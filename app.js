@@ -1,4 +1,4 @@
-// app.js - Application principale CORRIGÉE v2.2 avec gestion ScanStart et messages d'erreur améliorés
+// app.js - Application avec transitions fluides et design moderne
 
 class App {
     constructor() {
@@ -8,12 +8,27 @@ class App {
         this.maxInitAttempts = 3;
         this.isInitializing = false;
         this.initializationPromise = null;
+        
+        // Masquer immédiatement l'ancien UI
+        this.hideOldUI();
+    }
+
+    hideOldUI() {
+        // Cacher la navigation et le contenu dès le début
+        const mainNav = document.getElementById('mainNav');
+        const pageContent = document.getElementById('pageContent');
+        
+        if (mainNav) {
+            mainNav.style.display = 'none';
+        }
+        if (pageContent) {
+            pageContent.style.display = 'none';
+        }
     }
 
     async init() {
         console.log('[App] Initializing...');
         
-        // Éviter l'initialisation multiple
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
             return this.initializationPromise;
@@ -33,14 +48,12 @@ class App {
         this.initializationAttempts++;
         
         try {
-            // Vérifications préliminaires
             if (!this.checkPrerequisites()) {
                 return;
             }
 
             console.log('[App] Initializing auth service...');
             
-            // Initialize auth service avec timeout
             const initTimeout = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Initialization timeout')), 20000)
             );
@@ -49,13 +62,10 @@ class App {
             await Promise.race([initPromise, initTimeout]);
             
             console.log('[App] Auth service initialized');
-            
-            // Check authentication
             await this.checkAuthenticationStatus();
             
         } catch (error) {
             await this.handleInitializationError(error);
-            
         } finally {
             this.isInitializing = false;
             this.setupEventListeners();
@@ -63,21 +73,18 @@ class App {
     }
 
     checkPrerequisites() {
-        // Vérifier si MSAL est chargé
         if (typeof msal === 'undefined') {
             console.error('[App] MSAL library not loaded');
             this.showError('MSAL library not loaded. Please refresh the page.');
             return false;
         }
 
-        // Vérifier si la configuration est chargée
         if (!window.AppConfig) {
             console.error('[App] Configuration not loaded');
             this.showError('Configuration not loaded. Please refresh the page.');
             return false;
         }
 
-        // Vérifier la validité de la configuration
         const validation = window.AppConfig.validate();
         if (!validation.valid) {
             console.error('[App] Configuration invalid:', validation.issues);
@@ -85,7 +92,6 @@ class App {
             return false;
         }
 
-        // Vérifier si authService existe
         if (!window.authService) {
             console.error('[App] AuthService not available');
             this.showError('Authentication service not available. Please refresh the page.');
@@ -104,10 +110,9 @@ class App {
                     this.user = await window.authService.getUserInfo();
                     this.isAuthenticated = true;
                     console.log('[App] User authenticated:', this.user.displayName);
-                    this.showApp();
+                    this.showAppWithTransition();
                 } catch (userInfoError) {
                     console.error('[App] Error getting user info:', userInfoError);
-                    // Si on a un compte mais pas d'info utilisateur, essayer de se reconnecter
                     if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
                         console.log('[App] Token seems invalid, clearing auth and showing login');
                         await window.authService.reset();
@@ -129,22 +134,20 @@ class App {
     async handleInitializationError(error) {
         console.error('[App] Initialization error:', error);
         
-        // Gestion d'erreurs spécifiques
         if (error.message.includes('unauthorized_client')) {
             this.showConfigurationError([
                 'Configuration Azure incorrecte',
-                'Vérifiez votre Client ID dans config.js',
+                'Vérifiez votre Client ID dans la configuration',
                 'Consultez la documentation Azure App Registration'
             ]);
             return;
         }
         
         if (error.message.includes('Configuration invalid')) {
-            this.showConfigurationError(['Configuration invalide - vérifiez config.js']);
+            this.showConfigurationError(['Configuration invalide - vérifiez la configuration']);
             return;
         }
         
-        // Réessayer l'initialisation si c'est un problème temporaire
         if (this.initializationAttempts < this.maxInitAttempts && 
             (error.message.includes('timeout') || error.message.includes('network'))) {
             console.log(`[App] Retrying initialization (${this.initializationAttempts}/${this.maxInitAttempts})...`);
@@ -163,61 +166,56 @@ class App {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="login-card">
-                    <div class="login-icon" style="color: #f59e0b;">
-                        <i class="fas fa-exclamation-triangle"></i>
+                <div class="hero-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
+                        </div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Configuration requise</h1>
+                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
+                            <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
+                            <ul style="margin-left: 20px;">
+                                ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
+                            </ul>
+                            <div style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                                <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
+                                <ol style="margin-left: 20px;">
+                                    <li>Cliquez sur "Configurer l'application"</li>
+                                    <li>Suivez l'assistant de configuration</li>
+                                    <li>Entrez votre Azure Client ID</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <a href="setup.html" class="cta-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+                                <i class="fas fa-cog"></i>
+                                Configurer l'application
+                            </a>
+                            <button onclick="location.reload()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser
+                            </button>
+                        </div>
                     </div>
-                    <h1 style="color: #f59e0b;">Configuration Error</h1>
-                    <div style="text-align: left; margin: 20px 0;">
-                        <h3>Issues detected:</h3>
-                        <ul>
-                            ${issues.map(issue => `<li>${issue}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: left;">
-                        <h4>Steps to fix:</h4>
-                        <ol>
-                            <li>Click on "Configure the application" below</li>
-                            <li>Follow the setup wizard</li>
-                            <li>Enter your Azure Client ID</li>
-                        </ol>
-                    </div>
-                    <a href="setup.html" class="btn btn-primary">
-                        <i class="fas fa-cog"></i>
-                        Configure the application
-                    </a>
-                    <button class="btn btn-secondary" onclick="location.reload()" style="margin-top: 10px;">
-                        <i class="fas fa-refresh"></i>
-                        Refresh Page
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.diagnoseMSAL()" style="margin-top: 10px;">
-                        <i class="fas fa-bug"></i>
-                        Run Diagnostics
-                    </button>
                 </div>
             `;
-            loginPage.style.display = 'block';
         }
         
-        this.hideOtherUIElements();
+        this.hideModernLoading();
     }
 
     setupEventListeners() {
         console.log('[App] Setting up event listeners...');
         
-        // Login button
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
-            // Supprimer l'ancien listener s'il existe
             const newLoginBtn = loginBtn.cloneNode(true);
             loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
             
             newLoginBtn.addEventListener('click', () => this.login());
         }
 
-        // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
-            // Supprimer les anciens listeners
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
             
@@ -229,20 +227,16 @@ class App {
             });
         });
 
-        // Gestion des erreurs globales améliorée avec gestion ScanStart
         window.addEventListener('error', (event) => {
             console.error('[App] Global error:', event.error);
             
-            // Gestion spécifique des erreurs ScanStart.js
             if (event.error && event.error.message && 
                 event.error.message.includes('ScanStart.js') && 
                 event.error.message.includes('Unexpected token')) {
-                console.warn('[App] ScanStart.js syntax error detected - module should be handled inline');
-                // L'erreur est gérée par le module inline dans index.html
+                console.warn('[App] ScanStart.js syntax error detected - handled inline');
                 return;
             }
             
-            // Gestion spécifique des erreurs MSAL
             if (event.error && event.error.message) {
                 const message = event.error.message;
                 if (message.includes('unauthorized_client')) {
@@ -260,7 +254,6 @@ class App {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection:', event.reason);
             
-            // Gestion des rejets de promesse MSAL
             if (event.reason && event.reason.errorCode) {
                 console.log('[App] MSAL promise rejection:', event.reason.errorCode);
             }
@@ -274,65 +267,59 @@ class App {
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.disabled = true;
-                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion en cours...';
             }
             
-            if (window.uiManager) {
-                window.uiManager.showLoading('Connecting to Microsoft...');
-            }
+            this.showModernLoading('Connexion à Outlook...');
             
-            // Vérifier si authService est prêt
             if (!window.authService.isInitialized) {
                 console.log('[App] AuthService not initialized, initializing...');
                 await window.authService.initialize();
             }
             
             await window.authService.login();
-            // La page va se rediriger après login
             
         } catch (error) {
             console.error('[App] Login error:', error);
             
-            if (window.uiManager) {
-                window.uiManager.hideLoading();
-                
-                // Messages d'erreur plus spécifiques basés sur les codes d'erreur MSAL
-                let errorMessage = 'Login failed. Please try again.';
-                
-                if (error.errorCode) {
-                    const errorCode = error.errorCode;
-                    if (window.AppConfig.errors[errorCode]) {
-                        errorMessage = window.AppConfig.errors[errorCode];
-                    } else {
-                        switch (errorCode) {
-                            case 'popup_window_error':
-                                errorMessage = 'Popup blocked. Please allow popups and try again.';
-                                break;
-                            case 'user_cancelled':
-                                errorMessage = 'Login cancelled by user.';
-                                break;
-                            case 'network_error':
-                                errorMessage = 'Network error. Please check your connection and try again.';
-                                break;
-                            case 'unauthorized_client':
-                                errorMessage = 'Configuration error. Please check your Azure app registration.';
-                                break;
-                            default:
-                                errorMessage = `Login error: ${errorCode}`;
-                        }
+            this.hideModernLoading();
+            
+            let errorMessage = 'Échec de la connexion. Veuillez réessayer.';
+            
+            if (error.errorCode) {
+                const errorCode = error.errorCode;
+                if (window.AppConfig.errors && window.AppConfig.errors[errorCode]) {
+                    errorMessage = window.AppConfig.errors[errorCode];
+                } else {
+                    switch (errorCode) {
+                        case 'popup_window_error':
+                            errorMessage = 'Popup bloqué. Autorisez les popups et réessayez.';
+                            break;
+                        case 'user_cancelled':
+                            errorMessage = 'Connexion annulée.';
+                            break;
+                        case 'network_error':
+                            errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
+                            break;
+                        case 'unauthorized_client':
+                            errorMessage = 'Configuration incorrecte. Vérifiez votre Azure Client ID.';
+                            break;
+                        default:
+                            errorMessage = `Erreur: ${errorCode}`;
                     }
-                } else if (error.message.includes('unauthorized_client')) {
-                    errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
                 }
-                
+            } else if (error.message.includes('unauthorized_client')) {
+                errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
+            }
+            
+            if (window.uiManager) {
                 window.uiManager.showToast(errorMessage, 'error', 8000);
             }
             
-            // Restaurer le bouton
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.disabled = false;
-                loginBtn.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Microsoft';
+                loginBtn.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
             }
         }
     }
@@ -341,12 +328,10 @@ class App {
         console.log('[App] Logout attempted...');
         
         try {
-            const confirmed = confirm('Are you sure you want to log out?');
+            const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
             if (!confirmed) return;
             
-            if (window.uiManager) {
-                window.uiManager.showLoading('Logging out...');
-            }
+            this.showModernLoading('Déconnexion...');
             
             if (window.authService) {
                 await window.authService.logout();
@@ -356,11 +341,10 @@ class App {
             
         } catch (error) {
             console.error('[App] Logout error:', error);
+            this.hideModernLoading();
             if (window.uiManager) {
-                window.uiManager.hideLoading();
-                window.uiManager.showToast('Logout failed. Forcing cleanup...', 'warning');
+                window.uiManager.showToast('Erreur de déconnexion. Nettoyage forcé...', 'warning');
             }
-            
             this.forceCleanup();
         }
     }
@@ -368,19 +352,16 @@ class App {
     forceCleanup() {
         console.log('[App] Force cleanup...');
         
-        // Reset internal state
         this.user = null;
         this.isAuthenticated = false;
         this.isInitializing = false;
         this.initializationPromise = null;
         
-        // Reset auth service
         if (window.authService) {
             window.authService.forceCleanup();
         }
         
-        // Clear relevant localStorage
-        const keysToKeep = ['emailsort_categories', 'emailsort_tasks'];
+        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
         const allKeys = Object.keys(localStorage);
         
         allKeys.forEach(key => {
@@ -393,66 +374,81 @@ class App {
             }
         });
         
-        // Reload page
         setTimeout(() => {
             window.location.reload();
         }, 1000);
     }
 
     showLogin() {
-        console.log('[App] Showing login page');
+        console.log('[App] Showing modern login page');
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
-            loginPage.style.display = 'block';
+            loginPage.style.display = 'flex';
+            loginPage.style.animation = 'fadeInUp 0.5s ease';
         }
         
         this.hideOtherUIElements();
+        this.hideModernLoading();
         
-        // Update auth status
         if (window.uiManager) {
             window.uiManager.updateAuthStatus(null);
-            window.uiManager.hideLoading();
         }
     }
 
-    showApp() {
-        console.log('[App] Showing application');
+    showAppWithTransition() {
+        console.log('[App] Showing application with smooth transition');
+        
+        this.hideModernLoading();
         
         const loginPage = document.getElementById('loginPage');
         const mainNav = document.getElementById('mainNav');
         const pageContent = document.getElementById('pageContent');
         
+        // Transition fluide
         if (loginPage) {
-            loginPage.style.display = 'none';
-        }
-        if (mainNav) {
-            mainNav.style.display = 'flex';
-        }
-        if (pageContent) {
-            pageContent.style.display = 'block';
+            loginPage.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            loginPage.style.opacity = '0';
+            loginPage.style.transform = 'translateY(-20px)';
+            
+            setTimeout(() => {
+                loginPage.style.display = 'none';
+                
+                // Afficher la navigation avec animation
+                if (mainNav) {
+                    mainNav.style.display = 'flex';
+                    mainNav.style.opacity = '0';
+                    mainNav.style.animation = 'fadeInUp 0.5s ease forwards';
+                }
+                
+                // Afficher le contenu avec délai
+                if (pageContent) {
+                    setTimeout(() => {
+                        pageContent.style.display = 'block';
+                        pageContent.style.opacity = '0';
+                        pageContent.style.animation = 'fadeInUp 0.5s ease 0.2s forwards';
+                    }, 200);
+                }
+            }, 500);
         }
         
-        // Update auth status
         if (window.uiManager) {
             window.uiManager.updateAuthStatus(this.user);
-            window.uiManager.hideLoading();
         }
         
-        // Load dashboard
-        if (window.pageManager) {
-            setTimeout(() => {
+        // Charger le dashboard après la transition
+        setTimeout(() => {
+            if (window.pageManager) {
                 window.pageManager.loadPage('dashboard');
-            }, 100);
-        }
+            }
+        }, 800);
         
-        // Check onboarding après un délai (mais pas automatique)
+        // Vérifier l'onboarding
         setTimeout(() => {
             if (window.onboardingManager && window.onboardingManager.isFirstTime()) {
-                console.log('[App] First-time user detected, onboarding available');
-                // L'onboarding sera disponible mais pas automatique
+                console.log('[App] Premier utilisateur détecté');
             }
-        }, 500);
+        }, 1000);
     }
 
     hideOtherUIElements() {
@@ -463,43 +459,64 @@ class App {
         if (pageContent) pageContent.style.display = 'none';
     }
 
+    showModernLoading(message = 'Chargement...') {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            const loadingText = loadingOverlay.querySelector('.loading-text');
+            if (loadingText) {
+                loadingText.innerHTML = `
+                    <div>${message}</div>
+                    <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
+                `;
+            }
+            loadingOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    hideModernLoading() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    }
+
     showError(message) {
         console.error('[App] Showing error:', message);
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="login-card">
-                    <div class="login-icon" style="color: #ef4444;">
-                        <i class="fas fa-exclamation-triangle"></i>
+                <div class="hero-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                        </div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
+                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0;">
+                            <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="location.reload()" class="cta-button">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser la page
+                            </button>
+                            <button onclick="window.app.forceCleanup()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
+                                <i class="fas fa-undo"></i>
+                                Réinitialiser
+                            </button>
+                        </div>
                     </div>
-                    <h1 style="color: #ef4444;">Application Error</h1>
-                    <p>${message}</p>
-                    <button class="btn btn-primary" onclick="location.reload()">
-                        <i class="fas fa-refresh"></i>
-                        Refresh Page
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.app.forceCleanup()" style="margin-top: 10px;">
-                        <i class="fas fa-undo"></i>
-                        Reset and Refresh
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.diagnoseMSAL()" style="margin-top: 10px;">
-                        <i class="fas fa-bug"></i>
-                        Run Diagnostics
-                    </button>
                 </div>
             `;
-            loginPage.style.display = 'block';
+            loginPage.style.display = 'flex';
         }
         
         this.hideOtherUIElements();
-        
-        if (window.uiManager) {
-            window.uiManager.hideLoading();
-        }
+        this.hideModernLoading();
     }
 
-    // Diagnostic pour les erreurs ScanStart
     checkScanStartModule() {
         console.log('[App] Checking ScanStart module...');
         
@@ -531,8 +548,7 @@ class App {
 window.emergencyReset = function() {
     console.log('[App] Emergency reset triggered');
     
-    // Nettoyer tout le localStorage
-    const keysToKeep = ['emailsort_categories', 'emailsort_tasks'];
+    const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
     const allKeys = Object.keys(localStorage);
     
     allKeys.forEach(key => {
@@ -545,11 +561,9 @@ window.emergencyReset = function() {
         }
     });
     
-    // Recharger
     window.location.reload();
 };
 
-// Fonction pour vérifier que tous les services sont chargés
 function checkServicesReady() {
     const requiredServices = ['authService', 'mailService', 'uiManager'];
     const missingServices = requiredServices.filter(service => !window[service]);
@@ -557,7 +571,6 @@ function checkServicesReady() {
     if (missingServices.length > 0) {
         console.warn('[App] Missing services:', missingServices);
         
-        // Message d'erreur plus explicite pour MailService
         if (missingServices.includes('mailService')) {
             console.error('[App] MailService not loaded - Check if MailService.js exists and filename case is correct');
             console.error('[App] Note: File names are case-sensitive on GitHub Pages (Linux servers)');
@@ -566,13 +579,11 @@ function checkServicesReady() {
         return false;
     }
     
-    // Vérifier aussi la configuration
     if (!window.AppConfig) {
         console.warn('[App] Missing AppConfig');
         return false;
     }
     
-    // Vérifier ScanStart (non critique)
     if (!window.scanStartModule) {
         console.warn('[App] ScanStart module not available - will use fallback');
     }
@@ -584,15 +595,12 @@ function checkServicesReady() {
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[App] DOM loaded, creating app instance...');
     
-    // Créer l'instance de l'app
     window.app = new App();
     
-    // Attendre que tous les services soient chargés
     const waitForServices = () => {
         if (checkServicesReady()) {
             console.log('[App] All services ready, initializing...');
             
-            // Vérifier ScanStart et afficher le statut
             const scanStartStatus = window.app.checkScanStartModule();
             console.log('[App] ScanStart status:', scanStartStatus);
             
@@ -619,13 +627,11 @@ window.addEventListener('load', () => {
             console.log('[App] Fallback initialization check...');
             
             const loginPage = document.getElementById('loginPage');
-            
-            // S'assurer qu'au moins la page de login est visible
             if (loginPage && loginPage.style.display === 'none') {
-                loginPage.style.display = 'block';
+                loginPage.style.display = 'flex';
             }
         }
     }, 5000);
 });
 
-console.log('✅ App loaded with enhanced MSAL error handling and improved error messages');
+console.log('✅ App loaded with modern UI and smooth transitions');
