@@ -56,9 +56,8 @@ class ScanStartModule {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border-radius: 24px;
-                padding: 40px;
+                padding: 32px;
                 max-width: 90vw;
-                max-height: 90vh;
                 width: 100%;
                 max-width: 500px;
                 box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
@@ -67,7 +66,7 @@ class ScanStartModule {
                 position: relative;
                 animation: slideUp 0.6s ease-out;
                 overflow-y: auto;
-                margin: 20px auto;
+                margin: 0 auto;
             }
 
             @keyframes slideUp {
@@ -119,19 +118,19 @@ class ScanStartModule {
 
             /* Header - Compact */
             .scanner-header {
-                margin-bottom: 24px;
+                margin-bottom: 20px;
             }
 
             .scanner-icon {
-                width: 56px;
-                height: 56px;
+                width: 52px;
+                height: 52px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 14px;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 12px;
-                font-size: 20px;
+                margin: 0 auto 10px;
+                font-size: 18px;
                 color: white;
                 box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
                 transition: all 0.3s ease;
@@ -153,39 +152,39 @@ class ScanStartModule {
             }
 
             .scanner-title {
-                font-size: 22px;
+                font-size: 20px;
                 font-weight: 700;
                 color: #1a1a1a;
-                margin-bottom: 4px;
+                margin-bottom: 3px;
                 letter-spacing: -0.5px;
             }
 
             .scanner-subtitle {
-                font-size: 13px;
+                font-size: 12px;
                 color: #666;
                 opacity: 0.8;
             }
 
             /* Main Action Button */
             .scan-action {
-                margin-bottom: 20px;
+                margin-bottom: 16px;
             }
 
             .scan-button {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
-                padding: 18px 40px;
-                border-radius: 14px;
-                font-size: 16px;
+                padding: 16px 36px;
+                border-radius: 12px;
+                font-size: 15px;
                 font-weight: 700;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 display: inline-flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
                 box-shadow: 0 6px 24px rgba(102, 126, 234, 0.4);
-                min-width: 260px;
+                min-width: 240px;
                 justify-content: center;
                 position: relative;
                 overflow: hidden;
@@ -555,19 +554,19 @@ class ScanStartModule {
             /* Responsive */
             @media (max-width: 640px) {
                 .scanner-container {
-                    padding: 24px 20px;
+                    padding: 20px 16px;
                     max-width: 95vw;
                     border-radius: 20px;
                 }
 
                 .scanner-title {
-                    font-size: 20px;
+                    font-size: 18px;
                 }
 
                 .scan-button {
                     padding: 14px 28px;
-                    font-size: 15px;
-                    min-width: 220px;
+                    font-size: 14px;
+                    min-width: 200px;
                 }
 
                 .period-chips {
@@ -577,7 +576,7 @@ class ScanStartModule {
                 .period-chip {
                     padding: 6px 10px;
                     font-size: 11px;
-                    min-width: 45px;
+                    min-width: 40px;
                 }
 
                 .ai-toggles {
@@ -591,7 +590,7 @@ class ScanStartModule {
 
                 .scan-info {
                     flex-direction: column;
-                    gap: 8px;
+                    gap: 6px;
                 }
             }
         `;
