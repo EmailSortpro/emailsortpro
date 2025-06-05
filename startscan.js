@@ -53,28 +53,33 @@ class ScanStartModule {
                ==================================================== */
             
             .scanner-ultra-minimal {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
+                width: 100%;
+                height: 100vh;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 padding: 20px;
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: transparent;
+                margin: 0;
                 overflow: hidden;
             }
 
             .scanner-container {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
-                border-radius: 32px;
-                padding: 48px;
-                max-width: 500px;
+                border-radius: 24px;
+                padding: 40px;
+                max-width: 90vw;
+                max-height: 90vh;
                 width: 100%;
-                box-shadow: 0 32px 64px rgba(0, 0, 0, 0.15);
+                max-width: 500px;
+                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 text-align: center;
                 position: relative;
                 animation: slideUp 0.6s ease-out;
+                overflow-y: auto;
             }
 
             @keyframes slideUp {
@@ -126,21 +131,21 @@ class ScanStartModule {
 
             /* Header - Compact */
             .scanner-header {
-                margin-bottom: 32px;
+                margin-bottom: 24px;
             }
 
             .scanner-icon {
-                width: 64px;
-                height: 64px;
+                width: 56px;
+                height: 56px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 16px;
+                border-radius: 14px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 16px;
-                font-size: 24px;
+                margin: 0 auto 12px;
+                font-size: 20px;
                 color: white;
-                box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
                 transition: all 0.3s ease;
             }
 
@@ -160,7 +165,7 @@ class ScanStartModule {
             }
 
             .scanner-title {
-                font-size: 24px;
+                font-size: 22px;
                 font-weight: 700;
                 color: #1a1a1a;
                 margin-bottom: 4px;
@@ -168,31 +173,31 @@ class ScanStartModule {
             }
 
             .scanner-subtitle {
-                font-size: 14px;
+                font-size: 13px;
                 color: #666;
                 opacity: 0.8;
             }
 
             /* Main Action Button */
             .scan-action {
-                margin-bottom: 24px;
+                margin-bottom: 20px;
             }
 
             .scan-button {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
                 border: none;
-                padding: 20px 48px;
-                border-radius: 16px;
-                font-size: 18px;
+                padding: 18px 40px;
+                border-radius: 14px;
+                font-size: 16px;
                 font-weight: 700;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 display: inline-flex;
                 align-items: center;
-                gap: 12px;
-                box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
-                min-width: 280px;
+                gap: 10px;
+                box-shadow: 0 6px 24px rgba(102, 126, 234, 0.4);
+                min-width: 260px;
                 justify-content: center;
                 position: relative;
                 overflow: hidden;
@@ -344,9 +349,40 @@ class ScanStartModule {
                 color: #10b981;
             }
 
+            /* Settings Link */
+            .settings-link {
+                margin-bottom: 16px;
+            }
+
+            .settings-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: transparent;
+                border: 1px solid rgba(102, 126, 234, 0.3);
+                border-radius: 12px;
+                color: #667eea;
+                font-size: 11px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+            }
+
+            .settings-btn:hover {
+                background: rgba(102, 126, 234, 0.1);
+                border-color: #667eea;
+                transform: translateY(-1px);
+            }
+
+            .settings-btn i {
+                font-size: 10px;
+            }
+
             /* Process Steps - Ultra Compact */
             .process-section {
-                margin-bottom: 16px;
+                margin-bottom: 12px;
             }
 
             .process-steps {
@@ -531,8 +567,9 @@ class ScanStartModule {
             /* Responsive */
             @media (max-width: 640px) {
                 .scanner-container {
-                    padding: 32px 24px;
-                    max-width: 100%;
+                    padding: 24px 20px;
+                    max-width: 95vw;
+                    border-radius: 20px;
                 }
 
                 .scanner-title {
@@ -540,9 +577,9 @@ class ScanStartModule {
                 }
 
                 .scan-button {
-                    padding: 16px 32px;
-                    font-size: 16px;
-                    min-width: 240px;
+                    padding: 14px 28px;
+                    font-size: 15px;
+                    min-width: 220px;
                 }
 
                 .period-chips {
@@ -689,6 +726,14 @@ class ScanStartModule {
                                 <span>Tâches</span>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Settings Link -->
+                    <div class="settings-link">
+                        <button class="settings-btn" onclick="window.scanStartModule.openSettings()">
+                            <i class="fas fa-cog"></i>
+                            <span>Paramètres de scan</span>
+                        </button>
                     </div>
 
                     <!-- Progress (Hidden by default) -->
@@ -852,6 +897,14 @@ class ScanStartModule {
 • Dossier: ${folderText}
 • Classification: ${this.autoClassifyEmails ? 'Activée' : 'Désactivée'}
 • Tâches auto: ${this.autoCreateTasks ? 'Activée' : 'Désactivée'}`);
+    }
+
+    openSettings() {
+        if (window.pageManager?.loadPage) {
+            window.pageManager.loadPage('settings');
+        } else {
+            alert('⚙️ Paramètres de scan\n\nAccédez aux options avancées :\n• Dossiers supplémentaires\n• Filtres par expéditeur\n• Configuration IA\n• Paramètres de notification\n\nFonctionnalité bientôt disponible !');
+        }
     }
 
     // ====================================================
