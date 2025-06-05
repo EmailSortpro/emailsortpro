@@ -6,7 +6,7 @@
     <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="Gérez vos emails Microsoft intelligemment avec l'IA. Catégorisation automatique, création de tâches et rangement par domaine.">
+    <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
     <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
     <meta name="author" content="EmailSortPro">
     
@@ -14,13 +14,13 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://emailsortpro.github.io/emailsortpro/">
     <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
-    <meta property="og:description" content="Gérez vos emails Microsoft intelligemment avec l'IA.">
+    <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://emailsortpro.github.io/emailsortpro/">
     <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
-    <meta property="twitter:description" content="Gérez vos emails Microsoft intelligemment avec l'IA.">
+    <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
@@ -143,11 +143,232 @@
     
     <!-- Tentative de chargement du config.js (optionnel) -->
     <script src="config.js" onerror="console.warn('config.js non trouvé, utilisation de la configuration dynamique')"></script>
+
+    <!-- Styles de la page d'accueil épurée -->
+    <style>
+        /* Reset et styles de base pour la page de connexion */
+        .login-page-styles * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .login-page-styles {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            color: white;
+        }
+
+        .login-logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .login-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 50px;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .login-button {
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+            color: #667eea;
+            padding: 20px 50px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+        }
+
+        .login-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.4);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .login-security-note {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Loading overlay */
+        .login-loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .login-loading-overlay.active {
+            display: flex;
+        }
+
+        .login-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .login-loading-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 20px;
+            }
+
+            .login-title {
+                font-size: 2.5rem;
+            }
+
+            .login-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .login-button {
+                padding: 18px 40px;
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Cache la navigation et le contenu par défaut */
+        #mainNav, #pageContent {
+            display: none !important;
+        }
+
+        /* Styles pour les erreurs de configuration */
+        .config-error-page {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            color: white;
+            padding: 40px 20px;
+        }
+
+        .config-error-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+            color: #fbbf24;
+        }
+
+        .config-error-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        .config-error-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 20px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .config-error-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 30px;
+        }
+
+        .config-error-button {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .config-error-button.secondary {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .config-error-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </head>
 <body>
     <div id="app">
-        <!-- Header Application -->
-        <header class="app-header">
+        <!-- Header Application (caché au départ) -->
+        <header class="app-header" style="display: none;">
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
@@ -160,7 +381,7 @@
             </div>
         </header>
 
-        <!-- Navigation -->
+        <!-- Navigation (cachée au départ) -->
         <nav class="app-nav" id="mainNav" style="display: none;">
             <button class="nav-item active" data-page="dashboard">
                 <i class="fas fa-th-large"></i>
@@ -190,67 +411,44 @@
 
         <!-- Contenu Principal -->
         <main class="app-main" id="mainContent">
-            <!-- Page de Connexion (par défaut) -->
-            <div id="loginPage" class="page-container" style="display: block;">
-                <div class="login-card">
-                    <div class="login-icon">
+            <!-- Page de Connexion épurée (par défaut) -->
+            <div id="loginPage" class="login-page-styles" style="display: flex;">
+                <div class="login-container">
+                    <div class="login-logo">
                         <i class="fas fa-envelope-open-text"></i>
                     </div>
-                    <h1>EmailSortPro - Scanner Intelligent</h1>
-                    <p>Analysez vos emails Microsoft avec l'IA</p>
                     
-                    <div class="features-grid">
-                        <div class="feature">
-                            <i class="fas fa-cloud-download-alt"></i>
-                            <h3>Emails Réels</h3>
-                            <p>Connexion directe à votre boîte Microsoft</p>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-robot"></i>
-                            <h3>IA Intégrée</h3>
-                            <p>Catégorisation intelligente automatique</p>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-shield-alt"></i>
-                            <h3>100% Sécurisé</h3>
-                            <p>Vos données restent chez Microsoft</p>
-                        </div>
-                        <div class="feature">
-                            <i class="fas fa-tags"></i>
-                            <h3>11 Catégories</h3>
-                            <p>Classification avancée par IA</p>
-                        </div>
-                    </div>
+                    <h1 class="login-title">EmailSortPro</h1>
                     
-                    <button id="loginBtn" class="btn btn-primary btn-extra-large">
-                        <i class="fab fa-microsoft"></i>
-                        Scanner mes Emails
-                    </button>
-                    
-                    <p class="login-note">
-                        Connectez-vous à Microsoft pour analyser vos emails
+                    <p class="login-subtitle">
+                        Organisez vos emails Outlook avec l'IA
                     </p>
-                    
-                    <!-- Bouton de configuration -->
-                    <div style="margin-top: 20px;">
-                        <a href="setup.html" class="config-link">
-                            <i class="fas fa-cog"></i>
-                            Configurer l'application
-                        </a>
+
+                    <button id="loginBtn" class="login-button">
+                        <i class="fab fa-microsoft"></i>
+                        Se connecter à Outlook
+                    </button>
+
+                    <div class="login-security-note">
+                        <i class="fas fa-shield-alt"></i>
+                        Connexion sécurisée Microsoft
                     </div>
                 </div>
             </div>
 
-            <!-- Contenu Dynamique des Pages -->
+            <!-- Contenu Dynamique des Pages (caché au départ) -->
             <div id="pageContent" style="display: none;">
                 <!-- Le contenu des pages est généré dynamiquement -->
             </div>
         </main>
 
-        <!-- Overlay de Chargement -->
-        <div id="loadingOverlay" class="loading-overlay">
-            <div class="spinner"></div>
-            <p>Chargement en cours...</p>
+        <!-- Overlay de Chargement épuré -->
+        <div id="loadingOverlay" class="login-loading-overlay">
+            <div class="login-spinner"></div>
+            <div class="login-loading-text">
+                <div>Connexion à Outlook...</div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
+            </div>
         </div>
 
         <!-- Notifications Toast -->
@@ -261,7 +459,7 @@
     <!-- SCRIPTS - ORDRE CRITIQUE                  -->
     <!-- ========================================= -->
     
-    <!-- 2. Services Core (avec noms de fichiers CORRECTS) -->
+    <!-- 2. Services Core -->
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
@@ -293,6 +491,24 @@
     <script>
         // Vérification finale de la configuration
         window.addEventListener('DOMContentLoaded', function() {
+            // Gestion du bouton de connexion
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+                    this.disabled = true;
+                    
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    if (loadingOverlay) {
+                        loadingOverlay.classList.add('active');
+                    }
+                    
+                    if (window.app && window.app.login) {
+                        window.app.login();
+                    }
+                });
+            }
+            
             setTimeout(function() {
                 // Vérifier si la configuration est valide
                 if (window.AppConfig) {
@@ -330,90 +546,43 @@
                 }
             }
         };
+
+        // Fonction pour transition vers l'app (appelée par app.js)
+        window.showApp = function() {
+            const loginPage = document.getElementById('loginPage');
+            const mainNav = document.getElementById('mainNav');
+            const pageContent = document.getElementById('pageContent');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const appHeader = document.querySelector('.app-header');
+            
+            // Cacher le loading
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+            
+            // Transition fluide
+            if (loginPage) {
+                loginPage.style.transition = 'opacity 0.5s ease';
+                loginPage.style.opacity = '0';
+                setTimeout(() => {
+                    loginPage.style.display = 'none';
+                    
+                    // Afficher l'interface de l'app
+                    if (appHeader) {
+                        appHeader.style.display = 'block';
+                        appHeader.style.animation = 'fadeInUp 0.5s ease';
+                    }
+                    if (mainNav) {
+                        mainNav.style.display = 'flex';
+                        mainNav.style.animation = 'fadeInUp 0.5s ease';
+                    }
+                    if (pageContent) {
+                        pageContent.style.display = 'block';
+                        pageContent.style.animation = 'fadeInUp 0.5s ease 0.2s both';
+                    }
+                }, 500);
+            }
+        };
     </script>
-    
-    <!-- CSS additionnel pour GitHub Pages -->
-    <style>
-        .config-link {
-            color: #6c757d;
-            text-decoration: none;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            transition: color 0.3s;
-        }
-        
-        .config-link:hover {
-            color: #495057;
-            text-decoration: underline;
-        }
-        
-        /* Amélioration pour mobile */
-        @media (max-width: 768px) {
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .login-card {
-                padding: 20px;
-            }
-            
-            .btn-extra-large {
-                font-size: 16px;
-                padding: 12px 20px;
-            }
-        }
-        
-        /* Style pour les messages d'erreur */
-        .error-message {
-            background-color: #fee;
-            border: 1px solid #fcc;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 20px 0;
-            color: #c00;
-        }
-        
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .loading-overlay.active {
-            display: flex;
-        }
-        
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-        }
-    </style>
 </body>
-</html>"<!-- Updated -->" 
+</html>
