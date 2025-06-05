@@ -1,4 +1,4 @@
-// startscan.js - Version 5.1 - Scanner d'emails moderne avec résolution des problèmes
+// startscan.js - Version 5.2 - Scanner d'emails moderne avec styles intégrés
 
 class ScanStartModule {
     constructor() {
@@ -16,8 +16,9 @@ class ScanStartModule {
             maxEmails: 1000
         };
         
+        this.stylesAdded = false;
         this.addModernStyles();
-        console.log('[ScanStart] Module initialized - MODERN EMAIL SCANNER v5.1 with fixes');
+        console.log('[ScanStart] Module initialized - MODERN EMAIL SCANNER v5.2 with integrated styles');
     }
 
     getExcludedDomains() {
@@ -35,10 +36,855 @@ class ScanStartModule {
         return date.toISOString().split('T')[0];
     }
 
+    // ====================================================
+    // STYLES CSS INTÉGRÉS
+    // ====================================================
+    addModernStyles() {
+        if (this.stylesAdded) return;
+
+        const styleId = 'scanstart-modern-styles';
+        if (document.getElementById(styleId)) return;
+
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            /* ====================================================
+               STYLES MODERNES POUR LE SCANNER D'EMAILS
+               ==================================================== */
+            
+            .scanner-minimal {
+                max-width: 900px;
+                margin: 0 auto;
+                padding: 20px;
+                font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+                background: #f8fafc;
+                min-height: 100vh;
+            }
+
+            /* En-tête avec utilisateur */
+            .scanner-header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 16px;
+                padding: 24px;
+                margin-bottom: 24px;
+                color: white;
+                box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+            }
+
+            .user-welcome {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+
+            .user-avatar {
+                width: 48px;
+                height: 48px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                backdrop-filter: blur(10px);
+            }
+
+            .user-info {
+                flex: 1;
+            }
+
+            .scanner-title {
+                font-size: 28px;
+                font-weight: 700;
+                margin: 0 0 4px 0;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .scanner-subtitle {
+                font-size: 16px;
+                margin: 0;
+                opacity: 0.9;
+                font-weight: 400;
+            }
+
+            /* Contenu principal */
+            .scanner-content {
+                background: white;
+                border-radius: 16px;
+                padding: 32px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                margin-bottom: 24px;
+            }
+
+            /* Configuration rapide */
+            .quick-config {
+                margin-bottom: 32px;
+            }
+
+            .config-row {
+                margin-bottom: 28px;
+            }
+
+            .config-item {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .config-label {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .config-label i {
+                color: #667eea;
+                width: 20px;
+            }
+
+            /* Sélecteur de période */
+            .period-selector {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+
+            .period-chip {
+                padding: 8px 16px;
+                background: #f1f5f9;
+                border: 2px solid #e2e8f0;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 500;
+                color: #64748b;
+                transition: all 0.2s ease;
+                user-select: none;
+            }
+
+            .period-chip:hover {
+                background: #e2e8f0;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+            }
+
+            .period-chip.selected {
+                background: #667eea;
+                border-color: #667eea;
+                color: white;
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+
+            /* Sélecteur de dossiers */
+            .folders-selector {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .folder-chip {
+                padding: 12px 20px;
+                background: #f8fafc;
+                border: 2px solid #e2e8f0;
+                border-radius: 12px;
+                cursor: pointer;
+                font-weight: 500;
+                color: #475569;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                user-select: none;
+            }
+
+            .folder-chip:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+            }
+
+            .folder-chip.selected {
+                background: #10b981;
+                border-color: #10b981;
+                color: white;
+                box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            }
+
+            /* Options IA */
+            .ai-options {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .switch-option {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .switch {
+                position: relative;
+                display: inline-block;
+                width: 48px;
+                height: 24px;
+            }
+
+            .switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #cbd5e1;
+                transition: .3s;
+                border-radius: 24px;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .3s;
+                border-radius: 50%;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            }
+
+            input:checked + .slider {
+                background-color: #667eea;
+            }
+
+            input:checked + .slider:before {
+                transform: translateX(24px);
+            }
+
+            .option-label {
+                font-weight: 500;
+                color: #374151;
+            }
+
+            /* Aperçu du scan */
+            .scan-preview {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 32px;
+            }
+
+            .preview-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .preview-title i {
+                color: #667eea;
+            }
+
+            .preview-content {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .preview-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .preview-label {
+                color: #6b7280;
+                font-weight: 500;
+            }
+
+            .preview-value {
+                color: #1f2937;
+                font-weight: 600;
+            }
+
+            /* Action de scan */
+            .scan-action {
+                text-align: center;
+                margin-bottom: 32px;
+            }
+
+            .btn-scan {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 16px 32px;
+                border-radius: 12px;
+                font-size: 18px;
+                font-weight: 600;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 12px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+                margin-bottom: 16px;
+            }
+
+            .btn-scan:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+            }
+
+            .btn-scan:active {
+                transform: translateY(0);
+            }
+
+            .scan-info {
+                display: flex;
+                justify-content: center;
+                gap: 24px;
+                margin-bottom: 16px;
+                flex-wrap: wrap;
+            }
+
+            .info-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: #6b7280;
+                font-size: 14px;
+            }
+
+            .info-item i {
+                color: #10b981;
+            }
+
+            .advanced-options {
+                margin-top: 16px;
+            }
+
+            .btn-link {
+                background: none;
+                border: none;
+                color: #667eea;
+                cursor: pointer;
+                font-weight: 500;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                text-decoration: none;
+                transition: color 0.2s ease;
+            }
+
+            .btn-link:hover {
+                color: #5a67d8;
+                text-decoration: underline;
+            }
+
+            /* Barre de progression */
+            .progress-container {
+                background: white;
+                border-radius: 16px;
+                padding: 32px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                margin-bottom: 24px;
+            }
+
+            .progress-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+
+            .progress-header h3 {
+                margin: 0;
+                color: #1f2937;
+                font-size: 20px;
+                font-weight: 600;
+            }
+
+            .progress-percentage {
+                font-size: 24px;
+                font-weight: 700;
+                color: #667eea;
+            }
+
+            .progress-bar {
+                width: 100%;
+                height: 8px;
+                background: #e5e7eb;
+                border-radius: 4px;
+                overflow: hidden;
+                margin-bottom: 16px;
+            }
+
+            .progress-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                border-radius: 4px;
+                transition: width 0.3s ease;
+            }
+
+            .progress-details {
+                margin-bottom: 24px;
+            }
+
+            .progress-text {
+                color: #374151;
+                font-weight: 500;
+                margin-bottom: 8px;
+            }
+
+            .progress-stats {
+                color: #6b7280;
+                font-size: 14px;
+            }
+
+            .btn-cancel {
+                background: #ef4444;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 500;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.2s ease;
+            }
+
+            .btn-cancel:hover {
+                background: #dc2626;
+                transform: translateY(-1px);
+            }
+
+            /* Guide d'utilisation */
+            .usage-guide {
+                background: white;
+                border-radius: 16px;
+                padding: 24px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            }
+
+            .guide-title {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .guide-title i {
+                color: #f59e0b;
+            }
+
+            .guide-tips {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .tip {
+                display: flex;
+                gap: 12px;
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 12px;
+                border-left: 4px solid #667eea;
+            }
+
+            .tip-icon {
+                font-size: 20px;
+                min-width: 24px;
+            }
+
+            .tip-content {
+                flex: 1;
+            }
+
+            .tip-title {
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 4px;
+            }
+
+            .tip-text {
+                color: #6b7280;
+                font-size: 14px;
+                line-height: 1.5;
+            }
+
+            /* États d'erreur et d'authentification */
+            .auth-needed-modern, .error-state-modern {
+                text-align: center;
+                padding: 48px 24px;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+                margin: 0 auto;
+            }
+
+            .auth-icon, .error-icon {
+                font-size: 64px;
+                margin-bottom: 24px;
+                color: #667eea;
+            }
+
+            .error-icon {
+                color: #ef4444;
+            }
+
+            .auth-needed-modern h2, .error-state-modern h2 {
+                margin: 0 0 16px 0;
+                color: #1f2937;
+                font-size: 24px;
+                font-weight: 600;
+            }
+
+            .auth-needed-modern p, .error-state-modern p {
+                color: #6b7280;
+                margin-bottom: 32px;
+                font-size: 16px;
+                line-height: 1.5;
+            }
+
+            .btn-modern {
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                font-weight: 500;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.2s ease;
+                text-decoration: none;
+            }
+
+            .btn-modern:hover {
+                background: #5a67d8;
+                transform: translateY(-1px);
+            }
+
+            .btn-modern.btn-auth {
+                background: #0078d4;
+                font-size: 16px;
+                padding: 14px 28px;
+            }
+
+            .btn-modern.btn-auth:hover {
+                background: #106ebe;
+            }
+
+            .btn-modern.btn-retry {
+                background: #10b981;
+                margin-right: 12px;
+            }
+
+            .btn-modern.btn-retry:hover {
+                background: #059669;
+            }
+
+            .btn-modern.btn-diagnose {
+                background: #f59e0b;
+            }
+
+            .btn-modern.btn-diagnose:hover {
+                background: #d97706;
+            }
+
+            .btn-modern.btn-primary {
+                background: #667eea;
+                margin-right: 12px;
+            }
+
+            .btn-modern.btn-secondary {
+                background: #6b7280;
+            }
+
+            .btn-modern.btn-secondary:hover {
+                background: #4b5563;
+            }
+
+            /* Détails d'erreur */
+            .error-details-modern {
+                background: #f8fafc;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 24px 0;
+                text-align: left;
+            }
+
+            .error-detail-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .error-detail-item:last-child {
+                margin-bottom: 0;
+                padding-bottom: 0;
+                border-bottom: none;
+            }
+
+            .detail-label {
+                font-weight: 500;
+                color: #374151;
+            }
+
+            .detail-status {
+                font-weight: 600;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+
+            .status-ok {
+                color: #059669;
+                background: #ecfdf5;
+            }
+
+            .status-error {
+                color: #dc2626;
+                background: #fef2f2;
+            }
+
+            .error-actions {
+                display: flex;
+                justify-content: center;
+                gap: 12px;
+                margin-top: 24px;
+            }
+
+            /* Résultats inline */
+            .scan-results-inline, .scan-error-inline {
+                text-align: center;
+                padding: 32px;
+            }
+
+            .results-header, .error-header {
+                margin-bottom: 24px;
+            }
+
+            .results-header h3, .error-header h3 {
+                margin: 12px 0 0 0;
+                color: #1f2937;
+                font-size: 24px;
+                font-weight: 600;
+            }
+
+            .results-stats {
+                display: flex;
+                justify-content: center;
+                gap: 32px;
+                margin-bottom: 32px;
+                flex-wrap: wrap;
+            }
+
+            .stat-item {
+                text-align: center;
+            }
+
+            .stat-value {
+                font-size: 36px;
+                font-weight: 700;
+                color: #667eea;
+                margin-bottom: 4px;
+            }
+
+            .stat-label {
+                color: #6b7280;
+                font-weight: 500;
+            }
+
+            .results-actions, .error-actions {
+                display: flex;
+                justify-content: center;
+                gap: 12px;
+            }
+
+            .error-message {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 24px;
+                color: #dc2626;
+            }
+
+            /* Modal diagnostic */
+            .diagnostic-modal {
+                max-width: 600px;
+                background: white;
+                border-radius: 16px;
+                padding: 32px;
+            }
+
+            .diagnostic-header h3 {
+                margin: 0 0 24px 0;
+                color: #1f2937;
+                font-size: 24px;
+                font-weight: 600;
+            }
+
+            .diagnostic-section {
+                margin-bottom: 24px;
+                padding-bottom: 24px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .diagnostic-section:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+                padding-bottom: 0;
+            }
+
+            .diagnostic-section h4 {
+                margin: 0 0 16px 0;
+                color: #374151;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .diagnostic-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+
+            .diagnostic-error {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                border-radius: 6px;
+                padding: 8px 12px;
+                margin-top: 8px;
+                color: #dc2626;
+                font-size: 14px;
+            }
+
+            .diagnostic-actions {
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+                margin-top: 24px;
+            }
+
+            /* Responsive */
+            @media (max-width: 768px) {
+                .scanner-minimal {
+                    padding: 16px;
+                }
+
+                .scanner-content {
+                    padding: 20px;
+                }
+
+                .user-welcome {
+                    flex-direction: column;
+                    text-align: center;
+                    gap: 12px;
+                }
+
+                .scanner-title {
+                    font-size: 24px;
+                    justify-content: center;
+                }
+
+                .period-selector, .folders-selector {
+                    justify-content: center;
+                }
+
+                .scan-info {
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .results-stats {
+                    flex-direction: column;
+                    gap: 16px;
+                }
+
+                .error-actions, .results-actions {
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .diagnostic-actions {
+                    flex-direction: column;
+                }
+            }
+
+            /* Animations */
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .scanner-minimal > * {
+                animation: slideIn 0.5s ease-out;
+            }
+
+            .progress-fill {
+                transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            /* Focus et accessibilité */
+            .btn-scan:focus,
+            .btn-modern:focus,
+            .period-chip:focus,
+            .folder-chip:focus {
+                outline: 2px solid #667eea;
+                outline-offset: 2px;
+            }
+
+            .switch input:focus + .slider {
+                box-shadow: 0 0 0 2px #667eea;
+            }
+        `;
+
+        document.head.appendChild(style);
+        this.stylesAdded = true;
+        console.log('[ScanStart] ✅ Modern styles added');
+    }
+
     async render(container) {
         console.log('[ScanStart] Rendering enhanced scanner interface...');
         
         try {
+            // S'assurer que les styles sont ajoutés
             this.addModernStyles();
             
             if (!window.authService?.isAuthenticated()) {
@@ -666,7 +1512,7 @@ class ScanStartModule {
                 total: allEmails.length,
                 emails: allEmails,
                 scanDuration: Date.now() - startTime,
-                version: '5.1',
+                version: '5.2',
                 autoClassified: this.autoClassifyEmails,
                 tasksCreated: this.autoCreateTasks,
                 filters: filters
@@ -1200,3 +2046,217 @@ class ScanStartModule {
             console.warn('[ScanStart] Could not save settings:', e);
         }
     }
+
+    // ====================================================
+    // MÉTHODES D'INITIALISATION ET DE RÉCUPÉRATION
+    // ====================================================
+    loadSavedSettings() {
+        try {
+            const saved = localStorage.getItem('scanSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                this.selectedDays = settings.selectedDays || 7;
+                this.selectedFolders = settings.selectedFolders || ['inbox'];
+                this.autoClassifyEmails = settings.autoClassifyEmails !== undefined ? settings.autoClassifyEmails : true;
+                this.autoCreateTasks = settings.autoCreateTasks !== undefined ? settings.autoCreateTasks : true;
+                this.excludedDomains = settings.excludedDomains || this.excludedDomains;
+                
+                // Mettre à jour les paramètres de scan
+                this.scanSettings.startDate = this.getStartDateFromDays(this.selectedDays);
+                
+                console.log('[ScanStart] ✅ Settings loaded from storage');
+            }
+        } catch (e) {
+            console.warn('[ScanStart] Could not load saved settings:', e);
+        }
+    }
+
+    // Méthode pour récupérer les derniers résultats de scan
+    getLastScanResults() {
+        try {
+            const lastScan = localStorage.getItem('lastScanData');
+            const emails = localStorage.getItem('scannedEmails');
+            
+            if (lastScan && emails) {
+                return {
+                    summary: JSON.parse(lastScan),
+                    emails: JSON.parse(emails)
+                };
+            }
+        } catch (e) {
+            console.warn('[ScanStart] Could not load last scan results:', e);
+        }
+        return null;
+    }
+
+    // Méthode pour nettoyer les données anciennes
+    cleanupOldData() {
+        try {
+            const lastScan = this.getLastScanResults();
+            if (lastScan && lastScan.summary.date) {
+                const scanDate = new Date(lastScan.summary.date);
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                
+                if (scanDate < weekAgo) {
+                    localStorage.removeItem('lastScanData');
+                    localStorage.removeItem('scannedEmails');
+                    console.log('[ScanStart] ✅ Old scan data cleaned up');
+                }
+            }
+        } catch (e) {
+            console.warn('[ScanStart] Could not cleanup old data:', e);
+        }
+    }
+
+    // Méthode pour obtenir des statistiques
+    getScanStatistics() {
+        const lastResults = this.getLastScanResults();
+        if (!lastResults) {
+            return null;
+        }
+
+        const emails = lastResults.emails;
+        const stats = {
+            total: emails.length,
+            byFolder: {},
+            byCategory: {},
+            withAttachments: 0,
+            highPriority: 0,
+            lastScanDate: lastResults.summary.date,
+            scanDuration: lastResults.summary.scanDuration
+        };
+
+        emails.forEach(email => {
+            // Par dossier
+            const folder = email.sourceFolder || 'unknown';
+            stats.byFolder[folder] = (stats.byFolder[folder] || 0) + 1;
+
+            // Par catégorie
+            const category = email.category || 'other';
+            stats.byCategory[category] = (stats.byCategory[category] || 0) + 1;
+
+            // Autres statistiques
+            if (email.hasAttachments) stats.withAttachments++;
+            if (email.importance === 'high') stats.highPriority++;
+        });
+
+        return stats;
+    }
+
+    // ====================================================
+    // MÉTHODES PUBLIQUES POUR L'INTÉGRATION
+    // ====================================================
+    
+    // Méthode pour démarrer un scan programmatique
+    async startScanProgrammatically(options = {}) {
+        const settings = {
+            days: options.days || this.selectedDays,
+            folders: options.folders || this.selectedFolders,
+            autoClassify: options.autoClassify !== undefined ? options.autoClassify : this.autoClassifyEmails,
+            autoCreateTasks: options.autoCreateTasks !== undefined ? options.autoCreateTasks : this.autoCreateTasks
+        };
+
+        // Appliquer les paramètres
+        this.selectedDays = settings.days;
+        this.selectedFolders = settings.folders;
+        this.autoClassifyEmails = settings.autoClassify;
+        this.autoCreateTasks = settings.autoCreateTasks;
+        this.scanSettings.startDate = this.getStartDateFromDays(settings.days);
+
+        console.log('[ScanStart] 🤖 Starting programmatic scan with settings:', settings);
+
+        return await this.startEnhancedScan();
+    }
+
+    // Méthode pour vérifier si un scan est en cours
+    isScanInProgress() {
+        return this.scanInProgress;
+    }
+
+    // Méthode pour obtenir la configuration actuelle
+    getCurrentConfig() {
+        return {
+            selectedDays: this.selectedDays,
+            selectedFolders: this.selectedFolders,
+            autoClassifyEmails: this.autoClassifyEmails,
+            autoCreateTasks: this.autoCreateTasks,
+            excludedDomains: this.excludedDomains,
+            scanSettings: this.scanSettings,
+            isInitialized: this.isInitialized
+        };
+    }
+
+    // Méthode pour mettre à jour la configuration
+    updateConfig(newConfig) {
+        if (newConfig.selectedDays !== undefined) {
+            this.selectDays(newConfig.selectedDays);
+        }
+        if (newConfig.selectedFolders !== undefined) {
+            this.selectedFolders = newConfig.selectedFolders;
+        }
+        if (newConfig.autoClassifyEmails !== undefined) {
+            this.autoClassifyEmails = newConfig.autoClassifyEmails;
+        }
+        if (newConfig.autoCreateTasks !== undefined) {
+            this.autoCreateTasks = newConfig.autoCreateTasks;
+        }
+        if (newConfig.excludedDomains !== undefined) {
+            this.excludedDomains = newConfig.excludedDomains;
+        }
+
+        this.updatePreview();
+        this.saveScanSettings();
+        
+        console.log('[ScanStart] ✅ Configuration updated:', this.getCurrentConfig());
+    }
+
+    // Méthode pour obtenir des informations de débogage
+    getDebugInfo() {
+        return {
+            version: '5.2',
+            isInitialized: this.isInitialized,
+            scanInProgress: this.scanInProgress,
+            stylesAdded: this.stylesAdded,
+            config: this.getCurrentConfig(),
+            lastScanResults: this.getLastScanResults(),
+            statistics: this.getScanStatistics(),
+            services: {
+                authService: !!window.authService,
+                mailService: !!window.mailService,
+                categoryManager: !!window.categoryManager,
+                taskManager: !!window.taskManager,
+                aiTaskAnalyzer: !!window.aiTaskAnalyzer,
+                uiManager: !!window.uiManager,
+                pageManager: !!window.pageManager
+            }
+        };
+    }
+}
+
+// ====================================================
+// INITIALISATION AUTOMATIQUE
+// ====================================================
+
+// Initialiser automatiquement si dans un navigateur
+if (typeof window !== 'undefined') {
+    // Attendre que le DOM soit prêt
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            window.scanStartModule = new ScanStartModule();
+            window.scanStartModule.loadSavedSettings();
+            window.scanStartModule.cleanupOldData();
+            console.log('[ScanStart] 🚀 ScanStartModule ready and available globally');
+        });
+    } else {
+        window.scanStartModule = new ScanStartModule();
+        window.scanStartModule.loadSavedSettings();
+        window.scanStartModule.cleanupOldData();
+        console.log('[ScanStart] 🚀 ScanStartModule ready and available globally');
+    }
+}
+
+// Export pour les environnements module
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ScanStartModule;
+}
