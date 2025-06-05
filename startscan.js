@@ -52,19 +52,6 @@ class ScanStartModule {
                STYLES ULTRA-MINIMALISTES POUR LE SCANNER
                ==================================================== */
             
-            .scanner-ultra-minimal {
-                width: 100%;
-                height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: transparent;
-                margin: 0;
-                overflow: hidden;
-            }
-
             .scanner-container {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
@@ -80,6 +67,7 @@ class ScanStartModule {
                 position: relative;
                 animation: slideUp 0.6s ease-out;
                 overflow-y: auto;
+                margin: 20px auto;
             }
 
             @keyframes slideUp {
@@ -630,6 +618,7 @@ class ScanStartModule {
             await this.checkAndInitializeServices();
             const userInfo = await this.getUserInfo();
             
+            // Render directly in the container without extra wrapper
             container.innerHTML = this.renderUltraMinimalInterface(userInfo);
             this.initializeEvents();
             this.isInitialized = true;
@@ -767,19 +756,17 @@ class ScanStartModule {
 
     renderNotAuthenticated() {
         return `
-            <div class="scanner-ultra-minimal">
-                <div class="scanner-container">
-                    <div class="auth-needed-minimal">
-                        <div class="auth-icon">
-                            <i class="fas fa-lock"></i>
-                        </div>
-                        <h2>Connexion requise</h2>
-                        <p>Connectez-vous à Microsoft pour scanner vos emails</p>
-                        <button class="btn-auth" onclick="window.authService.login()">
-                            <i class="fab fa-microsoft"></i>
-                            <span>Se connecter</span>
-                        </button>
+            <div class="scanner-container">
+                <div class="auth-needed-minimal">
+                    <div class="auth-icon">
+                        <i class="fas fa-lock"></i>
                     </div>
+                    <h2>Connexion requise</h2>
+                    <p>Connectez-vous à Microsoft pour scanner vos emails</p>
+                    <button class="btn-auth" onclick="window.authService.login()">
+                        <i class="fab fa-microsoft"></i>
+                        <span>Se connecter</span>
+                    </button>
                 </div>
             </div>
         `;
@@ -787,19 +774,17 @@ class ScanStartModule {
 
     renderError(error) {
         return `
-            <div class="scanner-ultra-minimal">
-                <div class="scanner-container">
-                    <div class="error-state-minimal">
-                        <div class="error-icon">
-                            <i class="fas fa-exclamation-circle"></i>
-                        </div>
-                        <h2>Erreur d'initialisation</h2>
-                        <p>${error.message}</p>
-                        <button class="btn-auth" onclick="window.location.reload()">
-                            <i class="fas fa-redo"></i>
-                            <span>Réessayer</span>
-                        </button>
+            <div class="scanner-container">
+                <div class="error-state-minimal">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-circle"></i>
                     </div>
+                    <h2>Erreur d'initialisation</h2>
+                    <p>${error.message}</p>
+                    <button class="btn-auth" onclick="window.location.reload()">
+                        <i class="fas fa-redo"></i>
+                        <span>Réessayer</span>
+                    </button>
                 </div>
             </div>
         `;
