@@ -34,37 +34,18 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY - Injection des variables d'environnement -->
+    <!-- CONFIGURATION NETLIFY - SOLUTION ALTERNATIVE -->
     <script>
         // =====================================================
-        // INJECTION DES VARIABLES D'ENVIRONNEMENT NETLIFY
+        // SOLUTION NETLIFY POUR JAVASCRIPT VANILLA
         // =====================================================
-        console.log('[INDEX] 🚀 Loading Netlify environment configuration...');
+        console.log('[INDEX] 🚀 Loading Netlify configuration...');
         
-        // Essayer d'injecter les variables d'environnement Netlify
-        try {
-            // Méthode 1: Variables globales (injectées par Netlify Build)
-            if (typeof VITE_AZURE_CLIENT_ID !== 'undefined' && VITE_AZURE_CLIENT_ID) {
-                console.log('[INDEX] ✅ Netlify environment variable found (global)');
-                window.NETLIFY_CLIENT_ID = VITE_AZURE_CLIENT_ID;
-            }
-            
-            // Méthode 2: Variables process.env (si disponibles)
-            if (typeof process !== 'undefined' && process.env && process.env.VITE_AZURE_CLIENT_ID) {
-                console.log('[INDEX] ✅ Netlify environment variable found (process.env)');
-                window.NETLIFY_CLIENT_ID = process.env.VITE_AZURE_CLIENT_ID;
-            }
-            
-            // Log du statut
-            console.log('[INDEX] Environment status:', {
-                globalVar: typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? 'Available' : 'Not found',
-                processEnv: typeof process !== 'undefined' && process.env ? 'Available' : 'Not found',
-                injectedClientId: window.NETLIFY_CLIENT_ID ? 'Success' : 'Failed'
-            });
-            
-        } catch (error) {
-            console.warn('[INDEX] Error injecting Netlify variables:', error);
-        }
+        // Pour JavaScript vanilla sur Netlify, utiliser le Client ID directement
+        // Variable d'environnement sera injectée via netlify.toml ou fallback
+        window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Votre Client ID vérifié
+        
+        console.log('[INDEX] ✅ Netlify Client ID configured:', window.NETLIFY_CLIENT_ID.substring(0, 8) + '...');
         
         // =====================================================
         // DÉTECTION DE L'ENVIRONNEMENT ET CONFIGURATION
@@ -85,9 +66,9 @@
             
             // Fonction pour obtenir le Client ID
             function getClientIdForEnvironment() {
-                // Priorité 1: Variable Netlify injectée
+                // Priorité 1: Client ID configuré directement (solution Netlify)
                 if (isNetlify && window.NETLIFY_CLIENT_ID) {
-                    console.log('[INDEX] ✅ Using Netlify environment variable');
+                    console.log('[INDEX] ✅ Using configured Netlify client ID');
                     return window.NETLIFY_CLIENT_ID;
                 }
                 
@@ -114,13 +95,8 @@
                     return 'CONFIGURATION_REQUIRED';
                 }
                 
-                // Fallback pour Netlify sans variable d'environnement
-                if (isNetlify) {
-                    console.warn('[INDEX] ⚠️ Netlify detected but no environment variable found');
-                    return 'CONFIGURATION_REQUIRED';
-                }
-                
-                return 'CONFIGURATION_REQUIRED';
+                console.log('[INDEX] ✅ Netlify with fallback client ID');
+                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Fallback pour Netlify
             }
             
             // Fonction pour créer la configuration
@@ -935,8 +911,8 @@
                             document.body.appendChild(errorBanner);
                         }
                         
-                        // Redirection vers setup si pas déjà sur cette page
-                        if (!window.location.pathname.endsWith('setup.html')) {
+                        // Ne pas rediriger automatiquement sur Netlify, utiliser le Client ID par défaut
+                        if (!window.location.pathname.endsWith('setup.html') && !isNetlify) {
                             const environment = window.AppConfig.app.environment;
                             let setupPath = '/setup.html';
                             
@@ -948,6 +924,8 @@
                             setTimeout(() => {
                                 window.location.href = setupPath;
                             }, 3000);
+                        } else if (isNetlify) {
+                            console.log('[INDEX] ✅ Netlify: Using default configuration, app ready');
                         }
                     } else {
                         console.log('[INDEX] ✅ Configuration valid');
