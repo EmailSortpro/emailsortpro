@@ -1,9 +1,11 @@
-// config.js - Configuration centralisée NETLIFY COMPATIBLE v2.2
+// config.js - Configuration centralisée NETLIFY COMPATIBLE v3.0 - CORRIGÉE
 
-// FONCTION DE DÉTECTION DE L'ENVIRONNEMENT
+// FONCTION DE DÉTECTION DE L'ENVIRONNEMENT AMÉLIORÉE
 function detectEnvironment() {
     const hostname = window.location.hostname;
-    const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
+    const isNetlify = hostname.includes('netlify.app') || 
+                     hostname.includes('netlifyapp.com') || 
+                     hostname.includes('.netlify.com');
     const isGitHubPages = hostname.includes('github.io');
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
     
@@ -11,7 +13,8 @@ function detectEnvironment() {
         hostname,
         isNetlify,
         isGitHubPages,
-        isLocalhost
+        isLocalhost,
+        origin: window.location.origin
     });
     
     return {
@@ -23,63 +26,87 @@ function detectEnvironment() {
     };
 }
 
-// FONCTION DE RÉCUPÉRATION DU CLIENT ID
+// FONCTION DE RÉCUPÉRATION DU CLIENT ID CORRIGÉE
 function getClientId(environment) {
-    // 1. Vérifier les variables d'environnement Netlify (build time)
-    if (environment.isNetlify && typeof VITE_AZURE_CLIENT_ID !== 'undefined') {
-        console.log('[CONFIG] Using Netlify build-time environment variable');
-        return VITE_AZURE_CLIENT_ID;
+    console.log('[CONFIG] Getting Client ID for environment:', environment.type);
+    
+    // 1. PRIORITÉ ABSOLUE: Variables d'environnement Netlify build-time
+    if (environment.isNetlify) {
+        // Vérifier les variables d'environnement injectées au build
+        if (typeof process !== 'undefined' && process.env && process.env.VITE_AZURE_CLIENT_ID) {
+            console.log('[CONFIG] ✅ Using Netlify build environment variable from process.env');
+            return process.env.VITE_AZURE_CLIENT_ID;
+        }
+        
+        // Vérifier les variables globales injectées par Netlify
+        if (typeof VITE_AZURE_CLIENT_ID !== 'undefined' && VITE_AZURE_CLIENT_ID) {
+            console.log('[CONFIG] ✅ Using Netlify global environment variable');
+            return VITE_AZURE_CLIENT_ID;
+        }
+        
+        // Vérifier window.env (parfois utilisé par Netlify)
+        if (window.env && window.env.VITE_AZURE_CLIENT_ID) {
+            console.log('[CONFIG] ✅ Using Netlify window.env variable');
+            return window.env.VITE_AZURE_CLIENT_ID;
+        }
+        
+        // Log détaillé pour debug Netlify
+        console.log('[CONFIG] 🔍 Netlify environment debug:', {
+            'process.env exists': typeof process !== 'undefined' && !!process.env,
+            'process.env.VITE_AZURE_CLIENT_ID': typeof process !== 'undefined' && process.env ? process.env.VITE_AZURE_CLIENT_ID : 'N/A',
+            'global VITE_AZURE_CLIENT_ID': typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? VITE_AZURE_CLIENT_ID : 'N/A',
+            'window.env': window.env || 'N/A'
+        });
+        
+        console.warn('[CONFIG] ⚠️ NETLIFY: Variable VITE_AZURE_CLIENT_ID non trouvée dans les variables d\'environnement');
     }
     
-    // 2. Vérifier les variables d'environnement runtime (si disponibles)
-    if (typeof process !== 'undefined' && process.env && process.env.VITE_AZURE_CLIENT_ID) {
-        console.log('[CONFIG] Using runtime environment variable');
-        return process.env.VITE_AZURE_CLIENT_ID;
-    }
-    
-    // 3. Vérifier le localStorage (configuration sauvegardée)
+    // 2. Vérifier le localStorage (configuration sauvegardée)
     try {
         const savedClientId = localStorage.getItem('emailsortpro_client_id');
-        if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI') {
-            console.log('[CONFIG] Using saved client ID from localStorage');
+        if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
+            console.log('[CONFIG] ✅ Using saved client ID from localStorage');
             return savedClientId;
         }
     } catch (e) {
         console.warn('[CONFIG] Cannot access localStorage:', e);
     }
     
-    // 4. Fallback selon l'environnement
-    if (environment.isNetlify) {
-        // Pour Netlify, utiliser le client ID configuré
-        console.log('[CONFIG] Using Netlify fallback client ID');
-        return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Votre client ID vérifié
+    // 3. Fallback par défaut selon l'environnement
+    if (environment.isLocalhost) {
+        console.log('[CONFIG] Using localhost development client ID');
+        return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Votre client ID de développement
     }
     
+    // 4. Pour GitHub Pages ou autres
     if (environment.isGitHubPages) {
         console.log('[CONFIG] GitHub Pages - checking for saved configuration');
-        return 'CONFIGURATION_REQUIRED';
     }
     
-    if (environment.isLocalhost) {
-        console.log('[CONFIG] Localhost - using development client ID');
-        return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-    }
-    
-    console.warn('[CONFIG] No client ID found for environment:', environment.type);
+    console.warn('[CONFIG] ❌ No client ID found for environment:', environment.type);
     return 'CONFIGURATION_REQUIRED';
 }
 
 // CRÉATION IMMÉDIATE de la configuration
 (function createConfiguration() {
+    console.log('[CONFIG] 🚀 Creating configuration...');
+    
     const environment = detectEnvironment();
     const clientId = getClientId(environment);
+    
+    console.log('[CONFIG] Configuration summary:', {
+        environment: environment.type,
+        hostname: environment.hostname,
+        clientId: clientId === 'CONFIGURATION_REQUIRED' ? 'NEEDS_SETUP' : 'CONFIGURED',
+        clientIdLength: clientId.length
+    });
     
     // Construire l'URL de redirection selon l'environnement
     let redirectUri;
     if (environment.isNetlify) {
-        redirectUri = `https://${environment.hostname}/auth-callback.html`;
+        redirectUri = `${window.location.origin}/auth-callback.html`;
     } else if (environment.isGitHubPages) {
-        redirectUri = `https://${environment.hostname}/emailsortpro/auth-callback.html`;
+        redirectUri = `${window.location.origin}/emailsortpro/auth-callback.html`;
     } else {
         redirectUri = `${window.location.origin}/auth-callback.html`;
     }
@@ -94,10 +121,10 @@ function getClientId(environment) {
             redirectUri: redirectUri,
             postLogoutRedirectUri: window.location.origin,
             
-            // Configuration cache renforcée
+            // Configuration cache renforcée pour Netlify
             cache: {
                 cacheLocation: 'localStorage',
-                storeAuthStateInCookie: environment.isNetlify // Cookies pour Netlify
+                storeAuthStateInCookie: environment.isNetlify || environment.isGitHubPages // Cookies pour hébergement statique
             },
             
             // Configuration système avec debug adapté
@@ -132,7 +159,7 @@ function getClientId(environment) {
         // Configuration de l'application
         app: {
             name: 'EmailSortPro',
-            version: '2.0.4',
+            version: '3.0.0',
             debug: environment.isLocalhost,
             environment: environment.type,
             maxRetries: 3,
@@ -221,7 +248,12 @@ function getClientId(environment) {
                     available: typeof Storage !== 'undefined',
                     keys: typeof Storage !== 'undefined' ? Object.keys(localStorage).length : 0
                 },
-                netlifyEnvVar: environment.isNetlify ? (typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? 'Available' : 'Missing') : 'N/A'
+                netlifyConfig: environment.isNetlify ? {
+                    processEnvExists: typeof process !== 'undefined' && !!process.env,
+                    processEnvViteVar: typeof process !== 'undefined' && process.env ? process.env.VITE_AZURE_CLIENT_ID : null,
+                    globalViteVar: typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? VITE_AZURE_CLIENT_ID : null,
+                    windowEnv: window.env || null
+                } : 'N/A'
             };
         },
         
@@ -240,9 +272,18 @@ function getClientId(environment) {
                 
                 if (environment.isNetlify) {
                     errorMsg += `\n\nPour Netlify:\n`;
-                    errorMsg += `1. Vérifiez que VITE_AZURE_CLIENT_ID est configuré dans les variables d'environnement\n`;
-                    errorMsg += `2. Redéployez le site après modification des variables\n`;
-                    errorMsg += `3. Client ID détecté: ${this.msal.clientId}`;
+                    errorMsg += `1. Vérifiez que VITE_AZURE_CLIENT_ID est configuré dans Site settings > Environment variables\n`;
+                    errorMsg += `2. Redéployez le site après modification des variables (Important !)\n`;
+                    errorMsg += `3. La variable doit être préfixée par VITE_ pour être accessible côté client\n`;
+                    errorMsg += `4. Client ID détecté: ${this.msal.clientId}`;
+                    
+                    // Log de debug spécifique Netlify
+                    const debugInfo = this.getDebugInfo();
+                    console.group('[CONFIG] 🔍 DEBUG NETLIFY DÉTAILLÉ');
+                    console.log('Environment variables:', debugInfo.netlifyConfig);
+                    console.log('Current origin:', window.location.origin);
+                    console.log('Expected redirect URI:', this.msal.redirectUri);
+                    console.groupEnd();
                 }
                 
                 console.error(errorMsg);
@@ -312,9 +353,10 @@ function getClientId(environment) {
         if (environment.isNetlify) {
             errorMessage = '⚠️ NETLIFY: Variable d\'environnement manquante';
             solutions = [
-                '1. Aller dans Site settings > Environment variables',
+                '1. Aller dans Site settings > Environment variables sur Netlify',
                 '2. Ajouter VITE_AZURE_CLIENT_ID avec votre Client ID Azure',
-                '3. Redéployer le site'
+                '3. IMPORTANT: Redéployer le site après ajout de la variable',
+                '4. La variable doit être préfixée par VITE_ pour être accessible'
             ];
         } else if (environment.isGitHubPages) {
             errorMessage = '⚠️ GITHUB PAGES: Configuration requise';
@@ -332,7 +374,7 @@ function getClientId(environment) {
             ];
         }
         
-        // Créer une notification d'erreur immédiate avec solutions
+        // Créer une notification d'erreur immédiate avec solutions détaillées
         const errorDiv = document.createElement('div');
         errorDiv.id = 'config-error-immediate';
         errorDiv.style.cssText = `
@@ -350,12 +392,13 @@ function getClientId(environment) {
             border-bottom: 3px solid #b91c1c;
         `;
         errorDiv.innerHTML = `
-            <div style="max-width: 900px; margin: 0 auto;">
+            <div style="max-width: 1000px; margin: 0 auto;">
                 <strong>${errorMessage}</strong><br><br>
                 <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
                     <strong>Environnement détecté:</strong> ${environment.type.toUpperCase()}<br>
                     <strong>Hostname:</strong> ${environment.hostname}<br>
-                    <strong>Client ID actuel:</strong> <code>${window.AppConfig.msal.clientId || 'MANQUANT'}</code>
+                    <strong>Client ID actuel:</strong> <code>${window.AppConfig.msal.clientId || 'MANQUANT'}</code><br>
+                    ${environment.isNetlify ? `<strong>Variable d'environnement VITE_AZURE_CLIENT_ID:</strong> ${typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? VITE_AZURE_CLIENT_ID : 'NON DÉFINIE'}<br>` : ''}
                 </div>
                 ${solutions.length > 0 ? `
                 <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
@@ -424,6 +467,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     } else {
         console.error('[CONFIG] ❌ Final validation failed for', validation.environment);
+        
+        // Si on est sur Netlify et que la config échoue, afficher un guide de debug
+        if (validation.environment === 'netlify') {
+            setTimeout(() => {
+                console.group('🔧 GUIDE DE DEBUG NETLIFY');
+                console.log('1. Vérifiez vos variables d\'environnement sur Netlify');
+                console.log('2. La variable doit s\'appeler exactement: VITE_AZURE_CLIENT_ID');
+                console.log('3. Après avoir ajouté/modifié la variable, redéployez le site');
+                console.log('4. Debug info:', window.AppConfig.getDebugInfo());
+                console.groupEnd();
+            }, 3000);
+        }
     }
 });
 
@@ -451,8 +506,9 @@ window.diagnoseMSALConfig = function() {
     // Suggestions spécifiques selon l'environnement
     if (debug.environment.isNetlify) {
         console.log('💡 Suggestions Netlify:');
-        console.log('  - Variable VITE_AZURE_CLIENT_ID:', debug.netlifyEnvVar);
+        console.log('  - Variable VITE_AZURE_CLIENT_ID status:', debug.netlifyConfig);
         console.log('  - Redéployer après modification des variables d\'environnement');
+        console.log('  - Vérifier que la variable est bien préfixée par VITE_');
     } else if (debug.environment.isGitHubPages) {
         console.log('💡 Suggestions GitHub Pages:');
         console.log('  - Utiliser setup.html pour configurer');
@@ -465,7 +521,7 @@ window.diagnoseMSALConfig = function() {
 };
 
 // Messages de confirmation
-console.log('✅ Configuration Netlify/Multi-environnement chargée avec succès');
+console.log('✅ Configuration Netlify/Multi-environnement chargée avec succès v3.0');
 console.log(`📱 Client ID configuré: ${window.AppConfig.msal.clientId}`);
 console.log(`🌐 Environnement: ${window.AppConfig.environment.type}`);
 console.log('🔍 Utilisez diagnoseMSALConfig() pour diagnostiquer');
@@ -476,6 +532,6 @@ if (window.AppConfig && window.AppConfig.msal && window.AppConfig.msal.clientId 
 } else {
     console.warn('💥 ATTENTION: Configuration nécessite une intervention');
     if (window.AppConfig.environment.isNetlify) {
-        console.warn('📝 NETLIFY: Configurez VITE_AZURE_CLIENT_ID dans les variables d\'environnement');
+        console.warn('📝 NETLIFY: Configurez VITE_AZURE_CLIENT_ID dans les variables d\'environnement et redéployez');
     }
 }
