@@ -1,4 +1,4 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ v2.1
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ v3.0
 
 class AuthService {
     constructor() {
@@ -6,10 +6,12 @@ class AuthService {
         this.account = null;
         this.isInitialized = false;
         this.initializationPromise = null;
+        this.configWaitAttempts = 0;
+        this.maxConfigWaitAttempts = 50; // 5 secondes max
         
-        console.log('[AuthService] Constructor called');
+        console.log('[AuthService] Constructor called - Enhanced Netlify support');
         
-        // Attendre que la configuration soit disponible
+        // Attendre que la configuration soit disponible avec timeout
         this.waitForConfig();
     }
 
@@ -17,8 +19,15 @@ class AuthService {
         console.log('[AuthService] Waiting for configuration...');
         
         if (!window.AppConfig) {
-            console.log('[AuthService] AppConfig not yet available, waiting...');
-            setTimeout(() => this.waitForConfig(), 50);
+            this.configWaitAttempts++;
+            
+            if (this.configWaitAttempts >= this.maxConfigWaitAttempts) {
+                console.error('[AuthService] ❌ Configuration timeout - AppConfig not available after 5 seconds');
+                return;
+            }
+            
+            console.log(`[AuthService] AppConfig not yet available, waiting... (${this.configWaitAttempts}/${this.maxConfigWaitAttempts})`);
+            setTimeout(() => this.waitForConfig(), 100);
             return;
         }
         
@@ -28,7 +37,7 @@ class AuthService {
         
         if (!validation.valid) {
             console.error('[AuthService] Configuration invalid:', validation.issues);
-            // Continuer quand même pour afficher les erreurs
+            // Continuer quand même pour permettre l'affichage des erreurs
         } else {
             console.log('[AuthService] ✅ Configuration valid, ready to initialize');
         }
@@ -71,19 +80,28 @@ class AuthService {
             console.log('[AuthService] Configuration validation result:', validation);
             
             if (!validation.valid) {
-                const errorMsg = `Configuration invalid: ${validation.issues.join(', ')}`;
-                console.error('[AuthService]', errorMsg);
-                throw new Error(errorMsg);
+                // Pour Netlify, donner des informations spécifiques
+                if (validation.environment === 'netlify') {
+                    const errorMsg = `Configuration Netlify invalide: ${validation.issues.join(', ')}. 
+                    Vérifiez que VITE_AZURE_CLIENT_ID est configuré dans les variables d'environnement Netlify et que le site a été redéployé.`;
+                    console.error('[AuthService]', errorMsg);
+                    throw new Error(errorMsg);
+                } else {
+                    const errorMsg = `Configuration invalid: ${validation.issues.join(', ')}`;
+                    console.error('[AuthService]', errorMsg);
+                    throw new Error(errorMsg);
+                }
             }
 
             console.log('[AuthService] ✅ Configuration validated');
             
             // Log de la configuration utilisée (sans exposer de secrets)
             console.log('[AuthService] Using configuration:', {
-                clientId: window.AppConfig.msal.clientId,
+                clientId: window.AppConfig.msal.clientId ? window.AppConfig.msal.clientId.substring(0, 8) + '...' : 'MISSING',
                 authority: window.AppConfig.msal.authority,
                 redirectUri: window.AppConfig.msal.redirectUri,
-                cacheLocation: window.AppConfig.msal.cache.cacheLocation
+                cacheLocation: window.AppConfig.msal.cache.cacheLocation,
+                environment: window.AppConfig.app?.environment || 'unknown'
             });
 
             // Créer l'instance MSAL avec validation renforcée
@@ -101,14 +119,20 @@ class AuthService {
             };
             
             // Validation finale avant création MSAL
-            if (!msalConfig.auth.clientId) {
-                throw new Error('CRITICAL: clientId is missing in MSAL config');
+            if (!msalConfig.auth.clientId || msalConfig.auth.clientId === 'CONFIGURATION_REQUIRED') {
+                throw new Error('CRITICAL: clientId is missing or invalid in MSAL config');
+            }
+            
+            // Validation du format du Client ID
+            if (!/^[a-f0-9-]{36}$/i.test(msalConfig.auth.clientId)) {
+                throw new Error(`CRITICAL: clientId format is invalid: ${msalConfig.auth.clientId}. Must be a valid GUID.`);
             }
             
             console.log('[AuthService] MSAL config prepared:', {
-                clientId: msalConfig.auth.clientId ? '✅ Present' : '❌ Missing',
+                clientId: msalConfig.auth.clientId ? '✅ Present (valid GUID)' : '❌ Missing',
                 authority: msalConfig.auth.authority ? '✅ Present' : '❌ Missing',
-                redirectUri: msalConfig.auth.redirectUri ? '✅ Present' : '❌ Missing'
+                redirectUri: msalConfig.auth.redirectUri ? '✅ Present' : '❌ Missing',
+                cacheLocation: msalConfig.cache?.cacheLocation || 'default'
             });
             
             this.msalInstance = new msal.PublicClientApplication(msalConfig);
@@ -179,6 +203,15 @@ class AuthService {
                         15000
                     );
                 }
+            } else if (error.message.includes('Netlify')) {
+                console.error('[AuthService] NETLIFY CONFIG ERROR:', error.message);
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        'Erreur Netlify: Variable d\'environnement VITE_AZURE_CLIENT_ID manquante',
+                        'error',
+                        20000
+                    );
+                }
             }
             
             throw error;
@@ -223,7 +256,7 @@ class AuthService {
             console.log('[AuthService] Login request prepared:', {
                 scopes: loginRequest.scopes,
                 prompt: loginRequest.prompt,
-                clientId: this.msalInstance?.config?.auth?.clientId ? '✅ Present in MSAL' : '❌ Missing in MSAL'
+                clientId: this.msalInstance?.getConfiguration()?.auth?.clientId ? '✅ Present in MSAL' : '❌ Missing in MSAL'
             });
             
             // Vérification finale avant login
@@ -231,14 +264,16 @@ class AuthService {
                 throw new Error('MSAL instance not available');
             }
             
-            if (!this.msalInstance.getConfiguration().auth.clientId) {
+            const msalConfig = this.msalInstance.getConfiguration();
+            if (!msalConfig?.auth?.clientId) {
                 throw new Error('CRITICAL: clientId missing in MSAL instance');
             }
 
             console.log('[AuthService] Initiating login redirect...');
-            console.log('[AuthService] MSAL instance config:', {
-                clientId: this.msalInstance.getConfiguration().auth.clientId,
-                authority: this.msalInstance.getConfiguration().auth.authority
+            console.log('[AuthService] MSAL instance config verified:', {
+                clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
+                authority: msalConfig.auth.authority,
+                redirectUri: msalConfig.auth.redirectUri
             });
             
             // Utiliser loginRedirect pour éviter les problèmes de popup
@@ -257,7 +292,8 @@ class AuthService {
                 console.log('[AuthService] MSAL Error details:', {
                     errorCode: error.errorCode,
                     errorMessage: error.errorMessage,
-                    subError: error.subError
+                    subError: error.subError,
+                    correlationId: error.correlationId
                 });
                 
                 if (window.AppConfig.errors[errorCode]) {
@@ -276,16 +312,22 @@ class AuthService {
                         case 'unauthorized_client':
                             userMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
                             break;
+                        case 'invalid_client':
+                            userMessage = 'Client ID invalide. Vérifiez votre configuration Azure.';
+                            break;
                         default:
                             userMessage = `Erreur MSAL: ${errorCode}`;
                     }
                 }
             } else if (error.message.includes('clientId')) {
-                userMessage = 'Erreur de configuration: Client ID manquant';
+                userMessage = 'Erreur de configuration: Client ID manquant ou invalide';
                 console.error('[AuthService] Client ID error details:', {
                     configClientId: window.AppConfig?.msal?.clientId,
-                    msalClientId: this.msalInstance?.getConfiguration()?.auth?.clientId
+                    msalClientId: this.msalInstance?.getConfiguration()?.auth?.clientId,
+                    environment: window.AppConfig?.app?.environment
                 });
+            } else if (error.message.includes('Netlify')) {
+                userMessage = 'Erreur Netlify: Variable d\'environnement VITE_AZURE_CLIENT_ID non configurée';
             }
             
             if (window.uiManager) {
@@ -414,6 +456,7 @@ class AuthService {
         this.isInitialized = false;
         this.msalInstance = null;
         this.initializationPromise = null;
+        this.configWaitAttempts = 0;
         
         // Clear MSAL cache plus agressivement
         if (window.localStorage) {
@@ -437,47 +480,59 @@ class AuthService {
         console.log('[AuthService] ✅ Cleanup complete');
     }
 
-    // Méthode de diagnostic améliorée
+    // Méthode de diagnostic améliorée avec support Netlify
     getDiagnosticInfo() {
         return {
             isInitialized: this.isInitialized,
             hasAccount: !!this.account,
             accountUsername: this.account?.username,
             msalInstanceExists: !!this.msalInstance,
+            configWaitAttempts: this.configWaitAttempts,
             msalConfig: this.msalInstance ? {
-                clientId: this.msalInstance.getConfiguration()?.auth?.clientId,
+                clientId: this.msalInstance.getConfiguration()?.auth?.clientId?.substring(0, 8) + '...',
                 authority: this.msalInstance.getConfiguration()?.auth?.authority,
                 redirectUri: this.msalInstance.getConfiguration()?.auth?.redirectUri
             } : null,
             appConfig: window.AppConfig ? {
                 exists: true,
+                environment: window.AppConfig.app?.environment,
                 validation: window.AppConfig.validate(),
                 debug: window.AppConfig.getDebugInfo()
-            } : { exists: false }
+            } : { exists: false },
+            netlifySpecific: window.AppConfig?.app?.environment === 'netlify' ? {
+                envVarDetected: typeof VITE_AZURE_CLIENT_ID !== 'undefined',
+                envVarValue: typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? VITE_AZURE_CLIENT_ID?.substring(0, 8) + '...' : 'undefined',
+                processEnvExists: typeof process !== 'undefined' && !!process.env,
+                windowNetlifyClientId: !!window.NETLIFY_CLIENT_ID
+            } : 'N/A'
         };
     }
 }
 
-// Créer l'instance globale avec gestion d'erreur
+// Créer l'instance globale avec gestion d'erreur renforcée
 try {
     window.authService = new AuthService();
-    console.log('[AuthService] ✅ Global instance created successfully');
+    console.log('[AuthService] ✅ Global instance created successfully with Netlify support');
 } catch (error) {
     console.error('[AuthService] ❌ Failed to create global instance:', error);
     
-    // Créer une instance de fallback
+    // Créer une instance de fallback plus informative
     window.authService = {
         isInitialized: false,
-        initialize: () => Promise.reject(new Error('AuthService failed to initialize')),
-        login: () => Promise.reject(new Error('AuthService not available')),
+        initialize: () => Promise.reject(new Error('AuthService failed to initialize: ' + error.message)),
+        login: () => Promise.reject(new Error('AuthService not available: ' + error.message)),
         isAuthenticated: () => false,
-        getDiagnosticInfo: () => ({ error: 'AuthService failed to create' })
+        getDiagnosticInfo: () => ({ 
+            error: 'AuthService failed to create: ' + error.message,
+            environment: window.AppConfig?.app?.environment || 'unknown',
+            configExists: !!window.AppConfig
+        })
     };
 }
 
-// Fonction de diagnostic globale améliorée
+// Fonction de diagnostic globale améliorée avec support Netlify
 window.diagnoseMSAL = function() {
-    console.group('🔍 DIAGNOSTIC MSAL DÉTAILLÉ');
+    console.group('🔍 DIAGNOSTIC MSAL DÉTAILLÉ - NETLIFY AWARE');
     
     try {
         const authDiag = window.authService.getDiagnosticInfo();
@@ -489,6 +544,14 @@ window.diagnoseMSAL = function() {
         console.log('🌐 Current URL:', window.location.href);
         console.log('💾 LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('auth')));
         
+        // Diagnostic spécifique Netlify
+        if (window.AppConfig?.app?.environment === 'netlify') {
+            console.log('🚀 NETLIFY DIAGNOSTIC:');
+            console.log('  - Environment variable VITE_AZURE_CLIENT_ID:', authDiag.netlifySpecific);
+            console.log('  - Current hostname:', window.location.hostname);
+            console.log('  - Expected redirect URI:', window.AppConfig.msal.redirectUri);
+        }
+        
         return { authDiag, configDiag };
         
     } catch (error) {
@@ -499,4 +562,16 @@ window.diagnoseMSAL = function() {
     }
 };
 
-console.log('✅ AuthService loaded with enhanced client_id validation');
+// Test de disponibilité de la configuration au chargement
+setTimeout(() => {
+    if (window.AppConfig && window.AppConfig.app?.environment === 'netlify') {
+        const validation = window.AppConfig.validate();
+        if (!validation.valid) {
+            console.warn('🚨 NETLIFY WARNING: Configuration invalid on AuthService load');
+            console.log('Issues:', validation.issues);
+            console.log('Use diagnoseMSAL() for detailed diagnostic');
+        }
+    }
+}, 2000);
+
+console.log('✅ AuthService loaded with enhanced Netlify support and client_id validation v3.0');
