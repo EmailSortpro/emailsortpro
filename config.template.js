@@ -1,388 +1,481 @@
-// config.js - Configuration sécurisée pour production
-// Version GitHub-safe - Les clés sensibles sont gérées par les variables d'environnement
+// config.js - Configuration centralisée NETLIFY COMPATIBLE v2.2
 
-// Fonction pour récupérer la clé API de manière sécurisée
-function getSecureClientId() {
-    // 1. Essayer les variables d'environnement Netlify
-    if (typeof process !== 'undefined' && process.env?.VITE_AZURE_CLIENT_ID) {
+// FONCTION DE DÉTECTION DE L'ENVIRONNEMENT
+function detectEnvironment() {
+    const hostname = window.location.hostname;
+    const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
+    const isGitHubPages = hostname.includes('github.io');
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    
+    console.log('[CONFIG] Environment detection:', {
+        hostname,
+        isNetlify,
+        isGitHubPages,
+        isLocalhost
+    });
+    
+    return {
+        type: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
+        isNetlify,
+        isGitHubPages,
+        isLocalhost,
+        hostname
+    };
+}
+
+// FONCTION DE RÉCUPÉRATION DU CLIENT ID
+function getClientId(environment) {
+    // 1. Vérifier les variables d'environnement Netlify (build time)
+    if (environment.isNetlify && typeof VITE_AZURE_CLIENT_ID !== 'undefined') {
+        console.log('[CONFIG] Using Netlify build-time environment variable');
+        return VITE_AZURE_CLIENT_ID;
+    }
+    
+    // 2. Vérifier les variables d'environnement runtime (si disponibles)
+    if (typeof process !== 'undefined' && process.env && process.env.VITE_AZURE_CLIENT_ID) {
+        console.log('[CONFIG] Using runtime environment variable');
         return process.env.VITE_AZURE_CLIENT_ID;
     }
     
-    // 2. Essayer depuis les variables globales injectées au build
-    if (window.ENV?.VITE_AZURE_CLIENT_ID) {
-        return window.ENV.VITE_AZURE_CLIENT_ID;
+    // 3. Vérifier le localStorage (configuration sauvegardée)
+    try {
+        const savedClientId = localStorage.getItem('emailsortpro_client_id');
+        if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI') {
+            console.log('[CONFIG] Using saved client ID from localStorage');
+            return savedClientId;
+        }
+    } catch (e) {
+        console.warn('[CONFIG] Cannot access localStorage:', e);
     }
     
-    // 3. Essayer le localStorage (configuré par l'utilisateur)
-    const savedClientId = localStorage.getItem('emailsortpro_client_id');
-    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI') {
-        return savedClientId;
+    // 4. Fallback selon l'environnement
+    if (environment.isNetlify) {
+        // Pour Netlify, utiliser le client ID configuré
+        console.log('[CONFIG] Using Netlify fallback client ID');
+        return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Votre client ID vérifié
     }
     
-    // 4. Valeur par défaut qui force la configuration
-    return 'CONFIGURATION_REQUISE';
+    if (environment.isGitHubPages) {
+        console.log('[CONFIG] GitHub Pages - checking for saved configuration');
+        return 'CONFIGURATION_REQUIRED';
+    }
+    
+    if (environment.isLocalhost) {
+        console.log('[CONFIG] Localhost - using development client ID');
+        return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+    }
+    
+    console.warn('[CONFIG] No client ID found for environment:', environment.type);
+    return 'CONFIGURATION_REQUIRED';
 }
 
-// Fonction pour détecter l'environnement
-function getEnvironment() {
-    if (window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')) {
-        return 'development';
+// CRÉATION IMMÉDIATE de la configuration
+(function createConfiguration() {
+    const environment = detectEnvironment();
+    const clientId = getClientId(environment);
+    
+    // Construire l'URL de redirection selon l'environnement
+    let redirectUri;
+    if (environment.isNetlify) {
+        redirectUri = `https://${environment.hostname}/auth-callback.html`;
+    } else if (environment.isGitHubPages) {
+        redirectUri = `https://${environment.hostname}/emailsortpro/auth-callback.html`;
+    } else {
+        redirectUri = `${window.location.origin}/auth-callback.html`;
     }
-    if (window.location.hostname.includes('netlify.app') || window.location.hostname.includes('github.io')) {
-        return 'production';
-    }
-    return 'production';
-}
-
-// Configuration principale
-window.AppConfig = {
-    // Configuration MSAL - Clé sécurisée
-    msal: {
-        clientId: getSecureClientId(),
-        authority: 'https://login.microsoftonline.com/common',
-        redirectUri: window.location.origin + (window.location.pathname.includes('/emailsortpro') ? '/emailsortpro' : '') + '/auth-callback.html',
-        postLogoutRedirectUri: window.location.origin + (window.location.pathname.includes('/emailsortpro') ? '/emailsortpro' : ''),
-        
-        // Configuration cache optimisée
-        cache: {
-            cacheLocation: 'localStorage',
-            storeAuthStateInCookie: false
+    
+    console.log('[CONFIG] Redirect URI configured:', redirectUri);
+    
+    window.AppConfig = {
+        // Configuration MSAL adaptée à l'environnement
+        msal: {
+            clientId: clientId,
+            authority: 'https://login.microsoftonline.com/common',
+            redirectUri: redirectUri,
+            postLogoutRedirectUri: window.location.origin,
+            
+            // Configuration cache renforcée
+            cache: {
+                cacheLocation: 'localStorage',
+                storeAuthStateInCookie: environment.isNetlify // Cookies pour Netlify
+            },
+            
+            // Configuration système avec debug adapté
+            system: {
+                loggerOptions: {
+                    loggerCallback: (level, message, containsPii) => {
+                        if (environment.isLocalhost || window.debugMode) {
+                            console.log(`[MSAL ${level}] ${message}`);
+                        }
+                    },
+                    piiLoggingEnabled: false,
+                    logLevel: environment.isLocalhost ? 'Verbose' : 'Warning'
+                },
+                allowNativeBroker: false
+            }
         },
         
-        // Configuration système avec logging adaptatif
-        system: {
-            loggerOptions: {
-                loggerCallback: (level, message, containsPii) => {
-                    if (getEnvironment() === 'development' || window.debugMode) {
-                        console.log(`[MSAL ${level}] ${message}`);
-                    }
-                },
-                piiLoggingEnabled: false,
-                logLevel: getEnvironment() === 'development' ? 'Verbose' : 'Warning'
-            },
-            allowNativeBroker: false
-        }
-    },
-    
-    // Scopes Microsoft Graph
-    scopes: {
-        login: [
-            'https://graph.microsoft.com/User.Read',
-            'https://graph.microsoft.com/Mail.Read',
-            'https://graph.microsoft.com/Mail.ReadWrite'
-        ],
-        silent: [
-            'https://graph.microsoft.com/User.Read',
-            'https://graph.microsoft.com/Mail.Read',
-            'https://graph.microsoft.com/Mail.ReadWrite'
-        ]
-    },
-    
-    // Configuration de l'application
-    app: {
-        name: 'EmailSortPro',
-        version: '2.1.0',
-        debug: getEnvironment() === 'development',
-        environment: getEnvironment(),
-        buildDate: new Date().toISOString(),
-        supportedPlatforms: ['netlify', 'github-pages', 'local']
-    },
-    
-    // Configuration des emails
-    email: {
-        defaultFolder: 'inbox',
-        defaultDays: 30,
-        pageSize: 100,
-        maxEmails: 10000,
-        retryAttempts: 3,
-        retryDelay: 2000
-    },
-    
-    // Messages d'erreur localisés
-    errors: {
-        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID dans les paramètres.',
-        'invalid_client': 'Application non autorisée. Contactez l\'administrateur système.',
-        'consent_required': 'Autorisation requise. Veuillez accepter les permissions Microsoft.',
-        'interaction_required': 'Reconnexion requise pour des raisons de sécurité.',
-        'login_required': 'Connexion requise pour accéder à cette fonctionnalité.',
-        'network_error': 'Erreur réseau. Vérifiez votre connexion internet.',
-        'token_expired': 'Session expirée. Reconnexion automatique en cours...',
-        'popup_blocked': 'Popup bloqué. Autorisez les popups pour ce site.',
-        'configuration_missing': 'Configuration requise. Cliquez sur "Configurer" pour commencer.',
-        'AADSTS900144': 'Erreur de configuration Azure. Actualisez la page et réessayez.'
-    },
-    
-    // Méthode de validation renforcée
-    validate() {
-        const issues = [];
-        const clientId = this.msal.clientId;
+        // Scopes Microsoft Graph
+        scopes: {
+            login: [
+                'https://graph.microsoft.com/User.Read',
+                'https://graph.microsoft.com/Mail.Read',
+                'https://graph.microsoft.com/Mail.ReadWrite'
+            ],
+            silent: [
+                'https://graph.microsoft.com/User.Read',
+                'https://graph.microsoft.com/Mail.Read',
+                'https://graph.microsoft.com/Mail.ReadWrite'
+            ]
+        },
         
-        // Vérifications du client ID
-        if (!clientId) {
-            issues.push('Client ID manquant - Configuration requise');
-        } else if (clientId === 'CONFIGURATION_REQUISE') {
-            issues.push('Configuration non effectuée - Utilisez la page de configuration');
-        } else if (clientId === 'VOTRE_CLIENT_ID_ICI') {
-            issues.push('Client ID par défaut détecté - Configuration requise');
-        } else if (clientId.length < 30) {
-            issues.push('Client ID invalide - Format incorrect');
-        } else if (!/^[a-f0-9-]{36}$/i.test(clientId)) {
-            issues.push('Format Client ID invalide - Doit être un GUID Azure');
-        }
+        // Configuration de l'application
+        app: {
+            name: 'EmailSortPro',
+            version: '2.0.4',
+            debug: environment.isLocalhost,
+            environment: environment.type,
+            maxRetries: 3,
+            retryDelay: 2000
+        },
         
-        // Vérifications de l'autorité
-        if (!this.msal.authority || !this.msal.authority.includes('microsoftonline.com')) {
-            issues.push('URL d\'autorité Azure invalide');
-        }
+        // Configuration des emails
+        email: {
+            defaultFolder: 'inbox',
+            defaultDays: 30,
+            pageSize: 100,
+            maxEmails: 10000
+        },
         
-        // Vérifications des URI de redirection
-        if (!this.msal.redirectUri || !this.msal.redirectUri.includes(window.location.hostname)) {
-            issues.push('URI de redirection incompatible avec le domaine actuel');
-        }
+        // Messages d'erreur personnalisés
+        errors: {
+            'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
+            'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
+            'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+            'interaction_required': 'Reconnexion requise.',
+            'login_required': 'Connexion requise.',
+            'network_error': 'Erreur réseau. Vérifiez votre connexion.',
+            'token_expired': 'Session expirée. Reconnexion nécessaire.',
+            'AADSTS900144': 'Erreur de configuration client_id. Actualisation requise.',
+            'AADSTS50011': 'URL de redirection non configurée dans Azure.'
+        },
         
-        // Vérifications des scopes
-        if (!this.scopes.login || this.scopes.login.length === 0) {
-            issues.push('Scopes de connexion manquants');
-        }
+        // Informations d'environnement
+        environment: environment,
         
-        return {
-            valid: issues.length === 0,
-            issues: issues,
-            clientId: clientId,
-            environment: this.app.environment,
-            configurationMethod: this.getConfigurationSource()
-        };
-    },
-    
-    // Méthode pour obtenir des informations de debug détaillées
-    getDebugInfo() {
-        const validation = this.validate();
-        return {
-            // Informations sur l'environnement
-            environment: {
-                hostname: window.location.hostname,
-                origin: window.location.origin,
-                pathname: window.location.pathname,
-                userAgent: navigator.userAgent,
-                platform: navigator.platform
-            },
+        // Méthode pour vérifier la configuration RENFORCÉE
+        validate() {
+            const issues = [];
             
-            // Informations sur la configuration
-            configuration: {
-                valid: validation.valid,
-                issues: validation.issues,
-                clientIdLength: this.msal.clientId ? this.msal.clientId.length : 0,
-                clientIdFormat: this.msal.clientId ? (this.msal.clientId.includes('-') ? 'GUID' : 'Invalid') : 'Missing',
-                configSource: this.getConfigurationSource(),
-                environment: this.app.environment
-            },
-            
-            // Informations sur le navigateur
-            browser: {
-                localStorage: typeof Storage !== 'undefined',
-                localStorageKeys: typeof Storage !== 'undefined' ? Object.keys(localStorage).length : 0,
-                cookies: navigator.cookieEnabled,
-                online: navigator.onLine
-            },
-            
-            // Informations temporelles
-            timestamps: {
-                configLoad: new Date().toISOString(),
-                buildDate: this.app.buildDate,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-            },
-            
-            // Informations sur les dépendances
-            dependencies: {
-                msalAvailable: typeof msal !== 'undefined',
-                msalVersion: window.msal?.version || 'Unknown'
+            // Vérification du client ID
+            if (!this.msal.clientId) {
+                issues.push('Client ID manquant');
+            } else if (this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
+                if (environment.isNetlify) {
+                    issues.push('Variable d\'environnement VITE_AZURE_CLIENT_ID non configurée sur Netlify');
+                } else {
+                    issues.push('Client ID non configuré pour cet environnement');
+                }
+            } else if (this.msal.clientId.length < 30) {
+                issues.push('Client ID invalide (trop court)');
+            } else if (!/^[a-f0-9-]{36}$/i.test(this.msal.clientId)) {
+                issues.push('Format Client ID invalide (doit être un GUID)');
             }
-        };
-    },
-    
-    // Méthode pour identifier la source de configuration
-    getConfigurationSource() {
-        if (typeof process !== 'undefined' && process.env?.VITE_AZURE_CLIENT_ID) {
-            return 'environment-variables';
-        }
-        if (window.ENV?.VITE_AZURE_CLIENT_ID) {
-            return 'build-injection';
-        }
-        if (localStorage.getItem('emailsortpro_client_id')) {
-            return 'user-configuration';
-        }
-        return 'default-fallback';
-    },
-    
-    // Méthode pour forcer la revalidation
-    forceValidate() {
-        console.log('[CONFIG] Force validation started...');
-        
-        const validation = this.validate();
-        const debugInfo = this.getDebugInfo();
-        
-        console.log('[CONFIG] Validation result:', validation);
-        console.log('[CONFIG] Debug info:', debugInfo);
-        
-        if (!validation.valid) {
-            console.error('[CONFIG] CONFIGURATION CRITIQUE:', validation.issues);
             
-            // Afficher une notification d'erreur pour l'utilisateur
-            this.showConfigurationError(validation, debugInfo);
+            // Vérification de l'autorité
+            if (!this.msal.authority || !this.msal.authority.includes('microsoftonline.com')) {
+                issues.push('Authority URL invalide');
+            }
+            
+            // Vérification du redirect URI
+            if (!this.msal.redirectUri || !this.msal.redirectUri.includes(window.location.hostname)) {
+                issues.push('Redirect URI ne correspond pas au domaine actuel');
+            }
             
             return {
-                valid: false,
-                issues: validation.issues,
-                debug: debugInfo,
-                needsSetup: true
+                valid: issues.length === 0,
+                issues: issues,
+                clientId: this.msal.clientId,
+                authority: this.msal.authority,
+                redirectUri: this.msal.redirectUri,
+                environment: environment.type
             };
-        }
+        },
         
-        console.log('[CONFIG] ✅ Configuration validée avec succès');
-        return { 
-            valid: true, 
-            debug: debugInfo,
-            needsSetup: false
-        };
-    },
-    
-    // Méthode pour afficher les erreurs de configuration
-    showConfigurationError(validation, debugInfo) {
-        // Vérifier si on doit rediriger vers setup
-        if (validation.issues.some(issue => issue.includes('Configuration non effectuée') || issue.includes('Configuration requise'))) {
-            const currentPath = window.location.pathname;
-            if (!currentPath.includes('setup.html')) {
-                console.log('[CONFIG] Redirection vers la page de configuration...');
-                setTimeout(() => {
-                    const basePath = window.location.pathname.includes('/emailsortpro') ? '/emailsortpro' : '';
-                    window.location.href = window.location.origin + basePath + '/setup.html';
-                }, 2000);
+        // Méthode pour obtenir les informations de debug RENFORCÉE
+        getDebugInfo() {
+            const validation = this.validate();
+            return {
+                hostname: window.location.hostname,
+                origin: window.location.origin,
+                environment: environment,
+                userAgent: navigator.userAgent,
+                msalVersion: window.msal ? window.msal.version || 'Loaded' : 'Not loaded',
+                configValid: validation.valid,
+                configIssues: validation.issues,
+                clientIdLength: this.msal.clientId ? this.msal.clientId.length : 0,
+                clientIdFormat: this.msal.clientId ? (this.msal.clientId.includes('-') ? 'GUID' : 'Invalid') : 'Missing',
+                redirectUri: this.msal.redirectUri,
+                timestamp: new Date().toISOString(),
+                localStorage: {
+                    available: typeof Storage !== 'undefined',
+                    keys: typeof Storage !== 'undefined' ? Object.keys(localStorage).length : 0
+                },
+                netlifyEnvVar: environment.isNetlify ? (typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? 'Available' : 'Missing') : 'N/A'
+            };
+        },
+        
+        // Méthode pour forcer la validation et correction NETLIFY-AWARE
+        forceValidate() {
+            console.log('[CONFIG] Force validation started for environment:', environment.type);
+            
+            const validation = this.validate();
+            console.log('[CONFIG] Validation result:', validation);
+            
+            if (!validation.valid) {
+                console.error('[CONFIG] CRITICAL: Configuration is invalid!', validation.issues);
+                
+                // Messages spécifiques selon l'environnement
+                let errorMsg = `CONFIGURATION CRITIQUE (${environment.type}):\n${validation.issues.join('\n')}`;
+                
+                if (environment.isNetlify) {
+                    errorMsg += `\n\nPour Netlify:\n`;
+                    errorMsg += `1. Vérifiez que VITE_AZURE_CLIENT_ID est configuré dans les variables d'environnement\n`;
+                    errorMsg += `2. Redéployez le site après modification des variables\n`;
+                    errorMsg += `3. Client ID détecté: ${this.msal.clientId}`;
+                }
+                
+                console.error(errorMsg);
+                
+                return {
+                    valid: false,
+                    issues: validation.issues,
+                    environment: environment.type,
+                    debug: this.getDebugInfo()
+                };
             }
-        }
+            
+            console.log('[CONFIG] ✅ Configuration is valid for', environment.type);
+            return { 
+                valid: true, 
+                environment: environment.type,
+                debug: this.getDebugInfo() 
+            };
+        },
         
-        // Afficher une notification si l'UI Manager est disponible
-        if (window.uiManager && typeof window.uiManager.showToast === 'function') {
-            const mainIssue = validation.issues[0] || 'Configuration requise';
-            window.uiManager.showToast(
-                `Configuration : ${mainIssue}`,
-                'warning',
-                8000
-            );
-        }
-    },
-    
-    // Méthode pour mettre à jour la configuration
-    updateConfiguration(newClientId, save = true) {
-        if (!newClientId || newClientId.length < 30) {
-            throw new Error('Client ID invalide');
-        }
-        
-        this.msal.clientId = newClientId;
-        
-        if (save) {
-            localStorage.setItem('emailsortpro_client_id', newClientId);
-            console.log('[CONFIG] Configuration mise à jour et sauvegardée');
-        }
-        
-        // Revalider après mise à jour
-        return this.forceValidate();
-    },
-    
-    // Méthode pour réinitialiser la configuration
-    resetConfiguration() {
-        const keysToRemove = [
-            'emailsortpro_client_id',
-            'emailsortpro_tenant_id',
-            'emailsortpro_config_version'
-        ];
-        
-        keysToRemove.forEach(key => {
+        // Méthode pour sauvegarder le client ID (pour les environnements qui le permettent)
+        saveClientId(clientId) {
+            if (!clientId || clientId === 'VOTRE_CLIENT_ID_ICI') {
+                console.warn('[CONFIG] Invalid client ID provided for saving');
+                return false;
+            }
+            
             try {
-                localStorage.removeItem(key);
+                localStorage.setItem('emailsortpro_client_id', clientId);
+                
+                // Mettre à jour la configuration actuelle
+                this.msal.clientId = clientId;
+                
+                console.log('[CONFIG] ✅ Client ID saved and updated');
+                return true;
             } catch (e) {
-                console.warn('[CONFIG] Erreur lors de la suppression de', key);
+                console.error('[CONFIG] Cannot save client ID:', e);
+                return false;
             }
-        });
-        
-        this.msal.clientId = 'CONFIGURATION_REQUISE';
-        console.log('[CONFIG] Configuration réinitialisée');
-        
-        return this.forceValidate();
-    }
-};
-
-// Validation automatique au chargement
-(function autoValidate() {
-    console.log('[CONFIG] Validation automatique au chargement...');
+        }
+    };
     
-    // Vérifier que la configuration a été créée
+    console.log('[CONFIG] ✅ Configuration created for:', environment.type);
+    console.log('[CONFIG] Client ID source:', clientId === 'CONFIGURATION_REQUIRED' ? 'NEEDS_SETUP' : 'CONFIGURED');
+    console.log('[CONFIG] Redirect URI:', redirectUri);
+})();
+
+// VALIDATION IMMÉDIATE au chargement du script
+(function() {
+    console.log('[CONFIG] Immediate validation on script load...');
+    
     if (!window.AppConfig) {
-        console.error('[CONFIG] ERREUR CRITIQUE: AppConfig non créé!');
+        console.error('[CONFIG] CRITICAL: AppConfig not created!');
         return;
     }
     
-    // Attendre que le DOM soit prêt pour les vérifications avancées
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            window.AppConfig.forceValidate();
-        });
+    const validation = window.AppConfig.forceValidate();
+    
+    if (!validation.valid) {
+        console.error('[CONFIG] IMMEDIATE VALIDATION FAILED:', validation);
+        
+        // Notification d'erreur adaptée à l'environnement
+        const environment = window.AppConfig.environment;
+        let errorMessage = 'Configuration invalide';
+        let solutions = [];
+        
+        if (environment.isNetlify) {
+            errorMessage = '⚠️ NETLIFY: Variable d\'environnement manquante';
+            solutions = [
+                '1. Aller dans Site settings > Environment variables',
+                '2. Ajouter VITE_AZURE_CLIENT_ID avec votre Client ID Azure',
+                '3. Redéployer le site'
+            ];
+        } else if (environment.isGitHubPages) {
+            errorMessage = '⚠️ GITHUB PAGES: Configuration requise';
+            solutions = [
+                '1. Accéder à la page setup.html',
+                '2. Configurer votre Client ID Azure',
+                '3. La configuration sera sauvegardée localement'
+            ];
+        } else if (environment.isLocalhost) {
+            errorMessage = '⚠️ LOCALHOST: Configuration de développement';
+            solutions = [
+                '1. Vérifier le Client ID dans config.js',
+                '2. S\'assurer que l\'app Azure est configurée',
+                '3. Tester la connexion'
+            ];
+        }
+        
+        // Créer une notification d'erreur immédiate avec solutions
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'config-error-immediate';
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #dc2626;
+            color: white;
+            padding: 20px;
+            z-index: 99999;
+            text-align: center;
+            font-family: monospace;
+            font-size: 14px;
+            border-bottom: 3px solid #b91c1c;
+        `;
+        errorDiv.innerHTML = `
+            <div style="max-width: 900px; margin: 0 auto;">
+                <strong>${errorMessage}</strong><br><br>
+                <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <strong>Environnement détecté:</strong> ${environment.type.toUpperCase()}<br>
+                    <strong>Hostname:</strong> ${environment.hostname}<br>
+                    <strong>Client ID actuel:</strong> <code>${window.AppConfig.msal.clientId || 'MANQUANT'}</code>
+                </div>
+                ${solutions.length > 0 ? `
+                <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <strong>Solutions pour ${environment.type}:</strong><br>
+                    ${solutions.map(s => `${s}`).join('<br>')}
+                </div>
+                ` : ''}
+                <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <strong>Problèmes détectés:</strong><br>
+                    ${validation.issues.map(issue => `❌ ${issue}`).join('<br>')}
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" 
+                        style="background: white; color: #dc2626; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
+                    Masquer
+                </button>
+                <button onclick="window.location.reload()" 
+                        style="background: #f59e0b; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
+                    Actualiser
+                </button>
+                <button onclick="console.log('DEBUG:', window.AppConfig.getDebugInfo())" 
+                        style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
+                    Debug Console
+                </button>
+                ${environment.isGitHubPages ? `
+                <button onclick="window.location.href='setup.html'" 
+                        style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px;">
+                    Configurer
+                </button>
+                ` : ''}
+            </div>
+        `;
+        
+        // Ajouter dès que possible
+        if (document.body) {
+            document.body.appendChild(errorDiv);
+        } else {
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.appendChild(errorDiv);
+            });
+        }
     } else {
-        window.AppConfig.forceValidate();
+        console.log('[CONFIG] ✅ Immediate validation passed for', validation.environment);
+        
+        // Supprimer d'éventuelles erreurs précédentes
+        const existingError = document.getElementById('config-error-immediate');
+        if (existingError) {
+            existingError.remove();
+        }
     }
 })();
 
-// Fonction de diagnostic globale améliorée
-window.diagnoseMSALConfig = function() {
-    console.group('🔍 DIAGNOSTIC CONFIGURATION MSAL COMPLET');
+// Validation supplémentaire au DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[CONFIG] DOMContentLoaded validation...');
     
-    try {
-        const config = window.AppConfig;
-        const debug = config.getDebugInfo();
-        const validation = config.validate();
+    const validation = window.AppConfig.forceValidate();
+    
+    if (validation.valid) {
+        console.log('[CONFIG] ✅ Final validation successful - Configuration ready for MSAL');
+        console.log('[CONFIG] Environment:', validation.environment);
         
-        console.log('📋 Configuration actuelle:', {
-            clientId: config.msal.clientId?.substring(0, 8) + '...',
-            authority: config.msal.authority,
-            redirectUri: config.msal.redirectUri,
-            environment: config.app.environment
-        });
-        
-        console.log('✅ Validation:', validation);
-        console.log('🐛 Debug complet:', debug);
-        
-        if (window.authService && typeof window.authService.getDiagnosticInfo === 'function') {
-            console.log('🔐 AuthService:', window.authService.getDiagnosticInfo());
+        // Supprimer d'éventuelles erreurs précédentes
+        const existingError = document.getElementById('config-error-immediate');
+        if (existingError) {
+            existingError.remove();
         }
-        
-        // Suggestions basées sur les problèmes détectés
-        if (!validation.valid) {
-            console.log('💡 Suggestions:');
-            validation.issues.forEach((issue, index) => {
-                console.log(`   ${index + 1}. ${issue}`);
-            });
-            
-            if (validation.issues.some(i => i.includes('Configuration requise'))) {
-                console.log('   🔧 Action: Allez sur /setup.html pour configurer');
-            }
-        }
-        
-        return { debug, validation };
-        
-    } catch (error) {
-        console.error('❌ Diagnostic échoué:', error);
-        return { error: error.message };
-    } finally {
-        console.groupEnd();
+    } else {
+        console.error('[CONFIG] ❌ Final validation failed for', validation.environment);
     }
+});
+
+// Fonction de diagnostic globale améliorée pour tous les environnements
+window.diagnoseMSALConfig = function() {
+    console.group('🔍 DIAGNOSTIC CONFIGURATION MSAL - TOUS ENVIRONNEMENTS');
+    
+    const debug = window.AppConfig.getDebugInfo();
+    const validation = window.AppConfig.validate();
+    
+    console.log('🌐 Environnement:', debug.environment);
+    console.log('📋 Configuration actuelle:', {
+        clientId: window.AppConfig.msal.clientId,
+        authority: window.AppConfig.msal.authority,
+        redirectUri: window.AppConfig.msal.redirectUri
+    });
+    
+    console.log('✅ Validation:', validation);
+    console.log('🐛 Debug info complet:', debug);
+    
+    if (window.authService) {
+        console.log('🔐 AuthService:', window.authService.getDiagnosticInfo?.() || 'Pas de diagnostic disponible');
+    }
+    
+    // Suggestions spécifiques selon l'environnement
+    if (debug.environment.isNetlify) {
+        console.log('💡 Suggestions Netlify:');
+        console.log('  - Variable VITE_AZURE_CLIENT_ID:', debug.netlifyEnvVar);
+        console.log('  - Redéployer après modification des variables d\'environnement');
+    } else if (debug.environment.isGitHubPages) {
+        console.log('💡 Suggestions GitHub Pages:');
+        console.log('  - Utiliser setup.html pour configurer');
+        console.log('  - Configuration sauvegardée dans localStorage');
+    }
+    
+    console.groupEnd();
+    
+    return { debug, validation, environment: debug.environment };
 };
 
 // Messages de confirmation
-console.log('✅ Configuration sécurisée chargée avec succès');
-console.log(`📱 Mode: ${getEnvironment()}`);
-console.log(`🔧 Source: ${window.AppConfig.getConfigurationSource()}`);
+console.log('✅ Configuration Netlify/Multi-environnement chargée avec succès');
+console.log(`📱 Client ID configuré: ${window.AppConfig.msal.clientId}`);
+console.log(`🌐 Environnement: ${window.AppConfig.environment.type}`);
 console.log('🔍 Utilisez diagnoseMSALConfig() pour diagnostiquer');
 
-// Export pour compatibilité
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = window.AppConfig;
+// Test immédiat de disponibilité
+if (window.AppConfig && window.AppConfig.msal && window.AppConfig.msal.clientId && window.AppConfig.msal.clientId !== 'CONFIGURATION_REQUIRED') {
+    console.log('🎯 Configuration prête pour AuthService');
+} else {
+    console.warn('💥 ATTENTION: Configuration nécessite une intervention');
+    if (window.AppConfig.environment.isNetlify) {
+        console.warn('📝 NETLIFY: Configurez VITE_AZURE_CLIENT_ID dans les variables d\'environnement');
+    }
 }
