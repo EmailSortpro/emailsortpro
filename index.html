@@ -144,23 +144,36 @@
     <!-- Tentative de chargement du config.js (optionnel) -->
     <script src="config.js" onerror="console.warn('config.js non trouvé, utilisation de la configuration dynamique')"></script>
 
-    <!-- Styles de la page d'accueil épurée -->
+    <!-- Styles CORRIGÉS pour l'application -->
     <style>
-        /* Reset et styles de base pour la page de connexion */
-        .login-page-styles * {
+        /* Reset et styles de base */
+        * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        .login-page-styles {
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8fafc;
+            overflow-x: hidden;
+            transition: all 0.3s ease;
+        }
+
+        /* === STYLES POUR LA PAGE DE LOGIN === */
+        .login-page-styles {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
         }
 
         .login-container {
@@ -234,6 +247,200 @@
             gap: 8px;
         }
 
+        /* === STYLES POUR L'APPLICATION === */
+        /* Header Application */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none; /* Caché par défaut */
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: 100%;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .ai-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        /* Navigation */
+        .app-nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 999;
+            overflow-x: auto;
+            display: none; /* Caché par défaut */
+        }
+
+        #mainNav {
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            height: 100%;
+            gap: 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .nav-item:hover {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Contenu principal */
+        .app-main {
+            margin-top: 0; /* Pas de marge par défaut */
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        #pageContent {
+            display: none; /* Caché par défaut */
+            opacity: 0;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Classes pour l'état actif de l'app */
+        body.app-active {
+            background: #f8fafc;
+        }
+
+        body.app-active #loginPage {
+            display: none !important;
+        }
+
+        body.app-active .app-header {
+            display: block !important;
+        }
+
+        body.app-active .app-nav {
+            display: block !important;
+        }
+
+        body.app-active .app-main {
+            margin-top: 120px; /* Header + Nav */
+        }
+
+        body.app-active #pageContent {
+            display: block !important;
+            opacity: 1 !important;
+        }
+
+        /* Dashboard par défaut */
+        .dashboard-container {
+            padding: 20px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-subtitle {
+            font-size: 16px;
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            border: 2px solid transparent;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .action-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #667eea;
+        }
+
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .action-description {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
         /* Loading overlay */
         .login-loading-overlay {
             position: fixed;
@@ -273,31 +480,6 @@
             font-size: 18px;
             font-weight: 600;
             text-align: center;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .login-container {
-                padding: 20px;
-            }
-
-            .login-title {
-                font-size: 2.5rem;
-            }
-
-            .login-subtitle {
-                font-size: 1.1rem;
-            }
-
-            .login-button {
-                padding: 18px 40px;
-                font-size: 1.1rem;
-            }
-        }
-
-        /* Cache la navigation et le contenu par défaut */
-        #mainNav, #pageContent {
-            display: none !important;
         }
 
         /* Styles pour les erreurs de configuration */
@@ -363,12 +545,70 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 20px;
+            }
+
+            .login-title {
+                font-size: 2.5rem;
+            }
+
+            .login-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .login-button {
+                padding: 18px 40px;
+                font-size: 1.1rem;
+            }
+
+            .app-nav {
+                height: auto;
+                padding: 10px;
+            }
+            
+            #mainNav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            body.app-active .app-main {
+                margin-top: 140px;
+            }
+            
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+            }
+
+            #pageContent {
+                padding: 10px;
+            }
+        }
+
+        /* Animation pour les transitions */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease;
+        }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- Header Application (caché au départ) -->
-        <header class="app-header" style="display: none;">
+        <!-- Header Application -->
+        <header class="app-header">
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
@@ -381,38 +621,40 @@
             </div>
         </header>
 
-        <!-- Navigation (cachée au départ) -->
-        <nav class="app-nav" id="mainNav" style="display: none;">
-            <button class="nav-item active" data-page="dashboard">
-                <i class="fas fa-th-large"></i>
-                <span>Dashboard</span>
-            </button>
-            <button class="nav-item" data-page="scanner">
-                <i class="fas fa-search"></i>
-                <span>Scanner</span>
-            </button>
-            <button class="nav-item" data-page="emails">
-                <i class="fas fa-inbox"></i>
-                <span>Emails</span>
-            </button>
-            <button class="nav-item" data-page="tasks">
-                <i class="fas fa-tasks"></i>
-                <span>Tâches</span>
-            </button>
-            <button class="nav-item" data-page="ranger">
-                <i class="fas fa-folder-tree"></i>
-                <span>Ranger</span>
-            </button>
-            <button class="nav-item" data-page="settings">
-                <i class="fas fa-cog"></i>
-                <span>Paramètres</span>
-            </button>
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <div id="mainNav">
+                <button class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-page="scanner">
+                    <i class="fas fa-search"></i>
+                    <span>Scanner</span>
+                </button>
+                <button class="nav-item" data-page="emails">
+                    <i class="fas fa-inbox"></i>
+                    <span>Emails</span>
+                </button>
+                <button class="nav-item" data-page="tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tâches</span>
+                </button>
+                <button class="nav-item" data-page="ranger">
+                    <i class="fas fa-folder-tree"></i>
+                    <span>Ranger</span>
+                </button>
+                <button class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </button>
+            </div>
         </nav>
 
         <!-- Contenu Principal -->
-        <main class="app-main" id="mainContent">
-            <!-- Page de Connexion épurée (par défaut) -->
-            <div id="loginPage" class="login-page-styles" style="display: flex;">
+        <main class="app-main">
+            <!-- Page de Connexion épurée (visible par défaut) -->
+            <div id="loginPage" class="login-page-styles">
                 <div class="login-container">
                     <div class="login-logo">
                         <i class="fas fa-envelope-open-text"></i>
@@ -436,9 +678,57 @@
                 </div>
             </div>
 
-            <!-- Contenu Dynamique des Pages (caché au départ) -->
-            <div id="pageContent" style="display: none;">
-                <!-- Le contenu des pages est généré dynamiquement -->
+            <!-- Contenu Dynamique des Pages -->
+            <div id="pageContent">
+                <!-- Dashboard par défaut -->
+                <div class="dashboard-container">
+                    <div class="dashboard-header">
+                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                        <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
+                    </div>
+                    
+                    <div class="dashboard-actions">
+                        <div class="action-card" onclick="window.pageManager?.loadPage('scanner')">
+                            <div class="action-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h3 class="action-title">Scanner des emails</h3>
+                            <p class="action-description">Analysez et catégorisez vos emails automatiquement</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('emails')">
+                            <div class="action-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <h3 class="action-title">Voir les emails</h3>
+                            <p class="action-description">Consultez vos emails catégorisés</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('tasks')">
+                            <div class="action-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h3 class="action-title">Gérer les tâches</h3>
+                            <p class="action-description">Suivez vos tâches créées depuis vos emails</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('ranger')">
+                            <div class="action-icon">
+                                <i class="fas fa-folder-tree"></i>
+                            </div>
+                            <h3 class="action-title">Ranger par domaine</h3>
+                            <p class="action-description">Organisez vos emails par expéditeur</p>
+                        </div>
+                        
+                        <div class="action-card" onclick="window.pageManager?.loadPage('settings')">
+                            <div class="action-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <h3 class="action-title">Paramètres</h3>
+                            <p class="action-description">Configurez vos catégories et préférences</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
 
@@ -463,7 +753,7 @@
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
-    <script src="CategoryManagerUI.js" onerror="console.error('CategoryManagerUI.js manquant')"></script>
+    <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
 
     <!-- 3. CategoryManager -->
     <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
@@ -487,11 +777,26 @@
     <!-- 8. Application Principal -->
     <script src="app.js"></script>
     
-    <!-- Script de vérification et redirection -->
+    <!-- Scripts de gestion des événements -->
     <script>
-        // Vérification finale de la configuration
-        window.addEventListener('DOMContentLoaded', function() {
-            // Gestion du bouton de connexion
+        // Fonction pour forcer l'affichage de l'app
+        window.forceShowApp = function() {
+            console.log('[FORCE] Forcing app display...');
+            
+            // Ajouter la classe pour activer l'app
+            document.body.classList.add('app-active');
+            
+            // Masquer explicitement la page de login
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
+            }
+            
+            console.log('[FORCE] App display activated');
+        };
+
+        // Gestion du bouton de connexion
+        document.addEventListener('DOMContentLoaded', function() {
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
@@ -547,42 +852,20 @@
             }
         };
 
-        // Fonction pour transition vers l'app (appelée par app.js)
-        window.showApp = function() {
-            const loginPage = document.getElementById('loginPage');
-            const mainNav = document.getElementById('mainNav');
-            const pageContent = document.getElementById('pageContent');
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            const appHeader = document.querySelector('.app-header');
-            
-            // Cacher le loading
-            if (loadingOverlay) {
-                loadingOverlay.classList.remove('active');
-            }
-            
-            // Transition fluide
-            if (loginPage) {
-                loginPage.style.transition = 'opacity 0.5s ease';
-                loginPage.style.opacity = '0';
-                setTimeout(() => {
-                    loginPage.style.display = 'none';
-                    
-                    // Afficher l'interface de l'app
-                    if (appHeader) {
-                        appHeader.style.display = 'block';
-                        appHeader.style.animation = 'fadeInUp 0.5s ease';
-                    }
-                    if (mainNav) {
-                        mainNav.style.display = 'flex';
-                        mainNav.style.animation = 'fadeInUp 0.5s ease';
-                    }
-                    if (pageContent) {
-                        pageContent.style.display = 'block';
-                        pageContent.style.animation = 'fadeInUp 0.5s ease 0.2s both';
-                    }
-                }, 500);
-            }
-        };
+        // Fonction pour créer CategoryManagerUI si manquant
+        if (!window.CategoryManagerUI) {
+            window.CategoryManagerUI = class {
+                static renderCategorySelector(categories = {}) {
+                    return Object.entries(categories).map(([id, cat]) => 
+                        `<div class="category-item" data-category="${id}">
+                            <span>${cat.icon || '📂'}</span>
+                            <span>${cat.name}</span>
+                        </div>`
+                    ).join('');
+                }
+            };
+            console.log('✅ CategoryManagerUI créé automatiquement');
+        }
     </script>
 </body>
 </html>
