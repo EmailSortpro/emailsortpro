@@ -12,13 +12,13 @@
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://emailsortpro.github.io/emailsortpro/">
+    <meta property="og:url" content="https://emailsortpro.netlify.app/">
     <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://emailsortpro.github.io/emailsortpro/">
+    <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
     <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
@@ -34,19 +34,103 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- Configuration dynamique pour GitHub Pages -->
+    <!-- CONFIGURATION NETLIFY - Injection des variables d'environnement -->
     <script>
-        // Gestion de la configuration pour GitHub Pages
+        // =====================================================
+        // INJECTION DES VARIABLES D'ENVIRONNEMENT NETLIFY
+        // =====================================================
+        console.log('[INDEX] 🚀 Loading Netlify environment configuration...');
+        
+        // Essayer d'injecter les variables d'environnement Netlify
+        try {
+            // Méthode 1: Variables globales (injectées par Netlify Build)
+            if (typeof VITE_AZURE_CLIENT_ID !== 'undefined' && VITE_AZURE_CLIENT_ID) {
+                console.log('[INDEX] ✅ Netlify environment variable found (global)');
+                window.NETLIFY_CLIENT_ID = VITE_AZURE_CLIENT_ID;
+            }
+            
+            // Méthode 2: Variables process.env (si disponibles)
+            if (typeof process !== 'undefined' && process.env && process.env.VITE_AZURE_CLIENT_ID) {
+                console.log('[INDEX] ✅ Netlify environment variable found (process.env)');
+                window.NETLIFY_CLIENT_ID = process.env.VITE_AZURE_CLIENT_ID;
+            }
+            
+            // Log du statut
+            console.log('[INDEX] Environment status:', {
+                globalVar: typeof VITE_AZURE_CLIENT_ID !== 'undefined' ? 'Available' : 'Not found',
+                processEnv: typeof process !== 'undefined' && process.env ? 'Available' : 'Not found',
+                injectedClientId: window.NETLIFY_CLIENT_ID ? 'Success' : 'Failed'
+            });
+            
+        } catch (error) {
+            console.warn('[INDEX] Error injecting Netlify variables:', error);
+        }
+        
+        // =====================================================
+        // DÉTECTION DE L'ENVIRONNEMENT ET CONFIGURATION
+        // =====================================================
         (function() {
             // Détection de l'environnement
-            const isGitHubPages = window.location.hostname.includes('github.io');
-            const basePath = isGitHubPages ? '/emailsortpro' : '';
+            const hostname = window.location.hostname;
+            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
+            const isGitHubPages = hostname.includes('github.io');
+            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
             
-            // Vérifier le localStorage pour le Client ID
-            const savedClientId = localStorage.getItem('emailsortpro_client_id');
+            console.log('[INDEX] Environment detection:', {
+                hostname,
+                isNetlify,
+                isGitHubPages,
+                isLocalhost
+            });
+            
+            // Fonction pour obtenir le Client ID
+            function getClientIdForEnvironment() {
+                // Priorité 1: Variable Netlify injectée
+                if (isNetlify && window.NETLIFY_CLIENT_ID) {
+                    console.log('[INDEX] ✅ Using Netlify environment variable');
+                    return window.NETLIFY_CLIENT_ID;
+                }
+                
+                // Priorité 2: localStorage (configuration sauvegardée)
+                try {
+                    const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
+                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
+                        return savedClientId;
+                    }
+                } catch (e) {
+                    console.warn('[INDEX] Cannot access localStorage:', e);
+                }
+                
+                // Priorité 3: Client ID par défaut pour le développement
+                if (isLocalhost) {
+                    console.log('[INDEX] Using localhost development client ID');
+                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
+                }
+                
+                // Priorité 4: Redirection vers setup pour GitHub Pages
+                if (isGitHubPages) {
+                    console.log('[INDEX] GitHub Pages - configuration requise');
+                    return 'CONFIGURATION_REQUIRED';
+                }
+                
+                // Fallback pour Netlify sans variable d'environnement
+                if (isNetlify) {
+                    console.warn('[INDEX] ⚠️ Netlify detected but no environment variable found');
+                    return 'CONFIGURATION_REQUIRED';
+                }
+                
+                return 'CONFIGURATION_REQUIRED';
+            }
             
             // Fonction pour créer la configuration
             function createConfig(clientId) {
+                // Construire l'URL de base selon l'environnement
+                let basePath = '';
+                if (isGitHubPages) {
+                    basePath = '/emailsortpro';
+                }
+                
                 window.AppConfig = {
                     msal: {
                         clientId: clientId,
@@ -55,17 +139,17 @@
                         postLogoutRedirectUri: window.location.origin + basePath,
                         cache: {
                             cacheLocation: 'localStorage',
-                            storeAuthStateInCookie: false
+                            storeAuthStateInCookie: isNetlify || isGitHubPages // Cookies pour sites statiques
                         },
                         system: {
                             loggerOptions: {
                                 loggerCallback: (level, message, containsPii) => {
-                                    if (window.debugMode) {
+                                    if (window.debugMode || isLocalhost) {
                                         console.log(`[MSAL ${level}] ${message}`);
                                     }
                                 },
                                 piiLoggingEnabled: false,
-                                logLevel: 'Warning'
+                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
                             },
                             allowNativeBroker: false
                         }
@@ -84,9 +168,9 @@
                     },
                     app: {
                         name: 'EmailSortPro',
-                        version: '2.0.3',
-                        debug: false,
-                        githubPages: isGitHubPages
+                        version: '3.0.0',
+                        debug: isLocalhost,
+                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other'
                     },
                     email: {
                         defaultFolder: 'inbox',
@@ -105,8 +189,12 @@
                     },
                     validate() {
                         const issues = [];
-                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI') {
-                            issues.push('Client ID non configuré');
+                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
+                            if (isNetlify) {
+                                issues.push('Variable d\'environnement VITE_AZURE_CLIENT_ID non configurée sur Netlify');
+                            } else {
+                                issues.push('Client ID non configuré');
+                            }
                         }
                         return { 
                             valid: issues.length === 0, 
@@ -120,31 +208,59 @@
                         return {
                             hostname: window.location.hostname,
                             origin: window.location.origin,
+                            environment: this.app.environment,
                             configValid: this.validate().valid,
+                            clientId: this.msal.clientId,
+                            netlifyStatus: isNetlify ? {
+                                environmentVarFound: !!window.NETLIFY_CLIENT_ID,
+                                globalVarType: typeof VITE_AZURE_CLIENT_ID,
+                                processEnvAvailable: typeof process !== 'undefined' && !!process.env
+                            } : 'N/A',
                             timestamp: new Date().toISOString()
                         };
                     }
                 };
                 
-                console.log('✅ Configuration créée avec Client ID:', clientId.substring(0, 8) + '...');
+                console.log('[INDEX] ✅ Configuration créée:', {
+                    environment: window.AppConfig.app.environment,
+                    clientId: clientId.substring(0, 8) + '...',
+                    redirectUri: window.AppConfig.msal.redirectUri
+                });
             }
             
-            if (savedClientId) {
-                // Utiliser le Client ID sauvegardé
-                createConfig(savedClientId);
-                console.log('✅ Configuration chargée depuis localStorage');
+            // Créer la configuration
+            const clientId = getClientIdForEnvironment();
+            createConfig(clientId);
+            
+            // Vérification et redirection si nécessaire
+            if (clientId === 'CONFIGURATION_REQUIRED') {
+                console.log('[INDEX] ⚠️ Configuration requise');
+                
+                if (isNetlify) {
+                    console.error('[INDEX] 🚨 NETLIFY: Variable d\'environnement VITE_AZURE_CLIENT_ID manquante');
+                    // Afficher un message d'erreur spécifique à Netlify
+                    setTimeout(() => {
+                        if (window.location.pathname !== '/setup.html') {
+                            console.log('[INDEX] Redirection vers setup pour configuration Netlify');
+                            window.location.href = '/setup.html';
+                        }
+                    }, 2000);
+                } else if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
+                    console.log('[INDEX] Redirection vers setup pour GitHub Pages');
+                    setTimeout(() => {
+                        window.location.href = '/emailsortpro/setup.html';
+                    }, 1000);
+                }
             } else {
-                // Créer une configuration par défaut qui redirigera vers setup
-                createConfig('VOTRE_CLIENT_ID_ICI');
-                console.log('⚠️ Aucun Client ID trouvé, redirection vers setup...');
+                console.log('[INDEX] ✅ Configuration valide, application prête');
             }
         })();
     </script>
     
-    <!-- Tentative de chargement du config.js (optionnel) -->
-    <script src="config.js" onerror="console.warn('config.js non trouvé, utilisation de la configuration dynamique')"></script>
+    <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
+    <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
-    <!-- Styles CORRIGÉS pour l'application -->
+    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
     <style>
         /* Reset et styles de base */
         * {
@@ -482,68 +598,42 @@
             text-align: center;
         }
 
-        /* Styles pour les erreurs de configuration */
-        .config-error-page {
-            text-align: center;
-            max-width: 600px;
-            margin: 0 auto;
+        /* Configuration error styles */
+        .config-error-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #dc2626;
             color: white;
-            padding: 40px 20px;
-        }
-
-        .config-error-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-            color: #fbbf24;
-        }
-
-        .config-error-title {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-        }
-
-        .config-error-content {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            padding: 30px;
-            border-radius: 20px;
-            margin: 30px 0;
-            text-align: left;
+            padding: 15px;
+            text-align: center;
+            z-index: 99999;
+            font-family: monospace;
+            font-size: 14px;
         }
 
         .config-error-actions {
+            margin-top: 10px;
             display: flex;
-            gap: 15px;
             justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 30px;
-        }
-
-        .config-error-button {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 50px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .config-error-button.secondary {
+        .config-error-btn {
             background: rgba(255, 255, 255, 0.2);
+            color: white;
             border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
         }
 
-        .config-error-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        .config-error-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         /* Responsive */
@@ -797,6 +887,8 @@
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('[INDEX] DOM loaded, setting up event listeners...');
+            
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
@@ -814,20 +906,54 @@
                 });
             }
             
+            // Vérifier la configuration après le chargement du DOM
             setTimeout(function() {
-                // Vérifier si la configuration est valide
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
+                    console.log('[INDEX] Configuration validation:', validation);
+                    
                     if (!validation.valid) {
-                        console.log('Configuration invalide, vérification du Client ID...');
+                        console.log('[INDEX] Configuration invalid, checking redirect...');
                         
-                        // Si pas de Client ID valide et qu'on n'est pas déjà sur setup.html
-                        if (!window.location.pathname.endsWith('setup.html')) {
-                            const isGitHubPages = window.location.hostname.includes('github.io');
-                            const basePath = isGitHubPages ? '/emailsortpro' : '';
-                            window.location.href = window.location.origin + basePath + '/setup.html';
+                        // Afficher une bannière d'erreur spécifique à Netlify
+                        if (window.AppConfig.app.environment === 'netlify') {
+                            const errorBanner = document.createElement('div');
+                            errorBanner.className = 'config-error-banner';
+                            errorBanner.innerHTML = `
+                                <div>
+                                    ⚠️ <strong>NETLIFY:</strong> Variable d'environnement VITE_AZURE_CLIENT_ID manquante
+                                </div>
+                                <div>
+                                    Configurez VITE_AZURE_CLIENT_ID dans Site settings > Environment variables, puis redéployez
+                                </div>
+                                <div class="config-error-actions">
+                                    <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
+                                    <a href="/setup.html" class="config-error-btn">Configuration manuelle</a>
+                                    <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
+                                </div>
+                            `;
+                            document.body.appendChild(errorBanner);
                         }
+                        
+                        // Redirection vers setup si pas déjà sur cette page
+                        if (!window.location.pathname.endsWith('setup.html')) {
+                            const environment = window.AppConfig.app.environment;
+                            let setupPath = '/setup.html';
+                            
+                            if (environment === 'github') {
+                                setupPath = '/emailsortpro/setup.html';
+                            }
+                            
+                            console.log('[INDEX] Redirecting to setup page:', setupPath);
+                            setTimeout(() => {
+                                window.location.href = setupPath;
+                            }, 3000);
+                        }
+                    } else {
+                        console.log('[INDEX] ✅ Configuration valid');
                     }
+                } else {
+                    console.warn('[INDEX] AppConfig not available');
                 }
             }, 1000);
         });
@@ -836,20 +962,17 @@
         window.checkServices = function() {
             console.log('=== Diagnostic des services ===');
             console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
+            if (window.AppConfig) {
+                console.log('Environment:', window.AppConfig.app.environment);
+                console.log('Client ID:', window.AppConfig.msal.clientId);
+                console.log('Debug info:', window.AppConfig.getDebugInfo());
+            }
             console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
             console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
             console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
             console.log('taskManager:', window.taskManager ? 'OK' : 'MANQUANT');
-            
-            if (window.AppConfig) {
-                const validation = window.AppConfig.validate();
-                console.log('Configuration valide:', validation.valid);
-                if (!validation.valid) {
-                    console.log('Problèmes:', validation.issues);
-                }
-            }
         };
 
         // Fonction pour créer CategoryManagerUI si manquant
