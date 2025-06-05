@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - EmailSortPro</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .warning i {
+            color: #f39c12;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .step p {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .step a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .step a:hover {
+            text-decoration: underline;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        
+        .redirect-url {
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            word-break: break-all;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .redirect-url-text {
+            flex: 1;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .secondary-button {
+            background: #6c757d;
+        }
+        
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .copy-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .copy-button:hover {
+            background: #5a67d8;
+        }
+        
+        ul {
+            margin-left: 20px;
+        }
+        
+        li {
+            margin: 5px 0;
+        }
+        
+        .guide-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .guide-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .redirect-url {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i class="fas fa-envelope-open-text"></i>
+            </div>
+            <h1>Configuration d'EmailSortPro</h1>
+            <p class="subtitle">Configurez votre accès Microsoft en 5 minutes</p>
+        </div>
+
+        <div class="warning">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Configuration unique requise</strong><br>
+                Vous devez créer un Client ID Azure (gratuit) pour utiliser l'application.
+                Cette étape n'est nécessaire qu'une seule fois.
+            </div>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('automatic')">
+                <i class="fas fa-magic"></i> Configuration automatique
+            </div>
+            <div class="tab" onclick="switchTab('manual')">
+                <i class="fas fa-wrench"></i> Configuration manuelle
+            </div>
+        </div>
+
+        <!-- Configuration automatique -->
+        <div id="automatic-tab" class="tab-content active">
+            <div class="step">
+                <h3>
+                    <span class="step-number">1</span>
+                    Entrez votre Client ID Azure
+                </h3>
+                <p>Si vous avez déjà un Client ID, entrez-le ci-dessous :</p>
+                <input type="text" id="clientId" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                <div class="error" id="error-message"></div>
+                <a href="AZURE-SETUP-GUIDE.md" class="guide-link" target="_blank">
+                    <i class="fas fa-book"></i>
+                    Guide pour créer votre Client ID
+                </a>
+            </div>
+
+            <div class="button-group">
+                <button onclick="validateAndSave()">
+                    <i class="fas fa-check"></i>
+                    Valider et démarrer
+                </button>
+                <button class="secondary-button" onclick="switchTab('manual')">
+                    <i class="fas fa-question-circle"></i>
+                    Je n'ai pas de Client ID
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Validation en cours...</p>
+            </div>
+
+            <div class="success" id="success-message">
+                <i class="fas fa-check-circle"></i>
+                Configuration réussie ! Redirection en cours...
+            </div>
+        </div>
+
+        <!-- Configuration manuelle -->
+        <div id="manual-tab" class="tab-content">
+            <div class="step">
+                <h3>
+                    <span class="step-number">1</span>
+                    Créer une App Registration Azure
+                </h3>
+                <p>1. Allez sur <a href="https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps" target="_blank">Azure App Registrations</a></p>
+                <p>2. Connectez-vous avec votre compte Microsoft</p>
+                <p>3. Cliquez sur <strong>"New registration"</strong></p>
+                <p>4. Remplissez le formulaire :</p>
+                <ul>
+                    <li><strong>Name :</strong> EmailSortPro</li>
+                    <li><strong>Account types :</strong> Personal Microsoft accounts only</li>
+                    <li><strong>Redirect URI :</strong> Single-page application (SPA)</li>
+                </ul>
+                <p>5. Pour l'URI de redirection, copiez exactement :</p>
+                <div class="redirect-url">
+                    <span class="redirect-url-text" id="redirect-url">
+                        <!-- Sera rempli par JavaScript -->
+                    </span>
+                    <button class="copy-button" onclick="copyRedirectUrl()">
+                        <i class="fas fa-copy"></i> Copier
+                    </button>
+                </div>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">2</span>
+                    Configurer les permissions
+                </h3>
+                <p>1. Dans votre app Azure, allez dans <strong>"API permissions"</strong></p>
+                <p>2. Cliquez sur <strong>"Add a permission"</strong></p>
+                <p>3. Choisissez <strong>"Microsoft Graph"</strong></p>
+                <p>4. Sélectionnez <strong>"Delegated permissions"</strong></p>
+                <p>5. Ajoutez ces permissions :</p>
+                <ul>
+                    <li>✓ User.Read</li>
+                    <li>✓ Mail.Read</li>
+                    <li>✓ Mail.ReadWrite</li>
+                </ul>
+            </div>
+
+            <div class="step">
+                <h3>
+                    <span class="step-number">3</span>
+                    Récupérer votre Client ID
+                </h3>
+                <p>1. Dans <strong>"Overview"</strong>, copiez l'<strong>"Application (client) ID"</strong></p>
+                <p>2. Il ressemble à :</p>
+                <div class="code-block">
+                    xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+                </div>
+                <p>3. Collez-le dans le champ ci-dessous :</p>
+                <input type="text" id="manualClientId" placeholder="Collez votre Client ID ici">
+            </div>
+
+            <div class="button-group">
+                <button onclick="saveManualConfig()">
+                    <i class="fas fa-save"></i>
+                    Sauvegarder et démarrer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Détection de l'environnement
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        const basePath = isGitHubPages ? '/emailsortpro' : '';
+        
+        // Définir l'URL de redirection selon l'environnement
+        const redirectUrl = window.location.origin + basePath + '/auth-callback.html';
+        document.getElementById('redirect-url').textContent = redirectUrl;
+        
+        function switchTab(tabName) {
+            // Mettre à jour les onglets
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Activer l'onglet sélectionné
+            event.target.closest('.tab').classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
+        function copyRedirectUrl() {
+            const url = document.getElementById('redirect-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                // Changer le texte du bouton temporairement
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> Copié !';
+                button.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.background = '#667eea';
+                }, 2000);
+            }).catch(() => {
+                // Fallback pour les navigateurs qui ne supportent pas clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('URL copiée dans le presse-papier !');
+            });
+        }
+        
+        function validateClientId(clientId) {
+            // Validation du format GUID
+            const guidRegex = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+            return guidRegex.test(clientId);
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('error-message').style.display = 'none';
+        }
+        
+        async function validateAndSave() {
+            const clientId = document.getElementById('clientId').value.trim();
+            
+            hideError();
+            
+            if (!clientId) {
+                showError('Veuillez entrer votre Client ID');
+                return;
+            }
+            
+            if (!validateClientId(clientId)) {
+                showError('Format de Client ID invalide. Il doit ressembler à : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
+                return;
+            }
+            
+            // Afficher le loading
+            document.getElementById('loading').style.display = 'block';
+            
+            // Simuler une validation
+            setTimeout(() => {
+                saveConfiguration(clientId);
+            }, 1500);
+        }
+        
+        function saveManualConfig() {
+            const clientId = document.getElementById('manualClientId').value.trim();
+            
+            if (!clientId) {
+                alert('Veuillez entrer votre Client ID');
+                return;
+            }
+            
+            if (!validateClientId(clientId)) {
+                alert('Format de Client ID invalide');
+                return;
+            }
+            
+            saveConfiguration(clientId);
+        }
+        
+        function saveConfiguration(clientId) {
+            // Sauvegarder le Client ID
+            localStorage.setItem('emailsortpro_client_id', clientId);
+            
+            // Créer le fichier config.js dynamiquement
+            const configContent = `
+window.AppConfig = {
+    msal: {
+        clientId: '${clientId}',
+        authority: 'https://login.microsoftonline.com/common',
+        redirectUri: window.location.origin + '${basePath}/auth-callback.html',
+        postLogoutRedirectUri: window.location.origin + '${basePath}',
+        cache: {
+            cacheLocation: 'localStorage',
+            storeAuthStateInCookie: false
+        },
+        system: {
+            loggerOptions: {
+                loggerCallback: (level, message, containsPii) => {
+                    if (window.debugMode) {
+                        console.log(\`[MSAL \${level}] \${message}\`);
+                    }
+                },
+                piiLoggingEnabled: false,
+                logLevel: 'Warning'
+            },
+            allowNativeBroker: false
+        }
+    },
+    scopes: {
+        login: [
+            'https://graph.microsoft.com/User.Read',
+            'https://graph.microsoft.com/Mail.Read',
+            'https://graph.microsoft.com/Mail.ReadWrite'
+        ],
+        silent: [
+            'https://graph.microsoft.com/User.Read',
+            'https://graph.microsoft.com/Mail.Read',
+            'https://graph.microsoft.com/Mail.ReadWrite'
+        ]
+    },
+    app: {
+        name: 'EmailSortPro',
+        version: '2.0.3',
+        debug: false
+    },
+    email: {
+        defaultFolder: 'inbox',
+        defaultDays: 30,
+        pageSize: 100,
+        maxEmails: 10000
+    },
+    validate() {
+        return { valid: true, issues: [] };
+    },
+    forceValidate() {
+        return { valid: true, issues: [] };
+    }
+};`;
+            
+            // Créer un script dynamique
+            const script = document.createElement('script');
+            script.textContent = configContent;
+            document.head.appendChild(script);
+            
+            // Afficher le succès
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('success-message').style.display = 'block';
+            
+            // Rediriger après 2 secondes
+            setTimeout(() => {
+                const indexPath = basePath + '/index.html';
+                window.location.href = indexPath;
+            }, 2000);
+        }
+        
+        // Vérifier si un Client ID est déjà sauvegardé
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedClientId = localStorage.getItem('emailsortpro_client_id');
+            if (savedClientId) {
+                // Pré-remplir le champ si un ID existe
+                document.getElementById('clientId').value = savedClientId;
+            }
+        });
+    </script>
+</body>
+</html>

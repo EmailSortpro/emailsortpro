@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Gérez vos emails Microsoft intelligemment avec l'IA. Catégorisation automatique, création de tâches et rangement par domaine.">
+    <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
+    <meta name="author" content="EmailSortPro">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://emailsortpro.github.io/emailsortpro/">
+    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="og:description" content="Gérez vos emails Microsoft intelligemment avec l'IA.">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://emailsortpro.github.io/emailsortpro/">
+    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="twitter:description" content="Gérez vos emails Microsoft intelligemment avec l'IA.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
+    
+    <!-- MSAL Library -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles principaux -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Configuration dynamique pour GitHub Pages -->
+    <script>
+        // Gestion de la configuration pour GitHub Pages
+        (function() {
+            // Détection de l'environnement
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            const basePath = isGitHubPages ? '/emailsortpro' : '';
+            
+            // Vérifier le localStorage pour le Client ID
+            const savedClientId = localStorage.getItem('emailsortpro_client_id');
+            
+            // Fonction pour créer la configuration
+            function createConfig(clientId) {
+                window.AppConfig = {
+                    msal: {
+                        clientId: clientId,
+                        authority: 'https://login.microsoftonline.com/common',
+                        redirectUri: window.location.origin + basePath + '/auth-callback.html',
+                        postLogoutRedirectUri: window.location.origin + basePath,
+                        cache: {
+                            cacheLocation: 'localStorage',
+                            storeAuthStateInCookie: false
+                        },
+                        system: {
+                            loggerOptions: {
+                                loggerCallback: (level, message, containsPii) => {
+                                    if (window.debugMode) {
+                                        console.log(`[MSAL ${level}] ${message}`);
+                                    }
+                                },
+                                piiLoggingEnabled: false,
+                                logLevel: 'Warning'
+                            },
+                            allowNativeBroker: false
+                        }
+                    },
+                    scopes: {
+                        login: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ],
+                        silent: [
+                            'https://graph.microsoft.com/User.Read',
+                            'https://graph.microsoft.com/Mail.Read',
+                            'https://graph.microsoft.com/Mail.ReadWrite'
+                        ]
+                    },
+                    app: {
+                        name: 'EmailSortPro',
+                        version: '2.0.3',
+                        debug: false,
+                        githubPages: isGitHubPages
+                    },
+                    email: {
+                        defaultFolder: 'inbox',
+                        defaultDays: 30,
+                        pageSize: 100,
+                        maxEmails: 10000
+                    },
+                    errors: {
+                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
+                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
+                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+                        'interaction_required': 'Reconnexion requise.',
+                        'login_required': 'Connexion requise.',
+                        'network_error': 'Erreur réseau. Vérifiez votre connexion.',
+                        'token_expired': 'Session expirée. Reconnexion nécessaire.'
+                    },
+                    validate() {
+                        const issues = [];
+                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI') {
+                            issues.push('Client ID non configuré');
+                        }
+                        return { 
+                            valid: issues.length === 0, 
+                            issues: issues 
+                        };
+                    },
+                    forceValidate() {
+                        return this.validate();
+                    },
+                    getDebugInfo() {
+                        return {
+                            hostname: window.location.hostname,
+                            origin: window.location.origin,
+                            configValid: this.validate().valid,
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                };
+                
+                console.log('✅ Configuration créée avec Client ID:', clientId.substring(0, 8) + '...');
+            }
+            
+            if (savedClientId) {
+                // Utiliser le Client ID sauvegardé
+                createConfig(savedClientId);
+                console.log('✅ Configuration chargée depuis localStorage');
+            } else {
+                // Créer une configuration par défaut qui redirigera vers setup
+                createConfig('VOTRE_CLIENT_ID_ICI');
+                console.log('⚠️ Aucun Client ID trouvé, redirection vers setup...');
+            }
+        })();
+    </script>
+    
+    <!-- Tentative de chargement du config.js (optionnel) -->
+    <script src="config.js" onerror="console.warn('config.js non trouvé, utilisation de la configuration dynamique')"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header Application -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-envelope-open-text"></i>
+                    <span>EmailSortPro</span>
+                    <span class="ai-badge">AI</span>
+                </div>
+                <div id="authStatus" class="auth-status">
+                    <span class="text-muted">Initialisation...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav" id="mainNav" style="display: none;">
+            <button class="nav-item active" data-page="dashboard">
+                <i class="fas fa-th-large"></i>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-item" data-page="scanner">
+                <i class="fas fa-search"></i>
+                <span>Scanner</span>
+            </button>
+            <button class="nav-item" data-page="emails">
+                <i class="fas fa-inbox"></i>
+                <span>Emails</span>
+            </button>
+            <button class="nav-item" data-page="tasks">
+                <i class="fas fa-tasks"></i>
+                <span>Tâches</span>
+            </button>
+            <button class="nav-item" data-page="ranger">
+                <i class="fas fa-folder-tree"></i>
+                <span>Ranger</span>
+            </button>
+            <button class="nav-item" data-page="settings">
+                <i class="fas fa-cog"></i>
+                <span>Paramètres</span>
+            </button>
+        </nav>
+
+        <!-- Contenu Principal -->
+        <main class="app-main" id="mainContent">
+            <!-- Page de Connexion (par défaut) -->
+            <div id="loginPage" class="page-container" style="display: block;">
+                <div class="login-card">
+                    <div class="login-icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <h1>EmailSortPro - Scanner Intelligent</h1>
+                    <p>Analysez vos emails Microsoft avec l'IA</p>
+                    
+                    <div class="features-grid">
+                        <div class="feature">
+                            <i class="fas fa-cloud-download-alt"></i>
+                            <h3>Emails Réels</h3>
+                            <p>Connexion directe à votre boîte Microsoft</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-robot"></i>
+                            <h3>IA Intégrée</h3>
+                            <p>Catégorisation intelligente automatique</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>100% Sécurisé</h3>
+                            <p>Vos données restent chez Microsoft</p>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-tags"></i>
+                            <h3>11 Catégories</h3>
+                            <p>Classification avancée par IA</p>
+                        </div>
+                    </div>
+                    
+                    <button id="loginBtn" class="btn btn-primary btn-extra-large">
+                        <i class="fab fa-microsoft"></i>
+                        Scanner mes Emails
+                    </button>
+                    
+                    <p class="login-note">
+                        Connectez-vous à Microsoft pour analyser vos emails
+                    </p>
+                    
+                    <!-- Bouton de configuration -->
+                    <div style="margin-top: 20px;">
+                        <a href="setup.html" class="config-link">
+                            <i class="fas fa-cog"></i>
+                            Configurer l'application
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenu Dynamique des Pages -->
+            <div id="pageContent" style="display: none;">
+                <!-- Le contenu des pages est généré dynamiquement -->
+            </div>
+        </main>
+
+        <!-- Overlay de Chargement -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Chargement en cours...</p>
+        </div>
+
+        <!-- Notifications Toast -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+    <!-- ========================================= -->
+    <!-- SCRIPTS - ORDRE CRITIQUE                  -->
+    <!-- ========================================= -->
+    
+    <!-- 2. Services Core (avec noms de fichiers CORRECTS) -->
+    <script src="AuthService.js"></script>
+    <script src="MailService.js"></script>
+    <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
+    <script src="CategoryManagerUI.js" onerror="console.error('CategoryManagerUI.js manquant')"></script>
+
+    <!-- 3. CategoryManager -->
+    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+    
+    <!-- 4. Autres Managers -->
+    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
+    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+    
+    <!-- 5. Page Manager -->
+    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+    
+    <!-- 6. Modules de pages -->
+    <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
+    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
+    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+    
+    <!-- 7. Modules Optionnels -->
+    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+    
+    <!-- 8. Application Principal -->
+    <script src="app.js"></script>
+    
+    <!-- Script de vérification et redirection -->
+    <script>
+        // Vérification finale de la configuration
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                // Vérifier si la configuration est valide
+                if (window.AppConfig) {
+                    const validation = window.AppConfig.validate();
+                    if (!validation.valid) {
+                        console.log('Configuration invalide, vérification du Client ID...');
+                        
+                        // Si pas de Client ID valide et qu'on n'est pas déjà sur setup.html
+                        if (!window.location.pathname.endsWith('setup.html')) {
+                            const isGitHubPages = window.location.hostname.includes('github.io');
+                            const basePath = isGitHubPages ? '/emailsortpro' : '';
+                            window.location.href = window.location.origin + basePath + '/setup.html';
+                        }
+                    }
+                }
+            }, 1000);
+        });
+        
+        // Fonction de diagnostic accessible globalement
+        window.checkServices = function() {
+            console.log('=== Diagnostic des services ===');
+            console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
+            console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
+            console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
+            console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
+            console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
+            console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
+            console.log('taskManager:', window.taskManager ? 'OK' : 'MANQUANT');
+            
+            if (window.AppConfig) {
+                const validation = window.AppConfig.validate();
+                console.log('Configuration valide:', validation.valid);
+                if (!validation.valid) {
+                    console.log('Problèmes:', validation.issues);
+                }
+            }
+        };
+    </script>
+    
+    <!-- CSS additionnel pour GitHub Pages -->
+    <style>
+        .config-link {
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.3s;
+        }
+        
+        .config-link:hover {
+            color: #495057;
+            text-decoration: underline;
+        }
+        
+        /* Amélioration pour mobile */
+        @media (max-width: 768px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .login-card {
+                padding: 20px;
+            }
+            
+            .btn-extra-large {
+                font-size: 16px;
+                padding: 12px 20px;
+            }
+        }
+        
+        /* Style pour les messages d'erreur */
+        .error-message {
+            background-color: #fee;
+            border: 1px solid #fcc;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #c00;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+        }
+    </style>
+</body>
+</html>
