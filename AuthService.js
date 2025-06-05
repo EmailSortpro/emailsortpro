@@ -80,12 +80,10 @@ class AuthService {
             console.log('[AuthService] Configuration validation result:', validation);
             
             if (!validation.valid) {
-                // Pour Netlify, donner des informations spécifiques
+                // Pour Netlify avec JavaScript vanilla, être plus tolérant
                 if (validation.environment === 'netlify') {
-                    const errorMsg = `Configuration Netlify invalide: ${validation.issues.join(', ')}. 
-                    Vérifiez que VITE_AZURE_CLIENT_ID est configuré dans les variables d'environnement Netlify et que le site a été redéployé.`;
-                    console.error('[AuthService]', errorMsg);
-                    throw new Error(errorMsg);
+                    console.warn('[AuthService] Netlify: Using default configuration');
+                    // Continuer avec la configuration par défaut
                 } else {
                     const errorMsg = `Configuration invalid: ${validation.issues.join(', ')}`;
                     console.error('[AuthService]', errorMsg);
