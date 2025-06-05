@@ -1,4 +1,4 @@
-// app.js - Application avec transitions fluides et design moderne
+// app.js - Application CORRIGÉE avec affichage forcé
 
 class App {
     constructor() {
@@ -9,21 +9,7 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         
-        // Masquer immédiatement l'ancien UI
-        this.hideOldUI();
-    }
-
-    hideOldUI() {
-        // Cacher la navigation et le contenu dès le début
-        const mainNav = document.getElementById('mainNav');
-        const pageContent = document.getElementById('pageContent');
-        
-        if (mainNav) {
-            mainNav.style.display = 'none';
-        }
-        if (pageContent) {
-            pageContent.style.display = 'none';
-        }
+        console.log('[App] Constructor - Application starting...');
     }
 
     async init() {
@@ -109,7 +95,7 @@ class App {
                 try {
                     this.user = await window.authService.getUserInfo();
                     this.isAuthenticated = true;
-                    console.log('[App] User authenticated:', this.user.displayName);
+                    console.log('[App] User authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
                 } catch (userInfoError) {
                     console.error('[App] Error getting user info:', userInfoError);
@@ -380,15 +366,17 @@ class App {
     }
 
     showLogin() {
-        console.log('[App] Showing modern login page');
+        console.log('[App] Showing login page');
         
+        // S'assurer que la page de login est visible
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.style.display = 'flex';
-            loginPage.style.animation = 'fadeInUp 0.5s ease';
         }
         
-        this.hideOtherUIElements();
+        // S'assurer que l'app n'est pas en mode actif
+        document.body.classList.remove('app-active');
+        
         this.hideModernLoading();
         
         if (window.uiManager) {
@@ -396,73 +384,122 @@ class App {
         }
     }
 
+    // MÉTHODE CORRIGÉE - Affichage forcé de l'application
     showAppWithTransition() {
-        console.log('[App] Showing application with smooth transition');
+        console.log('[App] Showing application with FORCED transition');
         
         this.hideModernLoading();
         
+        // ÉTAPE 1: Activer immédiatement le mode app
+        document.body.classList.add('app-active');
+        console.log('[App] App mode activated');
+        
+        // ÉTAPE 2: Forcer l'affichage des éléments
         const loginPage = document.getElementById('loginPage');
-        const mainNav = document.getElementById('mainNav');
+        const appHeader = document.querySelector('.app-header');
+        const appNav = document.querySelector('.app-nav');
         const pageContent = document.getElementById('pageContent');
         
-        // Transition fluide
+        // Masquer la page de login
         if (loginPage) {
-            loginPage.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-            loginPage.style.opacity = '0';
-            loginPage.style.transform = 'translateY(-20px)';
-            
-            setTimeout(() => {
-                loginPage.style.display = 'none';
-                
-                // Afficher la navigation avec animation
-                if (mainNav) {
-                    mainNav.style.display = 'flex';
-                    mainNav.style.opacity = '0';
-                    mainNav.style.animation = 'fadeInUp 0.5s ease forwards';
-                }
-                
-                // Afficher le contenu avec délai
-                if (pageContent) {
-                    setTimeout(() => {
-                        pageContent.style.display = 'block';
-                        pageContent.style.opacity = '0';
-                        pageContent.style.animation = 'fadeInUp 0.5s ease 0.2s forwards';
-                    }, 200);
-                }
-            }, 500);
+            loginPage.style.display = 'none';
+            console.log('[App] Login page hidden');
         }
         
+        // Afficher le header
+        if (appHeader) {
+            appHeader.style.display = 'block';
+            appHeader.style.opacity = '1';
+            appHeader.style.visibility = 'visible';
+            console.log('[App] Header displayed');
+        }
+        
+        // Afficher la navigation
+        if (appNav) {
+            appNav.style.display = 'block';
+            appNav.style.opacity = '1';
+            appNav.style.visibility = 'visible';
+            console.log('[App] Navigation displayed');
+        }
+        
+        // Afficher le contenu
+        if (pageContent) {
+            pageContent.style.display = 'block';
+            pageContent.style.opacity = '1';
+            pageContent.style.visibility = 'visible';
+            console.log('[App] Page content displayed');
+        }
+        
+        // ÉTAPE 3: Mettre à jour l'interface utilisateur
         if (window.uiManager) {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // Charger le dashboard après la transition
-        setTimeout(() => {
-            if (window.pageManager) {
+        // ÉTAPE 4: Charger le dashboard immédiatement
+        console.log('[App] Loading dashboard...');
+        if (window.pageManager) {
+            // Petit délai pour s'assurer que tout est prêt
+            setTimeout(() => {
                 window.pageManager.loadPage('dashboard');
-            }
-        }, 800);
+                console.log('[App] Dashboard loading requested');
+            }, 100);
+        } else {
+            console.warn('[App] PageManager not available, dashboard will show default content');
+        }
         
-        // Vérifier l'onboarding
+        // ÉTAPE 5: Vérifier l'onboarding
         setTimeout(() => {
             if (window.onboardingManager && window.onboardingManager.isFirstTime()) {
                 console.log('[App] Premier utilisateur détecté');
             }
-        }, 1000);
+        }, 500);
+        
+        // ÉTAPE 6: Forcer l'affichage avec CSS (sécurité)
+        this.forceAppDisplay();
+        
+        console.log('[App] ✅ Application fully displayed');
     }
 
-    hideOtherUIElements() {
-        const mainNav = document.getElementById('mainNav');
-        const pageContent = document.getElementById('pageContent');
+    // Nouvelle méthode pour forcer l'affichage via CSS
+    forceAppDisplay() {
+        // Injecter du CSS pour forcer l'affichage
+        const forceDisplayStyle = document.createElement('style');
+        forceDisplayStyle.id = 'force-app-display';
+        forceDisplayStyle.textContent = `
+            body.app-active #loginPage {
+                display: none !important;
+            }
+            body.app-active .app-header {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.app-active .app-nav {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.app-active #pageContent {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+        `;
         
-        if (mainNav) mainNav.style.display = 'none';
-        if (pageContent) pageContent.style.display = 'none';
+        // Supprimer l'ancien style s'il existe
+        const oldStyle = document.getElementById('force-app-display');
+        if (oldStyle) {
+            oldStyle.remove();
+        }
+        
+        document.head.appendChild(forceDisplayStyle);
+        console.log('[App] Force display CSS injected');
     }
 
     showModernLoading(message = 'Chargement...') {
         const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
-            const loadingText = loadingOverlay.querySelector('.loading-text');
+            const loadingText = loadingOverlay.querySelector('.login-loading-text');
             if (loadingText) {
                 loadingText.innerHTML = `
                     <div>${message}</div>
@@ -513,7 +550,6 @@ class App {
             loginPage.style.display = 'flex';
         }
         
-        this.hideOtherUIElements();
         this.hideModernLoading();
     }
 
@@ -562,6 +598,19 @@ window.emergencyReset = function() {
     });
     
     window.location.reload();
+};
+
+// Fonction pour forcer l'affichage (accessible globalement)
+window.forceShowApp = function() {
+    console.log('[Global] Force show app triggered');
+    if (window.app && typeof window.app.showAppWithTransition === 'function') {
+        window.app.showAppWithTransition();
+    } else {
+        // Fallback si l'app n'est pas prête
+        document.body.classList.add('app-active');
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) loginPage.style.display = 'none';
+    }
 };
 
 function checkServicesReady() {
@@ -634,4 +683,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded with modern UI and smooth transitions');
+console.log('✅ App loaded with FORCED display and guaranteed visibility');
