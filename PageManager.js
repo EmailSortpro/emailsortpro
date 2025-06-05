@@ -1677,55 +1677,526 @@ async createTasksFromSelection() {
     }
 
 async renderScanner(container) {
-    // Vérifier si le module ScanStart est disponible
-    if (window.scanStartModule && typeof window.scanStartModule.render === 'function') {
-        // Utiliser le module ScanStart moderne
-        await window.scanStartModule.render(container);
-    } else {
-        // Fallback au scanner du PageManager
-        container.innerHTML = `
-            <div class="scanner-container">
-                <div class="scanner-card">
-                    <div class="scanner-header">
-                        <div class="scanner-icon" id="scannerIcon">
-                            <i class="fas fa-search"></i>
+    console.log('[PageManager] Rendering scanner page...');
+    
+    // Vérifier si le module ScanStart moderne est disponible et correctement initialisé
+    if (window.scanStartModule && 
+        typeof window.scanStartModule.render === 'function' && 
+        window.scanStartModule.stylesAdded) {
+        
+        try {
+            console.log('[PageManager] Using modern ScanStartModule');
+            await window.scanStartModule.render(container);
+            return;
+        } catch (error) {
+            console.error('[PageManager] Error with ScanStartModule, falling back:', error);
+        }
+    }
+    
+    // Si le module moderne n'est pas disponible, attendre un peu et réessayer
+    if (window.scanStartModule && !window.scanStartModule.stylesAdded) {
+        console.log('[PageManager] ScanStartModule detected but not ready, waiting...');
+        
+        // Attendre que le module soit prêt
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (attempts < maxAttempts && (!window.scanStartModule.stylesAdded || !window.scanStartModule.isInitialized)) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            attempts++;
+        }
+        
+        // Réessayer après l'attente
+        if (window.scanStartModule.stylesAdded && typeof window.scanStartModule.render === 'function') {
+            try {
+                console.log('[PageManager] Using ScanStartModule after wait');
+                await window.scanStartModule.render(container);
+                return;
+            } catch (error) {
+                console.error('[PageManager] Error with ScanStartModule after wait:', error);
+            }
+        }
+    }
+    
+    // Fallback au scanner basique du PageManager
+    console.log('[PageManager] Using fallback scanner interface');
+    this.renderBasicScanner(container);
+}
+
+renderBasicScanner(container) {
+    container.innerHTML = `
+        <div class="scanner-container">
+            <div class="scanner-card">
+                <div class="scanner-header">
+                    <div class="scanner-icon" id="scannerIcon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h1 class="scanner-title">Scanner d'emails</h1>
+                    <p class="scanner-subtitle">Analysez et organisez vos emails intelligemment</p>
+                </div>
+
+                <div class="scanner-body">
+                    <!-- Configuration simple -->
+                    <div class="scan-controls">
+                        <div class="control-group">
+                            <label class="control-label">
+                                <i class="fas fa-calendar-alt"></i> Période à analyser
+                            </label>
+                            <select class="control-select" id="scanDays">
+                                <option value="7" selected>7 derniers jours</option>
+                                <option value="30">30 derniers jours</option>
+                                <option value="90">90 derniers jours</option>
+                            </select>
                         </div>
-                        <h1 class="scanner-title">Scanner d'emails</h1>
-                        <p class="scanner-subtitle">Analysez et organisez vos emails</p>
+                        
+                        <div class="control-group">
+                            <label class="control-label">
+                                <i class="fas fa-folder"></i> Dossier à scanner
+                            </label>
+                            <select class="control-select" id="scanFolder">
+                                <option value="inbox" selected>Boîte de réception</option>
+                                <option value="junkemail">Courrier indésirable</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="scanner-body">
-                        <div class="scan-controls">
-                            <div class="control-group">
-                                <label class="control-label">
-                                    <i class="fas fa-calendar-alt"></i> Période
-                                </label>
-                                <select class="control-select" id="scanDays">
-                                    <option value="30" selected>30 derniers jours</option>
-                                    <option value="7">7 derniers jours</option>
-                                    <option value="90">90 derniers jours</option>
-                                </select>
+                    <!-- Bouton de scan -->
+                    <div class="scan-button-container">
+                        <button class="scan-button" id="startScanBtn" onclick="window.pageManager.startBasicScan()">
+                            <i class="fas fa-search-plus"></i> 
+                            <span>Démarrer le scan</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Guide rapide -->
+                    <div class="scan-info">
+                        <div class="info-card">
+                            <div class="info-icon">💡</div>
+                            <div class="info-content">
+                                <h4>Commencez par 7 jours</h4>
+                                <p>Idéal pour un premier scan rapide et efficace</p>
                             </div>
                         </div>
-
-                        <div class="scan-button-container">
-                            <button class="scan-button" id="startScanBtn" onclick="window.scanStartModule && window.scanStartModule.startRealScan ? window.scanStartModule.startRealScan() : window.pageManager.startScan()">
-                                <i class="fas fa-search-plus"></i> Scanner
-                            </button>
-                        </div>
-
-                        <div class="progress-section" id="progressSection">
-                            <div class="progress-bar-container">
-                                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                        <div class="info-card">
+                            <div class="info-icon">🎯</div>
+                            <div class="info-content">
+                                <h4>Classification automatique</h4>
+                                <p>Vos emails seront organisés par catégorie</p>
                             </div>
-                            <div class="progress-message" id="progressMessage">En attente...</div>
                         </div>
+                    </div>
+
+                    <!-- Section de progression -->
+                    <div class="progress-section" id="progressSection">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-message" id="progressMessage">En attente...</div>
+                        <div class="progress-details" id="progressDetails"></div>
+                    </div>
+                </div>
+                
+                <!-- Footer avec info -->
+                <div class="scanner-footer">
+                    <div class="scanner-note">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Connexion sécurisée via Microsoft Graph API</span>
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
+    
+    // Ajouter les styles pour le scanner de base
+    this.addBasicScannerStyles();
+}
+
+
+async startBasicScan() {
+    const days = parseInt(document.getElementById('scanDays').value);
+    const folder = document.getElementById('scanFolder').value;
+    const btn = document.getElementById('startScanBtn');
+    const progressSection = document.getElementById('progressSection');
+    const scannerIcon = document.getElementById('scannerIcon');
+
+    // Vérifier l'authentification
+    if (!window.authService?.isAuthenticated()) {
+        window.uiManager.showToast('Veuillez vous connecter d\'abord', 'warning');
+        return;
+    }
+
+    // Désactiver le bouton et afficher la progression
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Scan en cours...</span>';
+    progressSection.classList.add('active');
+    scannerIcon.classList.add('scanning');
+
+    try {
+        let results;
+        
+        // Utiliser emailScanner si disponible
+        if (window.emailScanner && window.mailService) {
+            console.log('[PageManager] Starting scan with EmailScanner');
+            
+            results = await window.emailScanner.scan({
+                days,
+                folder,
+                onProgress: (progress) => {
+                    this.updateBasicScanProgress(progress);
+                }
+            });
+            
+        } else if (window.scanStartModule?.startScanProgrammatically) {
+            // Essayer d'utiliser le module moderne en mode programmatique
+            console.log('[PageManager] Using ScanStartModule programmatically');
+            
+            results = await window.scanStartModule.startScanProgrammatically({
+                days,
+                folders: [folder],
+                autoClassify: true,
+                autoCreateTasks: false
+            });
+            
+        } else {
+            // Mode démo si aucun service n'est disponible
+            console.log('[PageManager] Running in demo mode');
+            
+            this.updateBasicScanProgress({ 
+                progress: { current: 0, total: 30 }, 
+                message: 'Génération d\'emails de démonstration...' 
+            });
+            
+            // Simuler un scan
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            results = {
+                emails: this.generateDemoEmails(30),
+                total: 30,
+                stats: { processed: 30, errors: 0 }
+            };
+            
+            this.updateBasicScanProgress({ 
+                progress: { current: 30, total: 30 }, 
+                message: 'Scan de démonstration terminé' 
+            });
+        }
+
+        // Traiter les résultats
+        if (results && results.emails) {
+            // Classification automatique
+            if (window.categoryManager) {
+                console.log('[PageManager] Categorizing emails...');
+                this.updateBasicScanProgress({ 
+                    message: 'Classification des emails...' 
+                });
+                
+                results.emails.forEach(email => {
+                    const catResult = window.categoryManager.analyzeEmail(email);
+                    email.category = catResult.category || 'other';
+                });
+            }
+
+            // Sauvegarder les résultats
+            this.temporaryEmailStorage = results.emails;
+            this.lastScanData = {
+                total: results.total || results.emails.length,
+                categorized: results.emails.filter(e => e.category && e.category !== 'other').length,
+                scanTime: new Date().toISOString(),
+                duration: results.duration || 0
+            };
+            
+            // Sauvegarder dans emailScanner si disponible
+            if (window.emailScanner) {
+                window.emailScanner.emails = results.emails;
+            }
+
+            // Notification de succès
+            window.uiManager.showToast(
+                `✅ ${results.emails.length} emails scannés avec succès!`, 
+                'success'
+            );
+            
+            // Redirection vers les emails après un délai
+            setTimeout(() => {
+                this.loadPage('emails');
+            }, 1500);
+
+        } else {
+            throw new Error('Aucun résultat obtenu du scan');
+        }
+
+    } catch (error) {
+        console.error('[PageManager] Basic scan error:', error);
+        window.uiManager.showToast(`Erreur de scan: ${error.message}`, 'error');
+        
+        // Restaurer l'interface
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-search-plus"></i> <span>Démarrer le scan</span>';
+        progressSection.classList.remove('active');
+        scannerIcon.classList.remove('scanning');
     }
 }
+
+addBasicScannerStyles() {
+    if (document.getElementById('basicScannerStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'basicScannerStyles';
+    styles.textContent = `
+        .scanner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            padding: 20px;
+        }
+        
+        .scanner-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .scanner-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .scanner-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            margin: 0 auto 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .scanner-icon.scanning {
+            animation: scanPulse 2s infinite;
+        }
+        
+        @keyframes scanPulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .scanner-title {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            color: #1f2937;
+            font-weight: 700;
+        }
+        
+        .scanner-subtitle {
+            margin: 0;
+            color: #6b7280;
+            font-size: 16px;
+        }
+        
+        .scan-controls {
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        .control-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.2s ease;
+        }
+        
+        .control-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .scan-button-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .scan-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+            justify-content: center;
+        }
+        
+        .scan-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .scan-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .scan-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+        
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .info-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .info-content h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            color: #1f2937;
+            font-weight: 600;
+        }
+        
+        .info-content p {
+            margin: 0;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.3;
+        }
+        
+        .progress-section {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .progress-section.active {
+            opacity: 1;
+        }
+        
+        .progress-bar-container {
+            background: #e5e7eb;
+            border-radius: 8px;
+            height: 10px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        .progress-bar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 8px;
+        }
+        
+        .progress-message {
+            text-align: center;
+            color: #4b5563;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .progress-details {
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        
+        .scanner-footer {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .scanner-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 13px;
+            padding: 8px 16px;
+            background: #f9fafb;
+            border-radius: 20px;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .scanner-note i {
+            color: #10b981;
+        }
+        
+        @media (max-width: 640px) {
+            .scanner-card {
+                padding: 30px 20px;
+            }
+            
+            .scan-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .scanner-title {
+                font-size: 24px;
+            }
+        }
+    `;
+    
+    document.head.appendChild(styles);
+}
+
+updateBasicScanProgress(progress) {
+    const progressBar = document.getElementById('progressBar');
+    const progressMessage = document.getElementById('progressMessage');
+    const progressDetails = document.getElementById('progressDetails');
+
+    if (progress.progress) {
+        const percent = Math.round((progress.progress.current / progress.progress.total) * 100);
+        if (progressBar) progressBar.style.width = percent + '%';
+        if (progressDetails) progressDetails.textContent = `${progress.progress.current}/${progress.progress.total} emails`;
+    }
+
+    if (progress.message && progressMessage) {
+        progressMessage.textContent = progress.message;
+    }
+}
+
 
     async startScan() {
         const days = parseInt(document.getElementById('scanDays').value);
