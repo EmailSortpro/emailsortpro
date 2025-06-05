@@ -52,21 +52,38 @@ class ScanStartModule {
                STYLES ULTRA-MINIMALISTES POUR LE SCANNER
                ==================================================== */
             
+            .scanner-ultra-minimal {
+                width: 100%;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1000;
+            }
+
             .scanner-container {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border-radius: 24px;
                 padding: 32px;
-                max-width: 90vw;
-                width: 100%;
                 max-width: 500px;
-                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
+                width: 90%;
+                box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 text-align: center;
                 position: relative;
                 animation: slideUp 0.6s ease-out;
                 overflow-y: auto;
-                margin: 0 auto;
+                max-height: 90vh;
             }
 
             @keyframes slideUp {
@@ -755,17 +772,19 @@ class ScanStartModule {
 
     renderNotAuthenticated() {
         return `
-            <div class="scanner-container">
-                <div class="auth-needed-minimal">
-                    <div class="auth-icon">
-                        <i class="fas fa-lock"></i>
+            <div class="scanner-ultra-minimal">
+                <div class="scanner-container">
+                    <div class="auth-needed-minimal">
+                        <div class="auth-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h2>Connexion requise</h2>
+                        <p>Connectez-vous à Microsoft pour scanner vos emails</p>
+                        <button class="btn-auth" onclick="window.authService.login()">
+                            <i class="fab fa-microsoft"></i>
+                            <span>Se connecter</span>
+                        </button>
                     </div>
-                    <h2>Connexion requise</h2>
-                    <p>Connectez-vous à Microsoft pour scanner vos emails</p>
-                    <button class="btn-auth" onclick="window.authService.login()">
-                        <i class="fab fa-microsoft"></i>
-                        <span>Se connecter</span>
-                    </button>
                 </div>
             </div>
         `;
@@ -773,17 +792,19 @@ class ScanStartModule {
 
     renderError(error) {
         return `
-            <div class="scanner-container">
-                <div class="error-state-minimal">
-                    <div class="error-icon">
-                        <i class="fas fa-exclamation-circle"></i>
+            <div class="scanner-ultra-minimal">
+                <div class="scanner-container">
+                    <div class="error-state-minimal">
+                        <div class="error-icon">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <h2>Erreur d'initialisation</h2>
+                        <p>${error.message}</p>
+                        <button class="btn-auth" onclick="window.location.reload()">
+                            <i class="fas fa-redo"></i>
+                            <span>Réessayer</span>
+                        </button>
                     </div>
-                    <h2>Erreur d'initialisation</h2>
-                    <p>${error.message}</p>
-                    <button class="btn-auth" onclick="window.location.reload()">
-                        <i class="fas fa-redo"></i>
-                        <span>Réessayer</span>
-                    </button>
                 </div>
             </div>
         `;
