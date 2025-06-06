@@ -1,22 +1,22 @@
-// startscan.js - Version 8.0 - Scanner Ultra-Minimaliste
+// ScanStart.js - Version 8.1 - Scanner Ultra-Minimaliste CORRIGÉ
 
-class MinimalScanModule {
+class ScanStartModule {
     constructor() {
         this.isInitialized = false;
         this.scanInProgress = false;
         this.selectedDays = 7;
         this.stylesAdded = false;
         this.scanStartTime = null;
+        this.scanResults = null;
         
-        this.addMinimalStyles();
-        console.log('[MinimalScan] Scanner ultra-minimaliste v8.0 initialized');
+        console.log('[ScanStart] Scanner ultra-minimaliste v8.1 initialized');
     }
 
-    addMinimalStyles() {
+    addUltraMinimalStyles() {
         if (this.stylesAdded) return;
         
         const styles = document.createElement('style');
-        styles.id = 'minimal-scan-styles';
+        styles.id = 'scanstart-styles';
         styles.textContent = `
             /* Scanner Ultra-Minimaliste */
             .minimal-scanner {
@@ -48,14 +48,8 @@ class MinimalScanModule {
             }
             
             @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
             }
             
             .scanner-icon {
@@ -84,7 +78,6 @@ class MinimalScanModule {
                 margin-bottom: 35px;
             }
             
-            /* Étapes visuelles */
             .steps-container {
                 display: flex;
                 justify-content: space-between;
@@ -146,7 +139,6 @@ class MinimalScanModule {
                 font-weight: 600;
             }
             
-            /* Sélecteur de durée */
             .duration-section {
                 margin-bottom: 35px;
             }
@@ -188,7 +180,6 @@ class MinimalScanModule {
                 border-color: #9ca3af;
             }
             
-            /* Bouton de scan */
             .scan-button-minimal {
                 width: 100%;
                 height: 60px;
@@ -218,7 +209,6 @@ class MinimalScanModule {
                 transform: none;
             }
             
-            /* Section de progression */
             .progress-section-minimal {
                 opacity: 0;
                 transition: opacity 0.3s ease;
@@ -257,7 +247,6 @@ class MinimalScanModule {
                 color: #9ca3af;
             }
             
-            /* Info badge */
             .scan-info {
                 background: rgba(102, 126, 234, 0.1);
                 border-radius: 10px;
@@ -271,7 +260,6 @@ class MinimalScanModule {
                 font-weight: 500;
             }
             
-            /* Responsive mobile */
             @media (max-width: 480px) {
                 .scanner-card-minimal {
                     width: 95%;
@@ -314,47 +302,18 @@ class MinimalScanModule {
                     font-size: 16px;
                 }
             }
-            
-            /* Mode sombre */
-            @media (prefers-color-scheme: dark) {
-                .scanner-card-minimal {
-                    background: rgba(30, 30, 46, 0.95);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                }
-                
-                .scanner-title {
-                    color: white;
-                }
-                
-                .scanner-subtitle,
-                .progress-text,
-                .progress-status {
-                    color: #9ca3af;
-                }
-                
-                .duration-option {
-                    background: rgba(255, 255, 255, 0.05);
-                    border-color: rgba(255, 255, 255, 0.1);
-                    color: #9ca3af;
-                }
-                
-                .duration-option.selected {
-                    background: #667eea;
-                    color: white;
-                }
-            }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles minimalistes ajoutés');
+        console.log('[ScanStart] ✅ Styles ajoutés');
     }
 
     async render(container) {
-        console.log('[MinimalScan] Rendu du scanner minimaliste...');
+        console.log('[ScanStart] Rendu du scanner...');
         
         try {
-            this.addMinimalStyles();
+            this.addUltraMinimalStyles();
             
             if (!window.authService?.isAuthenticated()) {
                 container.innerHTML = this.renderNotAuthenticated();
@@ -367,10 +326,10 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner minimaliste prêt');
+            console.log('[ScanStart] ✅ Scanner prêt');
             
         } catch (error) {
-            console.error('[MinimalScan] Erreur:', error);
+            console.error('[ScanStart] Erreur:', error);
             container.innerHTML = this.renderError(error);
         }
     }
@@ -384,7 +343,7 @@ class MinimalScanModule {
                     </div>
                     
                     <h1 class="scanner-title">Scanner Email</h1>
-                    <p class="scanner-subtitle">Organisez vos emails automatiquement</p>
+                    <p class="scanner-subtitle">Analysez vos vrais emails Outlook</p>
                     
                     <div class="steps-container">
                         <div class="step active" id="step1">
@@ -404,17 +363,17 @@ class MinimalScanModule {
                     <div class="duration-section">
                         <div class="duration-label">Période d'analyse</div>
                         <div class="duration-options">
-                            <button class="duration-option" onclick="window.minimalScanModule.selectDuration(1)" data-days="1">1 jour</button>
-                            <button class="duration-option" onclick="window.minimalScanModule.selectDuration(3)" data-days="3">3 jours</button>
-                            <button class="duration-option selected" onclick="window.minimalScanModule.selectDuration(7)" data-days="7">7 jours</button>
-                            <button class="duration-option" onclick="window.minimalScanModule.selectDuration(15)" data-days="15">15 jours</button>
-                            <button class="duration-option" onclick="window.minimalScanModule.selectDuration(30)" data-days="30">30 jours</button>
+                            <button class="duration-option" onclick="window.scanStartModule.selectDuration(1)" data-days="1">1 jour</button>
+                            <button class="duration-option" onclick="window.scanStartModule.selectDuration(3)" data-days="3">3 jours</button>
+                            <button class="duration-option selected" onclick="window.scanStartModule.selectDuration(7)" data-days="7">7 jours</button>
+                            <button class="duration-option" onclick="window.scanStartModule.selectDuration(15)" data-days="15">15 jours</button>
+                            <button class="duration-option" onclick="window.scanStartModule.selectDuration(30)" data-days="30">30 jours</button>
                         </div>
                     </div>
                     
-                    <button class="scan-button-minimal" id="minimalScanBtn" onclick="window.minimalScanModule.startScan()">
+                    <button class="scan-button-minimal" id="scanStartBtn" onclick="window.scanStartModule.startScan()">
                         <i class="fas fa-play"></i>
-                        <span>Démarrer l'analyse</span>
+                        <span>Scanner mes emails réels</span>
                     </button>
                     
                     <div class="progress-section-minimal" id="progressSection">
@@ -427,7 +386,7 @@ class MinimalScanModule {
                     
                     <div class="scan-info">
                         <i class="fas fa-shield-alt"></i>
-                        <span>Scan sécurisé et privé</span>
+                        <span>Scan de vos emails Outlook authentiques</span>
                     </div>
                 </div>
             </div>
@@ -446,7 +405,7 @@ class MinimalScanModule {
                     
                     <button class="scan-button-minimal" onclick="window.authService.login()">
                         <i class="fab fa-microsoft"></i>
-                        <span>Se connecter</span>
+                        <span>Se connecter à Outlook</span>
                     </button>
                 </div>
             </div>
@@ -482,139 +441,147 @@ class MinimalScanModule {
         }
         
         if (!window.mailService.isInitialized) {
+            console.log('[ScanStart] Initialisation du MailService...');
             await window.mailService.initialize();
         }
     }
 
     initializeEvents() {
-        // Pas d'événements supplémentaires nécessaires
-        console.log('[MinimalScan] Événements initialisés');
+        console.log('[ScanStart] Événements initialisés');
     }
 
     selectDuration(days) {
         this.selectedDays = days;
         
-        // Mettre à jour l'UI
         document.querySelectorAll('.duration-option').forEach(btn => {
             btn.classList.remove('selected');
         });
         
         document.querySelector(`[data-days="${days}"]`).classList.add('selected');
         
-        console.log(`[MinimalScan] Durée sélectionnée: ${days} jours`);
+        console.log(`[ScanStart] Durée sélectionnée: ${days} jours`);
     }
 
     async startScan() {
         if (this.scanInProgress) return;
         
-        console.log('[MinimalScan] 🚀 Démarrage du scan pour', this.selectedDays, 'jours');
+        console.log('[ScanStart] 🚀 Démarrage du VRAI scan pour', this.selectedDays, 'jours');
         
         try {
             this.scanInProgress = true;
             this.scanStartTime = Date.now();
             
-            // Passer à l'étape 2
             this.setActiveStep(2);
             
-            // Afficher la progression
             document.getElementById('progressSection').classList.add('visible');
-            const scanBtn = document.getElementById('minimalScanBtn');
+            const scanBtn = document.getElementById('scanStartBtn');
             scanBtn.disabled = true;
-            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Analyse en cours...</span>';
+            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Scan en cours...</span>';
             
-            // Exécuter le scan
-            await this.executeScan();
+            // VRAIE récupération des emails via MailService
+            await this.executeRealScan();
             
-            // Passer à l'étape 3
             this.setActiveStep(3);
-            
-            // Finaliser
             this.completeScan();
             
         } catch (error) {
-            console.error('[MinimalScan] Erreur de scan:', error);
+            console.error('[ScanStart] Erreur de scan:', error);
             this.showScanError(error);
         }
     }
 
-    async executeScan() {
-        const steps = [
-            { progress: 0, text: 'Initialisation...', status: 'Connexion au serveur' },
-            { progress: 20, text: 'Connexion...', status: 'Authentification' },
-            { progress: 40, text: 'Récupération...', status: `Chargement des emails (${this.selectedDays} jours)` },
-            { progress: 60, text: 'Analyse IA...', status: 'Classification en cours' },
-            { progress: 80, text: 'Organisation...', status: 'Tri par catégories' },
-            { progress: 100, text: 'Terminé !', status: 'Scan complété avec succès' }
-        ];
-
-        // Effectuer le vrai scan si disponible
+    async executeRealScan() {
+        console.log('[ScanStart] Exécution du scan réel...');
+        
+        this.updateProgress(10, 'Connexion...', 'Authentification Microsoft Graph');
+        
         try {
-            if (window.emailScanner) {
-                const results = await window.emailScanner.scan({
-                    days: this.selectedDays,
-                    folder: 'inbox',
-                    quick: true,
-                    onProgress: (progress) => {
-                        if (progress.progress) {
-                            const percent = 40 + Math.floor((progress.progress.current / progress.progress.total) * 40);
-                            this.updateProgress(percent, 'Analyse...', progress.message || 'Classification des emails');
-                        }
-                    }
+            // Vérifier que le MailService est prêt
+            if (!window.mailService?.isInitialized) {
+                await window.mailService.initialize();
+            }
+            
+            this.updateProgress(30, 'Récupération...', `Chargement des emails (${this.selectedDays} jours)`);
+            
+            // Récupérer les VRAIS emails via MailService
+            const emails = await window.mailService.getEmails({
+                maxResults: 100,
+                folder: 'inbox',
+                days: this.selectedDays
+            });
+            
+            console.log('[ScanStart] Emails récupérés:', emails.length);
+            
+            this.updateProgress(60, 'Classification...', 'Analyse et catégorisation');
+            
+            // Classification avec categoryManager
+            if (window.categoryManager && emails.length > 0) {
+                emails.forEach(email => {
+                    const result = window.categoryManager.analyzeEmail(email);
+                    email.category = result.category || 'other';
                 });
-                this.scanResults = results;
-            } else {
-                // Simulation avec progression
-                for (const step of steps) {
-                    this.updateProgress(step.progress, step.text, step.status);
-                    await new Promise(resolve => setTimeout(resolve, 600));
-                }
-                
-                // Générer des résultats réalistes
-                const baseEmails = Math.floor(Math.random() * 500) + 100;
-                this.scanResults = {
-                    success: true,
-                    total: baseEmails,
-                    categorized: Math.floor(baseEmails * 0.85),
-                    stats: { processed: baseEmails, errors: Math.floor(Math.random() * 3) }
+            }
+            
+            this.updateProgress(80, 'Organisation...', 'Tri par catégories');
+            
+            // Stocker les résultats dans emailScanner
+            if (window.emailScanner) {
+                window.emailScanner.emails = emails;
+                console.log('[ScanStart] Emails stockés dans emailScanner');
+            }
+            
+            // Aussi stocker dans pageManager comme backup
+            if (window.pageManager) {
+                window.pageManager.temporaryEmailStorage = emails;
+                window.pageManager.lastScanData = {
+                    total: emails.length,
+                    categorized: emails.filter(e => e.category && e.category !== 'other').length,
+                    scanTime: new Date().toISOString(),
+                    duration: Math.floor((Date.now() - this.scanStartTime) / 1000)
                 };
             }
-        } catch (error) {
-            console.error('[MinimalScan] Erreur lors du scan réel:', error);
-            // Continuer avec les résultats de simulation
-            for (const step of steps) {
-                this.updateProgress(step.progress, step.text, step.status);
-                await new Promise(resolve => setTimeout(resolve, 400));
-            }
+            
+            this.updateProgress(100, 'Terminé !', `${emails.length} emails analysés avec succès`);
             
             this.scanResults = {
                 success: true,
-                total: 0,
-                categorized: 0,
-                stats: { processed: 0, errors: 1 }
+                total: emails.length,
+                categorized: emails.filter(e => e.category && e.category !== 'other').length,
+                emails: emails
             };
+            
+        } catch (error) {
+            console.error('[ScanStart] Erreur lors du scan réel:', error);
+            throw error;
         }
     }
 
     updateProgress(percent, text, status) {
-        document.getElementById('progressFill').style.width = `${percent}%`;
-        document.getElementById('progressText').textContent = text;
-        document.getElementById('progressStatus').textContent = status;
+        const fill = document.getElementById('progressFill');
+        const textEl = document.getElementById('progressText');
+        const statusEl = document.getElementById('progressStatus');
+        
+        if (fill) fill.style.width = `${percent}%`;
+        if (textEl) textEl.textContent = text;
+        if (statusEl) statusEl.textContent = status;
     }
 
     setActiveStep(stepNumber) {
         document.querySelectorAll('.step').forEach(step => {
             step.classList.remove('active');
         });
-        document.getElementById(`step${stepNumber}`).classList.add('active');
+        const stepEl = document.getElementById(`step${stepNumber}`);
+        if (stepEl) stepEl.classList.add('active');
     }
 
     completeScan() {
         setTimeout(() => {
-            const scanBtn = document.getElementById('minimalScanBtn');
-            scanBtn.innerHTML = '<i class="fas fa-check"></i> <span>Scan terminé !</span>';
-            scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            const scanBtn = document.getElementById('scanStartBtn');
+            if (scanBtn) {
+                scanBtn.innerHTML = '<i class="fas fa-check"></i> <span>Scan terminé !</span>';
+                scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+            }
             
-            // Préparer les résultats pour la redirection
             setTimeout(() => {
                 this.redirectToResults();
             }, 1500);
@@ -624,35 +591,15 @@ class MinimalScanModule {
     redirectToResults() {
         this.scanInProgress = false;
         
-        // Stocker les résultats essentiels
-        const essentialResults = {
-            success: this.scanResults?.success || true,
-            total: this.scanResults?.total || 0,
-            categorized: this.scanResults?.categorized || 0,
-            scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
-            selectedDays: this.selectedDays,
-            timestamp: Date.now()
-        };
+        const totalEmails = this.scanResults?.total || 0;
         
-        try {
-            sessionStorage.removeItem('scanResults');
-            sessionStorage.setItem('scanResults', JSON.stringify(essentialResults));
-        } catch (error) {
-            console.warn('[MinimalScan] Erreur de stockage:', error);
-        }
-        
-        // Notification de succès
         if (window.uiManager?.showToast) {
-            const totalEmails = essentialResults.total;
-            window.uiManager.showToast(`✅ ${totalEmails} emails analysés avec succès`, 'success');
+            window.uiManager.showToast(`✅ ${totalEmails} emails réels analysés !`, 'success');
         }
         
-        // Redirection
         setTimeout(() => {
             if (window.pageManager) {
                 window.pageManager.loadPage('emails');
-            } else {
-                console.log('[MinimalScan] PageManager non disponible, scan terminé');
             }
         }, 500);
     }
@@ -665,7 +612,7 @@ class MinimalScanModule {
                     <div style="font-size: 16px; font-weight: 600; color: #ef4444; margin-bottom: 8px;">Erreur de scan</div>
                     <div style="font-size: 12px; color: #6b7280; margin-bottom: 16px;">${error.message}</div>
                     
-                    <button class="scan-button-minimal" onclick="window.minimalScanModule.resetScanner()" style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
+                    <button class="scan-button-minimal" onclick="window.scanStartModule.resetScanner()" style="width: auto; padding: 0 20px; height: 40px; font-size: 14px;">
                         <i class="fas fa-redo"></i>
                         <span>Réessayer</span>
                     </button>
@@ -679,25 +626,43 @@ class MinimalScanModule {
     resetScanner() {
         this.scanInProgress = false;
         this.setActiveStep(1);
-        document.getElementById('progressSection').classList.remove('visible');
         
-        const scanBtn = document.getElementById('minimalScanBtn');
-        scanBtn.disabled = false;
-        scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer l\'analyse</span>';
-        scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        const progressSection = document.getElementById('progressSection');
+        if (progressSection) {
+            progressSection.classList.remove('visible');
+        }
+        
+        const scanBtn = document.getElementById('scanStartBtn');
+        if (scanBtn) {
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Scanner mes emails réels</span>';
+            scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
         
         this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
         
-        console.log('[MinimalScan] Scanner réinitialisé');
+        console.log('[ScanStart] Scanner réinitialisé');
+    }
+
+    // Méthode pour mode programmatique (compatibilité PageManager)
+    async startScanProgrammatically(options = {}) {
+        this.selectedDays = options.days || 7;
+        
+        try {
+            await this.executeRealScan();
+            return this.scanResults;
+        } catch (error) {
+            console.error('[ScanStart] Erreur scan programmatique:', error);
+            throw error;
+        }
     }
 
     cleanup() {
-        console.log('[MinimalScan] Nettoyage terminé');
+        console.log('[ScanStart] Nettoyage terminé');
     }
 }
 
 // Créer l'instance globale
-window.minimalScanModule = new MinimalScanModule();
-window.scanStartModule = window.minimalScanModule; // Compatibilité
+window.scanStartModule = new ScanStartModule();
 
-console.log('[MinimalScan] 🚀 Scanner minimaliste prêt');
+console.log('[ScanStart] 🚀 Scanner réel prêt pour emails Outlook');
