@@ -61,7 +61,7 @@
             },
             app: {
                 name: 'EmailSortPro',
-                version: '3.0.0',
+                version: '3.1.0',
                 debug: false,
                 environment: 'netlify'
             },
@@ -106,174 +106,7 @@
             }
         };
         
-        // Créer les services intégrés pour éviter les dépendances externes
-        window.authService = {
-            isInitialized: false,
-            isAuthenticated: () => false,
-            initialize: async function() {
-                console.log('[AuthService] Built-in auth service initializing...');
-                if (typeof msal === 'undefined') {
-                    console.warn('[AuthService] MSAL not available, using mock mode');
-                    this.isInitialized = true;
-                    return;
-                }
-                
-                try {
-                    const msalConfig = {
-                        auth: {
-                            clientId: window.AppConfig.msal.clientId,
-                            authority: window.AppConfig.msal.authority,
-                            redirectUri: window.AppConfig.msal.redirectUri
-                        },
-                        cache: window.AppConfig.msal.cache
-                    };
-                    
-                    this.msalInstance = new msal.PublicClientApplication(msalConfig);
-                    await this.msalInstance.initialize();
-                    this.isInitialized = true;
-                    console.log('[AuthService] Built-in auth service initialized successfully');
-                } catch (error) {
-                    console.error('[AuthService] Initialization error:', error);
-                    this.isInitialized = true; // Continue anyway
-                }
-            },
-            login: async function() {
-                console.log('[AuthService] Built-in login attempt...');
-                if (this.msalInstance) {
-                    try {
-                        const loginRequest = {
-                            scopes: window.AppConfig.scopes.login,
-                            prompt: 'select_account'
-                        };
-                        await this.msalInstance.loginRedirect(loginRequest);
-                    } catch (error) {
-                        console.error('[AuthService] Login error:', error);
-                        throw error;
-                    }
-                } else {
-                    // Mock login pour démonstration
-                    console.log('[AuthService] Mock login - simulating successful authentication');
-                    setTimeout(() => {
-                        const mockUser = {
-                            displayName: 'Utilisateur Test',
-                            mail: 'test@example.com',
-                            userPrincipalName: 'test@example.com'
-                        };
-                        window.displayUserInfo(mockUser);
-                        window.showApp();
-                    }, 2000);
-                }
-            },
-            logout: async function() {
-                console.log('[AuthService] Built-in logout');
-                if (this.msalInstance) {
-                    await this.msalInstance.logoutRedirect();
-                } else {
-                    window.location.reload();
-                }
-            }
-        };
-        
-        window.mailService = {
-            initialized: false,
-            initialize: function() {
-                console.log('[MailService] Built-in mail service initialized');
-                this.initialized = true;
-            }
-        };
-        
-        // UIManager CORRIGÉ avec toutes les méthodes nécessaires
-        window.uiManager = {
-            showToast: function(message, type = 'info', duration = 5000) {
-                console.log(`[Toast ${type}] ${message}`);
-                // Toast simple
-                const toast = document.createElement('div');
-                toast.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 12px 20px;
-                    background: ${type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#4f46e5'};
-                    color: white;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    z-index: 10000;
-                    font-size: 14px;
-                    max-width: 300px;
-                `;
-                toast.textContent = message;
-                document.body.appendChild(toast);
-                
-                setTimeout(() => {
-                    if (toast.parentNode) toast.parentNode.removeChild(toast);
-                }, duration);
-            },
-            updateAuthStatus: function(user) {
-                if (user) {
-                    window.displayUserInfo(user);
-                }
-            },
-            showLoading: function(message = 'Chargement...') {
-                console.log('[Loading]', message);
-                let loading = document.getElementById('globalLoading');
-                if (!loading) {
-                    loading = document.createElement('div');
-                    loading.id = 'globalLoading';
-                    loading.style.cssText = `
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: rgba(0, 0, 0, 0.5);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        z-index: 9999;
-                        flex-direction: column;
-                        gap: 15px;
-                    `;
-                    loading.innerHTML = `
-                        <div style="width: 40px; height: 40px; border: 3px solid rgba(255, 255, 255, 0.2); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                        <div style="color: white; font-size: 16px; font-weight: 500;" id="loadingMessage">${message}</div>
-                        <style>
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                        </style>
-                    `;
-                    document.body.appendChild(loading);
-                } else {
-                    loading.style.display = 'flex';
-                    const messageEl = loading.querySelector('#loadingMessage');
-                    if (messageEl) messageEl.textContent = message;
-                }
-            },
-            hideLoading: function() {
-                const loading = document.getElementById('globalLoading');
-                if (loading) {
-                    loading.style.display = 'none';
-                }
-            },
-            createStatCard: function(options) {
-                return `
-                    <div class="card">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="color: ${options.color}; font-size: 2rem;">
-                                <i class="${options.icon}"></i>
-                            </div>
-                            <div>
-                                <div style="font-size: 2rem; font-weight: bold; color: #1e293b;">${options.value}</div>
-                                <div style="color: #64748b; font-size: 0.9rem;">${options.label}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        };
-        
-        console.log('[APP] Configuration and built-in services loaded successfully');
+        console.log('[APP] Configuration loaded successfully');
     </script>
     
     <style>
@@ -507,11 +340,11 @@
 
         /* États actifs */
         body.app-active .login-page {
-            display: none;
+            display: none !important;
         }
 
         body.app-active .app-header {
-            display: block;
+            display: block !important;
         }
 
         body.app-active .app-main {
@@ -519,8 +352,8 @@
         }
 
         body.app-active .page-content {
-            display: block;
-            opacity: 1;
+            display: block !important;
+            opacity: 1 !important;
         }
 
         /* Dashboard */
@@ -627,34 +460,6 @@
             font-size: 1rem;
             font-weight: 500;
         }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header-content {
-                padding: 0 16px;
-                height: 56px;
-            }
-
-            .logo {
-                font-size: 1.125rem;
-            }
-
-            .main-nav {
-                gap: 1px;
-            }
-
-            .nav-item {
-                padding: 6px 8px;
-                font-size: 0.8rem;
-            }
-
-            .nav-item span {
-                display: none;
-            }
-
-            .user-details {
-                display: none;
-            }
 
         /* Styles globaux pour l'application */
         .page-header {
@@ -781,79 +586,6 @@
             margin-bottom: 24px;
         }
 
-        .search-bar-container {
-            margin: 20px 0;
-        }
-
-        .search-bar {
-            position: relative;
-            max-width: 500px;
-        }
-
-        .search-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            color: #9ca3af;
-            z-index: 1;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 12px 12px 12px 40px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-            transition: border-color 0.2s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #4f46e5;
-        }
-
-        .search-clear-btn {
-            position: absolute;
-            right: 8px;
-            width: 24px;
-            height: 24px;
-            border: none;
-            background: #e5e7eb;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .search-clear-btn:hover {
-            background: #d1d5db;
-        }
-
-        .selection-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #1e40af;
-        }
-
-        .selection-count {
-            font-weight: 600;
-        }
-
         /* Variables CSS pour les couleurs */
         :root {
             --primary: #4f46e5;
@@ -864,7 +596,43 @@
             --info: #3b82f6;
         }
 
+        /* Responsive */
         @media (max-width: 768px) {
+            .header-content {
+                padding: 0 16px;
+                height: 56px;
+            }
+
+            .logo {
+                font-size: 1.125rem;
+            }
+
+            .main-nav {
+                gap: 1px;
+            }
+
+            .nav-item {
+                padding: 6px 8px;
+                font-size: 0.8rem;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+
+            .user-details {
+                display: none;
+            }
+
+            .page-content {
+                padding: 20px 16px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
             .page-header {
                 flex-direction: column;
                 gap: 16px;
@@ -877,16 +645,6 @@
 
             .grid-2, .grid-3, .grid-4 {
                 grid-template-columns: 1fr;
-            }
-        }
-
-            .page-content {
-                padding: 20px 16px;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
             }
         }
     </style>
@@ -1012,12 +770,557 @@
         <div class="loading-text">Connexion en cours...</div>
     </div>
 
+    <!-- Scripts de services intégrés -->
     <script>
         console.log('[APP] Starting application initialization...');
 
         // Variables globales
         let isAuthenticated = false;
         let currentUser = null;
+
+        // ==========================================
+        // SERVICES INTÉGRÉS AMÉLIORÉS
+        // ==========================================
+
+        // Service d'authentification intégré
+        window.authService = {
+            isInitialized: false,
+            msalInstance: null,
+            
+            async initialize() {
+                console.log('[AuthService] Initializing built-in auth service...');
+                if (typeof msal === 'undefined') {
+                    console.warn('[AuthService] MSAL not available, using mock mode');
+                    this.isInitialized = true;
+                    return;
+                }
+                
+                try {
+                    const msalConfig = {
+                        auth: {
+                            clientId: window.AppConfig.msal.clientId,
+                            authority: window.AppConfig.msal.authority,
+                            redirectUri: window.AppConfig.msal.redirectUri
+                        },
+                        cache: window.AppConfig.msal.cache
+                    };
+                    
+                    this.msalInstance = new msal.PublicClientApplication(msalConfig);
+                    await this.msalInstance.initialize();
+                    this.isInitialized = true;
+                    console.log('[AuthService] Built-in auth service initialized successfully');
+                    
+                    // Vérifier si l'utilisateur est déjà connecté
+                    const accounts = this.msalInstance.getAllAccounts();
+                    if (accounts.length > 0) {
+                        console.log('[AuthService] User already authenticated');
+                        currentUser = await this.getUserInfo();
+                        isAuthenticated = true;
+                    }
+                    
+                } catch (error) {
+                    console.error('[AuthService] Initialization error:', error);
+                    this.isInitialized = true; // Continue anyway
+                }
+            },
+            
+            isAuthenticated() {
+                if (!this.msalInstance) return false;
+                const accounts = this.msalInstance.getAllAccounts();
+                return accounts.length > 0;
+            },
+            
+            async login() {
+                console.log('[AuthService] Built-in login attempt...');
+                if (this.msalInstance) {
+                    try {
+                        const loginRequest = {
+                            scopes: window.AppConfig.scopes.login,
+                            prompt: 'select_account'
+                        };
+                        await this.msalInstance.loginRedirect(loginRequest);
+                    } catch (error) {
+                        console.error('[AuthService] Login error:', error);
+                        throw error;
+                    }
+                } else {
+                    // Mock login pour démonstration
+                    console.log('[AuthService] Mock login - simulating successful authentication');
+                    setTimeout(() => {
+                        const mockUser = {
+                            displayName: 'Utilisateur Test',
+                            mail: 'test@example.com',
+                            userPrincipalName: 'test@example.com'
+                        };
+                        window.displayUserInfo(mockUser);
+                        window.showApp();
+                    }, 2000);
+                }
+            },
+            
+            async getAccessToken() {
+                if (!this.msalInstance) return null;
+                
+                try {
+                    const accounts = this.msalInstance.getAllAccounts();
+                    if (accounts.length === 0) return null;
+                    
+                    const request = {
+                        scopes: window.AppConfig.scopes.silent,
+                        account: accounts[0]
+                    };
+                    
+                    const response = await this.msalInstance.acquireTokenSilent(request);
+                    return response.accessToken;
+                } catch (error) {
+                    console.error('[AuthService] Token acquisition error:', error);
+                    return null;
+                }
+            },
+            
+            async getUserInfo() {
+                const token = await this.getAccessToken();
+                if (!token) return null;
+                
+                try {
+                    const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) throw new Error('Failed to get user info');
+                    return await response.json();
+                } catch (error) {
+                    console.error('[AuthService] User info error:', error);
+                    return null;
+                }
+            },
+            
+            async logout() {
+                console.log('[AuthService] Built-in logout');
+                if (this.msalInstance) {
+                    await this.msalInstance.logoutRedirect();
+                } else {
+                    window.location.reload();
+                }
+            }
+        };
+
+        // Service de messagerie intégré et corrigé
+        window.mailService = {
+            isInitialized: false,
+            cache: new Map(),
+            
+            async initialize() {
+                console.log('[MailService] Initializing built-in mail service...');
+                
+                if (!window.authService?.isAuthenticated()) {
+                    console.warn('[MailService] User not authenticated, cannot initialize');
+                    return;
+                }
+                
+                this.isInitialized = true;
+                console.log('[MailService] ✅ Initialization complete');
+            },
+            
+            async getEmails(options = {}) {
+                console.log('[MailService] Getting emails with options:', options);
+                
+                if (!this.isInitialized) {
+                    await this.initialize();
+                }
+                
+                try {
+                    const token = await window.authService.getAccessToken();
+                    if (!token) throw new Error('No access token available');
+                    
+                    const {
+                        maxResults = 100,
+                        folder = 'inbox',
+                        days = 7
+                    } = options;
+                    
+                    // Calculer la date de début
+                    const startDate = new Date();
+                    startDate.setDate(startDate.getDate() - days);
+                    
+                    // Construire l'URL de l'API Microsoft Graph
+                    const params = new URLSearchParams({
+                        '$top': Math.min(maxResults, 1000).toString(),
+                        '$orderby': 'receivedDateTime desc',
+                        '$select': [
+                            'id', 'subject', 'bodyPreview', 'body', 'from', 
+                            'toRecipients', 'receivedDateTime', 'isRead', 
+                            'importance', 'hasAttachments', 'categories'
+                        ].join(','),
+                        '$filter': `receivedDateTime ge ${startDate.toISOString()}`
+                    });
+                    
+                    const url = `https://graph.microsoft.com/v1.0/me/mailFolders/${folder}/messages?${params}`;
+                    
+                    const response = await fetch(url, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    const emails = data.value || [];
+                    
+                    console.log(`[MailService] ✅ Retrieved ${emails.length} real emails`);
+                    
+                    // Traiter et enrichir les emails
+                    return emails.map(email => ({
+                        ...email,
+                        emailText: this.extractEmailText(email),
+                        senderDomain: this.extractSenderDomain(email.from),
+                        retrievedAt: new Date().toISOString()
+                    }));
+                    
+                } catch (error) {
+                    console.error('[MailService] ❌ Error getting emails:', error);
+                    throw error;
+                }
+            },
+            
+            extractEmailText(email) {
+                let text = '';
+                if (email.subject) text += email.subject + ' ';
+                if (email.from?.emailAddress?.name) text += email.from.emailAddress.name + ' ';
+                if (email.bodyPreview) text += email.bodyPreview + ' ';
+                return text.trim();
+            },
+            
+            extractSenderDomain(fromField) {
+                try {
+                    if (!fromField?.emailAddress?.address) return 'unknown';
+                    const email = fromField.emailAddress.address;
+                    const domain = email.split('@')[1];
+                    return domain ? domain.toLowerCase() : 'unknown';
+                } catch (error) {
+                    return 'unknown';
+                }
+            }
+        };
+
+        // Gestionnaire d'interface utilisateur
+        window.uiManager = {
+            showToast: function(message, type = 'info', duration = 5000) {
+                console.log(`[Toast ${type}] ${message}`);
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 12px 20px;
+                    background: ${type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#4f46e5'};
+                    color: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    z-index: 10000;
+                    font-size: 14px;
+                    max-width: 300px;
+                `;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, duration);
+            },
+            
+            updateAuthStatus: function(user) {
+                if (user) {
+                    window.displayUserInfo(user);
+                }
+            },
+            
+            showLoading: function(message = 'Chargement...') {
+                console.log('[Loading]', message);
+                let loading = document.getElementById('globalLoading');
+                if (!loading) {
+                    loading = document.createElement('div');
+                    loading.id = 'globalLoading';
+                    loading.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 9999;
+                        flex-direction: column;
+                        gap: 15px;
+                    `;
+                    loading.innerHTML = `
+                        <div style="width: 40px; height: 40px; border: 3px solid rgba(255, 255, 255, 0.2); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <div style="color: white; font-size: 16px; font-weight: 500;" id="loadingMessage">${message}</div>
+                    `;
+                    document.body.appendChild(loading);
+                } else {
+                    loading.style.display = 'flex';
+                    const messageEl = loading.querySelector('#loadingMessage');
+                    if (messageEl) messageEl.textContent = message;
+                }
+            },
+            
+            hideLoading: function() {
+                const loading = document.getElementById('globalLoading');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            },
+            
+            createStatCard: function(options) {
+                return `
+                    <div class="card">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="color: ${options.color}; font-size: 2rem;">
+                                <i class="${options.icon}"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 2rem; font-weight: bold; color: #1e293b;">${options.value}</div>
+                                <div style="color: #64748b; font-size: 0.9rem;">${options.label}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        };
+
+        // Gestionnaire de catégories amélioré
+        window.categoryManager = {
+            getCategories: function() {
+                return {
+                    professional: { name: 'Professionnel', icon: '💼', color: '#3b82f6' },
+                    personal: { name: 'Personnel', icon: '❤️', color: '#ef4444' },
+                    promotions: { name: 'Promotions', icon: '🏷️', color: '#f59e0b' },
+                    social: { name: 'Social', icon: '👥', color: '#10b981' },
+                    newsletters: { name: 'Newsletters', icon: '📰', color: '#8b5cf6' }
+                };
+            },
+            
+            getCategory: function(id) {
+                const categories = this.getCategories();
+                return categories[id] || { name: id, icon: '📂', color: '#6b7280' };
+            },
+            
+            analyzeEmail: function(email) {
+                if (!email) return { category: 'other', confidence: 0 };
+                
+                const subject = (email.subject || '').toLowerCase();
+                const sender = (email.from?.emailAddress?.address || '').toLowerCase();
+                const senderName = (email.from?.emailAddress?.name || '').toLowerCase();
+                const body = (email.bodyPreview || '').toLowerCase();
+                
+                // Réseaux sociaux
+                if (sender.includes('linkedin') || sender.includes('facebook') || 
+                    sender.includes('twitter') || sender.includes('instagram') ||
+                    senderName.includes('linkedin') || senderName.includes('facebook')) {
+                    return { category: 'social', confidence: 0.9 };
+                }
+                
+                // Professionnel
+                if (subject.includes('meeting') || subject.includes('réunion') || 
+                    subject.includes('projet') || subject.includes('travail') ||
+                    subject.includes('bureau') || subject.includes('équipe') ||
+                    body.includes('meeting') || body.includes('projet')) {
+                    return { category: 'professional', confidence: 0.8 };
+                }
+                
+                // Promotions/Marketing
+                if (subject.includes('promo') || subject.includes('offre') || 
+                    subject.includes('solde') || subject.includes('discount') ||
+                    subject.includes('sale') || subject.includes('marketing') ||
+                    body.includes('unsubscribe') || body.includes('désabonner')) {
+                    return { category: 'promotions', confidence: 0.8 };
+                }
+                
+                // Newsletters
+                if (subject.includes('newsletter') || subject.includes('bulletin') ||
+                    body.includes('newsletter') || body.includes('voir en ligne')) {
+                    return { category: 'newsletters', confidence: 0.8 };
+                }
+                
+                // Personnel
+                if (subject.includes('famille') || subject.includes('ami') || 
+                    subject.includes('personnel') || subject.includes('privé') ||
+                    sender.includes('gmail') || sender.includes('yahoo') ||
+                    sender.includes('hotmail')) {
+                    return { category: 'personal', confidence: 0.7 };
+                }
+                
+                return { category: 'other', confidence: 0.5 };
+            }
+        };
+
+        // EmailScanner intégré
+        window.emailScanner = {
+            emails: [],
+            isInitialized: false,
+            
+            async scan(options = {}) {
+                console.log('[EmailScanner] Starting scan with options:', options);
+                
+                try {
+                    // Utiliser le MailService pour récupérer les vrais emails
+                    if (window.mailService) {
+                        const emails = await window.mailService.getEmails({
+                            maxResults: options.maxResults || 100,
+                            folder: options.folder || 'inbox',
+                            days: options.days || 7
+                        });
+                        
+                        // Classification automatique
+                        if (window.categoryManager) {
+                            emails.forEach(email => {
+                                const result = window.categoryManager.analyzeEmail(email);
+                                email.category = result.category || 'other';
+                            });
+                        }
+                        
+                        this.emails = emails;
+                        
+                        // Callbacks de progression
+                        if (options.onProgress) {
+                            options.onProgress({
+                                progress: { current: emails.length, total: emails.length },
+                                message: 'Scan terminé'
+                            });
+                        }
+                        
+                        return {
+                            emails: emails,
+                            total: emails.length,
+                            stats: { processed: emails.length, errors: 0 }
+                        };
+                    } else {
+                        throw new Error('MailService non disponible');
+                    }
+                } catch (error) {
+                    console.error('[EmailScanner] Erreur de scan:', error);
+                    throw error;
+                }
+            },
+            
+            getAllEmails() {
+                return this.emails || [];
+            },
+            
+            getEmailsByCategory(category) {
+                return this.emails.filter(email => email.category === category);
+            }
+        };
+
+        // Gestionnaire de tâches
+        window.taskManager = {
+            tasks: [],
+            createTask: function(taskData) {
+                const task = {
+                    ...taskData,
+                    id: taskData.id || 'task-' + Date.now(),
+                    createdAt: taskData.createdAt || new Date().toISOString()
+                };
+                this.tasks.push(task);
+                return task;
+            },
+            
+            createTaskFromEmail: function(taskData, email) {
+                const task = this.createTask({
+                    ...taskData,
+                    hasEmail: true,
+                    emailContent: email.bodyPreview || email.subject || 'Email associé'
+                });
+                return task;
+            },
+            
+            saveTasks: function() {
+                try {
+                    // Ne pas utiliser localStorage dans Claude.ai
+                    console.log('[TaskManager] Tasks saved to memory');
+                } catch (e) {
+                    console.warn('Could not save tasks:', e);
+                }
+            },
+            
+            loadTasks: function() {
+                // Charger depuis la mémoire uniquement
+                console.log('[TaskManager] Tasks loaded from memory');
+            },
+            
+            getStats: function() {
+                const total = this.tasks.length;
+                const byStatus = {
+                    todo: this.tasks.filter(t => t.status === 'todo').length,
+                    'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
+                    completed: this.tasks.filter(t => t.status === 'completed').length
+                };
+                const overdue = this.tasks.filter(t => {
+                    if (!t.dueDate) return false;
+                    return new Date(t.dueDate) < new Date() && t.status !== 'completed';
+                }).length;
+                
+                return { total, byStatus, overdue };
+            }
+        };
+
+        // Analyseur de tâches IA (version simplifiée)
+        window.aiTaskAnalyzer = {
+            isConfigured: function() {
+                return false; // Mode démo
+            },
+            
+            analyzeEmailForTasks: async function(email, options = {}) {
+                // Analyse simple sans IA externe
+                const subject = email.subject || 'Email sans sujet';
+                const sender = email.from?.emailAddress?.name || 'Expéditeur inconnu';
+                
+                return {
+                    mainTask: {
+                        title: `Traiter: ${subject}`,
+                        description: `Email de ${sender}\n\nSujet: ${subject}\n\nContenu: ${email.bodyPreview || 'Aucun aperçu'}`,
+                        priority: 'medium',
+                        dueDate: null
+                    },
+                    summary: `Email de ${sender} concernant: ${subject}`,
+                    importance: 'medium',
+                    actionPoints: [
+                        'Lire le contenu complet',
+                        'Évaluer les actions requises',
+                        'Répondre si nécessaire'
+                    ],
+                    actionsHighlighted: [
+                        { action: 'Lire et analyser', deadline: null }
+                    ],
+                    insights: {
+                        responseExpected: subject.includes('?') || email.bodyPreview?.includes('?'),
+                        keyInfo: [`Expéditeur: ${sender}`, `Date: ${new Date(email.receivedDateTime).toLocaleDateString()}`],
+                        risks: []
+                    },
+                    suggestedReplies: [],
+                    subtasks: [],
+                    tags: ['email', sender.split('@')[1]?.split('.')[0] || 'unknown'].filter(Boolean)
+                };
+            },
+            
+            showConfigurationModal: function() {
+                window.uiManager.showToast('Configuration IA non disponible en mode démo', 'info');
+            }
+        };
+
+        // ==========================================
+        // FONCTIONS PRINCIPALES
+        // ==========================================
 
         // Fonction pour afficher l'application
         function showApp() {
@@ -1027,6 +1330,19 @@
             // Cacher le loading
             const loading = document.getElementById('loadingOverlay');
             if (loading) loading.classList.remove('active');
+            
+            // FORCER la réinitialisation du MailService après authentification
+            if (window.mailService && !window.mailService.isInitialized) {
+                console.log('[APP] Forçage de l\'initialisation du MailService...');
+                setTimeout(async () => {
+                    try {
+                        await window.mailService.initialize();
+                        console.log('[APP] ✅ MailService initialisé avec succès après authentification');
+                    } catch (error) {
+                        console.error('[APP] Erreur initialisation MailService:', error);
+                    }
+                }, 1000);
+            }
         }
 
         // Fonction pour afficher les infos utilisateur
@@ -1095,199 +1411,17 @@
             }
         }
 
-        // Créer les services manquants si nécessaire
-        if (!window.categoryManager) {
-            window.categoryManager = {
-                getCategories: function() {
-                    return {
-                        professional: { name: 'Professionnel', icon: '💼', color: '#3b82f6' },
-                        personal: { name: 'Personnel', icon: '❤️', color: '#ef4444' },
-                        promotions: { name: 'Promotions', icon: '🏷️', color: '#f59e0b' },
-                        social: { name: 'Social', icon: '👥', color: '#10b981' }
-                    };
-                },
-                getCategory: function(id) {
-                    const categories = this.getCategories();
-                    return categories[id] || { name: id, icon: '📂', color: '#6b7280' };
-                },
-                analyzeEmail: function(email) {
-                    // Classification simple basée sur des mots-clés
-                    const subject = (email.subject || '').toLowerCase();
-                    const sender = (email.from?.emailAddress?.address || '').toLowerCase();
-                    
-                    if (sender.includes('linkedin') || sender.includes('facebook') || sender.includes('twitter')) {
-                        return { category: 'social', confidence: 0.8 };
-                    }
-                    if (subject.includes('promotion') || subject.includes('offre') || subject.includes('solde')) {
-                        return { category: 'promotions', confidence: 0.7 };
-                    }
-                    if (subject.includes('réunion') || subject.includes('meeting') || subject.includes('projet')) {
-                        return { category: 'professional', confidence: 0.6 };
-                    }
-                    
-                    return { category: 'other', confidence: 0.5 };
-                }
-            };
-        }
-
-        if (!window.taskManager) {
-            window.taskManager = {
-                tasks: [],
-                createTask: function(taskData) {
-                    const task = {
-                        ...taskData,
-                        id: taskData.id || 'task-' + Date.now(),
-                        createdAt: taskData.createdAt || new Date().toISOString()
-                    };
-                    this.tasks.push(task);
-                    return task;
-                },
-                createTaskFromEmail: function(taskData, email) {
-                    const task = this.createTask({
-                        ...taskData,
-                        hasEmail: true,
-                        emailContent: email.bodyPreview || email.subject || 'Email associé'
-                    });
-                    return task;
-                },
-                saveTasks: function() {
-                    try {
-                        localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
-                    } catch (e) {
-                        console.warn('Could not save tasks:', e);
-                    }
-                },
-                loadTasks: function() {
-                    try {
-                        const saved = localStorage.getItem('emailsort_tasks');
-                        if (saved) {
-                            this.tasks = JSON.parse(saved);
-                        }
-                    } catch (e) {
-                        console.warn('Could not load tasks:', e);
-                    }
-                },
-                getStats: function() {
-                    const total = this.tasks.length;
-                    const byStatus = {
-                        todo: this.tasks.filter(t => t.status === 'todo').length,
-                        'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
-                        completed: this.tasks.filter(t => t.status === 'completed').length
-                    };
-                    const overdue = this.tasks.filter(t => {
-                        if (!t.dueDate) return false;
-                        return new Date(t.dueDate) < new Date() && t.status !== 'completed';
-                    }).length;
-                    
-                    return { total, byStatus, overdue };
-                }
-            };
-            
-            // Charger les tâches sauvegardées
-            window.taskManager.loadTasks();
-        }
-
-        if (!window.aiTaskAnalyzer) {
-            window.aiTaskAnalyzer = {
-                isConfigured: function() {
-                    return false; // Mode démo
-                },
-                analyzeEmailForTasks: async function(email, options = {}) {
-                    // Analyse simple sans IA externe
-                    const subject = email.subject || 'Email sans sujet';
-                    const sender = email.from?.emailAddress?.name || 'Expéditeur inconnu';
-                    
-                    return {
-                        mainTask: {
-                            title: `Traiter: ${subject}`,
-                            description: `Email de ${sender}\n\nSujet: ${subject}\n\nContenu: ${email.bodyPreview || 'Aucun aperçu'}`,
-                            priority: 'medium',
-                            dueDate: null
-                        },
-                        summary: `Email de ${sender} concernant: ${subject}`,
-                        importance: 'medium',
-                        actionPoints: [
-                            'Lire le contenu complet',
-                            'Évaluer les actions requises',
-                            'Répondre si nécessaire'
-                        ],
-                        actionsHighlighted: [
-                            { action: 'Lire et analyser', deadline: null }
-                        ],
-                        insights: {
-                            responseExpected: subject.includes('?') || email.bodyPreview?.includes('?'),
-                            keyInfo: [`Expéditeur: ${sender}`, `Date: ${new Date(email.receivedDateTime).toLocaleDateString()}`],
-                            risks: []
-                        },
-                        suggestedReplies: [],
-                        subtasks: [],
-                        tags: ['email', sender.split('@')[1]?.split('.')[0] || 'unknown'].filter(Boolean)
-                    };
-                },
-                showConfigurationModal: function() {
-                    window.uiManager.showToast('Configuration IA non disponible en mode démo', 'info');
-                }
-            };
-        }
-
-        // Gestion des événements
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[APP] DOM loaded, setting up event listeners');
-
-            // Initialiser immédiatement les services intégrés
-            console.log('[APP] Initializing built-in services...');
-            window.authService.initialize();
-            window.mailService.initialize();
-            
-            // Afficher l'app après un court délai pour s'assurer que tout est prêt
-            setTimeout(() => {
-                console.log('[APP] Auto-showing app with built-in services');
-                showApp();
-                // Charger le dashboard par défaut
-                navigateToPage('dashboard');
-            }, 1000);
-
-            // Bouton de connexion
-            const loginBtn = document.getElementById('loginBtn');
-            if (loginBtn) {
-                loginBtn.addEventListener('click', function() {
-                    console.log('[AUTH] Login button clicked');
-                    
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
-                    this.disabled = true;
-                    
-                    const loading = document.getElementById('loadingOverlay');
-                    if (loading) loading.classList.add('active');
-                    
-                    // Utiliser notre service d'auth intégré
-                    window.authService.login().catch(error => {
-                        console.error('[AUTH] Login failed:', error);
-                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
-                        this.disabled = false;
-                        if (loading) loading.classList.remove('active');
-                        window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
-                    });
-                });
+        // Fonction startEmailScan manquante
+        window.startEmailScan = function() {
+            console.log('[Global] startEmailScan called - redirecting to scanner');
+            if (window.pageManager) {
+                window.pageManager.loadPage('scanner');
+            } else if (window.scanStartModule) {
+                window.scanStartModule.startScan();
+            } else {
+                console.error('[Global] No scanner available');
             }
-
-            // Navigation
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const page = this.dataset.page;
-                    if (page) {
-                        navigateToPage(page);
-                    }
-                });
-            });
-        });
-
-        // Fonctions globales pour compatibilité
-        window.displayUserInfo = displayUserInfo;
-        window.showApp = showApp;
-        window.navigateToPage = navigateToPage;
-        window.startEmailScan = startEmailScan;
+        };
 
         // Fonctions globales pour compatibilité
         window.displayUserInfo = displayUserInfo;
@@ -1305,32 +1439,13 @@
                 console.warn('[APP] External script failed to load:', e.filename, 'App will continue with built-in services');
             }
         });
-        
-        // Fonction de diagnostic pour le scanner
-        window.debugScanner = function() {
-            console.log('=== DIAGNOSTIC SCANNER ===');
-            console.log('scanStartModule exists:', !!window.scanStartModule);
-            console.log('scanStartModule.render:', typeof window.scanStartModule?.render);
-            console.log('scanStartModule.stylesAdded:', window.scanStartModule?.stylesAdded);
-            console.log('scanStartModule.isInitialized:', window.scanStartModule?.isInitialized);
-            
-            if (window.scanStartModule) {
-                console.log('scanStartModule methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.scanStartModule)));
-            }
-            
-            // Test de chargement
-            if (window.pageManager) {
-                console.log('Testing scanner reload...');
-                window.pageManager.loadPage('scanner');
-            }
-        };
     </script>
     
-    <!-- Services principaux -->
+    <!-- Services externes (optionnels) -->
     <script src="AuthService.js" onerror="console.log('External AuthService.js not found - using built-in service')"></script>
     <script src="MailService.js" onerror="console.log('External MailService.js not found - using built-in service')"></script>
     
-    <!-- Modules spécialisés - CHARGÉS AVANT PageManager -->
+    <!-- Module scanner - CHARGÉ AVANT PageManager -->
     <script src="ScanStart.js" onerror="console.log('External ScanStart.js not found - will use basic scanner')"></script>
     
     <!-- Gestionnaire de pages - APRÈS les modules -->
@@ -1338,5 +1453,101 @@
     
     <!-- Application principale - EN DERNIER -->
     <script src="app.js" onerror="console.log('External app.js not found - using built-in app logic')"></script>
+
+    <!-- Initialisation de l'application -->
+    <script>
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[APP] DOM loaded, setting up event listeners');
+
+            try {
+                // Initialiser les services intégrés d'abord
+                console.log('[APP] Initializing built-in services...');
+                await window.authService.initialize();
+                
+                // Vérifier l'authentification existante
+                if (window.authService.isAuthenticated()) {
+                    console.log('[APP] User already authenticated, getting user info...');
+                    currentUser = await window.authService.getUserInfo();
+                    if (currentUser) {
+                        isAuthenticated = true;
+                        displayUserInfo(currentUser);
+                        showApp();
+                        
+                        // Initialiser le service mail après l'authentification
+                        try {
+                            await window.mailService.initialize();
+                        } catch (error) {
+                            console.warn('[APP] MailService init failed, will retry later:', error);
+                        }
+                    }
+                } else {
+                    console.log('[APP] User not authenticated, showing login page');
+                }
+                
+            } catch (error) {
+                console.error('[APP] Initialization error:', error);
+            }
+
+            // Bouton de connexion
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', async function() {
+                    console.log('[AUTH] Login button clicked');
+                    
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
+                    this.disabled = true;
+                    
+                    const loading = document.getElementById('loadingOverlay');
+                    if (loading) loading.classList.add('active');
+                    
+                    try {
+                        await window.authService.login();
+                    } catch (error) {
+                        console.error('[AUTH] Login failed:', error);
+                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
+                        this.disabled = false;
+                        if (loading) loading.classList.remove('active');
+                        window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
+                    }
+                });
+            }
+
+            // Navigation
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.dataset.page;
+                    if (page) {
+                        navigateToPage(page);
+                    }
+                });
+            });
+
+            // Auto-show app after short delay if services are ready
+            setTimeout(() => {
+                if (!isAuthenticated) {
+                    console.log('[APP] Auto-showing app with built-in services');
+                    showApp();
+                    // Charger le dashboard par défaut
+                    navigateToPage('dashboard');
+                }
+            }, 2000);
+        });
+
+        // Fallback si l'initialisation échoue
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (!isAuthenticated) {
+                    console.log('[APP] Fallback - showing app anyway');
+                    showApp();
+                    navigateToPage('dashboard');
+                }
+            }, 5000);
+        });
+
+        console.log('✅ EmailSortPro loaded with integrated services and real email support');
+    </script>
 </body>
 </html>
