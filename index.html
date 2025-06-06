@@ -23,7 +23,7 @@
     <script>
         console.log('[APP] Initializing EmailSortPro...');
         
-        // Configuration Azure Client ID
+        // Configuration simple et robuste
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
         window.AppConfig = {
@@ -61,9 +61,9 @@
             },
             app: {
                 name: 'EmailSortPro',
-                version: '3.1.0',
+                version: '3.0.0',
                 debug: false,
-                environment: 'production'
+                environment: 'netlify'
             },
             email: {
                 defaultFolder: 'inbox',
@@ -106,10 +106,87 @@
             }
         };
         
-        // UIManager complet
+        // Créer les services intégrés pour éviter les dépendances externes
+        window.authService = {
+            isInitialized: false,
+            isAuthenticated: () => false,
+            initialize: async function() {
+                console.log('[AuthService] Built-in auth service initializing...');
+                if (typeof msal === 'undefined') {
+                    console.warn('[AuthService] MSAL not available, using mock mode');
+                    this.isInitialized = true;
+                    return;
+                }
+                
+                try {
+                    const msalConfig = {
+                        auth: {
+                            clientId: window.AppConfig.msal.clientId,
+                            authority: window.AppConfig.msal.authority,
+                            redirectUri: window.AppConfig.msal.redirectUri
+                        },
+                        cache: window.AppConfig.msal.cache
+                    };
+                    
+                    this.msalInstance = new msal.PublicClientApplication(msalConfig);
+                    await this.msalInstance.initialize();
+                    this.isInitialized = true;
+                    console.log('[AuthService] Built-in auth service initialized successfully');
+                } catch (error) {
+                    console.error('[AuthService] Initialization error:', error);
+                    this.isInitialized = true; // Continue anyway
+                }
+            },
+            login: async function() {
+                console.log('[AuthService] Built-in login attempt...');
+                if (this.msalInstance) {
+                    try {
+                        const loginRequest = {
+                            scopes: window.AppConfig.scopes.login,
+                            prompt: 'select_account'
+                        };
+                        await this.msalInstance.loginRedirect(loginRequest);
+                    } catch (error) {
+                        console.error('[AuthService] Login error:', error);
+                        throw error;
+                    }
+                } else {
+                    // Mock login pour démonstration
+                    console.log('[AuthService] Mock login - simulating successful authentication');
+                    setTimeout(() => {
+                        const mockUser = {
+                            displayName: 'Utilisateur Test',
+                            mail: 'test@example.com',
+                            userPrincipalName: 'test@example.com'
+                        };
+                        window.displayUserInfo(mockUser);
+                        window.showApp();
+                    }, 2000);
+                }
+            },
+            logout: async function() {
+                console.log('[AuthService] Built-in logout');
+                if (this.msalInstance) {
+                    await this.msalInstance.logoutRedirect();
+                } else {
+                    window.location.reload();
+                }
+            }
+        };
+        
+        window.mailService = {
+            initialized: false,
+            initialize: function() {
+                console.log('[MailService] Built-in mail service initialized');
+                this.initialized = true;
+            }
+        };
+        
+        // UIManager CORRIGÉ avec toutes les méthodes nécessaires
         window.uiManager = {
             showToast: function(message, type = 'info', duration = 5000) {
                 console.log(`[Toast ${type}] ${message}`);
+                // Toast simple
                 const toast = document.createElement('div');
                 toast.style.cssText = `
                     position: fixed;
@@ -131,13 +208,11 @@
                     if (toast.parentNode) toast.parentNode.removeChild(toast);
                 }, duration);
             },
-            
             updateAuthStatus: function(user) {
                 if (user) {
                     window.displayUserInfo(user);
                 }
             },
-            
             showLoading: function(message = 'Chargement...') {
                 console.log('[Loading]', message);
                 let loading = document.getElementById('globalLoading');
@@ -175,14 +250,12 @@
                     if (messageEl) messageEl.textContent = message;
                 }
             },
-            
             hideLoading: function() {
                 const loading = document.getElementById('globalLoading');
                 if (loading) {
                     loading.style.display = 'none';
                 }
             },
-            
             createStatCard: function(options) {
                 return `
                     <div class="card">
@@ -200,77 +273,7 @@
             }
         };
         
-        // Loader de modules spécifiques pour chaque page
-        window.moduleLoader = {
-            loadedModules: new Set(),
-            
-            async loadPageModule(pageName) {
-                console.log(`[ModuleLoader] Loading module for page: ${pageName}`);
-                
-                if (this.loadedModules.has(pageName)) {
-                    console.log(`[ModuleLoader] Module ${pageName} already loaded`);
-                    return true;
-                }
-                
-                const moduleFiles = this.getModuleFiles(pageName);
-                
-                try {
-                    for (const file of moduleFiles) {
-                        await this.loadScript(file);
-                    }
-                    
-                    this.loadedModules.add(pageName);
-                    console.log(`[ModuleLoader] ✅ Module ${pageName} loaded successfully`);
-                    return true;
-                    
-                } catch (error) {
-                    console.error(`[ModuleLoader] ❌ Failed to load module ${pageName}:`, error);
-                    return false;
-                }
-            },
-            
-            getModuleFiles(pageName) {
-                const moduleMap = {
-                    'dashboard': ['DashboardManager.js'],
-                    'scanner': ['ScannerManager.js', 'ScanStart.js'],
-                    'emails': ['EmailsManager.js', 'EmailList.js'],
-                    'tasks': ['TasksManager.js', 'TaskCreator.js'],
-                    'organizer': ['OrganizerManager.js', 'DomainOrganizer.js'],
-                    'settings': ['SettingsManager.js']
-                };
-                
-                return moduleMap[pageName] || [];
-            },
-            
-            loadScript(src) {
-                return new Promise((resolve, reject) => {
-                    console.log(`[ModuleLoader] Loading script: ${src}`);
-                    
-                    // Vérifier si le script est déjà chargé
-                    const existingScript = document.querySelector(`script[src="${src}"]`);
-                    if (existingScript) {
-                        console.log(`[ModuleLoader] Script ${src} already exists`);
-                        resolve();
-                        return;
-                    }
-                    
-                    const script = document.createElement('script');
-                    script.src = src;
-                    script.onload = () => {
-                        console.log(`[ModuleLoader] ✅ Loaded: ${src}`);
-                        resolve();
-                    };
-                    script.onerror = (error) => {
-                        console.warn(`[ModuleLoader] ⚠️ Failed to load: ${src}`);
-                        resolve(); // Ne pas faire échouer le chargement global
-                    };
-                    
-                    document.head.appendChild(script);
-                });
-            }
-        };
-        
-        console.log('[APP] Configuration loaded successfully');
+        console.log('[APP] Configuration and built-in services loaded successfully');
     </script>
     
     <style>
@@ -504,11 +507,11 @@
 
         /* États actifs */
         body.app-active .login-page {
-            display: none !important;
+            display: none;
         }
 
         body.app-active .app-header {
-            display: block !important;
+            display: block;
         }
 
         body.app-active .app-main {
@@ -516,8 +519,8 @@
         }
 
         body.app-active .page-content {
-            display: block !important;
-            opacity: 1 !important;
+            display: block;
+            opacity: 1;
         }
 
         /* Dashboard */
@@ -585,114 +588,7 @@
             color: #64748b;
         }
 
-        /* Styles globaux pour l'application */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .page-header h1 {
-            margin: 0;
-            font-size: 28px;
-            font-weight: 700;
-            color: #1e293b;
-        }
-
-        .page-actions {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background: #4f46e5;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #3730a3;
-            transform: translateY(-1px);
-        }
-
-        .btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-            border: 1px solid #d1d5db;
-        }
-
-        .btn-secondary:hover {
-            background: #e5e7eb;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
-            margin-bottom: 20px;
-        }
-
-        .card h3 {
-            margin: 0 0 16px 0;
-            font-size: 18px;
-            font-weight: 600;
-            color: #1e293b;
-        }
-
-        .grid {
-            display: grid;
-            gap: 20px;
-        }
-
-        .grid-2 {
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #64748b;
-        }
-
-        .empty-state-icon {
-            font-size: 4rem;
-            margin-bottom: 24px;
-            color: #cbd5e1;
-        }
-
-        .empty-state-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #334155;
-            margin-bottom: 12px;
-        }
-
-        .empty-state-text {
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-
-        /* Loading States */
+        /* Loading */
         .loading-overlay {
             position: fixed;
             top: 0;
@@ -760,15 +656,215 @@
                 display: none;
             }
 
-            .page-content {
-                padding: 20px 16px;
-            }
+        /* Styles globaux pour l'application */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
 
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
+        .page-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
 
+        .page-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3730a3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn-large {
+            padding: 16px 24px;
+            font-size: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+            color: #cbd5e1;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 12px;
+        }
+
+        .empty-state-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .search-bar-container {
+            margin: 20px 0;
+        }
+
+        .search-bar {
+            position: relative;
+            max-width: 500px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            color: #9ca3af;
+            z-index: 1;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .search-clear-btn {
+            position: absolute;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #e5e7eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .search-clear-btn:hover {
+            background: #d1d5db;
+        }
+
+        .selection-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+
+        .selection-count {
+            font-weight: 600;
+        }
+
+        /* Variables CSS pour les couleurs */
+        :root {
+            --primary: #4f46e5;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        @media (max-width: 768px) {
             .page-header {
                 flex-direction: column;
                 gap: 16px;
@@ -779,8 +875,18 @@
                 justify-content: center;
             }
 
-            .grid-2 {
+            .grid-2, .grid-3, .grid-4 {
                 grid-template-columns: 1fr;
+            }
+        }
+
+            .page-content {
+                padding: 20px 16px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
             }
         }
     </style>
@@ -859,7 +965,44 @@
     <!-- Contenu principal -->
     <main class="app-main">
         <div id="pageContent" class="page-content">
-            <!-- Le contenu sera chargé dynamiquement -->
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                <p class="dashboard-subtitle">Organisez et gérez vos emails avec l'intelligence artificielle</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card" onclick="navigateToPage('scanner')">
+                    <div class="card-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="card-title">Scanner les emails</h3>
+                    <p class="card-description">Analysez et catégorisez automatiquement vos emails avec l'IA</p>
+                </div>
+
+                <div class="dashboard-card" onclick="navigateToPage('emails')">
+                    <div class="card-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3 class="card-title">Consulter les emails</h3>
+                    <p class="card-description">Accédez à vos emails organisés par catégories intelligentes</p>
+                </div>
+
+                <div class="dashboard-card" onclick="navigateToPage('tasks')">
+                    <div class="card-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="card-title">Gérer les tâches</h3>
+                    <p class="card-description">Suivez les tâches extraites automatiquement de vos emails</p>
+                </div>
+
+                <div class="dashboard-card" onclick="navigateToPage('organizer')">
+                    <div class="card-icon">
+                        <i class="fas fa-folder-tree"></i>
+                    </div>
+                    <h3 class="card-title">Organiser par domaine</h3>
+                    <p class="card-description">Classez vos emails par expéditeur et domaine d'origine</p>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -875,7 +1018,6 @@
         // Variables globales
         let isAuthenticated = false;
         let currentUser = null;
-        let appInitialized = false;
 
         // Fonction pour afficher l'application
         function showApp() {
@@ -885,8 +1027,6 @@
             // Cacher le loading
             const loading = document.getElementById('loadingOverlay');
             if (loading) loading.classList.remove('active');
-            
-            appInitialized = true;
         }
 
         // Fonction pour afficher les infos utilisateur
@@ -919,231 +1059,193 @@
             }
         }
 
-        // Navigation avec chargement de module spécifique
-        async function navigateToPage(page) {
+        // Navigation
+        function navigateToPage(page) {
             console.log('[NAV] Navigating to page:', page);
             
-            // Afficher le loading
-            window.uiManager.showLoading(`Chargement de ${page}...`);
-            
-            try {
-                // Charger le module spécifique à la page
-                await window.moduleLoader.loadPageModule(page);
-                
-                // Mettre à jour la navigation active
-                const navItems = document.querySelectorAll('.nav-item');
-                navItems.forEach(item => {
-                    item.classList.remove('active');
-                    if (item.dataset.page === page) {
-                        item.classList.add('active');
-                    }
-                });
-
-                // Utiliser le PageManager s'il est disponible
-                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                    await window.pageManager.loadPage(page);
-                } else {
-                    // Fallback - charger le manager spécifique
-                    await loadPageSpecificManager(page);
+            // Mettre à jour la navigation active
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === page) {
+                    item.classList.add('active');
                 }
-                
-            } catch (error) {
-                console.error('[NAV] Error loading page:', error);
-                window.uiManager.showToast(`Erreur lors du chargement de ${page}`, 'error');
-            } finally {
-                window.uiManager.hideLoading();
-            }
-        }
+            });
 
-        // Chargement de manager spécifique par page
-        async function loadPageSpecificManager(page) {
-            console.log(`[NAV] Loading specific manager for: ${page}`);
-            
-            const pageContent = document.getElementById('pageContent');
-            
-            switch (page) {
-                case 'dashboard':
-                    if (window.dashboardManager) {
-                        window.dashboardManager.render(pageContent);
-                    } else {
-                        pageContent.innerHTML = getDashboardFallback();
-                    }
-                    break;
-                    
-                case 'scanner':
-                    if (window.scannerManager) {
-                        window.scannerManager.render(pageContent);
-                    } else {
-                        pageContent.innerHTML = getScannerFallback();
-                    }
-                    break;
-                    
-                case 'emails':
-                    if (window.emailsManager) {
-                        window.emailsManager.render(pageContent);
-                    } else {
-                        pageContent.innerHTML = getEmailsFallback();
-                    }
-                    break;
-                    
-                case 'tasks':
-                    if (window.tasksManager) {
-                        window.tasksManager.render(pageContent);
-                    } else {
-                        pageContent.innerHTML = getTasksFallback();
-                    }
-                    break;
-                    
-                case 'organizer':
-                    if (window.organizerManager) {
-                        window.organizerManager.render(pageContent);
-                    } else {
-                        pageContent.innerHTML = getOrganizerFallback();
-                    }
-                    break;
-                    
-                case 'settings':
-                    if (window.settingsManager) {
-                        window.settingsManager.render(pageContent);
-                    } else {
-                        pageContent.innerHTML = getSettingsFallback();
-                    }
-                    break;
-                    
-                default:
-                    pageContent.innerHTML = getDefaultFallback(page);
-            }
-        }
-
-        // Templates fallback
-        function getDashboardFallback() {
-            return `
-                <div class="dashboard-header">
-                    <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
-                    <p class="dashboard-subtitle">Organisez et gérez vos emails avec l'intelligence artificielle</p>
-                </div>
-                <div class="dashboard-grid">
-                    <div class="dashboard-card" onclick="navigateToPage('scanner')">
-                        <div class="card-icon"><i class="fas fa-search"></i></div>
-                        <h3 class="card-title">Scanner les emails</h3>
-                        <p class="card-description">Analysez et catégorisez automatiquement vos emails avec l'IA</p>
-                    </div>
-                    <div class="dashboard-card" onclick="navigateToPage('emails')">
-                        <div class="card-icon"><i class="fas fa-inbox"></i></div>
-                        <h3 class="card-title">Consulter les emails</h3>
-                        <p class="card-description">Accédez à vos emails organisés par catégories intelligentes</p>
-                    </div>
-                    <div class="dashboard-card" onclick="navigateToPage('tasks')">
-                        <div class="card-icon"><i class="fas fa-tasks"></i></div>
-                        <h3 class="card-title">Gérer les tâches</h3>
-                        <p class="card-description">Suivez les tâches extraites automatiquement de vos emails</p>
-                    </div>
-                    <div class="dashboard-card" onclick="navigateToPage('organizer')">
-                        <div class="card-icon"><i class="fas fa-folder-tree"></i></div>
-                        <h3 class="card-title">Organiser par domaine</h3>
-                        <p class="card-description">Classez vos emails par expéditeur et domaine d'origine</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        function getScannerFallback() {
-            return `
-                <div class="page-header">
-                    <h1>Scanner d'Emails</h1>
-                    <div class="page-actions">
-                        <button class="btn btn-primary" onclick="startEmailScan()">
-                            <i class="fas fa-play"></i>
-                            Démarrer le scan
-                        </button>
-                    </div>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-search"></i></div>
-                    <h3 class="empty-state-title">Module Scanner</h3>
-                    <p class="empty-state-text">Chargement du module de scan en cours...</p>
-                </div>
-            `;
-        }
-
-        function getEmailsFallback() {
-            return `
-                <div class="page-header">
-                    <h1>Emails Scannés</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
-                    <h3 class="empty-state-title">Module Emails</h3>
-                    <p class="empty-state-text">Chargement du module de gestion des emails...</p>
-                </div>
-            `;
-        }
-
-        function getTasksFallback() {
-            return `
-                <div class="page-header">
-                    <h1>Tâches Extraites</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-tasks"></i></div>
-                    <h3 class="empty-state-title">Module Tâches</h3>
-                    <p class="empty-state-text">Chargement du module de gestion des tâches...</p>
-                </div>
-            `;
-        }
-
-        function getOrganizerFallback() {
-            return `
-                <div class="page-header">
-                    <h1>Organisation par Domaine</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-folder-tree"></i></div>
-                    <h3 class="empty-state-title">Module Organizer</h3>
-                    <p class="empty-state-text">Chargement du module d'organisation...</p>
-                </div>
-            `;
-        }
-
-        function getSettingsFallback() {
-            return `
-                <div class="page-header">
-                    <h1>Paramètres</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-cog"></i></div>
-                    <h3 class="empty-state-title">Module Paramètres</h3>
-                    <p class="empty-state-text">Chargement du module de configuration...</p>
-                </div>
-            `;
-        }
-
-        function getDefaultFallback(page) {
-            return `
-                <div class="page-header">
-                    <h1>Page ${page}</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
-                    <h3 class="empty-state-title">Page introuvable</h3>
-                    <p class="empty-state-text">Le module ${page} n'est pas encore disponible.</p>
-                </div>
-            `;
-        }
-
-        // Fonction de scan des emails (fallback)
-        function startEmailScan() {
-            console.log('[SCAN] Starting email scan...');
-            if (window.scanStart && typeof window.scanStart.initiateScan === 'function') {
-                window.scanStart.initiateScan();
+            // Charger le contenu de la page via PageManager
+            if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                window.pageManager.loadPage(page);
             } else {
-                window.uiManager.showToast('Module de scan en cours de chargement...', 'info');
+                console.warn('[NAV] PageManager not available, using fallback');
+                // Fallback simple
+                const pageContent = document.getElementById('pageContent');
+                if (pageContent) {
+                    pageContent.innerHTML = `
+                        <div class="dashboard-header">
+                            <h1 class="dashboard-title">Page ${page}</h1>
+                            <p class="dashboard-subtitle">Contenu de la page ${page} en cours de développement</p>
+                        </div>
+                        <div style="text-align: center; padding: 60px; color: #64748b;">
+                            <i class="fas fa-cog fa-spin" style="font-size: 3rem; margin-bottom: 20px; color: #4f46e5;"></i>
+                            <p style="font-size: 1.1rem; margin-bottom: 10px;">Module en cours de chargement...</p>
+                            <p style="font-size: 0.9rem;">Cette fonctionnalité sera bientôt disponible</p>
+                        </div>
+                    `;
+                }
             }
+        }
+
+        // Créer les services manquants si nécessaire
+        if (!window.categoryManager) {
+            window.categoryManager = {
+                getCategories: function() {
+                    return {
+                        professional: { name: 'Professionnel', icon: '💼', color: '#3b82f6' },
+                        personal: { name: 'Personnel', icon: '❤️', color: '#ef4444' },
+                        promotions: { name: 'Promotions', icon: '🏷️', color: '#f59e0b' },
+                        social: { name: 'Social', icon: '👥', color: '#10b981' }
+                    };
+                },
+                getCategory: function(id) {
+                    const categories = this.getCategories();
+                    return categories[id] || { name: id, icon: '📂', color: '#6b7280' };
+                },
+                analyzeEmail: function(email) {
+                    // Classification simple basée sur des mots-clés
+                    const subject = (email.subject || '').toLowerCase();
+                    const sender = (email.from?.emailAddress?.address || '').toLowerCase();
+                    
+                    if (sender.includes('linkedin') || sender.includes('facebook') || sender.includes('twitter')) {
+                        return { category: 'social', confidence: 0.8 };
+                    }
+                    if (subject.includes('promotion') || subject.includes('offre') || subject.includes('solde')) {
+                        return { category: 'promotions', confidence: 0.7 };
+                    }
+                    if (subject.includes('réunion') || subject.includes('meeting') || subject.includes('projet')) {
+                        return { category: 'professional', confidence: 0.6 };
+                    }
+                    
+                    return { category: 'other', confidence: 0.5 };
+                }
+            };
+        }
+
+        if (!window.taskManager) {
+            window.taskManager = {
+                tasks: [],
+                createTask: function(taskData) {
+                    const task = {
+                        ...taskData,
+                        id: taskData.id || 'task-' + Date.now(),
+                        createdAt: taskData.createdAt || new Date().toISOString()
+                    };
+                    this.tasks.push(task);
+                    return task;
+                },
+                createTaskFromEmail: function(taskData, email) {
+                    const task = this.createTask({
+                        ...taskData,
+                        hasEmail: true,
+                        emailContent: email.bodyPreview || email.subject || 'Email associé'
+                    });
+                    return task;
+                },
+                saveTasks: function() {
+                    try {
+                        localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
+                    } catch (e) {
+                        console.warn('Could not save tasks:', e);
+                    }
+                },
+                loadTasks: function() {
+                    try {
+                        const saved = localStorage.getItem('emailsort_tasks');
+                        if (saved) {
+                            this.tasks = JSON.parse(saved);
+                        }
+                    } catch (e) {
+                        console.warn('Could not load tasks:', e);
+                    }
+                },
+                getStats: function() {
+                    const total = this.tasks.length;
+                    const byStatus = {
+                        todo: this.tasks.filter(t => t.status === 'todo').length,
+                        'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
+                        completed: this.tasks.filter(t => t.status === 'completed').length
+                    };
+                    const overdue = this.tasks.filter(t => {
+                        if (!t.dueDate) return false;
+                        return new Date(t.dueDate) < new Date() && t.status !== 'completed';
+                    }).length;
+                    
+                    return { total, byStatus, overdue };
+                }
+            };
+            
+            // Charger les tâches sauvegardées
+            window.taskManager.loadTasks();
+        }
+
+        if (!window.aiTaskAnalyzer) {
+            window.aiTaskAnalyzer = {
+                isConfigured: function() {
+                    return false; // Mode démo
+                },
+                analyzeEmailForTasks: async function(email, options = {}) {
+                    // Analyse simple sans IA externe
+                    const subject = email.subject || 'Email sans sujet';
+                    const sender = email.from?.emailAddress?.name || 'Expéditeur inconnu';
+                    
+                    return {
+                        mainTask: {
+                            title: `Traiter: ${subject}`,
+                            description: `Email de ${sender}\n\nSujet: ${subject}\n\nContenu: ${email.bodyPreview || 'Aucun aperçu'}`,
+                            priority: 'medium',
+                            dueDate: null
+                        },
+                        summary: `Email de ${sender} concernant: ${subject}`,
+                        importance: 'medium',
+                        actionPoints: [
+                            'Lire le contenu complet',
+                            'Évaluer les actions requises',
+                            'Répondre si nécessaire'
+                        ],
+                        actionsHighlighted: [
+                            { action: 'Lire et analyser', deadline: null }
+                        ],
+                        insights: {
+                            responseExpected: subject.includes('?') || email.bodyPreview?.includes('?'),
+                            keyInfo: [`Expéditeur: ${sender}`, `Date: ${new Date(email.receivedDateTime).toLocaleDateString()}`],
+                            risks: []
+                        },
+                        suggestedReplies: [],
+                        subtasks: [],
+                        tags: ['email', sender.split('@')[1]?.split('.')[0] || 'unknown'].filter(Boolean)
+                    };
+                },
+                showConfigurationModal: function() {
+                    window.uiManager.showToast('Configuration IA non disponible en mode démo', 'info');
+                }
+            };
         }
 
         // Gestion des événements
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[APP] DOM loaded, setting up event listeners');
+
+            // Initialiser immédiatement les services intégrés
+            console.log('[APP] Initializing built-in services...');
+            window.authService.initialize();
+            window.mailService.initialize();
+            
+            // Afficher l'app après un court délai pour s'assurer que tout est prêt
+            setTimeout(() => {
+                console.log('[APP] Auto-showing app with built-in services');
+                showApp();
+                // Charger le dashboard par défaut
+                navigateToPage('dashboard');
+            }, 1000);
 
             // Bouton de connexion
             const loginBtn = document.getElementById('loginBtn');
@@ -1157,22 +1259,14 @@
                     const loading = document.getElementById('loadingOverlay');
                     if (loading) loading.classList.add('active');
                     
-                    // Attendre que AuthService soit chargé
-                    if (window.authService && typeof window.authService.login === 'function') {
-                        window.authService.login().catch(error => {
-                            console.error('[AUTH] Login failed:', error);
-                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
-                            this.disabled = false;
-                            if (loading) loading.classList.remove('active');
-                            window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
-                        });
-                    } else {
-                        console.error('[AUTH] AuthService not available');
+                    // Utiliser notre service d'auth intégré
+                    window.authService.login().catch(error => {
+                        console.error('[AUTH] Login failed:', error);
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
                         this.disabled = false;
                         if (loading) loading.classList.remove('active');
-                        window.uiManager.showToast('Service d\'authentification non chargé', 'error');
-                    }
+                        window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
+                    });
                 });
             }
 
@@ -1194,14 +1288,27 @@
         window.showApp = showApp;
         window.navigateToPage = navigateToPage;
         window.startEmailScan = startEmailScan;
+
+        // Fonctions globales pour compatibilité
+        window.displayUserInfo = displayUserInfo;
+        window.showApp = showApp;
+        window.navigateToPage = navigateToPage;
         
         console.log('[APP] Application script loaded successfully');
     </script>
 
-    <!-- Scripts externes - Chargement des services core -->
-    <script src="AuthService.js"></script>
-    <script src="MailService.js"></script>
-    <script src="PageManager.js"></script>
-    <script src="app.js"></script>
+    <!-- Scripts externes (optionnels - l'app fonctionne sans eux) -->
+    <script>
+        // Remplacer les scripts externes par des stubs s'ils échouent
+        window.addEventListener('error', function(e) {
+            if (e.filename && (e.filename.includes('.js'))) {
+                console.warn('[APP] External script failed to load:', e.filename, 'App will continue with built-in services');
+            }
+        });
+    </script>
+    <script src="AuthService.js" onerror="console.log('External AuthService.js not found - using built-in service')"></script>
+    <script src="MailService.js" onerror="console.log('External MailService.js not found - using built-in service')"></script>
+    <script src="PageManager.js" onerror="console.log('External PageManager.js not found - using built-in navigation')"></script>
+    <script src="app.js" onerror="console.log('External app.js not found - using built-in app logic')"></script>
 </body>
 </html>
