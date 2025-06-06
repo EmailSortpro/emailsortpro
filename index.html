@@ -346,7 +346,7 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 80px; /* Augmenté pour inclure les deux bandeaux */
+            height: 60px; /* Réduit pour un design plus compact */
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             z-index: 1000;
@@ -358,122 +358,133 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            padding: 0 20px;
             height: 100%;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        /* Première ligne - Logo et infos utilisateur */
-        .header-top-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
             width: 100%;
         }
 
+        /* Logo à gauche */
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             font-weight: 700;
-            font-size: 20px;
+            font-size: 18px;
             color: white;
+            flex-shrink: 0;
         }
 
         .logo i {
-            font-size: 24px;
+            font-size: 20px;
         }
 
         .ai-badge {
             background: rgba(255,255,255,0.2);
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: white;
         }
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            color: white;
-            font-size: 14px;
-        }
-
-        .user-details {
-            text-align: right;
-            line-height: 1.3;
-        }
-
-        .user-name {
-            font-weight: 600;
-            color: white;
-        }
-
-        .user-email {
-            font-size: 12px;
-            opacity: 0.9;
-            color: white;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
-        }
-
-        /* Deuxième ligne - Navigation */
-        .header-bottom-row {
-            width: 100%;
-        }
-
+        /* Navigation au centre */
         .main-nav {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
             justify-content: center;
+            flex: 1;
+            margin: 0 40px;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: none;
+            border: none;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             color: white;
             transition: all 0.2s ease;
             white-space: nowrap;
             text-decoration: none;
+            opacity: 0.85;
         }
 
         .nav-item:hover {
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.3);
-            transform: translateY(-1px);
+            background: rgba(255,255,255,0.15);
+            opacity: 1;
+            transform: none;
         }
 
         .nav-item.active {
-            background: rgba(255,255,255,0.25);
-            border-color: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.2);
             font-weight: 600;
+            opacity: 1;
         }
 
         .nav-item i {
+            font-size: 12px;
             opacity: 0.9;
+        }
+
+        /* Infos utilisateur à droite */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            text-align: right;
+            line-height: 1.2;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: white;
+            font-size: 14px;
+        }
+
+        .user-email {
+            font-size: 11px;
+            opacity: 0.8;
+            color: white;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            font-weight: 600;
+        }
+
+        /* Auth status fallback */
+        .auth-status {
+            color: white;
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        /* Suppression des lignes séparées */
+        .header-top-row, .header-bottom-row {
+            display: none;
         }
 
         /* Navigation secondaire supprimée car fusionnée */
