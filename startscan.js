@@ -20,7 +20,7 @@ class ModernScanStartModule {
         styles.textContent = `
             /* Scanner Ultra-Moderne Sans Défilement */
             .modern-scanner {
-                height: 100vh;
+                height: calc(100vh - 120px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -28,17 +28,14 @@ class ModernScanStartModule {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 margin: 0;
                 border-radius: 0;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                position: relative;
                 overflow: hidden;
                 box-sizing: border-box;
+                min-height: 500px;
             }
             
-            /* Masquer les barres de défilement globalement */
-            body {
+            /* Masquer les barres de défilement seulement si nécessaire */
+            .modern-scanner-container {
                 overflow: hidden !important;
             }
             
@@ -49,7 +46,7 @@ class ModernScanStartModule {
                 padding: 30px 25px;
                 max-width: 520px;
                 width: 100%;
-                max-height: 90vh;
+                max-height: calc(100vh - 160px);
                 text-align: center;
                 box-shadow: 
                     0 20px 60px rgba(0, 0, 0, 0.15),
@@ -422,14 +419,16 @@ class ModernScanStartModule {
             /* Responsive mobile */
             @media (max-width: 640px) {
                 .modern-scanner {
+                    height: calc(100vh - 100px);
                     padding: 15px;
+                    min-height: 400px;
                 }
                 
                 .scanner-card-modern {
                     padding: 24px 20px;
                     border-radius: 20px;
                     max-width: none;
-                    max-height: 95vh;
+                    max-height: calc(100vh - 140px);
                 }
                 
                 .modern-title {
@@ -465,12 +464,14 @@ class ModernScanStartModule {
             /* Responsive très petit écran */
             @media (max-height: 600px) {
                 .modern-scanner {
+                    height: calc(100vh - 80px);
                     padding: 10px;
+                    min-height: 350px;
                 }
                 
                 .scanner-card-modern {
                     padding: 20px 18px;
-                    max-height: 95vh;
+                    max-height: calc(100vh - 120px);
                 }
 
                 .modern-header {
@@ -572,8 +573,11 @@ class ModernScanStartModule {
         try {
             this.addModernMinimalStyles();
             
-            // Masquer le défilement de la page
-            document.body.style.overflow = 'hidden';
+            // Appliquer overflow hidden seulement au conteneur
+            if (container) {
+                container.style.overflow = 'hidden';
+                container.classList.add('modern-scanner-container');
+            }
             
             if (!window.authService?.isAuthenticated()) {
                 container.innerHTML = this.renderNotAuthenticated();
@@ -929,9 +933,6 @@ class ModernScanStartModule {
         this.stopTimer();
         this.scanInProgress = false;
         
-        // Restaurer le défilement de la page
-        document.body.style.overflow = '';
-        
         // Stocker seulement les données essentielles pour éviter QuotaExceededError
         const essentialResults = {
             success: this.scanResults?.success || true,
@@ -999,9 +1000,6 @@ class ModernScanStartModule {
 
     // Nettoyer les styles au démontage
     cleanup() {
-        // Restaurer le défilement de la page
-        document.body.style.overflow = '';
-        
         // Arrêter le timer
         this.stopTimer();
         
