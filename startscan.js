@@ -299,14 +299,48 @@ class ModernScanStartModule {
                 transform: translateY(0);
             }
 
-            .progress-spinner {
-                width: 50px;
-                height: 50px;
+            .progress-bar-container {
+                width: 100%;
+                max-width: 300px;
                 margin: 0 auto 16px;
-                border: 3px solid rgba(102, 126, 234, 0.2);
-                border-top: 3px solid #667eea;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
+                background: rgba(102, 126, 234, 0.1);
+                border-radius: 12px;
+                overflow: hidden;
+                height: 8px;
+                position: relative;
+            }
+
+            .progress-bar {
+                height: 100%;
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                border-radius: 12px;
+                width: 0%;
+                transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .progress-bar::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                animation: shimmer 1.5s ease-in-out infinite;
+            }
+
+            @keyframes shimmer {
+                0% { left: -100%; }
+                100% { left: 100%; }
+            }
+
+            .progress-percentage-text {
+                font-size: 14px;
+                font-weight: 600;
+                color: #667eea;
+                margin-bottom: 8px;
             }
 
             @keyframes spin {
@@ -452,6 +486,14 @@ class ModernScanStartModule {
                     border-color: rgba(255, 255, 255, 0.2);
                     border-top-color: #667eea;
                 }
+
+                .progress-bar-container {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+
+                .progress-percentage-text {
+                    color: #667eea;
+                }
             }
         `;
         
@@ -574,7 +616,10 @@ class ModernScanStartModule {
                     </div>
                     
                     <div class="progress-section-modern" id="progressSection">
-                        <div class="progress-spinner"></div>
+                        <div class="progress-percentage-text" id="progressPercentageText">0%</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
                         
                         <div class="progress-details-modern">
                             <div class="scan-timer" id="scanTimer">
@@ -712,11 +757,14 @@ class ModernScanStartModule {
     }
 
     async executeOptimizedScan() {
-        // Scan minimal et rapide - 2 secondes maximum
-        this.updateProgress('Connexion...', 'Accès à votre boîte email');
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Scan minimal et rapide avec barre de progression
+        this.updateProgress(0, 'Connexion...', 'Accès à votre boîte email');
+        await new Promise(resolve => setTimeout(resolve, 300));
         
-        this.updateProgress('Analyse...', 'Classification des emails');
+        this.updateProgress(20, 'Authentification...', 'Vérification des permissions');
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        this.updateProgress(40, 'Récupération...', 'Téléchargement des emails');
         
         // Effectuer le vrai scan si disponible
         try {
@@ -724,16 +772,30 @@ class ModernScanStartModule {
                 const results = await window.emailScanner.scan({
                     days: this.selectedDays,
                     folder: 'inbox',
-                    quick: true // Mode rapide
+                    quick: true, // Mode rapide
+                    onProgress: (progress) => {
+                        if (progress.progress) {
+                            const percent = 40 + Math.floor((progress.progress.current / progress.progress.total) * 40);
+                            this.updateProgress(percent, 'Analyse...', progress.message || 'Classification des emails');
+                        }
+                    }
                 });
                 this.scanResults = results;
             } else {
-                // Mode démo rapide
+                // Mode démo rapide avec progression simulée
+                await new Promise(resolve => setTimeout(resolve, 200));
+                this.updateProgress(60, 'Analyse...', 'Classification par IA');
+                
+                await new Promise(resolve => setTimeout(resolve, 300));
+                this.updateProgress(80, 'Organisation...', 'Tri par catégories');
+                
+                // Générer des résultats réalistes sans limitation
+                const baseEmails = Math.floor(Math.random() * 500) + 100; // 100-600 emails
                 this.scanResults = {
                     success: true,
-                    total: Math.floor(Math.random() * 200) + 50,
-                    categorized: Math.floor(Math.random() * 150) + 40,
-                    stats: { processed: 147, errors: 0 }
+                    total: baseEmails,
+                    categorized: Math.floor(baseEmails * 0.85), // 85% catégorisés
+                    stats: { processed: baseEmails, errors: Math.floor(Math.random() * 3) }
                 };
             }
         } catch (error) {
@@ -746,16 +808,30 @@ class ModernScanStartModule {
             };
         }
         
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        this.updateProgress(95, 'Finalisation...', 'Préparation des résultats');
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        this.updateProgress('Finalisation...', 'Préparation des résultats');
-        await new Promise(resolve => setTimeout(resolve, 500));
+        this.updateProgress(100, 'Terminé !', 'Redirection en cours...');
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Redirection automatique vers les résultats
         this.redirectToResults();
     }
 
-    updateProgress(title, subtitle) {
+    updateProgress(percent, title, subtitle) {
+        // Mettre à jour la barre de progression
+        const progressBar = document.getElementById('progressBar');
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+        }
+        
+        // Mettre à jour le pourcentage
+        const percentageEl = document.getElementById('progressPercentageText');
+        if (percentageEl) {
+            percentageEl.textContent = `${Math.round(percent)}%`;
+        }
+        
+        // Mettre à jour les textes
         const titleEl = document.getElementById('progressTitle');
         if (titleEl) titleEl.textContent = title;
         
