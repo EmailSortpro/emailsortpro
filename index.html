@@ -1297,18 +1297,46 @@
         console.log('[APP] Application script loaded successfully');
     </script>
 
-    <!-- Scripts externes (optionnels - l'app fonctionne sans eux) -->
+    <!-- Scripts externes - ORDRE IMPORTANT POUR LE FONCTIONNEMENT -->
     <script>
-        // Remplacer les scripts externes par des stubs s'ils échouent
+        // Gestion d'erreur pour les scripts externes
         window.addEventListener('error', function(e) {
             if (e.filename && (e.filename.includes('.js'))) {
                 console.warn('[APP] External script failed to load:', e.filename, 'App will continue with built-in services');
             }
         });
+        
+        // Fonction de diagnostic pour le scanner
+        window.debugScanner = function() {
+            console.log('=== DIAGNOSTIC SCANNER ===');
+            console.log('scanStartModule exists:', !!window.scanStartModule);
+            console.log('scanStartModule.render:', typeof window.scanStartModule?.render);
+            console.log('scanStartModule.stylesAdded:', window.scanStartModule?.stylesAdded);
+            console.log('scanStartModule.isInitialized:', window.scanStartModule?.isInitialized);
+            
+            if (window.scanStartModule) {
+                console.log('scanStartModule methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.scanStartModule)));
+            }
+            
+            // Test de chargement
+            if (window.pageManager) {
+                console.log('Testing scanner reload...');
+                window.pageManager.loadPage('scanner');
+            }
+        };
     </script>
+    
+    <!-- Services principaux -->
     <script src="AuthService.js" onerror="console.log('External AuthService.js not found - using built-in service')"></script>
     <script src="MailService.js" onerror="console.log('External MailService.js not found - using built-in service')"></script>
+    
+    <!-- Modules spécialisés - CHARGÉS AVANT PageManager -->
+    <script src="ScanStart.js" onerror="console.log('External ScanStart.js not found - will use basic scanner')"></script>
+    
+    <!-- Gestionnaire de pages - APRÈS les modules -->
     <script src="PageManager.js" onerror="console.log('External PageManager.js not found - using built-in navigation')"></script>
+    
+    <!-- Application principale - EN DERNIER -->
     <script src="app.js" onerror="console.log('External app.js not found - using built-in app logic')"></script>
 </body>
 </html>
