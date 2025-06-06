@@ -852,28 +852,72 @@ Sujet: ${subject}
     filterTasks(filters = {}) {
         let filtered = [...this.tasks];
         
+        // Status filter
         if (filters.status && filters.status !== 'all') {
             filtered = filtered.filter(task => task.status === filters.status);
         }
         
+        // Priority filter
         if (filters.priority && filters.priority !== 'all') {
             filtered = filtered.filter(task => task.priority === filters.priority);
         }
         
+        // Category filter
         if (filters.category && filters.category !== 'all') {
             filtered = filtered.filter(task => task.category === filters.category);
         }
         
+        // Client filter
+        if (filters.client && filters.client !== 'all') {
+            filtered = filtered.filter(task => task.client === filters.client);
+        }
+        
+        // Tag filter
+        if (filters.tag && filters.tag !== 'all') {
+            filtered = filtered.filter(task => 
+                task.tags && Array.isArray(task.tags) && task.tags.includes(filters.tag)
+            );
+        }
+        
+        // Date range filter
+        if (filters.dateRange && filters.dateRange !== 'all') {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            
+            filtered = filtered.filter(task => {
+                const taskDate = new Date(task.createdAt);
+                
+                switch (filters.dateRange) {
+                    case 'today':
+                        return taskDate >= today;
+                    case 'week':
+                        return taskDate >= weekStart;
+                    case 'month':
+                        return taskDate >= monthStart;
+                    case 'older':
+                        return taskDate < monthStart;
+                    default:
+                        return true;
+                }
+            });
+        }
+        
+        // Search filter
         if (filters.search) {
             const search = filters.search.toLowerCase();
             filtered = filtered.filter(task => 
                 task.title.toLowerCase().includes(search) ||
                 task.description.toLowerCase().includes(search) ||
                 (task.emailFromName && task.emailFromName.toLowerCase().includes(search)) ||
-                (task.client && task.client.toLowerCase().includes(search))
+                (task.client && task.client.toLowerCase().includes(search)) ||
+                (task.tags && task.tags.some(tag => tag.toLowerCase().includes(search)))
             );
         }
         
+        // Special filters
         if (filters.overdue) {
             filtered = filtered.filter(task => {
                 if (!task.dueDate || task.status === 'completed') return false;
@@ -906,6 +950,9 @@ Sujet: ${subject}
                     return new Date(a.dueDate) - new Date(b.dueDate);
                 });
                 break;
+            case 'title':
+                sorted.sort((a, b) => a.title.localeCompare(b.title));
+                break;
             case 'sender':
                 sorted.sort((a, b) => {
                     const senderA = (a.emailFromName || a.emailFrom || 'ZZZ').toLowerCase();
@@ -919,6 +966,9 @@ Sujet: ${subject}
                     const clientB = (b.client || 'ZZZ').toLowerCase();
                     return clientA.localeCompare(clientB);
                 });
+                break;
+            case 'updated':
+                sorted.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
                 break;
             case 'created':
             default:
@@ -992,13 +1042,17 @@ class TasksView {
             status: 'all',
             priority: 'all', 
             category: 'all',
+            client: 'all',
+            tag: 'all',
             search: '',
-            sortBy: 'created'
+            sortBy: 'created',
+            dateRange: 'all'
         };
         
         this.selectedTasks = new Set();
         this.currentViewMode = 'condensed';
         this.showCompleted = false;
+        this.showAdvancedFilters = false;
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
@@ -1095,9 +1149,93 @@ class TasksView {
                     </div>
                 </div>
 
-                <!-- Filtres de statut IDENTIQUES à PageManager -->
+                <!-- Filtres de statut avec bouton filtres avancés -->
                 <div class="status-filters-large">
                     ${this.buildLargeStatusPills(stats)}
+                    <button class="btn-large advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                            onclick="window.tasksView.toggleAdvancedFilters()">
+                        <i class="fas fa-filter"></i>
+                        <span class="btn-text-large">Filtres avancés</span>
+                        <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                    </button>
+                </div>
+
+                <!-- Filtres avancés -->
+                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                    <div class="advanced-filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-flag"></i> Priorité
+                            </label>
+                            <select class="filter-select" id="priorityFilter" 
+                                    onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-building"></i> Client
+                            </label>
+                            <select class="filter-select" id="clientFilter" 
+                                    onchange="window.tasksView.updateFilter('client', this.value)">
+                                ${this.buildClientFilterOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-tags"></i> Tag
+                            </label>
+                            <select class="filter-select" id="tagFilter" 
+                                    onchange="window.tasksView.updateFilter('tag', this.value)">
+                                ${this.buildTagFilterOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-calendar"></i> Période
+                            </label>
+                            <select class="filter-select" id="dateRangeFilter" 
+                                    onchange="window.tasksView.updateFilter('dateRange', this.value)">
+                                <option value="all" ${this.currentFilters.dateRange === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="today" ${this.currentFilters.dateRange === 'today' ? 'selected' : ''}>Aujourd'hui</option>
+                                <option value="week" ${this.currentFilters.dateRange === 'week' ? 'selected' : ''}>Cette semaine</option>
+                                <option value="month" ${this.currentFilters.dateRange === 'month' ? 'selected' : ''}>Ce mois</option>
+                                <option value="older" ${this.currentFilters.dateRange === 'older' ? 'selected' : ''}>Plus ancien</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-sort"></i> Trier par
+                            </label>
+                            <select class="filter-select" id="sortByFilter" 
+                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                                <option value="updated" ${this.currentFilters.sortBy === 'updated' ? 'selected' : ''}>Dernière modif</option>
+                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                                <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                                <i class="fas fa-undo"></i> Réinitialiser
+                            </button>
+                            <div class="active-filters-count">
+                                ${this.getActiveFiltersCount()} filtres actifs
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tasks-container-modern" id="tasksContainer">
@@ -1162,7 +1300,7 @@ class TasksView {
                     ${this.hasActiveFilters() ? 'Aucune tâche ne correspond à vos critères' : 'Vous n\'avez aucune tâche'}
                 </p>
                 ${this.hasActiveFilters() ? `
-                    <button class="btn-large btn-primary-large" onclick="window.tasksView.resetFilters()">
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.resetAllFilters()">
                         <i class="fas fa-undo"></i>
                         <span>Réinitialiser les filtres</span>
                     </button>
@@ -1243,6 +1381,15 @@ class TasksView {
                             ${task.aiRepliesGenerated ? 
                                 '<span class="ai-generated-badge">✨ IA</span>' : ''
                             }
+                            ${task.tags && task.tags.length > 0 ? `
+                                <div class="task-tags-line">
+                                    <i class="fas fa-tags"></i>
+                                    ${task.tags.slice(0, 3).map(tag => `
+                                        <span class="task-tag" onclick="event.stopPropagation(); window.tasksView.filterByTag('${tag}')">#${tag}</span>
+                                    `).join('')}
+                                    ${task.tags.length > 3 ? `<span class="tags-more">+${task.tags.length - 3}</span>` : ''}
+                                </div>
+                            ` : ''}
                         </div>
                     ` : ''}
                     
@@ -1300,15 +1447,94 @@ class TasksView {
             `);
         }
         
+        // Bouton de suppression modifié avec confirmation
         actions.push(`
-            <button class="action-btn-modern delete" 
-                    onclick="event.stopPropagation(); window.tasksView.deleteTask('${task.id}')"
-                    title="Supprimer">
-                <i class="fas fa-trash"></i>
+            <button class="action-btn-modern delete-btn" 
+                    onclick="event.stopPropagation(); window.tasksView.confirmDeleteTask('${task.id}')"
+                    title="Supprimer cette tâche"
+                    data-task-title="${this.escapeHtml(task.title)}">
+                <i class="fas fa-trash-alt"></i>
             </button>
         `);
         
         return actions.join('');
+    }
+
+    // NOUVELLE MÉTHODE POUR CONFIRMATION DE SUPPRESSION
+    confirmDeleteTask(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        const modalHTML = `
+            <div id="deleteConfirmModal" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 500px; width: 100%; 
+                           box-shadow: 0 10px 40px rgba(0,0,0,0.3); border: 1px solid #e5e7eb;">
+                    <div style="padding: 24px 24px 16px 24px; text-align: center;">
+                        <div style="width: 64px; height: 64px; background: #fef2f2; border-radius: 50%; 
+                                   display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 28px; color: #dc2626;"></i>
+                        </div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 20px; color: #1f2937;">Confirmer la suppression</h3>
+                        <p style="margin: 0 0 16px 0; color: #6b7280; line-height: 1.5;">
+                            Êtes-vous sûr de vouloir supprimer cette tâche ?
+                        </p>
+                        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">
+                                ${this.escapeHtml(task.title)}
+                            </div>
+                            ${task.hasEmail ? `
+                                <div style="font-size: 14px; color: #6b7280;">
+                                    <i class="fas fa-envelope"></i> Email de ${task.emailFromName || task.emailFrom}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p style="margin: 0; font-size: 14px; color: #dc2626; font-weight: 500;">
+                            ⚠️ Cette action est irréversible
+                        </p>
+                    </div>
+                    <div style="padding: 16px 24px 24px 24px; display: flex; justify-content: center; gap: 12px;">
+                        <button onclick="document.getElementById('deleteConfirmModal').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 10px 20px; background: #f3f4f6; border: 1px solid #d1d5db; 
+                                       border-radius: 8px; cursor: pointer; font-weight: 500; color: #374151;">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button onclick="window.tasksView.executeDelete('${task.id}'); document.getElementById('deleteConfirmModal').remove();"
+                                style="padding: 10px 20px; background: #dc2626; color: white; border: none; 
+                                       border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    executeDelete(taskId) {
+        window.taskManager.deleteTask(taskId);
+        this.selectedTasks.delete(taskId);
+        document.body.style.overflow = 'auto';
+        this.showToast('Tâche supprimée définitivement', 'success');
+    }
+
+    // MÉTHODE POUR FILTRER PAR TAG
+    filterByTag(tag) {
+        this.currentFilters.tag = tag;
+        this.showAdvancedFilters = true;
+        
+        // Mettre à jour le select
+        const tagFilter = document.getElementById('tagFilter');
+        if (tagFilter) {
+            tagFilter.value = tag;
+        }
+        
+        this.refreshView();
+        this.showToast(`Filtré par tag: #${tag}`, 'info');
     }
 
     // Event handlers et interactions IDENTIQUES À PAGEMANAGER
@@ -1874,6 +2100,9 @@ class TasksView {
         return this.currentFilters.status !== 'all' ||
                this.currentFilters.priority !== 'all' ||
                this.currentFilters.category !== 'all' ||
+               this.currentFilters.client !== 'all' ||
+               this.currentFilters.tag !== 'all' ||
+               this.currentFilters.dateRange !== 'all' ||
                this.currentFilters.search !== '' ||
                this.currentFilters.overdue ||
                this.currentFilters.needsReply;
@@ -2021,11 +2250,8 @@ class TasksView {
     }
 
     deleteTask(taskId) {
-        if (confirm('Supprimer cette tâche ?')) {
-            window.taskManager.deleteTask(taskId);
-            this.selectedTasks.delete(taskId);
-            this.showToast('Tâche supprimée', 'success');
-        }
+        // Rediriger vers la confirmation
+        this.confirmDeleteTask(taskId);
     }
 
     showCreateModal() {
@@ -2144,21 +2370,117 @@ class TasksView {
         this.refreshView();
     }
 
-    resetFilters() {
+    // NOUVELLES MÉTHODES POUR LES FILTRES AVANCÉS
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        
+        const panel = document.getElementById('advancedFiltersPanel');
+        const toggle = document.querySelector('.advanced-filters-toggle');
+        
+        if (panel) {
+            panel.classList.toggle('show', this.showAdvancedFilters);
+        }
+        
+        if (toggle) {
+            toggle.classList.toggle('active', this.showAdvancedFilters);
+            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
+                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
+            }
+        }
+    }
+
+    buildClientFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(task => {
+            if (task.client) {
+                clients.add(task.client);
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        Array.from(clients).sort().forEach(client => {
+            const count = tasks.filter(t => t.client === client).length;
+            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    buildTagFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const tags = new Set();
+        
+        tasks.forEach(task => {
+            if (task.tags && Array.isArray(task.tags)) {
+                task.tags.forEach(tag => tags.add(tag));
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.tag === 'all' ? 'selected' : ''}>Tous les tags</option>`;
+        
+        Array.from(tags).sort().forEach(tag => {
+            const count = tasks.filter(t => t.tags && t.tags.includes(tag)).length;
+            options += `<option value="${tag}" ${this.currentFilters.tag === tag ? 'selected' : ''}>#${tag} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    updateFilter(filterType, value) {
+        this.currentFilters[filterType] = value;
+        this.refreshView();
+        console.log('[TasksView] Filter updated:', filterType, '=', value);
+    }
+
+    getActiveFiltersCount() {
+        let count = 0;
+        
+        if (this.currentFilters.status !== 'all') count++;
+        if (this.currentFilters.priority !== 'all') count++;
+        if (this.currentFilters.client !== 'all') count++;
+        if (this.currentFilters.tag !== 'all') count++;
+        if (this.currentFilters.dateRange !== 'all') count++;
+        if (this.currentFilters.search !== '') count++;
+        if (this.currentFilters.overdue) count++;
+        if (this.currentFilters.needsReply) count++;
+        
+        return count;
+    }
+
+    resetAllFilters() {
         this.currentFilters = {
             status: 'all',
             priority: 'all',
             category: 'all',
+            client: 'all',
+            tag: 'all',
             search: '',
             sortBy: 'created',
+            dateRange: 'all',
             overdue: false,
             needsReply: false
         };
         
+        // Reset search input
         const searchInput = document.getElementById('taskSearchInput');
         if (searchInput) searchInput.value = '';
         
+        // Reset all filter selects
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.querySelector('option[value="all"]')) {
+                select.value = 'all';
+            } else if (select.id === 'sortByFilter') {
+                select.value = 'created';
+            }
+        });
+        
         this.refreshView();
+        this.showToast('Filtres réinitialisés', 'info');
     }
 
     bulkActions() {
@@ -2930,10 +3252,170 @@ class TasksView {
                 color: #d97706;
             }
             
-            .action-btn-modern.delete:hover {
+            /* NOUVEAUX STYLES POUR FILTRES AVANCÉS */
+            .advanced-filters-toggle {
+                background: #f8fafc;
+                border-color: #e2e8f0;
+                color: #475569;
+            }
+            
+            .advanced-filters-toggle:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+            }
+            
+            .advanced-filters-toggle.active {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+            
+            .advanced-filters-panel {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                max-height: 0;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                opacity: 0;
+            }
+            
+            .advanced-filters-panel.show {
+                max-height: 500px;
+                opacity: 1;
+                padding: 20px;
+            }
+            
+            .advanced-filters-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                align-items: end;
+            }
+            
+            .filter-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .filter-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-weight: 600;
+                font-size: 14px;
+                color: #374151;
+            }
+            
+            .filter-select {
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                background: white;
+                font-size: 14px;
+                color: #374151;
+                cursor: pointer;
+                transition: border-color 0.2s ease;
+            }
+            
+            .filter-select:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .filter-actions {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .btn-small {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid;
+            }
+            
+            .btn-small.btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+            
+            .btn-small.btn-secondary:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+            
+            .active-filters-count {
+                font-size: 12px;
+                color: #6b7280;
+                text-align: center;
+                font-weight: 500;
+            }
+            
+            /* STYLES POUR LES TAGS DANS LES TÂCHES */
+            .task-tags-line {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 4px;
+                font-size: 12px;
+                color: #6b7280;
+                flex-wrap: wrap;
+            }
+            
+            .task-tag {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid rgba(255,255,255,0.2);
+            }
+            
+            .task-tag:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+            }
+            
+            .tags-more {
+                background: #f3f4f6;
+                color: #6b7280;
+                padding: 2px 6px;
+                border-radius: 10px;
+                font-size: 10px;
+                font-weight: 500;
+            }
+            
+            /* NOUVEAU STYLE POUR LE BOUTON DE SUPPRESSION */
+            .action-btn-modern.delete-btn {
                 background: #fef2f2;
-                border-color: #dc2626;
                 color: #dc2626;
+                border-color: #fecaca;
+                transition: all 0.3s ease;
+            }
+            
+            .action-btn-modern.delete-btn:hover {
+                background: #dc2626;
+                color: white;
+                border-color: #dc2626;
+                transform: translateY(-1px) scale(1.05);
+                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
             }
             
             .empty-state-modern {
