@@ -1,4 +1,4 @@
-// app.js - Application CORRIGÉE pour emailsortpro.netlify.app v3.1
+// app.js - Application CORRIGÉE avec redirection vers scanner et menu amélioré
 
 class App {
     constructor() {
@@ -8,39 +8,12 @@ class App {
         this.maxInitAttempts = 3;
         this.isInitializing = false;
         this.initializationPromise = null;
-        this.expectedDomain = 'emailsortpro.netlify.app';
         
-        console.log('[App] Constructor - Application starting for emailsortpro.netlify.app...');
-        this.verifyDomain();
-    }
-
-    verifyDomain() {
-        const currentDomain = window.location.hostname;
-        const isCorrectDomain = currentDomain === this.expectedDomain;
-        
-        console.log('[App] Domain verification:', {
-            current: currentDomain,
-            expected: this.expectedDomain,
-            isCorrect: isCorrectDomain
-        });
-        
-        if (!isCorrectDomain && !currentDomain.includes('localhost') && !currentDomain.includes('127.0.0.1')) {
-            console.warn('[App] ⚠️ Domain mismatch detected!');
-            console.warn('[App] This may cause authentication issues with Azure');
-            
-            // Afficher un avertissement
-            if (window.uiManager) {
-                window.uiManager.showToast(
-                    `Domaine incorrect: ${currentDomain}. Attendu: ${this.expectedDomain}`,
-                    'warning',
-                    10000
-                );
-            }
-        }
+        console.log('[App] Constructor - Application starting...');
     }
 
     async init() {
-        console.log('[App] Initializing for emailsortpro.netlify.app...');
+        console.log('[App] Initializing...');
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -65,7 +38,7 @@ class App {
                 return;
             }
 
-            console.log('[App] Initializing auth service for emailsortpro.netlify.app...');
+            console.log('[App] Initializing auth service...');
             
             const initTimeout = new Promise((_, reject) => 
                 setTimeout(() => reject(new Error('Initialization timeout')), 20000)
@@ -74,7 +47,7 @@ class App {
             const initPromise = window.authService.initialize();
             await Promise.race([initPromise, initTimeout]);
             
-            console.log('[App] Auth service initialized for new domain');
+            console.log('[App] Auth service initialized');
             await this.checkAuthenticationStatus();
             
         } catch (error) {
@@ -100,20 +73,8 @@ class App {
 
         const validation = window.AppConfig.validate();
         if (!validation.valid) {
-            console.error('[App] Configuration invalid for emailsortpro.netlify.app:', validation.issues);
+            console.error('[App] Configuration invalid:', validation.issues);
             this.showConfigurationError(validation.issues);
-            return false;
-        }
-
-        // Vérification spécifique pour le nouveau domaine
-        if (window.AppConfig.msal.redirectUri && 
-            !window.AppConfig.msal.redirectUri.includes(this.expectedDomain)) {
-            console.error('[App] Redirect URI does not match expected domain');
-            this.showConfigurationError([
-                `URI de redirection incorrecte pour ${this.expectedDomain}`,
-                `Attendue: https://${this.expectedDomain}/auth-callback.html`,
-                `Actuelle: ${window.AppConfig.msal.redirectUri}`
-            ]);
             return false;
         }
 
@@ -130,14 +91,14 @@ class App {
         if (window.authService.isAuthenticated()) {
             const account = window.authService.getAccount();
             if (account) {
-                console.log('[App] Getting user info for emailsortpro.netlify.app...');
+                console.log('[App] Getting user info...');
                 try {
                     this.user = await window.authService.getUserInfo();
                     this.isAuthenticated = true;
-                    console.log('[App] User authenticated on new domain:', this.user.displayName || this.user.mail);
+                    console.log('[App] User authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
                 } catch (userInfoError) {
-                    console.error('[App] Error getting user info on new domain:', userInfoError);
+                    console.error('[App] Error getting user info:', userInfoError);
                     if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
                         console.log('[App] Token seems invalid, clearing auth and showing login');
                         await window.authService.reset();
@@ -147,40 +108,29 @@ class App {
                     }
                 }
             } else {
-                console.log('[App] No active account found on new domain');
+                console.log('[App] No active account found');
                 this.showLogin();
             }
         } else {
-            console.log('[App] User not authenticated on emailsortpro.netlify.app');
+            console.log('[App] User not authenticated');
             this.showLogin();
         }
     }
 
     async handleInitializationError(error) {
-        console.error('[App] Initialization error for emailsortpro.netlify.app:', error);
+        console.error('[App] Initialization error:', error);
         
         if (error.message.includes('unauthorized_client')) {
             this.showConfigurationError([
-                'Configuration Azure incorrecte pour emailsortpro.netlify.app',
-                'Vérifiez votre Client ID et les URI de redirection',
-                'URI de redirection attendue: https://emailsortpro.netlify.app/auth-callback.html',
+                'Configuration Azure incorrecte',
+                'Vérifiez votre Client ID dans la configuration',
                 'Consultez la documentation Azure App Registration'
             ]);
             return;
         }
         
-        if (error.message.includes('invalid_request') || error.message.includes('redirect_uri')) {
-            this.showConfigurationError([
-                'URI de redirection invalide pour emailsortpro.netlify.app',
-                'Dans Azure Portal, configurez:',
-                'URI de redirection: https://emailsortpro.netlify.app/auth-callback.html',
-                'URI de déconnexion: https://emailsortpro.netlify.app/'
-            ]);
-            return;
-        }
-        
         if (error.message.includes('Configuration invalid')) {
-            this.showConfigurationError(['Configuration invalide - vérifiez la configuration pour le nouveau domaine']);
+            this.showConfigurationError(['Configuration invalide - vérifiez la configuration']);
             return;
         }
         
@@ -193,54 +143,43 @@ class App {
             return;
         }
         
-        this.showError('Failed to initialize the application for emailsortpro.netlify.app. Please check the configuration and refresh the page.');
+        this.showError('Failed to initialize the application. Please check the configuration and refresh the page.');
     }
 
     showConfigurationError(issues) {
-        console.error('[App] Configuration error for emailsortpro.netlify.app:', issues);
+        console.error('[App] Configuration error:', issues);
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
                 <div class="hero-container">
-                    <div style="max-width: 700px; margin: 0 auto; text-align: center; color: white;">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
                         <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
                             <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
                         </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Configuration requise pour emailsortpro.netlify.app</h1>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Configuration requise</h1>
                         <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
                             <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
                             <ul style="margin-left: 20px;">
                                 ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
                             </ul>
                             <div style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
-                                <h4 style="margin-bottom: 10px; color: #10b981;">Configuration Azure requise :</h4>
-                                <div style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin: 10px 0;">
-                                    <div>🔗 <strong>Redirect URI:</strong></div>
-                                    <div style="color: #10b981; margin: 5px 0;">https://emailsortpro.netlify.app/auth-callback.html</div>
-                                    <div>🚪 <strong>Logout URI:</strong></div>
-                                    <div style="color: #10b981; margin: 5px 0;">https://emailsortpro.netlify.app/</div>
-                                </div>
-                                <ol style="margin-left: 20px; margin-top: 15px;">
-                                    <li>Connectez-vous à Azure Portal</li>
-                                    <li>Allez dans votre App Registration</li>
-                                    <li>Section "Authentication" → Mettez à jour les URI</li>
-                                    <li>Cliquez sur "Configurer l'application" ci-dessous</li>
+                                <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
+                                <ol style="margin-left: 20px;">
+                                    <li>Cliquez sur "Configurer l'application"</li>
+                                    <li>Suivez l'assistant de configuration</li>
+                                    <li>Entrez votre Azure Client ID</li>
                                 </ol>
                             </div>
                         </div>
                         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <a href="/setup.html" class="cta-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+                            <a href="setup.html" class="cta-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
                                 <i class="fas fa-cog"></i>
                                 Configurer l'application
                             </a>
                             <button onclick="location.reload()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
                                 <i class="fas fa-refresh"></i>
                                 Actualiser
-                            </button>
-                            <button onclick="window.app.checkDomainConfiguration()" class="cta-button" style="background: rgba(59, 130, 246, 0.8); color: white; border: 1px solid rgba(59, 130, 246, 0.3);">
-                                <i class="fas fa-info-circle"></i>
-                                Diagnostic
                             </button>
                         </div>
                     </div>
@@ -251,52 +190,8 @@ class App {
         this.hideModernLoading();
     }
 
-    // Nouvelle méthode de diagnostic spécifique au domaine
-    checkDomainConfiguration() {
-        console.group('🔍 DIAGNOSTIC DOMAINE emailsortpro.netlify.app');
-        
-        const currentDomain = window.location.hostname;
-        const expectedDomain = this.expectedDomain;
-        const currentUrl = window.location.href;
-        
-        console.log('🌐 Domaine actuel:', currentDomain);
-        console.log('🎯 Domaine attendu:', expectedDomain);
-        console.log('✅ Correspondance:', currentDomain === expectedDomain);
-        console.log('🔗 URL actuelle:', currentUrl);
-        
-        if (window.AppConfig) {
-            console.log('⚙️ Configuration:');
-            console.log('  - Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
-            console.log('  - Redirect URI:', window.AppConfig.msal.redirectUri);
-            console.log('  - Post Logout URI:', window.AppConfig.msal.postLogoutRedirectUri);
-            console.log('  - Domaine config:', window.AppConfig.app?.domain);
-            
-            const validation = window.AppConfig.validate();
-            console.log('  - Validation:', validation);
-        } else {
-            console.log('❌ Configuration non disponible');
-        }
-        
-        console.log('🔧 Actions recommandées:');
-        console.log('1. Vérifiez que vous êtes sur https://emailsortpro.netlify.app');
-        console.log('2. Dans Azure Portal, configurez les URI:');
-        console.log('   - Redirect: https://emailsortpro.netlify.app/auth-callback.html');
-        console.log('   - Logout: https://emailsortpro.netlify.app/');
-        console.log('3. Allez sur /setup.html pour reconfigurer');
-        
-        console.groupEnd();
-        
-        if (window.uiManager) {
-            window.uiManager.showToast(
-                'Diagnostic terminé - Consultez la console pour les détails',
-                'info',
-                5000
-            );
-        }
-    }
-
     setupEventListeners() {
-        console.log('[App] Setting up event listeners for emailsortpro.netlify.app...');
+        console.log('[App] Setting up event listeners...');
         
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
@@ -319,7 +214,7 @@ class App {
         });
 
         window.addEventListener('error', (event) => {
-            console.error('[App] Global error on emailsortpro.netlify.app:', event.error);
+            console.error('[App] Global error:', event.error);
             
             if (event.error && event.error.message && 
                 event.error.message.includes('ScanStart.js') && 
@@ -333,17 +228,9 @@ class App {
                 if (message.includes('unauthorized_client')) {
                     if (window.uiManager) {
                         window.uiManager.showToast(
-                            'Erreur de configuration Azure pour emailsortpro.netlify.app. Vérifiez votre Client ID.',
+                            'Erreur de configuration Azure. Vérifiez votre Client ID.',
                             'error',
                             10000
-                        );
-                    }
-                } else if (message.includes('invalid_request') || message.includes('redirect_uri')) {
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            'URI de redirection invalide. Configurez: https://emailsortpro.netlify.app/auth-callback.html',
-                            'error',
-                            15000
                         );
                     }
                 }
@@ -351,26 +238,16 @@ class App {
         });
 
         window.addEventListener('unhandledrejection', (event) => {
-            console.error('[App] Unhandled promise rejection on emailsortpro.netlify.app:', event.reason);
+            console.error('[App] Unhandled promise rejection:', event.reason);
             
             if (event.reason && event.reason.errorCode) {
                 console.log('[App] MSAL promise rejection:', event.reason.errorCode);
-                
-                if (event.reason.errorCode === 'invalid_request') {
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            'Configuration Azure requise pour emailsortpro.netlify.app',
-                            'error',
-                            10000
-                        );
-                    }
-                }
             }
         });
     }
 
     async login() {
-        console.log('[App] Login attempted for emailsortpro.netlify.app...');
+        console.log('[App] Login attempted...');
         
         try {
             const loginBtn = document.getElementById('loginBtn');
@@ -379,7 +256,7 @@ class App {
                 loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion en cours...';
             }
             
-            this.showModernLoading('Connexion à Outlook sur emailsortpro.netlify.app...');
+            this.showModernLoading('Connexion à Outlook...');
             
             if (!window.authService.isInitialized) {
                 console.log('[App] AuthService not initialized, initializing...');
@@ -389,7 +266,7 @@ class App {
             await window.authService.login();
             
         } catch (error) {
-            console.error('[App] Login error on emailsortpro.netlify.app:', error);
+            console.error('[App] Login error:', error);
             
             this.hideModernLoading();
             
@@ -411,23 +288,18 @@ class App {
                             errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
                             break;
                         case 'unauthorized_client':
-                            errorMessage = 'Configuration incorrecte pour emailsortpro.netlify.app. Vérifiez votre Azure Client ID.';
-                            break;
-                        case 'invalid_request':
-                            errorMessage = 'URI de redirection invalide. Configurez: https://emailsortpro.netlify.app/auth-callback.html dans Azure Portal.';
+                            errorMessage = 'Configuration incorrecte. Vérifiez votre Azure Client ID.';
                             break;
                         default:
                             errorMessage = `Erreur: ${errorCode}`;
                     }
                 }
             } else if (error.message.includes('unauthorized_client')) {
-                errorMessage = 'Configuration Azure incorrecte pour emailsortpro.netlify.app. Vérifiez votre Client ID.';
-            } else if (error.message.includes('redirect_uri') || error.message.includes('invalid_request')) {
-                errorMessage = 'URI de redirection invalide. Reconfigurez votre application Azure pour emailsortpro.netlify.app.';
+                errorMessage = 'Configuration Azure incorrecte. Vérifiez votre Client ID.';
             }
             
             if (window.uiManager) {
-                window.uiManager.showToast(errorMessage, 'error', 12000);
+                window.uiManager.showToast(errorMessage, 'error', 8000);
             }
             
             const loginBtn = document.getElementById('loginBtn');
@@ -439,7 +311,7 @@ class App {
     }
 
     async logout() {
-        console.log('[App] Logout attempted from emailsortpro.netlify.app...');
+        console.log('[App] Logout attempted...');
         
         try {
             const confirmed = confirm('Êtes-vous sûr de vouloir vous déconnecter ?');
@@ -454,7 +326,7 @@ class App {
             }
             
         } catch (error) {
-            console.error('[App] Logout error on emailsortpro.netlify.app:', error);
+            console.error('[App] Logout error:', error);
             this.hideModernLoading();
             if (window.uiManager) {
                 window.uiManager.showToast('Erreur de déconnexion. Nettoyage forcé...', 'warning');
@@ -464,7 +336,7 @@ class App {
     }
 
     forceCleanup() {
-        console.log('[App] Force cleanup for emailsortpro.netlify.app...');
+        console.log('[App] Force cleanup...');
         
         this.user = null;
         this.isAuthenticated = false;
@@ -494,7 +366,7 @@ class App {
     }
 
     showLogin() {
-        console.log('[App] Showing login page for emailsortpro.netlify.app');
+        console.log('[App] Showing login page');
         
         // S'assurer que la page de login est visible
         const loginPage = document.getElementById('loginPage');
@@ -512,15 +384,15 @@ class App {
         }
     }
 
-    // MÉTHODE CORRIGÉE - Affichage forcé de l'application
+    // MÉTHODE CORRIGÉE - Affichage forcé de l'application avec redirection vers SCANNER
     showAppWithTransition() {
-        console.log('[App] Showing application with FORCED transition for emailsortpro.netlify.app');
+        console.log('[App] Showing application with FORCED transition - Redirecting to SCANNER');
         
         this.hideModernLoading();
         
         // ÉTAPE 1: Activer immédiatement le mode app
         document.body.classList.add('app-active');
-        console.log('[App] App mode activated for new domain');
+        console.log('[App] App mode activated');
         
         // ÉTAPE 2: Forcer l'affichage des éléments
         const loginPage = document.getElementById('loginPage');
@@ -563,29 +435,29 @@ class App {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // ÉTAPE 4: Charger le dashboard immédiatement
-        console.log('[App] Loading dashboard for emailsortpro.netlify.app...');
+        // ÉTAPE 4: Charger le SCANNER au lieu du dashboard
+        console.log('[App] Loading SCANNER page...');
         if (window.pageManager) {
             // Petit délai pour s'assurer que tout est prêt
             setTimeout(() => {
-                window.pageManager.loadPage('dashboard');
-                console.log('[App] Dashboard loading requested');
+                window.pageManager.loadPage('scanner');
+                console.log('[App] Scanner page loading requested');
             }, 100);
         } else {
-            console.warn('[App] PageManager not available, dashboard will show default content');
+            console.warn('[App] PageManager not available, will show default content');
         }
         
         // ÉTAPE 5: Vérifier l'onboarding
         setTimeout(() => {
             if (window.onboardingManager && window.onboardingManager.isFirstTime()) {
-                console.log('[App] Premier utilisateur détecté sur emailsortpro.netlify.app');
+                console.log('[App] Premier utilisateur détecté');
             }
         }, 500);
         
         // ÉTAPE 6: Forcer l'affichage avec CSS (sécurité)
         this.forceAppDisplay();
         
-        console.log('[App] ✅ Application fully displayed for emailsortpro.netlify.app');
+        console.log('[App] ✅ Application fully displayed - Scanner page loaded');
     }
 
     // Nouvelle méthode pour forcer l'affichage via CSS
@@ -621,7 +493,7 @@ class App {
         }
         
         document.head.appendChild(forceDisplayStyle);
-        console.log('[App] Force display CSS injected for emailsortpro.netlify.app');
+        console.log('[App] Force display CSS injected');
     }
 
     showModernLoading(message = 'Chargement...') {
@@ -631,7 +503,7 @@ class App {
             if (loadingText) {
                 loadingText.innerHTML = `
                     <div>${message}</div>
-                    <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">emailsortpro.netlify.app</div>
+                    <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
                 `;
             }
             loadingOverlay.classList.add('active');
@@ -648,7 +520,7 @@ class App {
     }
 
     showError(message) {
-        console.error('[App] Showing error for emailsortpro.netlify.app:', message);
+        console.error('[App] Showing error:', message);
         
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
@@ -661,10 +533,6 @@ class App {
                         <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
                         <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0;">
                             <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
-                            <div style="margin-top: 15px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; font-size: 0.9rem;">
-                                <strong>Domaine:</strong> emailsortpro.netlify.app<br>
-                                <strong>Statut:</strong> ${window.location.hostname === this.expectedDomain ? '✅ Correct' : '❌ Incorrect'}
-                            </div>
                         </div>
                         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                             <button onclick="location.reload()" class="cta-button">
@@ -675,10 +543,6 @@ class App {
                                 <i class="fas fa-undo"></i>
                                 Réinitialiser
                             </button>
-                            <a href="/setup.html" class="cta-button" style="background: rgba(59, 130, 246, 0.8); color: white; text-decoration: none;">
-                                <i class="fas fa-cog"></i>
-                                Configuration
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -718,7 +582,7 @@ class App {
 
 // Fonction globale pour le reset d'urgence
 window.emergencyReset = function() {
-    console.log('[App] Emergency reset triggered for emailsortpro.netlify.app');
+    console.log('[App] Emergency reset triggered');
     
     const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
     const allKeys = Object.keys(localStorage);
@@ -738,7 +602,7 @@ window.emergencyReset = function() {
 
 // Fonction pour forcer l'affichage (accessible globalement)
 window.forceShowApp = function() {
-    console.log('[Global] Force show app triggered for emailsortpro.netlify.app');
+    console.log('[Global] Force show app triggered');
     if (window.app && typeof window.app.showAppWithTransition === 'function') {
         window.app.showAppWithTransition();
     } else {
@@ -749,41 +613,23 @@ window.forceShowApp = function() {
     }
 };
 
-// Fonction de diagnostic domaine (accessible globalement)
-window.checkDomain = function() {
-    console.log('=== DIAGNOSTIC DOMAINE ===');
-    console.log('Domaine actuel:', window.location.hostname);
-    console.log('Domaine attendu: emailsortpro.netlify.app');
-    console.log('URL complète:', window.location.href);
-    console.log('Correspondance:', window.location.hostname === 'emailsortpro.netlify.app');
-    
-    if (window.AppConfig) {
-        console.log('Configuration redirect URI:', window.AppConfig.msal?.redirectUri);
-        console.log('Configuration logout URI:', window.AppConfig.msal?.postLogoutRedirectUri);
-    }
-    
-    if (window.app) {
-        window.app.checkDomainConfiguration();
-    }
-};
-
 function checkServicesReady() {
     const requiredServices = ['authService', 'mailService', 'uiManager'];
     const missingServices = requiredServices.filter(service => !window[service]);
     
     if (missingServices.length > 0) {
-        console.warn('[App] Missing services for emailsortpro.netlify.app:', missingServices);
+        console.warn('[App] Missing services:', missingServices);
         
         if (missingServices.includes('mailService')) {
             console.error('[App] MailService not loaded - Check if MailService.js exists and filename case is correct');
-            console.error('[App] Note: File names are case-sensitive on live servers');
+            console.error('[App] Note: File names are case-sensitive on GitHub Pages (Linux servers)');
         }
         
         return false;
     }
     
     if (!window.AppConfig) {
-        console.warn('[App] Missing AppConfig for emailsortpro.netlify.app');
+        console.warn('[App] Missing AppConfig');
         return false;
     }
     
@@ -796,13 +642,13 @@ function checkServicesReady() {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded for emailsortpro.netlify.app, creating app instance...');
+    console.log('[App] DOM loaded, creating app instance...');
     
     window.app = new App();
     
     const waitForServices = () => {
         if (checkServicesReady()) {
-            console.log('[App] All services ready for emailsortpro.netlify.app, initializing...');
+            console.log('[App] All services ready, initializing...');
             
             const scanStartStatus = window.app.checkScanStartModule();
             console.log('[App] ScanStart status:', scanStartStatus);
@@ -823,11 +669,11 @@ document.addEventListener('DOMContentLoaded', () => {
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.app) {
-            console.error('[App] App instance not created for emailsortpro.netlify.app, creating fallback...');
+            console.error('[App] App instance not created, creating fallback...');
             window.app = new App();
             window.app.init();
         } else if (!window.app.isAuthenticated && !window.app.isInitializing) {
-            console.log('[App] Fallback initialization check for emailsortpro.netlify.app...');
+            console.log('[App] Fallback initialization check...');
             
             const loginPage = document.getElementById('loginPage');
             if (loginPage && loginPage.style.display === 'none') {
@@ -837,4 +683,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded for emailsortpro.netlify.app with enhanced domain verification v3.1');
+console.log('✅ App loaded with SCANNER redirection and improved menu visibility');
