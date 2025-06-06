@@ -1,4 +1,4 @@
-// startscan.js - Version 7.0 - Scanner Ultra-Moderne et Minimaliste
+// startscan.js - Version 7.1 - Scanner Ultra-Moderne Optimisé
 
 class ModernScanStartModule {
     constructor() {
@@ -9,7 +9,7 @@ class ModernScanStartModule {
         this.scanStartTime = null;
         
         this.addModernMinimalStyles();
-        console.log('[ModernScan] Ultra-modern minimal scanner v7.0 initialized');
+        console.log('[ModernScan] Ultra-modern optimized scanner v7.1 initialized');
     }
 
     addModernMinimalStyles() {
@@ -18,7 +18,7 @@ class ModernScanStartModule {
         const styles = document.createElement('style');
         styles.id = 'modern-minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Moderne Minimaliste */
+            /* Scanner Ultra-Moderne Optimisé */
             .modern-scanner {
                 min-height: 80vh;
                 display: flex;
@@ -35,7 +35,7 @@ class ModernScanStartModule {
                 backdrop-filter: blur(20px);
                 border-radius: 24px;
                 padding: 60px 40px;
-                max-width: 500px;
+                max-width: 550px;
                 width: 100%;
                 text-align: center;
                 box-shadow: 
@@ -58,7 +58,7 @@ class ModernScanStartModule {
             
             /* Header épuré */
             .modern-header {
-                margin-bottom: 40px;
+                margin-bottom: 32px;
             }
             
             .modern-logo {
@@ -92,8 +92,72 @@ class ModernScanStartModule {
             .modern-subtitle {
                 font-size: 16px;
                 color: #6b7280;
-                margin: 0;
+                margin: 0 0 32px 0;
                 font-weight: 400;
+            }
+
+            /* Section d'explication */
+            .explanation-section {
+                margin-bottom: 40px;
+                text-align: left;
+                background: rgba(102, 126, 234, 0.05);
+                border-radius: 16px;
+                padding: 24px;
+                border: 1px solid rgba(102, 126, 234, 0.1);
+            }
+
+            .explanation-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 16px;
+                text-align: center;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .explanation-steps {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+
+            .explanation-step {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .step-number {
+                width: 24px;
+                height: 24px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 12px;
+                font-weight: 600;
+                flex-shrink: 0;
+                margin-top: 2px;
+            }
+
+            .step-content {
+                flex: 1;
+            }
+
+            .step-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1a1a2e;
+                margin-bottom: 2px;
+            }
+
+            .step-description {
+                font-size: 12px;
+                color: #6b7280;
+                line-height: 1.4;
             }
             
             /* Sélecteur de durée moderne */
@@ -208,63 +272,33 @@ class ModernScanStartModule {
                 gap: 10px;
             }
             
-            /* Section de progression ultra-moderne */
+            /* Section de progression minimaliste */
             .progress-section-modern {
                 opacity: 0;
                 transform: translateY(20px);
                 transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
                 margin-top: 32px;
+                text-align: center;
             }
             
             .progress-section-modern.active {
                 opacity: 1;
                 transform: translateY(0);
             }
-            
-            .progress-circle-container {
-                position: relative;
-                width: 120px;
-                height: 120px;
+
+            .progress-spinner {
+                width: 60px;
+                height: 60px;
                 margin: 0 auto 24px;
-            }
-            
-            .progress-circle {
-                width: 120px;
-                height: 120px;
+                border: 3px solid rgba(102, 126, 234, 0.2);
+                border-top: 3px solid #667eea;
                 border-radius: 50%;
-                background: conic-gradient(
-                    from 0deg,
-                    #667eea 0deg,
-                    #764ba2 var(--progress, 0deg),
-                    #e5e7eb var(--progress, 0deg)
-                );
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                position: relative;
-                animation: circleRotate 2s linear infinite;
+                animation: spin 1s linear infinite;
             }
-            
-            @keyframes circleRotate {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-            
-            .progress-circle::before {
-                content: '';
-                width: 100px;
-                height: 100px;
-                background: white;
-                border-radius: 50%;
-                position: absolute;
-            }
-            
-            .progress-percentage {
-                position: absolute;
-                font-size: 20px;
-                font-weight: 700;
-                color: #1a1a2e;
-                z-index: 1;
+
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
             }
             
             .progress-details-modern {
@@ -282,30 +316,6 @@ class ModernScanStartModule {
                 font-size: 14px;
                 color: #6b7280;
                 margin-bottom: 16px;
-            }
-            
-            .progress-steps {
-                display: flex;
-                justify-content: center;
-                gap: 8px;
-                margin-bottom: 20px;
-            }
-            
-            .progress-step {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #e5e7eb;
-                transition: all 0.3s ease;
-            }
-            
-            .progress-step.active {
-                background: #667eea;
-                transform: scale(1.2);
-            }
-            
-            .progress-step.completed {
-                background: #10b981;
             }
             
             /* Timer moderne */
@@ -329,112 +339,6 @@ class ModernScanStartModule {
             @keyframes tick {
                 0%, 100% { transform: scale(1); }
                 50% { transform: scale(1.1); }
-            }
-            
-            /* Résultats finaux */
-            .scan-results-modern {
-                text-align: center;
-                padding: 32px 0;
-            }
-            
-            .success-icon {
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 auto 24px;
-                font-size: 36px;
-                color: white;
-                animation: successPulse 0.6s ease-out;
-                box-shadow: 0 8px 32px rgba(16, 185, 129, 0.3);
-            }
-            
-            @keyframes successPulse {
-                0% { transform: scale(0); opacity: 0; }
-                50% { transform: scale(1.1); }
-                100% { transform: scale(1); opacity: 1; }
-            }
-            
-            .results-title {
-                font-size: 24px;
-                font-weight: 700;
-                color: #1a1a2e;
-                margin-bottom: 8px;
-            }
-            
-            .results-subtitle {
-                font-size: 16px;
-                color: #6b7280;
-                margin-bottom: 24px;
-            }
-            
-            .results-stats {
-                display: flex;
-                justify-content: center;
-                gap: 24px;
-                margin-bottom: 32px;
-            }
-            
-            .stat-item {
-                text-align: center;
-            }
-            
-            .stat-value {
-                font-size: 28px;
-                font-weight: 700;
-                color: #667eea;
-                display: block;
-            }
-            
-            .stat-label {
-                font-size: 12px;
-                color: #9ca3af;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                margin-top: 4px;
-            }
-            
-            .action-buttons {
-                display: flex;
-                gap: 12px;
-                justify-content: center;
-            }
-            
-            .btn-modern {
-                padding: 12px 24px;
-                border-radius: 12px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                border: none;
-                transition: all 0.3s ease;
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .btn-primary-modern {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-            }
-            
-            .btn-primary-modern:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-            }
-            
-            .btn-secondary-modern {
-                background: rgba(102, 126, 234, 0.1);
-                color: #667eea;
-                border: 1px solid rgba(102, 126, 234, 0.2);
-            }
-            
-            .btn-secondary-modern:hover {
-                background: rgba(102, 126, 234, 0.15);
             }
             
             /* Info badge moderne */
@@ -465,19 +369,15 @@ class ModernScanStartModule {
                 .modern-title {
                     font-size: 28px;
                 }
+
+                .explanation-steps {
+                    grid-template-columns: 1fr;
+                    gap: 12px;
+                }
                 
                 .duration-options {
                     flex-direction: column;
                     gap: 4px;
-                }
-                
-                .results-stats {
-                    flex-direction: column;
-                    gap: 16px;
-                }
-                
-                .action-buttons {
-                    flex-direction: column;
                 }
             }
             
@@ -496,6 +396,15 @@ class ModernScanStartModule {
                 .progress-subtitle-modern {
                     color: #9ca3af;
                 }
+
+                .explanation-section {
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                }
+
+                .step-title {
+                    color: white;
+                }
                 
                 .duration-options {
                     background: rgba(255, 255, 255, 0.05);
@@ -505,24 +414,24 @@ class ModernScanStartModule {
                     background: rgba(255, 255, 255, 0.1);
                 }
                 
-                .progress-circle::before {
-                    background: rgba(30, 30, 46, 0.95);
-                }
-                
-                .progress-percentage,
                 .progress-title-modern {
                     color: white;
+                }
+
+                .progress-spinner {
+                    border-color: rgba(255, 255, 255, 0.2);
+                    border-top-color: #667eea;
                 }
             }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[ModernScan] ✅ Modern minimal styles added');
+        console.log('[ModernScan] ✅ Modern optimized styles added');
     }
 
     async render(container) {
-        console.log('[ModernScan] Rendering ultra-modern minimal scanner...');
+        console.log('[ModernScan] Rendering ultra-modern optimized scanner...');
         
         try {
             this.addModernMinimalStyles();
@@ -558,6 +467,43 @@ class ModernScanStartModule {
                         <h1 class="modern-title">Scanner intelligent</h1>
                         <p class="modern-subtitle">Organisez vos emails automatiquement</p>
                     </div>
+
+                    <div class="explanation-section">
+                        <div class="explanation-title">Comment ça marche ?</div>
+                        <div class="explanation-steps">
+                            <div class="explanation-step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <div class="step-title">Connexion sécurisée</div>
+                                    <div class="step-description">Accès à votre boîte mail Microsoft</div>
+                                </div>
+                            </div>
+                            
+                            <div class="explanation-step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <div class="step-title">Analyse intelligente</div>
+                                    <div class="step-description">Classification automatique par IA</div>
+                                </div>
+                            </div>
+                            
+                            <div class="explanation-step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <div class="step-title">Organisation</div>
+                                    <div class="step-description">Tri par catégories et priorités</div>
+                                </div>
+                            </div>
+                            
+                            <div class="explanation-step">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <div class="step-title">Résultats</div>
+                                    <div class="step-description">Tableau de bord complet</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="duration-selector">
                         <div class="duration-label">Période d'analyse</div>
@@ -592,11 +538,7 @@ class ModernScanStartModule {
                     </div>
                     
                     <div class="progress-section-modern" id="progressSection">
-                        <div class="progress-circle-container">
-                            <div class="progress-circle" id="progressCircle">
-                                <div class="progress-percentage" id="progressPercentage">0%</div>
-                            </div>
-                        </div>
+                        <div class="progress-spinner"></div>
                         
                         <div class="progress-details-modern">
                             <div class="scan-timer" id="scanTimer">
@@ -604,16 +546,8 @@ class ModernScanStartModule {
                                 <span id="timerText">00:00</span>
                             </div>
                             
-                            <div class="progress-title-modern" id="progressTitle">Initialisation...</div>
-                            <div class="progress-subtitle-modern" id="progressSubtitle">Préparation du scan</div>
-                            
-                            <div class="progress-steps">
-                                <div class="progress-step" id="step1"></div>
-                                <div class="progress-step" id="step2"></div>
-                                <div class="progress-step" id="step3"></div>
-                                <div class="progress-step" id="step4"></div>
-                                <div class="progress-step" id="step5"></div>
-                            </div>
+                            <div class="progress-title-modern" id="progressTitle">Analyse en cours...</div>
+                            <div class="progress-subtitle-modern" id="progressSubtitle">Traitement de vos emails</div>
                         </div>
                     </div>
                 </div>
@@ -720,7 +654,7 @@ class ModernScanStartModule {
     async startModernScan() {
         if (this.scanInProgress) return;
         
-        console.log('[ModernScan] 🚀 Starting modern scan for', this.selectedDays, 'days');
+        console.log('[ModernScan] 🚀 Starting optimized scan for', this.selectedDays, 'days');
         
         try {
             this.scanInProgress = true;
@@ -732,8 +666,8 @@ class ModernScanStartModule {
             
             this.startTimer();
             
-            // Étapes du scan
-            await this.executeModernScanSteps();
+            // Scan rapide optimisé
+            await this.executeOptimizedScan();
             
         } catch (error) {
             console.error('[ModernScan] Scan error:', error);
@@ -741,65 +675,33 @@ class ModernScanStartModule {
         }
     }
 
-    async executeModernScanSteps() {
-        const steps = [
-            { title: 'Connexion', subtitle: 'Accès à votre boîte email', duration: 800 },
-            { title: 'Récupération', subtitle: 'Téléchargement des emails', duration: 2000 },
-            { title: 'Analyse', subtitle: 'Classification intelligente', duration: 1500 },
-            { title: 'Organisation', subtitle: 'Tri par catégories', duration: 1000 },
-            { title: 'Finalisation', subtitle: 'Sauvegarde des résultats', duration: 500 }
-        ];
+    async executeOptimizedScan() {
+        // Scan minimal et rapide - 2 secondes maximum
+        this.updateProgress('Connexion...', 'Accès à votre boîte email');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        for (let i = 0; i < steps.length; i++) {
-            const step = steps[i];
-            
-            // Activer l'étape
-            this.setActiveStep(i + 1);
-            this.updateProgress((i + 1) * 20, step.title, step.subtitle);
-            
-            // Simuler le travail de l'étape
-            if (i === 1) {
-                // Étape de récupération - faire le vrai scan
-                await this.performRealScan();
-            } else {
-                // Autres étapes - simulation
-                await new Promise(resolve => setTimeout(resolve, step.duration));
-            }
-            
-            // Marquer comme complétée
-            this.setStepCompleted(i + 1);
-        }
+        this.updateProgress('Analyse...', 'Classification des emails');
         
-        this.showResults();
-    }
-
-    async performRealScan() {
+        // Effectuer le vrai scan si disponible
         try {
             if (window.emailScanner) {
                 const results = await window.emailScanner.scan({
                     days: this.selectedDays,
                     folder: 'inbox',
-                    onProgress: (progress) => {
-                        if (progress.progress) {
-                            const percent = 20 + Math.floor((progress.progress.current / progress.progress.total) * 60);
-                            this.updateProgress(percent, 'Récupération', progress.message || 'Téléchargement...');
-                        }
-                    }
+                    quick: true // Mode rapide
                 });
-                
                 this.scanResults = results;
             } else {
-                // Mode démo
+                // Mode démo rapide
                 this.scanResults = {
                     success: true,
-                    total: 147,
-                    categorized: 132,
+                    total: Math.floor(Math.random() * 200) + 50,
+                    categorized: Math.floor(Math.random() * 150) + 40,
                     stats: { processed: 147, errors: 0 }
                 };
             }
         } catch (error) {
             console.error('[ModernScan] Real scan error:', error);
-            // Continuer avec des résultats de démo
             this.scanResults = {
                 success: true,
                 total: 0,
@@ -807,42 +709,17 @@ class ModernScanStartModule {
                 stats: { processed: 0, errors: 1 }
             };
         }
-    }
-
-    setActiveStep(stepNumber) {
-        for (let i = 1; i <= 5; i++) {
-            const step = document.getElementById(`step${i}`);
-            if (step) {
-                step.classList.remove('active');
-                if (i === stepNumber) {
-                    step.classList.add('active');
-                }
-            }
-        }
-    }
-
-    setStepCompleted(stepNumber) {
-        const step = document.getElementById(`step${stepNumber}`);
-        if (step) {
-            step.classList.remove('active');
-            step.classList.add('completed');
-        }
-    }
-
-    updateProgress(percent, title, subtitle) {
-        // Mettre à jour le cercle de progression
-        const circle = document.getElementById('progressCircle');
-        if (circle) {
-            circle.style.setProperty('--progress', `${(percent / 100) * 360}deg`);
-        }
         
-        // Mettre à jour le pourcentage
-        const percentageEl = document.getElementById('progressPercentage');
-        if (percentageEl) {
-            percentageEl.textContent = `${Math.round(percent)}%`;
-        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Mettre à jour les textes
+        this.updateProgress('Finalisation...', 'Préparation des résultats');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Redirection automatique vers les résultats
+        this.redirectToResults();
+    }
+
+    updateProgress(title, subtitle) {
         const titleEl = document.getElementById('progressTitle');
         if (titleEl) titleEl.textContent = title;
         
@@ -869,59 +746,34 @@ class ModernScanStartModule {
         }
     }
 
-    showResults() {
+    redirectToResults() {
         this.stopTimer();
-        
-        const totalEmails = this.scanResults?.total || 0;
-        const categorizedEmails = this.scanResults?.categorized || 0;
-        const scanDuration = Math.floor((Date.now() - this.scanStartTime) / 1000);
-        
-        const progressSection = document.getElementById('progressSection');
-        if (progressSection) {
-            progressSection.innerHTML = `
-                <div class="scan-results-modern">
-                    <div class="success-icon">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    
-                    <div class="results-title">Scan terminé !</div>
-                    <div class="results-subtitle">Vos emails ont été analysés et organisés</div>
-                    
-                    <div class="results-stats">
-                        <div class="stat-item">
-                            <span class="stat-value">${totalEmails}</span>
-                            <span class="stat-label">Emails analysés</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-value">${categorizedEmails}</span>
-                            <span class="stat-label">Catégorisés</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-value">${scanDuration}s</span>
-                            <span class="stat-label">Durée</span>
-                        </div>
-                    </div>
-                    
-                    <div class="action-buttons">
-                        <button class="btn-modern btn-primary-modern" onclick="window.pageManager.loadPage('emails')">
-                            <i class="fas fa-envelope"></i>
-                            <span>Voir les emails</span>
-                        </button>
-                        <button class="btn-modern btn-secondary-modern" onclick="window.pageManager.loadPage('scanner')">
-                            <i class="fas fa-redo"></i>
-                            <span>Nouveau scan</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-        
         this.scanInProgress = false;
         
-        // Notification
+        // Stocker les résultats pour la page de résultats
+        if (this.scanResults) {
+            sessionStorage.setItem('scanResults', JSON.stringify({
+                ...this.scanResults,
+                scanDuration: Math.floor((Date.now() - this.scanStartTime) / 1000),
+                selectedDays: this.selectedDays,
+                timestamp: Date.now()
+            }));
+        }
+        
+        // Notification de succès
         if (window.uiManager?.showToast) {
+            const totalEmails = this.scanResults?.total || 0;
             window.uiManager.showToast(`✅ ${totalEmails} emails analysés avec succès`, 'success');
         }
+        
+        // Redirection automatique vers la page des emails/résultats
+        setTimeout(() => {
+            if (window.pageManager) {
+                window.pageManager.loadPage('emails');
+            } else {
+                console.log('[ModernScan] PageManager not available, scan completed');
+            }
+        }, 500);
     }
 
     showError(error) {
@@ -930,20 +782,20 @@ class ModernScanStartModule {
         const progressSection = document.getElementById('progressSection');
         if (progressSection) {
             progressSection.innerHTML = `
-                <div class="scan-results-modern">
-                    <div class="success-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">
+                <div style="text-align: center; padding: 32px 0;">
+                    <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: white; font-size: 24px;">
                         <i class="fas fa-times"></i>
                     </div>
                     
-                    <div class="results-title">Erreur de scan</div>
-                    <div class="results-subtitle">${error.message}</div>
+                    <div style="font-size: 18px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px;">Erreur de scan</div>
+                    <div style="font-size: 14px; color: #6b7280; margin-bottom: 24px;">${error.message}</div>
                     
-                    <div class="action-buttons">
-                        <button class="btn-modern btn-primary-modern" onclick="window.pageManager.loadPage('scanner')">
+                    <button class="scan-button-modern" onclick="window.pageManager.loadPage('scanner')" style="width: auto; padding: 0 24px;">
+                        <div class="scan-button-content">
                             <i class="fas fa-redo"></i>
                             <span>Réessayer</span>
-                        </button>
-                    </div>
+                        </div>
+                    </button>
                 </div>
             `;
         }
@@ -956,4 +808,4 @@ class ModernScanStartModule {
 window.modernScanModule = new ModernScanStartModule();
 window.scanStartModule = window.modernScanModule; // Compatibilité
 
-console.log('[ModernScan] 🚀 Ultra-modern minimal scanner ready');
+console.log('[ModernScan] 🚀 Ultra-modern optimized scanner ready');
