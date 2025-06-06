@@ -1608,100 +1608,53 @@ Cordialement,
         return html;
     }
 
-async renderScanner(container) {
-    console.log('[PageManager] Rendering scanner page...');
-    
-    // Attendre que le DOM soit prêt
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Vérifier si ScanStartModule est disponible et initialisé
-    if (window.scanStartModule && 
-        typeof window.scanStartModule.render === 'function') {
+    async renderScanner(container) {
+        console.log('[PageManager] Rendering scanner page...');
         
-        try {
-            console.log('[PageManager] Using ScanStartModule');
+        // Vérifier si le module ScanStart moderne est disponible et correctement initialisé
+        if (window.scanStartModule && 
+            typeof window.scanStartModule.render === 'function' && 
+            window.scanStartModule.stylesAdded) {
             
-            // Vérifier que les styles sont ajoutés
-            if (!window.scanStartModule.stylesAdded) {
-                console.log('[PageManager] Adding ScanStart styles...');
-                window.scanStartModule.addUltraMinimalStyles();
-            }
-            
-            // Attendre un peu plus si nécessaire
-            let attempts = 0;
-            while (!window.scanStartModule.stylesAdded && attempts < 10) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                attempts++;
-            }
-            
-            // Rendre l'interface ScanStart
-            await window.scanStartModule.render(container);
-            return;
-            
-        } catch (error) {
-            console.error('[PageManager] Error with ScanStartModule:', error);
-        }
-    }
-    
-    // Si ScanStartModule n'est pas disponible, attendre un peu et réessayer
-    if (!window.scanStartModule) {
-        console.log('[PageManager] ScanStartModule not found, waiting...');
-        
-        let attempts = 0;
-        const maxAttempts = 20; // 2 secondes maximum
-        
-        while (!window.scanStartModule && attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
-        
-        // Réessayer après l'attente
-        if (window.scanStartModule && typeof window.scanStartModule.render === 'function') {
             try {
-                console.log('[PageManager] Using ScanStartModule after wait');
+                console.log('[PageManager] Using modern ScanStartModule');
                 await window.scanStartModule.render(container);
                 return;
             } catch (error) {
-                console.error('[PageManager] Error with ScanStartModule after wait:', error);
+                console.error('[PageManager] Error with ScanStartModule, falling back:', error);
             }
         }
-    }
-    
-    // Fallback au scanner basique du PageManager
-    console.log('[PageManager] Using fallback scanner interface');
-    this.renderBasicScanner(container);
-}
-
-// Ajouter cette méthode pour forcer le rechargement du scanner
-async reloadScanner() {
-    console.log('[PageManager] Reloading scanner...');
-    
-    // Forcer le rechargement du module ScanStart si nécessaire
-    if (!window.scanStartModule) {
-        try {
-            // Essayer de charger dynamiquement le script
-            const script = document.createElement('script');
-            script.src = 'ScanStart.js';
-            script.onload = () => {
-                console.log('[PageManager] ScanStart.js loaded dynamically');
-                setTimeout(() => {
-                    this.loadPage('scanner');
-                }, 500);
-            };
-            script.onerror = () => {
-                console.error('[PageManager] Failed to load ScanStart.js dynamically');
-                this.renderBasicScanner(document.getElementById('pageContent'));
-            };
-            document.head.appendChild(script);
-        } catch (error) {
-            console.error('[PageManager] Error loading ScanStart.js:', error);
-            this.renderBasicScanner(document.getElementById('pageContent'));
+        
+        // Si le module moderne n'est pas disponible, attendre un peu et réessayer
+        if (window.scanStartModule && !window.scanStartModule.stylesAdded) {
+            console.log('[PageManager] ScanStartModule detected but not ready, waiting...');
+            
+            // Attendre que le module soit prêt
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            while (attempts < maxAttempts && (!window.scanStartModule.stylesAdded || !window.scanStartModule.isInitialized)) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                attempts++;
+            }
+            
+            // Réessayer après l'attente
+            if (window.scanStartModule.stylesAdded && typeof window.scanStartModule.render === 'function') {
+                try {
+                    console.log('[PageManager] Using ScanStartModule after wait');
+                    await window.scanStartModule.render(container);
+                    return;
+                } catch (error) {
+                    console.error('[PageManager] Error with ScanStartModule after wait:', error);
+                }
+            }
         }
-    } else {
-        // Le module existe, juste recharger la page
-        this.loadPage('scanner');
+        
+        // Fallback au scanner basique du PageManager
+        console.log('[PageManager] Using fallback scanner interface');
+        this.renderBasicScanner(container);
     }
-}
+
     renderBasicScanner(container) {
         container.innerHTML = `
             <div class="scanner-container">
