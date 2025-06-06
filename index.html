@@ -106,86 +106,10 @@
             }
         };
         
-        // Créer les services intégrés pour éviter les dépendances externes
-        window.authService = {
-            isInitialized: false,
-            isAuthenticated: () => false,
-            initialize: async function() {
-                console.log('[AuthService] Built-in auth service initializing...');
-                if (typeof msal === 'undefined') {
-                    console.warn('[AuthService] MSAL not available, using mock mode');
-                    this.isInitialized = true;
-                    return;
-                }
-                
-                try {
-                    const msalConfig = {
-                        auth: {
-                            clientId: window.AppConfig.msal.clientId,
-                            authority: window.AppConfig.msal.authority,
-                            redirectUri: window.AppConfig.msal.redirectUri
-                        },
-                        cache: window.AppConfig.msal.cache
-                    };
-                    
-                    this.msalInstance = new msal.PublicClientApplication(msalConfig);
-                    await this.msalInstance.initialize();
-                    this.isInitialized = true;
-                    console.log('[AuthService] Built-in auth service initialized successfully');
-                } catch (error) {
-                    console.error('[AuthService] Initialization error:', error);
-                    this.isInitialized = true; // Continue anyway
-                }
-            },
-            login: async function() {
-                console.log('[AuthService] Built-in login attempt...');
-                if (this.msalInstance) {
-                    try {
-                        const loginRequest = {
-                            scopes: window.AppConfig.scopes.login,
-                            prompt: 'select_account'
-                        };
-                        await this.msalInstance.loginRedirect(loginRequest);
-                    } catch (error) {
-                        console.error('[AuthService] Login error:', error);
-                        throw error;
-                    }
-                } else {
-                    // Mock login pour démonstration
-                    console.log('[AuthService] Mock login - simulating successful authentication');
-                    setTimeout(() => {
-                        const mockUser = {
-                            displayName: 'Utilisateur Test',
-                            mail: 'test@example.com',
-                            userPrincipalName: 'test@example.com'
-                        };
-                        window.displayUserInfo(mockUser);
-                        window.showApp();
-                    }, 2000);
-                }
-            },
-            logout: async function() {
-                console.log('[AuthService] Built-in logout');
-                if (this.msalInstance) {
-                    await this.msalInstance.logoutRedirect();
-                } else {
-                    window.location.reload();
-                }
-            }
-        };
-        
-        window.mailService = {
-            initialized: false,
-            initialize: function() {
-                console.log('[MailService] Built-in mail service initialized');
-                this.initialized = true;
-            }
-        };
-        
+        // UIManager corrigé et complet
         window.uiManager = {
             showToast: function(message, type = 'info', duration = 5000) {
                 console.log(`[Toast ${type}] ${message}`);
-                // Toast simple
                 const toast = document.createElement('div');
                 toast.style.cssText = `
                     position: fixed;
@@ -269,6 +193,384 @@
                         </div>
                     </div>
                 `;
+            }
+        };
+        
+        // AuthService intégré simplifié
+        window.authService = {
+            isInitialized: false,
+            isAuthenticated: () => false,
+            initialize: async function() {
+                console.log('[AuthService] Built-in auth service initializing...');
+                if (typeof msal === 'undefined') {
+                    console.warn('[AuthService] MSAL not available, using mock mode');
+                    this.isInitialized = true;
+                    return;
+                }
+                
+                try {
+                    const msalConfig = {
+                        auth: {
+                            clientId: window.AppConfig.msal.clientId,
+                            authority: window.AppConfig.msal.authority,
+                            redirectUri: window.AppConfig.msal.redirectUri
+                        },
+                        cache: window.AppConfig.msal.cache
+                    };
+                    
+                    this.msalInstance = new msal.PublicClientApplication(msalConfig);
+                    await this.msalInstance.initialize();
+                    this.isInitialized = true;
+                    console.log('[AuthService] Built-in auth service initialized successfully');
+                } catch (error) {
+                    console.error('[AuthService] Initialization error:', error);
+                    this.isInitialized = true; // Continue anyway
+                }
+            },
+            login: async function() {
+                console.log('[AuthService] Built-in login attempt...');
+                if (this.msalInstance) {
+                    try {
+                        const loginRequest = {
+                            scopes: window.AppConfig.scopes.login,
+                            prompt: 'select_account'
+                        };
+                        await this.msalInstance.loginRedirect(loginRequest);
+                    } catch (error) {
+                        console.error('[AuthService] Login error:', error);
+                        throw error;
+                    }
+                } else {
+                    // Mock login pour démonstration
+                    console.log('[AuthService] Mock login - simulating successful authentication');
+                    setTimeout(() => {
+                        const mockUser = {
+                            displayName: 'Utilisateur Test',
+                            mail: 'test@example.com',
+                            userPrincipalName: 'test@example.com'
+                        };
+                        window.displayUserInfo(mockUser);
+                        window.showApp();
+                    }, 2000);
+                }
+            },
+            logout: async function() {
+                console.log('[AuthService] Built-in logout');
+                if (this.msalInstance) {
+                    await this.msalInstance.logoutRedirect();
+                } else {
+                    window.location.reload();
+                }
+            }
+        };
+        
+        window.mailService = {
+            initialized: false,
+            initialize: function() {
+                console.log('[MailService] Built-in mail service initialized');
+                this.initialized = true;
+            }
+        };
+        
+        // PageManager simplifié pour corriger les erreurs
+        window.pageManager = {
+            loadPage: function(pageName) {
+                console.log(`[PageManager] Loading page: ${pageName}`);
+                
+                // Corriger l'appel à showLoading
+                if (window.uiManager && typeof window.uiManager.showLoading === 'function') {
+                    window.uiManager.showLoading(`Chargement de ${pageName}...`);
+                }
+                
+                const pageContent = document.getElementById('pageContent');
+                if (!pageContent) return;
+                
+                // Contenu spécifique selon la page
+                let content = '';
+                
+                switch(pageName) {
+                    case 'dashboard':
+                        content = this.getDashboardContent();
+                        break;
+                    case 'scanner':
+                        content = this.getScannerContent();
+                        break;
+                    case 'emails':
+                        content = this.getEmailsContent();
+                        break;
+                    case 'tasks':
+                        content = this.getTasksContent();
+                        break;
+                    case 'organizer':
+                        content = this.getOrganizerContent();
+                        break;
+                    case 'settings':
+                        content = this.getSettingsContent();
+                        break;
+                    default:
+                        content = this.getDefaultContent(pageName);
+                }
+                
+                pageContent.innerHTML = content;
+                
+                // Masquer le loading après un délai
+                setTimeout(() => {
+                    if (window.uiManager && typeof window.uiManager.hideLoading === 'function') {
+                        window.uiManager.hideLoading();
+                    }
+                }, 500);
+                
+                // Mettre à jour la navigation active
+                this.updateNavigation(pageName);
+            },
+            
+            getDashboardContent: function() {
+                return `
+                    <div class="dashboard-header">
+                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                        <p class="dashboard-subtitle">Organisez et gérez vos emails avec l'intelligence artificielle</p>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="dashboard-card" onclick="window.pageManager.loadPage('scanner')">
+                            <div class="card-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h3 class="card-title">Scanner les emails</h3>
+                            <p class="card-description">Analysez et catégorisez automatiquement vos emails avec l'IA</p>
+                        </div>
+
+                        <div class="dashboard-card" onclick="window.pageManager.loadPage('emails')">
+                            <div class="card-icon">
+                                <i class="fas fa-inbox"></i>
+                            </div>
+                            <h3 class="card-title">Consulter les emails</h3>
+                            <p class="card-description">Accédez à vos emails organisés par catégories intelligentes</p>
+                        </div>
+
+                        <div class="dashboard-card" onclick="window.pageManager.loadPage('tasks')">
+                            <div class="card-icon">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <h3 class="card-title">Gérer les tâches</h3>
+                            <p class="card-description">Suivez les tâches extraites automatiquement de vos emails</p>
+                        </div>
+
+                        <div class="dashboard-card" onclick="window.pageManager.loadPage('organizer')">
+                            <div class="card-icon">
+                                <i class="fas fa-folder-tree"></i>
+                            </div>
+                            <h3 class="card-title">Organiser par domaine</h3>
+                            <p class="card-description">Classez vos emails par expéditeur et domaine d'origine</p>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            getScannerContent: function() {
+                return `
+                    <div class="page-header">
+                        <h1>Scanner d'Emails</h1>
+                        <div class="page-actions">
+                            <button class="btn btn-primary" onclick="window.startEmailScan()">
+                                <i class="fas fa-play"></i>
+                                Démarrer le scan
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3>Configuration du scan</h3>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Dossier à scanner</label>
+                                <select id="folderSelect" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <option value="inbox">Boîte de réception</option>
+                                    <option value="sent">Éléments envoyés</option>
+                                    <option value="archive">Archive</option>
+                                </select>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Nombre d'emails à analyser</label>
+                                <select id="emailCount" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <option value="50">50 emails</option>
+                                    <option value="100">100 emails</option>
+                                    <option value="250">250 emails</option>
+                                    <option value="500">500 emails</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h3>Aperçu du scan</h3>
+                            <div id="scanProgress" style="display: none;">
+                                <div style="background: #f3f4f6; border-radius: 8px; height: 8px; margin: 10px 0;">
+                                    <div id="progressBar" style="background: #4f46e5; height: 100%; border-radius: 8px; width: 0%; transition: width 0.3s;"></div>
+                                </div>
+                                <p id="scanStatus" style="color: #64748b; font-size: 14px;">Préparation du scan...</p>
+                            </div>
+                            <div id="scanResults" style="display: none;">
+                                <p style="color: #10b981; font-weight: 500;">✅ Scan terminé avec succès</p>
+                                <div style="margin-top: 15px;">
+                                    <button class="btn btn-primary" onclick="window.pageManager.loadPage('emails')">
+                                        Voir les résultats
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            getEmailsContent: function() {
+                return `
+                    <div class="page-header">
+                        <h1>Emails Scannés</h1>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-filter"></i>
+                                Filtrer
+                            </button>
+                            <button class="btn btn-primary">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <h3 class="empty-state-title">Aucun email scanné</h3>
+                        <p class="empty-state-text">
+                            Commencez par scanner vos emails pour voir les résultats ici.
+                        </p>
+                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                            <i class="fas fa-search"></i>
+                            Scanner les emails
+                        </button>
+                    </div>
+                `;
+            },
+            
+            getTasksContent: function() {
+                return `
+                    <div class="page-header">
+                        <h1>Tâches Extraites</h1>
+                        <div class="page-actions">
+                            <button class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Nouvelle tâche
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <h3 class="empty-state-title">Aucune tâche trouvée</h3>
+                        <p class="empty-state-text">
+                            Les tâches seront automatiquement extraites de vos emails lors du scan.
+                        </p>
+                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                            <i class="fas fa-search"></i>
+                            Scanner pour extraire les tâches
+                        </button>
+                    </div>
+                `;
+            },
+            
+            getOrganizerContent: function() {
+                return `
+                    <div class="page-header">
+                        <h1>Organisation par Domaine</h1>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary">
+                                <i class="fas fa-cog"></i>
+                                Configurer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-folder-tree"></i>
+                        </div>
+                        <h3 class="empty-state-title">Organisation en cours</h3>
+                        <p class="empty-state-text">
+                            Vos emails seront automatiquement organisés par domaine d'expéditeur.
+                        </p>
+                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                            <i class="fas fa-search"></i>
+                            Commencer l'organisation
+                        </button>
+                    </div>
+                `;
+            },
+            
+            getSettingsContent: function() {
+                return `
+                    <div class="page-header">
+                        <h1>Paramètres</h1>
+                    </div>
+
+                    <div class="grid grid-2">
+                        <div class="card">
+                            <h3>Configuration IA</h3>
+                            <p style="color: #64748b; margin-bottom: 20px;">
+                                Configurez les paramètres d'analyse intelligente des emails.
+                            </p>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Niveau de détail</label>
+                                <select style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <option>Basique</option>
+                                    <option>Détaillé</option>
+                                    <option>Avancé</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary">Sauvegarder</button>
+                        </div>
+
+                        <div class="card">
+                            <h3>Compte Microsoft</h3>
+                            <p style="color: #64748b; margin-bottom: 20px;">
+                                Gérez votre connexion et vos autorisations.
+                            </p>
+                            <button class="btn btn-secondary" onclick="window.authService.logout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Se déconnecter
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            getDefaultContent: function(pageName) {
+                return `
+                    <div class="page-header">
+                        <h1>Page ${pageName}</h1>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-cog fa-spin"></i>
+                        </div>
+                        <h3 class="empty-state-title">Fonctionnalité en développement</h3>
+                        <p class="empty-state-text">
+                            Cette section sera bientôt disponible.
+                        </p>
+                    </div>
+                `;
+            },
+            
+            updateNavigation: function(activePage) {
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.page === activePage) {
+                        item.classList.add('active');
+                    }
+                });
             }
         };
         
@@ -627,34 +929,6 @@
             font-weight: 500;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header-content {
-                padding: 0 16px;
-                height: 56px;
-            }
-
-            .logo {
-                font-size: 1.125rem;
-            }
-
-            .main-nav {
-                gap: 1px;
-            }
-
-            .nav-item {
-                padding: 6px 8px;
-                font-size: 0.8rem;
-            }
-
-            .nav-item span {
-                display: none;
-            }
-
-            .user-details {
-                display: none;
-            }
-
         /* Styles globaux pour l'application */
         .page-header {
             display: flex;
@@ -712,16 +986,6 @@
             background: #e5e7eb;
         }
 
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 13px;
-        }
-
-        .btn-large {
-            padding: 16px 24px;
-            font-size: 16px;
-        }
-
         .card {
             background: white;
             border-radius: 12px;
@@ -745,14 +1009,6 @@
 
         .grid-2 {
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        }
-
-        .grid-3 {
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        }
-
-        .grid-4 {
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         }
 
         .empty-state {
@@ -780,90 +1036,43 @@
             margin-bottom: 24px;
         }
 
-        .search-bar-container {
-            margin: 20px 0;
-        }
-
-        .search-bar {
-            position: relative;
-            max-width: 500px;
-        }
-
-        .search-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            color: #9ca3af;
-            z-index: 1;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 12px 12px 12px 40px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-            transition: border-color 0.2s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #4f46e5;
-        }
-
-        .search-clear-btn {
-            position: absolute;
-            right: 8px;
-            width: 24px;
-            height: 24px;
-            border: none;
-            background: #e5e7eb;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .search-clear-btn:hover {
-            background: #d1d5db;
-        }
-
-        .selection-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #1e40af;
-        }
-
-        .selection-count {
-            font-weight: 600;
-        }
-
-        /* Variables CSS pour les couleurs */
-        :root {
-            --primary: #4f46e5;
-            --secondary: #64748b;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #3b82f6;
-        }
-
+        /* Responsive */
         @media (max-width: 768px) {
+            .header-content {
+                padding: 0 16px;
+                height: 56px;
+            }
+
+            .logo {
+                font-size: 1.125rem;
+            }
+
+            .main-nav {
+                gap: 1px;
+            }
+
+            .nav-item {
+                padding: 6px 8px;
+                font-size: 0.8rem;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+
+            .user-details {
+                display: none;
+            }
+
+            .page-content {
+                padding: 20px 16px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
             .page-header {
                 flex-direction: column;
                 gap: 16px;
@@ -874,18 +1083,8 @@
                 justify-content: center;
             }
 
-            .grid-2, .grid-3, .grid-4 {
+            .grid-2 {
                 grid-template-columns: 1fr;
-            }
-        }
-
-            .page-content {
-                padding: 20px 16px;
-            }
-
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
             }
         }
     </style>
@@ -964,44 +1163,7 @@
     <!-- Contenu principal -->
     <main class="app-main">
         <div id="pageContent" class="page-content">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
-                <p class="dashboard-subtitle">Organisez et gérez vos emails avec l'intelligence artificielle</p>
-            </div>
-
-            <div class="dashboard-grid">
-                <div class="dashboard-card" onclick="navigateToPage('scanner')">
-                    <div class="card-icon">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <h3 class="card-title">Scanner les emails</h3>
-                    <p class="card-description">Analysez et catégorisez automatiquement vos emails avec l'IA</p>
-                </div>
-
-                <div class="dashboard-card" onclick="navigateToPage('emails')">
-                    <div class="card-icon">
-                        <i class="fas fa-inbox"></i>
-                    </div>
-                    <h3 class="card-title">Consulter les emails</h3>
-                    <p class="card-description">Accédez à vos emails organisés par catégories intelligentes</p>
-                </div>
-
-                <div class="dashboard-card" onclick="navigateToPage('tasks')">
-                    <div class="card-icon">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <h3 class="card-title">Gérer les tâches</h3>
-                    <p class="card-description">Suivez les tâches extraites automatiquement de vos emails</p>
-                </div>
-
-                <div class="dashboard-card" onclick="navigateToPage('organizer')">
-                    <div class="card-icon">
-                        <i class="fas fa-folder-tree"></i>
-                    </div>
-                    <h3 class="card-title">Organiser par domaine</h3>
-                    <p class="card-description">Classez vos emails par expéditeur et domaine d'origine</p>
-                </div>
-            </div>
+            <!-- Le contenu sera chargé dynamiquement par pageManager -->
         </div>
     </main>
 
@@ -1026,6 +1188,9 @@
             // Cacher le loading
             const loading = document.getElementById('loadingOverlay');
             if (loading) loading.classList.remove('active');
+            
+            // Charger le dashboard par défaut
+            window.pageManager.loadPage('dashboard');
         }
 
         // Fonction pour afficher les infos utilisateur
@@ -1058,33 +1223,48 @@
             }
         }
 
-        // Navigation
-        function navigateToPage(page) {
-            console.log('[NAV] Navigating to page:', page);
+        // Fonction de scan des emails (simulation)
+        function startEmailScan() {
+            console.log('[SCAN] Starting email scan...');
             
-            // Mettre à jour la navigation active
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.classList.remove('active');
-                if (item.dataset.page === page) {
-                    item.classList.add('active');
-                }
-            });
-
-            // Charger le contenu de la page
-            const pageContent = document.getElementById('pageContent');
-            if (pageContent) {
-                pageContent.innerHTML = `
-                    <div class="dashboard-header">
-                        <h1 class="dashboard-title">Page ${page}</h1>
-                        <p class="dashboard-subtitle">Contenu de la page ${page} en cours de développement</p>
-                    </div>
-                    <div style="text-align: center; padding: 60px; color: #64748b;">
-                        <i class="fas fa-cog fa-spin" style="font-size: 3rem; margin-bottom: 20px; color: #4f46e5;"></i>
-                        <p style="font-size: 1.1rem; margin-bottom: 10px;">Module en cours de chargement...</p>
-                        <p style="font-size: 0.9rem;">Cette fonctionnalité sera bientôt disponible</p>
-                    </div>
-                `;
+            const scanProgress = document.getElementById('scanProgress');
+            const scanResults = document.getElementById('scanResults');
+            const progressBar = document.getElementById('progressBar');
+            const scanStatus = document.getElementById('scanStatus');
+            
+            if (scanProgress) {
+                scanProgress.style.display = 'block';
+                if (scanResults) scanResults.style.display = 'none';
+                
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 100) progress = 100;
+                    
+                    if (progressBar) progressBar.style.width = progress + '%';
+                    
+                    if (scanStatus) {
+                        if (progress < 30) {
+                            scanStatus.textContent = 'Connexion à Microsoft Graph...';
+                        } else if (progress < 60) {
+                            scanStatus.textContent = 'Récupération des emails...';
+                        } else if (progress < 90) {
+                            scanStatus.textContent = 'Analyse IA en cours...';
+                        } else if (progress < 100) {
+                            scanStatus.textContent = 'Finalisation...';
+                        } else {
+                            scanStatus.textContent = 'Scan terminé !';
+                        }
+                    }
+                    
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        setTimeout(() => {
+                            if (scanProgress) scanProgress.style.display = 'none';
+                            if (scanResults) scanResults.style.display = 'block';
+                        }, 500);
+                    }
+                }, 200);
             }
         }
 
@@ -1099,12 +1279,8 @@
             
             // Afficher l'app après un court délai pour s'assurer que tout est prêt
             setTimeout(() => {
-                if (!appInitialized) {
-                    console.log('[APP] Auto-showing app with built-in services');
-                    showApp();
-                    // Charger le dashboard par défaut
-                    navigateToPage('dashboard');
-                }
+                console.log('[APP] Auto-showing app with built-in services');
+                showApp();
             }, 1000);
 
             // Bouton de connexion
@@ -1125,7 +1301,9 @@
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
                         this.disabled = false;
                         if (loading) loading.classList.remove('active');
-                        window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
+                        if (window.uiManager) {
+                            window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
+                        }
                     });
                 });
             }
@@ -1136,8 +1314,8 @@
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
                     const page = this.dataset.page;
-                    if (page) {
-                        navigateToPage(page);
+                    if (page && window.pageManager) {
+                        window.pageManager.loadPage(page);
                     }
                 });
             });
@@ -1146,164 +1324,9 @@
         // Fonctions globales pour compatibilité
         window.displayUserInfo = displayUserInfo;
         window.showApp = showApp;
-        window.navigateToPage = navigateToPage;
         window.startEmailScan = startEmailScan;
-
-        // Fonctions globales pour compatibilité
-        window.displayUserInfo = displayUserInfo;
-        window.showApp = showApp;
-        window.navigateToPage = navigateToPage;
-        
-        // Créer les services manquants si nécessaire
-        if (!window.categoryManager) {
-            window.categoryManager = {
-                getCategories: function() {
-                    return {
-                        professional: { name: 'Professionnel', icon: '💼', color: '#3b82f6' },
-                        personal: { name: 'Personnel', icon: '❤️', color: '#ef4444' },
-                        promotions: { name: 'Promotions', icon: '🏷️', color: '#f59e0b' },
-                        social: { name: 'Social', icon: '👥', color: '#10b981' }
-                    };
-                },
-                getCategory: function(id) {
-                    const categories = this.getCategories();
-                    return categories[id] || { name: id, icon: '📂', color: '#6b7280' };
-                },
-                analyzeEmail: function(email) {
-                    // Classification simple basée sur des mots-clés
-                    const subject = (email.subject || '').toLowerCase();
-                    const sender = (email.from?.emailAddress?.address || '').toLowerCase();
-                    
-                    if (sender.includes('linkedin') || sender.includes('facebook') || sender.includes('twitter')) {
-                        return { category: 'social', confidence: 0.8 };
-                    }
-                    if (subject.includes('promotion') || subject.includes('offre') || subject.includes('solde')) {
-                        return { category: 'promotions', confidence: 0.7 };
-                    }
-                    if (subject.includes('réunion') || subject.includes('meeting') || subject.includes('projet')) {
-                        return { category: 'professional', confidence: 0.6 };
-                    }
-                    
-                    return { category: 'other', confidence: 0.5 };
-                }
-            };
-        }
-
-        if (!window.taskManager) {
-            window.taskManager = {
-                tasks: [],
-                createTask: function(taskData) {
-                    const task = {
-                        ...taskData,
-                        id: taskData.id || 'task-' + Date.now(),
-                        createdAt: taskData.createdAt || new Date().toISOString()
-                    };
-                    this.tasks.push(task);
-                    return task;
-                },
-                createTaskFromEmail: function(taskData, email) {
-                    const task = this.createTask({
-                        ...taskData,
-                        hasEmail: true,
-                        emailContent: email.bodyPreview || email.subject || 'Email associé'
-                    });
-                    return task;
-                },
-                saveTasks: function() {
-                    try {
-                        localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
-                    } catch (e) {
-                        console.warn('Could not save tasks:', e);
-                    }
-                },
-                loadTasks: function() {
-                    try {
-                        const saved = localStorage.getItem('emailsort_tasks');
-                        if (saved) {
-                            this.tasks = JSON.parse(saved);
-                        }
-                    } catch (e) {
-                        console.warn('Could not load tasks:', e);
-                    }
-                },
-                getStats: function() {
-                    const total = this.tasks.length;
-                    const byStatus = {
-                        todo: this.tasks.filter(t => t.status === 'todo').length,
-                        'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
-                        completed: this.tasks.filter(t => t.status === 'completed').length
-                    };
-                    const overdue = this.tasks.filter(t => {
-                        if (!t.dueDate) return false;
-                        return new Date(t.dueDate) < new Date() && t.status !== 'completed';
-                    }).length;
-                    
-                    return { total, byStatus, overdue };
-                }
-            };
-            
-            // Charger les tâches sauvegardées
-            window.taskManager.loadTasks();
-        }
-
-        if (!window.aiTaskAnalyzer) {
-            window.aiTaskAnalyzer = {
-                isConfigured: function() {
-                    return false; // Mode démo
-                },
-                analyzeEmailForTasks: async function(email, options = {}) {
-                    // Analyse simple sans IA externe
-                    const subject = email.subject || 'Email sans sujet';
-                    const sender = email.from?.emailAddress?.name || 'Expéditeur inconnu';
-                    
-                    return {
-                        mainTask: {
-                            title: `Traiter: ${subject}`,
-                            description: `Email de ${sender}\n\nSujet: ${subject}\n\nContenu: ${email.bodyPreview || 'Aucun aperçu'}`,
-                            priority: 'medium',
-                            dueDate: null
-                        },
-                        summary: `Email de ${sender} concernant: ${subject}`,
-                        importance: 'medium',
-                        actionPoints: [
-                            'Lire le contenu complet',
-                            'Évaluer les actions requises',
-                            'Répondre si nécessaire'
-                        ],
-                        actionsHighlighted: [
-                            { action: 'Lire et analyser', deadline: null }
-                        ],
-                        insights: {
-                            responseExpected: subject.includes('?') || email.bodyPreview?.includes('?'),
-                            keyInfo: [`Expéditeur: ${sender}`, `Date: ${new Date(email.receivedDateTime).toLocaleDateString()}`],
-                            risks: []
-                        },
-                        suggestedReplies: [],
-                        subtasks: [],
-                        tags: ['email', sender.split('@')[1]?.split('.')[0] || 'unknown'].filter(Boolean)
-                    };
-                },
-                showConfigurationModal: function() {
-                    window.uiManager.showToast('Configuration IA non disponible en mode démo', 'info');
-                }
-            };
-        }
         
         console.log('[APP] Application script loaded successfully');
     </script>
-
-    <!-- Scripts externes (optionnels - l'app fonctionne sans eux) -->
-    <script>
-        // Remplacer les scripts externes par des stubs s'ils échouent
-        window.addEventListener('error', function(e) {
-            if (e.filename && (e.filename.includes('.js'))) {
-                console.warn('[APP] External script failed to load:', e.filename, 'App will continue with built-in services');
-            }
-        });
-    </script>
-    <script src="AuthService.js" onerror="console.log('External AuthService.js not found - using built-in service')"></script>
-    <script src="MailService.js" onerror="console.log('External MailService.js not found - using built-in service')"></script>
-    <script src="PageManager.js" onerror="console.log('External PageManager.js not found - using built-in navigation')"></script>
-    <script src="app.js" onerror="console.log('External app.js not found - using built-in app logic')"></script>
 </body>
 </html>
