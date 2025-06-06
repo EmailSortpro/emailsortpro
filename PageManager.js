@@ -2197,45 +2197,45 @@ Cordialement,
         const styles = document.createElement('style');
         styles.id = 'optimizedEmailPageStyles';
         styles.textContent = `
-            /* Layout principal - COMPACT et sans espaces inutiles */
+            /* Layout principal - ULTRA COMPACT sans espaces inutiles */
             .emails-main-toolbar {
                 display: flex;
                 align-items: center;
-                gap: 16px;
-                padding: 12px 0;
+                gap: 12px;
+                padding: 8px 0;
                 border-bottom: 1px solid #e5e7eb;
-                margin-bottom: 12px;
-                min-height: 50px;
+                margin-bottom: 8px;
+                min-height: 40px;
             }
             
             .toolbar-left {
                 display: flex;
                 align-items: baseline;
-                gap: 10px;
-                min-width: 180px;
+                gap: 8px;
+                min-width: 160px;
                 flex-shrink: 0;
             }
             
             .emails-title {
                 margin: 0;
-                font-size: 24px;
+                font-size: 22px;
                 font-weight: 700;
                 color: #1f2937;
             }
             
             .emails-count-large {
-                font-size: 14px;
+                font-size: 13px;
                 color: #6b7280;
                 font-weight: 600;
                 background: #f3f4f6;
-                padding: 4px 10px;
-                border-radius: 12px;
+                padding: 2px 8px;
+                border-radius: 10px;
             }
             
             .toolbar-center {
                 flex: 1;
-                max-width: 400px;
-                min-width: 250px;
+                max-width: 350px;
+                min-width: 200px;
             }
             
             .search-wrapper-large {
@@ -2245,41 +2245,41 @@ Cordialement,
             
             .search-input-large {
                 width: 100%;
-                padding: 10px 16px 10px 40px;
+                padding: 8px 12px 8px 32px;
                 border: 1px solid #d1d5db;
-                border-radius: 10px;
-                font-size: 14px;
+                border-radius: 8px;
+                font-size: 13px;
                 background: white;
                 transition: all 0.2s ease;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                box-shadow: none;
             }
             
             .search-input-large:focus {
                 outline: none;
                 border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
             }
             
             .search-icon-large {
                 position: absolute;
-                left: 14px;
+                left: 10px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 16px;
+                font-size: 14px;
             }
             
             .search-clear-large {
                 position: absolute;
-                right: 10px;
+                right: 8px;
                 top: 50%;
                 transform: translateY(-50%);
                 background: none;
                 border: none;
                 color: #9ca3af;
                 cursor: pointer;
-                padding: 4px;
-                border-radius: 4px;
+                padding: 2px;
+                border-radius: 3px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2297,28 +2297,28 @@ Cordialement,
             
             .view-modes-large {
                 display: flex;
-                gap: 3px;
+                gap: 2px;
                 background: #f3f4f6;
-                padding: 3px;
-                border-radius: 8px;
+                padding: 2px;
+                border-radius: 6px;
             }
             
             .toolbar-right {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 flex-shrink: 0;
             }
             
             .selection-info-large {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 8px 12px;
+                gap: 6px;
+                padding: 6px 10px;
                 background: #eff6ff;
                 border: 1px solid #bfdbfe;
-                border-radius: 8px;
-                font-size: 13px;
+                border-radius: 6px;
+                font-size: 12px;
                 color: #1e40af;
             }
             
@@ -2326,25 +2326,25 @@ Cordialement,
                 font-weight: 600;
             }
             
-            /* Boutons COMPACTS mais bien visibles */
+            /* Boutons ULTRA COMPACTS */
             .btn-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
-                padding: 8px 14px;
+                gap: 4px;
+                padding: 6px 12px;
                 border: 1px solid #d1d5db;
-                border-radius: 8px;
+                border-radius: 6px;
                 background: white;
                 color: #374151;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 text-decoration: none;
                 white-space: nowrap;
-                min-height: 38px;
+                min-height: 32px;
                 box-sizing: border-box;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                box-shadow: none;
             }
             
             .btn-large:hover {
@@ -2352,14 +2352,14 @@ Cordialement,
                 border-color: #9ca3af;
                 color: #1f2937;
                 transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
             .btn-large.active {
                 background: #667eea;
                 color: white;
                 border-color: #667eea;
-                box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
+                box-shadow: 0 1px 3px rgba(102, 126, 234, 0.2);
             }
             
             .btn-large.btn-primary-large {
@@ -2372,7 +2372,7 @@ Cordialement,
                 background: #5a67d8;
                 border-color: #5a67d8;
                 transform: translateY(-1px);
-                box-shadow: 0 3px 8px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
             }
             
             .btn-large.btn-secondary-large {
@@ -2391,41 +2391,41 @@ Cordialement,
                 font-weight: 600;
             }
             
-            /* Filtres de catégories COMPACTS */
+            /* Filtres de catégories ULTRA COMPACTS */
             .category-filters-large {
                 display: flex;
-                gap: 8px;
+                gap: 6px;
                 flex-wrap: wrap;
-                margin-bottom: 16px;
-                padding: 12px 16px;
+                margin-bottom: 8px;
+                padding: 8px 12px;
                 background: #f8fafc;
-                border-radius: 10px;
+                border-radius: 8px;
                 border: 1px solid #e2e8f0;
             }
             
             .category-pill-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                padding: 8px 14px;
+                gap: 6px;
+                padding: 6px 10px;
                 border: 1px solid #d1d5db;
-                border-radius: 8px;
+                border-radius: 6px;
                 background: white;
                 color: #374151;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                min-height: 38px;
+                min-height: 32px;
                 box-sizing: border-box;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                box-shadow: none;
             }
             
             .category-pill-large:hover {
                 border-color: var(--cat-color, #667eea);
-                background: var(--cat-color, #667eea)10;
+                background: var(--cat-color, #667eea)08;
                 transform: translateY(-1px);
-                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
             .category-pill-large.active {
@@ -2433,25 +2433,25 @@ Cordialement,
                 color: white;
                 border-color: var(--cat-color, #667eea);
                 transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                box-shadow: 0 1px 4px rgba(0,0,0,0.15);
             }
             
             .pill-icon-large {
-                font-size: 16px;
+                font-size: 14px;
             }
             
             .pill-text-large {
                 font-weight: 600;
-                font-size: 14px;
+                font-size: 13px;
             }
             
             .pill-count-large {
                 background: rgba(0,0,0,0.1);
-                padding: 2px 8px;
-                border-radius: 10px;
-                font-size: 12px;
+                padding: 1px 6px;
+                border-radius: 8px;
+                font-size: 11px;
                 font-weight: 700;
-                min-width: 20px;
+                min-width: 18px;
                 text-align: center;
             }
             
@@ -3181,23 +3181,23 @@ Cordialement,
                 color: #78350f;
             }
             
-            /* Responsive design COMPACT */
+            /* Responsive design ULTRA COMPACT */
             @media (max-width: 1200px) {
                 .emails-main-toolbar {
                     flex-wrap: wrap;
-                    gap: 12px;
+                    gap: 8px;
                 }
                 
                 .toolbar-center {
                     order: 3;
                     flex: 1 1 100%;
                     max-width: none;
-                    margin: 8px 0;
+                    margin: 4px 0;
                 }
                 
                 .view-modes-large {
                     flex-wrap: wrap;
-                    gap: 2px;
+                    gap: 1px;
                 }
             }
             
@@ -3208,9 +3208,9 @@ Cordialement,
                 
                 .emails-main-toolbar {
                     flex-direction: column;
-                    gap: 10px;
+                    gap: 6px;
                     align-items: stretch;
-                    padding: 8px 0;
+                    padding: 6px 0;
                 }
                 
                 .toolbar-left,
@@ -3230,21 +3230,21 @@ Cordialement,
                 }
                 
                 .category-filters-large {
-                    padding: 10px 12px;
-                    gap: 6px;
-                    margin-bottom: 12px;
+                    padding: 6px 8px;
+                    gap: 4px;
+                    margin-bottom: 6px;
                 }
                 
                 .btn-large {
-                    padding: 6px 12px;
-                    font-size: 13px;
-                    min-height: 34px;
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    min-height: 28px;
                 }
                 
                 .category-pill-large {
-                    padding: 6px 12px;
-                    font-size: 13px;
-                    min-height: 34px;
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    min-height: 28px;
                 }
                 
                 .pill-text-large {
@@ -3252,12 +3252,22 @@ Cordialement,
                 }
                 
                 .emails-title {
-                    font-size: 20px;
+                    font-size: 18px;
                 }
                 
                 .emails-count-large {
+                    font-size: 11px;
+                    padding: 2px 6px;
+                }
+                
+                .search-input-large {
+                    padding: 6px 8px 6px 28px;
                     font-size: 12px;
-                    padding: 3px 8px;
+                }
+                
+                .search-icon-large {
+                    left: 8px;
+                    font-size: 12px;
                 }
             }
         `;
