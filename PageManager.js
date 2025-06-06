@@ -1,4 +1,4 @@
-// PageManager.js - Version 9.1 - Layout optimisé avec barre unifiée et boutons harmonisés
+// PageManager.js - Version 9.2 - CORRIGÉ avec vérification TaskManager
 
 class PageManager {
     constructor() {
@@ -26,7 +26,49 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v9.1 - Layout optimisé avec barre unifiée');
+        console.log('[PageManager] Initialized v9.2 - CORRIGÉ avec vérification TaskManager');
+    }
+
+    // =====================================
+    // VÉRIFICATION ET INITIALISATION TASKMANAGER
+    // =====================================
+    ensureTaskManagerReady() {
+        // Vérifier que TaskManager existe et est initialisé
+        if (!window.taskManager) {
+            console.warn('[PageManager] TaskManager not found, creating new instance...');
+            window.taskManager = new TaskManager();
+        }
+        
+        if (!window.taskManager.initialized) {
+            console.warn('[PageManager] TaskManager not initialized, waiting...');
+            return false;
+        }
+        
+        // Vérifier que les méthodes essentielles existent
+        if (typeof window.taskManager.createTaskFromEmail !== 'function') {
+            console.error('[PageManager] TaskManager missing createTaskFromEmail method');
+            return false;
+        }
+        
+        return true;
+    }
+
+    waitForTaskManager() {
+        return new Promise((resolve) => {
+            const checkInterval = setInterval(() => {
+                if (this.ensureTaskManagerReady()) {
+                    clearInterval(checkInterval);
+                    resolve(true);
+                }
+            }, 100);
+            
+            // Timeout après 5 secondes
+            setTimeout(() => {
+                clearInterval(checkInterval);
+                console.error('[PageManager] TaskManager initialization timeout');
+                resolve(false);
+            }, 5000);
+        });
     }
 
     // =====================================
@@ -344,11 +386,26 @@ class PageManager {
     }
 
     // =====================================
-    // MODAL CRÉATION DE TÂCHE
+    // MODAL CRÉATION DE TÂCHE - CORRIGÉE
     // =====================================
     async showTaskCreationModal(emailId) {
+        console.log('[PageManager] Showing task creation modal for email:', emailId);
+        
         const email = this.getEmailById(emailId);
-        if (!email) return;
+        if (!email) {
+            console.error('[PageManager] Email not found:', emailId);
+            return;
+        }
+
+        // VÉRIFIER QUE TASKMANAGER EST PRÊT
+        if (!this.ensureTaskManagerReady()) {
+            console.log('[PageManager] TaskManager not ready, waiting...');
+            const ready = await this.waitForTaskManager();
+            if (!ready) {
+                window.uiManager.showToast('Erreur: Service de tâches non disponible', 'error');
+                return;
+            }
+        }
 
         // Nettoyer tout modal existant
         document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
@@ -364,8 +421,9 @@ class PageManager {
             window.uiManager.hideLoading();
         } catch (error) {
             window.uiManager.hideLoading();
-            window.uiManager.showToast('Erreur d\'analyse', 'error');
-            return;
+            console.error('[PageManager] AI analysis error:', error);
+            // Utiliser une analyse par défaut si l'IA échoue
+            analysis = this.createFallbackAnalysis(email);
         }
 
         // Créer un nouvel id unique
@@ -406,12 +464,39 @@ class PageManager {
         // Ajouter au DOM
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
+        
+        console.log('[PageManager] Task creation modal displayed');
     }
 
-    // Simplifier la fonction de fermeture
-    closeTaskModal() {
-        document.querySelectorAll('[id^="task_creation_modal_"]').forEach(el => el.remove());
-        document.body.style.overflow = 'auto';
+    // Créer une analyse de fallback si l'IA échoue
+    createFallbackAnalysis(email) {
+        const senderName = email.from?.emailAddress?.name || 'Expéditeur';
+        const subject = email.subject || 'Email sans sujet';
+        
+        return {
+            mainTask: {
+                title: `Traiter: ${subject}`,
+                description: `Email de ${senderName}`,
+                priority: 'medium',
+                dueDate: null
+            },
+            summary: `Email reçu de ${senderName}`,
+            actionPoints: [`Lire et répondre à l'email de ${senderName}`],
+            actionsHighlighted: [
+                { action: `Répondre à ${senderName}`, deadline: null }
+            ],
+            keyInfo: [`Expéditeur: ${senderName}`, `Sujet: ${subject}`],
+            risks: [],
+            insights: {
+                responseExpected: true,
+                keyInfo: [`Expéditeur: ${senderName}`],
+                risks: []
+            },
+            suggestedReplies: [],
+            subtasks: [],
+            importance: 'medium',
+            tags: ['email']
+        };
     }
 
     buildEnhancedTaskCreationModal(email, analysis) {
@@ -448,7 +533,7 @@ class PageManager {
                 <div class="form-group">
                     <label>Titre de la tâche</label>
                     <input type="text" id="task-title" class="form-input" 
-                           value="${enhancedTitle}" />
+                           value="${this.escapeHtml(enhancedTitle)}" />
                 </div>
                 
                 <!-- Structured Task Sections -->
@@ -460,7 +545,7 @@ class PageManager {
                             <h4>Résumé Exécutif</h4>
                         </div>
                         <div class="section-content">
-                            <textarea id="task-summary" class="section-textarea" rows="4">${taskData.summary}</textarea>
+                            <textarea id="task-summary" class="section-textarea" rows="4">${this.escapeHtml(taskData.summary)}</textarea>
                         </div>
                     </div>
                     
@@ -477,7 +562,7 @@ class PageManager {
                                         <div class="action-item">
                                             <span class="action-number">${idx + 1}</span>
                                             <input type="text" class="action-input" 
-                                                   value="${action.text}" 
+                                                   value="${this.escapeHtml(action.text)}" 
                                                    data-action-index="${idx}">
                                             ${action.deadline ? `<span class="action-deadline">${action.deadline}</span>` : ''}
                                         </div>
@@ -499,7 +584,7 @@ class PageManager {
                                     ${taskData.keyInfo.map(info => `
                                         <div class="info-item">
                                             <i class="fas fa-chevron-right"></i>
-                                            <span>${info}</span>
+                                            <span>${this.escapeHtml(info)}</span>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -519,7 +604,7 @@ class PageManager {
                                     ${taskData.risks.map(risk => `
                                         <div class="attention-item">
                                             <i class="fas fa-exclamation-circle"></i>
-                                            <span>${risk}</span>
+                                            <span>${this.escapeHtml(risk)}</span>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -547,9 +632,6 @@ class PageManager {
                 
                 <!-- AI Generated Smart Replies -->
                 ${this.renderSmartReplies(analysis, email)}
-                
-                <!-- Separated Tasks Section -->
-                ${this.renderSeparatedTasks(analysis)}
                 
                 <!-- Email Context Collapsible -->
                 <div class="email-context-section">
@@ -652,7 +734,6 @@ ${analysis.insights?.responseExpected ? '📮 Réponse attendue' : ''}`;
         // Analyze the email context to generate ultra-personalized replies
         const hasDeadline = analysis.actionsHighlighted?.some(a => a.deadline) || analysis.mainTask.dueDate;
         const isUrgent = analysis.importance === 'urgent' || analysis.mainTask.priority === 'urgent';
-        const hasMultipleActions = analysis.actionPoints?.length > 2;
         
         // Professional acknowledgment
         if (isUrgent) {
@@ -672,79 +753,7 @@ Cordialement,
             });
         }
         
-        // Detailed action plan response
-        if (hasMultipleActions) {
-            const actionsList = analysis.actionPoints.slice(0, 3).map((a, i) => `${i + 1}. ${a}`).join('\n');
-            replies.push({
-                tone: 'formel',
-                subject: `Re: ${subject} - Plan d'action`,
-                content: `Bonjour ${senderName},
-
-J'ai bien reçu votre email et j'ai identifié les points suivants à traiter :
-
-${actionsList}
-
-Je vais procéder méthodiquement à chacune de ces actions et je vous tiendrai informé de l'avancement.
-
-${hasDeadline ? 'Je prends note de l\'échéance et organiserai mon travail en conséquence.' : 'Je reviendrai vers vous avec un planning détaillé.'}
-
-Bien cordialement,
-[Votre nom]`
-            });
-        }
-        
-        // Clarification request if needed
-        if (analysis.insights?.risks?.length > 0 || analysis.insights?.keyInfo?.length < 2) {
-            replies.push({
-                tone: 'neutre',
-                subject: `Re: ${subject} - Demande de précisions`,
-                content: `Bonjour ${senderName},
-
-Merci pour votre message concernant "${subject}".
-
-Pour m'assurer de bien répondre à vos attentes, j'aurais besoin de quelques précisions supplémentaires :
-
-${analysis.insights?.risks?.length > 0 ? '- ' + analysis.insights.risks[0] : ''}
-${analysis.actionPoints?.length > 0 ? '- Concernant "' + analysis.actionPoints[0] + '", pourriez-vous me préciser vos attentes ?' : ''}
-
-Je reste à votre disposition pour en discuter.
-
-Cordialement,
-[Votre nom]`
-            });
-        }
-        
         return replies;
-    }
-
-    renderSeparatedTasks(analysis) {
-        if (!analysis.subtasks || analysis.subtasks.length === 0) {
-            return '';
-        }
-
-        return `
-            <div class="separated-tasks-section">
-                <h4><i class="fas fa-tasks"></i> Tâches séparées suggérées</h4>
-                <p class="section-description">L'IA a identifié ces actions qui pourraient être gérées comme des tâches distinctes :</p>
-                <div class="subtasks-list">
-                    ${analysis.subtasks.map((subtask, index) => `
-                        <div class="subtask-item">
-                            <input type="checkbox" id="subtask-${index}" checked>
-                            <label for="subtask-${index}">
-                                <span class="subtask-title">${subtask.title}</span>
-                                <span class="subtask-priority priority-${subtask.priority}">
-                                    ${this.getPriorityIcon(subtask.priority)} ${this.getPriorityLabel(subtask.priority)}
-                                </span>
-                            </label>
-                        </div>
-                    `).join('')}
-                </div>
-                <p class="section-note">
-                    <i class="fas fa-info-circle"></i> 
-                    Ces tâches seront créées séparément si sélectionnées
-                </p>
-            </div>
-        `;
     }
 
     toggleEmailContext() {
@@ -762,13 +771,35 @@ Cordialement,
         }
     }
 
+    // =====================================
+    // CRÉATION DE TÂCHE - MÉTHODE CORRIGÉE
+    // =====================================
     async createTaskFromModal(emailId) {
+        console.log('[PageManager] Creating task from modal for email:', emailId);
+        
         const email = this.getEmailById(emailId);
         const analysis = this.aiAnalysisResults.get(emailId);
         
-        if (!email || !analysis) {
-            window.uiManager.showToast('Données manquantes', 'error');
+        if (!email) {
+            console.error('[PageManager] Email not found:', emailId);
+            window.uiManager.showToast('Email introuvable', 'error');
             return;
+        }
+
+        if (!analysis) {
+            console.error('[PageManager] Analysis not found for email:', emailId);
+            window.uiManager.showToast('Analyse introuvable', 'error');
+            return;
+        }
+
+        // VÉRIFIER QUE TASKMANAGER EST PRÊT
+        if (!this.ensureTaskManagerReady()) {
+            console.log('[PageManager] TaskManager not ready, waiting...');
+            const ready = await this.waitForTaskManager();
+            if (!ready) {
+                window.uiManager.showToast('Erreur: Service de tâches non disponible', 'error');
+                return;
+            }
         }
 
         const title = document.getElementById('task-title')?.value;
@@ -828,7 +859,13 @@ Cordialement,
         const senderDomain = senderEmail.split('@')[1] || 'unknown';
 
         try {
-            // Create main task with COMPLETE email data
+            console.log('[PageManager] Creating task with data:', {
+                title,
+                emailFrom: senderEmail,
+                emailFromName: senderName
+            });
+
+            // UTILISER LA MÉTHODE CORRIGÉE createTaskFromEmail
             const mainTaskData = {
                 id: this.generateTaskId(),
                 title,
@@ -837,7 +874,7 @@ Cordialement,
                 dueDate,
                 status: 'todo',
                 emailId: emailId,
-                category: email.category || 'other',
+                category: email.category || 'email',
                 createdAt: new Date().toISOString(),
                 aiGenerated: true,
                 
@@ -848,6 +885,7 @@ Cordialement,
                 emailDomain: senderDomain,
                 emailDate: email.receivedDateTime,
                 hasAttachments: email.hasAttachments || false,
+                needsReply: analysis.insights?.responseExpected || false,
                 
                 // AI Analysis
                 aiAnalysis: analysis,
@@ -864,52 +902,229 @@ Cordialement,
                 actions: taskData.actions,
                 keyInfo: taskData.keyInfo,
                 risks: taskData.risks,
-                method: 'ai'
+                method: 'ai',
+                client: senderDomain || 'Externe'
             };
 
             // IMPORTANT: Use createTaskFromEmail to ensure email content is preserved
+            console.log('[PageManager] Calling TaskManager.createTaskFromEmail...');
             const mainTask = window.taskManager.createTaskFromEmail(mainTaskData, email);
             
-            // Create selected subtasks
-            const selectedSubtasks = [];
-            analysis.subtasks?.forEach((subtask, index) => {
-                const checkbox = document.getElementById(`subtask-${index}`);
-                if (checkbox && checkbox.checked) {
-                    const subtaskData = {
-                        id: this.generateTaskId(),
-                        title: subtask.title,
-                        description: `Sous-tâche de: ${title}\n\nContexte: ${analysis.summary}`,
-                        priority: subtask.priority,
-                        dueDate: dueDate,
-                        status: 'todo',
-                        parentTaskId: mainTask.id,
-                        emailId: emailId,
-                        category: email.category || 'other',
-                        createdAt: new Date().toISOString(),
-                        aiGenerated: true,
-                        hasEmail: true,
-                        emailContent: `Sous-tâche de: ${title}\n\nContexte: ${analysis.summary}`
-                    };
-                    
-                    // Create subtask - it will inherit email data
-                    const createdSubtask = window.taskManager.createTask(subtaskData);
-                    selectedSubtasks.push(createdSubtask);
-                }
-            });
+            if (!mainTask) {
+                throw new Error('Task creation failed - no task returned');
+            }
+
+            console.log('[PageManager] Task created successfully:', mainTask.id);
             
             window.taskManager.saveTasks();
             this.createdTasks.set(emailId, mainTask.id);
             
             this.closeTaskModal();
-            window.uiManager.showToast(`Tâche créée avec succès${selectedSubtasks.length > 0 ? ` (+${selectedSubtasks.length} sous-tâches)` : ''}`, 'success');
+            window.uiManager.showToast('Tâche créée avec succès', 'success');
             
             // Update email display
             this.renderEmailsList(this.currentViewMode, this.currentCategory);
             
         } catch (error) {
-            console.error('Error creating task:', error);
-            window.uiManager.showToast('Erreur lors de la création', 'error');
+            console.error('[PageManager] Error creating task:', error);
+            window.uiManager.showToast(`Erreur lors de la création: ${error.message}`, 'error');
         }
+    }
+
+    // Simplifier la fonction de fermeture
+    closeTaskModal() {
+        document.querySelectorAll('[id^="task_creation_modal_"]').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
+    }
+
+    // =====================================
+    // CRÉATION DE TÂCHES EN BATCH - CORRIGÉE
+    // =====================================
+    async createTasksFromSelection() {
+        console.log('[PageManager] Creating tasks from selection:', this.selectedEmails.size);
+        
+        if (this.selectedEmails.size === 0) {
+            window.uiManager.showToast('Aucun email sélectionné', 'warning');
+            return;
+        }
+
+        // VÉRIFIER QUE TASKMANAGER EST PRÊT
+        if (!this.ensureTaskManagerReady()) {
+            console.log('[PageManager] TaskManager not ready, waiting...');
+            const ready = await this.waitForTaskManager();
+            if (!ready) {
+                window.uiManager.showToast('Erreur: Service de tâches non disponible', 'error');
+                return;
+            }
+        }
+        
+        window.uiManager.showLoading('Création des tâches...');
+        let created = 0;
+        let errors = 0;
+        
+        for (const emailId of this.selectedEmails) {
+            try {
+                const email = this.getEmailById(emailId);
+                if (!email || this.createdTasks.has(emailId)) continue;
+                
+                console.log('[PageManager] Processing email for task creation:', emailId);
+                
+                // Get analysis
+                let analysis = this.aiAnalysisResults.get(emailId);
+                if (!analysis) {
+                    try {
+                        analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                        this.aiAnalysisResults.set(emailId, analysis);
+                    } catch (error) {
+                        console.warn('[PageManager] AI analysis failed, using fallback:', error);
+                        analysis = this.createFallbackAnalysis(email);
+                    }
+                }
+                
+                // Extract sender info
+                const senderName = email.from?.emailAddress?.name || 'Inconnu';
+                const senderEmail = email.from?.emailAddress?.address || '';
+                const senderDomain = senderEmail.split('@')[1] || 'unknown';
+                
+                // Create task data
+                const taskData = {
+                    id: this.generateTaskId(),
+                    title: analysis.mainTask.title || `Email de ${senderName}`,
+                    description: this.buildTaskDescription(email, analysis, senderName),
+                    priority: analysis.mainTask.priority || 'medium',
+                    dueDate: analysis.mainTask.dueDate,
+                    status: 'todo',
+                    emailId: emailId,
+                    category: email.category || 'email',
+                    createdAt: new Date().toISOString(),
+                    aiGenerated: true,
+                    
+                    // Email details
+                    emailFrom: senderEmail,
+                    emailFromName: senderName,
+                    emailSubject: email.subject,
+                    emailDomain: senderDomain,
+                    emailDate: email.receivedDateTime,
+                    hasAttachments: email.hasAttachments || false,
+                    needsReply: analysis.insights?.responseExpected || false,
+                    
+                    // AI Analysis
+                    aiAnalysis: analysis,
+                    
+                    // Structured data
+                    summary: analysis.summary || `Email de ${senderName}`,
+                    actions: this.extractActions(analysis),
+                    keyInfo: analysis.insights?.keyInfo || [],
+                    risks: analysis.insights?.risks || [],
+                    
+                    // Tags
+                    tags: [
+                        senderDomain,
+                        analysis.importance,
+                        ...(analysis.tags || [])
+                    ].filter(Boolean),
+                    
+                    method: 'ai',
+                    client: senderDomain || 'Externe'
+                };
+                
+                // Use createTaskFromEmail to ensure email content is preserved
+                console.log('[PageManager] Creating task via createTaskFromEmail for:', emailId);
+                const task = window.taskManager.createTaskFromEmail(taskData, email);
+                
+                if (task) {
+                    this.createdTasks.set(emailId, task.id);
+                    created++;
+                    console.log('[PageManager] Task created successfully:', task.id);
+                } else {
+                    console.error('[PageManager] Task creation returned null for:', emailId);
+                    errors++;
+                }
+                
+            } catch (error) {
+                console.error('[PageManager] Error creating task for email:', emailId, error);
+                errors++;
+            }
+        }
+        
+        window.uiManager.hideLoading();
+        
+        if (created > 0) {
+            window.taskManager.saveTasks();
+            window.uiManager.showToast(
+                `${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''}${errors > 0 ? ` (${errors} erreur${errors > 1 ? 's' : ''})` : ''}`, 
+                errors > 0 ? 'warning' : 'success'
+            );
+            this.clearSelection();
+        } else {
+            window.uiManager.showToast('Aucune tâche créée', 'error');
+        }
+    }
+
+    buildTaskDescription(email, analysis, senderName) {
+        const senderDomain = email.from?.emailAddress?.address?.split('@')[1] || '';
+        
+        let description = `📧 RÉSUMÉ EXÉCUTIF\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        description += `De: ${senderName} (${senderDomain})\n`;
+        description += `Objet: ${analysis.summary || email.subject}\n`;
+        
+        if (analysis.importance === 'urgent' || analysis.mainTask.priority === 'urgent') {
+            description += `🚨 URGENT - Action immédiate requise\n`;
+        }
+        
+        if (analysis.insights?.responseExpected) {
+            description += `📮 Réponse attendue\n`;
+        }
+        
+        // Actions
+        const actions = this.extractActions(analysis);
+        if (actions.length > 0) {
+            description += `\n🎯 ACTIONS REQUISES:\n`;
+            actions.forEach((action, idx) => {
+                description += `${idx + 1}. ${action.text}\n`;
+            });
+        }
+        
+        // Key info
+        if (analysis.insights?.keyInfo && analysis.insights.keyInfo.length > 0) {
+            description += `\n💡 INFORMATIONS CLÉS:\n`;
+            analysis.insights.keyInfo.forEach(info => {
+                description += `• ${info}\n`;
+            });
+        }
+        
+        // Risks
+        if (analysis.insights?.risks && analysis.insights.risks.length > 0) {
+            description += `\n⚠️ POINTS D'ATTENTION:\n`;
+            analysis.insights.risks.forEach(risk => {
+                description += `• ${risk}\n`;
+            });
+        }
+        
+        return description;
+    }
+
+    extractActions(analysis) {
+        // Extract actions from different analysis formats
+        const actions = [];
+        
+        if (analysis.actionsHighlighted) {
+            analysis.actionsHighlighted.forEach(action => {
+                actions.push({
+                    text: action.action,
+                    deadline: action.deadline
+                });
+            });
+        } else if (analysis.actionPoints) {
+            analysis.actionPoints.forEach(point => {
+                actions.push({
+                    text: point,
+                    deadline: null
+                });
+            });
+        }
+        
+        return actions.slice(0, 5); // Limit to 5 actions
     }
 
     // Helper methods
@@ -950,24 +1165,11 @@ Cordialement,
         return labels[tone] || 'Neutre';
     }
 
-    getPriorityIcon(priority) {
-        const icons = {
-            urgent: '🚨',
-            high: '⚡',
-            medium: '📌',
-            low: '📄'
-        };
-        return icons[priority] || '📌';
-    }
-
-    getPriorityLabel(priority) {
-        const labels = {
-            urgent: 'Urgente',
-            high: 'Haute',
-            medium: 'Normale',
-            low: 'Basse'
-        };
-        return labels[priority] || 'Normale';
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     changeViewMode(mode) {
@@ -1188,12 +1390,6 @@ Cordialement,
         document.body.style.overflow = 'hidden';
     }
 
-    // Simplifier la fonction de fermeture
-    closeEmailModal() {
-        document.querySelectorAll('[id^="email_modal_"]').forEach(el => el.remove());
-        document.body.style.overflow = 'auto';
-    }
-
     // =====================================
     // SELECTION MANAGEMENT
     // =====================================
@@ -1211,76 +1407,6 @@ Cordialement,
     clearSelection() {
         this.selectedEmails.clear();
         this.renderEmails(document.getElementById('pageContent'));
-    }
-
-    async createTasksFromSelection() {
-        if (this.selectedEmails.size === 0) return;
-        
-        let created = 0;
-        
-        for (const emailId of this.selectedEmails) {
-            const email = this.getEmailById(emailId);
-            if (!email || this.createdTasks.has(emailId)) continue;
-            
-            // Get analysis
-            let analysis = this.aiAnalysisResults.get(emailId);
-            if (!analysis) {
-                try {
-                    analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
-                    this.aiAnalysisResults.set(emailId, analysis);
-                } catch (error) {
-                    continue;
-                }
-            }
-            
-            // Extract sender info
-            const senderName = email.from?.emailAddress?.name || 'Inconnu';
-            const senderEmail = email.from?.emailAddress?.address || '';
-            const senderDomain = senderEmail.split('@')[1] || 'unknown';
-            
-            // Create task data
-            const taskData = {
-                id: this.generateTaskId(),
-                title: analysis.mainTask.title,
-                description: analysis.mainTask.description,
-                priority: analysis.mainTask.priority,
-                dueDate: analysis.mainTask.dueDate,
-                status: 'todo',
-                emailId: emailId,
-                category: email.category || 'other',
-                createdAt: new Date().toISOString(),
-                aiGenerated: true,
-                
-                // Email details
-                emailFrom: senderEmail,
-                emailFromName: senderName,
-                emailSubject: email.subject,
-                emailDomain: senderDomain,
-                emailDate: email.receivedDateTime,
-                hasAttachments: email.hasAttachments || false,
-                
-                // AI Analysis
-                aiAnalysis: analysis,
-                
-                // Tags
-                tags: [
-                    senderDomain,
-                    analysis.importance,
-                    ...(analysis.tags || [])
-                ].filter(Boolean)
-            };
-            
-            // Use createTaskFromEmail to ensure email content is preserved
-            const task = window.taskManager.createTaskFromEmail(taskData, email);
-            this.createdTasks.set(emailId, task.id);
-            created++;
-        }
-        
-        if (created > 0) {
-            window.taskManager.saveTasks();
-            window.uiManager.showToast(`${created} tâches créées`, 'success');
-            this.clearSelection();
-        }
     }
 
     async copyReply(emailId, replyIndex) {
@@ -1508,7 +1634,7 @@ Cordialement,
     }
 
     // =====================================
-    // DASHBOARD
+    // OTHER PAGES
     // =====================================
     async renderDashboard(container) {
         const scanData = this.lastScanData;
@@ -1625,31 +1751,6 @@ Cordialement,
             }
         }
         
-        // Si le module moderne n'est pas disponible, attendre un peu et réessayer
-        if (window.scanStartModule && !window.scanStartModule.stylesAdded) {
-            console.log('[PageManager] ScanStartModule detected but not ready, waiting...');
-            
-            // Attendre que le module soit prêt
-            let attempts = 0;
-            const maxAttempts = 10;
-            
-            while (attempts < maxAttempts && (!window.scanStartModule.stylesAdded || !window.scanStartModule.isInitialized)) {
-                await new Promise(resolve => setTimeout(resolve, 200));
-                attempts++;
-            }
-            
-            // Réessayer après l'attente
-            if (window.scanStartModule.stylesAdded && typeof window.scanStartModule.render === 'function') {
-                try {
-                    console.log('[PageManager] Using ScanStartModule after wait');
-                    await window.scanStartModule.render(container);
-                    return;
-                } catch (error) {
-                    console.error('[PageManager] Error with ScanStartModule after wait:', error);
-                }
-            }
-        }
-        
         // Fallback au scanner basique du PageManager
         console.log('[PageManager] Using fallback scanner interface');
         this.renderBasicScanner(container);
@@ -1700,24 +1801,6 @@ Cordialement,
                             </button>
                         </div>
                         
-                        <!-- Guide rapide -->
-                        <div class="scan-info">
-                            <div class="info-card">
-                                <div class="info-icon">💡</div>
-                                <div class="info-content">
-                                    <h4>Commencez par 7 jours</h4>
-                                    <p>Idéal pour un premier scan rapide et efficace</p>
-                                </div>
-                            </div>
-                            <div class="info-card">
-                                <div class="info-icon">🎯</div>
-                                <div class="info-content">
-                                    <h4>Classification automatique</h4>
-                                    <p>Vos emails seront organisés par catégorie</p>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Section de progression -->
                         <div class="progress-section" id="progressSection">
                             <div class="progress-bar-container">
@@ -1725,14 +1808,6 @@ Cordialement,
                             </div>
                             <div class="progress-message" id="progressMessage">En attente...</div>
                             <div class="progress-details" id="progressDetails"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- Footer avec info -->
-                    <div class="scanner-footer">
-                        <div class="scanner-note">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Connexion sécurisée via Microsoft Graph API</span>
                         </div>
                     </div>
                 </div>
@@ -1775,17 +1850,6 @@ Cordialement,
                     onProgress: (progress) => {
                         this.updateBasicScanProgress(progress);
                     }
-                });
-                
-            } else if (window.scanStartModule?.startScanProgrammatically) {
-                // Essayer d'utiliser le module moderne en mode programmatique
-                console.log('[PageManager] Using ScanStartModule programmatically');
-                
-                results = await window.scanStartModule.startScanProgrammatically({
-                    days,
-                    folders: [folder],
-                    autoClassify: true,
-                    autoCreateTasks: false
                 });
                 
             } else {
@@ -2000,40 +2064,6 @@ Cordialement,
                 transform: none;
             }
             
-            .scan-info {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-                margin-bottom: 30px;
-            }
-            
-            .info-card {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 16px;
-                text-align: center;
-            }
-            
-            .info-icon {
-                font-size: 24px;
-                margin-bottom: 8px;
-            }
-            
-            .info-content h4 {
-                margin: 0 0 4px 0;
-                font-size: 14px;
-                color: #1f2937;
-                font-weight: 600;
-            }
-            
-            .info-content p {
-                margin: 0;
-                font-size: 12px;
-                color: #6b7280;
-                line-height: 1.3;
-            }
-            
             .progress-section {
                 opacity: 0;
                 transition: opacity 0.3s ease;
@@ -2071,41 +2101,6 @@ Cordialement,
                 text-align: center;
                 color: #6b7280;
                 font-size: 12px;
-            }
-            
-            .scanner-footer {
-                margin-top: 30px;
-                text-align: center;
-            }
-            
-            .scanner-note {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                color: #6b7280;
-                font-size: 13px;
-                padding: 8px 16px;
-                background: #f9fafb;
-                border-radius: 20px;
-                border: 1px solid #e5e7eb;
-            }
-            
-            .scanner-note i {
-                color: #10b981;
-            }
-            
-            @media (max-width: 640px) {
-                .scanner-card {
-                    padding: 30px 20px;
-                }
-                
-                .scan-info {
-                    grid-template-columns: 1fr;
-                }
-                
-                .scanner-title {
-                    font-size: 24px;
-                }
             }
         `;
         
@@ -2158,10 +2153,31 @@ Cordialement,
         return emails;
     }
 
-    // =====================================
-    // OTHER PAGES
-    // =====================================
     async renderTasks(container) {
+        // VÉRIFIER QUE TASKMANAGER EST PRÊT AVANT DE RENDRE LES TÂCHES
+        if (!this.ensureTaskManagerReady()) {
+            console.log('[PageManager] TaskManager not ready for tasks view, waiting...');
+            const ready = await this.waitForTaskManager();
+            if (!ready) {
+                container.innerHTML = `
+                    <div class="page-header">
+                        <h1>Tâches</h1>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-state-title">Service de tâches indisponible</h3>
+                        <p class="empty-state-text">Le gestionnaire de tâches n'a pas pu être initialisé</p>
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i class="fas fa-refresh"></i> Actualiser
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+        }
+
         if (window.tasksView && window.tasksView.render) {
             window.tasksView.render(container);
         } else {
@@ -2173,8 +2189,11 @@ Cordialement,
                     <div class="empty-state-icon">
                         <i class="fas fa-tasks"></i>
                     </div>
-                    <h3 class="empty-state-title">Aucune tâche</h3>
-                    <p class="empty-state-text">Créez des tâches à partir de vos emails</p>
+                    <h3 class="empty-state-title">Interface des tâches non disponible</h3>
+                    <p class="empty-state-text">Le module d'affichage des tâches n'est pas chargé</p>
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="fas fa-refresh"></i> Actualiser
+                    </button>
                 </div>
             `;
         }
@@ -2499,7 +2518,7 @@ Cordialement,
                 background: rgba(255,255,255,0.25);
             }
             
-            /* Condensed Email View AGRANDIE avec layout sur une ligne */
+            /* Email List Styles */
             .emails-condensed-list {
                 display: flex;
                 flex-direction: column;
@@ -2643,270 +2662,25 @@ Cordialement,
                 transform: scale(1.1);
             }
             
-            /* Grouped View Styles */
-            .senders-list {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
+            /* Task Creation Modal Styles */
+            .task-creation-form {
+                max-width: none;
             }
             
-            .sender-line {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                overflow: hidden;
-                transition: all 0.2s ease;
-            }
-            
-            .sender-line:hover {
-                border-color: #d1d5db;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            }
-            
-            .sender-line.expanded {
-                border-color: #667eea;
-            }
-            
-            .sender-line-content {
-                display: flex;
-                align-items: center;
-                padding: 16px;
-                cursor: pointer;
-                user-select: none;
-            }
-            
-            .sender-avatar {
-                width: 40px;
-                height: 40px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 600;
-                font-size: 16px;
-                margin-right: 12px;
-            }
-            
-            .sender-info {
-                flex: 1;
-            }
-            
-            .sender-name {
-                font-weight: 600;
-                color: #1f2937;
-                font-size: 15px;
-            }
-            
-            .sender-meta {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-right: 12px;
-            }
-            
-            .sender-count {
-                background: #f3f4f6;
-                color: #4b5563;
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 12px;
-                font-weight: 600;
-            }
-            
-            .sender-date {
-                color: #6b7280;
-                font-size: 13px;
-            }
-            
-            .sender-toggle {
-                color: #6b7280;
-                font-size: 14px;
-                transition: transform 0.2s ease;
-            }
-            
-            .sender-emails {
-                background: #f9fafb;
-                border-top: 1px solid #e5e7eb;
-            }
-            
-            .emails-container {
-                padding: 8px;
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            
-            /* Task Creation Modal - Structured Sections */
-            .task-sections-container {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                margin: 20px 0;
-            }
-            
-            .task-section {
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                overflow: hidden;
-            }
-            
-            .task-section.attention-section {
-                background: #fef3c7;
-                border-color: #fbbf24;
-            }
-            
-            .section-header {
+            .ai-suggestion-banner {
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #7dd3fc;
+                border-radius: 8px;
                 padding: 12px 16px;
-                background: white;
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .attention-section .section-header {
-                background: #fef9e8;
-                border-bottom-color: #fbbf24;
-            }
-            
-            .section-header i {
-                font-size: 16px;
-                color: #6b7280;
-            }
-            
-            .attention-section .section-header i {
-                color: #f59e0b;
-            }
-            
-            .section-header h4 {
-                margin: 0;
-                font-size: 15px;
-                font-weight: 600;
-                color: #1f2937;
-            }
-            
-            .section-content {
-                padding: 16px;
-            }
-            
-            .section-textarea {
-                width: 100%;
-                padding: 10px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 13px;
-                line-height: 1.5;
-                resize: vertical;
-                min-height: 60px;
-            }
-            
-            .section-textarea:focus {
-                outline: none;
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-            
-            .actions-list {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .action-item {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            
-            .action-number {
-                width: 24px;
-                height: 24px;
-                background: #667eea;
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-            
-            .action-input {
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 13px;
-            }
-            
-            .action-input:focus {
-                outline: none;
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-            
-            .action-deadline {
-                font-size: 12px;
-                color: #dc2626;
-                font-weight: 500;
-                white-space: nowrap;
-            }
-            
-            .info-grid {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .info-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-                font-size: 13px;
-                color: #374151;
-                line-height: 1.4;
-            }
-            
-            .info-item i {
-                font-size: 10px;
-                color: #9ca3af;
-                margin-top: 4px;
-            }
-            
-            .attention-list {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .attention-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 10px;
-                background: #fffbeb;
-                border: 1px solid #fde68a;
-                border-radius: 6px;
-                padding: 10px 12px;
-            }
-            
-            .attention-item i {
+                margin-bottom: 20px;
                 font-size: 14px;
-                color: #f59e0b;
-                margin-top: 2px;
+                color: #075985;
+                font-weight: 600;
             }
             
-            .attention-item span {
-                flex: 1;
-                font-size: 13px;
-                color: #92400e;
-                line-height: 1.4;
-            }
-            
-            /* Sender Context Box */
             .sender-context-box {
                 display: flex;
                 align-items: center;
@@ -2952,7 +2726,173 @@ Cordialement,
                 font-weight: 500;
             }
             
-            /* Smart Replies Section */
+            /* Form elements */
+            .form-group {
+                margin-bottom: 16px;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 6px;
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .form-input, .form-select, .form-textarea {
+                width: 100%;
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            
+            .form-input:focus, .form-select:focus, .form-textarea:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+            
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+            
+            /* Task sections */
+            .task-sections-container {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                margin: 20px 0;
+            }
+            
+            .task-section {
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .task-section.attention-section {
+                background: #fef3c7;
+                border-color: #fbbf24;
+            }
+            
+            .section-header {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 16px;
+                background: white;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .attention-section .section-header {
+                background: #fef9e8;
+                border-bottom-color: #fbbf24;
+            }
+            
+            .section-header h4 {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+            
+            .section-content {
+                padding: 16px;
+            }
+            
+            .section-textarea {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 13px;
+                line-height: 1.5;
+                resize: vertical;
+                min-height: 60px;
+            }
+            
+            .actions-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .action-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .action-number {
+                width: 24px;
+                height: 24px;
+                background: #667eea;
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+            
+            .action-input {
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            
+            .info-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .info-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.4;
+            }
+            
+            .attention-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .attention-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 6px;
+                padding: 10px 12px;
+            }
+            
+            .attention-item i {
+                font-size: 14px;
+                color: #f59e0b;
+                margin-top: 2px;
+            }
+            
+            .attention-item span {
+                flex: 1;
+                font-size: 13px;
+                color: #92400e;
+                line-height: 1.4;
+            }
+            
+            /* Smart replies section */
             .smart-replies-section {
                 background: #f0f9ff;
                 border: 1px solid #7dd3fc;
@@ -2978,10 +2918,6 @@ Cordialement,
                 margin-bottom: 12px;
             }
             
-            .smart-reply-card:last-child {
-                margin-bottom: 0;
-            }
-            
             .reply-header {
                 display: flex;
                 justify-content: space-between;
@@ -2999,31 +2935,6 @@ Cordialement,
                 font-weight: 600;
             }
             
-            .reply-tone-badge.formel {
-                background: #e5e7eb;
-                color: #374151;
-            }
-            
-            .reply-tone-badge.informel {
-                background: #fef3c7;
-                color: #92400e;
-            }
-            
-            .reply-tone-badge.urgent {
-                background: #fee2e2;
-                color: #991b1b;
-            }
-            
-            .reply-tone-badge.neutre {
-                background: #e0e7ff;
-                color: #4338ca;
-            }
-            
-            .reply-tone-badge.amical {
-                background: #d1fae5;
-                color: #065f46;
-            }
-            
             .reply-subject {
                 font-size: 13px;
                 color: #4b5563;
@@ -3039,115 +2950,7 @@ Cordialement,
                 line-height: 1.5;
             }
             
-            .no-reply-suggestion {
-                background: #f3f4f6;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-                padding: 16px;
-                margin: 20px 0;
-                text-align: center;
-            }
-            
-            .no-reply-suggestion p {
-                margin: 0;
-                color: #6b7280;
-                font-size: 14px;
-            }
-            
-            /* Separated Tasks Section */
-            .separated-tasks-section {
-                background: #f0fdf4;
-                border: 1px solid #86efac;
-                border-radius: 8px;
-                padding: 16px;
-                margin: 20px 0;
-            }
-            
-            .separated-tasks-section h4 {
-                margin: 0 0 8px 0;
-                color: #166534;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 16px;
-            }
-            
-            .section-description {
-                font-size: 13px;
-                color: #15803d;
-                margin-bottom: 12px;
-            }
-            
-            .subtasks-list {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-                margin-bottom: 12px;
-            }
-            
-            .subtask-item {
-                display: flex;
-                align-items: center;
-                background: white;
-                border: 1px solid #bbf7d0;
-                border-radius: 6px;
-                padding: 10px 12px;
-            }
-            
-            .subtask-item input[type="checkbox"] {
-                margin-right: 10px;
-            }
-            
-            .subtask-item label {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-                cursor: pointer;
-            }
-            
-            .subtask-title {
-                color: #15803d;
-                font-size: 14px;
-            }
-            
-            .subtask-priority {
-                font-size: 12px;
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-weight: 600;
-            }
-            
-            .subtask-priority.priority-urgent {
-                background: #fee2e2;
-                color: #991b1b;
-            }
-            
-            .subtask-priority.priority-high {
-                background: #fef3c7;
-                color: #92400e;
-            }
-            
-            .subtask-priority.priority-medium {
-                background: #e0e7ff;
-                color: #4338ca;
-            }
-            
-            .subtask-priority.priority-low {
-                background: #f3f4f6;
-                color: #6b7280;
-            }
-            
-            .section-note {
-                font-size: 12px;
-                color: #15803d;
-                margin: 0;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            
-            /* Email Context Section */
+            /* Email context section */
             .email-context-section {
                 margin-top: 20px;
                 border: 1px solid #e5e7eb;
@@ -3195,127 +2998,8 @@ Cordialement,
                 color: #374151;
             }
             
-            .form-group {
-                margin-bottom: 16px;
-            }
-            
-            .form-group label {
-                display: block;
-                margin-bottom: 6px;
-                font-weight: 600;
-                color: #374151;
-            }
-            
-            .form-input, .form-select, .form-textarea {
-                width: 100%;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            
-            .form-input:focus, .form-select:focus, .form-textarea:focus {
-                outline: none;
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-            
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }
-            
-            /* AI Banner */
-            .ai-banner {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                border: 1px solid #fbbf24;
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 24px;
-            }
-            
-            .ai-banner-icon {
-                font-size: 48px;
-                color: #f59e0b;
-            }
-            
-            .ai-banner-content h3 {
-                margin: 0 0 4px 0;
-                color: #92400e;
-            }
-            
-            .ai-banner-content p {
-                margin: 0;
-                color: #78350f;
-            }
-            
-            /* Responsive pour les emails agrandis */
-            @media (max-width: 1024px) {
-                .email-header-line {
-                    gap: 12px;
-                }
-                
-                .sender-name-large {
-                    min-width: 150px;
-                    font-size: 15px;
-                }
-                
-                .email-subject-large {
-                    font-size: 15px;
-                }
-            }
-            
+            /* Responsive Design */
             @media (max-width: 768px) {
-                .email-condensed {
-                    padding: 12px 16px;
-                    min-height: 50px;
-                }
-                
-                .sender-avatar-condensed {
-                    width: 36px;
-                    height: 36px;
-                    font-size: 16px;
-                    margin-right: 12px;
-                }
-                
-                .email-header-line {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 6px;
-                }
-                
-                .sender-name-large {
-                    min-width: auto;
-                    font-size: 15px;
-                }
-                
-                .email-subject-large {
-                    font-size: 14px;
-                    width: 100%;
-                }
-                
-                .email-meta-right {
-                    width: 100%;
-                    justify-content: space-between;
-                }
-                
-                .email-deadline {
-                    font-size: 12px;
-                    padding: 3px 6px;
-                }
-                
-                .email-date-large {
-                    font-size: 13px;
-                }
-                
-                .btn-text-large {
-                    display: none;
-                }
-                
                 .emails-main-toolbar {
                     flex-direction: column;
                     gap: 10px;
@@ -3358,27 +3042,49 @@ Cordialement,
                     min-height: 42px;
                 }
                 
+                .btn-text-large {
+                    display: none;
+                }
+                
                 .pill-text-large {
                     display: none;
                 }
                 
-                .emails-title {
-                    font-size: 22px;
+                .email-condensed {
+                    padding: 12px 16px;
+                    min-height: 50px;
                 }
                 
-                .emails-count-large {
-                    font-size: 13px;
-                    padding: 4px 10px;
+                .sender-avatar-condensed {
+                    width: 36px;
+                    height: 36px;
+                    font-size: 16px;
+                    margin-right: 12px;
                 }
                 
-                .search-input-large {
-                    padding: 12px 14px 12px 40px;
-                    font-size: 14px;
+                .email-header-line {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 6px;
                 }
                 
-                .search-icon-large {
-                    left: 14px;
+                .sender-name-large {
+                    min-width: auto;
                     font-size: 15px;
+                }
+                
+                .email-subject-large {
+                    font-size: 14px;
+                    width: 100%;
+                }
+                
+                .email-meta-right {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+                
+                .form-row {
+                    grid-template-columns: 1fr;
                 }
             }
         `;
@@ -3387,14 +3093,16 @@ Cordialement,
     }
 }
 
-// Create global instance
+// =====================================
+// GLOBAL INITIALIZATION CORRIGÉE
+// =====================================
 window.pageManager = new PageManager();
 
-// Bind methods
+// Bind methods pour éviter les erreurs de contexte
 Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
         window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
     }
 });
 
-console.log('✅ PageManager v9.1 loaded - Layout optimisé avec barre unifiée et boutons harmonisés');
+console.log('✅ PageManager v9.2 CORRIGÉ loaded - Avec vérification TaskManager et gestion d\'erreurs');
