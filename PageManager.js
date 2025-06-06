@@ -102,75 +102,77 @@ class PageManager {
             const totalEmails = emails.length;
             
             container.innerHTML = `
-                <!-- Barre de titre unifiée -->
-                <div class="emails-header-unified">
-                    <div class="header-left">
-                        <h1>Emails</h1>
-                        <span class="emails-count-header">${totalEmails} emails</span>
+                <!-- Barre principale unifiée avec TOUT sur une seule ligne -->
+                <div class="emails-main-toolbar">
+                    <div class="toolbar-left">
+                        <h1 class="emails-title">Emails</h1>
+                        <span class="emails-count-large">${totalEmails} emails</span>
                     </div>
-                    <div class="header-center">
-                        <!-- Barre de recherche intégrée -->
-                        <div class="search-input-wrapper-header">
-                            <i class="fas fa-search search-icon"></i>
+                    
+                    <div class="toolbar-center">
+                        <!-- Barre de recherche -->
+                        <div class="search-wrapper-large">
+                            <i class="fas fa-search search-icon-large"></i>
                             <input type="text" 
-                                   class="search-input-header" 
+                                   class="search-input-large" 
                                    id="emailSearchInput"
                                    placeholder="Rechercher par expéditeur, sujet, contenu..." 
                                    value="${this.searchTerm}">
-                            <button class="search-clear-btn" id="searchClearBtn" 
+                            <button class="search-clear-large" id="searchClearBtn" 
                                     style="display: ${this.searchTerm ? 'flex' : 'none'}"
                                     onclick="window.pageManager.clearSearch()">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="header-right">
+                    
+                    <div class="toolbar-center-right">
+                        <!-- Modes de vue intégrés -->
+                        <div class="view-modes-large">
+                            <button class="btn-large ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                    data-mode="grouped-domain"
+                                    onclick="window.pageManager.changeViewMode('grouped-domain')">
+                                <i class="fas fa-globe"></i>
+                                <span class="btn-text-large">Par domaine</span>
+                            </button>
+                            <button class="btn-large ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                    data-mode="grouped-sender"
+                                    onclick="window.pageManager.changeViewMode('grouped-sender')">
+                                <i class="fas fa-user"></i>
+                                <span class="btn-text-large">Par expéditeur</span>
+                            </button>
+                            <button class="btn-large ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                    data-mode="flat"
+                                    onclick="window.pageManager.changeViewMode('flat')">
+                                <i class="fas fa-list"></i>
+                                <span class="btn-text-large">Liste complète</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="toolbar-right">
                         ${this.selectedEmails.size > 0 ? `
-                            <div class="selection-info-compact">
-                                <span class="selection-count">${this.selectedEmails.size} sélectionné(s)</span>
-                                <button class="btn-unified btn-secondary" onclick="window.pageManager.clearSelection()">
+                            <div class="selection-info-large">
+                                <span class="selection-count-large">${this.selectedEmails.size} sélectionné(s)</span>
+                                <button class="btn-large btn-secondary-large" onclick="window.pageManager.clearSelection()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
-                            <button class="btn-unified btn-primary" onclick="window.pageManager.createTasksFromSelection()">
-                                <i class="fas fa-tasks"></i> Créer tâches
+                            <button class="btn-large btn-primary-large" onclick="window.pageManager.createTasksFromSelection()">
+                                <i class="fas fa-tasks"></i>
+                                <span class="btn-text-large">Créer tâches</span>
                             </button>
                         ` : ''}
-                        <button class="btn-unified btn-secondary" onclick="window.pageManager.refreshEmails()">
-                            <i class="fas fa-sync"></i> Actualiser
+                        <button class="btn-large btn-secondary-large" onclick="window.pageManager.refreshEmails()">
+                            <i class="fas fa-sync"></i>
+                            <span class="btn-text-large">Actualiser</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Toolbar avec modes de vue harmonisés -->
-                <div class="emails-toolbar-unified">
-                    <div class="toolbar-section">
-                        <div class="view-controls-unified">
-                            <button class="btn-unified ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                    data-mode="grouped-domain"
-                                    onclick="window.pageManager.changeViewMode('grouped-domain')">
-                                <i class="fas fa-globe"></i>
-                                <span class="btn-text">Par domaine</span>
-                            </button>
-                            <button class="btn-unified ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                    data-mode="grouped-sender"
-                                    onclick="window.pageManager.changeViewMode('grouped-sender')">
-                                <i class="fas fa-user"></i>
-                                <span class="btn-text">Par expéditeur</span>
-                            </button>
-                            <button class="btn-unified ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                    data-mode="flat"
-                                    onclick="window.pageManager.changeViewMode('flat')">
-                                <i class="fas fa-list"></i>
-                                <span class="btn-text">Liste complète</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Filtres de catégories harmonisés -->
-                <div class="category-filters-unified">
-                    ${this.buildUnifiedCategoryPills(categoryCounts, totalEmails, categories, this.currentCategory)}
+                <!-- Filtres de catégories grands -->
+                <div class="category-filters-large">
+                    ${this.buildLargeCategoryPills(categoryCounts, totalEmails, categories, this.currentCategory)}
                 </div>
 
                 <div id="emailsList"></div>
@@ -192,16 +194,16 @@ class PageManager {
     }
 
     // =====================================
-    // CONSTRUCTION DES PILLS UNIFIÉES
+    // CONSTRUCTION DES PILLS GRANDES
     // =====================================
-    buildUnifiedCategoryPills(categoryCounts, totalEmails, categories, currentCategory) {
+    buildLargeCategoryPills(categoryCounts, totalEmails, categories, currentCategory) {
         let pills = `
-            <button class="btn-unified category-pill ${currentCategory === 'all' ? 'active' : ''}" 
+            <button class="btn-large category-pill-large ${currentCategory === 'all' ? 'active' : ''}" 
                     data-category="all"
                     onclick="window.pageManager.filterByCategory('all')">
-                <span class="pill-icon">📧</span>
-                <span class="pill-text">Tous</span>
-                <span class="pill-count">${totalEmails}</span>
+                <span class="pill-icon-large">📧</span>
+                <span class="pill-text-large">Tous</span>
+                <span class="pill-count-large">${totalEmails}</span>
             </button>
         `;
         
@@ -209,13 +211,13 @@ class PageManager {
             const count = categoryCounts[catId] || 0;
             if (count > 0) {
                 pills += `
-                    <button class="btn-unified category-pill ${currentCategory === catId ? 'active' : ''}" 
+                    <button class="btn-large category-pill-large ${currentCategory === catId ? 'active' : ''}" 
                             data-category="${catId}"
                             onclick="window.pageManager.filterByCategory('${catId}')"
                             style="--cat-color: ${category.color}">
-                        <span class="pill-icon">${category.icon}</span>
-                        <span class="pill-text">${category.name}</span>
-                        <span class="pill-count">${count}</span>
+                        <span class="pill-icon-large">${category.icon}</span>
+                        <span class="pill-text-large">${category.name}</span>
+                        <span class="pill-count-large">${count}</span>
                     </button>
                 `;
             }
@@ -224,12 +226,12 @@ class PageManager {
         const otherCount = categoryCounts.other || 0;
         if (otherCount > 0) {
             pills += `
-                <button class="btn-unified category-pill ${currentCategory === 'other' ? 'active' : ''}" 
+                <button class="btn-large category-pill-large ${currentCategory === 'other' ? 'active' : ''}" 
                         data-category="other"
                         onclick="window.pageManager.filterByCategory('other')">
-                    <span class="pill-icon">📌</span>
-                    <span class="pill-text">Autre</span>
-                    <span class="pill-count">${otherCount}</span>
+                    <span class="pill-icon-large">📌</span>
+                    <span class="pill-text-large">Autre</span>
+                    <span class="pill-count-large">${otherCount}</span>
                 </button>
             `;
         }
@@ -960,7 +962,7 @@ Cordialement,
         this.currentViewMode = mode;
         
         // Update active button
-        document.querySelectorAll('.btn-unified[data-mode]').forEach(btn => {
+        document.querySelectorAll('.btn-large[data-mode]').forEach(btn => {
             btn.classList.remove('active');
         });
         const activeBtn = document.querySelector(`[data-mode="${mode}"]`);
@@ -1384,7 +1386,7 @@ Cordialement,
         }
         
         // Update display
-        const currentCategory = document.querySelector('.category-pill.active')?.dataset.category || 'all';
+        const currentCategory = document.querySelector('.category-pill-large.active')?.dataset.category || 'all';
         this.renderEmailsList(this.currentViewMode, currentCategory);
     }
 
@@ -1406,7 +1408,7 @@ Cordialement,
 
     handleSearch(term) {
         this.searchTerm = term.trim();
-        const currentCategory = document.querySelector('.category-pill.active')?.dataset.category || 'all';
+        const currentCategory = document.querySelector('.category-pill-large.active')?.dataset.category || 'all';
         this.renderEmailsList(this.currentViewMode, currentCategory);
         
         const clearBtn = document.getElementById('searchClearBtn');
@@ -1426,7 +1428,7 @@ Cordialement,
     filterByCategory(categoryId) {
         this.currentCategory = categoryId;
         
-        document.querySelectorAll('.category-pill').forEach(pill => {
+        document.querySelectorAll('.category-pill-large').forEach(pill => {
             pill.classList.remove('active');
         });
         
@@ -2195,282 +2197,266 @@ Cordialement,
         const styles = document.createElement('style');
         styles.id = 'optimizedEmailPageStyles';
         styles.textContent = `
-            /* Layout unifié pour la page emails */
-            .emails-header-unified {
+            /* Layout principal - TOUT sur une ligne */
+            .emails-main-toolbar {
                 display: flex;
                 align-items: center;
                 gap: 20px;
                 padding: 20px 0;
                 border-bottom: 2px solid #f1f5f9;
                 margin-bottom: 20px;
+                min-height: 60px;
             }
             
-            .header-left {
+            .toolbar-left {
                 display: flex;
                 align-items: baseline;
                 gap: 12px;
                 min-width: 200px;
+                flex-shrink: 0;
             }
             
-            .header-left h1 {
+            .emails-title {
                 margin: 0;
                 font-size: 28px;
                 font-weight: 700;
                 color: #1f2937;
             }
             
-            .emails-count-header {
-                font-size: 14px;
+            .emails-count-large {
+                font-size: 16px;
                 color: #6b7280;
-                font-weight: 500;
+                font-weight: 600;
                 background: #f3f4f6;
-                padding: 4px 8px;
-                border-radius: 12px;
+                padding: 6px 12px;
+                border-radius: 16px;
             }
             
-            .header-center {
+            .toolbar-center {
                 flex: 1;
-                max-width: 600px;
+                max-width: 500px;
+                min-width: 300px;
             }
             
-            .search-input-wrapper-header {
+            .search-wrapper-large {
                 position: relative;
                 width: 100%;
             }
             
-            .search-input-header {
+            .search-input-large {
                 width: 100%;
-                padding: 12px 16px 12px 44px;
+                padding: 14px 20px 14px 50px;
                 border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                font-size: 14px;
+                border-radius: 14px;
+                font-size: 15px;
                 background: white;
                 transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
-            .search-input-header:focus {
+            .search-input-large:focus {
                 outline: none;
                 border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
             }
             
-            .search-icon {
+            .search-icon-large {
                 position: absolute;
-                left: 16px;
+                left: 18px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 16px;
+                font-size: 18px;
             }
             
-            .search-clear-btn {
+            .search-clear-large {
                 position: absolute;
-                right: 12px;
+                right: 14px;
                 top: 50%;
                 transform: translateY(-50%);
                 background: none;
                 border: none;
                 color: #9ca3af;
                 cursor: pointer;
-                padding: 4px;
-                border-radius: 4px;
+                padding: 6px;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.2s ease;
             }
             
-            .search-clear-btn:hover {
+            .search-clear-large:hover {
                 background: #f3f4f6;
                 color: #6b7280;
             }
             
-            .header-right {
+            .toolbar-center-right {
+                flex-shrink: 0;
+            }
+            
+            .view-modes-large {
+                display: flex;
+                gap: 6px;
+                background: #f3f4f6;
+                padding: 6px;
+                border-radius: 12px;
+            }
+            
+            .toolbar-right {
                 display: flex;
                 align-items: center;
                 gap: 12px;
+                flex-shrink: 0;
             }
             
-            .selection-info-compact {
+            .selection-info-large {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 8px 12px;
+                gap: 10px;
+                padding: 12px 16px;
                 background: #eff6ff;
-                border: 1px solid #bfdbfe;
-                border-radius: 8px;
-                font-size: 13px;
+                border: 2px solid #bfdbfe;
+                border-radius: 12px;
+                font-size: 14px;
                 color: #1e40af;
             }
             
-            .selection-count {
-                font-weight: 600;
+            .selection-count-large {
+                font-weight: 700;
             }
             
-            /* Boutons unifiés - MÊME TAILLE POUR TOUS */
-            .btn-unified {
+            /* Boutons LARGES - Taille considérablement augmentée */
+            .btn-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
-                padding: 8px 14px;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
+                gap: 8px;
+                padding: 12px 20px;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
                 background: white;
                 color: #374151;
-                font-size: 13px;
-                font-weight: 500;
+                font-size: 15px;
+                font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 text-decoration: none;
                 white-space: nowrap;
-                min-height: 36px;
+                min-height: 48px;
                 box-sizing: border-box;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
             
-            .btn-unified:hover {
+            .btn-large:hover {
                 background: #f9fafb;
                 border-color: #d1d5db;
                 color: #1f2937;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
             }
             
-            .btn-unified.active {
+            .btn-large.active {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            }
+            
+            .btn-large.btn-primary-large {
                 background: #667eea;
                 color: white;
                 border-color: #667eea;
             }
             
-            .btn-unified.btn-primary {
-                background: #667eea;
-                color: white;
-                border-color: #667eea;
-            }
-            
-            .btn-unified.btn-primary:hover {
+            .btn-large.btn-primary-large:hover {
                 background: #5a67d8;
                 border-color: #5a67d8;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
             }
             
-            .btn-unified.btn-secondary {
+            .btn-large.btn-secondary-large {
                 background: #f3f4f6;
                 color: #4b5563;
                 border-color: #d1d5db;
             }
             
-            .btn-unified.btn-secondary:hover {
+            .btn-large.btn-secondary-large:hover {
                 background: #e5e7eb;
                 color: #374151;
+                transform: translateY(-1px);
             }
             
-            /* Toolbar unifié */
-            .emails-toolbar-unified {
-                margin-bottom: 16px;
+            .btn-text-large {
+                font-weight: 600;
             }
             
-            .toolbar-section {
+            /* Filtres de catégories LARGES */
+            .category-filters-large {
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-            
-            .view-controls-unified {
-                display: flex;
-                gap: 4px;
-                background: #f3f4f6;
-                padding: 4px;
-                border-radius: 8px;
-            }
-            
-            .btn-text {
-                display: inline;
-            }
-            
-            @media (max-width: 768px) {
-                .btn-text {
-                    display: none;
-                }
-                
-                .emails-header-unified {
-                    flex-direction: column;
-                    gap: 16px;
-                    align-items: stretch;
-                }
-                
-                .header-left,
-                .header-center,
-                .header-right {
-                    width: 100%;
-                    max-width: none;
-                }
-                
-                .header-right {
-                    justify-content: flex-end;
-                }
-                
-                .view-controls-unified {
-                    justify-content: center;
-                }
-            }
-            
-            /* Filtres de catégories harmonisés */
-            .category-filters-unified {
-                display: flex;
-                gap: 8px;
+                gap: 12px;
                 flex-wrap: wrap;
-                margin-bottom: 20px;
-                padding: 16px;
+                margin-bottom: 24px;
+                padding: 20px;
                 background: #f9fafb;
-                border-radius: 12px;
-                border: 1px solid #e5e7eb;
+                border-radius: 16px;
+                border: 2px solid #e5e7eb;
             }
             
-            .category-pill {
+            .category-pill-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
-                padding: 8px 14px;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
+                gap: 10px;
+                padding: 14px 20px;
+                border: 2px solid #e5e7eb;
+                border-radius: 14px;
                 background: white;
                 color: #374151;
-                font-size: 13px;
-                font-weight: 500;
+                font-size: 15px;
+                font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                min-height: 36px;
+                min-height: 52px;
                 box-sizing: border-box;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }
             
-            .category-pill:hover {
+            .category-pill-large:hover {
                 border-color: var(--cat-color, #667eea);
-                background: var(--cat-color, #667eea)10;
+                background: var(--cat-color, #667eea)15;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             }
             
-            .category-pill.active {
+            .category-pill-large.active {
                 background: var(--cat-color, #667eea);
                 color: white;
                 border-color: var(--cat-color, #667eea);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(0,0,0,0.2);
             }
             
-            .pill-icon {
-                font-size: 14px;
+            .pill-icon-large {
+                font-size: 18px;
             }
             
-            .pill-text {
-                font-weight: 500;
-            }
-            
-            .pill-count {
-                background: rgba(0,0,0,0.1);
-                padding: 2px 6px;
-                border-radius: 10px;
-                font-size: 11px;
+            .pill-text-large {
                 font-weight: 600;
-                min-width: 18px;
+                font-size: 15px;
+            }
+            
+            .pill-count-large {
+                background: rgba(0,0,0,0.1);
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 13px;
+                font-weight: 700;
+                min-width: 24px;
                 text-align: center;
             }
             
-            .category-pill.active .pill-count {
-                background: rgba(255,255,255,0.2);
+            .category-pill-large.active .pill-count-large {
+                background: rgba(255,255,255,0.25);
             }
             
             /* Condensed Email View */
@@ -3195,28 +3181,71 @@ Cordialement,
                 color: #78350f;
             }
             
-            /* Responsive */
+            /* Responsive design pour les boutons larges */
+            @media (max-width: 1200px) {
+                .emails-main-toolbar {
+                    flex-wrap: wrap;
+                    gap: 16px;
+                }
+                
+                .toolbar-center {
+                    order: 3;
+                    flex: 1 1 100%;
+                    max-width: none;
+                }
+                
+                .view-modes-large {
+                    flex-wrap: wrap;
+                    gap: 4px;
+                }
+            }
+            
             @media (max-width: 768px) {
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
-                
-                .category-filters-unified {
-                    padding: 12px;
-                }
-                
-                .btn-unified {
-                    padding: 6px 12px;
-                    font-size: 12px;
-                }
-                
-                .pill-text {
+                .btn-text-large {
                     display: none;
                 }
                 
-                .view-controls-unified {
+                .emails-main-toolbar {
+                    flex-direction: column;
+                    gap: 16px;
+                    align-items: stretch;
+                }
+                
+                .toolbar-left,
+                .toolbar-center,
+                .toolbar-center-right,
+                .toolbar-right {
                     width: 100%;
+                    max-width: none;
+                }
+                
+                .toolbar-right {
+                    justify-content: flex-end;
+                }
+                
+                .view-modes-large {
                     justify-content: center;
+                }
+                
+                .category-filters-large {
+                    padding: 16px;
+                    gap: 8px;
+                }
+                
+                .btn-large {
+                    padding: 10px 16px;
+                    font-size: 14px;
+                    min-height: 44px;
+                }
+                
+                .category-pill-large {
+                    padding: 12px 16px;
+                    font-size: 14px;
+                    min-height: 48px;
+                }
+                
+                .pill-text-large {
+                    display: none;
                 }
             }
         `;
