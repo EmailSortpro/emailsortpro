@@ -20,18 +20,18 @@ class ModernScanStartModule {
         styles.textContent = `
             /* Scanner Ultra-Moderne Sans Défilement */
             .modern-scanner {
-                height: calc(100vh - 120px);
+                height: 100%;
+                min-height: calc(100vh - 150px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 20px;
+                padding: 40px 20px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 margin: 0;
                 border-radius: 0;
                 position: relative;
                 overflow: hidden;
                 box-sizing: border-box;
-                min-height: 500px;
             }
             
             /* Masquer les barres de défilement seulement si nécessaire */
@@ -43,10 +43,9 @@ class ModernScanStartModule {
                 background: rgba(255, 255, 255, 0.98);
                 backdrop-filter: blur(20px);
                 border-radius: 24px;
-                padding: 30px 25px;
-                max-width: 520px;
+                padding: 40px 35px;
+                max-width: 580px;
                 width: 100%;
-                max-height: calc(100vh - 160px);
                 text-align: center;
                 box-shadow: 
                     0 20px 60px rgba(0, 0, 0, 0.15),
@@ -55,7 +54,6 @@ class ModernScanStartModule {
                 position: relative;
                 display: flex;
                 flex-direction: column;
-                overflow: hidden;
                 box-sizing: border-box;
             }
             
@@ -69,22 +67,22 @@ class ModernScanStartModule {
                 background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
             }
             
-            /* Header compact */
+            /* Header plus visible */
             .modern-header {
-                margin-bottom: 20px;
+                margin-bottom: 30px;
                 flex-shrink: 0;
             }
             
             .modern-logo {
-                width: 60px;
-                height: 60px;
+                width: 80px;
+                height: 80px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 16px;
+                border-radius: 20px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 16px;
-                font-size: 28px;
+                margin: 0 auto 20px;
+                font-size: 36px;
                 color: white;
                 box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
                 animation: gentlePulse 3s ease-in-out infinite;
@@ -96,36 +94,36 @@ class ModernScanStartModule {
             }
             
             .modern-title {
-                font-size: 24px;
+                font-size: 32px;
                 font-weight: 700;
                 color: #1a1a2e;
-                margin: 0 0 6px 0;
+                margin: 0 0 10px 0;
                 letter-spacing: -0.5px;
             }
             
             .modern-subtitle {
-                font-size: 14px;
+                font-size: 18px;
                 color: #6b7280;
-                margin: 0 0 20px 0;
+                margin: 0 0 30px 0;
                 font-weight: 400;
             }
 
-            /* Section d'explication compacte */
+            /* Section d'explication plus lisible */
             .explanation-section {
-                margin-bottom: 20px;
+                margin-bottom: 30px;
                 text-align: left;
                 background: rgba(102, 126, 234, 0.08);
-                border-radius: 14px;
-                padding: 18px;
+                border-radius: 18px;
+                padding: 28px;
                 border: 1px solid rgba(102, 126, 234, 0.15);
                 flex-shrink: 0;
             }
 
             .explanation-title {
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 600;
                 color: #374151;
-                margin-bottom: 12px;
+                margin-bottom: 20px;
                 text-align: center;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
@@ -134,28 +132,28 @@ class ModernScanStartModule {
             .explanation-steps {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 12px;
+                gap: 20px;
             }
 
             .explanation-step {
                 display: flex;
                 align-items: flex-start;
-                gap: 10px;
+                gap: 15px;
             }
 
             .step-number {
-                width: 22px;
-                height: 22px;
+                width: 32px;
+                height: 32px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 6px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-size: 11px;
+                font-size: 14px;
                 font-weight: 600;
                 flex-shrink: 0;
-                margin-top: 1px;
+                margin-top: 2px;
             }
 
             .step-content {
@@ -163,30 +161,30 @@ class ModernScanStartModule {
             }
 
             .step-title {
-                font-size: 12px;
+                font-size: 16px;
                 font-weight: 600;
                 color: #1a1a2e;
-                margin-bottom: 2px;
+                margin-bottom: 6px;
                 line-height: 1.3;
             }
 
             .step-description {
-                font-size: 11px;
+                font-size: 14px;
                 color: #6b7280;
-                line-height: 1.3;
+                line-height: 1.4;
             }
             
-            /* Sélecteur de durée compact */
+            /* Sélecteur de durée plus lisible */
             .duration-selector {
-                margin-bottom: 20px;
+                margin-bottom: 30px;
                 flex-shrink: 0;
             }
             
             .duration-label {
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 600;
                 color: #374151;
-                margin-bottom: 12px;
+                margin-bottom: 18px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }
@@ -194,20 +192,20 @@ class ModernScanStartModule {
             .duration-options {
                 display: grid;
                 grid-template-columns: repeat(5, 1fr);
-                gap: 6px;
+                gap: 10px;
                 background: #f8fafc;
-                padding: 6px;
-                border-radius: 14px;
-                margin-bottom: 8px;
+                padding: 10px;
+                border-radius: 18px;
+                margin-bottom: 15px;
                 border: 1px solid #e2e8f0;
             }
             
             .duration-option {
-                padding: 10px 4px;
+                padding: 16px 8px;
                 border: none;
                 background: transparent;
-                border-radius: 10px;
-                font-size: 12px;
+                border-radius: 14px;
+                font-size: 14px;
                 font-weight: 500;
                 color: #64748b;
                 cursor: pointer;
@@ -232,24 +230,24 @@ class ModernScanStartModule {
             }
             
             .duration-info {
-                font-size: 11px;
+                font-size: 15px;
                 color: #9ca3af;
                 text-align: center;
                 font-weight: 500;
             }
             
-            /* Bouton de scan compact */
+            /* Bouton de scan plus visible */
             .scan-button-modern {
                 width: 100%;
-                height: 48px;
+                height: 58px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 border: none;
-                border-radius: 14px;
+                border-radius: 18px;
                 color: white;
-                font-size: 15px;
+                font-size: 18px;
                 font-weight: 600;
                 cursor: pointer;
-                margin-bottom: 16px;
+                margin-bottom: 20px;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 position: relative;
                 overflow: hidden;
@@ -291,7 +289,7 @@ class ModernScanStartModule {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
+                gap: 12px;
             }
             
             /* Section de progression compacte */
@@ -402,62 +400,60 @@ class ModernScanStartModule {
                 50% { transform: scale(1.1); }
             }
             
-            /* Info badge compact */
+            /* Info badge plus visible */
             .info-badge {
                 display: inline-flex;
                 align-items: center;
-                gap: 5px;
+                gap: 8px;
                 background: rgba(16, 185, 129, 0.1);
                 color: #059669;
-                padding: 6px 10px;
-                border-radius: 12px;
-                font-size: 11px;
+                padding: 10px 16px;
+                border-radius: 16px;
+                font-size: 14px;
                 font-weight: 500;
-                margin-top: 8px;
+                margin-top: 12px;
             }
             
             /* Responsive mobile */
             @media (max-width: 640px) {
                 .modern-scanner {
-                    height: calc(100vh - 100px);
-                    padding: 15px;
-                    min-height: 400px;
+                    min-height: calc(100vh - 120px);
+                    padding: 30px 15px;
                 }
                 
                 .scanner-card-modern {
-                    padding: 24px 20px;
+                    padding: 30px 25px;
                     border-radius: 20px;
                     max-width: none;
-                    max-height: calc(100vh - 140px);
                 }
                 
                 .modern-title {
-                    font-size: 22px;
+                    font-size: 28px;
                 }
                 
                 .modern-subtitle {
-                    font-size: 13px;
+                    font-size: 16px;
                 }
 
                 .explanation-steps {
                     grid-template-columns: 1fr;
-                    gap: 10px;
+                    gap: 16px;
                 }
                 
                 .duration-options {
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 5px;
-                    padding: 5px;
+                    gap: 8px;
+                    padding: 8px;
                 }
                 
                 .duration-option {
-                    padding: 8px 3px;
-                    font-size: 11px;
+                    padding: 12px 6px;
+                    font-size: 13px;
                 }
                 
                 .scan-button-modern {
-                    height: 44px;
-                    font-size: 14px;
+                    height: 52px;
+                    font-size: 16px;
                 }
             }
 
