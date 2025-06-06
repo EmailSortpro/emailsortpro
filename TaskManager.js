@@ -1,5 +1,5 @@
-// TaskManager Pro - Système unifié de gestion des tâches avec emails intégrés
-// Version 6.0 - Interface moderne avec filtres avancés et corrections z-index
+// TaskManager Pro v7.0 - Interface Optimisée User-Friendly
+// Interface moderne, intuitive avec filtres intelligents et affichage optimisé
 
 // =====================================
 // TASK MANAGER CLASS
@@ -14,7 +14,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v6.0...');
+            console.log('[TaskManager] Initializing v7.0...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -32,13 +32,70 @@ class TaskManager {
                 this.tasks = JSON.parse(saved);
                 console.log(`[TaskManager] Loaded ${this.tasks.length} tasks from storage`);
             } else {
-                console.log('[TaskManager] No saved tasks found');
-                this.tasks = [];
+                console.log('[TaskManager] No saved tasks found, generating sample data');
+                this.generateSampleData();
             }
         } catch (error) {
             console.error('[TaskManager] Error loading tasks:', error);
             this.tasks = [];
         }
+    }
+
+    generateSampleData() {
+        const sampleTasks = [
+            {
+                id: 'sample_1',
+                title: 'Révision contrat client Premium',
+                description: 'Revoir les termes du contrat annuel avec modifications demandées',
+                priority: 'urgent',
+                status: 'todo',
+                dueDate: new Date(Date.now() + 86400000).toISOString(),
+                category: 'client',
+                hasEmail: true,
+                emailFrom: 'marie.dupont@entreprise.com',
+                emailFromName: 'Marie Dupont',
+                emailSubject: 'Révision urgente contrat 2025',
+                tags: ['contrat', 'urgent', 'client-premium'],
+                client: 'Entreprise SAS',
+                createdAt: new Date(Date.now() - 3600000).toISOString(),
+                updatedAt: new Date().toISOString(),
+                needsReply: true
+            },
+            {
+                id: 'sample_2',
+                title: 'Préparation présentation Q1',
+                description: 'Créer la présentation des résultats du premier trimestre',
+                priority: 'high',
+                status: 'in-progress',
+                dueDate: new Date(Date.now() + 172800000).toISOString(),
+                category: 'project',
+                hasEmail: false,
+                tags: ['présentation', 'q1', 'résultats'],
+                client: 'Interne',
+                createdAt: new Date(Date.now() - 86400000).toISOString(),
+                updatedAt: new Date().toISOString()
+            },
+            {
+                id: 'sample_3',
+                title: 'Formation équipe développement',
+                description: 'Organiser la session de formation sur les nouvelles technologies',
+                priority: 'medium',
+                status: 'completed',
+                category: 'meeting',
+                hasEmail: true,
+                emailFrom: 'tech@formation.fr',
+                emailFromName: 'Centre Formation Tech',
+                emailSubject: 'Confirmation formation équipe',
+                tags: ['formation', 'équipe', 'tech'],
+                client: 'Interne',
+                completedAt: new Date(Date.now() - 43200000).toISOString(),
+                createdAt: new Date(Date.now() - 172800000).toISOString(),
+                updatedAt: new Date().toISOString()
+            }
+        ];
+        
+        this.tasks = sampleTasks;
+        this.saveTasks();
     }
 
     saveTasks() {
@@ -55,70 +112,6 @@ class TaskManager {
     createTask(taskData) {
         console.log('[TaskManager] Creating task with data:', taskData);
         
-        // Extraire le contenu email complet - UNIFIÉ avec PageManager
-        let emailContent = '';
-        let emailContentType = 'text';
-        let emailFullHtml = null;
-        
-        // 1. Si on a un objet email complet (depuis PageManager)
-        if (taskData.email) {
-            if (taskData.email.body?.content) {
-                emailContent = taskData.email.body.content;
-                emailContentType = taskData.email.body.contentType || 'html';
-                emailFullHtml = taskData.email.body.content;
-            } else if (taskData.email.bodyPreview) {
-                emailContent = taskData.email.bodyPreview;
-            }
-        }
-        
-        // 2. Vérifier les propriétés directes (emailHtml prioritaire)
-        if (taskData.emailHtml) {
-            emailFullHtml = taskData.emailHtml;
-            emailContent = taskData.emailHtml;
-            emailContentType = 'html';
-        } else if (taskData.emailFullHtml) {
-            emailFullHtml = taskData.emailFullHtml;
-            emailContent = taskData.emailFullHtml;
-            emailContentType = 'html';
-        }
-        
-        // 3. Si pas encore de contenu, utiliser les autres sources
-        if (!emailContent) {
-            // Chercher dans emailDetails
-            if (taskData.emailDetails?.body) {
-                emailContent = taskData.emailDetails.body;
-                if (taskData.emailDetails.fullHtml) {
-                    emailFullHtml = taskData.emailDetails.fullHtml;
-                    emailContentType = 'html';
-                }
-            } else if (taskData.emailBody?.content) {
-                emailContent = taskData.emailBody.content;
-                emailContentType = taskData.emailBody.contentType || 'text';
-                if (emailContentType === 'html') {
-                    emailFullHtml = taskData.emailBody.content;
-                }
-            } else if (taskData.emailContent) {
-                emailContent = taskData.emailContent;
-            } else if (taskData.emailBodyPreview) {
-                emailContent = taskData.emailBodyPreview;
-            }
-        }
-        
-        // 4. Si on n'a toujours pas de HTML mais que le contenu semble être du HTML
-        if (!emailFullHtml && emailContent && this.isHtmlContent(emailContent)) {
-            emailFullHtml = emailContent;
-            emailContentType = 'html';
-        }
-        
-        // 5. Extraire depuis aiAnalysis si disponible
-        if (!emailContent && taskData.aiAnalysis?.emailMetadata?.fullContent) {
-            emailContent = taskData.aiAnalysis.emailMetadata.fullContent;
-            if (this.isHtmlContent(emailContent)) {
-                emailFullHtml = emailContent;
-                emailContentType = 'html';
-            }
-        }
-        
         const task = {
             id: taskData.id || this.generateId(),
             title: taskData.title || 'Nouvelle tâche',
@@ -128,37 +121,21 @@ class TaskManager {
             dueDate: taskData.dueDate || null,
             category: taskData.category || 'other',
             
-            // Email info complète - UNIFIÉ
+            // Email info
             emailId: taskData.emailId || null,
-            emailFrom: taskData.emailFrom || taskData.emailDetails?.fromEmail || taskData.emailDetails?.from || null,
-            emailFromName: taskData.emailFromName || taskData.emailDetails?.from || taskData.emailDetails?.fromName || null,
-            emailSubject: taskData.emailSubject || taskData.emailDetails?.subject || null,
-            emailDomain: this.extractDomain(taskData.emailFrom || taskData.emailDetails?.fromEmail),
-            
-            // Contenu email complet - PROPRIÉTÉS UNIFIÉES
-            emailContent: emailContent,
-            emailContentType: emailContentType,
-            emailFullHtml: emailFullHtml,
-            emailHtml: emailFullHtml, // Pour compatibilité
-            emailBodyType: emailContentType, // Pour compatibilité
-            
-            // Métadonnées email
-            hasEmail: !!(taskData.emailId || taskData.emailDetails || taskData.emailFrom || emailContent),
+            emailFrom: taskData.emailFrom || null,
+            emailFromName: taskData.emailFromName || null,
+            emailSubject: taskData.emailSubject || null,
+            emailDomain: this.extractDomain(taskData.emailFrom),
+            emailContent: taskData.emailContent || '',
+            emailFullHtml: taskData.emailFullHtml || null,
+            hasEmail: !!(taskData.emailId || taskData.emailFrom || taskData.emailContent),
             emailReplied: false,
-            emailDate: taskData.emailDate || taskData.emailDetails?.date || taskData.createdAt,
-            hasAttachments: taskData.hasAttachments || taskData.emailDetails?.hasAttachments || taskData.emailHasAttachments || false,
+            emailDate: taskData.emailDate || taskData.createdAt,
+            hasAttachments: taskData.hasAttachments || false,
+            needsReply: taskData.needsReply || false,
             
-            // AI Analysis complète
-            aiAnalysis: taskData.aiAnalysis || null,
-            aiGenerated: taskData.aiGenerated || false,
-            
-            // Sections structurées (depuis PageManager)
-            summary: taskData.summary || '',
-            actions: taskData.actions || [],
-            keyInfo: taskData.keyInfo || [],
-            risks: taskData.risks || [],
-            
-            // Tags et metadata
+            // Metadata
             tags: taskData.tags || [],
             client: taskData.client || this.extractClient(taskData),
             
@@ -166,89 +143,19 @@ class TaskManager {
             createdAt: taskData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             
-            // Méthode de création
-            method: taskData.method || 'manual',
+            // AI Analysis
+            aiAnalysis: taskData.aiAnalysis || null,
+            aiGenerated: taskData.aiGenerated || false,
             
-            // Référence à l'email original si disponible
-            originalEmail: taskData.email || taskData.originalEmail || null
+            // Method
+            method: taskData.method || 'manual'
         };
-        
-        console.log('[TaskManager] Created task with email content:', {
-            hasContent: !!task.emailContent,
-            hasHtml: !!task.emailFullHtml,
-            contentLength: task.emailContent?.length || 0,
-            htmlLength: task.emailFullHtml?.length || 0,
-            bodyType: task.emailContentType,
-            hasOriginalEmail: !!task.originalEmail
-        });
         
         this.tasks.push(task);
         this.saveTasks();
         this.emitTaskUpdate('create', task);
         
         return task;
-    }
-    
-    // Méthode helper pour détecter si le contenu est du HTML
-    isHtmlContent(content) {
-        if (!content) return false;
-        
-        // Patterns HTML courants
-        const htmlPatterns = [
-            /<html[^>]*>/i,
-            /<body[^>]*>/i,
-            /<div[^>]*>/i,
-            /<p[^>]*>/i,
-            /<br[^>]*>/i,
-            /<img[^>]*>/i,
-            /<table[^>]*>/i,
-            /<span[^>]*>/i,
-            /<a\s+href=/i
-        ];
-        
-        return htmlPatterns.some(pattern => pattern.test(content));
-    }
-    
-    // Méthode pour créer une tâche depuis PageManager avec l'email complet
-    createTaskFromEmail(taskData, email) {
-        console.log('[TaskManager] Creating task from email:', email);
-        
-        // Extraire le contenu complet de l'email
-        let emailContent = '';
-        let emailHtml = null;
-        let emailContentType = 'text';
-        
-        // Récupérer le contenu depuis l'objet email
-        if (email && email.body?.content) {
-            emailContent = email.body.content;
-            emailHtml = email.body.content;
-            emailContentType = email.body.contentType || 'html';
-        } else if (email && email.bodyPreview) {
-            emailContent = email.bodyPreview;
-        }
-        
-        // S'assurer que l'email complet est passé avec le bon format
-        const enhancedTaskData = {
-            ...taskData,
-            email: email, // L'objet email complet
-            originalEmail: email, // Garder une référence à l'email original
-            emailId: email?.id || taskData.emailId,
-            emailFrom: email?.from?.emailAddress?.address || taskData.emailFrom,
-            emailFromName: email?.from?.emailAddress?.name || taskData.emailFromName,
-            emailSubject: email?.subject || taskData.emailSubject,
-            emailDate: email?.receivedDateTime || taskData.emailDate,
-            hasAttachments: email?.hasAttachments || taskData.hasAttachments || false,
-            // Passer explicitement le contenu complet
-            emailContent: emailContent || taskData.emailContent || '',
-            emailHtml: emailHtml,
-            emailFullHtml: emailHtml,
-            emailContentType: emailContentType,
-            emailBodyType: emailContentType,
-            // S'assurer que le flag hasEmail est correct
-            hasEmail: true
-        };
-        
-        return this.createTask(enhancedTaskData);
     }
 
     updateTask(id, updates) {
@@ -299,13 +206,6 @@ class TaskManager {
         return deletedTasks;
     }
 
-    markAsReplied(taskId) {
-        return this.updateTask(taskId, {
-            emailReplied: true,
-            lastReplyDate: new Date().toISOString()
-        });
-    }
-
     filterTasks(filters = {}) {
         let filtered = [...this.tasks];
         
@@ -318,16 +218,16 @@ class TaskManager {
             filtered = filtered.filter(task => task.priority === filters.priority);
         }
         
+        if (filters.category && filters.category !== 'all') {
+            filtered = filtered.filter(task => task.category === filters.category);
+        }
+        
         if (filters.hasEmail) {
             filtered = filtered.filter(task => task.hasEmail);
         }
         
         if (filters.needsReply) {
-            filtered = filtered.filter(task => task.hasEmail && !task.emailReplied);
-        }
-        
-        if (filters.sender && filters.sender !== 'all') {
-            filtered = filtered.filter(task => task.emailFrom === filters.sender);
+            filtered = filtered.filter(task => task.needsReply || (task.hasEmail && !task.emailReplied));
         }
         
         if (filters.overdue) {
@@ -337,50 +237,10 @@ class TaskManager {
             });
         }
         
-        // Filtre par tag
         if (filters.tag && filters.tag !== 'all') {
             filtered = filtered.filter(task => 
                 task.tags && task.tags.includes(filters.tag)
             );
-        }
-        
-        // Filtre par date
-        if (filters.dateFilter && filters.dateFilter !== 'all') {
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            switch (filters.dateFilter) {
-                case 'today':
-                    filtered = filtered.filter(task => {
-                        const taskDate = new Date(task.createdAt);
-                        return taskDate >= today && taskDate < tomorrow;
-                    });
-                    break;
-                case 'week':
-                    const weekAgo = new Date(today);
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-                    filtered = filtered.filter(task => {
-                        const taskDate = new Date(task.createdAt);
-                        return taskDate >= weekAgo;
-                    });
-                    break;
-                case 'month':
-                    const monthAgo = new Date(today);
-                    monthAgo.setMonth(monthAgo.getMonth() - 1);
-                    filtered = filtered.filter(task => {
-                        const taskDate = new Date(task.createdAt);
-                        return taskDate >= monthAgo;
-                    });
-                    break;
-                case 'overdue':
-                    filtered = filtered.filter(task => {
-                        if (!task.dueDate || task.status === 'completed') return false;
-                        return new Date(task.dueDate) < now;
-                    });
-                    break;
-            }
         }
         
         // Recherche
@@ -391,7 +251,6 @@ class TaskManager {
                 task.description.toLowerCase().includes(search) ||
                 (task.emailFromName && task.emailFromName.toLowerCase().includes(search)) ||
                 (task.emailSubject && task.emailSubject.toLowerCase().includes(search)) ||
-                (task.emailContent && task.emailContent.toLowerCase().includes(search)) ||
                 (task.tags && task.tags.some(tag => tag.toLowerCase().includes(search)))
             );
         }
@@ -438,45 +297,14 @@ class TaskManager {
             inProgress: this.tasks.filter(t => t.status === 'in-progress').length,
             completed: this.tasks.filter(t => t.status === 'completed').length,
             withEmail: this.tasks.filter(t => t.hasEmail).length,
-            needsReply: this.tasks.filter(t => t.hasEmail && !t.emailReplied && t.status !== 'completed').length,
+            needsReply: this.tasks.filter(t => t.needsReply || (t.hasEmail && !t.emailReplied && t.status !== 'completed')).length,
             overdue: this.tasks.filter(t => {
                 if (!t.dueDate || t.status === 'completed') return false;
                 return new Date(t.dueDate) < new Date();
             }).length,
-            // Pour la compatibilité avec PageManager
-            byStatus: {
-                todo: this.tasks.filter(t => t.status === 'todo').length,
-                'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
-                completed: this.tasks.filter(t => t.status === 'completed').length
-            }
+            urgent: this.tasks.filter(t => t.priority === 'urgent' && t.status !== 'completed').length
         };
         return stats;
-    }
-
-    getSenders() {
-        const senders = new Map();
-        this.tasks.forEach(task => {
-            if (task.emailFrom) {
-                const key = task.emailFrom;
-                if (!senders.has(key)) {
-                    senders.set(key, {
-                        name: task.emailFromName || 'Inconnu',
-                        email: task.emailFrom,
-                        domain: task.emailDomain,
-                        count: 0,
-                        tasks: []
-                    });
-                }
-                const sender = senders.get(key);
-                sender.count++;
-                sender.tasks.push(task.id);
-            }
-        });
-        
-        // Convertir en array et trier par nombre de tâches
-        return Array.from(senders.entries())
-            .map(([email, data]) => ({ email, ...data }))
-            .sort((a, b) => b.count - a.count);
     }
 
     getTask(id) {
@@ -500,12 +328,12 @@ class TaskManager {
     extractClient(taskData) {
         if (taskData.client) return taskData.client;
         
-        const domain = this.extractDomain(taskData.emailFrom || taskData.emailDetails?.fromEmail);
+        const domain = this.extractDomain(taskData.emailFrom);
         if (domain && !domain.includes('gmail') && !domain.includes('yahoo') && !domain.includes('hotmail')) {
             return domain.split('.')[0];
         }
         
-        return 'Personnel';
+        return 'Interne';
     }
 
     emitTaskUpdate(action, task) {
@@ -518,28 +346,28 @@ class TaskManager {
 }
 
 // =====================================
-// TASKS VIEW CLASS - MODERNISÉE
+// TASKS VIEW CLASS - INTERFACE OPTIMISÉE
 // =====================================
 class TasksView {
     constructor() {
         this.currentFilters = {
             status: 'all',
             priority: 'all',
-            sender: 'all',
+            category: 'all',
             search: '',
             sortBy: 'priority',
             overdue: false,
-            needsReply: false
+            needsReply: false,
+            hasEmail: false
         };
         
         this.selectedTasks = new Set();
         this.currentTaskDetail = null;
-        this.editMode = false;
-        this.dropdownStates = new Map();
+        this.viewMode = 'cards'; // 'cards' ou 'list'
+        this.showCompletedTasks = true;
         
         // Écouter les mises à jour
         window.addEventListener('taskUpdate', () => {
-            console.log('[TasksView] Task update detected, refreshing view');
             this.refreshView();
         });
     }
@@ -555,2217 +383,1091 @@ class TasksView {
             console.log('[TasksView] Waiting for TaskManager initialization...');
             
             container.innerHTML = `
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <p>Chargement des tâches...</p>
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p class="loading-text">Chargement de vos tâches...</p>
                 </div>
             `;
             
-            // Réessayer après un court délai
             setTimeout(() => {
                 if (window.taskManager && window.taskManager.initialized) {
                     this.render(container);
                 } else {
-                    console.error('[TasksView] TaskManager still not ready');
-                    container.innerHTML = '<div class="error">Erreur de chargement du gestionnaire de tâches</div>';
+                    container.innerHTML = '<div class="error-message">Erreur de chargement du gestionnaire de tâches</div>';
                 }
             }, 500);
             return;
         }
 
-        // Récupérer toutes les tâches
-        const allTasks = window.taskManager.getAllTasks();
-        console.log('[TasksView] Rendering with', allTasks.length, 'tasks');
-
-        // Générer le HTML complet de la page
+        // Générer le HTML de la page
         const pageHTML = `
-            <div class="tasks-page">
+            <div class="task-manager-app">
                 ${this.renderHeader()}
-                ${this.renderStats()}
-                ${this.renderFilters()}
+                ${this.renderQuickStats()}
+                ${this.renderSmartFilters()}
+                ${this.renderViewControls()}
                 ${this.renderBulkActions()}
-                <div id="tasksListContainer" class="tasks-list-container">
-                    ${this.renderTasksList()}
+                <div id="tasksContainer" class="tasks-container">
+                    ${this.renderTasksDisplay()}
                 </div>
             </div>
         `;
 
-        // Injecter le HTML dans le container
         container.innerHTML = pageHTML;
-
-        // Attacher les event listeners
         this.attachEventListeners();
+        this.addModernStyles();
         
-        // Ajouter les styles si nécessaire
-        this.addStyles();
-        
-        console.log('[TasksView] Page rendered successfully');
+        console.log('[TasksView] Modern interface rendered successfully');
     }
 
     renderHeader() {
-        return `
-            <div class="page-header">
-                <h1 class="page-title">Gestion des Tâches</h1>
-                <div class="page-actions">
-                    <button class="btn btn-primary" onclick="window.tasksView.showCreateModal()">
-                        <i class="fas fa-plus"></i> Nouvelle tâche
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    renderStats() {
         const stats = window.taskManager.getStats();
         
         return `
-            <div class="stats-grid">
-                <div class="stat-card" onclick="window.tasksView.setFilter('status', 'all')" style="--accent-color: var(--primary)">
-                    <div class="stat-icon">
-                        <i class="fas fa-list"></i>
+            <div class="app-header">
+                <div class="header-content">
+                    <div class="header-title">
+                        <h1 class="main-title">
+                            <i class="fas fa-tasks title-icon"></i>
+                            Gestionnaire de Tâches
+                        </h1>
+                        <p class="subtitle">${stats.total} tâche${stats.total > 1 ? 's' : ''} • ${stats.todo} en attente</p>
                     </div>
-                    <div class="stat-content">
-                        <div class="stat-value">${stats.total}</div>
-                        <div class="stat-label">Total</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card" onclick="window.tasksView.setFilter('status', 'todo')" style="--accent-color: var(--info)">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">${stats.todo}</div>
-                        <div class="stat-label">À faire</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card" onclick="window.tasksView.setFilter('status', 'in-progress')" style="--accent-color: var(--warning)">
-                    <div class="stat-icon">
-                        <i class="fas fa-spinner"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">${stats.inProgress}</div>
-                        <div class="stat-label">En cours</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card" onclick="window.tasksView.setFilter('status', 'completed')" style="--accent-color: var(--success)">
-                    <div class="stat-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">${stats.completed}</div>
-                        <div class="stat-label">Terminées</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card" onclick="window.tasksView.setFilter('overdue', true)" style="--accent-color: var(--danger)">
-                    <div class="stat-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">${stats.overdue}</div>
-                        <div class="stat-label">En retard</div>
-                    </div>
-                </div>
-                
-                <div class="stat-card" onclick="window.tasksView.setFilter('needsReply', true)" style="--accent-color: var(--primary)">
-                    <div class="stat-icon">
-                        <i class="fas fa-reply"></i>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value">${stats.needsReply}</div>
-                        <div class="stat-label">À répondre</div>
+                    <div class="header-actions">
+                        <button class="btn-primary btn-new-task" onclick="window.tasksView.showCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            <span>Nouvelle tâche</span>
+                        </button>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    renderFilters() {
-        const senders = window.taskManager.getSenders();
-        const allTags = this.getAllTags();
-        
-        // Compter les filtres actifs
-        let activeFilterCount = 0;
-        if (this.currentFilters.status !== 'all') activeFilterCount++;
-        if (this.currentFilters.priority !== 'all') activeFilterCount++;
-        if (this.currentFilters.sender !== 'all') activeFilterCount++;
-        if (this.currentFilters.dateFilter && this.currentFilters.dateFilter !== 'all') activeFilterCount++;
-        if (this.currentFilters.tag && this.currentFilters.tag !== 'all') activeFilterCount++;
-        if (this.currentFilters.search) activeFilterCount++;
+    renderQuickStats() {
+        const stats = window.taskManager.getStats();
         
         return `
-            <div class="filters-section">
-                <div class="filters-row">
-                    <!-- Recherche toujours visible -->
-                    <div class="search-wrapper inline-search">
+            <div class="quick-stats">
+                <div class="stat-card ${this.currentFilters.status === 'todo' ? 'active' : ''}" 
+                     onclick="window.tasksView.quickFilter('status', 'todo')">
+                    <div class="stat-icon todo-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">${stats.todo}</div>
+                        <div class="stat-label">À faire</div>
+                    </div>
+                </div>
+
+                <div class="stat-card ${this.currentFilters.status === 'in-progress' ? 'active' : ''}" 
+                     onclick="window.tasksView.quickFilter('status', 'in-progress')">
+                    <div class="stat-icon progress-icon">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">${stats.inProgress}</div>
+                        <div class="stat-label">En cours</div>
+                    </div>
+                </div>
+
+                <div class="stat-card ${this.currentFilters.overdue ? 'active' : ''}" 
+                     onclick="window.tasksView.quickFilter('overdue', true)">
+                    <div class="stat-icon urgent-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">${stats.overdue}</div>
+                        <div class="stat-label">En retard</div>
+                    </div>
+                </div>
+
+                <div class="stat-card ${this.currentFilters.needsReply ? 'active' : ''}" 
+                     onclick="window.tasksView.quickFilter('needsReply', true)">
+                    <div class="stat-icon reply-icon">
+                        <i class="fas fa-reply"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">${stats.needsReply}</div>
+                        <div class="stat-label">À répondre</div>
+                    </div>
+                </div>
+
+                <div class="stat-card ${this.currentFilters.status === 'completed' ? 'active' : ''}" 
+                     onclick="window.tasksView.quickFilter('status', 'completed')">
+                    <div class="stat-icon completed-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-number">${stats.completed}</div>
+                        <div class="stat-label">Terminées</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderSmartFilters() {
+        const hasActiveFilters = this.hasActiveFilters();
+        
+        return `
+            <div class="smart-filters">
+                <div class="search-section">
+                    <div class="search-container">
                         <i class="fas fa-search search-icon"></i>
                         <input type="text" 
+                               id="globalSearch" 
                                class="search-input" 
-                               id="filter-search" 
-                               placeholder="Rechercher..." 
-                               value="${this.currentFilters.search}">
-                        <button class="search-clear" 
-                                id="searchClearBtn" 
-                                style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                               placeholder="Rechercher dans les tâches..."
+                               value="${this.currentFilters.search}"
+                               autocomplete="off">
+                        <button class="search-clear ${this.currentFilters.search ? 'visible' : ''}" 
+                                id="searchClear"
                                 onclick="window.tasksView.clearSearch()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    
-                    <div class="inline-filters">
-                        <!-- Statut -->
-                        <div class="filter-dropdown compact ${this.currentFilters.status !== 'all' ? 'has-filter' : ''}" id="statusDropdownCompact">
-                            <button class="filter-button compact" onclick="window.tasksView.toggleDropdown('statusDropdownCompact')">
-                                <i class="fas fa-tasks"></i>
-                                <span>${this.getFilterLabel('status', this.currentFilters.status)}</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-item ${this.currentFilters.status === 'all' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('status', 'all')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    Tous les statuts
-                                </div>
-                                <div class="dropdown-item ${this.currentFilters.status === 'todo' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('status', 'todo')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-clock"></i> À faire
-                                </div>
-                                <div class="dropdown-item ${this.currentFilters.status === 'in-progress' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('status', 'in-progress')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-spinner"></i> En cours
-                                </div>
-                                <div class="dropdown-item ${this.currentFilters.status === 'completed' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('status', 'completed')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-check-circle"></i> Terminées
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Priorité -->
-                        <div class="filter-dropdown compact ${this.currentFilters.priority !== 'all' ? 'has-filter' : ''}" id="priorityDropdownCompact">
-                            <button class="filter-button compact" onclick="window.tasksView.toggleDropdown('priorityDropdownCompact')">
+                </div>
+
+                <div class="filter-chips">
+                    <div class="filter-group">
+                        <div class="filter-chip-container">
+                            <button class="filter-chip ${this.currentFilters.priority !== 'all' ? 'active' : ''}" 
+                                    id="priorityFilter" 
+                                    onclick="window.tasksView.toggleFilterMenu('priority')">
                                 <i class="fas fa-flag"></i>
-                                <span>${this.getFilterLabel('priority', this.currentFilters.priority)}</span>
+                                <span>${this.getFilterDisplayName('priority', this.currentFilters.priority)}</span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-item ${this.currentFilters.priority === 'all' ? 'active' : ''}" 
+                            <div class="filter-menu" id="priorityMenu">
+                                <div class="filter-option ${this.currentFilters.priority === 'all' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setFilter('priority', 'all')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    Toutes priorités
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>Toutes priorités</span>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.priority === 'urgent' ? 'active' : ''}" 
+                                <div class="filter-option ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setFilter('priority', 'urgent')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    🚨 Urgent
+                                    <i class="fas fa-check check-mark"></i>
+                                    <div class="priority-option urgent">
+                                        <span class="priority-icon">🚨</span>
+                                        <span>Urgent</span>
+                                    </div>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.priority === 'high' ? 'active' : ''}" 
+                                <div class="filter-option ${this.currentFilters.priority === 'high' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setFilter('priority', 'high')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    ⚡ Haute
+                                    <i class="fas fa-check check-mark"></i>
+                                    <div class="priority-option high">
+                                        <span class="priority-icon">⚡</span>
+                                        <span>Haute</span>
+                                    </div>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.priority === 'medium' ? 'active' : ''}" 
+                                <div class="filter-option ${this.currentFilters.priority === 'medium' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setFilter('priority', 'medium')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    📌 Normale
+                                    <i class="fas fa-check check-mark"></i>
+                                    <div class="priority-option medium">
+                                        <span class="priority-icon">📌</span>
+                                        <span>Normale</span>
+                                    </div>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.priority === 'low' ? 'active' : ''}" 
+                                <div class="filter-option ${this.currentFilters.priority === 'low' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setFilter('priority', 'low')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    📄 Basse
+                                    <i class="fas fa-check check-mark"></i>
+                                    <div class="priority-option low">
+                                        <span class="priority-icon">📄</span>
+                                        <span>Basse</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Expéditeurs -->
-                        <div class="filter-dropdown compact ${this.currentFilters.sender !== 'all' ? 'has-filter' : ''}" id="senderDropdownCompact">
-                            <button class="filter-button compact" onclick="window.tasksView.toggleDropdown('senderDropdownCompact')">
-                                <i class="fas fa-user"></i>
-                                <span>${this.getFilterLabel('sender', this.currentFilters.sender)}</span>
+
+                        <div class="filter-chip-container">
+                            <button class="filter-chip ${this.currentFilters.category !== 'all' ? 'active' : ''}" 
+                                    id="categoryFilter" 
+                                    onclick="window.tasksView.toggleFilterMenu('category')">
+                                <i class="fas fa-folder"></i>
+                                <span>${this.getFilterDisplayName('category', this.currentFilters.category)}</span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
-                            <div class="dropdown-menu dropdown-menu-large">
-                                <div class="dropdown-item ${this.currentFilters.sender === 'all' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('sender', 'all')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    Tous les expéditeurs
+                            <div class="filter-menu" id="categoryMenu">
+                                <div class="filter-option ${this.currentFilters.category === 'all' ? 'selected' : ''}" 
+                                     onclick="window.tasksView.setFilter('category', 'all')">
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>Toutes catégories</span>
                                 </div>
-                                ${senders.length > 0 ? `
-                                    <div class="dropdown-divider"></div>
-                                    <div class="dropdown-section-title">Expéditeurs récents</div>
-                                    ${senders.slice(0, 10).map(sender => `
-                                        <div class="dropdown-item sender-item ${this.currentFilters.sender === sender.email ? 'active' : ''}" 
-                                             onclick="window.tasksView.setFilter('sender', '${sender.email}')">
-                                            <i class="fas fa-check check-icon"></i>
-                                            <div class="sender-avatar">${sender.name.charAt(0).toUpperCase()}</div>
-                                            <div class="sender-info">
-                                                <div class="sender-name">${this.escapeHtml(sender.name)}</div>
-                                                <div class="sender-email">${this.escapeHtml(sender.email)}</div>
-                                            </div>
-                                            <span class="sender-count">${sender.count}</span>
-                                        </div>
-                                    `).join('')}
-                                ` : ''}
-                            </div>
-                        </div>
-                        
-                        <!-- Dates -->
-                        <div class="filter-dropdown compact ${this.currentFilters.dateFilter && this.currentFilters.dateFilter !== 'all' ? 'has-filter' : ''}" id="dateDropdownCompact">
-                            <button class="filter-button compact" onclick="window.tasksView.toggleDropdown('dateDropdownCompact')">
-                                <i class="fas fa-calendar"></i>
-                                <span>${this.getFilterLabel('dateFilter', this.currentFilters.dateFilter || 'all')}</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-item ${!this.currentFilters.dateFilter || this.currentFilters.dateFilter === 'all' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('dateFilter', 'all')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    Toutes les dates
+                                <div class="filter-option ${this.currentFilters.category === 'client' ? 'selected' : ''}" 
+                                     onclick="window.tasksView.setFilter('category', 'client')">
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>🤝 Client</span>
                                 </div>
-                                <div class="dropdown-divider"></div>
-                                <div class="dropdown-item ${this.currentFilters.dateFilter === 'today' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('dateFilter', 'today')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-calendar-day"></i> Aujourd'hui
+                                <div class="filter-option ${this.currentFilters.category === 'project' ? 'selected' : ''}" 
+                                     onclick="window.tasksView.setFilter('category', 'project')">
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>📁 Projet</span>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.dateFilter === 'week' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('dateFilter', 'week')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-calendar-week"></i> Cette semaine
+                                <div class="filter-option ${this.currentFilters.category === 'meeting' ? 'selected' : ''}" 
+                                     onclick="window.tasksView.setFilter('category', 'meeting')">
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>🗓️ Réunion</span>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.dateFilter === 'month' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('dateFilter', 'month')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-calendar-alt"></i> Ce mois
-                                </div>
-                                <div class="dropdown-item ${this.currentFilters.dateFilter === 'overdue' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('dateFilter', 'overdue')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-exclamation-triangle"></i> En retard
+                                <div class="filter-option ${this.currentFilters.category === 'email' ? 'selected' : ''}" 
+                                     onclick="window.tasksView.setFilter('category', 'email')">
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>📧 Email</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Tags -->
-                        <div class="filter-dropdown compact ${this.currentFilters.tag && this.currentFilters.tag !== 'all' ? 'has-filter' : ''}" id="tagDropdownCompact">
-                            <button class="filter-button compact" onclick="window.tasksView.toggleDropdown('tagDropdownCompact')">
-                                <i class="fas fa-tags"></i>
-                                <span>${this.getFilterLabel('tag', this.currentFilters.tag || 'all')}</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </button>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-item ${!this.currentFilters.tag || this.currentFilters.tag === 'all' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setFilter('tag', 'all')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    Tous les tags
-                                </div>
-                                ${allTags.length > 0 ? `
-                                    <div class="dropdown-divider"></div>
-                                    <div class="dropdown-section-title">Tags disponibles</div>
-                                    ${allTags.map(tag => `
-                                        <div class="dropdown-item tag-item ${this.currentFilters.tag === tag.name ? 'active' : ''}" 
-                                             onclick="window.tasksView.setFilter('tag', '${tag.name}')">
-                                            <i class="fas fa-check check-icon"></i>
-                                            <i class="fas fa-tag"></i>
-                                            <span class="tag-name">${this.escapeHtml(tag.name)}</span>
-                                            <span class="tag-count">${tag.count}</span>
-                                        </div>
-                                    `).join('')}
-                                ` : ''}
-                            </div>
-                        </div>
-                        
-                        <!-- Tri -->
-                        <div class="filter-dropdown compact" id="sortDropdownCompact">
-                            <button class="filter-button compact sort-button" onclick="window.tasksView.toggleDropdown('sortDropdownCompact')">
+
+                        <div class="filter-chip-container">
+                            <button class="filter-chip" 
+                                    id="sortFilter" 
+                                    onclick="window.tasksView.toggleFilterMenu('sort')">
                                 <i class="fas fa-sort"></i>
-                                <span>${this.getFilterLabel('sortBy', this.currentFilters.sortBy)}</span>
+                                <span>${this.getFilterDisplayName('sortBy', this.currentFilters.sortBy)}</span>
                                 <i class="fas fa-chevron-down"></i>
                             </button>
-                            <div class="dropdown-menu">
-                                <div class="dropdown-section-title">Trier par</div>
-                                <div class="dropdown-item ${this.currentFilters.sortBy === 'priority' ? 'active' : ''}" 
+                            <div class="filter-menu" id="sortMenu">
+                                <div class="filter-option ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setSort('priority')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-flag"></i> Priorité
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>🎯 Priorité</span>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.sortBy === 'dueDate' ? 'active' : ''}" 
+                                <div class="filter-option ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setSort('dueDate')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-calendar-check"></i> Échéance
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>📅 Échéance</span>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.sortBy === 'created' ? 'active' : ''}" 
+                                <div class="filter-option ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setSort('created')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-calendar-plus"></i> Date de création
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>🆕 Plus récent</span>
                                 </div>
-                                <div class="dropdown-item ${this.currentFilters.sortBy === 'updated' ? 'active' : ''}" 
-                                     onclick="window.tasksView.setSort('updated')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-calendar-check"></i> Dernière modification
-                                </div>
-                                <div class="dropdown-item ${this.currentFilters.sortBy === 'alphabetical' ? 'active' : ''}" 
+                                <div class="filter-option ${this.currentFilters.sortBy === 'alphabetical' ? 'selected' : ''}" 
                                      onclick="window.tasksView.setSort('alphabetical')">
-                                    <i class="fas fa-check check-icon"></i>
-                                    <i class="fas fa-sort-alpha-down"></i> Alphabétique
+                                    <i class="fas fa-check check-mark"></i>
+                                    <span>🔤 Alphabétique</span>
                                 </div>
                             </div>
                         </div>
-                        
-                        <button class="btn btn-secondary btn-sm reset-btn ${activeFilterCount > 0 ? 'visible' : ''}" 
-                                onclick="window.tasksView.resetFilters()">
-                            <i class="fas fa-times"></i> Réinitialiser (${activeFilterCount})
+                    </div>
+
+                    <div class="filter-actions">
+                        <button class="reset-filters-btn ${hasActiveFilters ? 'visible' : ''}" 
+                                onclick="window.tasksView.resetAllFilters()">
+                            <i class="fas fa-undo"></i>
+                            <span>Réinitialiser</span>
                         </button>
                     </div>
                 </div>
             </div>
         `;
     }
-    
-    getAllTags() {
-        const tagsMap = new Map();
-        
-        window.taskManager.getAllTasks().forEach(task => {
-            if (task.tags && task.tags.length > 0) {
-                task.tags.forEach(tag => {
-                    if (!tagsMap.has(tag)) {
-                        tagsMap.set(tag, { name: tag, count: 0 });
-                    }
-                    tagsMap.get(tag).count++;
-                });
-            }
-        });
-        
-        return Array.from(tagsMap.values()).sort((a, b) => b.count - a.count);
+
+    renderViewControls() {
+        return `
+            <div class="view-controls">
+                <div class="view-toggle">
+                    <button class="view-btn ${this.viewMode === 'cards' ? 'active' : ''}" 
+                            onclick="window.tasksView.setViewMode('cards')"
+                            title="Vue cartes">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button class="view-btn ${this.viewMode === 'list' ? 'active' : ''}" 
+                            onclick="window.tasksView.setViewMode('list')"
+                            title="Vue liste">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+
+                <div class="view-options">
+                    <label class="toggle-completed">
+                        <input type="checkbox" 
+                               ${this.showCompletedTasks ? 'checked' : ''} 
+                               onchange="window.tasksView.toggleCompletedTasks(this.checked)">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Afficher terminées</span>
+                    </label>
+                </div>
+            </div>
+        `;
     }
 
     renderBulkActions() {
-        const filteredTasks = window.taskManager.filterTasks(this.currentFilters);
-        const allSelected = filteredTasks.length > 0 && 
-            filteredTasks.every(task => this.selectedTasks.has(task.id));
-        
         return `
             <div class="bulk-actions ${this.selectedTasks.size > 0 ? 'visible' : ''}" id="bulkActions">
-                <div class="bulk-info">
-                    <span class="selection-count">${this.selectedTasks.size}</span> tâche(s) sélectionnée(s)
+                <div class="bulk-selection-info">
+                    <span class="selection-count">${this.selectedTasks.size}</span>
+                    <span class="selection-text">tâche${this.selectedTasks.size > 1 ? 's' : ''} sélectionnée${this.selectedTasks.size > 1 ? 's' : ''}</span>
                 </div>
-                <div class="bulk-buttons">
-                    <button class="btn btn-secondary btn-sm" onclick="window.tasksView.toggleSelectAll()">
-                        <i class="fas fa-check-square"></i> 
-                        <span>${allSelected ? 'Tout désélectionner' : 'Tout sélectionner'}</span>
+                <div class="bulk-action-buttons">
+                    <button class="bulk-btn bulk-btn-secondary" onclick="window.tasksView.clearSelection()">
+                        <i class="fas fa-times"></i>
+                        Désélectionner
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="window.tasksView.deleteSelected()">
-                        <i class="fas fa-trash"></i> Supprimer
+                    <button class="bulk-btn bulk-btn-primary" onclick="window.tasksView.bulkMarkComplete()">
+                        <i class="fas fa-check"></i>
+                        Marquer terminé
+                    </button>
+                    <button class="bulk-btn bulk-btn-danger" onclick="window.tasksView.bulkDelete()">
+                        <i class="fas fa-trash"></i>
+                        Supprimer
                     </button>
                 </div>
             </div>
         `;
     }
 
-    renderTasksList() {
+    renderTasksDisplay() {
         const tasks = window.taskManager.filterTasks(this.currentFilters);
-        console.log('[TasksView] Rendering', tasks.length, 'filtered tasks');
         
-        if (tasks.length === 0) {
-            return `
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-inbox"></i>
-                    </div>
-                    <h3 class="empty-state-title">Aucune tâche trouvée</h3>
-                    <p class="empty-state-text">${this.currentFilters.search ? 'Aucun résultat pour votre recherche' : 'Créez une nouvelle tâche ou ajustez les filtres'}</p>
-                    ${this.currentFilters.status !== 'all' || this.currentFilters.priority !== 'all' ? 
-                        '<button class="btn btn-primary" onclick="window.tasksView.resetFilters()">Réinitialiser les filtres</button>' : 
-                        '<button class="btn btn-primary" onclick="window.tasksView.showCreateModal()">Créer une tâche</button>'
+        // Filtrer les tâches terminées si nécessaire
+        const filteredTasks = this.showCompletedTasks ? tasks : tasks.filter(task => task.status !== 'completed');
+        
+        if (filteredTasks.length === 0) {
+            return this.renderEmptyState();
+        }
+
+        if (this.viewMode === 'cards') {
+            return this.renderTaskCards(filteredTasks);
+        } else {
+            return this.renderTaskList(filteredTasks);
+        }
+    }
+
+    renderEmptyState() {
+        const hasFilters = this.hasActiveFilters() || !this.showCompletedTasks;
+        
+        return `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-title">
+                    ${hasFilters ? 'Aucune tâche trouvée' : 'Aucune tâche pour le moment'}
+                </h3>
+                <p class="empty-description">
+                    ${hasFilters ? 
+                        'Aucune tâche ne correspond à vos critères de recherche.' : 
+                        'Commencez par créer votre première tâche.'}
+                </p>
+                <div class="empty-actions">
+                    ${hasFilters ? 
+                        '<button class="btn-secondary" onclick="window.tasksView.resetAllFilters()">Réinitialiser les filtres</button>' :
+                        '<button class="btn-primary" onclick="window.tasksView.showCreateModal()">Créer une tâche</button>'
                     }
                 </div>
-            `;
-        }
-        
-        return `
-            <div class="tasks-list">
-                ${tasks.map(task => this.renderTaskItem(task)).join('')}
             </div>
         `;
     }
 
-    renderTaskItem(task) {
-        const isCompleted = task.status === 'completed';
-        const hasAI = task.aiAnalysis && task.aiAnalysis.method;
-        const needsReply = task.hasEmail && !task.emailReplied && !isCompleted;
-        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
+    renderTaskCards(tasks) {
+        return `
+            <div class="tasks-grid">
+                ${tasks.map(task => this.renderTaskCard(task)).join('')}
+            </div>
+        `;
+    }
+
+    renderTaskCard(task) {
         const isSelected = this.selectedTasks.has(task.id);
+        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+        const needsReply = task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed');
         
         return `
-            <div class="task-item ${isCompleted ? 'completed' : ''} ${isOverdue ? 'overdue' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-task-id="${task.id}">
+            <div class="task-card ${task.status} ${isSelected ? 'selected' : ''} ${isOverdue ? 'overdue' : ''}"
+                 data-task-id="${task.id}"
+                 onclick="window.tasksView.handleCardClick(event, '${task.id}')">
                 
-                <div class="task-checkbox">
-                    <div class="custom-checkbox ${isCompleted ? 'checked' : ''}" 
-                         onclick="event.stopPropagation(); window.tasksView.toggleTaskStatus('${task.id}')">
-                        ${isCompleted ? '<i class="fas fa-check"></i>' : ''}
+                <div class="card-header">
+                    <div class="card-checkbox" onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+                        <div class="custom-checkbox ${isSelected ? 'checked' : ''}">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="priority-indicator ${task.priority}"></div>
+                    
+                    <div class="card-actions">
+                        ${task.status !== 'completed' ? `
+                            <button class="card-action-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.quickToggleStatus('${task.id}')"
+                                    title="Marquer comme terminé">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        ` : ''}
+                        ${needsReply ? `
+                            <button class="card-action-btn reply-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.quickReply('${task.id}')"
+                                    title="Répondre">
+                                <i class="fas fa-reply"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
+
+                <div class="card-content">
+                    <h3 class="card-title">${this.escapeHtml(task.title)}</h3>
+                    
+                    ${task.description ? `
+                        <p class="card-description">${this.escapeHtml(task.description.substring(0, 120))}${task.description.length > 120 ? '...' : ''}</p>
+                    ` : ''}
+                    
+                    <div class="card-badges">
+                        <span class="status-badge ${task.status}">
+                            ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
+                        </span>
+                        ${task.hasEmail ? '<span class="feature-badge email"><i class="fas fa-envelope"></i></span>' : ''}
+                        ${needsReply ? '<span class="feature-badge reply"><i class="fas fa-reply"></i></span>' : ''}
+                        ${task.aiGenerated ? '<span class="feature-badge ai"><i class="fas fa-robot"></i></span>' : ''}
+                    </div>
+                    
+                    ${task.tags && task.tags.length > 0 ? `
+                        <div class="card-tags">
+                            ${task.tags.slice(0, 3).map(tag => `
+                                <span class="tag-chip">${this.escapeHtml(tag)}</span>
+                            `).join('')}
+                            ${task.tags.length > 3 ? `<span class="tag-more">+${task.tags.length - 3}</span>` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="card-footer">
+                    ${task.client && task.client !== 'Interne' ? `
+                        <div class="card-client">
+                            <i class="fas fa-building"></i>
+                            <span>${this.escapeHtml(task.client)}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.dueDate ? `
+                        <div class="card-due-date ${isOverdue ? 'overdue' : ''}">
+                            <i class="fas fa-calendar"></i>
+                            <span>${this.formatRelativeDate(task.dueDate)}</span>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="card-meta">
+                        <span class="card-created">${this.formatRelativeDate(task.createdAt)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderTaskList(tasks) {
+        return `
+            <div class="tasks-list">
+                <div class="list-header">
+                    <div class="list-header-cell select-all">
+                        <div class="custom-checkbox ${this.isAllSelected(tasks) ? 'checked' : ''}"
+                             onclick="window.tasksView.toggleSelectAll()">
+                            ${this.isAllSelected(tasks) ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                    </div>
+                    <div class="list-header-cell title">Tâche</div>
+                    <div class="list-header-cell priority">Priorité</div>
+                    <div class="list-header-cell status">Statut</div>
+                    <div class="list-header-cell client">Client</div>
+                    <div class="list-header-cell due-date">Échéance</div>
+                    <div class="list-header-cell actions">Actions</div>
+                </div>
                 
-                <div class="task-select">
-                    <div class="custom-checkbox ${isSelected ? 'checked' : ''}" 
+                <div class="list-body">
+                    ${tasks.map(task => this.renderTaskListItem(task)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderTaskListItem(task) {
+        const isSelected = this.selectedTasks.has(task.id);
+        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+        const needsReply = task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed');
+        
+        return `
+            <div class="list-row ${task.status} ${isSelected ? 'selected' : ''} ${isOverdue ? 'overdue' : ''}"
+                 data-task-id="${task.id}"
+                 onclick="window.tasksView.handleRowClick(event, '${task.id}')">
+                
+                <div class="list-cell select">
+                    <div class="custom-checkbox ${isSelected ? 'checked' : ''}"
                          onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                         ${isSelected ? '<i class="fas fa-check"></i>' : ''}
                     </div>
                 </div>
-                
-                <div class="task-content" onclick="window.tasksView.showTaskModal('${task.id}')">
-                    <div class="task-header">
-                        <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
-                        <div class="task-badges">
-                            <span class="priority-badge ${task.priority}">${this.getPriorityLabel(task.priority)}</span>
-                            ${task.hasEmail ? '<span class="email-badge"><i class="fas fa-envelope"></i></span>' : ''}
-                            ${hasAI ? '<span class="ai-badge"><i class="fas fa-robot"></i></span>' : ''}
-                            ${needsReply ? '<span class="reply-badge"><i class="fas fa-reply"></i></span>' : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="task-description">
-                        ${task.description ? `<p>${this.escapeHtml(task.description).substring(0, 100)}${task.description.length > 100 ? '...' : ''}</p>` : ''}
-                        ${task.tags && task.tags.length > 0 ? `
-                            <div class="task-tags">
-                                ${task.tags.map(tag => `
-                                    <span class="task-tag" onclick="event.stopPropagation(); window.tasksView.setFilter('tag', '${tag}')">
-                                        <i class="fas fa-tag"></i>
-                                        ${this.escapeHtml(tag)}
-                                    </span>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="task-meta">
-                        ${task.emailFromName ? `
-                            <span class="meta-item">
-                                <i class="fas fa-user"></i> ${this.escapeHtml(task.emailFromName)}
-                            </span>
-                        ` : ''}
-                        
-                        ${task.dueDate ? `
-                            <span class="meta-item ${isOverdue ? 'overdue' : ''}">
-                                <i class="fas fa-calendar"></i> ${this.formatDate(task.dueDate)}
-                            </span>
-                        ` : ''}
-                        
-                        <span class="meta-item">
-                            <i class="fas fa-clock"></i> ${this.formatDate(task.createdAt)}
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="task-actions">
-                    ${needsReply ? `
-                        <button class="action-btn primary" 
-                                onclick="event.stopPropagation(); window.tasksView.quickReply('${task.id}')"
-                                title="Répondre rapidement">
-                            <i class="fas fa-reply"></i>
-                        </button>
-                    ` : ''}
-                    <button class="action-btn danger" 
-                            onclick="event.stopPropagation(); window.tasksView.deleteTask('${task.id}')"
-                            title="Supprimer">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-// Remplacer la fonction showTaskModal dans TasksView (TaskManager.js)
-// Remplacer dans TaskManager.js (TasksView class)
-showTaskModal(taskId) {
-    const task = window.taskManager.getTask(taskId);
-    if (!task) return;
-    
-    // Nettoyer tout modal existant
-    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-    
-    this.currentTaskDetail = task;
-    this.editMode = false;
-    
-    // Créer un nouvel id unique
-    const uniqueId = 'task_detail_modal_' + Date.now();
 
-    // Créer le modal avec style inline pour forcer l'affichage
-    const modalHTML = `
-        <div id="${uniqueId}" 
-             style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
-                    z-index: 99999999; display: flex; align-items: center; justify-content: center; 
-                    padding: 20px; backdrop-filter: blur(4px);">
-            <div style="background: white; border-radius: 12px; max-width: 1000px; width: 100%; 
-                        max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px 12px 0 0; color: white; display: flex; justify-content: space-between; align-items: center;">
-                    <h2 id="modalTitle" style="margin: 0; font-size: 20px; color: white;">${this.escapeHtml(task.title)}</h2>
-                    <input type="text" 
-                           id="modalTitleInput" 
-                           value="${this.escapeHtml(task.title)}"
-                           style="display: none; width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                    <button onclick="window.tasksView.closeModalById('${uniqueId}');"
-                            style="background: rgba(255,255,255,0.2); border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div style="padding: 20px; overflow-y: auto; flex: 1;">
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
-                        <!-- Barre d'outils -->
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
-                            <div style="display: flex; gap: 12px;">
-                                <button id="editModeBtn" onclick="window.tasksView.toggleEditMode();"
-                                        style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
-                                    <i class="fas fa-edit"></i> Modifier
-                                </button>
-                                ${task.hasEmail && !task.emailReplied ? `
-                                    <button onclick="window.tasksView.showReplySection();"
-                                            style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                                        <i class="fas fa-reply"></i> Répondre à l'email
-                                    </button>
-                                ` : ''}
-                            </div>
-                            <div style="display: flex; gap: 8px;">
-                                <span style="padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; 
-                                             background: ${this.getPriorityBackground(task.priority)}; color: ${this.getPriorityColor(task.priority)};">
-                                    ${this.getPriorityLabel(task.priority)}
-                                </span>
-                                <span style="padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;
-                                             background: ${this.getStatusBackground(task.status)}; color: ${this.getStatusColor(task.status)};">
-                                    ${this.getStatusLabel(task.status)}
-                                </span>
-                            </div>
-                        </div>
-                        
-                        <!-- Contenu principal -->
-                        <div style="display: flex; flex-direction: column; gap: 20px;">
-                            ${task.hasEmail && task.emailFromName ? this.renderSenderContext(task) : ''}
-                            
-                            ${this.renderTaskSections(task)}
-                            
-                            ${task.hasEmail && (task.emailContent || task.emailFullHtml || task.emailHtml) ? this.renderEmailSection(task) : ''}
-                            
-                            ${this.renderMetadataSection(task)}
+                <div class="list-cell title">
+                    <div class="task-title-container">
+                        <div class="task-title">${this.escapeHtml(task.title)}</div>
+                        <div class="task-indicators">
+                            ${task.hasEmail ? '<i class="fas fa-envelope indicator-email" title="Email associé"></i>' : ''}
+                            ${needsReply ? '<i class="fas fa-reply indicator-reply" title="Réponse requise"></i>' : ''}
+                            ${task.aiGenerated ? '<i class="fas fa-robot indicator-ai" title="Généré par IA"></i>' : ''}
                         </div>
                     </div>
                 </div>
-                <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
-                    <div id="viewFooter">
-                        <button onclick="window.tasksView.closeModalById('${uniqueId}');"
-                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
-                            Fermer
-                        </button>
-                    </div>
-                    <div id="editFooter" style="display: none;">
-                        <button onclick="window.tasksView.cancelEdit();"
-                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
-                            Annuler
-                        </button>
-                        <button onclick="window.tasksView.saveEdit();"
-                                style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            <i class="fas fa-save"></i> Enregistrer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
 
-    // Ajouter au DOM
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    document.body.style.overflow = 'hidden';
-}
-
-// Ajouter cette nouvelle méthode pour fermer par ID
-closeModalById(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.remove();
-        document.body.style.overflow = 'auto';
-    }
-}
-
-// Simplifier la fonction closeModal existante
-closeModal(modalId) {
-    document.querySelectorAll('.modal-overlay, [id^="task_detail_modal_"], [id^="email_modal_"], [id^="task_creation_modal_"]').forEach(el => el.remove());
-    document.body.style.overflow = '';
-}
-
-// Ajouter ces méthodes d'aide pour les couleurs
-getPriorityBackground(priority) {
-    const backgrounds = {
-        urgent: '#fee2e2',
-        high: '#fef3c7', 
-        medium: '#dbeafe',
-        low: '#f3f4f6'
-    };
-    return backgrounds[priority] || '#f3f4f6';
-}
-
-getPriorityColor(priority) {
-    const colors = {
-        urgent: '#991b1b',
-        high: '#92400e',
-        medium: '#1e40af',
-        low: '#4b5563'
-    };
-    return colors[priority] || '#4b5563';
-}
-
-getStatusBackground(status) {
-    const backgrounds = {
-        todo: '#dbeafe',
-        'in-progress': '#fef3c7',
-        completed: '#d1fae5'
-    };
-    return backgrounds[status] || '#f3f4f6';
-}
-
-getStatusColor(status) {
-    const colors = {
-        todo: '#1e40af',
-        'in-progress': '#92400e',
-        completed: '#065f46'
-    };
-    return colors[status] || '#4b5563';
-}
-
-// Remplacer la fonction showEmailModal dans PageManager.js
-
-showEmailModal(emailId) {
-    const email = this.getEmailById(emailId);
-    if (!email) return;
-
-    // Fermer modal existant s'il y en a un
-    const existingModal = document.getElementById('emailDetailModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-
-    // Create modal element
-    let modal = document.createElement('div');
-    modal.id = 'emailDetailModal';
-    modal.className = 'modal-overlay';
-    modal.style.zIndex = "10000004"; // Valeur très élevée
-    modal.style.display = 'flex';
-
-    modal.innerHTML = `
-        <div class="modal-container">
-            <div class="modal-header">
-                <h2>Email Complet</h2>
-                <button class="modal-close-btn" onclick="window.pageManager.closeEmailModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="email-detail-header">
-                    <div class="email-detail-meta">
-                        <div class="meta-row">
-                            <span class="meta-label">De:</span>
-                            <span>${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
-                        </div>
-                        <div class="meta-row">
-                            <span class="meta-label">Date:</span>
-                            <span>${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
-                        </div>
-                        <div class="meta-row">
-                            <span class="meta-label">Sujet:</span>
-                            <span>${email.subject || 'Sans sujet'}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="email-detail-body">
-                    ${this.getEmailContent(email)}
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="window.pageManager.closeEmailModal()">
-                    Fermer
-                </button>
-                ${!this.createdTasks.has(emailId) ? `
-                    <button class="btn btn-primary" onclick="window.pageManager.showTaskCreationModal('${emailId}')">
-                        <i class="fas fa-tasks"></i> Créer une tâche
-                    </button>
-                ` : ''}
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    document.body.style.overflow = 'hidden';
-}
-
-// Fonction auxiliaire pour le rendu du contenu (ajoutez cette fonction)
-renderTaskModalContent(task) {
-    return `
-        <!-- Barre d'outils -->
-        <div class="task-toolbar">
-            <div class="toolbar-left">
-                <button class="btn btn-secondary" id="editModeBtn" onclick="window.tasksView.toggleEditMode()">
-                    <i class="fas fa-edit"></i> Modifier
-                </button>
-                ${task.hasEmail && !task.emailReplied ? `
-                    <button class="btn btn-primary" onclick="window.tasksView.showReplySection()">
-                        <i class="fas fa-reply"></i> Répondre à l'email
-                    </button>
-                ` : ''}
-            </div>
-            <div class="toolbar-right">
-                <span class="priority-badge ${task.priority}">${this.getPriorityLabel(task.priority)}</span>
-                <span class="status-badge ${task.status}">${this.getStatusLabel(task.status)}</span>
-                ${task.hasEmail ? '<span class="email-badge">📧 Email</span>' : ''}
-                ${task.emailReplied ? '<span class="replied-badge">✅ Répondu</span>' : ''}
-                ${task.aiGenerated ? `<span class="ai-badge">🤖 ${task.method || 'AI'}</span>` : ''}
-            </div>
-        </div>
-        
-        <!-- Contenu principal -->
-        <div class="task-main-content">
-            ${task.hasEmail && task.emailFromName ? this.renderSenderContext(task) : ''}
-            
-            ${this.renderTaskSections(task)}
-            
-            ${task.hasEmail && (task.emailContent || task.emailFullHtml || task.emailHtml) ? this.renderEmailSection(task) : ''}
-            
-            ${this.renderMetadataSection(task)}
-            
-            ${this.renderHistorySection(task)}
-            
-            ${task.aiAnalysis ? this.renderAIAnalysisUnified(task.aiAnalysis, task.id) : ''}
-        </div>
-    `;
-}
-
-// Remplacer les fonctions closeEmailModal et closeTaskModal dans PageManager.js
-
-closeEmailModal() {
-    const modal = document.getElementById('emailDetailModal');
-    if (modal) {
-        document.body.removeChild(modal);
-        document.body.style.overflow = 'auto';
-    }
-}
-
-closeTaskModal() {
-    const modal = document.getElementById('taskCreationModal');
-    if (modal) {
-        document.body.removeChild(modal);
-        document.body.style.overflow = 'auto';
-    }
-}
-
-    // Rendu des sections structurées (synchronisé avec PageManager)
-    renderTaskSections(task) {
-        let html = '';
-        
-        // Debug pour voir les données
-        console.log('[TasksView] Rendering task sections for:', task);
-        
-        // Vérifier si on a une description structurée (nouvelle méthode)
-        const hasStructuredContent = task.summary || (task.actions && task.actions.length > 0) || 
-                                   (task.keyInfo && task.keyInfo.length > 0) || 
-                                   (task.risks && task.risks.length > 0);
-        
-        // Toujours afficher au moins la description
-        if (task.summary || task.description) {
-            html += `
-                <div class="content-section">
-                    <div class="section-header">
-                        <i class="fas fa-clipboard-list"></i>
-                        <h4>Résumé Exécutif</h4>
-                    </div>
-                    <div class="section-content">
-                        <div id="summaryView" class="section-text">
-                            ${this.formatSummary(task.summary || this.extractSummaryFromDescription(task.description))}
-                        </div>
-                        <textarea id="summaryEdit" 
-                                  class="section-textarea" 
-                                  rows="4"
-                                  style="display: none;">${task.summary || this.extractSummaryFromDescription(task.description) || ''}</textarea>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Section Actions Requises
-        if (task.actions && task.actions.length > 0) {
-            html += `
-                <div class="content-section">
-                    <div class="section-header">
-                        <i class="fas fa-tasks"></i>
-                        <h4>Actions Requises</h4>
-                    </div>
-                    <div class="section-content">
-                        <div id="actionsView" class="actions-list">
-                            ${task.actions.map((action, idx) => `
-                                <div class="action-item">
-                                    <span class="action-number">${idx + 1}</span>
-                                    <span class="action-text">${typeof action === 'string' ? action : action.text}</span>
-                                    ${action.deadline ? `<span class="action-deadline">${action.deadline}</span>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div id="actionsEdit" style="display: none;">
-                            ${task.actions.map((action, idx) => `
-                                <div class="action-item-edit">
-                                    <span class="action-number">${idx + 1}</span>
-                                    <input type="text" 
-                                           class="action-input" 
-                                           value="${typeof action === 'string' ? action : action.text}" 
-                                           data-action-index="${idx}">
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Section Informations Clés
-        if (task.keyInfo && task.keyInfo.length > 0) {
-            html += `
-                <div class="content-section">
-                    <div class="section-header">
-                        <i class="fas fa-info-circle"></i>
-                        <h4>Informations Clés</h4>
-                    </div>
-                    <div class="section-content">
-                        <div class="info-grid">
-                            ${task.keyInfo.map(info => `
-                                <div class="info-item">
-                                    <i class="fas fa-chevron-right"></i>
-                                    <span>${info}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Section Points d'Attention
-        if (task.risks && task.risks.length > 0) {
-            html += `
-                <div class="content-section attention-section">
-                    <div class="section-header">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h4>Points d'Attention</h4>
-                    </div>
-                    <div class="section-content">
-                        <div class="attention-list">
-                            ${task.risks.map(risk => `
-                                <div class="attention-item">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span>${risk}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Si aucune section structurée, afficher la description simple
-        if (!html && task.description) {
-            html = `
-                <div class="content-section">
-                    <h3>Description</h3>
-                    <div id="descriptionView" class="description-view">
-                        ${this.formatDescription(task.description)}
-                    </div>
-                    <textarea id="descriptionEdit" 
-                              class="form-textarea" 
-                              rows="6"
-                              style="display: none;">${task.description || ''}</textarea>
-                </div>
-            `;
-        }
-        
-        return html;
-    }
-
-    // Méthodes de rendu (suite de la classe)
-    renderSenderContext(task) {
-        const senderName = task.emailFromName || 'Inconnu';
-        const senderEmail = task.emailFrom || '';
-        const senderDomain = task.emailDomain || '';
-        const senderInitial = senderName.charAt(0).toUpperCase();
-        
-        return `
-            <div class="sender-context-box">
-                <div class="sender-avatar-small">${senderInitial}</div>
-                <div class="sender-details">
-                    <div class="sender-name-bold">${senderName}</div>
-                    <div class="sender-email-small">${senderEmail}</div>
-                    ${senderDomain ? `<div class="sender-domain">@${senderDomain}</div>` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    renderEmailSection(task) {
-        // Utiliser la logique unifiée pour récupérer le contenu
-        let content = '';
-        let isHtml = false;
-        
-        // 1. Priorité à l'email original si disponible
-        if (task.originalEmail && task.originalEmail.body?.content) {
-            content = task.originalEmail.body.content;
-            isHtml = true;
-        } 
-        // 2. Sinon utiliser emailFullHtml ou emailHtml
-        else if (task.emailFullHtml) {
-            content = task.emailFullHtml;
-            isHtml = true;
-        } else if (task.emailHtml) {
-            content = task.emailHtml;
-            isHtml = true;
-        } 
-        // 3. Sinon utiliser emailContent
-        else if (task.emailContent) {
-            content = task.emailContent;
-            isHtml = task.emailContentType === 'html' || window.taskManager.isHtmlContent(content);
-        }
-        
-        // Si pas de contenu, afficher un message
-        if (!content) {
-            content = 'Aucun contenu disponible';
-            isHtml = false;
-        }
-        
-        console.log('[TasksView] Rendering email section:', {
-            hasOriginalEmail: !!task.originalEmail,
-            hasContent: !!content,
-            contentLength: content.length,
-            isHtml: isHtml,
-            contentType: task.emailContentType
-        });
-        
-        return `
-            <div class="content-section email-section">
-                <h3><i class="fas fa-envelope"></i> Email associé</h3>
-                
-                <div class="email-header-info">
-                    <div class="email-field">
-                        <strong>De:</strong> ${this.escapeHtml(task.emailFromName || '')} 
-                        <span class="email-address">&lt;${this.escapeHtml(task.emailFrom || '')}&gt;</span>
-                    </div>
-                    <div class="email-field">
-                        <strong>Objet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans objet')}
-                    </div>
-                    <div class="email-field">
-                        <strong>Date:</strong> ${this.formatDate(task.emailDate || task.createdAt)}
-                    </div>
-                    ${task.hasAttachments ? `
-                        <div class="email-field">
-                            <strong>Pièces jointes:</strong> <i class="fas fa-paperclip"></i> Oui
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="email-content-container">
-                    <div class="email-content-header">
-                        <h4>Contenu de l'email</h4>
-                        ${isHtml ? '<span class="email-type-badge">HTML</span>' : '<span class="email-type-badge">Texte</span>'}
-                    </div>
-                    <div class="email-content-box ${isHtml ? 'html-content' : 'text-content'}">
-                        ${this.formatEmailContent(content, isHtml)}
-                    </div>
-                </div>
-                
-                <!-- Section de réponse (cachée par défaut) -->
-                <div id="replySection" class="reply-section-integrated" style="display: none;">
-                    ${this.renderUnifiedReplyInterface(task)}
-                </div>
-            </div>
-        `;
-    }
-
-    formatEmailContent(content, isHtml = false) {
-        if (!content) return '<p class="text-muted">Aucun contenu</p>';
-        
-        if (isHtml) {
-            // Pour le contenu HTML, créer un conteneur sécurisé
-            console.log('[TasksView] Formatting HTML email content');
-            
-            // Nettoyer le HTML mais préserver les images et la structure
-            const cleanedHtml = this.sanitizeEmailHtml(content);
-            
-            return `
-                <div class="email-html-container">
-                    <div class="email-html-content">${cleanedHtml}</div>
-                </div>
-            `;
-        } else {
-            // Pour le texte brut
-            const escaped = this.escapeHtml(content);
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            const withLinks = escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-            
-            return `<div class="formatted-content">${withLinks.replace(/\n/g, '<br>')}</div>`;
-        }
-    }
-
-    sanitizeEmailHtml(html) {
-        // Nettoyer le HTML tout en préservant les images et la structure
-        let cleaned = html
-            // Supprimer les scripts
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            // Supprimer les event handlers
-            .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-            .replace(/on\w+\s*=\s*[^\s>]+/gi, '')
-            // Supprimer javascript: URLs
-            .replace(/javascript:/gi, 'void:')
-            // Supprimer les balises potentiellement dangereuses mais garder img
-            .replace(/<(iframe|embed|object|form|input|textarea|button|select|script|link|meta|base)[^>]*>/gi, '')
-            .replace(/<\/(iframe|embed|object|form|input|textarea|button|select|script|link|meta|base)>/gi, '');
-            
-        // Traiter les images pour s'assurer qu'elles sont visibles
-        cleaned = cleaned.replace(/<img([^>]*)>/gi, (match, attributes) => {
-            // S'assurer que les images ont des attributs sûrs
-            let safeAttributes = attributes
-                .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-                .replace(/javascript:/gi, '');
-                
-            // Ajouter des styles pour assurer la visibilité
-            if (!safeAttributes.includes('style=')) {
-                safeAttributes += ' style="max-width: 100%; height: auto;"';
-            }
-            
-            return `<img${safeAttributes}>`;
-        });
-        
-        // Préserver les styles inline basiques (y compris pour les images)
-        cleaned = cleaned.replace(/style\s*=\s*["']([^"']*)/gi, (match, styles) => {
-            // Garder les styles sûrs et ceux nécessaires pour les images
-            const safeStyles = styles
-                .split(';')
-                .filter(style => {
-                    const prop = style.split(':')[0].trim().toLowerCase();
-                    return ['color', 'background-color', 'background', 'font-size', 'font-weight', 
-                            'text-align', 'margin', 'padding', 'width', 'height', 'max-width', 
-                            'max-height', 'display', 'border', 'border-radius'].includes(prop);
-                })
-                .join(';');
-            return safeStyles ? `style="${safeStyles}` : '';
-        });
-        
-        // S'assurer que les liens dans les emails sont sûrs
-        cleaned = cleaned.replace(/href\s*=\s*["']([^"']*)/gi, (match, url) => {
-            if (url.startsWith('javascript:') || url.startsWith('data:')) {
-                return 'href="#"';
-            }
-            return match;
-        });
-            
-        return cleaned;
-    }
-
-    renderMetadataSection(task) {
-        return `
-            <div class="content-section metadata-section">
-                <h3>Informations</h3>
-                <div class="metadata-grid">
-                    <div class="metadata-item">
-                        <label>Échéance</label>
-                        <div id="dueDateView" class="metadata-value">
-                            ${task.dueDate ? this.formatDate(task.dueDate) : 'Non définie'}
-                        </div>
-                        <input type="date" 
-                               id="dueDateEdit"
-                               class="form-input"
-                               value="${task.dueDate ? task.dueDate.split('T')[0] : ''}"
-                               style="display: none;">
-                    </div>
-                    
-                    <div class="metadata-item">
-                        <label>Client</label>
-                        <div id="clientView" class="metadata-value">
-                            ${task.client || 'Non défini'}
-                        </div>
-                        <input type="text" 
-                               id="clientEdit"
-                               class="form-input"
-                               value="${task.client || ''}"
-                               style="display: none;">
-                    </div>
-                    
-                    <div class="metadata-item">
-                        <label>Catégorie</label>
-                        <div id="categoryView" class="metadata-value">
-                            ${task.category || 'Autre'}
-                        </div>
-                        <select id="categoryEdit" 
-                                class="form-select"
-                                style="display: none;">
-                            <option value="tasks" ${task.category === 'tasks' ? 'selected' : ''}>Tâches</option>
-                            <option value="email" ${task.category === 'email' ? 'selected' : ''}>Email</option>
-                            <option value="project" ${task.category === 'project' ? 'selected' : ''}>Projet</option>
-                            <option value="meeting" ${task.category === 'meeting' ? 'selected' : ''}>Réunion</option>
-                            <option value="finance" ${task.category === 'finance' ? 'selected' : ''}>Finance</option>
-                            <option value="client" ${task.category === 'client' ? 'selected' : ''}>Client</option>
-                            <option value="other" ${task.category === 'other' ? 'selected' : ''}>Autre</option>
-                        </select>
-                    </div>
-                    
-                    <div class="metadata-item">
-                        <label>Tags</label>
-                        <div id="tagsView" class="metadata-value">
-                            ${task.tags && task.tags.length > 0 ? 
-                                task.tags.map(tag => `<span class="tag">${this.escapeHtml(tag)}</span>`).join('') : 
-                                'Aucun tag'}
-                        </div>
-                        <input type="text" 
-                               id="tagsEdit"
-                               class="form-input"
-                               placeholder="tag1, tag2, tag3..."
-                               value="${task.tags ? task.tags.join(', ') : ''}"
-                               style="display: none;">
-                    </div>
-                </div>
-                
-                <!-- Sélecteurs en mode édition -->
-                <div id="editSelectors" class="edit-selectors" style="display: none;">
-                    <div class="selector-item">
-                        <label>Priorité</label>
-                        <select id="priorityEdit" class="form-select">
-                            <option value="low" ${task.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                            <option value="high" ${task.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                            <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                        </select>
-                    </div>
-                    <div class="selector-item">
-                        <label>Statut</label>
-                        <select id="statusEdit" class="form-select">
-                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>À faire</option>
-                            <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>En cours</option>
-                            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Terminée</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderHistorySection(task) {
-        return `
-            <div class="content-section history-section">
-                <h3>Historique</h3>
-                <div class="history-items">
-                    <div class="history-item">
-                        <strong>Créée le</strong>
-                        <span>${this.formatDate(task.createdAt)}</span>
-                    </div>
-                    <div class="history-item">
-                        <strong>Modifiée le</strong>
-                        <span>${this.formatDate(task.updatedAt)}</span>
-                    </div>
-                    ${task.completedAt ? `
-                        <div class="history-item">
-                            <strong>Terminée le</strong>
-                            <span>${this.formatDate(task.completedAt)}</span>
-                        </div>
-                    ` : ''}
-                    ${task.lastReplyDate ? `
-                        <div class="history-item">
-                            <strong>Répondu le</strong>
-                            <span>${this.formatDate(task.lastReplyDate)}</span>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    renderUnifiedReplyInterface(task) {
-        const suggestions = task.aiAnalysis?.suggestedReplies || this.generateDefaultReplies(task);
-        
-        return `
-            <div class="reply-wrapper">
-                <h4><i class="fas fa-reply"></i> Répondre à l'email</h4>
-                
-                <!-- Suggestions IA en ligne -->
-                ${suggestions.length > 0 ? `
-                    <div class="inline-suggestions">
-                        <label>Utiliser une suggestion :</label>
-                        <div class="suggestion-pills">
-                            ${suggestions.map((sugg, idx) => `
-                                <button class="suggestion-pill" 
-                                        onclick="window.tasksView.applySuggestion(${idx})"
-                                        title="${this.escapeHtml(sugg.content).substring(0, 100)}...">
-                                    ${this.getReplyToneIcon(sugg.tone)} ${this.getReplyToneLabel(sugg.tone)}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-                
-                <!-- Formulaire de réponse compact -->
-                <form id="replyForm" class="compact-reply-form" onsubmit="window.tasksView.sendReply(event, '${task.id}')">
-                    <div class="reply-fields">
-                        <div class="field-row">
-                            <label>À:</label>
-                            <input type="email" 
-                                   name="to" 
-                                   id="replyTo"
-                                   class="form-input" 
-                                   value="${task.emailFrom || ''}" 
-                                   required>
-                        </div>
-                        
-                        <div class="field-row">
-                            <label>Objet:</label>
-                            <input type="text" 
-                                   name="subject" 
-                                   id="replySubject"
-                                   class="form-input" 
-                                   value="Re: ${task.emailSubject || 'Sans objet'}" 
-                                   required>
-                        </div>
-                    </div>
-                    
-                    <div class="reply-content-area">
-                        <textarea name="content" 
-                                  id="replyContent"
-                                  class="form-textarea" 
-                                  rows="8" 
-                                  placeholder="Votre réponse..."
-                                  required>${suggestions.length > 0 ? suggestions[0].content : ''}</textarea>
-                    </div>
-                    
-                    <div class="reply-actions">
-                        <button type="button" class="btn btn-secondary" onclick="window.tasksView.hideReplySection()">
-                            Annuler
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> Envoyer
-                        </button>
-                    </div>
-                </form>
-            </div>
-        `;
-    }
-
-    renderAIAnalysisUnified(analysis, taskId) {
-        if (!analysis) return '';
-        
-        return `
-            <div class="content-section ai-section">
-                <h3><i class="fas fa-robot"></i> Analyse IA</h3>
-                
-                ${analysis.summary ? `
-                    <div class="ai-block">
-                        <h4>Résumé</h4>
-                        <p>${this.escapeHtml(analysis.summary)}</p>
-                    </div>
-                ` : ''}
-                
-                ${analysis.actionPoints?.length > 0 ? `
-                    <div class="ai-block">
-                        <h4>Actions suggérées</h4>
-                        <ul class="action-list">
-                            ${analysis.actionPoints.map(action => `
-                                <li>${this.escapeHtml(action)}</li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-                
-                ${analysis.insights?.keyInfo?.length > 0 ? `
-                    <div class="ai-block">
-                        <h4>Informations clés</h4>
-                        <ul class="info-list">
-                            ${analysis.insights.keyInfo.map(info => `
-                                <li>${this.escapeHtml(info)}</li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-                
-                ${analysis.insights?.risks?.length > 0 ? `
-                    <div class="ai-block attention-block">
-                        <h4>Points d'attention</h4>
-                        <ul class="attention-list">
-                            ${analysis.insights.risks.map(risk => `
-                                <li><i class="fas fa-exclamation-circle"></i> ${this.escapeHtml(risk)}</li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                ` : ''}
-                
-                <div class="ai-metadata">
-                    <span class="ai-method">Méthode: ${analysis.method || 'Inconnue'}</span>
-                    ${analysis.confidence ? `<span class="ai-confidence">Confiance: ${Math.round(analysis.confidence * 100)}%</span>` : ''}
-                </div>
-            </div>
-        `;
-    }
-
-    // Méthodes d'édition
-    toggleEditMode() {
-        this.editMode = !this.editMode;
-        const btn = document.getElementById('editModeBtn');
-        
-        if (this.editMode) {
-            // Activer le mode édition
-            btn.innerHTML = '<i class="fas fa-times"></i> Annuler';
-            btn.classList.add('active');
-            
-            // Titre
-            document.getElementById('modalTitle').style.display = 'none';
-            document.getElementById('modalTitleInput').style.display = 'block';
-            
-            // Sections structurées
-            const viewElements = ['summaryView', 'actionsView', 'descriptionView', 'dueDateView', 'clientView', 'categoryView', 'tagsView'];
-            const editElements = ['summaryEdit', 'actionsEdit', 'descriptionEdit', 'dueDateEdit', 'clientEdit', 'categoryEdit', 'tagsEdit'];
-            
-            viewElements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) element.style.display = 'none';
-            });
-            
-            editElements.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) element.style.display = 'block';
-            });
-            
-            // Sélecteurs
-            document.getElementById('editSelectors').style.display = 'flex';
-            
-            // Footer
-            document.getElementById('viewFooter').style.display = 'none';
-            document.getElementById('editFooter').style.display = 'flex';
-            
-        } else {
-            this.cancelEdit();
-        }
-    }
-
-    cancelEdit() {
-        this.editMode = false;
-        const btn = document.getElementById('editModeBtn');
-        btn.innerHTML = '<i class="fas fa-edit"></i> Modifier';
-        btn.classList.remove('active');
-        
-        // Restaurer l'affichage
-        document.getElementById('modalTitle').style.display = 'block';
-        document.getElementById('modalTitleInput').style.display = 'none';
-        
-        const viewElements = ['summaryView', 'actionsView', 'descriptionView', 'dueDateView', 'clientView', 'categoryView', 'tagsView'];
-        const editElements = ['summaryEdit', 'actionsEdit', 'descriptionEdit', 'dueDateEdit', 'clientEdit', 'categoryEdit', 'tagsEdit'];
-        
-        viewElements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.style.display = 'block';
-        });
-        
-        editElements.forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.style.display = 'none';
-        });
-        
-        document.getElementById('editSelectors').style.display = 'none';
-        
-        document.getElementById('viewFooter').style.display = 'flex';
-        document.getElementById('editFooter').style.display = 'none';
-    }
-
-    saveEdit() {
-        const task = this.currentTaskDetail;
-        
-        const updates = {
-            title: document.getElementById('modalTitleInput').value,
-            dueDate: document.getElementById('dueDateEdit').value || null,
-            client: document.getElementById('clientEdit').value,
-            category: document.getElementById('categoryEdit').value,
-            tags: document.getElementById('tagsEdit').value ? 
-                  document.getElementById('tagsEdit').value.split(',').map(t => t.trim()).filter(t => t) : [],
-            priority: document.getElementById('priorityEdit').value,
-            status: document.getElementById('statusEdit').value
-        };
-        
-        // Gérer les sections structurées
-        const summaryEdit = document.getElementById('summaryEdit');
-        if (summaryEdit) {
-            updates.summary = summaryEdit.value;
-        }
-        
-        const descriptionEdit = document.getElementById('descriptionEdit');
-        if (descriptionEdit) {
-            updates.description = descriptionEdit.value;
-        }
-        
-        // Gérer les actions
-        const actionInputs = document.querySelectorAll('.action-input');
-        if (actionInputs.length > 0) {
-            updates.actions = Array.from(actionInputs).map(input => ({
-                text: input.value,
-                deadline: null // À améliorer si nécessaire
-            }));
-        }
-        
-        window.taskManager.updateTask(task.id, updates);
-        
-        // Fermer et rouvrir le modal pour rafraîchir
-        this.closeModal('taskModal');
-        setTimeout(() => {
-            this.showTaskModal(task.id);
-        }, 100);
-    }
-
-    // Gestion de la réponse email
-    showReplySection() {
-        const replySection = document.getElementById('replySection');
-        if (replySection) {
-            replySection.style.display = 'block';
-            replySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            document.getElementById('replyContent').focus();
-        }
-    }
-
-    hideReplySection() {
-        const replySection = document.getElementById('replySection');
-        if (replySection) {
-            replySection.style.display = 'none';
-        }
-    }
-
-    applySuggestion(index) {
-        const task = this.currentTaskDetail;
-        const suggestions = task.aiAnalysis?.suggestedReplies || this.generateDefaultReplies(task);
-        
-        if (suggestions[index]) {
-            const textarea = document.getElementById('replyContent');
-            const subjectInput = document.getElementById('replySubject');
-            if (textarea) {
-                textarea.value = suggestions[index].content;
-                textarea.focus();
-            }
-            if (subjectInput && suggestions[index].subject) {
-                subjectInput.value = suggestions[index].subject;
-            }
-        }
-    }
-
-    async sendReply(event, taskId) {
-        event.preventDefault();
-        
-        const form = event.target;
-        const formData = new FormData(form);
-        
-        const to = formData.get('to');
-        const subject = formData.get('subject');
-        const content = formData.get('content');
-        
-        try {
-            // Ouvrir le client email
-            const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(content)}`;
-            window.open(mailtoLink);
-            
-            // Marquer comme répondu
-            window.taskManager.markAsReplied(taskId);
-            
-            // Rafraîchir
-            this.closeModal('taskModal');
-            setTimeout(() => {
-                this.showTaskModal(taskId);
-            }, 100);
-            
-            if (window.uiManager?.showToast) {
-                window.uiManager.showToast('Email prêt à envoyer!', 'success');
-            } else {
-                alert('Email prêt à envoyer!');
-            }
-        } catch (error) {
-            console.error('Erreur envoi email:', error);
-            alert('Erreur lors de l\'envoi: ' + error.message);
-        }
-    }
-
-// Remplacer dans TaskManager.js (TasksView class)
-showCreateModal() {
-    // Nettoyer tout modal existant
-    document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-    
-    // Créer un nouvel id unique
-    const uniqueId = 'create_task_modal_' + Date.now();
-
-    // Créer le modal avec style inline pour forcer l'affichage
-    const modalHTML = `
-        <div id="${uniqueId}" 
-             style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
-                    z-index: 99999999; display: flex; align-items: center; justify-content: center; 
-                    padding: 20px; backdrop-filter: blur(4px);">
-            <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; 
-                        max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px 12px 0 0; color: white; display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="margin: 0; font-size: 20px; color: white;">Nouvelle tâche</h2>
-                    <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                            style="background: rgba(255,255,255,0.2); border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: white;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <form id="createForm" onsubmit="window.tasksView.createTask(event); return false;">
-                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Titre <span style="color: #ef4444;">*</span></label>
-                            <input type="text" 
-                                   name="title" 
-                                   style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px;"
-                                   placeholder="Titre de la tâche..."
-                                   required>
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Description</label>
-                            <textarea name="description" 
-                                      style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; min-height: 120px; font-size: 14px; resize: vertical;"
-                                      placeholder="Description détaillée..."></textarea>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
-                            <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Priorité</label>
-                                <select name="priority" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                                    <option value="low">📄 Basse</option>
-                                    <option value="medium" selected>📌 Normale</option>
-                                    <option value="high">⚡ Haute</option>
-                                    <option value="urgent">🚨 Urgente</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Date d'échéance</label>
-                                <input type="date" 
-                                       name="dueDate" 
-                                       style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                            </div>
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Client</label>
-                            <input type="text" 
-                                   name="client" 
-                                   style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
-                                   placeholder="Nom du client ou entreprise...">
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tags (séparés par des virgules)</label>
-                            <input type="text" 
-                                   name="tags" 
-                                   style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
-                                   placeholder="tag1, tag2, tag3...">
-                        </div>
-                    </div>
-                    
-                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
-                        <button type="button" onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
-                            Annuler
-                        </button>
-                        <button type="submit"
-                                style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            <i class="fas fa-plus"></i> Créer
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    `;
-
-    // Ajouter au DOM
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    document.body.style.overflow = 'hidden';
-}
-// Ajouter ces fonctions dans TasksView class (TaskManager.js)
-
-// Rendu des sections de tâche
-renderTaskSections(task) {
-    let html = '';
-    
-    // Description
-    if (task.summary || task.description) {
-        html += `
-            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-                    <i class="fas fa-clipboard-list" style="color: #6b7280;"></i>
-                    <h4 style="margin: 0; font-size: 15px; font-weight: 600;">Résumé Exécutif</h4>
-                </div>
-                <div style="padding: 16px;">
-                    <div id="summaryView" style="font-size: 14px; line-height: 1.6; color: #374151;">
-                        ${this.formatSummary(task.summary || this.extractSummaryFromDescription(task.description) || 'Aucune description')}
-                    </div>
-                    <textarea id="summaryEdit" 
-                              style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; min-height: 100px; display: none;"
-                              rows="4">${task.summary || this.extractSummaryFromDescription(task.description) || ''}</textarea>
-                </div>
-            </div>
-        `;
-    }
-    
-    // Actions
-    if (task.actions && task.actions.length > 0) {
-        html += `
-            <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
-                <div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
-                    <i class="fas fa-tasks" style="color: #6b7280;"></i>
-                    <h4 style="margin: 0; font-size: 15px; font-weight: 600;">Actions Requises</h4>
-                </div>
-                <div style="padding: 16px;">
-                    <div id="actionsView">
-                        ${task.actions.map((action, idx) => `
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                <span style="width: 24px; height: 24px; background: #667eea; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;">${idx + 1}</span>
-                                <span style="font-size: 14px; color: #374151;">${typeof action === 'string' ? action : action.text}</span>
-                                ${action.deadline ? `<span style="font-size: 12px; color: #ef4444; font-weight: 500;">${action.deadline}</span>` : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    return html;
-}
-
-// Rendu de la section email
-renderEmailSection(task) {
-    // Utiliser la logique unifiée pour récupérer le contenu
-    let content = '';
-    let isHtml = false;
-    
-    // 1. Priorité à l'email original si disponible
-    if (task.originalEmail && task.originalEmail.body?.content) {
-        content = task.originalEmail.body.content;
-        isHtml = true;
-    } 
-    // 2. Sinon utiliser emailFullHtml ou emailHtml
-    else if (task.emailFullHtml) {
-        content = task.emailFullHtml;
-        isHtml = true;
-    } else if (task.emailHtml) {
-        content = task.emailHtml;
-        isHtml = true;
-    } 
-    // 3. Sinon utiliser emailContent
-    else if (task.emailContent) {
-        content = task.emailContent;
-        isHtml = task.emailContentType === 'html';
-    }
-    
-    // Si pas de contenu, afficher un message
-    if (!content) {
-        content = 'Aucun contenu disponible';
-        isHtml = false;
-    }
-    
-    return `
-        <div style="background: #f0f9ff; border: 1px solid #7dd3fc; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
-            <h3 style="margin: 0; padding: 12px 16px; background: #e0f2fe; border-bottom: 1px solid #7dd3fc; font-size: 16px; color: #075985;">
-                <i class="fas fa-envelope"></i> Email associé
-            </h3>
-            
-            <div style="padding: 16px; background: white; border: 1px solid #bae6fd; border-radius: 6px; margin: 16px;">
-                <div style="margin-bottom: 12px;">
-                    <div style="margin-bottom: 4px;">
-                        <strong>De:</strong> ${this.escapeHtml(task.emailFromName || '')} 
-                        <span style="color: #6b7280;">&lt;${this.escapeHtml(task.emailFrom || '')}&gt;</span>
-                    </div>
-                    <div style="margin-bottom: 4px;">
-                        <strong>Objet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans objet')}
-                    </div>
-                    <div style="margin-bottom: 4px;">
-                        <strong>Date:</strong> ${this.formatDate(task.emailDate || task.createdAt)}
-                    </div>
-                </div>
-            </div>
-            
-            <div style="margin: 0 16px 16px 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px 6px 0 0; border-bottom: none;">
-                    <h4 style="margin: 0; font-size: 14px; color: #075985;">Contenu de l'email</h4>
-                    <span style="font-size: 11px; padding: 2px 8px; background: #dbeafe; color: #1e40af; border-radius: 12px;">
-                        ${isHtml ? 'HTML' : 'Texte'}
+                <div class="list-cell priority">
+                    <span class="priority-badge ${task.priority}">
+                        ${this.getPriorityIcon(task.priority)} ${this.getPriorityLabel(task.priority)}
                     </span>
                 </div>
-                <div style="max-height: 400px; overflow-y: auto; padding: 16px; background: white; border: 1px solid #bae6fd; border-radius: 0 0 6px 6px;">
-                    ${isHtml ? 
-                        `<div style="font-size: 14px; line-height: 1.6; color: #374151;">${this.sanitizeEmailHtml(content)}</div>` : 
-                        `<div style="font-family: 'Courier New', monospace; white-space: pre-wrap; font-size: 14px; line-height: 1.6; color: #374151;">${this.escapeHtml(content)}</div>`
-                    }
-                </div>
-            </div>
-        </div>
-    `;
-}
 
-// Rendu de la section metadata
-renderMetadataSection(task) {
-    return `
-        <div style="background: white; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
-            <h3 style="margin: 0; padding: 12px 16px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 16px; color: #374151;">
-                Informations
-            </h3>
-            
-            <div style="padding: 16px;">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-                    <div>
-                        <label style="font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 4px;">
-                            Échéance
-                        </label>
-                        <div id="dueDateView" style="font-size: 14px; color: #374151;">
-                            ${task.dueDate ? this.formatDate(task.dueDate) : 'Non définie'}
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label style="font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 4px;">
-                            Client
-                        </label>
-                        <div id="clientView" style="font-size: 14px; color: #374151;">
-                            ${task.client || 'Non défini'}
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label style="font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 4px;">
-                            Catégorie
-                        </label>
-                        <div id="categoryView" style="font-size: 14px; color: #374151;">
-                            ${task.category || 'Autre'}
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label style="font-size: 12px; font-weight: 600; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 4px;">
-                            Tags
-                        </label>
-                        <div id="tagsView" style="font-size: 14px; color: #374151;">
-                            ${task.tags && task.tags.length > 0 ? 
-                                task.tags.map(tag => `<span style="display: inline-block; padding: 2px 8px; background: #e5e7eb; color: #4b5563; border-radius: 12px; font-size: 12px; margin-right: 4px; margin-bottom: 4px;">${this.escapeHtml(tag)}</span>`).join('') : 
-                                'Aucun tag'}
-                        </div>
-                    </div>
+                <div class="list-cell status">
+                    <span class="status-badge ${task.status}">
+                        ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
+                    </span>
                 </div>
-                
-                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: #6b7280;">
-                        <span><strong>Créée le</strong></span>
-                        <span>${this.formatDate(task.createdAt)}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: #6b7280;">
-                        <span><strong>Modifiée le</strong></span>
-                        <span>${this.formatDate(task.updatedAt)}</span>
+
+                <div class="list-cell client">
+                    <span class="client-name">${this.escapeHtml(task.client || 'Interne')}</span>
+                </div>
+
+                <div class="list-cell due-date">
+                    ${task.dueDate ? `
+                        <span class="due-date ${isOverdue ? 'overdue' : ''}">
+                            ${this.formatRelativeDate(task.dueDate)}
+                        </span>
+                    ` : '<span class="no-due-date">-</span>'}
+                </div>
+
+                <div class="list-cell actions">
+                    <div class="action-buttons">
+                        ${task.status !== 'completed' ? `
+                            <button class="action-btn complete-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.quickToggleStatus('${task.id}')"
+                                    title="Marquer comme terminé">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        ` : ''}
+                        ${needsReply ? `
+                            <button class="action-btn reply-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.quickReply('${task.id}')"
+                                    title="Répondre">
+                                <i class="fas fa-reply"></i>
+                            </button>
+                        ` : ''}
+                        <button class="action-btn delete-btn" 
+                                onclick="event.stopPropagation(); window.tasksView.deleteTask('${task.id}')"
+                                title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-}
-
-// Méthode pour renderSenderContext
-renderSenderContext(task) {
-    const senderName = task.emailFromName || 'Inconnu';
-    const senderEmail = task.emailFrom || '';
-    const senderDomain = task.emailDomain || '';
-    const senderInitial = senderName.charAt(0).toUpperCase();
-    
-    return `
-        <div style="display: flex; align-items: center; gap: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 20px;">
-            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600;">
-                ${senderInitial}
-            </div>
-            <div>
-                <div style="font-weight: 700; color: #1f2937; font-size: 16px;">${senderName}</div>
-                <div style="font-size: 13px; color: #6b7280;">${senderEmail}</div>
-                ${senderDomain ? `<div style="font-size: 12px; color: #9ca3af;">@${senderDomain}</div>` : ''}
-            </div>
-        </div>
-    `;
-}
-
-// Fonction pour sanitizeEmailHtml
-sanitizeEmailHtml(html) {
-    if (!html) return '<p style="color: #9ca3af; font-style: italic;">Aucun contenu</p>';
-    
-    // Nettoyer le HTML tout en préservant les images et la structure
-    let cleaned = html
-        // Supprimer les scripts
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        // Supprimer les event handlers
-        .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-        .replace(/on\w+\s*=\s*[^\s>]+/gi, '')
-        // Supprimer javascript: URLs
-        .replace(/javascript:/gi, 'void:')
-        // Supprimer les balises potentiellement dangereuses mais garder img
-        .replace(/<(iframe|embed|object|form|input|textarea|button|select|script|link|meta|base)[^>]*>/gi, '')
-        .replace(/<\/(iframe|embed|object|form|input|textarea|button|select|script|link|meta|base)>/gi, '');
-        
-    // Traiter les images pour s'assurer qu'elles sont visibles
-    cleaned = cleaned.replace(/<img([^>]*)>/gi, (match, attributes) => {
-        // S'assurer que les images ont des attributs sûrs
-        let safeAttributes = attributes
-            .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
-            .replace(/javascript:/gi, '');
-            
-        // Ajouter des styles pour assurer la visibilité
-        if (!safeAttributes.includes('style=')) {
-            safeAttributes += ' style="max-width: 100%; height: auto;"';
-        }
-        
-        return `<img${safeAttributes}>`;
-    });
-    
-    return cleaned;
-}
-
-// Méthode formatSummary
-formatSummary(summary) {
-    if (!summary) return '<p style="color: #9ca3af; font-style: italic;">Aucun résumé</p>';
-    
-    // Traiter les sauts de ligne et les emojis
-    return summary.split('\n').map(line => {
-        if (line.includes('🚨')) {
-            return `<p style="color: #ef4444; font-weight: 500;">${this.escapeHtml(line)}</p>`;
-        } else if (line.includes('📮')) {
-            return `<p style="color: #3b82f6; font-weight: 500;">${this.escapeHtml(line)}</p>`;
-        } else {
-            return `<p style="margin-bottom: 8px;">${this.escapeHtml(line)}</p>`;
-        }
-    }).join('');
-}
-
-// Méthode extractSummaryFromDescription
-extractSummaryFromDescription(description) {
-    if (!description) return '';
-    
-    // Chercher la section résumé dans la description
-    const summaryMatch = description.match(/📧 RÉSUMÉ EXÉCUTIF\n━+\n([\s\S]*?)(?=\n\n|$)/);
-    if (summaryMatch) {
-        return summaryMatch[1].trim();
+        `;
     }
-    
-    // Sinon, prendre les premières lignes
-    const lines = description.split('\n').filter(line => line.trim());
-    return lines.slice(0, 3).join('\n');
-}
-// Modifier la fonction createTask pour fermer le modal après création
-createTask(event) {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    
-    const taskData = {
-        title: formData.get('title'),
-        description: formData.get('description'),
-        priority: formData.get('priority'),
-        status: 'todo',
-        dueDate: formData.get('dueDate') || null,
-        client: formData.get('client'),
-        tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()).filter(t => t) : []
-    };
-    
-    window.taskManager.createTask(taskData);
-    
-    // Fermer tous les modaux
-    document.querySelectorAll('[id^="create_task_modal_"]').forEach(el => el.remove());
-    document.body.style.overflow = 'auto';
-    
-    // Rafraîchir la vue
-    this.refreshView();
-}
-    createTask(event) {
-        event.preventDefault();
-        const formData = new FormData(event.target);
+
+    // Méthodes d'interaction
+    handleCardClick(event, taskId) {
+        if (event.target.closest('.card-checkbox') || event.target.closest('.card-action-btn')) {
+            return;
+        }
+        this.showTaskModal(taskId);
+    }
+
+    handleRowClick(event, taskId) {
+        if (event.target.closest('.custom-checkbox') || event.target.closest('.action-btn')) {
+            return;
+        }
+        this.showTaskModal(taskId);
+    }
+
+    quickFilter(filterType, value) {
+        // Reset other quick filters
+        if (filterType === 'status') {
+            this.currentFilters.overdue = false;
+            this.currentFilters.needsReply = false;
+        } else if (filterType === 'overdue' || filterType === 'needsReply') {
+            this.currentFilters.status = 'all';
+        }
         
-        const taskData = {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            priority: formData.get('priority'),
-            status: 'todo',
-            dueDate: formData.get('dueDate') || null,
-            client: formData.get('client'),
-            tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()).filter(t => t) : []
+        // Toggle or set filter
+        if (this.currentFilters[filterType] === value) {
+            this.currentFilters[filterType] = filterType === 'status' ? 'all' : false;
+        } else {
+            this.currentFilters[filterType] = value;
+        }
+        
+        this.refreshView();
+    }
+
+    toggleFilterMenu(filterType) {
+        const menu = document.getElementById(filterType + 'Menu');
+        const allMenus = document.querySelectorAll('.filter-menu');
+        
+        // Fermer tous les autres menus
+        allMenus.forEach(m => {
+            if (m !== menu) m.classList.remove('open');
+        });
+        
+        // Toggle le menu actuel
+        if (menu) {
+            menu.classList.toggle('open');
+        }
+    }
+
+    setFilter(filterType, value) {
+        this.currentFilters[filterType] = value;
+        this.closeAllFilterMenus();
+        this.refreshView();
+    }
+
+    setSort(sortBy) {
+        this.currentFilters.sortBy = sortBy;
+        this.closeAllFilterMenus();
+        this.refreshView();
+    }
+
+    closeAllFilterMenus() {
+        document.querySelectorAll('.filter-menu').forEach(menu => {
+            menu.classList.remove('open');
+        });
+    }
+
+    clearSearch() {
+        this.currentFilters.search = '';
+        const searchInput = document.getElementById('globalSearch');
+        if (searchInput) searchInput.value = '';
+        this.refreshView();
+    }
+
+    resetAllFilters() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            search: '',
+            sortBy: 'priority',
+            overdue: false,
+            needsReply: false,
+            hasEmail: false
         };
         
-        window.taskManager.createTask(taskData);
-        this.closeModal('createModal');
-    }
-
-    // Actions rapides
-    quickReply(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.hasEmail) return;
+        const searchInput = document.getElementById('globalSearch');
+        if (searchInput) searchInput.value = '';
         
-        this.showTaskModal(taskId);
-        setTimeout(() => {
-            this.showReplySection();
-        }, 100);
+        this.refreshView();
     }
 
-    // Gestion de la sélection multiple
+    setViewMode(mode) {
+        this.viewMode = mode;
+        this.refreshView();
+    }
+
+    toggleCompletedTasks(show) {
+        this.showCompletedTasks = show;
+        this.refreshView();
+    }
+
+    // Gestion de la sélection
     toggleTaskSelection(taskId) {
         if (this.selectedTasks.has(taskId)) {
             this.selectedTasks.delete(taskId);
         } else {
             this.selectedTasks.add(taskId);
         }
-        this.updateBulkActions();
+        this.updateSelectionUI();
     }
 
     toggleSelectAll() {
         const tasks = window.taskManager.filterTasks(this.currentFilters);
-        const allSelected = tasks.every(task => this.selectedTasks.has(task.id));
+        const visibleTasks = this.showCompletedTasks ? tasks : tasks.filter(task => task.status !== 'completed');
         
-        if (allSelected) {
+        if (this.isAllSelected(visibleTasks)) {
             this.selectedTasks.clear();
         } else {
-            tasks.forEach(task => this.selectedTasks.add(task.id));
+            visibleTasks.forEach(task => this.selectedTasks.add(task.id));
         }
         
-        this.refreshView();
+        this.updateSelectionUI();
     }
 
-    updateBulkActions() {
-        const bulkActions = document.getElementById('bulkActions');
-        const selectedCount = document.querySelector('.selection-count');
-        
-        if (bulkActions) {
-            bulkActions.classList.toggle('visible', this.selectedTasks.size > 0);
-        }
-        
-        if (selectedCount) {
-            selectedCount.textContent = this.selectedTasks.size;
-        }
-        
-        // Mettre à jour le texte du bouton select all
-        const filteredTasks = window.taskManager.filterTasks(this.currentFilters);
-        const allSelected = filteredTasks.length > 0 && 
-            filteredTasks.every(task => this.selectedTasks.has(task.id));
-        
-        const selectAllBtn = document.querySelector('#bulkActions .btn-secondary span');
-        if (selectAllBtn) {
-            selectAllBtn.textContent = allSelected ? 'Tout désélectionner' : 'Tout sélectionner';
-        }
-        
+    isAllSelected(tasks) {
+        return tasks.length > 0 && tasks.every(task => this.selectedTasks.has(task.id));
+    }
+
+    clearSelection() {
+        this.selectedTasks.clear();
+        this.updateSelectionUI();
+    }
+
+    updateSelectionUI() {
         // Mettre à jour les checkboxes
-        document.querySelectorAll('.task-item').forEach(item => {
-            const taskId = item.dataset.taskId;
+        document.querySelectorAll('[data-task-id]').forEach(element => {
+            const taskId = element.dataset.taskId;
             const isSelected = this.selectedTasks.has(taskId);
-            item.classList.toggle('selected', isSelected);
             
-            const checkbox = item.querySelector('.task-select .custom-checkbox');
+            element.classList.toggle('selected', isSelected);
+            
+            const checkbox = element.querySelector('.custom-checkbox');
             if (checkbox) {
                 checkbox.classList.toggle('checked', isSelected);
                 checkbox.innerHTML = isSelected ? '<i class="fas fa-check"></i>' : '';
             }
         });
-    }
-
-    deleteSelected() {
-        const count = this.selectedTasks.size;
-        if (count === 0) return;
         
-        if (confirm(`Êtes-vous sûr de vouloir supprimer ${count} tâche(s) ?`)) {
-            window.taskManager.deleteTasks(Array.from(this.selectedTasks));
-            this.selectedTasks.clear();
-            this.updateBulkActions();
+        // Mettre à jour les actions groupées
+        const bulkActions = document.getElementById('bulkActions');
+        if (bulkActions) {
+            bulkActions.classList.toggle('visible', this.selectedTasks.size > 0);
+            
+            const countElement = bulkActions.querySelector('.selection-count');
+            if (countElement) {
+                countElement.textContent = this.selectedTasks.size;
+            }
+            
+            const textElement = bulkActions.querySelector('.selection-text');
+            if (textElement) {
+                textElement.textContent = `tâche${this.selectedTasks.size > 1 ? 's' : ''} sélectionnée${this.selectedTasks.size > 1 ? 's' : ''}`;
+            }
         }
     }
 
-    toggleTaskStatus(taskId) {
+    // Actions groupées
+    bulkMarkComplete() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const selectedIds = Array.from(this.selectedTasks);
+        selectedIds.forEach(id => {
+            window.taskManager.updateTask(id, { status: 'completed' });
+        });
+        
+        this.clearSelection();
+        this.showToast(`${selectedIds.length} tâche${selectedIds.length > 1 ? 's' : ''} marquée${selectedIds.length > 1 ? 's' : ''} comme terminée${selectedIds.length > 1 ? 's' : ''}`, 'success');
+    }
+
+    bulkDelete() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const count = this.selectedTasks.size;
+        if (confirm(`Êtes-vous sûr de vouloir supprimer ${count} tâche${count > 1 ? 's' : ''} ?`)) {
+            window.taskManager.deleteTasks(Array.from(this.selectedTasks));
+            this.clearSelection();
+            this.showToast(`${count} tâche${count > 1 ? 's' : ''} supprimée${count > 1 ? 's' : ''}`, 'success');
+        }
+    }
+
+    // Actions rapides
+    quickToggleStatus(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task) return;
         
         const newStatus = task.status === 'completed' ? 'todo' : 'completed';
         window.taskManager.updateTask(taskId, { status: newStatus });
+        
+        const statusText = newStatus === 'completed' ? 'terminée' : 'réactivée';
+        this.showToast(`Tâche ${statusText}`, 'success');
     }
 
     deleteTask(taskId) {
         if (confirm('Êtes-vous sûr de vouloir supprimer cette tâche ?')) {
             window.taskManager.deleteTask(taskId);
             this.selectedTasks.delete(taskId);
-            this.updateBulkActions();
+            this.updateSelectionUI();
+            this.showToast('Tâche supprimée', 'success');
         }
     }
 
-closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        document.body.removeChild(modal);
-        document.body.style.overflow = '';
-    }
-}
-
-    // Filtres et dropdowns
-    toggleDropdown(dropdownId) {
-        const dropdown = document.getElementById(dropdownId);
-        if (!dropdown) return;
+    quickReply(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
         
-        const isOpen = dropdown.classList.contains('open');
+        // Ouvrir le client email avec les données pré-remplies
+        const subject = `Re: ${task.emailSubject || 'Votre message'}`;
+        const to = task.emailFrom;
+        const body = `Bonjour,\n\nMerci pour votre message concernant "${task.title}".\n\n\n\nCordialement,`;
         
-        // Fermer tous les dropdowns
-        document.querySelectorAll('.filter-dropdown').forEach(dd => {
-            dd.classList.remove('open');
-        });
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
         
-        // Ouvrir/fermer le dropdown actuel
-        if (!isOpen) {
-            dropdown.classList.add('open');
-        }
-    }
-    
-    toggleFilters() {
-        const container = document.getElementById('filtersContainer');
-        if (container) {
-            container.classList.toggle('collapsed');
-        }
+        // Marquer comme répondu
+        window.taskManager.updateTask(taskId, { emailReplied: true });
+        this.showToast('Email de réponse ouvert', 'success');
     }
 
-    setFilter(filterType, value) {
-        // Réinitialiser certains filtres si nécessaire
-        if (filterType === 'status' || filterType === 'priority' || filterType === 'sender') {
-            this.currentFilters.overdue = false;
-            this.currentFilters.needsReply = false;
-        }
+    showTaskModal(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
         
-        this.currentFilters[filterType] = value;
+        this.currentTaskDetail = task;
         
-        // Fermer le dropdown
-        document.querySelectorAll('.filter-dropdown').forEach(dd => {
-            dd.classList.remove('open');
-        });
+        // Créer le modal avec un ID unique
+        const modalId = 'taskModal_' + Date.now();
         
-        this.refreshView();
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay" onclick="window.tasksView.closeModal('${modalId}')">
+                <div class="task-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2 class="modal-title">${this.escapeHtml(task.title)}</h2>
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${modalId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="task-detail-content">
+                            ${this.renderTaskDetail(task)}
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="window.tasksView.closeModal('${modalId}')">
+                            Fermer
+                        </button>
+                        <button class="btn-primary" onclick="window.tasksView.editTask('${task.id}')">
+                            <i class="fas fa-edit"></i>
+                            Modifier
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
     }
 
-    setSort(sortBy) {
-        this.currentFilters.sortBy = sortBy;
+    renderTaskDetail(task) {
+        const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
+        const needsReply = task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed');
         
-        // Fermer le dropdown
-        document.getElementById('sortDropdown')?.classList.remove('open');
-        
-        this.refreshView();
+        return `
+            <div class="task-detail">
+                <div class="task-detail-header">
+                    <div class="task-status-info">
+                        <span class="status-badge ${task.status}">
+                            ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
+                        </span>
+                        <span class="priority-badge ${task.priority}">
+                            ${this.getPriorityIcon(task.priority)} ${this.getPriorityLabel(task.priority)}
+                        </span>
+                        ${task.hasEmail ? '<span class="feature-badge email"><i class="fas fa-envelope"></i> Email</span>' : ''}
+                        ${needsReply ? '<span class="feature-badge reply"><i class="fas fa-reply"></i> À répondre</span>' : ''}
+                    </div>
+                </div>
+                
+                ${task.description ? `
+                    <div class="detail-section">
+                        <h4>Description</h4>
+                        <p class="task-description">${this.escapeHtml(task.description)}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="detail-section">
+                    <h4>Informations</h4>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Client</label>
+                            <span>${this.escapeHtml(task.client || 'Interne')}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Catégorie</label>
+                            <span>${this.getCategoryLabel(task.category)}</span>
+                        </div>
+                        ${task.dueDate ? `
+                            <div class="info-item">
+                                <label>Échéance</label>
+                                <span class="${isOverdue ? 'overdue' : ''}">${this.formatDate(task.dueDate)}</span>
+                            </div>
+                        ` : ''}
+                        <div class="info-item">
+                            <label>Créé le</label>
+                            <span>${this.formatDate(task.createdAt)}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                ${task.tags && task.tags.length > 0 ? `
+                    <div class="detail-section">
+                        <h4>Tags</h4>
+                        <div class="tags-display">
+                            ${task.tags.map(tag => `<span class="tag-chip">${this.escapeHtml(tag)}</span>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${task.hasEmail ? this.renderEmailInfo(task) : ''}
+            </div>
+        `;
     }
 
-    resetFilters() {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            sender: 'all',
-            search: '',
-            sortBy: 'priority',
-            overdue: false,
-            needsReply: false,
-            dateFilter: 'all',
-            tag: 'all'
+    renderEmailInfo(task) {
+        return `
+            <div class="detail-section email-info">
+                <h4><i class="fas fa-envelope"></i> Email associé</h4>
+                <div class="email-details">
+                    ${task.emailFromName ? `
+                        <div class="email-field">
+                            <label>Expéditeur</label>
+                            <span>${this.escapeHtml(task.emailFromName)} &lt;${this.escapeHtml(task.emailFrom || '')}&gt;</span>
+                        </div>
+                    ` : ''}
+                    ${task.emailSubject ? `
+                        <div class="email-field">
+                            <label>Objet</label>
+                            <span>${this.escapeHtml(task.emailSubject)}</span>
+                        </div>
+                    ` : ''}
+                    ${task.emailDate ? `
+                        <div class="email-field">
+                            <label>Date</label>
+                            <span>${this.formatDate(task.emailDate)}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${(task.needsReply || (task.hasEmail && !task.emailReplied)) ? `
+                    <div class="email-actions">
+                        <button class="btn-primary" onclick="window.tasksView.quickReply('${task.id}')">
+                            <i class="fas fa-reply"></i>
+                            Répondre maintenant
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    showCreateModal() {
+        const modalId = 'createModal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay" onclick="window.tasksView.closeModal('${modalId}')">
+                <div class="create-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Nouvelle tâche</h2>
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${modalId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="createTaskForm" onsubmit="window.tasksView.createTask(event, '${modalId}')">
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label class="form-label">Titre <span class="required">*</span></label>
+                                <input type="text" name="title" class="form-input" required 
+                                       placeholder="Titre de la tâche...">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea name="description" class="form-textarea" rows="4" 
+                                          placeholder="Description détaillée..."></textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Priorité</label>
+                                    <select name="priority" class="form-select">
+                                        <option value="low">📄 Basse</option>
+                                        <option value="medium" selected>📌 Normale</option>
+                                        <option value="high">⚡ Haute</option>
+                                        <option value="urgent">🚨 Urgente</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Catégorie</label>
+                                    <select name="category" class="form-select">
+                                        <option value="other">Autre</option>
+                                        <option value="client">🤝 Client</option>
+                                        <option value="project">📁 Projet</option>
+                                        <option value="meeting">🗓️ Réunion</option>
+                                        <option value="email">📧 Email</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Date d'échéance</label>
+                                    <input type="date" name="dueDate" class="form-input">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Client</label>
+                                    <input type="text" name="client" class="form-input" 
+                                           placeholder="Nom du client...">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Tags (séparés par des virgules)</label>
+                                <input type="text" name="tags" class="form-input" 
+                                       placeholder="tag1, tag2, tag3...">
+                            </div>
+                        </div>
+                        
+                        <div class="modal-footer">
+                            <button type="button" class="btn-secondary" onclick="window.tasksView.closeModal('${modalId}')">
+                                Annuler
+                            </button>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Créer la tâche
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        
+        // Focus sur le premier champ
+        setTimeout(() => {
+            const titleInput = document.querySelector('#createTaskForm input[name="title"]');
+            if (titleInput) titleInput.focus();
+        }, 100);
+    }
+
+    createTask(event, modalId) {
+        event.preventDefault();
+        
+        const formData = new FormData(event.target);
+        const taskData = {
+            title: formData.get('title'),
+            description: formData.get('description'),
+            priority: formData.get('priority'),
+            category: formData.get('category'),
+            dueDate: formData.get('dueDate') || null,
+            client: formData.get('client'),
+            tags: formData.get('tags') ? formData.get('tags').split(',').map(t => t.trim()).filter(t => t) : []
         };
         
-        // Réinitialiser le champ de recherche
-        const searchInput = document.getElementById('filter-search');
-        if (searchInput) searchInput.value = '';
-        
-        this.refreshView();
+        window.taskManager.createTask(taskData);
+        this.closeModal(modalId);
+        this.showToast('Tâche créée avec succès', 'success');
     }
 
-    clearSearch() {
-        this.currentFilters.search = '';
-        const searchInput = document.getElementById('filter-search');
-        if (searchInput) searchInput.value = '';
-        this.refreshView();
+    editTask(taskId) {
+        // Pour l'instant, on ferme le modal et on peut implémenter l'édition plus tard
+        this.closeModal();
+        this.showToast('Fonctionnalité d\'édition en cours de développement', 'info');
     }
 
-    refreshView() {
-        const listContainer = document.getElementById('tasksListContainer');
-        if (listContainer) {
-            listContainer.innerHTML = this.renderTasksList();
+    closeModal(modalId) {
+        const modal = modalId ? document.getElementById(modalId) : document.querySelector('.modal-overlay');
+        if (modal) {
+            modal.remove();
+            document.body.style.overflow = 'auto';
         }
-        
-        // Mettre à jour les stats
-        const pageHeader = document.querySelector('.page-header');
-        if (pageHeader) {
-            const statsHtml = this.renderStats();
-            const existingStats = document.querySelector('.stats-grid');
-            if (existingStats) {
-                existingStats.outerHTML = statsHtml;
-            }
-        }
-        
-        // Mettre à jour les bulk actions
-        const bulkActionsContainer = document.getElementById('bulkActions');
-        if (bulkActionsContainer) {
-            bulkActionsContainer.outerHTML = this.renderBulkActions();
-        }
-        
-        this.updateBulkActions();
-    }
-
-    attachEventListeners() {
-        // Recherche
-        const searchInput = document.getElementById('filter-search');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.currentFilters.search = e.target.value;
-                    const searchClearBtn = document.getElementById('searchClearBtn');
-                    if (searchClearBtn) {
-                        searchClearBtn.style.display = e.target.value ? 'flex' : 'none';
-                    }
-                    this.refreshView();
-                }, 300);
-            });
-        }
-        
-        // Fermer les dropdowns en cliquant à l'extérieur
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.filter-dropdown')) {
-                document.querySelectorAll('.filter-dropdown.open').forEach(dd => {
-                    dd.classList.remove('open');
-                });
-            }
-        });
     }
 
     // Méthodes utilitaires
-    generateDefaultReplies(task) {
-        const sender = task.emailFromName || 'l\'expéditeur';
-        return [
-            {
-                tone: 'neutre',
-                subject: `Re: ${task.emailSubject || 'Votre message'}`,
-                content: `Bonjour ${sender},\n\nJ'ai bien reçu votre message et je vous en remercie.\n\nJe vais examiner votre demande et vous apporter une réponse dans les meilleurs délais.\n\nCordialement,`
-            },
-            {
-                tone: 'formel',
-                subject: `Re: ${task.emailSubject || 'Votre message'} - Confirmation`,
-                content: `Bonjour ${sender},\n\nJe vous remercie pour votre message concernant "${task.emailSubject || 'votre demande'}".\n\nJe prends connaissance de votre demande et reviendrai vers vous prochainement avec les éléments demandés.\n\nJe vous prie d'agréer mes salutations distinguées.`
-            },
-            {
-                tone: 'amical',
-                subject: `Re: ${task.emailSubject || 'Votre message'}`,
-                content: `Bonjour ${sender},\n\nMerci pour votre message !\n\nJe vais regarder ça de près et je reviens vers vous rapidement.\n\nBonne journée,`
-            }
-        ];
+    hasActiveFilters() {
+        return this.currentFilters.status !== 'all' ||
+               this.currentFilters.priority !== 'all' ||
+               this.currentFilters.category !== 'all' ||
+               this.currentFilters.search !== '' ||
+               this.currentFilters.overdue ||
+               this.currentFilters.needsReply ||
+               this.currentFilters.hasEmail;
     }
 
-    getFilterLabel(filterType, value) {
-        const labels = {
-            status: {
-                all: 'Tous les statuts',
-                todo: 'À faire',
-                'in-progress': 'En cours',
-                completed: 'Terminées'
-            },
+    getFilterDisplayName(filterType, value) {
+        const displayNames = {
             priority: {
                 all: 'Toutes priorités',
                 urgent: '🚨 Urgent',
@@ -2773,37 +1475,103 @@ closeModal(modalId) {
                 medium: '📌 Normale',
                 low: '📄 Basse'
             },
+            category: {
+                all: 'Toutes catégories',
+                client: '🤝 Client',
+                project: '📁 Projet',
+                meeting: '🗓️ Réunion',
+                email: '📧 Email',
+                other: 'Autre'
+            },
             sortBy: {
-                priority: 'Priorité',
-                dueDate: 'Échéance',
-                created: 'Date de création',
-                updated: 'Dernière modification',
-                alphabetical: 'Alphabétique'
-            },
-            dateFilter: {
-                all: 'Toutes les dates',
-                today: 'Aujourd\'hui',
-                week: 'Cette semaine',
-                month: 'Ce mois',
-                overdue: 'En retard'
-            },
-            tag: {
-                all: 'Tous les tags'
+                priority: '🎯 Priorité',
+                dueDate: '📅 Échéance',
+                created: '🆕 Plus récent',
+                updated: '🔄 Modifié',
+                alphabetical: '🔤 Alphabétique'
             }
         };
         
-        if (filterType === 'sender') {
-            if (value === 'all') return 'Tous les expéditeurs';
-            const senders = window.taskManager.getSenders();
-            const sender = senders.find(s => s.email === value);
-            return sender ? sender.name : 'Tous les expéditeurs';
-        }
+        return displayNames[filterType]?.[value] || value;
+    }
+
+    getPriorityIcon(priority) {
+        const icons = {
+            urgent: '🚨',
+            high: '⚡',
+            medium: '📌',
+            low: '📄'
+        };
+        return icons[priority] || '📌';
+    }
+
+    getPriorityLabel(priority) {
+        const labels = {
+            urgent: 'Urgent',
+            high: 'Haute',
+            medium: 'Normale',
+            low: 'Basse'
+        };
+        return labels[priority] || 'Normale';
+    }
+
+    getStatusIcon(status) {
+        const icons = {
+            todo: '⏳',
+            'in-progress': '⚡',
+            completed: '✅'
+        };
+        return icons[status] || '⏳';
+    }
+
+    getStatusLabel(status) {
+        const labels = {
+            todo: 'À faire',
+            'in-progress': 'En cours',
+            completed: 'Terminée'
+        };
+        return labels[status] || 'À faire';
+    }
+
+    getCategoryLabel(category) {
+        const labels = {
+            client: '🤝 Client',
+            project: '📁 Projet',
+            meeting: '🗓️ Réunion',
+            email: '📧 Email',
+            other: 'Autre'
+        };
+        return labels[category] || 'Autre';
+    }
+
+    formatDate(dateStr) {
+        if (!dateStr) return '';
         
-        if (filterType === 'tag' && value !== 'all') {
-            return value;
-        }
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    formatRelativeDate(dateStr) {
+        if (!dateStr) return '';
         
-        return labels[filterType]?.[value] || value;
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffTime = date - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 0) return 'Aujourd\'hui';
+        if (diffDays === 1) return 'Demain';
+        if (diffDays === -1) return 'Hier';
+        if (diffDays > 0) return `Dans ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        if (diffDays < 0) return `Il y a ${Math.abs(diffDays)} jour${Math.abs(diffDays) > 1 ? 's' : ''}`;
+        
+        return this.formatDate(dateStr);
     }
 
     escapeHtml(text) {
@@ -2813,193 +1581,281 @@ closeModal(modalId) {
         return div.innerHTML;
     }
 
-    formatDescription(text) {
-        if (!text) return '';
+    showToast(message, type = 'info') {
+        // Créer le toast
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
         
-        // Préserver les sauts de ligne et formater
-        const escaped = this.escapeHtml(text);
+        // Ajouter au DOM
+        document.body.appendChild(toast);
         
-        // Traiter les URLs comme des liens
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-        const withLinks = escaped.replace(urlRegex, '<a href="$1" target="_blank">$1</a>');
+        // Animation d'apparition
+        setTimeout(() => toast.classList.add('show'), 100);
         
-        // Conserver les sauts de ligne
-        return `<div class="formatted-text">${withLinks.replace(/\n/g, '<br>')}</div>`;
+        // Suppression automatique
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
-    formatDate(dateStr) {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        const now = new Date();
-        const isToday = date.toDateString() === now.toDateString();
-        const isYesterday = new Date(now - 86400000).toDateString() === date.toDateString();
+    refreshView() {
+        const container = document.getElementById('tasksContainer');
+        if (container) {
+            container.innerHTML = this.renderTasksDisplay();
+        }
         
-        if (isToday) {
-            return `Aujourd'hui à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-        } else if (isYesterday) {
-            return `Hier à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-        } else {
-            return date.toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
+        // Mettre à jour les stats
+        const quickStats = document.querySelector('.quick-stats');
+        if (quickStats) {
+            quickStats.outerHTML = this.renderQuickStats();
+        }
+        
+        // Mettre à jour les filtres
+        const smartFilters = document.querySelector('.smart-filters');
+        if (smartFilters) {
+            smartFilters.outerHTML = this.renderSmartFilters();
+        }
+        
+        // Mettre à jour les actions groupées
+        const bulkActions = document.getElementById('bulkActions');
+        if (bulkActions) {
+            bulkActions.outerHTML = this.renderBulkActions();
+        }
+        
+        this.updateSelectionUI();
+        this.attachEventListeners();
+    }
+
+    attachEventListeners() {
+        // Recherche globale
+        const searchInput = document.getElementById('globalSearch');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.currentFilters.search = e.target.value;
+                    const searchClear = document.getElementById('searchClear');
+                    if (searchClear) {
+                        searchClear.classList.toggle('visible', e.target.value.length > 0);
+                    }
+                    this.refreshView();
+                }, 300);
             });
         }
-    }
-
-    extractSummaryFromDescription(description) {
-        if (!description) return '';
         
-        // Chercher la section résumé dans la description
-        const summaryMatch = description.match(/📧 RÉSUMÉ EXÉCUTIF\n━+\n([\s\S]*?)(?=\n\n|$)/);
-        if (summaryMatch) {
-            return summaryMatch[1].trim();
-        }
-        
-        // Sinon, prendre les premières lignes
-        const lines = description.split('\n').filter(line => line.trim());
-        return lines.slice(0, 3).join('\n');
-    }
-
-    formatSummary(summary) {
-        if (!summary) return '<p class="text-muted">Aucun résumé</p>';
-        
-        // Traiter les sauts de ligne et les emojis
-        return summary.split('\n').map(line => {
-            if (line.includes('🚨')) {
-                return `<p class="urgent-text">${this.escapeHtml(line)}</p>`;
-            } else if (line.includes('📮')) {
-                return `<p class="response-expected">${this.escapeHtml(line)}</p>`;
-            } else {
-                return `<p>${this.escapeHtml(line)}</p>`;
+        // Fermer les menus en cliquant à l'extérieur
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.filter-chip-container')) {
+                this.closeAllFilterMenus();
             }
-        }).join('');
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 'n':
+                        e.preventDefault();
+                        this.showCreateModal();
+                        break;
+                    case 'f':
+                        e.preventDefault();
+                        const searchInput = document.getElementById('globalSearch');
+                        if (searchInput) searchInput.focus();
+                        break;
+                }
+            }
+        });
     }
 
-    getPriorityLabel(priority) {
-        const labels = {
-            urgent: '🚨 Urgent',
-            high: '⚡ Haute',
-            medium: '📌 Normale',
-            low: '📄 Basse'
-        };
-        return labels[priority] || '📌 Normale';
-    }
-
-    getStatusLabel(status) {
-        const labels = {
-            'todo': 'À faire',
-            'in-progress': 'En cours',
-            'completed': 'Terminée'
-        };
-        return labels[status] || status;
-    }
-
-    getReplyToneIcon(tone) {
-        const icons = {
-            formel: '👔',
-            informel: '😊',
-            urgent: '🚨',
-            neutre: '📝',
-            amical: '🤝'
-        };
-        return icons[tone] || '📝';
-    }
-
-    getReplyToneLabel(tone) {
-        const labels = {
-            formel: 'Formel',
-            informel: 'Informel',
-            urgent: 'Urgent',
-            neutre: 'Neutre',
-            amical: 'Amical'
-        };
-        return labels[tone] || 'Neutre';
-    }
-
-    // Styles
-    addStyles() {
-        if (document.getElementById('tasksViewStyles')) return;
+    addModernStyles() {
+        if (document.getElementById('modernTaskStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'tasksViewStyles';
+        styles.id = 'modernTaskStyles';
         styles.textContent = `
-            /* Variables CSS */
+            /* Variables CSS modernes */
             :root {
-                --primary: #667eea;
-                --primary-dark: #5a67d8;
-                --primary-light: #7c3aed;
-                --secondary: #64748b;
-                --success: #10b981;
-                --danger: #ef4444;
-                --warning: #f59e0b;
-                --info: #3b82f6;
-                --dark: #1e293b;
-                --light: #f8fafc;
-                --gray-50: #f9fafb;
-                --gray-100: #f3f4f6;
-                --gray-200: #e5e7eb;
-                --gray-300: #d1d5db;
-                --gray-400: #9ca3af;
-                --gray-500: #6b7280;
-                --gray-600: #4b5563;
-                --gray-700: #374151;
-                --gray-800: #1f2937;
+                --primary-500: #6366f1;
+                --primary-600: #5048e5;
+                --primary-50: #eef2ff;
+                --success-500: #10b981;
+                --success-50: #ecfdf5;
+                --warning-500: #f59e0b;
+                --warning-50: #fffbeb;
+                --danger-500: #ef4444;
+                --danger-50: #fef2f2;
                 --gray-900: #111827;
+                --gray-800: #1f2937;
+                --gray-700: #374151;
+                --gray-600: #4b5563;
+                --gray-500: #6b7280;
+                --gray-400: #9ca3af;
+                --gray-300: #d1d5db;
+                --gray-200: #e5e7eb;
+                --gray-100: #f3f4f6;
+                --gray-50: #f9fafb;
+                --white: #ffffff;
+                
+                --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                
+                --radius-sm: 0.375rem;
+                --radius-md: 0.5rem;
+                --radius-lg: 0.75rem;
+                --radius-xl: 1rem;
             }
-            
-            /* Tasks Page Styles */
-            .tasks-page {
-                padding: 20px;
-                max-width: 1400px;
-                margin: 0 auto;
+
+            /* Reset et base */
+            * {
+                box-sizing: border-box;
             }
-            
-            /* Header */
-            .page-header {
+
+            .task-manager-app {
+                min-height: 100vh;
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                padding: 1.5rem;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+
+            /* Header moderne */
+            .app-header {
+                margin-bottom: 2rem;
+            }
+
+            .header-content {
                 display: flex;
                 justify-content: space-between;
-                align-items: center;
-                margin-bottom: 32px;
+                align-items: flex-start;
                 flex-wrap: wrap;
-                gap: 16px;
+                gap: 1rem;
             }
-            
-            .page-title {
-                font-size: 32px;
+
+            .header-title {
+                flex: 1;
+                min-width: 300px;
+            }
+
+            .main-title {
+                font-size: 2.5rem;
                 font-weight: 800;
-                background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+                color: var(--gray-900);
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                line-height: 1.2;
+            }
+
+            .title-icon {
+                background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
-                margin: 0;
             }
-            
-            /* Stats Grid - Ligne unique */
-            .stats-grid {
+
+            .subtitle {
+                font-size: 1.125rem;
+                color: var(--gray-600);
+                margin: 0.5rem 0 0 0;
+                font-weight: 500;
+            }
+
+            .header-actions {
+                display: flex;
+                gap: 0.75rem;
+                align-items: center;
+            }
+
+            /* Boutons modernes */
+            .btn-primary {
+                background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+                color: var(--white);
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: var(--radius-lg);
+                font-weight: 600;
+                font-size: 0.875rem;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.2s ease;
+                box-shadow: var(--shadow-sm);
+                text-decoration: none;
+            }
+
+            .btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+                background: linear-gradient(135deg, var(--primary-600), var(--primary-500));
+            }
+
+            .btn-secondary {
+                background: var(--white);
+                color: var(--gray-700);
+                border: 1px solid var(--gray-300);
+                padding: 0.75rem 1.5rem;
+                border-radius: var(--radius-lg);
+                font-weight: 600;
+                font-size: 0.875rem;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.2s ease;
+                text-decoration: none;
+            }
+
+            .btn-secondary:hover {
+                background: var(--gray-50);
+                border-color: var(--gray-400);
+            }
+
+            .btn-new-task {
+                font-size: 1rem;
+                padding: 1rem 2rem;
+                box-shadow: var(--shadow-lg);
+            }
+
+            .btn-new-task:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-xl);
+            }
+
+            /* Stats rapides */
+            .quick-stats {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-                gap: 12px;
-                margin-bottom: 24px;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+                margin-bottom: 2rem;
             }
-            
+
             .stat-card {
-                background: white;
-                border-radius: 12px;
-                padding: 16px;
+                background: var(--white);
+                border-radius: var(--radius-xl);
+                padding: 1.5rem;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 1rem;
                 cursor: pointer;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: all 0.3s ease;
                 border: 2px solid transparent;
+                box-shadow: var(--shadow-sm);
                 position: relative;
                 overflow: hidden;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
-            
+
             .stat-card::before {
                 content: '';
                 position: absolute;
@@ -3007,858 +1863,1041 @@ closeModal(modalId) {
                 left: 0;
                 right: 0;
                 height: 4px;
-                background: var(--accent-color, var(--primary));
-                opacity: 0;
-                transition: opacity 0.3s ease;
+                background: var(--gray-200);
+                transition: all 0.3s ease;
             }
-            
+
             .stat-card:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-                border-color: var(--accent-color, var(--primary));
+                box-shadow: var(--shadow-lg);
+                border-color: var(--primary-200);
             }
-            
-            .stat-card:hover::before {
-                opacity: 1;
+
+            .stat-card.active {
+                border-color: var(--primary-500);
+                background: linear-gradient(135deg, var(--primary-50), var(--white));
             }
-            
+
+            .stat-card.active::before {
+                background: var(--primary-500);
+            }
+
             .stat-icon {
-                width: 36px;
-                height: 36px;
+                width: 3rem;
+                height: 3rem;
+                border-radius: var(--radius-lg);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border-radius: 10px;
-                background: var(--accent-color, var(--primary));
-                background: linear-gradient(135deg, var(--accent-color, var(--primary)), var(--accent-color, var(--primary)));
-                opacity: 0.1;
-                color: var(--accent-color, var(--primary));
-                font-size: 16px;
+                font-size: 1.25rem;
+                flex-shrink: 0;
             }
-            
-            .stat-card:hover .stat-icon {
-                opacity: 0.2;
+
+            .todo-icon {
+                background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+                color: #1e40af;
             }
-            
+
+            .progress-icon {
+                background: linear-gradient(135deg, #fef3c7, #fde68a);
+                color: #92400e;
+            }
+
+            .urgent-icon {
+                background: linear-gradient(135deg, #fecaca, #fca5a5);
+                color: #dc2626;
+            }
+
+            .reply-icon {
+                background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+                color: #5b21b6;
+            }
+
+            .completed-icon {
+                background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+                color: #065f46;
+            }
+
             .stat-content {
                 flex: 1;
                 min-width: 0;
             }
-            
-            .stat-value {
-                font-size: 24px;
-                font-weight: 700;
-                line-height: 1;
+
+            .stat-number {
+                font-size: 2rem;
+                font-weight: 800;
                 color: var(--gray-900);
+                line-height: 1;
+                margin-bottom: 0.25rem;
             }
-            
+
             .stat-label {
-                font-size: 11px;
+                font-size: 0.875rem;
                 font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: var(--gray-500);
-                margin-top: 2px;
-            }
-            
-            /* Section des filtres */
-            .filters-section {
-                margin-bottom: 12px;
-            }
-            
-            .filters-row {
-                background: white;
-                border-radius: 12px;
-                padding: 12px 16px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
-            
-            .inline-search {
-                flex: 0 1 200px;
-                min-width: 150px;
-            }
-            
-            .inline-search .search-input {
-                padding: 8px 36px;
-                font-size: 13px;
-                height: 36px;
-            }
-            
-            .search-icon {
-                position: absolute;
-                left: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: var(--gray-400);
-                font-size: 14px;
-                pointer-events: none;
-            }
-            
-            .search-clear {
-                position: absolute;
-                right: 8px;
-                top: 50%;
-                transform: translateY(-50%);
-                background: var(--gray-200);
-                border: none;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                font-size: 10px;
                 color: var(--gray-600);
-                transition: all 0.2s ease;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
             }
-            
-            .inline-filters {
-                display: flex;
-                gap: 6px;
-                align-items: center;
-                flex: 1;
-                flex-wrap: wrap;
+
+            /* Filtres intelligents */
+            .smart-filters {
+                background: var(--white);
+                border-radius: var(--radius-xl);
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+                box-shadow: var(--shadow-sm);
             }
-            
-            .filter-dropdown {
+
+            .search-section {
+                margin-bottom: 1.5rem;
+            }
+
+            .search-container {
                 position: relative;
+                max-width: 400px;
             }
-            
-            .filter-dropdown.compact .filter-button {
-                padding: 8px 10px;
-                font-size: 12px;
-                min-width: 0;
-                height: 36px;
-                border: 1px solid var(--gray-200);
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            
-            .filter-dropdown.compact .filter-button > i:first-child {
-                font-size: 12px;
-                margin-right: 2px;
-            }
-            
-            .filter-dropdown.compact .filter-button > span {
-                max-width: 90px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .filter-dropdown.compact .filter-button > i:last-child {
-                font-size: 10px;
-                margin-left: 2px;
-            }
-            
-            .filter-dropdown.has-filter .filter-button {
-                background: linear-gradient(135deg, var(--primary), var(--primary-light));
-                color: white;
-                border-color: var(--primary);
-            }
-            
-            .filter-dropdown.has-filter .filter-button i {
-                color: white !important;
-            }
-            
-            .reset-btn {
-                padding: 8px 12px;
-                height: 36px;
-                font-size: 12px;
-                opacity: 0;
-                pointer-events: none;
-                transition: all 0.3s ease;
-                margin-left: auto;
-            }
-            
-            .reset-btn.visible {
-                opacity: 1;
-                pointer-events: auto;
-            }
-            
-            /* Dropdown menu */
-            .dropdown-menu {
-                position: absolute;
-                top: 100%;
-                left: 0;
-                margin-top: 6px;
-                background: white;
-                border: 1px solid var(--gray-200);
-                border-radius: 8px;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-                opacity: 0;
-                transform: translateY(-10px);
-                visibility: hidden;
-                transition: all 0.3s ease;
-                z-index: 1000;
-                max-height: 300px;
-                overflow-y: auto;
-                min-width: 180px;
-                width: max-content;
-            }
-            
-            /* Filters container (for advanced filters) */
-            .filters-container {
-                display: none;
-            }
-            
-            .filter-search {
-                width: 100%;
-            }
-            
-            .search-wrapper {
-                position: relative;
-            }
-            
+
             .search-input {
                 width: 100%;
-                padding: 10px 44px;
+                padding: 0.875rem 1rem 0.875rem 2.75rem;
                 border: 2px solid var(--gray-200);
-                border-radius: 10px;
-                font-size: 14px;
-                transition: all 0.3s ease;
+                border-radius: var(--radius-lg);
+                font-size: 1rem;
                 background: var(--gray-50);
+                transition: all 0.2s ease;
             }
-            
+
             .search-input:focus {
                 outline: none;
-                border-color: var(--primary);
-                background: white;
-                box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+                border-color: var(--primary-500);
+                background: var(--white);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
-            
+
             .search-icon {
                 position: absolute;
-                left: 16px;
+                left: 1rem;
                 top: 50%;
                 transform: translateY(-50%);
                 color: var(--gray-400);
-                font-size: 16px;
+                font-size: 1.125rem;
                 pointer-events: none;
             }
-            
+
             .search-clear {
                 position: absolute;
-                right: 12px;
+                right: 0.75rem;
                 top: 50%;
                 transform: translateY(-50%);
-                background: var(--gray-200);
+                background: var(--gray-300);
                 border: none;
-                width: 24px;
-                height: 24px;
+                width: 1.5rem;
+                height: 1.5rem;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                font-size: 12px;
+                font-size: 0.75rem;
                 color: var(--gray-600);
+                opacity: 0;
+                visibility: hidden;
                 transition: all 0.2s ease;
             }
-            
+
+            .search-clear.visible {
+                opacity: 1;
+                visibility: visible;
+            }
+
             .search-clear:hover {
-                background: var(--gray-300);
-                color: var(--gray-700);
+                background: var(--gray-400);
+                color: var(--white);
             }
-            
-            .filter-dropdowns {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-                gap: 10px;
+
+            /* Filter chips */
+            .filter-chips {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                flex-wrap: wrap;
             }
-            
-            /* Dropdowns modernes */
-            .filter-dropdown {
+
+            .filter-group {
+                display: flex;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+                flex: 1;
+            }
+
+            .filter-chip-container {
                 position: relative;
             }
-            
-            .filter-dropdown.has-filter .filter-button {
-                background: linear-gradient(135deg, var(--primary), var(--primary-light));
-                color: white;
-                border-color: var(--primary);
-            }
-            
-            .filter-dropdown.has-filter .filter-button i {
-                color: white !important;
-            }
-            
-            .filter-button {
-                width: 100%;
-                padding: 9px 14px;
-                border: 2px solid var(--gray-200);
-                border-radius: 10px;
-                background: var(--gray-50);
-                font-size: 13px;
-                font-weight: 500;
+
+            .filter-chip {
+                background: var(--gray-100);
                 color: var(--gray-700);
+                border: 1px solid var(--gray-200);
+                padding: 0.625rem 1rem;
+                border-radius: var(--radius-lg);
+                font-size: 0.875rem;
+                font-weight: 600;
                 cursor: pointer;
-                transition: all 0.3s ease;
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                gap: 6px;
+                gap: 0.5rem;
+                transition: all 0.2s ease;
                 white-space: nowrap;
-                overflow: hidden;
             }
-            
-            .filter-button > i:first-child {
-                margin-right: 4px;
-                color: var(--gray-500);
-                flex-shrink: 0;
-            }
-            
-            .filter-button > span {
-                flex: 1;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .filter-button.sort-button {
-                background: linear-gradient(135deg, var(--gray-50), var(--gray-100));
+
+            .filter-chip:hover {
+                background: var(--gray-200);
                 border-color: var(--gray-300);
             }
-            
-            .filter-button:hover {
-                border-color: var(--gray-300);
-                background: white;
+
+            .filter-chip.active {
+                background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+                color: var(--white);
+                border-color: var(--primary-500);
             }
-            
-            .filter-dropdown.has-filter .filter-button:hover {
-                background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+
+            .filter-chip i:last-child {
+                font-size: 0.75rem;
+                transition: transform 0.2s ease;
             }
-            
-            .filter-button i:last-child {
-                font-size: 12px;
-                transition: transform 0.3s ease;
-                flex-shrink: 0;
-            }
-            
-            .filter-dropdown.open .filter-button {
-                border-color: var(--primary);
-                background: white;
-                color: var(--primary);
-            }
-            
-            .filter-dropdown.has-filter.open .filter-button {
-                background: white;
-                color: var(--primary);
-            }
-            
-            .filter-dropdown.open .filter-button i {
-                color: var(--primary) !important;
-            }
-            
-            .filter-dropdown.open .filter-button i:last-child {
+
+            .filter-chip-container:hover .filter-chip i:last-child {
                 transform: rotate(180deg);
             }
-            
-            .dropdown-menu {
+
+            /* Filter menus */
+            .filter-menu {
                 position: absolute;
                 top: 100%;
                 left: 0;
-                right: 0;
-                margin-top: 8px;
-                background: white;
+                margin-top: 0.5rem;
+                background: var(--white);
                 border: 1px solid var(--gray-200);
-                border-radius: 10px;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-xl);
                 opacity: 0;
-                transform: translateY(-10px);
                 visibility: hidden;
-                transition: all 0.3s ease;
-                z-index: 1000;
+                transform: translateY(-10px);
+                transition: all 0.2s ease;
+                z-index: 50;
+                min-width: 200px;
                 max-height: 300px;
                 overflow-y: auto;
-                min-width: 200px;
             }
-            
-            .dropdown-menu-large {
-                max-height: 400px;
-            }
-            
-            .filter-dropdown.open .dropdown-menu {
+
+            .filter-menu.open {
                 opacity: 1;
-                transform: translateY(0);
                 visibility: visible;
+                transform: translateY(0);
             }
-            
-            .dropdown-item {
-                padding: 10px 16px;
+
+            .filter-option {
+                padding: 0.75rem 1rem;
                 cursor: pointer;
                 transition: background 0.2s ease;
-                font-size: 14px;
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 0.75rem;
+                font-size: 0.875rem;
+                color: var(--gray-700);
             }
-            
-            .dropdown-item > i:nth-child(2) {
-                color: var(--gray-500);
-            }
-            
-            .dropdown-item:hover {
+
+            .filter-option:hover {
                 background: var(--gray-50);
             }
-            
-            .dropdown-item.active {
-                background: var(--primary);
-                color: white;
+
+            .filter-option.selected {
+                background: var(--primary-50);
+                color: var(--primary-700);
             }
-            
-            .dropdown-item.active > i {
-                color: white !important;
-            }
-            
-            .dropdown-item .check-icon {
-                font-size: 12px;
+
+            .check-mark {
                 opacity: 0;
-                width: 16px;
+                font-size: 0.75rem;
+                color: var(--primary-500);
+                width: 1rem;
                 flex-shrink: 0;
             }
-            
-            .dropdown-item.active .check-icon {
+
+            .filter-option.selected .check-mark {
                 opacity: 1;
             }
-            
-            .dropdown-divider {
-                height: 1px;
-                background: var(--gray-200);
-                margin: 8px 0;
+
+            .priority-option {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
             }
-            
-            .dropdown-section-title {
-                font-size: 12px;
+
+            .priority-icon {
+                font-size: 1rem;
+            }
+
+            /* Filter actions */
+            .filter-actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .reset-filters-btn {
+                background: var(--danger-50);
+                color: var(--danger-700);
+                border: 1px solid var(--danger-200);
+                padding: 0.625rem 1rem;
+                border-radius: var(--radius-lg);
+                font-size: 0.875rem;
                 font-weight: 600;
-                color: var(--gray-500);
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                padding: 8px 16px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.2s ease;
+                opacity: 0;
+                visibility: hidden;
+                transform: scale(0.95);
+            }
+
+            .reset-filters-btn.visible {
+                opacity: 1;
+                visibility: visible;
+                transform: scale(1);
+            }
+
+            .reset-filters-btn:hover {
+                background: var(--danger-100);
+                border-color: var(--danger-300);
+            }
+
+            /* View controls */
+            .view-controls {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 1.5rem;
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
+
+            .view-toggle {
+                display: flex;
+                background: var(--white);
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-lg);
+                overflow: hidden;
+                box-shadow: var(--shadow-sm);
+            }
+
+            .view-btn {
+                background: none;
+                border: none;
+                padding: 0.75rem 1rem;
+                cursor: pointer;
+                color: var(--gray-600);
+                transition: all 0.2s ease;
+                font-size: 1rem;
+            }
+
+            .view-btn:hover {
+                background: var(--gray-50);
+                color: var(--gray-800);
+            }
+
+            .view-btn.active {
+                background: var(--primary-500);
+                color: var(--white);
+            }
+
+            .view-options {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            }
+
+            /* Toggle moderne */
+            .toggle-completed {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                cursor: pointer;
+                user-select: none;
+            }
+
+            .toggle-completed input {
+                display: none;
+            }
+
+            .toggle-slider {
+                width: 3rem;
+                height: 1.5rem;
+                background: var(--gray-300);
+                border-radius: 1rem;
+                position: relative;
+                transition: all 0.3s ease;
+            }
+
+            .toggle-slider::before {
+                content: '';
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 1.25rem;
+                height: 1.25rem;
+                background: var(--white);
+                border-radius: 50%;
+                transition: all 0.3s ease;
+                box-shadow: var(--shadow-sm);
+            }
+
+            .toggle-completed input:checked + .toggle-slider {
+                background: var(--primary-500);
+            }
+
+            .toggle-completed input:checked + .toggle-slider::before {
+                transform: translateX(1.5rem);
+            }
+
+            .toggle-label {
+                font-size: 0.875rem;
+                font-weight: 500;
+                color: var(--gray-700);
+            }
+
+            /* Bulk actions */
+            .bulk-actions {
+                background: linear-gradient(135deg, var(--primary-50), var(--white));
+                border: 1px solid var(--primary-200);
+                border-radius: var(--radius-lg);
+                padding: 1rem 1.5rem;
+                margin-bottom: 1.5rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-10px);
+                transition: all 0.3s ease;
+            }
+
+            .bulk-actions.visible {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
+
+            .bulk-selection-info {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.875rem;
+                color: var(--gray-700);
+                font-weight: 500;
+            }
+
+            .selection-count {
+                font-size: 1.25rem;
+                font-weight: 800;
+                color: var(--primary-600);
+            }
+
+            .bulk-action-buttons {
+                display: flex;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+            }
+
+            .bulk-btn {
+                padding: 0.5rem 1rem;
+                border-radius: var(--radius-md);
+                font-size: 0.875rem;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                transition: all 0.2s ease;
+                border: none;
+            }
+
+            .bulk-btn-primary {
+                background: var(--primary-500);
+                color: var(--white);
+            }
+
+            .bulk-btn-primary:hover {
+                background: var(--primary-600);
+            }
+
+            .bulk-btn-secondary {
+                background: var(--white);
+                color: var(--gray-700);
+                border: 1px solid var(--gray-300);
+            }
+
+            .bulk-btn-secondary:hover {
                 background: var(--gray-50);
             }
-            
-            /* Sender items */
-            .sender-item {
-                padding: 8px 16px;
+
+            .bulk-btn-danger {
+                background: var(--danger-500);
+                color: var(--white);
             }
-            
-            .sender-avatar {
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-                color: white;
+
+            .bulk-btn-danger:hover {
+                background: var(--danger-600);
+            }
+
+            /* Tasks container */
+            .tasks-container {
+                background: var(--white);
+                border-radius: var(--radius-xl);
+                overflow: hidden;
+                box-shadow: var(--shadow-sm);
+                min-height: 400px;
+            }
+
+            /* Tasks grid (vue cartes) */
+            .tasks-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+
+            .task-card {
+                background: var(--white);
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-lg);
+                overflow: hidden;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                position: relative;
+            }
+
+            .task-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-lg);
+                border-color: var(--primary-300);
+            }
+
+            .task-card.selected {
+                border-color: var(--primary-500);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+
+            .task-card.overdue {
+                border-left: 4px solid var(--danger-500);
+            }
+
+            .task-card.completed {
+                opacity: 0.7;
+            }
+
+            .card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                padding: 1rem 1rem 0 1rem;
+                gap: 0.75rem;
+            }
+
+            .card-checkbox {
+                margin-top: 0.25rem;
+            }
+
+            .custom-checkbox {
+                width: 1.25rem;
+                height: 1.25rem;
+                border: 2px solid var(--gray-300);
+                border-radius: var(--radius-sm);
+                cursor: pointer;
+                transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
-                font-weight: 600;
+                background: var(--white);
                 flex-shrink: 0;
             }
-            
-            .sender-info {
-                flex: 1;
-                min-width: 0;
-                margin-left: 4px;
+
+            .custom-checkbox:hover {
+                border-color: var(--primary-400);
             }
-            
-            .sender-name {
-                font-size: 13px;
-                font-weight: 500;
-                color: var(--gray-800);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+
+            .custom-checkbox.checked {
+                background: var(--primary-500);
+                border-color: var(--primary-500);
+                color: var(--white);
             }
-            
-            .sender-email {
-                font-size: 11px;
-                color: var(--gray-500);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+
+            .custom-checkbox i {
+                font-size: 0.75rem;
             }
-            
-            .sender-count {
-                font-size: 11px;
+
+            .priority-indicator {
+                width: 4px;
+                height: 1.5rem;
+                border-radius: 2px;
+                flex-shrink: 0;
+            }
+
+            .priority-indicator.urgent {
+                background: var(--danger-500);
+            }
+
+            .priority-indicator.high {
+                background: var(--warning-500);
+            }
+
+            .priority-indicator.medium {
+                background: var(--primary-500);
+            }
+
+            .priority-indicator.low {
+                background: var(--gray-400);
+            }
+
+            .card-actions {
+                display: flex;
+                gap: 0.5rem;
+                opacity: 0;
+                transition: opacity 0.2s ease;
+            }
+
+            .task-card:hover .card-actions {
+                opacity: 1;
+            }
+
+            .card-action-btn {
+                width: 2rem;
+                height: 2rem;
+                border: none;
+                border-radius: var(--radius-md);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.875rem;
+                transition: all 0.2s ease;
                 background: var(--gray-100);
                 color: var(--gray-600);
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-weight: 600;
-                margin-left: auto;
             }
-            
-            .dropdown-item.active .sender-count {
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
+
+            .card-action-btn:hover {
+                background: var(--gray-200);
+                color: var(--gray-800);
+                transform: scale(1.05);
             }
-            
-            /* Actions groupées */
-            .bulk-actions {
-                background: white;
-                border-radius: 12px;
-                padding: 12px 16px;
-                margin-bottom: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 16px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                transition: all 0.3s ease;
-                opacity: 0;
-                transform: translateY(-10px);
-                visibility: hidden;
-                height: 0;
-                margin-bottom: 0;
-                padding: 0 16px;
+
+            .card-action-btn.reply-btn {
+                background: var(--primary-100);
+                color: var(--primary-600);
             }
-            
-            .bulk-actions.visible {
-                opacity: 1;
-                transform: translateY(0);
-                visibility: visible;
-                height: auto;
-                padding: 12px 16px;
-                margin-bottom: 12px;
+
+            .card-action-btn.reply-btn:hover {
+                background: var(--primary-200);
+                color: var(--primary-700);
             }
-            
-            .bulk-info {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 14px;
-                color: var(--gray-700);
+
+            .card-content {
+                padding: 0 1rem 1rem 1rem;
             }
-            
-            .selection-count {
+
+            .card-title {
+                font-size: 1.125rem;
                 font-weight: 700;
-                color: var(--primary);
-                font-size: 16px;
-            }
-            
-            .bulk-buttons {
-                display: flex;
-                gap: 8px;
-            }
-            
-            /* Boutons modernes */
-            .btn {
-                padding: 10px 20px;
-                border: none;
-                border-radius: 10px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                text-decoration: none;
-                white-space: nowrap;
-            }
-            
-            .btn:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
-            
-            .btn-primary {
-                background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-                color: white;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-            }
-            
-            .btn-primary:hover:not(:disabled) {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-            }
-            
-            .btn-secondary {
-                background: white;
-                color: var(--gray-700);
-                border: 1px solid var(--gray-200);
-            }
-            
-            .btn-secondary:hover:not(:disabled) {
-                background: var(--gray-50);
-                border-color: var(--gray-300);
-            }
-            
-            .btn-danger {
-                background: var(--danger);
-                color: white;
-            }
-            
-            .btn-danger:hover:not(:disabled) {
-                background: #dc2626;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-            }
-            
-            .btn-sm {
-                padding: 6px 12px;
-                font-size: 13px;
-            }
-            
-            /* Liste des tâches */
-            .tasks-list-container {
-                background: white;
-                border-radius: 12px;
+                color: var(--gray-900);
+                margin: 0 0 0.5rem 0;
+                line-height: 1.4;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
                 overflow: hidden;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
-            
+
+            .card-description {
+                font-size: 0.875rem;
+                color: var(--gray-600);
+                line-height: 1.5;
+                margin: 0 0 1rem 0;
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+
+            .card-badges {
+                display: flex;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .status-badge {
+                padding: 0.25rem 0.75rem;
+                border-radius: var(--radius-md);
+                font-size: 0.75rem;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+            }
+
+            .status-badge.todo {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+
+            .status-badge.in-progress {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .status-badge.completed {
+                background: #d1fae5;
+                color: #065f46;
+            }
+
+            .feature-badge {
+                width: 1.5rem;
+                height: 1.5rem;
+                border-radius: var(--radius-sm);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.75rem;
+            }
+
+            .feature-badge.email {
+                background: #e0e7ff;
+                color: #5b21b6;
+            }
+
+            .feature-badge.reply {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .feature-badge.ai {
+                background: #f3e8ff;
+                color: #7c3aed;
+            }
+
+            .card-tags {
+                display: flex;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .tag-chip {
+                padding: 0.25rem 0.5rem;
+                background: var(--gray-100);
+                color: var(--gray-700);
+                border-radius: var(--radius-sm);
+                font-size: 0.75rem;
+                font-weight: 500;
+            }
+
+            .tag-more {
+                padding: 0.25rem 0.5rem;
+                background: var(--primary-100);
+                color: var(--primary-700);
+                border-radius: var(--radius-sm);
+                font-size: 0.75rem;
+                font-weight: 600;
+            }
+
+            .card-footer {
+                padding: 0 1rem 1rem 1rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                font-size: 0.75rem;
+                color: var(--gray-500);
+            }
+
+            .card-client {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-weight: 500;
+            }
+
+            .card-due-date {
+                display: flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-weight: 500;
+            }
+
+            .card-due-date.overdue {
+                color: var(--danger-600);
+                font-weight: 600;
+            }
+
+            .card-meta {
+                font-size: 0.75rem;
+                color: var(--gray-400);
+            }
+
+            /* Tasks list (vue liste) */
             .tasks-list {
                 display: flex;
                 flex-direction: column;
             }
-            
-            .task-item {
+
+            .list-header {
+                display: grid;
+                grid-template-columns: 3rem 1fr 120px 120px 150px 120px 100px;
+                gap: 1rem;
+                padding: 1rem 1.5rem;
+                background: var(--gray-50);
+                border-bottom: 1px solid var(--gray-200);
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: var(--gray-700);
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+            }
+
+            .list-header-cell {
                 display: flex;
                 align-items: center;
-                padding: 16px 20px;
+            }
+
+            .list-body {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .list-row {
+                display: grid;
+                grid-template-columns: 3rem 1fr 120px 120px 150px 120px 100px;
+                gap: 1rem;
+                padding: 1rem 1.5rem;
                 border-bottom: 1px solid var(--gray-100);
                 transition: all 0.2s ease;
                 cursor: pointer;
-                position: relative;
+                align-items: center;
             }
-            
-            .task-item:last-child {
-                border-bottom: none;
-            }
-            
-            .task-item:hover {
+
+            .list-row:hover {
                 background: var(--gray-50);
             }
-            
-            .task-item.selected {
-                background: rgba(102, 126, 234, 0.05);
+
+            .list-row.selected {
+                background: var(--primary-50);
+                border-color: var(--primary-200);
             }
-            
-            .task-item.completed {
-                opacity: 0.6;
+
+            .list-row.overdue {
+                border-left: 4px solid var(--danger-500);
             }
-            
-            .task-item.completed .task-title {
-                text-decoration: line-through;
+
+            .list-row.completed {
+                opacity: 0.7;
             }
-            
-            .task-item.overdue {
-                border-left: 3px solid var(--danger);
-            }
-            
-            .task-checkbox, .task-select {
-                margin-right: 12px;
-            }
-            
-            .custom-checkbox {
-                width: 20px;
-                height: 20px;
-                border: 2px solid var(--gray-300);
-                border-radius: 6px;
-                cursor: pointer;
-                transition: all 0.2s ease;
+
+            .list-cell {
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                background: white;
-            }
-            
-            .custom-checkbox:hover {
-                border-color: var(--primary);
-            }
-            
-            .custom-checkbox.checked {
-                background: var(--primary);
-                border-color: var(--primary);
-            }
-            
-            .custom-checkbox.checked i {
-                color: white;
-                font-size: 12px;
-            }
-            
-            .task-content {
-                flex: 1;
                 min-width: 0;
-                padding-right: 16px;
             }
-            
-            .task-header {
+
+            .task-title-container {
                 display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                margin-bottom: 4px;
+                align-items: center;
+                gap: 0.5rem;
+                min-width: 0;
+                flex: 1;
             }
-            
+
             .task-title {
                 font-weight: 600;
                 color: var(--gray-900);
-                margin: 0;
-                font-size: 16px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 flex: 1;
-                margin-right: 12px;
             }
-            
-            .task-badges {
+
+            .task-indicators {
                 display: flex;
-                gap: 6px;
-                align-items: center;
+                gap: 0.25rem;
                 flex-shrink: 0;
             }
-            
+
+            .task-indicators i {
+                font-size: 0.875rem;
+            }
+
+            .indicator-email {
+                color: var(--primary-500);
+            }
+
+            .indicator-reply {
+                color: var(--warning-500);
+            }
+
+            .indicator-ai {
+                color: var(--purple-500);
+            }
+
             .priority-badge {
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 12px;
+                padding: 0.25rem 0.75rem;
+                border-radius: var(--radius-md);
+                font-size: 0.75rem;
                 font-weight: 600;
-                white-space: nowrap;
-            }
-            
-            .priority-badge.urgent {
-                background: rgba(239, 68, 68, 0.1);
-                color: var(--danger);
-            }
-            
-            .priority-badge.high {
-                background: rgba(245, 158, 11, 0.1);
-                color: var(--warning);
-            }
-            
-            .priority-badge.medium {
-                background: rgba(59, 130, 246, 0.1);
-                color: var(--info);
-            }
-            
-            .priority-badge.low {
-                background: var(--gray-100);
-                color: var(--gray-600);
-            }
-            
-            .email-badge, .ai-badge, .reply-badge {
-                font-size: 14px;
-                color: var(--gray-600);
-            }
-            
-            .email-badge {
-                color: var(--info);
-            }
-            
-            .ai-badge {
-                color: #8b5cf6;
-            }
-            
-            .reply-badge {
-                color: var(--warning);
-            }
-            
-            .task-description {
-                color: var(--gray-600);
-                font-size: 14px;
-                margin: 4px 0;
-                line-height: 1.4;
-            }
-            
-            .task-meta {
-                display: flex;
-                gap: 16px;
-                font-size: 13px;
-                color: var(--gray-500);
-                margin-top: 8px;
-            }
-            
-            .meta-item {
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                gap: 0.25rem;
+                white-space: nowrap;
             }
-            
-            .meta-item.overdue {
-                color: var(--danger);
+
+            .priority-badge.urgent {
+                background: #fecaca;
+                color: #dc2626;
+            }
+
+            .priority-badge.high {
+                background: #fde68a;
+                color: #d97706;
+            }
+
+            .priority-badge.medium {
+                background: #dbeafe;
+                color: #2563eb;
+            }
+
+            .priority-badge.low {
+                background: var(--gray-200);
+                color: var(--gray-600);
+            }
+
+            .client-name {
                 font-weight: 500;
+                color: var(--gray-700);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
-            
-            .task-actions {
+
+            .due-date {
+                font-weight: 500;
+                color: var(--gray-700);
+                white-space: nowrap;
+            }
+
+            .due-date.overdue {
+                color: var(--danger-600);
+                font-weight: 600;
+            }
+
+            .no-due-date {
+                color: var(--gray-400);
+            }
+
+            .action-buttons {
                 display: flex;
-                gap: 8px;
+                gap: 0.5rem;
                 opacity: 0;
                 transition: opacity 0.2s ease;
             }
-            
-            .task-item:hover .task-actions {
+
+            .list-row:hover .action-buttons {
                 opacity: 1;
             }
-            
+
             .action-btn {
-                width: 32px;
-                height: 32px;
+                width: 1.75rem;
+                height: 1.75rem;
                 border: none;
-                border-radius: 6px;
+                border-radius: var(--radius-sm);
+                cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                cursor: pointer;
+                font-size: 0.75rem;
                 transition: all 0.2s ease;
-                font-size: 14px;
             }
-            
-            .action-btn:hover {
-                transform: scale(1.05);
+
+            .complete-btn {
+                background: var(--success-100);
+                color: var(--success-600);
             }
-            
-            .action-btn.primary {
-                background: var(--info);
-                color: white;
+
+            .complete-btn:hover {
+                background: var(--success-200);
+                color: var(--success-700);
             }
-            
-            .action-btn.primary:hover {
-                background: #2563eb;
+
+            .reply-btn {
+                background: var(--primary-100);
+                color: var(--primary-600);
             }
-            
-            .action-btn.danger {
-                background: var(--danger);
-                color: white;
+
+            .reply-btn:hover {
+                background: var(--primary-200);
+                color: var(--primary-700);
             }
-            
-            .action-btn.danger:hover {
-                background: #dc2626;
+
+            .delete-btn {
+                background: var(--danger-100);
+                color: var(--danger-600);
             }
-            
-            /* Empty State */
+
+            .delete-btn:hover {
+                background: var(--danger-200);
+                color: var(--danger-700);
+            }
+
+            /* Empty state */
             .empty-state {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 4rem 2rem;
                 text-align: center;
-                padding: 80px 20px;
             }
-            
-            .empty-state-icon {
-                font-size: 64px;
+
+            .empty-icon {
+                font-size: 4rem;
                 color: var(--gray-300);
-                margin-bottom: 24px;
+                margin-bottom: 1.5rem;
             }
-            
-            .empty-state-title {
-                font-size: 24px;
+
+            .empty-title {
+                font-size: 1.5rem;
                 font-weight: 700;
                 color: var(--gray-800);
-                margin-bottom: 8px;
+                margin: 0 0 0.5rem 0;
             }
-            
-            .empty-state-text {
-                font-size: 16px;
-                color: var(--gray-500);
-                margin-bottom: 24px;
+
+            .empty-description {
+                font-size: 1rem;
+                color: var(--gray-600);
+                margin: 0 0 2rem 0;
+                max-width: 400px;
+                line-height: 1.5;
             }
-            
-            /* Modal moderne - Z-index ultra élevé pour éviter les conflits */
+
+            .empty-actions {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            /* Modal moderne */
             .modal-overlay {
                 position: fixed;
                 top: 0;
@@ -3869,45 +2908,35 @@ closeModal(modalId) {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 999999;
+                z-index: 1000;
                 backdrop-filter: blur(4px);
+                padding: 1rem;
                 animation: fadeIn 0.3s ease;
-                padding: 20px;
-                overflow-y: auto;
             }
-            
-            /* Encore plus élevé pour les modaux de tâches */
-            .modal-overlay-task {
-                z-index: 9999999;
-            }
-            
+
             @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                }
-                to {
-                    opacity: 1;
-                }
+                from { opacity: 0; }
+                to { opacity: 1; }
             }
-            
-            .modal-container {
-                background: white;
-                border-radius: 16px;
-                width: 90%;
+
+            .task-modal,
+            .create-modal {
+                background: var(--white);
+                border-radius: var(--radius-xl);
+                width: 100%;
                 max-width: 600px;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                box-shadow: var(--shadow-xl);
                 animation: slideUp 0.3s ease;
-                position: relative;
-                margin: auto;
+                overflow: hidden;
             }
-            
-            .modal-xlarge {
-                max-width: 1000px;
+
+            .task-modal {
+                max-width: 800px;
             }
-            
+
             @keyframes slideUp {
                 from {
                     transform: translateY(20px);
@@ -3918,969 +2947,507 @@ closeModal(modalId) {
                     opacity: 1;
                 }
             }
-            
+
             .modal-header {
-                padding: 24px;
-                border-bottom: 1px solid var(--gray-100);
-                flex-shrink: 0;
-                position: relative;
+                padding: 1.5rem;
+                border-bottom: 1px solid var(--gray-200);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+                color: var(--white);
             }
-            
-            .modal-header.gradient-header {
-                background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-                color: white;
-            }
-            
-            .modal-header h2 {
-                margin: 0;
-                font-size: 24px;
+
+            .modal-title {
+                font-size: 1.5rem;
                 font-weight: 700;
-                padding-right: 60px;
+                margin: 0;
+                color: var(--white);
+                flex: 1;
+                margin-right: 1rem;
             }
-            
-            .modal-header.gradient-header h2 {
-                color: white;
-            }
-            
+
             .modal-close {
-                position: absolute;
-                top: 24px;
-                right: 24px;
                 background: rgba(255, 255, 255, 0.2);
                 border: none;
-                width: 36px;
-                height: 36px;
+                width: 2.5rem;
+                height: 2.5rem;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                transition: all 0.3s ease;
-                color: white;
-                z-index: 10;
+                color: var(--white);
+                font-size: 1.125rem;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
             }
-            
+
             .modal-close:hover {
                 background: rgba(255, 255, 255, 0.3);
                 transform: rotate(90deg);
             }
-            
+
             .modal-body {
-                padding: 24px;
-                overflow-y: auto;
+                padding: 1.5rem;
                 flex: 1;
+                overflow-y: auto;
             }
-            
+
             .modal-footer {
-                padding: 24px;
-                border-top: 1px solid var(--gray-100);
+                padding: 1.5rem;
+                border-top: 1px solid var(--gray-200);
                 display: flex;
                 justify-content: flex-end;
-                gap: 12px;
-                flex-shrink: 0;
+                gap: 1rem;
+                background: var(--gray-50);
             }
-            
-            /* Modal titre éditable */
-            .modal-title-input {
-                width: 100%;
-                font-size: 20px;
-                font-weight: 600;
-                padding: 8px 12px;
-                border: 1px solid var(--gray-300);
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.9);
+
+            /* Task detail */
+            .task-detail {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .task-detail-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .task-status-info {
+                display: flex;
+                gap: 0.75rem;
+                flex-wrap: wrap;
+            }
+
+            .detail-section {
+                background: var(--gray-50);
+                border-radius: var(--radius-lg);
+                padding: 1.5rem;
+            }
+
+            .detail-section h4 {
+                font-size: 1.125rem;
+                font-weight: 700;
                 color: var(--gray-900);
-            }
-            
-            .modal-title-input:focus {
-                outline: none;
-                border-color: white;
-                background: white;
-                box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
-            }
-            
-            /* Task detail view */
-            .unified-task-view {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .task-toolbar {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 16px;
-                background: var(--gray-50);
-                border-radius: 8px;
-                border: 1px solid var(--gray-200);
-                flex-wrap: wrap;
-                gap: 12px;
-            }
-            
-            .toolbar-left, .toolbar-right {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-                flex-wrap: wrap;
-            }
-            
-            .status-badge {
-                padding: 4px 12px;
-                border-radius: 12px;
-                font-size: 13px;
-                font-weight: 600;
-            }
-            
-            .status-badge.todo {
-                background: #dbeafe;
-                color: #1e40af;
-            }
-            
-            .status-badge.in-progress {
-                background: #fef3c7;
-                color: #92400e;
-            }
-            
-            .status-badge.completed {
-                background: #d1fae5;
-                color: #065f46;
-            }
-            
-            .replied-badge {
-                padding: 4px 12px;
-                border-radius: 12px;
-                font-size: 13px;
-                background: #d1fae5;
-                color: #065f46;
-            }
-            
-            /* Content Sections */
-            .content-section {
-                background: white;
-                border: 1px solid var(--gray-200);
-                border-radius: 8px;
-                overflow: hidden;
-            }
-            
-            .content-section h3 {
-                padding: 12px 16px;
-                margin: 0;
-                background: var(--gray-50);
-                border-bottom: 1px solid var(--gray-200);
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--gray-800);
-            }
-            
-            .section-header {
+                margin: 0 0 1rem 0;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 12px 16px;
-                background: var(--gray-50);
-                border-bottom: 1px solid var(--gray-200);
+                gap: 0.5rem;
             }
-            
-            .section-header i {
-                font-size: 16px;
-                color: var(--gray-600);
-            }
-            
-            .section-header h4 {
-                margin: 0;
-                font-size: 15px;
-                font-weight: 600;
-                color: var(--gray-800);
-            }
-            
-            .section-content {
-                padding: 16px;
-            }
-            
-            .section-text {
-                font-size: 14px;
+
+            .task-description {
+                font-size: 1rem;
                 line-height: 1.6;
                 color: var(--gray-700);
+                margin: 0;
             }
-            
-            .section-textarea {
-                width: 100%;
-                padding: 10px 12px;
-                border: 1px solid var(--gray-300);
-                border-radius: 6px;
-                font-size: 14px;
-                line-height: 1.5;
-                resize: vertical;
-                min-height: 60px;
-            }
-            
-            .section-textarea:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-            
-            .urgent-text {
-                color: var(--danger);
-                font-weight: 500;
-            }
-            
-            .response-expected {
-                color: var(--info);
-            }
-            
-            /* Actions List */
-            .actions-list {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .action-item {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            
-            .action-number {
-                width: 24px;
-                height: 24px;
-                background: var(--primary);
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-            
-            .action-text {
-                flex: 1;
-                font-size: 14px;
-                color: var(--gray-700);
-            }
-            
-            .action-deadline {
-                font-size: 12px;
-                color: var(--danger);
-                font-weight: 500;
-                white-space: nowrap;
-            }
-            
-            .action-item-edit {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin-bottom: 8px;
-            }
-            
-            .action-input {
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid var(--gray-300);
-                border-radius: 6px;
-                font-size: 13px;
-            }
-            
-            .action-input:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-            
-            /* Info Grid */
+
             .info-grid {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .info-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-                font-size: 13px;
-                color: var(--gray-700);
-                line-height: 1.4;
-            }
-            
-            .info-item i {
-                font-size: 10px;
-                color: var(--gray-400);
-                margin-top: 4px;
-            }
-            
-            /* Attention Section */
-            .attention-section {
-                background: #fef3c7;
-                border-color: #fbbf24;
-            }
-            
-            .attention-section .section-header {
-                background: #fef9e8;
-                border-bottom-color: #fbbf24;
-            }
-            
-            .attention-section .section-header i {
-                color: var(--warning);
-            }
-            
-            .attention-list {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .attention-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 10px;
-                background: #fffbeb;
-                border: 1px solid #fde68a;
-                border-radius: 6px;
-                padding: 10px 12px;
-            }
-            
-            .attention-item i {
-                font-size: 14px;
-                color: var(--warning);
-                margin-top: 2px;
-            }
-            
-            .attention-item span {
-                flex: 1;
-                font-size: 13px;
-                color: #92400e;
-                line-height: 1.4;
-            }
-            
-            /* Email Section */
-            .email-section {
-                background: #f0f9ff;
-                border-color: #7dd3fc;
-            }
-            
-            .email-section h3 {
-                background: #e0f2fe;
-                border-bottom-color: #7dd3fc;
-                color: #075985;
-            }
-            
-            .email-header-info {
-                background: white;
-                border: 1px solid #bae6fd;
-                border-radius: 6px;
-                padding: 12px;
-                margin-bottom: 16px;
-            }
-            
-            .email-field {
-                font-size: 13px;
-                color: var(--gray-700);
-                margin-bottom: 4px;
-            }
-            
-            .email-field:last-child {
-                margin-bottom: 0;
-            }
-            
-            .email-address {
-                color: var(--gray-600);
-            }
-            
-            .email-content-container {
-                border: 1px solid #bae6fd;
-                border-radius: 6px;
-                overflow: hidden;
-                background: white;
-            }
-            
-            .email-content-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 10px 16px;
-                background: #f0f9ff;
-                border-bottom: 1px solid #bae6fd;
-            }
-            
-            .email-content-header h4 {
-                margin: 0;
-                font-size: 14px;
-                font-weight: 600;
-                color: #075985;
-            }
-            
-            .email-type-badge {
-                font-size: 11px;
-                padding: 2px 8px;
-                background: #dbeafe;
-                color: #1e40af;
-                border-radius: 12px;
-                font-weight: 600;
-            }
-            
-            .email-content-box {
-                padding: 16px;
-                max-height: 600px;
-                overflow-y: auto;
-                position: relative;
-                background: white;
-            }
-            
-            .email-content-box.text-content {
-                font-family: 'Courier New', monospace;
-                white-space: pre-wrap;
-            }
-            
-            .email-content-box.html-content {
-                background: #fafafa;
-            }
-            
-            .email-content-box::-webkit-scrollbar {
-                width: 8px;
-            }
-            
-            .email-content-box::-webkit-scrollbar-track {
-                background: #f1f1f1;
-                border-radius: 4px;
-            }
-            
-            .email-content-box::-webkit-scrollbar-thumb {
-                background: #888;
-                border-radius: 4px;
-            }
-            
-            .email-content-box::-webkit-scrollbar-thumb:hover {
-                background: #555;
-            }
-            
-            .formatted-content {
-                font-size: 14px;
-                line-height: 1.6;
-                color: var(--gray-700);
-                word-wrap: break-word;
-            }
-            
-            .email-html-container {
-                position: relative;
-                overflow: visible;
-                background: white;
-                min-height: 200px;
-            }
-            
-            .email-html-content {
-                padding: 0;
-                font-size: 14px;
-                line-height: 1.6;
-                color: var(--gray-700);
-                overflow-x: auto;
-                max-width: 100%;
-            }
-            
-            .email-html-content * {
-                max-width: 100% !important;
-                height: auto !important;
-            }
-            
-            .email-html-content img {
-                max-width: 100% !important;
-                height: auto !important;
-                display: block;
-                margin: 10px 0;
-            }
-            
-            .email-html-content table {
-                max-width: 100% !important;
-                width: auto !important;
-                border-collapse: collapse;
-                margin: 10px 0;
-            }
-            
-            .email-html-content td,
-            .email-html-content th {
-                padding: 4px 8px;
-                border: 1px solid var(--gray-200);
-            }
-            
-            /* Metadata Section */
-            .metadata-section h3 {
-                background: var(--gray-50);
-                border-bottom: 1px solid var(--gray-200);
-            }
-            
-            .metadata-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
+                gap: 1rem;
             }
-            
-            .metadata-item {
+
+            .info-item {
                 display: flex;
                 flex-direction: column;
-                gap: 4px;
+                gap: 0.25rem;
             }
-            
-            .metadata-item label {
-                font-size: 12px;
+
+            .info-item label {
+                font-size: 0.875rem;
                 font-weight: 600;
                 color: var(--gray-600);
                 text-transform: uppercase;
+                letter-spacing: 0.025em;
             }
-            
-            .metadata-value {
-                font-size: 14px;
-                color: var(--gray-800);
-            }
-            
-            .tag {
-                display: inline-block;
-                padding: 2px 8px;
-                background: var(--gray-200);
-                color: var(--gray-700);
-                border-radius: 12px;
-                font-size: 12px;
-                margin-right: 4px;
-            }
-            
-            .edit-selectors {
-                display: flex;
-                gap: 16px;
-                margin-top: 16px;
-                padding-top: 16px;
-                border-top: 1px solid var(--gray-200);
-            }
-            
-            .selector-item {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-            }
-            
-            .selector-item label {
-                font-size: 12px;
-                font-weight: 600;
-                color: var(--gray-600);
-                text-transform: uppercase;
-            }
-            
-            /* History Section */
-            .history-section {
-                background: var(--gray-50);
-            }
-            
-            .history-items {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .history-item {
-                display: flex;
-                justify-content: space-between;
-                font-size: 13px;
-                color: var(--gray-600);
-            }
-            
-            .history-item strong {
-                font-weight: 600;
-            }
-            
-            /* AI Section */
-            .ai-section {
-                background: #f3f4f6;
-                border-color: var(--gray-400);
-            }
-            
-            .ai-section h3 {
-                background: #e5e7eb;
-                border-bottom-color: var(--gray-400);
-                color: var(--gray-600);
-            }
-            
-            .ai-block {
-                margin-bottom: 16px;
-            }
-            
-            .ai-block:last-child {
-                margin-bottom: 0;
-            }
-            
-            .ai-block h4 {
-                margin: 0 0 8px 0;
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--gray-700);
-            }
-            
-            .ai-block p {
-                margin: 0;
-                font-size: 13px;
-                color: var(--gray-600);
-                line-height: 1.5;
-            }
-            
-            .action-list, .info-list {
-                margin: 0;
-                padding-left: 20px;
-                font-size: 13px;
-                color: var(--gray-600);
-            }
-            
-            .action-list li, .info-list li {
-                margin-bottom: 4px;
-            }
-            
-            .ai-metadata {
-                display: flex;
-                gap: 16px;
-                margin-top: 12px;
-                padding-top: 12px;
-                border-top: 1px solid var(--gray-300);
-                font-size: 12px;
-                color: var(--gray-500);
-            }
-            
-            /* Reply Section */
-            .reply-section-integrated {
-                margin-top: 20px;
-                padding: 16px;
-                background: #f0f9ff;
-                border: 1px solid #7dd3fc;
-                border-radius: 8px;
-            }
-            
-            .reply-wrapper h4 {
-                margin: 0 0 16px 0;
-                font-size: 16px;
-                color: #075985;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .inline-suggestions {
-                margin-bottom: 16px;
-            }
-            
-            .inline-suggestions label {
-                display: block;
-                margin-bottom: 8px;
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--gray-700);
-            }
-            
-            .suggestion-pills {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-            
-            .suggestion-pill {
-                padding: 6px 12px;
-                border: 1px solid var(--gray-300);
-                border-radius: 20px;
-                background: white;
-                font-size: 13px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            
-            .suggestion-pill:hover {
-                background: var(--gray-50);
-                border-color: var(--gray-400);
-            }
-            
-            .compact-reply-form {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .reply-fields {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            
-            .field-row {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .field-row label {
-                width: 60px;
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--gray-700);
-            }
-            
-            .field-row .form-input {
-                flex: 1;
-            }
-            
-            .reply-content-area {
-                margin-top: 8px;
-            }
-            
-            .reply-actions {
-                display: flex;
-                justify-content: flex-end;
-                gap: 8px;
-                margin-top: 12px;
-            }
-            
-            /* Sender Context */
-            .sender-context-box {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                background: var(--gray-100);
-                border: 1px solid var(--gray-200);
-                border-radius: 8px;
-                padding: 12px;
-                margin-bottom: 20px;
-            }
-            
-            .sender-avatar-small {
-                width: 48px;
-                height: 48px;
-                background: linear-gradient(135deg, var(--primary), var(--primary-light));
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-                font-weight: 600;
-            }
-            
-            .sender-details {
-                flex: 1;
-            }
-            
-            .sender-name-bold {
-                font-weight: 700;
-                color: var(--gray-800);
-                font-size: 16px;
-            }
-            
-            .sender-email-small {
-                font-size: 13px;
-                color: var(--gray-600);
-            }
-            
-            .sender-domain {
-                font-size: 12px;
-                color: var(--gray-500);
+
+            .info-item span {
+                font-size: 1rem;
+                color: var(--gray-900);
                 font-weight: 500;
             }
-            
-            /* Formulaires */
-            .form-group {
-                margin-bottom: 20px;
+
+            .tags-display {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
             }
-            
+
+            .email-info {
+                background: linear-gradient(135deg, var(--primary-50), var(--white));
+                border: 1px solid var(--primary-200);
+            }
+
+            .email-info h4 {
+                color: var(--primary-700);
+            }
+
+            .email-details {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+            }
+
+            .email-field {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .email-field label {
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: var(--primary-600);
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+            }
+
+            .email-field span {
+                font-size: 0.875rem;
+                color: var(--gray-700);
+            }
+
+            .email-actions {
+                padding-top: 1rem;
+                border-top: 1px solid var(--primary-200);
+            }
+
+            /* Forms */
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+
             .form-label {
                 display: block;
-                font-size: 14px;
+                font-size: 0.875rem;
                 font-weight: 600;
                 color: var(--gray-700);
-                margin-bottom: 8px;
+                margin-bottom: 0.5rem;
             }
-            
+
+            .required {
+                color: var(--danger-500);
+            }
+
             .form-input,
             .form-select,
             .form-textarea {
                 width: 100%;
-                padding: 10px 16px;
+                padding: 0.75rem 1rem;
                 border: 2px solid var(--gray-200);
-                border-radius: 10px;
-                font-size: 14px;
-                transition: all 0.3s ease;
-                background: white;
+                border-radius: var(--radius-lg);
+                font-size: 1rem;
+                transition: all 0.2s ease;
+                background: var(--white);
             }
-            
+
             .form-input:focus,
             .form-select:focus,
             .form-textarea:focus {
                 outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+                border-color: var(--primary-500);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
-            
+
             .form-textarea {
                 resize: vertical;
-                min-height: 100px;
+                min-height: 120px;
+                line-height: 1.5;
             }
-            
+
             .form-row {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 16px;
+                gap: 1rem;
             }
-            
-            .required {
-                color: var(--danger);
-            }
-            
+
             /* Loading */
-            .loading-state {
+            .loading-container {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                padding: 60px;
+                padding: 4rem 2rem;
+                text-align: center;
             }
-            
-            .spinner {
-                width: 40px;
-                height: 40px;
+
+            .loading-spinner {
+                width: 3rem;
+                height: 3rem;
                 border: 3px solid var(--gray-200);
                 border-radius: 50%;
-                border-top-color: var(--primary);
+                border-top-color: var(--primary-500);
                 animation: spin 1s linear infinite;
+                margin-bottom: 1rem;
             }
-            
+
             @keyframes spin {
                 to { transform: rotate(360deg); }
             }
-            
-            /* Responsive */
-            @media (max-width: 1400px) {
-                .inline-filters {
-                    gap: 4px;
+
+            .loading-text {
+                font-size: 1.125rem;
+                color: var(--gray-600);
+                font-weight: 500;
+                margin: 0;
+            }
+
+            .error-message {
+                background: var(--danger-50);
+                color: var(--danger-700);
+                border: 1px solid var(--danger-200);
+                border-radius: var(--radius-lg);
+                padding: 1rem;
+                text-align: center;
+                font-weight: 500;
+            }
+
+            /* Toast notifications */
+            .toast {
+                position: fixed;
+                bottom: 1.5rem;
+                right: 1.5rem;
+                background: var(--white);
+                border: 1px solid var(--gray-200);
+                border-radius: var(--radius-lg);
+                box-shadow: var(--shadow-xl);
+                padding: 1rem 1.5rem;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                z-index: 1100;
+                max-width: 400px;
+            }
+
+            .toast.show {
+                transform: translateX(0);
+            }
+
+            .toast-success {
+                border-color: var(--success-200);
+                background: var(--success-50);
+                color: var(--success-800);
+            }
+
+            .toast-error {
+                border-color: var(--danger-200);
+                background: var(--danger-50);
+                color: var(--danger-800);
+            }
+
+            .toast-info {
+                border-color: var(--primary-200);
+                background: var(--primary-50);
+                color: var(--primary-800);
+            }
+
+            .toast-content {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 500;
+            }
+
+            /* Responsive design */
+            @media (max-width: 1024px) {
+                .tasks-grid {
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 1rem;
+                    padding: 1rem;
                 }
-                
-                .filter-dropdown.compact .filter-button {
-                    padding: 8px;
-                    font-size: 11px;
+
+                .list-header,
+                .list-row {
+                    grid-template-columns: 2.5rem 1fr 100px 100px 80px;
+                    gap: 0.75rem;
+                    padding: 0.75rem 1rem;
                 }
-                
-                .filter-dropdown.compact .filter-button > span {
-                    max-width: 70px;
-                }
-                
-                .filter-dropdown.compact .filter-button > i:first-child {
-                    font-size: 11px;
+
+                .list-header-cell:nth-child(5),
+                .list-cell:nth-child(5),
+                .list-header-cell:nth-child(6),
+                .list-cell:nth-child(6) {
+                    display: none;
                 }
             }
-            
-            @media (max-width: 1200px) {
-                .filters-row {
-                    padding: 10px 12px;
-                    gap: 8px;
-                }
-                
-                .inline-search {
-                    flex: 0 1 180px;
-                }
-                
-                .filter-dropdown.compact .filter-button > span {
-                    max-width: 60px;
-                }
-            }
-            
-            @media (max-width: 992px) {
-                .filters-row {
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: 10px;
-                }
-                
-                .inline-search {
-                    width: 100%;
-                    max-width: 100%;
-                    flex: 1;
-                }
-                
-                .inline-filters {
-                    width: 100%;
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                    gap: 6px;
-                }
-                
-                .filter-dropdown.compact .filter-button {
-                    width: 100%;
-                    justify-content: space-between;
-                }
-                
-                .filter-dropdown.compact .filter-button > span {
-                    max-width: none;
-                }
-                
-                .reset-btn {
-                    grid-column: 1 / -1;
-                    width: 100%;
-                    margin-left: 0;
-                }
-            }
-            
+
             @media (max-width: 768px) {
-                .tasks-page {
-                    padding: 12px;
+                .task-manager-app {
+                    padding: 1rem;
                 }
-                
-                .stats-grid {
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 8px;
+
+                .main-title {
+                    font-size: 2rem;
                 }
-                
-                .stat-card {
-                    padding: 12px;
-                }
-                
-                .stat-value {
-                    font-size: 20px;
-                }
-                
-                .stat-label {
-                    font-size: 10px;
-                }
-                
-                .inline-filters {
-                    grid-template-columns: repeat(2, 1fr);
-                }
-                
-                .bulk-actions {
+
+                .header-content {
                     flex-direction: column;
                     align-items: stretch;
-                    padding: 10px 12px;
                 }
-                
-                .bulk-buttons {
+
+                .header-title {
+                    min-width: auto;
+                    text-align: center;
+                }
+
+                .quick-stats {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 0.75rem;
+                }
+
+                .stat-card {
+                    padding: 1rem;
+                }
+
+                .stat-number {
+                    font-size: 1.5rem;
+                }
+
+                .filter-chips {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 1rem;
+                }
+
+                .filter-group {
+                    flex-direction: column;
+                    gap: 0.5rem;
+                }
+
+                .filter-chip {
+                    justify-content: space-between;
                     width: 100%;
-                    justify-content: stretch;
                 }
-                
-                .bulk-buttons .btn {
-                    flex: 1;
+
+                .view-controls {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 1rem;
                 }
-                
-                .task-header {
+
+                .tasks-grid {
+                    grid-template-columns: 1fr;
+                    padding: 1rem;
+                }
+
+                .list-header,
+                .list-row {
+                    grid-template-columns: 2rem 1fr 60px;
+                    gap: 0.5rem;
+                    padding: 0.75rem;
+                }
+
+                .list-header-cell:nth-child(n+4),
+                .list-cell:nth-child(n+4) {
+                    display: none;
+                }
+
+                .task-title-container {
                     flex-direction: column;
                     align-items: flex-start;
-                    gap: 4px;
+                    gap: 0.25rem;
                 }
-                
-                .task-badges {
-                    margin-top: 4px;
+
+                .task-indicators {
+                    margin-top: 0.25rem;
                 }
-                
+
+                .bulk-actions {
+                    flex-direction: column;
+                    gap: 1rem;
+                }
+
+                .bulk-action-buttons {
+                    justify-content: stretch;
+                }
+
+                .bulk-btn {
+                    flex: 1;
+                    justify-content: center;
+                }
+
                 .form-row {
                     grid-template-columns: 1fr;
                 }
-                
-                .modal-container {
-                    width: 95%;
-                    margin: 10px;
+
+                .modal-overlay {
+                    padding: 0.5rem;
+                }
+
+                .task-modal,
+                .create-modal {
+                    max-height: 95vh;
+                }
+
+                .modal-body {
+                    padding: 1rem;
+                }
+
+                .modal-footer {
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+
+                .modal-footer .btn-primary,
+                .modal-footer .btn-secondary {
+                    width: 100%;
+                    justify-content: center;
+                }
+
+                .info-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .task-manager-app {
+                    padding: 0.75rem;
+                }
+
+                .main-title {
+                    font-size: 1.75rem;
+                }
+
+                .quick-stats {
+                    grid-template-columns: 1fr;
+                }
+
+                .stat-card {
+                    padding: 0.75rem;
+                }
+
+                .smart-filters {
+                    padding: 1rem;
+                }
+
+                .search-container {
+                    max-width: 100%;
+                }
+
+                .tasks-grid {
+                    padding: 0.75rem;
+                }
+
+                .task-card {
+                    border-radius: var(--radius-md);
+                }
+
+                .card-header,
+                .card-content {
+                    padding: 0.75rem;
+                }
+
+                .card-footer {
+                    padding: 0 0.75rem 0.75rem 0.75rem;
                 }
             }
         `;
@@ -4893,7 +3460,7 @@ closeModal(modalId) {
 // GLOBAL INITIALIZATION
 // =====================================
 
-// Create global instances
+// Créer les instances globales
 if (!window.taskManager) {
     window.taskManager = new TaskManager();
 }
@@ -4915,4 +3482,4 @@ Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
     }
 });
 
-console.log('✅ TaskManager v6.0 loaded - Interface moderne avec filtres avancés et corrections z-index');
+console.log('✅ TaskManager v7.0 loaded - Interface optimisée user-friendly avec design moderne');
