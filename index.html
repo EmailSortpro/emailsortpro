@@ -35,6 +35,16 @@
                 cache: {
                     cacheLocation: 'localStorage',
                     storeAuthStateInCookie: true
+                },
+                system: {
+                    loggerOptions: {
+                        loggerCallback: (level, message, containsPii) => {
+                            console.log(`[MSAL ${level}] ${message}`);
+                        },
+                        piiLoggingEnabled: false,
+                        logLevel: 'Warning'
+                    },
+                    allowNativeBroker: false
                 }
             },
             scopes: {
@@ -42,7 +52,56 @@
                     'https://graph.microsoft.com/User.Read',
                     'https://graph.microsoft.com/Mail.Read',
                     'https://graph.microsoft.com/Mail.ReadWrite'
+                ],
+                silent: [
+                    'https://graph.microsoft.com/User.Read',
+                    'https://graph.microsoft.com/Mail.Read',
+                    'https://graph.microsoft.com/Mail.ReadWrite'
                 ]
+            },
+            app: {
+                name: 'EmailSortPro',
+                version: '3.0.0',
+                debug: false,
+                environment: 'netlify'
+            },
+            email: {
+                defaultFolder: 'inbox',
+                defaultDays: 30,
+                pageSize: 100,
+                maxEmails: 10000
+            },
+            errors: {
+                'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
+                'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
+                'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+                'interaction_required': 'Reconnexion requise.',
+                'login_required': 'Connexion requise.',
+                'network_error': 'Erreur réseau. Vérifiez votre connexion.',
+                'token_expired': 'Session expirée. Reconnexion nécessaire.'
+            },
+            validate() {
+                const issues = [];
+                if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
+                    issues.push('Client ID non configuré');
+                }
+                return { 
+                    valid: issues.length === 0, 
+                    issues: issues 
+                };
+            },
+            forceValidate() {
+                return this.validate();
+            },
+            getDebugInfo() {
+                return {
+                    hostname: window.location.hostname,
+                    origin: window.location.origin,
+                    environment: this.app.environment,
+                    configValid: this.validate().valid,
+                    clientId: this.msal.clientId ? this.msal.clientId.substring(0, 8) + '...' : 'MISSING',
+                    timestamp: new Date().toISOString()
+                };
             }
         };
         
@@ -160,7 +219,7 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
-            height: 64px;
+            height: 68px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -199,17 +258,18 @@
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
+            gap: 8px;
+            padding: 10px 16px;
             border-radius: 6px;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             font-weight: 500;
             color: #64748b;
             transition: all 0.2s ease;
             text-decoration: none;
+            min-height: 40px;
         }
 
         .nav-item:hover {
@@ -223,7 +283,7 @@
         }
 
         .nav-item i {
-            font-size: 0.875rem;
+            font-size: 1rem;
         }
 
         /* Infos utilisateur */
@@ -287,7 +347,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 64px;
+            margin-top: 68px;
         }
 
         body.app-active .page-content {
@@ -429,7 +489,7 @@
             }
 
             body.app-active .app-main {
-                margin-top: 56px;
+                margin-top: 60px;
             }
 
             .page-content {
@@ -707,6 +767,41 @@
         window.displayUserInfo = displayUserInfo;
         window.showApp = showApp;
         window.navigateToPage = navigateToPage;
+        
+        // Créer les services manquants si nécessaire
+        if (!window.uiManager) {
+            window.uiManager = {
+                showToast: function(message, type = 'info', duration = 5000) {
+                    console.log(`[Toast ${type}] ${message}`);
+                    // Toast simple si pas d'UIManager
+                    const toast = document.createElement('div');
+                    toast.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 12px 20px;
+                        background: ${type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#4f46e5'};
+                        color: white;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                        z-index: 10000;
+                        font-size: 14px;
+                        max-width: 300px;
+                    `;
+                    toast.textContent = message;
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        if (toast.parentNode) toast.parentNode.removeChild(toast);
+                    }, duration);
+                },
+                updateAuthStatus: function(user) {
+                    if (user) {
+                        displayUserInfo(user);
+                    }
+                }
+            };
+        }
         
         console.log('[APP] Application script loaded successfully');
     </script>
