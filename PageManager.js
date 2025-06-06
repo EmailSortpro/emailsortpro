@@ -2197,15 +2197,16 @@ Cordialement,
         const styles = document.createElement('style');
         styles.id = 'optimizedEmailPageStyles';
         styles.textContent = `
-            /* Layout principal - ULTRA COMPACT sans espaces inutiles */
+            /* Layout principal - SUPPRESSION TOTALE des espaces et traits */
             .emails-main-toolbar {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 8px 0;
-                border-bottom: 1px solid #e5e7eb;
-                margin-bottom: 8px;
-                min-height: 40px;
+                padding: 4px 0;
+                border: none;
+                margin: 0;
+                min-height: 44px;
+                background: transparent;
             }
             
             .toolbar-left {
@@ -2218,24 +2219,24 @@ Cordialement,
             
             .emails-title {
                 margin: 0;
-                font-size: 22px;
+                font-size: 24px;
                 font-weight: 700;
                 color: #1f2937;
             }
             
             .emails-count-large {
-                font-size: 13px;
+                font-size: 14px;
                 color: #6b7280;
                 font-weight: 600;
                 background: #f3f4f6;
-                padding: 2px 8px;
-                border-radius: 10px;
+                padding: 4px 10px;
+                border-radius: 12px;
             }
             
             .toolbar-center {
                 flex: 1;
-                max-width: 350px;
-                min-width: 200px;
+                max-width: 400px;
+                min-width: 250px;
             }
             
             .search-wrapper-large {
@@ -2245,41 +2246,41 @@ Cordialement,
             
             .search-input-large {
                 width: 100%;
-                padding: 8px 12px 8px 32px;
+                padding: 12px 16px 12px 44px;
                 border: 1px solid #d1d5db;
-                border-radius: 8px;
-                font-size: 13px;
+                border-radius: 10px;
+                font-size: 14px;
                 background: white;
                 transition: all 0.2s ease;
-                box-shadow: none;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
             
             .search-input-large:focus {
                 outline: none;
                 border-color: #667eea;
-                box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             }
             
             .search-icon-large {
                 position: absolute;
-                left: 10px;
+                left: 16px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 14px;
+                font-size: 16px;
             }
             
             .search-clear-large {
                 position: absolute;
-                right: 8px;
+                right: 12px;
                 top: 50%;
                 transform: translateY(-50%);
                 background: none;
                 border: none;
                 color: #9ca3af;
                 cursor: pointer;
-                padding: 2px;
-                border-radius: 3px;
+                padding: 4px;
+                border-radius: 4px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2297,28 +2298,28 @@ Cordialement,
             
             .view-modes-large {
                 display: flex;
-                gap: 2px;
+                gap: 4px;
                 background: #f3f4f6;
-                padding: 2px;
-                border-radius: 6px;
+                padding: 4px;
+                border-radius: 8px;
             }
             
             .toolbar-right {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
                 flex-shrink: 0;
             }
             
             .selection-info-large {
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                padding: 6px 10px;
+                gap: 8px;
+                padding: 8px 12px;
                 background: #eff6ff;
                 border: 1px solid #bfdbfe;
-                border-radius: 6px;
-                font-size: 12px;
+                border-radius: 8px;
+                font-size: 13px;
                 color: #1e40af;
             }
             
@@ -2326,25 +2327,25 @@ Cordialement,
                 font-weight: 600;
             }
             
-            /* Boutons ULTRA COMPACTS */
+            /* Boutons de BONNE TAILLE mais sans espaces perdus */
             .btn-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 4px;
-                padding: 6px 12px;
+                gap: 6px;
+                padding: 10px 16px;
                 border: 1px solid #d1d5db;
-                border-radius: 6px;
+                border-radius: 8px;
                 background: white;
                 color: #374151;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 text-decoration: none;
                 white-space: nowrap;
-                min-height: 32px;
+                min-height: 40px;
                 box-sizing: border-box;
-                box-shadow: none;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
             
             .btn-large:hover {
@@ -2352,14 +2353,14 @@ Cordialement,
                 border-color: #9ca3af;
                 color: #1f2937;
                 transform: translateY(-1px);
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             
             .btn-large.active {
                 background: #667eea;
                 color: white;
                 border-color: #667eea;
-                box-shadow: 0 1px 3px rgba(102, 126, 234, 0.2);
+                box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
             }
             
             .btn-large.btn-primary-large {
@@ -2372,7 +2373,7 @@ Cordialement,
                 background: #5a67d8;
                 border-color: #5a67d8;
                 transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 3px 8px rgba(102, 126, 234, 0.3);
             }
             
             .btn-large.btn-secondary-large {
@@ -2391,41 +2392,40 @@ Cordialement,
                 font-weight: 600;
             }
             
-            /* Filtres de catégories ULTRA COMPACTS */
+            /* Filtres de catégories SANS ESPACES avec bons boutons */
             .category-filters-large {
                 display: flex;
-                gap: 6px;
+                gap: 8px;
                 flex-wrap: wrap;
-                margin-bottom: 8px;
-                padding: 8px 12px;
-                background: #f8fafc;
-                border-radius: 8px;
-                border: 1px solid #e2e8f0;
+                margin: 0;
+                padding: 0;
+                background: transparent;
+                border: none;
             }
             
             .category-pill-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
-                padding: 6px 10px;
+                gap: 8px;
+                padding: 10px 16px;
                 border: 1px solid #d1d5db;
-                border-radius: 6px;
+                border-radius: 8px;
                 background: white;
                 color: #374151;
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                min-height: 32px;
+                min-height: 40px;
                 box-sizing: border-box;
-                box-shadow: none;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
             
             .category-pill-large:hover {
                 border-color: var(--cat-color, #667eea);
-                background: var(--cat-color, #667eea)08;
+                background: var(--cat-color, #667eea)10;
                 transform: translateY(-1px);
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             }
             
             .category-pill-large.active {
@@ -2433,25 +2433,25 @@ Cordialement,
                 color: white;
                 border-color: var(--cat-color, #667eea);
                 transform: translateY(-1px);
-                box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             }
             
             .pill-icon-large {
-                font-size: 14px;
+                font-size: 16px;
             }
             
             .pill-text-large {
                 font-weight: 600;
-                font-size: 13px;
+                font-size: 14px;
             }
             
             .pill-count-large {
                 background: rgba(0,0,0,0.1);
-                padding: 1px 6px;
-                border-radius: 8px;
-                font-size: 11px;
+                padding: 3px 8px;
+                border-radius: 10px;
+                font-size: 12px;
                 font-weight: 700;
-                min-width: 18px;
+                min-width: 20px;
                 text-align: center;
             }
             
@@ -3181,23 +3181,23 @@ Cordialement,
                 color: #78350f;
             }
             
-            /* Responsive design ULTRA COMPACT */
+            /* Responsive design - SANS ESPACES avec bons boutons */
             @media (max-width: 1200px) {
                 .emails-main-toolbar {
                     flex-wrap: wrap;
-                    gap: 8px;
+                    gap: 10px;
                 }
                 
                 .toolbar-center {
                     order: 3;
                     flex: 1 1 100%;
                     max-width: none;
-                    margin: 4px 0;
+                    margin: 4px 0 0 0;
                 }
                 
                 .view-modes-large {
                     flex-wrap: wrap;
-                    gap: 1px;
+                    gap: 3px;
                 }
             }
             
@@ -3208,9 +3208,9 @@ Cordialement,
                 
                 .emails-main-toolbar {
                     flex-direction: column;
-                    gap: 6px;
+                    gap: 8px;
                     align-items: stretch;
-                    padding: 6px 0;
+                    padding: 4px 0;
                 }
                 
                 .toolbar-left,
@@ -3230,21 +3230,21 @@ Cordialement,
                 }
                 
                 .category-filters-large {
-                    padding: 6px 8px;
-                    gap: 4px;
-                    margin-bottom: 6px;
+                    padding: 0;
+                    gap: 6px;
+                    margin: 0;
                 }
                 
                 .btn-large {
-                    padding: 4px 8px;
-                    font-size: 12px;
-                    min-height: 28px;
+                    padding: 8px 12px;
+                    font-size: 13px;
+                    min-height: 36px;
                 }
                 
                 .category-pill-large {
-                    padding: 4px 8px;
-                    font-size: 12px;
-                    min-height: 28px;
+                    padding: 8px 12px;
+                    font-size: 13px;
+                    min-height: 36px;
                 }
                 
                 .pill-text-large {
@@ -3252,22 +3252,22 @@ Cordialement,
                 }
                 
                 .emails-title {
-                    font-size: 18px;
+                    font-size: 20px;
                 }
                 
                 .emails-count-large {
-                    font-size: 11px;
-                    padding: 2px 6px;
+                    font-size: 12px;
+                    padding: 3px 8px;
                 }
                 
                 .search-input-large {
-                    padding: 6px 8px 6px 28px;
-                    font-size: 12px;
+                    padding: 10px 12px 10px 36px;
+                    font-size: 13px;
                 }
                 
                 .search-icon-large {
-                    left: 8px;
-                    font-size: 12px;
+                    left: 12px;
+                    font-size: 14px;
                 }
             }
         `;
