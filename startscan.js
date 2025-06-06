@@ -18,18 +18,36 @@ class ModernScanStartModule {
         const styles = document.createElement('style');
         styles.id = 'modern-minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Moderne Corrigé */
+            /* Scanner Ultra-Moderne avec espace bleu */
             .modern-scanner {
                 height: calc(100vh - 150px);
                 display: flex;
+                flex-direction: column;
                 align-items: center;
-                justify-content: center;
-                padding: 25px 20px 20px 20px;
+                justify-content: flex-start;
+                padding: 0;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin-top: 15px;
+                margin-top: 0;
                 border-radius: 0;
                 position: relative;
                 overflow: hidden;
+                box-sizing: border-box;
+            }
+            
+            .blue-space {
+                width: 100%;
+                height: 80px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                flex-shrink: 0;
+            }
+            
+            .scanner-container {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+                width: 100%;
                 box-sizing: border-box;
             }
             
@@ -47,8 +65,8 @@ class ModernScanStartModule {
                 background: rgba(255, 255, 255, 0.98);
                 backdrop-filter: blur(20px);
                 border-radius: 24px;
-                padding: 25px 30px;
-                max-width: 750px;
+                padding: 35px 40px;
+                max-width: 800px;
                 width: 100%;
                 text-align: center;
                 box-shadow: 
@@ -71,72 +89,23 @@ class ModernScanStartModule {
                 background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
             }
             
-            /* Header avec bouton paramètres visible */
+            /* Header sans bouton paramètres */
             .modern-header {
-                margin-bottom: 22px;
+                margin-bottom: 30px;
                 flex-shrink: 0;
                 position: relative;
             }
             
-            .header-top {
-                display: flex;
-                justify-content: flex-end;
-                align-items: flex-start;
-                margin-bottom: 12px;
-                position: absolute;
-                top: -18px;
-                right: -25px;
-                z-index: 20;
-            }
-            
-            .settings-link {
-                background: rgba(255, 255, 255, 0.95);
-                border: 2px solid rgba(102, 126, 234, 0.4);
-                border-radius: 12px;
-                padding: 8px 12px;
-                color: #667eea;
-                text-decoration: none;
-                font-size: 12px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                transition: all 0.3s ease;
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                z-index: 25;
-                position: relative;
-            }
-            
-            .settings-link:hover {
-                background: rgba(102, 126, 234, 0.1);
-                border-color: rgba(102, 126, 234, 0.6);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 18px rgba(102, 126, 234, 0.25);
-                color: #667eea;
-                text-decoration: none;
-            }
-            
-            .settings-link i {
-                font-size: 12px;
-                animation: rotate 3s linear infinite;
-            }
-            
-            @keyframes rotate {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-            
             .modern-logo {
-                width: 70px;
-                height: 70px;
+                width: 80px;
+                height: 80px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 18px;
+                border-radius: 20px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 15px;
-                font-size: 32px;
+                margin: 0 auto 20px;
+                font-size: 36px;
                 color: white;
                 box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4);
                 animation: gentlePulse 3s ease-in-out infinite;
@@ -148,27 +117,27 @@ class ModernScanStartModule {
             }
             
             .modern-title {
-                font-size: 28px;
+                font-size: 32px;
                 font-weight: 700;
                 color: #1a1a2e;
-                margin: 0 0 8px 0;
+                margin: 0 0 10px 0;
                 letter-spacing: -0.5px;
             }
             
             .modern-subtitle {
-                font-size: 16px;
+                font-size: 18px;
                 color: #6b7280;
-                margin: 0 0 22px 0;
+                margin: 0 0 30px 0;
                 font-weight: 400;
             }
 
-            /* Section unifiée simplifiée */
+            /* Section unifiée avec textes agrandis */
             .unified-explanation-section {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
-                padding: 18px 20px;
-                border-radius: 16px;
-                margin-bottom: 18px;
+                padding: 25px;
+                border-radius: 18px;
+                margin-bottom: 25px;
                 text-align: left;
                 position: relative;
                 overflow: hidden;
@@ -191,57 +160,57 @@ class ModernScanStartModule {
             }
             
             .unified-title {
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: 600;
-                margin-bottom: 14px;
+                margin-bottom: 18px;
                 text-align: center;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
+                gap: 10px;
             }
             
             .unified-content {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 18px;
+                gap: 25px;
             }
             
             .key-points {
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 16px;
             }
             
             .key-point {
                 display: flex;
                 align-items: flex-start;
-                gap: 10px;
-                font-size: 13px;
+                gap: 12px;
+                font-size: 15px;
                 line-height: 1.4;
             }
             
             .point-icon {
-                width: 26px;
-                height: 26px;
+                width: 30px;
+                height: 30px;
                 background: rgba(255, 255, 255, 0.25);
-                border-radius: 8px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
-                font-size: 11px;
+                font-size: 13px;
                 font-weight: 600;
             }
             
             .settings-hint {
-                margin-top: 14px;
-                padding: 12px;
+                margin-top: 18px;
+                padding: 15px;
                 background: rgba(255, 255, 255, 0.15);
-                border-radius: 10px;
+                border-radius: 12px;
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 text-align: center;
-                font-size: 12px;
+                font-size: 14px;
                 line-height: 1.4;
             }
             
@@ -258,17 +227,17 @@ class ModernScanStartModule {
                 color: white;
             }
             
-            /* Sélecteur de durée */
+            /* Sélecteur de durée avec textes agrandis */
             .duration-selector {
-                margin-bottom: 18px;
+                margin-bottom: 25px;
                 flex-shrink: 0;
             }
             
             .duration-label {
-                font-size: 14px;
+                font-size: 16px;
                 font-weight: 600;
                 color: #374151;
-                margin-bottom: 12px;
+                margin-bottom: 15px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }
@@ -276,20 +245,20 @@ class ModernScanStartModule {
             .duration-options {
                 display: grid;
                 grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
+                gap: 10px;
                 background: #f8fafc;
-                padding: 8px;
-                border-radius: 14px;
-                margin-bottom: 10px;
+                padding: 10px;
+                border-radius: 16px;
+                margin-bottom: 12px;
                 border: 1px solid #e2e8f0;
             }
             
             .duration-option {
-                padding: 12px 8px;
+                padding: 14px 10px;
                 border: none;
                 background: transparent;
-                border-radius: 10px;
-                font-size: 12px;
+                border-radius: 12px;
+                font-size: 14px;
                 font-weight: 500;
                 color: #64748b;
                 cursor: pointer;
@@ -302,7 +271,7 @@ class ModernScanStartModule {
                 background: white;
                 color: #667eea;
                 box-shadow: 
-                    0 2px 8px rgba(0, 0, 0, 0.1),
+                    0 3px 12px rgba(0, 0, 0, 0.12),
                     0 0 0 1px rgba(102, 126, 234, 0.15);
                 transform: translateY(-1px);
                 font-weight: 600;
@@ -314,24 +283,24 @@ class ModernScanStartModule {
             }
             
             .duration-info {
-                font-size: 12px;
+                font-size: 14px;
                 color: #9ca3af;
                 text-align: center;
                 font-weight: 500;
             }
             
-            /* Bouton de scan */
+            /* Bouton de scan agrandi */
             .scan-button-modern {
                 width: 100%;
-                height: 50px;
+                height: 55px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 border: none;
-                border-radius: 14px;
+                border-radius: 16px;
                 color: white;
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: 600;
                 cursor: pointer;
-                margin-bottom: 14px;
+                margin-bottom: 18px;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 position: relative;
                 overflow: hidden;
@@ -483,75 +452,71 @@ class ModernScanStartModule {
                 50% { transform: scale(1.1); }
             }
             
-            /* Info badge */
+            /* Info badge agrandi */
             .info-badge {
                 display: inline-flex;
                 align-items: center;
-                gap: 5px;
+                gap: 6px;
                 background: rgba(16, 185, 129, 0.1);
                 color: #059669;
-                padding: 6px 12px;
-                border-radius: 10px;
-                font-size: 11px;
+                padding: 8px 14px;
+                border-radius: 12px;
+                font-size: 13px;
                 font-weight: 500;
-                margin-top: 10px;
+                margin-top: 12px;
             }
             
             /* Responsive mobile */
             @media (max-width: 640px) {
-                .modern-scanner {
-                    height: calc(100vh - 120px);
-                    padding: 20px 15px 15px 15px;
-                    margin-top: 12px;
+                .blue-space {
+                    height: 60px;
+                }
+                
+                .scanner-container {
+                    padding: 15px;
                 }
                 
                 .scanner-card-modern {
-                    padding: 22px 18px;
+                    padding: 30px 25px;
                     border-radius: 20px;
                     max-width: none;
                 }
                 
-                .header-top {
-                    top: -15px;
-                    right: -18px;
-                }
-                
-                .settings-link {
-                    padding: 6px 8px;
-                    font-size: 10px;
-                }
-                
                 .modern-title {
-                    font-size: 24px;
+                    font-size: 26px;
                 }
                 
                 .modern-subtitle {
-                    font-size: 14px;
+                    font-size: 16px;
                 }
 
                 .unified-content {
                     grid-template-columns: 1fr;
-                    gap: 14px;
+                    gap: 18px;
                 }
                 
                 .unified-title {
+                    font-size: 16px;
+                }
+                
+                .key-point {
                     font-size: 14px;
                 }
 
                 .duration-options {
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 6px;
-                    padding: 6px;
+                    gap: 8px;
+                    padding: 8px;
                 }
                 
                 .duration-option {
-                    padding: 10px 6px;
-                    font-size: 11px;
+                    padding: 12px 8px;
+                    font-size: 13px;
                 }
                 
                 .scan-button-modern {
-                    height: 46px;
-                    font-size: 15px;
+                    height: 50px;
+                    font-size: 16px;
                 }
             }
             
@@ -627,121 +592,117 @@ class ModernScanStartModule {
     renderModernScanner(userInfo) {
         return `
             <div class="modern-scanner">
-                <div class="scanner-card-modern">
-                    <div class="modern-header">
-                        <div class="header-top">
-                            <a href="#" class="settings-link" onclick="window.modernScanModule.openSettings(); return false;" title="Personnaliser les paramètres de scan">
-                                <i class="fas fa-cog"></i>
-                                <span>Paramètres</span>
-                            </a>
+                <div class="blue-space"></div>
+                <div class="scanner-container">
+                    <div class="scanner-card-modern">
+                        <div class="modern-header">
+                            <div class="modern-logo">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h1 class="modern-title">Scanner intelligent</h1>
+                            <p class="modern-subtitle">Organisez vos emails automatiquement</p>
                         </div>
-                        
-                        <div class="modern-logo">
-                            <i class="fas fa-search"></i>
-                        </div>
-                        <h1 class="modern-title">Scanner intelligent</h1>
-                        <p class="modern-subtitle">Organisez vos emails automatiquement</p>
-                    </div>
 
-                    <div class="unified-explanation-section">
-                        <div class="unified-title">
-                            <i class="fas fa-lightbulb"></i>
-                            <span>Scanner IA ultra-rapide</span>
-                        </div>
-                        
-                        <div class="unified-content">
-                            <div class="key-points">
-                                <div class="key-point">
-                                    <div class="point-icon">
-                                        <i class="fas fa-zap"></i>
+                        <div class="unified-explanation-section">
+                            <div class="unified-title">
+                                <i class="fas fa-lightbulb"></i>
+                                <span>Scanner IA ultra-rapide</span>
+                            </div>
+                            
+                            <div class="unified-content">
+                                <div class="key-points">
+                                    <div class="key-point">
+                                        <div class="point-icon">
+                                            <i class="fas fa-zap"></i>
+                                        </div>
+                                        <span><strong>Économisez 2h par jour</strong> - Tri automatique intelligent de tous vos emails</span>
                                     </div>
-                                    <span><strong>Économisez 2h par jour</strong> - Tri automatique intelligent de tous vos emails</span>
+                                    
+                                    <div class="key-point">
+                                        <div class="point-icon">
+                                            <i class="fas fa-brain"></i>
+                                        </div>
+                                        <span><strong>IA qui apprend</strong> - S'adapte à vos habitudes et préférences</span>
+                                    </div>
                                 </div>
                                 
-                                <div class="key-point">
-                                    <div class="point-icon">
-                                        <i class="fas fa-brain"></i>
+                                <div class="key-points">
+                                    <div class="key-point">
+                                        <div class="point-icon">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <span><strong>100% sécurisé</strong> - Microsoft certified, aucune donnée stockée</span>
                                     </div>
-                                    <span><strong>IA qui apprend</strong> - S'adapte à vos habitudes et préférences</span>
+                                    
+                                    <div class="key-point">
+                                        <div class="point-icon">
+                                            <i class="fas fa-rocket"></i>
+                                        </div>
+                                        <span><strong>Résultats instantanés</strong> - Classification en temps réel</span>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="key-points">
-                                <div class="key-point">
-                                    <div class="point-icon">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </div>
-                                    <span><strong>100% sécurisé</strong> - Microsoft certified, aucune donnée stockée</span>
-                                </div>
-                                
-                                <div class="key-point">
-                                    <div class="point-icon">
-                                        <i class="fas fa-rocket"></i>
-                                    </div>
-                                    <span><strong>Résultats instantanés</strong> - Classification en temps réel</span>
-                                </div>
+                            <div class="settings-hint">
+                                💡 <strong>Astuce :</strong> Accédez aux 
+                                <span class="settings-hint-link" onclick="window.modernScanModule.openSettings()">paramètres avancés</span>
+                                depuis le menu pour personnaliser vos règles de tri
                             </div>
                         </div>
                         
-                        <div class="settings-hint">
-                            💡 <strong>Astuce :</strong> Cliquez sur 
-                            <span class="settings-hint-link" onclick="window.modernScanModule.openSettings()">Paramètres</span>
-                            pour personnaliser vos règles de tri et filtres avancés
-                        </div>
-                    </div>
-                    
-                    <div class="duration-selector">
-                        <div class="duration-label">Période d'analyse</div>
-                        <div class="duration-options">
-                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(1)" data-days="1">
-                                1 jour
-                            </button>
-                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(3)" data-days="3">
-                                3 jours
-                            </button>
-                            <button class="duration-option selected" onclick="window.modernScanModule.selectDuration(7)" data-days="7">
-                                7 jours
-                            </button>
-                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(15)" data-days="15">
-                                15 jours
-                            </button>
-                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(30)" data-days="30">
-                                30 jours
-                            </button>
-                        </div>
-                        <div class="duration-info" id="durationInfo">
-                            Analysera les emails des 7 derniers jours
-                        </div>
-                    </div>
-                    
-                    <div id="scanSection">
-                        <button class="scan-button-modern" id="modernScanBtn" onclick="window.modernScanModule.startModernScan()">
-                            <div class="scan-button-content">
-                                <i class="fas fa-play"></i>
-                                <span>Démarrer l'analyse</span>
+                        <div class="duration-selector">
+                            <div class="duration-label">Période d'analyse</div>
+                            <div class="duration-options">
+                                <button class="duration-option" onclick="window.modernScanModule.selectDuration(1)" data-days="1">
+                                    1 jour
+                                </button>
+                                <button class="duration-option" onclick="window.modernScanModule.selectDuration(3)" data-days="3">
+                                    3 jours
+                                </button>
+                                <button class="duration-option selected" onclick="window.modernScanModule.selectDuration(7)" data-days="7">
+                                    7 jours
+                                </button>
+                                <button class="duration-option" onclick="window.modernScanModule.selectDuration(15)" data-days="15">
+                                    15 jours
+                                </button>
+                                <button class="duration-option" onclick="window.modernScanModule.selectDuration(30)" data-days="30">
+                                    30 jours
+                                </button>
                             </div>
-                        </button>
-                        
-                        <div class="info-badge">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Scan sécurisé Microsoft</span>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-section-modern" id="progressSection">
-                        <div class="progress-percentage-text" id="progressPercentageText">0%</div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" id="progressBar"></div>
+                            <div class="duration-info" id="durationInfo">
+                                Analysera les emails des 7 derniers jours
+                            </div>
                         </div>
                         
-                        <div class="progress-details-modern">
-                            <div class="scan-timer" id="scanTimer">
-                                <i class="fas fa-clock timer-icon"></i>
-                                <span id="timerText">00:00</span>
+                        <div id="scanSection">
+                            <button class="scan-button-modern" id="modernScanBtn" onclick="window.modernScanModule.startModernScan()">
+                                <div class="scan-button-content">
+                                    <i class="fas fa-play"></i>
+                                    <span>Démarrer l'analyse</span>
+                                </div>
+                            </button>
+                            
+                            <div class="info-badge">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Scan sécurisé Microsoft</span>
+                            </div>
+                        </div>
+                        
+                        <div class="progress-section-modern" id="progressSection">
+                            <div class="progress-percentage-text" id="progressPercentageText">0%</div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="progressBar"></div>
                             </div>
                             
-                            <div class="progress-title-modern" id="progressTitle">Analyse en cours...</div>
-                            <div class="progress-subtitle-modern" id="progressSubtitle">Traitement de vos emails</div>
+                            <div class="progress-details-modern">
+                                <div class="scan-timer" id="scanTimer">
+                                    <i class="fas fa-clock timer-icon"></i>
+                                    <span id="timerText">00:00</span>
+                                </div>
+                                
+                                <div class="progress-title-modern" id="progressTitle">Analyse en cours...</div>
+                                <div class="progress-subtitle-modern" id="progressSubtitle">Traitement de vos emails</div>
+                            </div>
                         </div>
                     </div>
                 </div>
