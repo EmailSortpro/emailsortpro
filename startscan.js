@@ -162,7 +162,7 @@ class ModernScanStartModule {
                 font-weight: 400;
             }
 
-            /* Section unifiée fonctionnement et intérêts */
+            /* Section unifiée simplifiée */
             .unified-explanation-section {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
@@ -207,23 +207,13 @@ class ModernScanStartModule {
                 gap: 20px;
             }
             
-            .benefits-column, .process-column {
+            .key-points {
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
             }
             
-            .column-title {
-                font-size: 14px;
-                font-weight: 600;
-                margin-bottom: 8px;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                opacity: 0.9;
-            }
-            
-            .benefit-item, .process-step {
+            .key-point {
                 display: flex;
                 align-items: flex-start;
                 gap: 10px;
@@ -231,7 +221,7 @@ class ModernScanStartModule {
                 line-height: 1.4;
             }
             
-            .benefit-icon, .step-number {
+            .point-icon {
                 width: 26px;
                 height: 26px;
                 background: rgba(255, 255, 255, 0.25);
@@ -242,12 +232,6 @@ class ModernScanStartModule {
                 flex-shrink: 0;
                 font-size: 11px;
                 font-weight: 600;
-            }
-            
-            .step-number {
-                background: rgba(255, 255, 255, 0.3);
-                color: #667eea;
-                font-weight: 700;
             }
             
             .settings-hint {
@@ -662,81 +646,39 @@ class ModernScanStartModule {
                     <div class="unified-explanation-section">
                         <div class="unified-title">
                             <i class="fas fa-lightbulb"></i>
-                            <span>Fonctionnement et avantages du scanner</span>
+                            <span>Scanner IA ultra-rapide</span>
                         </div>
                         
                         <div class="unified-content">
-                            <div class="benefits-column">
-                                <div class="column-title">
-                                    <i class="fas fa-star"></i>
-                                    <span>Pourquoi l'utiliser ?</span>
-                                </div>
-                                
-                                <div class="benefit-item">
-                                    <div class="benefit-icon">
-                                        <i class="fas fa-save"></i>
+                            <div class="key-points">
+                                <div class="key-point">
+                                    <div class="point-icon">
+                                        <i class="fas fa-zap"></i>
                                     </div>
-                                    <span>Économisez 2h par jour en automatisant le tri de vos emails</span>
+                                    <span><strong>Économisez 2h par jour</strong> - Tri automatique intelligent de tous vos emails</span>
                                 </div>
                                 
-                                <div class="benefit-item">
-                                    <div class="benefit-icon">
+                                <div class="key-point">
+                                    <div class="point-icon">
                                         <i class="fas fa-brain"></i>
                                     </div>
-                                    <span>IA avancée qui apprend de vos habitudes et préférences</span>
-                                </div>
-                                
-                                <div class="benefit-item">
-                                    <div class="benefit-icon">
-                                        <i class="fas fa-shield-alt"></i>
-                                    </div>
-                                    <span>100% sécurisé Microsoft, aucune donnée stockée</span>
-                                </div>
-                                
-                                <div class="benefit-item">
-                                    <div class="benefit-icon">
-                                        <i class="fas fa-rocket"></i>
-                                    </div>
-                                    <span>Productivité instantanée dès le premier scan</span>
+                                    <span><strong>IA qui apprend</strong> - S'adapte à vos habitudes et préférences</span>
                                 </div>
                             </div>
                             
-                            <div class="process-column">
-                                <div class="column-title">
-                                    <i class="fas fa-cogs"></i>
-                                    <span>Comment ça marche ?</span>
+                            <div class="key-points">
+                                <div class="key-point">
+                                    <div class="point-icon">
+                                        <i class="fas fa-shield-alt"></i>
+                                    </div>
+                                    <span><strong>100% sécurisé</strong> - Microsoft certified, aucune donnée stockée</span>
                                 </div>
                                 
-                                <div class="process-step">
-                                    <div class="step-number">1</div>
-                                    <div>
-                                        <strong>Connexion sécurisée</strong><br>
-                                        Accès à votre boîte mail Microsoft
+                                <div class="key-point">
+                                    <div class="point-icon">
+                                        <i class="fas fa-rocket"></i>
                                     </div>
-                                </div>
-                                
-                                <div class="process-step">
-                                    <div class="step-number">2</div>
-                                    <div>
-                                        <strong>Analyse intelligente</strong><br>
-                                        Classification automatique par IA
-                                    </div>
-                                </div>
-                                
-                                <div class="process-step">
-                                    <div class="step-number">3</div>
-                                    <div>
-                                        <strong>Organisation</strong><br>
-                                        Tri par catégories et priorités
-                                    </div>
-                                </div>
-                                
-                                <div class="process-step">
-                                    <div class="step-number">4</div>
-                                    <div>
-                                        <strong>Résultats</strong><br>
-                                        Tableau de bord complet
-                                    </div>
+                                    <span><strong>Résultats instantanés</strong> - Classification en temps réel</span>
                                 </div>
                             </div>
                         </div>
@@ -744,7 +686,7 @@ class ModernScanStartModule {
                         <div class="settings-hint">
                             💡 <strong>Astuce :</strong> Cliquez sur 
                             <span class="settings-hint-link" onclick="window.modernScanModule.openSettings()">Paramètres</span>
-                            en haut à droite pour personnaliser vos règles de classification, filtres et seuils de confiance IA
+                            pour personnaliser vos règles de tri et filtres avancés
                         </div>
                     </div>
                     
