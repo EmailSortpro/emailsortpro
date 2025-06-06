@@ -1,4 +1,4 @@
-// TaskManager Pro v8.2 - CORRIGÉ avec interface moderne unifiée
+// TaskManager Pro v8.3 - CORRIGÉ avec contenu email complet et sections structurées
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v8.2 - CORRIGÉ avec interface moderne...');
+            console.log('[TaskManager] Initializing v8.3 - CORRIGÉ avec contenu email complet...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -55,6 +55,23 @@ class TaskManager {
                 emailSubject: 'Validation campagne marketing Q2',
                 emailDate: '2025-06-06T09:15:00Z',
                 emailDomain: 'acme-corp.com',
+                emailContent: `Email de: Sarah Martin <sarah.martin@acme-corp.com>
+Date: ${new Date().toLocaleString('fr-FR')}
+Sujet: Validation campagne marketing Q2
+
+Bonjour,
+
+J'espère que vous allez bien. Je vous contacte concernant notre campagne marketing Q2 qui nécessite votre validation.
+
+Nous avons préparé les éléments suivants :
+- Visuels créatifs pour les réseaux sociaux
+- Budget détaillé de 50k€
+- Calendrier de lancement
+
+Pourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner avec l'équipe commerciale pour le lancement.
+
+Merci d'avance,
+Sarah Martin`,
                 tags: ['marketing', 'validation', 'q2'],
                 client: 'ACME Corp',
                 createdAt: new Date(Date.now() - 86400000).toISOString(),
@@ -77,21 +94,6 @@ class TaskManager {
                     'Coordination avec l\'équipe commerciale requise'
                 ],
                 method: 'ai'
-            },
-            {
-                id: 'sample_2',
-                title: 'Préparer rapport financier Q1',
-                description: 'Préparer le rapport financier complet pour le premier trimestre 2025.\n\nÉléments à inclure:\n- Analyse des revenus\n- Répartition des coûts\n- Comparaison avec Q1 2024\n- Projections Q2',
-                priority: 'medium',
-                status: 'in-progress',
-                category: 'work',
-                hasEmail: false,
-                tags: ['finance', 'rapport', 'q1'],
-                client: 'Interne',
-                createdAt: new Date(Date.now() - 172800000).toISOString(),
-                updatedAt: new Date(Date.now() - 86400000).toISOString(),
-                dueDate: '2025-06-10',
-                method: 'manual'
             }
         ];
         
@@ -99,12 +101,15 @@ class TaskManager {
         this.saveTasks();
     }
 
-    // MÉTHODE PRINCIPALE POUR CRÉER UNE TÂCHE À PARTIR D'UN EMAIL
+    // MÉTHODE PRINCIPALE POUR CRÉER UNE TÂCHE À PARTIR D'UN EMAIL - CORRIGÉE
     createTaskFromEmail(taskData, email = null) {
-        console.log('[TaskManager] Creating task from email:', taskData.title);
+        console.log('[TaskManager] Creating task from email with full content:', taskData.title);
         
         // Assurer un ID unique
         const taskId = taskData.id || this.generateId();
+        
+        // EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
+        const fullEmailContent = this.extractFullEmailContent(email, taskData);
         
         // Construire la tâche complète avec toutes les données email
         const task = {
@@ -116,12 +121,12 @@ class TaskManager {
             dueDate: taskData.dueDate || null,
             category: taskData.category || 'email',
             
-            // DONNÉES EMAIL COMPLÈTES
+            // DONNÉES EMAIL COMPLÈTES AVEC CONTENU
             emailId: taskData.emailId || null,
             emailFrom: taskData.emailFrom || (email?.from?.emailAddress?.address),
             emailFromName: taskData.emailFromName || (email?.from?.emailAddress?.name),
             emailSubject: taskData.emailSubject || email?.subject,
-            emailContent: this.getEmailContent(email) || taskData.emailContent || '',
+            emailContent: fullEmailContent, // CONTENU COMPLET
             emailDomain: taskData.emailDomain || (taskData.emailFrom ? taskData.emailFrom.split('@')[1] : ''),
             hasEmail: true,
             emailReplied: false,
@@ -129,7 +134,7 @@ class TaskManager {
             needsReply: taskData.needsReply || false,
             hasAttachments: email?.hasAttachments || false,
             
-            // DONNÉES STRUCTURÉES DE L'IA
+            // DONNÉES STRUCTURÉES DE L'IA - COMPLÈTES
             summary: taskData.summary || '',
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
@@ -152,26 +157,140 @@ class TaskManager {
         this.saveTasks();
         this.emitTaskUpdate('create', task);
         
-        console.log('[TaskManager] Task created successfully:', task.id);
+        console.log('[TaskManager] Task created successfully with full content:', {
+            id: task.id,
+            hasEmailContent: !!task.emailContent,
+            contentLength: task.emailContent?.length || 0,
+            hasActions: task.actions?.length || 0,
+            hasKeyInfo: task.keyInfo?.length || 0,
+            hasRisks: task.risks?.length || 0
+        });
+        
         return task;
     }
 
-    getEmailContent(email) {
-        if (!email) return '';
+    // NOUVELLE MÉTHODE POUR EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
+    extractFullEmailContent(email, taskData) {
+        console.log('[TaskManager] Extracting full email content...');
         
-        // Essayer d'extraire le contenu de l'email
-        if (email.body?.content) {
-            return email.body.content;
-        } else if (email.bodyPreview) {
-            return email.bodyPreview;
-        } else {
-            // Construire un contenu minimal
-            return `Email de: ${email.from?.emailAddress?.name || 'Inconnu'} <${email.from?.emailAddress?.address || ''}>
-Date: ${email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : ''}
-Sujet: ${email.subject || 'Sans sujet'}
-
-${email.bodyPreview || 'Contenu non disponible'}`;
+        // Priorité 1: Contenu passé directement dans taskData
+        if (taskData.emailContent && taskData.emailContent.length > 50) {
+            console.log('[TaskManager] Using email content from taskData');
+            return taskData.emailContent;
         }
+        
+        // Priorité 2: Contenu complet de l'email
+        if (email?.body?.content) {
+            console.log('[TaskManager] Using email body content');
+            return this.cleanEmailContent(email.body.content);
+        }
+        
+        // Priorité 3: Contenu HTML de l'email (si disponible)
+        if (email?.body?.type === 'html' && email?.body?.content) {
+            console.log('[TaskManager] Using HTML email content');
+            return this.convertHtmlToText(email.body.content);
+        }
+        
+        // Priorité 4: Preview de l'email étendu
+        if (email?.bodyPreview && email.bodyPreview.length > 20) {
+            console.log('[TaskManager] Using extended email preview');
+            return this.buildExtendedPreview(email);
+        }
+        
+        // Priorité 5: Construire un contenu minimal mais complet
+        console.log('[TaskManager] Building minimal email content');
+        return this.buildMinimalEmailContent(email, taskData);
+    }
+
+    cleanEmailContent(content) {
+        if (!content) return '';
+        
+        // Nettoyer le contenu HTML et garder seulement le texte
+        const cleanContent = content
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Supprimer scripts
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Supprimer styles
+            .replace(/<[^>]*>/g, ' ') // Supprimer toutes les balises HTML
+            .replace(/&nbsp;/g, ' ') // Remplacer &nbsp;
+            .replace(/&amp;/g, '&') // Remplacer &amp;
+            .replace(/&lt;/g, '<') // Remplacer &lt;
+            .replace(/&gt;/g, '>') // Remplacer &gt;
+            .replace(/&quot;/g, '"') // Remplacer &quot;
+            .replace(/\s+/g, ' ') // Normaliser les espaces
+            .trim();
+            
+        return cleanContent.length > 100 ? cleanContent : '';
+    }
+
+    convertHtmlToText(htmlContent) {
+        if (!htmlContent) return '';
+        
+        // Créer un élément temporaire pour extraire le texte
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // Extraire le texte propre
+        const textContent = tempDiv.textContent || tempDiv.innerText || '';
+        
+        return textContent.trim();
+    }
+
+    buildExtendedPreview(email) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const subject = email.subject || 'Sans sujet';
+        const date = email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
+        const preview = email.bodyPreview || '';
+        
+        return `Email de: ${senderName} <${senderEmail}>
+Date: ${date}
+Sujet: ${subject}
+
+${preview}
+
+[Contenu complet non disponible - Aperçu seulement]`;
+    }
+
+    buildMinimalEmailContent(email, taskData) {
+        const senderName = taskData.emailFromName || email?.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = taskData.emailFrom || email?.from?.emailAddress?.address || '';
+        const subject = taskData.emailSubject || email?.subject || 'Sans sujet';
+        const date = taskData.emailDate || email?.receivedDateTime;
+        const formattedDate = date ? new Date(date).toLocaleString('fr-FR') : 'Date inconnue';
+        
+        // Construire un contenu basé sur l'analyse IA si disponible
+        let content = `Email de: ${senderName} <${senderEmail}>
+Date: ${formattedDate}
+Sujet: ${subject}
+
+`;
+
+        // Ajouter le résumé s'il existe
+        if (taskData.summary) {
+            content += `${taskData.summary}\n\n`;
+        }
+        
+        // Ajouter les actions s'elles existent
+        if (taskData.actions && taskData.actions.length > 0) {
+            content += `Actions mentionnées dans l'email:\n`;
+            taskData.actions.forEach((action, idx) => {
+                content += `${idx + 1}. ${action.text}\n`;
+            });
+            content += '\n';
+        }
+        
+        // Ajouter les informations clés
+        if (taskData.keyInfo && taskData.keyInfo.length > 0) {
+            content += `Informations importantes:\n`;
+            taskData.keyInfo.forEach(info => {
+                content += `• ${info}\n`;
+            });
+            content += '\n';
+        }
+        
+        // Ajouter un message si le contenu complet n'est pas disponible
+        content += `[Contenu complet de l'email non disponible - Résumé généré par IA]`;
+        
+        return content;
     }
 
     // MÉTHODE ALTERNATIVE POUR CRÉER UNE TÂCHE NORMALE
@@ -385,7 +504,7 @@ ${email.bodyPreview || 'Contenu non disponible'}`;
 }
 
 // =====================================
-// MODERN TASKS VIEW - MÊME INTERFACE QUE PAGEMANAGER
+// MODERN TASKS VIEW - AVEC AFFICHAGE CONTENU COMPLET
 // =====================================
 class TasksView {
     constructor() {
@@ -739,7 +858,7 @@ class TasksView {
                  style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
                         z-index: 99999999; display: flex; align-items: center; justify-content: center; 
                         padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
+                <div style="background: white; border-radius: 12px; max-width: 900px; width: 100%; 
                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
                     <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
                         <h2 style="margin: 0; font-size: 20px;">Détails de la tâche</h2>
@@ -771,6 +890,7 @@ class TasksView {
         document.body.style.overflow = 'hidden';
     }
 
+    // CONTENU DES DÉTAILS AVEC CONTENU EMAIL COMPLET
     buildTaskDetailsContent(task) {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const statusLabel = this.getStatusLabel(task.status);
@@ -868,8 +988,33 @@ class TasksView {
                         </div>
                     </div>
                 ` : ''}
+
+                ${task.emailContent && task.emailContent.length > 100 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope-open"></i> Contenu de l'Email</h3>
+                        <div class="email-content-section">
+                            <div class="email-content-box">
+                                ${this.formatEmailContent(task.emailContent)}
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         `;
+    }
+
+    // NOUVELLE MÉTHODE POUR FORMATER LE CONTENU EMAIL
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        // Préserver la structure de l'email
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-original-content">${formattedContent}</div>`;
     }
 
     // Utility methods IDENTIQUES À PAGEMANAGER
@@ -1333,7 +1478,7 @@ class TasksView {
         }
     }
 
-    // STYLES IDENTIQUES À PAGEMANAGER - RÉUTILISE LES MÊMES CSS
+    // STYLES IDENTIQUES À PAGEMANAGER + STYLES POUR CONTENU EMAIL
     addModernTaskStyles() {
         // Utiliser les styles existants de PageManager s'ils sont déjà présents
         if (document.getElementById('optimizedEmailPageStyles')) {
@@ -2144,6 +2289,33 @@ class TasksView {
                 line-height: 1.4;
             }
             
+            /* NOUVEAUX STYLES POUR LE CONTENU EMAIL */
+            .email-content-section {
+                padding: 16px 20px;
+            }
+            
+            .email-content-box {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+            
+            .email-original-content {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+                white-space: pre-wrap;
+            }
+            
+            .email-original-content strong {
+                color: #1f2937;
+                font-weight: 600;
+            }
+            
             /* Responsive */
             @media (max-width: 768px) {
                 .tasks-main-toolbar {
@@ -2263,7 +2435,7 @@ function initializeTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v8.2 CORRIGÉ loaded - Interface moderne unifiée avec PageManager');
+    console.log('✅ TaskManager v8.3 CORRIGÉ loaded - Avec contenu email complet et sections structurées');
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
