@@ -23,7 +23,7 @@
     <script>
         console.log('[APP] Initializing EmailSortPro...');
         
-        // Configuration simple et robuste
+        // Configuration Azure Client ID
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
         window.AppConfig = {
@@ -61,9 +61,9 @@
             },
             app: {
                 name: 'EmailSortPro',
-                version: '3.0.0',
+                version: '3.1.0',
                 debug: false,
-                environment: 'netlify'
+                environment: 'production'
             },
             email: {
                 defaultFolder: 'inbox',
@@ -106,7 +106,7 @@
             }
         };
         
-        // UIManager corrigé et complet
+        // UIManager complet
         window.uiManager = {
             showToast: function(message, type = 'info', duration = 5000) {
                 console.log(`[Toast ${type}] ${message}`);
@@ -131,11 +131,13 @@
                     if (toast.parentNode) toast.parentNode.removeChild(toast);
                 }, duration);
             },
+            
             updateAuthStatus: function(user) {
                 if (user) {
                     window.displayUserInfo(user);
                 }
             },
+            
             showLoading: function(message = 'Chargement...') {
                 console.log('[Loading]', message);
                 let loading = document.getElementById('globalLoading');
@@ -173,12 +175,14 @@
                     if (messageEl) messageEl.textContent = message;
                 }
             },
+            
             hideLoading: function() {
                 const loading = document.getElementById('globalLoading');
                 if (loading) {
                     loading.style.display = 'none';
                 }
             },
+            
             createStatCard: function(options) {
                 return `
                     <div class="card">
@@ -196,385 +200,77 @@
             }
         };
         
-        // AuthService intégré simplifié
-        window.authService = {
-            isInitialized: false,
-            isAuthenticated: () => false,
-            initialize: async function() {
-                console.log('[AuthService] Built-in auth service initializing...');
-                if (typeof msal === 'undefined') {
-                    console.warn('[AuthService] MSAL not available, using mock mode');
-                    this.isInitialized = true;
-                    return;
+        // Loader de modules spécifiques pour chaque page
+        window.moduleLoader = {
+            loadedModules: new Set(),
+            
+            async loadPageModule(pageName) {
+                console.log(`[ModuleLoader] Loading module for page: ${pageName}`);
+                
+                if (this.loadedModules.has(pageName)) {
+                    console.log(`[ModuleLoader] Module ${pageName} already loaded`);
+                    return true;
                 }
+                
+                const moduleFiles = this.getModuleFiles(pageName);
                 
                 try {
-                    const msalConfig = {
-                        auth: {
-                            clientId: window.AppConfig.msal.clientId,
-                            authority: window.AppConfig.msal.authority,
-                            redirectUri: window.AppConfig.msal.redirectUri
-                        },
-                        cache: window.AppConfig.msal.cache
+                    for (const file of moduleFiles) {
+                        await this.loadScript(file);
+                    }
+                    
+                    this.loadedModules.add(pageName);
+                    console.log(`[ModuleLoader] ✅ Module ${pageName} loaded successfully`);
+                    return true;
+                    
+                } catch (error) {
+                    console.error(`[ModuleLoader] ❌ Failed to load module ${pageName}:`, error);
+                    return false;
+                }
+            },
+            
+            getModuleFiles(pageName) {
+                const moduleMap = {
+                    'dashboard': ['DashboardManager.js'],
+                    'scanner': ['ScannerManager.js', 'ScanStart.js'],
+                    'emails': ['EmailsManager.js', 'EmailList.js'],
+                    'tasks': ['TasksManager.js', 'TaskCreator.js'],
+                    'organizer': ['OrganizerManager.js', 'DomainOrganizer.js'],
+                    'settings': ['SettingsManager.js']
+                };
+                
+                return moduleMap[pageName] || [];
+            },
+            
+            loadScript(src) {
+                return new Promise((resolve, reject) => {
+                    console.log(`[ModuleLoader] Loading script: ${src}`);
+                    
+                    // Vérifier si le script est déjà chargé
+                    const existingScript = document.querySelector(`script[src="${src}"]`);
+                    if (existingScript) {
+                        console.log(`[ModuleLoader] Script ${src} already exists`);
+                        resolve();
+                        return;
+                    }
+                    
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.onload = () => {
+                        console.log(`[ModuleLoader] ✅ Loaded: ${src}`);
+                        resolve();
+                    };
+                    script.onerror = (error) => {
+                        console.warn(`[ModuleLoader] ⚠️ Failed to load: ${src}`);
+                        resolve(); // Ne pas faire échouer le chargement global
                     };
                     
-                    this.msalInstance = new msal.PublicClientApplication(msalConfig);
-                    await this.msalInstance.initialize();
-                    this.isInitialized = true;
-                    console.log('[AuthService] Built-in auth service initialized successfully');
-                } catch (error) {
-                    console.error('[AuthService] Initialization error:', error);
-                    this.isInitialized = true; // Continue anyway
-                }
-            },
-            login: async function() {
-                console.log('[AuthService] Built-in login attempt...');
-                if (this.msalInstance) {
-                    try {
-                        const loginRequest = {
-                            scopes: window.AppConfig.scopes.login,
-                            prompt: 'select_account'
-                        };
-                        await this.msalInstance.loginRedirect(loginRequest);
-                    } catch (error) {
-                        console.error('[AuthService] Login error:', error);
-                        throw error;
-                    }
-                } else {
-                    // Mock login pour démonstration
-                    console.log('[AuthService] Mock login - simulating successful authentication');
-                    setTimeout(() => {
-                        const mockUser = {
-                            displayName: 'Utilisateur Test',
-                            mail: 'test@example.com',
-                            userPrincipalName: 'test@example.com'
-                        };
-                        window.displayUserInfo(mockUser);
-                        window.showApp();
-                    }, 2000);
-                }
-            },
-            logout: async function() {
-                console.log('[AuthService] Built-in logout');
-                if (this.msalInstance) {
-                    await this.msalInstance.logoutRedirect();
-                } else {
-                    window.location.reload();
-                }
-            }
-        };
-        
-        window.mailService = {
-            initialized: false,
-            initialize: function() {
-                console.log('[MailService] Built-in mail service initialized');
-                this.initialized = true;
-            }
-        };
-        
-        // PageManager simplifié pour corriger les erreurs
-        window.pageManager = {
-            loadPage: function(pageName) {
-                console.log(`[PageManager] Loading page: ${pageName}`);
-                
-                // Corriger l'appel à showLoading
-                if (window.uiManager && typeof window.uiManager.showLoading === 'function') {
-                    window.uiManager.showLoading(`Chargement de ${pageName}...`);
-                }
-                
-                const pageContent = document.getElementById('pageContent');
-                if (!pageContent) return;
-                
-                // Contenu spécifique selon la page
-                let content = '';
-                
-                switch(pageName) {
-                    case 'dashboard':
-                        content = this.getDashboardContent();
-                        break;
-                    case 'scanner':
-                        content = this.getScannerContent();
-                        break;
-                    case 'emails':
-                        content = this.getEmailsContent();
-                        break;
-                    case 'tasks':
-                        content = this.getTasksContent();
-                        break;
-                    case 'organizer':
-                        content = this.getOrganizerContent();
-                        break;
-                    case 'settings':
-                        content = this.getSettingsContent();
-                        break;
-                    default:
-                        content = this.getDefaultContent(pageName);
-                }
-                
-                pageContent.innerHTML = content;
-                
-                // Masquer le loading après un délai
-                setTimeout(() => {
-                    if (window.uiManager && typeof window.uiManager.hideLoading === 'function') {
-                        window.uiManager.hideLoading();
-                    }
-                }, 500);
-                
-                // Mettre à jour la navigation active
-                this.updateNavigation(pageName);
-            },
-            
-            getDashboardContent: function() {
-                return `
-                    <div class="dashboard-header">
-                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
-                        <p class="dashboard-subtitle">Organisez et gérez vos emails avec l'intelligence artificielle</p>
-                    </div>
-
-                    <div class="dashboard-grid">
-                        <div class="dashboard-card" onclick="window.pageManager.loadPage('scanner')">
-                            <div class="card-icon">
-                                <i class="fas fa-search"></i>
-                            </div>
-                            <h3 class="card-title">Scanner les emails</h3>
-                            <p class="card-description">Analysez et catégorisez automatiquement vos emails avec l'IA</p>
-                        </div>
-
-                        <div class="dashboard-card" onclick="window.pageManager.loadPage('emails')">
-                            <div class="card-icon">
-                                <i class="fas fa-inbox"></i>
-                            </div>
-                            <h3 class="card-title">Consulter les emails</h3>
-                            <p class="card-description">Accédez à vos emails organisés par catégories intelligentes</p>
-                        </div>
-
-                        <div class="dashboard-card" onclick="window.pageManager.loadPage('tasks')">
-                            <div class="card-icon">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <h3 class="card-title">Gérer les tâches</h3>
-                            <p class="card-description">Suivez les tâches extraites automatiquement de vos emails</p>
-                        </div>
-
-                        <div class="dashboard-card" onclick="window.pageManager.loadPage('organizer')">
-                            <div class="card-icon">
-                                <i class="fas fa-folder-tree"></i>
-                            </div>
-                            <h3 class="card-title">Organiser par domaine</h3>
-                            <p class="card-description">Classez vos emails par expéditeur et domaine d'origine</p>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            getScannerContent: function() {
-                return `
-                    <div class="page-header">
-                        <h1>Scanner d'Emails</h1>
-                        <div class="page-actions">
-                            <button class="btn btn-primary" onclick="window.startEmailScan()">
-                                <i class="fas fa-play"></i>
-                                Démarrer le scan
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-2">
-                        <div class="card">
-                            <h3>Configuration du scan</h3>
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Dossier à scanner</label>
-                                <select id="folderSelect" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                    <option value="inbox">Boîte de réception</option>
-                                    <option value="sent">Éléments envoyés</option>
-                                    <option value="archive">Archive</option>
-                                </select>
-                            </div>
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Nombre d'emails à analyser</label>
-                                <select id="emailCount" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                    <option value="50">50 emails</option>
-                                    <option value="100">100 emails</option>
-                                    <option value="250">250 emails</option>
-                                    <option value="500">500 emails</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <h3>Aperçu du scan</h3>
-                            <div id="scanProgress" style="display: none;">
-                                <div style="background: #f3f4f6; border-radius: 8px; height: 8px; margin: 10px 0;">
-                                    <div id="progressBar" style="background: #4f46e5; height: 100%; border-radius: 8px; width: 0%; transition: width 0.3s;"></div>
-                                </div>
-                                <p id="scanStatus" style="color: #64748b; font-size: 14px;">Préparation du scan...</p>
-                            </div>
-                            <div id="scanResults" style="display: none;">
-                                <p style="color: #10b981; font-weight: 500;">✅ Scan terminé avec succès</p>
-                                <div style="margin-top: 15px;">
-                                    <button class="btn btn-primary" onclick="window.pageManager.loadPage('emails')">
-                                        Voir les résultats
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            getEmailsContent: function() {
-                return `
-                    <div class="page-header">
-                        <h1>Emails Scannés</h1>
-                        <div class="page-actions">
-                            <button class="btn btn-secondary">
-                                <i class="fas fa-filter"></i>
-                                Filtrer
-                            </button>
-                            <button class="btn btn-primary">
-                                <i class="fas fa-refresh"></i>
-                                Actualiser
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-inbox"></i>
-                        </div>
-                        <h3 class="empty-state-title">Aucun email scanné</h3>
-                        <p class="empty-state-text">
-                            Commencez par scanner vos emails pour voir les résultats ici.
-                        </p>
-                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                            <i class="fas fa-search"></i>
-                            Scanner les emails
-                        </button>
-                    </div>
-                `;
-            },
-            
-            getTasksContent: function() {
-                return `
-                    <div class="page-header">
-                        <h1>Tâches Extraites</h1>
-                        <div class="page-actions">
-                            <button class="btn btn-primary">
-                                <i class="fas fa-plus"></i>
-                                Nouvelle tâche
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-tasks"></i>
-                        </div>
-                        <h3 class="empty-state-title">Aucune tâche trouvée</h3>
-                        <p class="empty-state-text">
-                            Les tâches seront automatiquement extraites de vos emails lors du scan.
-                        </p>
-                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                            <i class="fas fa-search"></i>
-                            Scanner pour extraire les tâches
-                        </button>
-                    </div>
-                `;
-            },
-            
-            getOrganizerContent: function() {
-                return `
-                    <div class="page-header">
-                        <h1>Organisation par Domaine</h1>
-                        <div class="page-actions">
-                            <button class="btn btn-secondary">
-                                <i class="fas fa-cog"></i>
-                                Configurer
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-folder-tree"></i>
-                        </div>
-                        <h3 class="empty-state-title">Organisation en cours</h3>
-                        <p class="empty-state-text">
-                            Vos emails seront automatiquement organisés par domaine d'expéditeur.
-                        </p>
-                        <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                            <i class="fas fa-search"></i>
-                            Commencer l'organisation
-                        </button>
-                    </div>
-                `;
-            },
-            
-            getSettingsContent: function() {
-                return `
-                    <div class="page-header">
-                        <h1>Paramètres</h1>
-                    </div>
-
-                    <div class="grid grid-2">
-                        <div class="card">
-                            <h3>Configuration IA</h3>
-                            <p style="color: #64748b; margin-bottom: 20px;">
-                                Configurez les paramètres d'analyse intelligente des emails.
-                            </p>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500;">Niveau de détail</label>
-                                <select style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                    <option>Basique</option>
-                                    <option>Détaillé</option>
-                                    <option>Avancé</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-primary">Sauvegarder</button>
-                        </div>
-
-                        <div class="card">
-                            <h3>Compte Microsoft</h3>
-                            <p style="color: #64748b; margin-bottom: 20px;">
-                                Gérez votre connexion et vos autorisations.
-                            </p>
-                            <button class="btn btn-secondary" onclick="window.authService.logout()">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Se déconnecter
-                            </button>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            getDefaultContent: function(pageName) {
-                return `
-                    <div class="page-header">
-                        <h1>Page ${pageName}</h1>
-                    </div>
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-cog fa-spin"></i>
-                        </div>
-                        <h3 class="empty-state-title">Fonctionnalité en développement</h3>
-                        <p class="empty-state-text">
-                            Cette section sera bientôt disponible.
-                        </p>
-                    </div>
-                `;
-            },
-            
-            updateNavigation: function(activePage) {
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                    if (item.dataset.page === activePage) {
-                        item.classList.add('active');
-                    }
+                    document.head.appendChild(script);
                 });
             }
         };
         
-        console.log('[APP] Configuration and built-in services loaded successfully');
+        console.log('[APP] Configuration loaded successfully');
     </script>
     
     <style>
@@ -808,11 +504,11 @@
 
         /* États actifs */
         body.app-active .login-page {
-            display: none;
+            display: none !important;
         }
 
         body.app-active .app-header {
-            display: block;
+            display: block !important;
         }
 
         body.app-active .app-main {
@@ -820,8 +516,8 @@
         }
 
         body.app-active .page-content {
-            display: block;
-            opacity: 1;
+            display: block !important;
+            opacity: 1 !important;
         }
 
         /* Dashboard */
@@ -887,46 +583,6 @@
         .card-description {
             font-size: 0.875rem;
             color: #64748b;
-        }
-
-        /* Loading */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(79, 70, 229, 0.9);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .loading-overlay.active {
-            display: flex;
-        }
-
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            color: white;
-            font-size: 1rem;
-            font-weight: 500;
         }
 
         /* Styles globaux pour l'application */
@@ -1034,6 +690,46 @@
             font-size: 1rem;
             line-height: 1.6;
             margin-bottom: 24px;
+        }
+
+        /* Loading States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(79, 70, 229, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 1rem;
+            font-weight: 500;
         }
 
         /* Responsive */
@@ -1163,7 +859,7 @@
     <!-- Contenu principal -->
     <main class="app-main">
         <div id="pageContent" class="page-content">
-            <!-- Le contenu sera chargé dynamiquement par pageManager -->
+            <!-- Le contenu sera chargé dynamiquement -->
         </div>
     </main>
 
@@ -1179,6 +875,7 @@
         // Variables globales
         let isAuthenticated = false;
         let currentUser = null;
+        let appInitialized = false;
 
         // Fonction pour afficher l'application
         function showApp() {
@@ -1189,8 +886,7 @@
             const loading = document.getElementById('loadingOverlay');
             if (loading) loading.classList.remove('active');
             
-            // Charger le dashboard par défaut
-            window.pageManager.loadPage('dashboard');
+            appInitialized = true;
         }
 
         // Fonction pour afficher les infos utilisateur
@@ -1223,65 +919,231 @@
             }
         }
 
-        // Fonction de scan des emails (simulation)
+        // Navigation avec chargement de module spécifique
+        async function navigateToPage(page) {
+            console.log('[NAV] Navigating to page:', page);
+            
+            // Afficher le loading
+            window.uiManager.showLoading(`Chargement de ${page}...`);
+            
+            try {
+                // Charger le module spécifique à la page
+                await window.moduleLoader.loadPageModule(page);
+                
+                // Mettre à jour la navigation active
+                const navItems = document.querySelectorAll('.nav-item');
+                navItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.page === page) {
+                        item.classList.add('active');
+                    }
+                });
+
+                // Utiliser le PageManager s'il est disponible
+                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                    await window.pageManager.loadPage(page);
+                } else {
+                    // Fallback - charger le manager spécifique
+                    await loadPageSpecificManager(page);
+                }
+                
+            } catch (error) {
+                console.error('[NAV] Error loading page:', error);
+                window.uiManager.showToast(`Erreur lors du chargement de ${page}`, 'error');
+            } finally {
+                window.uiManager.hideLoading();
+            }
+        }
+
+        // Chargement de manager spécifique par page
+        async function loadPageSpecificManager(page) {
+            console.log(`[NAV] Loading specific manager for: ${page}`);
+            
+            const pageContent = document.getElementById('pageContent');
+            
+            switch (page) {
+                case 'dashboard':
+                    if (window.dashboardManager) {
+                        window.dashboardManager.render(pageContent);
+                    } else {
+                        pageContent.innerHTML = getDashboardFallback();
+                    }
+                    break;
+                    
+                case 'scanner':
+                    if (window.scannerManager) {
+                        window.scannerManager.render(pageContent);
+                    } else {
+                        pageContent.innerHTML = getScannerFallback();
+                    }
+                    break;
+                    
+                case 'emails':
+                    if (window.emailsManager) {
+                        window.emailsManager.render(pageContent);
+                    } else {
+                        pageContent.innerHTML = getEmailsFallback();
+                    }
+                    break;
+                    
+                case 'tasks':
+                    if (window.tasksManager) {
+                        window.tasksManager.render(pageContent);
+                    } else {
+                        pageContent.innerHTML = getTasksFallback();
+                    }
+                    break;
+                    
+                case 'organizer':
+                    if (window.organizerManager) {
+                        window.organizerManager.render(pageContent);
+                    } else {
+                        pageContent.innerHTML = getOrganizerFallback();
+                    }
+                    break;
+                    
+                case 'settings':
+                    if (window.settingsManager) {
+                        window.settingsManager.render(pageContent);
+                    } else {
+                        pageContent.innerHTML = getSettingsFallback();
+                    }
+                    break;
+                    
+                default:
+                    pageContent.innerHTML = getDefaultFallback(page);
+            }
+        }
+
+        // Templates fallback
+        function getDashboardFallback() {
+            return `
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                    <p class="dashboard-subtitle">Organisez et gérez vos emails avec l'intelligence artificielle</p>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card" onclick="navigateToPage('scanner')">
+                        <div class="card-icon"><i class="fas fa-search"></i></div>
+                        <h3 class="card-title">Scanner les emails</h3>
+                        <p class="card-description">Analysez et catégorisez automatiquement vos emails avec l'IA</p>
+                    </div>
+                    <div class="dashboard-card" onclick="navigateToPage('emails')">
+                        <div class="card-icon"><i class="fas fa-inbox"></i></div>
+                        <h3 class="card-title">Consulter les emails</h3>
+                        <p class="card-description">Accédez à vos emails organisés par catégories intelligentes</p>
+                    </div>
+                    <div class="dashboard-card" onclick="navigateToPage('tasks')">
+                        <div class="card-icon"><i class="fas fa-tasks"></i></div>
+                        <h3 class="card-title">Gérer les tâches</h3>
+                        <p class="card-description">Suivez les tâches extraites automatiquement de vos emails</p>
+                    </div>
+                    <div class="dashboard-card" onclick="navigateToPage('organizer')">
+                        <div class="card-icon"><i class="fas fa-folder-tree"></i></div>
+                        <h3 class="card-title">Organiser par domaine</h3>
+                        <p class="card-description">Classez vos emails par expéditeur et domaine d'origine</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getScannerFallback() {
+            return `
+                <div class="page-header">
+                    <h1>Scanner d'Emails</h1>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="startEmailScan()">
+                            <i class="fas fa-play"></i>
+                            Démarrer le scan
+                        </button>
+                    </div>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-search"></i></div>
+                    <h3 class="empty-state-title">Module Scanner</h3>
+                    <p class="empty-state-text">Chargement du module de scan en cours...</p>
+                </div>
+            `;
+        }
+
+        function getEmailsFallback() {
+            return `
+                <div class="page-header">
+                    <h1>Emails Scannés</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
+                    <h3 class="empty-state-title">Module Emails</h3>
+                    <p class="empty-state-text">Chargement du module de gestion des emails...</p>
+                </div>
+            `;
+        }
+
+        function getTasksFallback() {
+            return `
+                <div class="page-header">
+                    <h1>Tâches Extraites</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-tasks"></i></div>
+                    <h3 class="empty-state-title">Module Tâches</h3>
+                    <p class="empty-state-text">Chargement du module de gestion des tâches...</p>
+                </div>
+            `;
+        }
+
+        function getOrganizerFallback() {
+            return `
+                <div class="page-header">
+                    <h1>Organisation par Domaine</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-folder-tree"></i></div>
+                    <h3 class="empty-state-title">Module Organizer</h3>
+                    <p class="empty-state-text">Chargement du module d'organisation...</p>
+                </div>
+            `;
+        }
+
+        function getSettingsFallback() {
+            return `
+                <div class="page-header">
+                    <h1>Paramètres</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-cog"></i></div>
+                    <h3 class="empty-state-title">Module Paramètres</h3>
+                    <p class="empty-state-text">Chargement du module de configuration...</p>
+                </div>
+            `;
+        }
+
+        function getDefaultFallback(page) {
+            return `
+                <div class="page-header">
+                    <h1>Page ${page}</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h3 class="empty-state-title">Page introuvable</h3>
+                    <p class="empty-state-text">Le module ${page} n'est pas encore disponible.</p>
+                </div>
+            `;
+        }
+
+        // Fonction de scan des emails (fallback)
         function startEmailScan() {
             console.log('[SCAN] Starting email scan...');
-            
-            const scanProgress = document.getElementById('scanProgress');
-            const scanResults = document.getElementById('scanResults');
-            const progressBar = document.getElementById('progressBar');
-            const scanStatus = document.getElementById('scanStatus');
-            
-            if (scanProgress) {
-                scanProgress.style.display = 'block';
-                if (scanResults) scanResults.style.display = 'none';
-                
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += Math.random() * 15;
-                    if (progress > 100) progress = 100;
-                    
-                    if (progressBar) progressBar.style.width = progress + '%';
-                    
-                    if (scanStatus) {
-                        if (progress < 30) {
-                            scanStatus.textContent = 'Connexion à Microsoft Graph...';
-                        } else if (progress < 60) {
-                            scanStatus.textContent = 'Récupération des emails...';
-                        } else if (progress < 90) {
-                            scanStatus.textContent = 'Analyse IA en cours...';
-                        } else if (progress < 100) {
-                            scanStatus.textContent = 'Finalisation...';
-                        } else {
-                            scanStatus.textContent = 'Scan terminé !';
-                        }
-                    }
-                    
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        setTimeout(() => {
-                            if (scanProgress) scanProgress.style.display = 'none';
-                            if (scanResults) scanResults.style.display = 'block';
-                        }, 500);
-                    }
-                }, 200);
+            if (window.scanStart && typeof window.scanStart.initiateScan === 'function') {
+                window.scanStart.initiateScan();
+            } else {
+                window.uiManager.showToast('Module de scan en cours de chargement...', 'info');
             }
         }
 
         // Gestion des événements
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[APP] DOM loaded, setting up event listeners');
-
-            // Initialiser immédiatement les services intégrés
-            console.log('[APP] Initializing built-in services...');
-            window.authService.initialize();
-            window.mailService.initialize();
-            
-            // Afficher l'app après un court délai pour s'assurer que tout est prêt
-            setTimeout(() => {
-                console.log('[APP] Auto-showing app with built-in services');
-                showApp();
-            }, 1000);
 
             // Bouton de connexion
             const loginBtn = document.getElementById('loginBtn');
@@ -1295,16 +1157,22 @@
                     const loading = document.getElementById('loadingOverlay');
                     if (loading) loading.classList.add('active');
                     
-                    // Utiliser notre service d'auth intégré
-                    window.authService.login().catch(error => {
-                        console.error('[AUTH] Login failed:', error);
+                    // Attendre que AuthService soit chargé
+                    if (window.authService && typeof window.authService.login === 'function') {
+                        window.authService.login().catch(error => {
+                            console.error('[AUTH] Login failed:', error);
+                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
+                            this.disabled = false;
+                            if (loading) loading.classList.remove('active');
+                            window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
+                        });
+                    } else {
+                        console.error('[AUTH] AuthService not available');
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
                         this.disabled = false;
                         if (loading) loading.classList.remove('active');
-                        if (window.uiManager) {
-                            window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
-                        }
-                    });
+                        window.uiManager.showToast('Service d\'authentification non chargé', 'error');
+                    }
                 });
             }
 
@@ -1314,8 +1182,8 @@
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
                     const page = this.dataset.page;
-                    if (page && window.pageManager) {
-                        window.pageManager.loadPage(page);
+                    if (page) {
+                        navigateToPage(page);
                     }
                 });
             });
@@ -1324,9 +1192,16 @@
         // Fonctions globales pour compatibilité
         window.displayUserInfo = displayUserInfo;
         window.showApp = showApp;
+        window.navigateToPage = navigateToPage;
         window.startEmailScan = startEmailScan;
         
         console.log('[APP] Application script loaded successfully');
     </script>
+
+    <!-- Scripts externes - Chargement des services core -->
+    <script src="AuthService.js"></script>
+    <script src="MailService.js"></script>
+    <script src="PageManager.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
