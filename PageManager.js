@@ -1,4 +1,4 @@
-// PageManager.js - Version 9.2 - CORRIGÉ avec vérification TaskManager
+// PageManager.js - Version 9.3 - CORRIGÉ avec gestion unifiée des tâches
 
 class PageManager {
     constructor() {
@@ -26,7 +26,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v9.2 - CORRIGÉ avec vérification TaskManager');
+        console.log('[PageManager] Initialized v9.3 - CORRIGÉ avec gestion unifiée des tâches');
     }
 
     // =====================================
@@ -126,6 +126,60 @@ class PageManager {
                 item.classList.remove('active');
             }
         });
+    }
+
+    // =====================================
+    // TASKS PAGE - DÉLÉGATION À TASKMANAGER
+    // =====================================
+    async renderTasks(container) {
+        console.log('[PageManager] Rendering tasks page - delegating to TasksView');
+        
+        // VÉRIFIER QUE TASKMANAGER EST PRÊT AVANT DE RENDRE LES TÂCHES
+        if (!this.ensureTaskManagerReady()) {
+            console.log('[PageManager] TaskManager not ready for tasks view, waiting...');
+            const ready = await this.waitForTaskManager();
+            if (!ready) {
+                container.innerHTML = `
+                    <div class="page-header">
+                        <h1>Tâches</h1>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <h3 class="empty-state-title">Service de tâches indisponible</h3>
+                        <p class="empty-state-text">Le gestionnaire de tâches n'a pas pu être initialisé</p>
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i class="fas fa-refresh"></i> Actualiser
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+        }
+
+        // DÉLÉGUER À TASKSVIEW POUR UNE INTERFACE UNIFIÉE
+        if (window.tasksView && window.tasksView.render) {
+            console.log('[PageManager] Using TasksView modern interface');
+            window.tasksView.render(container);
+        } else {
+            console.warn('[PageManager] TasksView not available, using fallback');
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Tâches</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="empty-state-title">Interface des tâches non disponible</h3>
+                    <p class="empty-state-text">Le module d'affichage des tâches n'est pas chargé</p>
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="fas fa-refresh"></i> Actualiser
+                    </button>
+                </div>
+            `;
+        }
     }
 
     // =====================================
@@ -386,7 +440,7 @@ class PageManager {
     }
 
     // =====================================
-    // MODAL CRÉATION DE TÂCHE - CORRIGÉE
+    // MODAL CRÉATION DE TÂCHE - CORRIGÉE POUR UNIFICATION
     // =====================================
     async showTaskCreationModal(emailId) {
         console.log('[PageManager] Showing task creation modal for email:', emailId);
@@ -772,7 +826,7 @@ Cordialement,
     }
 
     // =====================================
-    // CRÉATION DE TÂCHE - MÉTHODE CORRIGÉE
+    // CRÉATION DE TÂCHE - MÉTHODE CORRIGÉE POUR UNIFICATION
     // =====================================
     async createTaskFromModal(emailId) {
         console.log('[PageManager] Creating task from modal for email:', emailId);
@@ -865,7 +919,7 @@ Cordialement,
                 emailFromName: senderName
             });
 
-            // UTILISER LA MÉTHODE CORRIGÉE createTaskFromEmail
+            // UTILISER LA MÉTHODE UNIFIÉE createTaskFromEmail POUR COHÉRENCE
             const mainTaskData = {
                 id: this.generateTaskId(),
                 title,
@@ -878,7 +932,7 @@ Cordialement,
                 createdAt: new Date().toISOString(),
                 aiGenerated: true,
                 
-                // Email details - FORMAT IMPORTANT
+                // Email details - FORMAT UNIFIÉ AVEC TASKMANAGER
                 emailFrom: senderEmail,
                 emailFromName: senderName,
                 emailSubject: email.subject,
@@ -897,7 +951,7 @@ Cordialement,
                     ...(analysis.tags || [])
                 ].filter(Boolean),
                 
-                // Structured sections for unified view
+                // Structured sections for unified view - MÊME FORMAT QUE TASKMANAGER
                 summary: summaryText || taskData.summary,
                 actions: taskData.actions,
                 keyInfo: taskData.keyInfo,
@@ -938,7 +992,7 @@ Cordialement,
     }
 
     // =====================================
-    // CRÉATION DE TÂCHES EN BATCH - CORRIGÉE
+    // CRÉATION DE TÂCHES EN BATCH - CORRIGÉE POUR UNIFICATION
     // =====================================
     async createTasksFromSelection() {
         console.log('[PageManager] Creating tasks from selection:', this.selectedEmails.size);
@@ -986,7 +1040,7 @@ Cordialement,
                 const senderEmail = email.from?.emailAddress?.address || '';
                 const senderDomain = senderEmail.split('@')[1] || 'unknown';
                 
-                // Create task data
+                // Create task data - FORMAT UNIFIÉ AVEC TASKMANAGER
                 const taskData = {
                     id: this.generateTaskId(),
                     title: analysis.mainTask.title || `Email de ${senderName}`,
@@ -999,7 +1053,7 @@ Cordialement,
                     createdAt: new Date().toISOString(),
                     aiGenerated: true,
                     
-                    // Email details
+                    // Email details - FORMAT UNIFIÉ
                     emailFrom: senderEmail,
                     emailFromName: senderName,
                     emailSubject: email.subject,
@@ -1011,7 +1065,7 @@ Cordialement,
                     // AI Analysis
                     aiAnalysis: analysis,
                     
-                    // Structured data
+                    // Structured data - MÊME FORMAT QUE TASKMANAGER
                     summary: analysis.summary || `Email de ${senderName}`,
                     actions: this.extractActions(analysis),
                     keyInfo: analysis.insights?.keyInfo || [],
@@ -2153,52 +2207,6 @@ Cordialement,
         return emails;
     }
 
-    async renderTasks(container) {
-        // VÉRIFIER QUE TASKMANAGER EST PRÊT AVANT DE RENDRE LES TÂCHES
-        if (!this.ensureTaskManagerReady()) {
-            console.log('[PageManager] TaskManager not ready for tasks view, waiting...');
-            const ready = await this.waitForTaskManager();
-            if (!ready) {
-                container.innerHTML = `
-                    <div class="page-header">
-                        <h1>Tâches</h1>
-                    </div>
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <h3 class="empty-state-title">Service de tâches indisponible</h3>
-                        <p class="empty-state-text">Le gestionnaire de tâches n'a pas pu être initialisé</p>
-                        <button class="btn btn-primary" onclick="location.reload()">
-                            <i class="fas fa-refresh"></i> Actualiser
-                        </button>
-                    </div>
-                `;
-                return;
-            }
-        }
-
-        if (window.tasksView && window.tasksView.render) {
-            window.tasksView.render(container);
-        } else {
-            container.innerHTML = `
-                <div class="page-header">
-                    <h1>Tâches</h1>
-                </div>
-                <div class="empty-state">
-                    <div class="empty-state-icon">
-                        <i class="fas fa-tasks"></i>
-                    </div>
-                    <h3 class="empty-state-title">Interface des tâches non disponible</h3>
-                    <p class="empty-state-text">Le module d'affichage des tâches n'est pas chargé</p>
-                    <button class="btn btn-primary" onclick="location.reload()">
-                        <i class="fas fa-refresh"></i> Actualiser
-                    </button>
-                </div>
-            `;
-        }
-    }
-
     async renderCategories(container) {
         const categories = window.categoryManager?.getCategories() || {};
         
@@ -3105,4 +3113,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v9.2 CORRIGÉ loaded - Avec vérification TaskManager et gestion d\'erreurs');
+console.log('✅ PageManager v9.3 CORRIGÉ loaded - Avec gestion unifiée des tâches');
