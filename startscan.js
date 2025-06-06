@@ -25,9 +25,9 @@ class ModernScanStartModule {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 20px;
+                padding: 0 20px 20px 20px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin: 0;
+                margin: 0 -20px 0 -20px;
                 border-radius: 0;
                 position: relative;
             }
@@ -37,7 +37,7 @@ class ModernScanStartModule {
                 backdrop-filter: blur(20px);
                 border-radius: 24px;
                 padding: 35px 30px;
-                max-width: 520px;
+                max-width: 600px;
                 width: 100%;
                 height: auto;
                 text-align: center;
@@ -48,6 +48,7 @@ class ModernScanStartModule {
                 position: relative;
                 display: flex;
                 flex-direction: column;
+                overflow: visible;
             }
             
             .scanner-card-modern::before {
