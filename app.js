@@ -1,4 +1,4 @@
-// app.js - Application CORRIGÉE avec affichage forcé
+// app.js - Application ORIGINALE avec support header fusionné
 
 class App {
     constructor() {
@@ -384,7 +384,7 @@ class App {
         }
     }
 
-    // MÉTHODE CORRIGÉE - Affichage forcé de l'application
+    // MÉTHODE MODIFIÉE - Support pour header fusionné (app-header avec navigation intégrée)
     showAppWithTransition() {
         console.log('[App] Showing application with FORCED transition');
         
@@ -397,7 +397,6 @@ class App {
         // ÉTAPE 2: Forcer l'affichage des éléments
         const loginPage = document.getElementById('loginPage');
         const appHeader = document.querySelector('.app-header');
-        const appNav = document.querySelector('.app-nav');
         const pageContent = document.getElementById('pageContent');
         
         // Masquer la page de login
@@ -406,20 +405,12 @@ class App {
             console.log('[App] Login page hidden');
         }
         
-        // Afficher le header
+        // Afficher le header fusionné
         if (appHeader) {
             appHeader.style.display = 'block';
             appHeader.style.opacity = '1';
             appHeader.style.visibility = 'visible';
-            console.log('[App] Header displayed');
-        }
-        
-        // Afficher la navigation
-        if (appNav) {
-            appNav.style.display = 'block';
-            appNav.style.opacity = '1';
-            appNav.style.visibility = 'visible';
-            console.log('[App] Navigation displayed');
+            console.log('[App] Fused header displayed');
         }
         
         // Afficher le contenu
@@ -470,11 +461,6 @@ class App {
                 display: none !important;
             }
             body.app-active .app-header {
-                display: block !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-            }
-            body.app-active .app-nav {
                 display: block !important;
                 opacity: 1 !important;
                 visibility: visible !important;
@@ -546,141 +532,3 @@ class App {
                         </div>
                     </div>
                 </div>
-            `;
-            loginPage.style.display = 'flex';
-        }
-        
-        this.hideModernLoading();
-    }
-
-    checkScanStartModule() {
-        console.log('[App] Checking ScanStart module...');
-        
-        if (!window.scanStartModule) {
-            console.warn('[App] ScanStart module not available');
-            return {
-                available: false,
-                error: 'Module not loaded'
-            };
-        }
-        
-        if (typeof window.scanStartModule.render !== 'function') {
-            console.warn('[App] ScanStart module incomplete');
-            return {
-                available: false,
-                error: 'Module incomplete - missing render method'
-            };
-        }
-        
-        console.log('[App] ScanStart module OK');
-        return {
-            available: true,
-            methods: Object.keys(window.scanStartModule)
-        };
-    }
-}
-
-// Fonction globale pour le reset d'urgence
-window.emergencyReset = function() {
-    console.log('[App] Emergency reset triggered');
-    
-    const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
-    const allKeys = Object.keys(localStorage);
-    
-    allKeys.forEach(key => {
-        if (!keysToKeep.includes(key)) {
-            try {
-                localStorage.removeItem(key);
-            } catch (e) {
-                console.warn('[Emergency] Error removing key:', key);
-            }
-        }
-    });
-    
-    window.location.reload();
-};
-
-// Fonction pour forcer l'affichage (accessible globalement)
-window.forceShowApp = function() {
-    console.log('[Global] Force show app triggered');
-    if (window.app && typeof window.app.showAppWithTransition === 'function') {
-        window.app.showAppWithTransition();
-    } else {
-        // Fallback si l'app n'est pas prête
-        document.body.classList.add('app-active');
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) loginPage.style.display = 'none';
-    }
-};
-
-function checkServicesReady() {
-    const requiredServices = ['authService', 'mailService', 'uiManager'];
-    const missingServices = requiredServices.filter(service => !window[service]);
-    
-    if (missingServices.length > 0) {
-        console.warn('[App] Missing services:', missingServices);
-        
-        if (missingServices.includes('mailService')) {
-            console.error('[App] MailService not loaded - Check if MailService.js exists and filename case is correct');
-            console.error('[App] Note: File names are case-sensitive on GitHub Pages (Linux servers)');
-        }
-        
-        return false;
-    }
-    
-    if (!window.AppConfig) {
-        console.warn('[App] Missing AppConfig');
-        return false;
-    }
-    
-    if (!window.scanStartModule) {
-        console.warn('[App] ScanStart module not available - will use fallback');
-    }
-    
-    return true;
-}
-
-// Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating app instance...');
-    
-    window.app = new App();
-    
-    const waitForServices = () => {
-        if (checkServicesReady()) {
-            console.log('[App] All services ready, initializing...');
-            
-            const scanStartStatus = window.app.checkScanStartModule();
-            console.log('[App] ScanStart status:', scanStartStatus);
-            
-            setTimeout(() => {
-                window.app.init();
-            }, 100);
-        } else {
-            console.log('[App] Waiting for services...');
-            setTimeout(waitForServices, 100);
-        }
-    };
-    
-    waitForServices();
-});
-
-// Fallback si l'initialisation échoue
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        if (!window.app) {
-            console.error('[App] App instance not created, creating fallback...');
-            window.app = new App();
-            window.app.init();
-        } else if (!window.app.isAuthenticated && !window.app.isInitializing) {
-            console.log('[App] Fallback initialization check...');
-            
-            const loginPage = document.getElementById('loginPage');
-            if (loginPage && loginPage.style.display === 'none') {
-                loginPage.style.display = 'flex';
-            }
-        }
-    }, 5000);
-});
-
-console.log('✅ App loaded with FORCED display and guaranteed visibility');
