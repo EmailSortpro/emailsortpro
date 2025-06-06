@@ -866,24 +866,26 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- SCRIPTS - ORDRE CRITIQUE                  -->
+    <!-- SCRIPTS - ORDRE CRITIQUE POUR UNIFICATION -->
     <!-- ========================================= -->
     
-    <!-- 2. Services Core -->
+    <!-- 1. Services Core -->
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
     <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
 
-    <!-- 3. CategoryManager -->
+    <!-- 2. CategoryManager -->
     <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
     
-    <!-- 4. Autres Managers -->
+    <!-- 3. TaskManager AVANT PageManager pour éviter les conflits -->
     <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+    
+    <!-- 4. Autres Managers -->
     <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
     <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
     
-    <!-- 5. Page Manager -->
+    <!-- 5. Page Manager APRÈS TaskManager -->
     <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
     <!-- 6. Modules de pages -->
@@ -894,7 +896,7 @@
     <!-- 7. Modules Optionnels -->
     <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
     
-    <!-- 8. Application Principal -->
+    <!-- 8. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
@@ -987,11 +989,17 @@
             console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
             console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
             console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
+            console.log('taskManager:', window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT');
+            console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
-            console.log('taskManager:', window.taskManager ? 'OK' : 'MANQUANT');
             console.log('Current hostname:', window.location.hostname);
             console.log('Expected hostname: emailsortpro.netlify.app');
+            console.log('=== Ordre de chargement ===');
+            console.log('1. TaskManager chargé AVANT PageManager');
+            console.log('2. TasksView créé dans TaskManager');
+            console.log('3. PageManager délègue les tâches à TasksView');
+            console.log('4. Interface unifiée entre emails et tâches');
         };
 
         // Fonction pour créer CategoryManagerUI si manquant
@@ -1014,6 +1022,10 @@
         console.log('[INDEX] Current hostname:', window.location.hostname);
         console.log('[INDEX] Expected hostname: emailsortpro.netlify.app');
         console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
+        console.log('[INDEX] 🎯 ORDRE DE CHARGEMENT CORRIGÉ:');
+        console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
+        console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
+        console.log('[INDEX] 3. PageManager délègue les tâches à TasksView');
     </script>
 </body>
 </html>
