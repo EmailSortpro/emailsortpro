@@ -80,34 +80,39 @@ class ModernScanStartModule {
             
             .header-top {
                 display: flex;
-                justify-content: space-between;
+                justify-content: flex-end;
                 align-items: flex-start;
                 margin-bottom: 15px;
+                position: relative;
+                width: 100%;
             }
             
             .settings-link {
-                background: rgba(255, 255, 255, 0.15);
-                border: 1px solid rgba(255, 255, 255, 0.25);
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
                 border-radius: 12px;
                 padding: 10px 14px;
                 color: white;
                 text-decoration: none;
                 font-size: 13px;
-                font-weight: 500;
+                font-weight: 600;
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 transition: all 0.3s ease;
                 cursor: pointer;
                 backdrop-filter: blur(10px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                z-index: 10;
+                position: relative;
             }
             
             .settings-link:hover {
-                background: rgba(255, 255, 255, 0.25);
+                background: rgba(255, 255, 255, 0.3);
                 transform: translateY(-1px);
-                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
                 color: white;
+                text-decoration: none;
             }
             
             .settings-link i {
@@ -479,14 +484,11 @@ class ModernScanStartModule {
                 }
                 
                 .header-top {
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 10px;
+                    justify-content: flex-end;
                     margin-bottom: 10px;
                 }
                 
                 .settings-link {
-                    align-self: flex-end;
                     padding: 8px 12px;
                     font-size: 12px;
                 }
@@ -659,7 +661,6 @@ class ModernScanStartModule {
                 <div class="scanner-card-modern">
                     <div class="modern-header">
                         <div class="header-top">
-                            <div></div>
                             <a href="#" class="settings-link" onclick="window.modernScanModule.openSettings(); return false;">
                                 <i class="fas fa-cog"></i>
                                 <span>Paramètres</span>
