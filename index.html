@@ -211,6 +211,64 @@
                 if (user) {
                     window.displayUserInfo(user);
                 }
+            },
+            showLoading: function(message = 'Chargement...') {
+                console.log('[Loading]', message);
+                let loading = document.getElementById('globalLoading');
+                if (!loading) {
+                    loading = document.createElement('div');
+                    loading.id = 'globalLoading';
+                    loading.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 9999;
+                        flex-direction: column;
+                        gap: 15px;
+                    `;
+                    loading.innerHTML = `
+                        <div style="width: 40px; height: 40px; border: 3px solid rgba(255, 255, 255, 0.2); border-top: 3px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <div style="color: white; font-size: 16px; font-weight: 500;" id="loadingMessage">${message}</div>
+                        <style>
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        </style>
+                    `;
+                    document.body.appendChild(loading);
+                } else {
+                    loading.style.display = 'flex';
+                    const messageEl = loading.querySelector('#loadingMessage');
+                    if (messageEl) messageEl.textContent = message;
+                }
+            },
+            hideLoading: function() {
+                const loading = document.getElementById('globalLoading');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            },
+            createStatCard: function(options) {
+                return `
+                    <div class="card">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="color: ${options.color}; font-size: 2rem;">
+                                <i class="${options.icon}"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 2rem; font-weight: bold; color: #1e293b;">${options.value}</div>
+                                <div style="color: #64748b; font-size: 0.9rem;">${options.label}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
         };
         
@@ -597,9 +655,229 @@
                 display: none;
             }
 
-            body.app-active .app-main {
-                margin-top: 60px;
+        /* Styles globaux pour l'application */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #3730a3;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn-large {
+            padding: 16px 24px;
+            font-size: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 24px;
+            color: #cbd5e1;
+        }
+
+        .empty-state-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 12px;
+        }
+
+        .empty-state-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .search-bar-container {
+            margin: 20px 0;
+        }
+
+        .search-bar {
+            position: relative;
+            max-width: 500px;
+        }
+
+        .search-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            color: #9ca3af;
+            z-index: 1;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .search-clear-btn {
+            position: absolute;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #e5e7eb;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .search-clear-btn:hover {
+            background: #d1d5db;
+        }
+
+        .selection-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+
+        .selection-count {
+            font-weight: 600;
+        }
+
+        /* Variables CSS pour les couleurs */
+        :root {
+            --primary: #4f46e5;
+            --secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: stretch;
             }
+
+            .page-actions {
+                justify-content: center;
+            }
+
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+        }
 
             .page-content {
                 padding: 20px 16px;
@@ -877,36 +1155,136 @@
         window.navigateToPage = navigateToPage;
         
         // Créer les services manquants si nécessaire
-        if (!window.uiManager) {
-            window.uiManager = {
-                showToast: function(message, type = 'info', duration = 5000) {
-                    console.log(`[Toast ${type}] ${message}`);
-                    // Toast simple si pas d'UIManager
-                    const toast = document.createElement('div');
-                    toast.style.cssText = `
-                        position: fixed;
-                        top: 20px;
-                        right: 20px;
-                        padding: 12px 20px;
-                        background: ${type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#4f46e5'};
-                        color: white;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                        z-index: 10000;
-                        font-size: 14px;
-                        max-width: 300px;
-                    `;
-                    toast.textContent = message;
-                    document.body.appendChild(toast);
-                    
-                    setTimeout(() => {
-                        if (toast.parentNode) toast.parentNode.removeChild(toast);
-                    }, duration);
+        if (!window.categoryManager) {
+            window.categoryManager = {
+                getCategories: function() {
+                    return {
+                        professional: { name: 'Professionnel', icon: '💼', color: '#3b82f6' },
+                        personal: { name: 'Personnel', icon: '❤️', color: '#ef4444' },
+                        promotions: { name: 'Promotions', icon: '🏷️', color: '#f59e0b' },
+                        social: { name: 'Social', icon: '👥', color: '#10b981' }
+                    };
                 },
-                updateAuthStatus: function(user) {
-                    if (user) {
-                        displayUserInfo(user);
+                getCategory: function(id) {
+                    const categories = this.getCategories();
+                    return categories[id] || { name: id, icon: '📂', color: '#6b7280' };
+                },
+                analyzeEmail: function(email) {
+                    // Classification simple basée sur des mots-clés
+                    const subject = (email.subject || '').toLowerCase();
+                    const sender = (email.from?.emailAddress?.address || '').toLowerCase();
+                    
+                    if (sender.includes('linkedin') || sender.includes('facebook') || sender.includes('twitter')) {
+                        return { category: 'social', confidence: 0.8 };
                     }
+                    if (subject.includes('promotion') || subject.includes('offre') || subject.includes('solde')) {
+                        return { category: 'promotions', confidence: 0.7 };
+                    }
+                    if (subject.includes('réunion') || subject.includes('meeting') || subject.includes('projet')) {
+                        return { category: 'professional', confidence: 0.6 };
+                    }
+                    
+                    return { category: 'other', confidence: 0.5 };
+                }
+            };
+        }
+
+        if (!window.taskManager) {
+            window.taskManager = {
+                tasks: [],
+                createTask: function(taskData) {
+                    const task = {
+                        ...taskData,
+                        id: taskData.id || 'task-' + Date.now(),
+                        createdAt: taskData.createdAt || new Date().toISOString()
+                    };
+                    this.tasks.push(task);
+                    return task;
+                },
+                createTaskFromEmail: function(taskData, email) {
+                    const task = this.createTask({
+                        ...taskData,
+                        hasEmail: true,
+                        emailContent: email.bodyPreview || email.subject || 'Email associé'
+                    });
+                    return task;
+                },
+                saveTasks: function() {
+                    try {
+                        localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
+                    } catch (e) {
+                        console.warn('Could not save tasks:', e);
+                    }
+                },
+                loadTasks: function() {
+                    try {
+                        const saved = localStorage.getItem('emailsort_tasks');
+                        if (saved) {
+                            this.tasks = JSON.parse(saved);
+                        }
+                    } catch (e) {
+                        console.warn('Could not load tasks:', e);
+                    }
+                },
+                getStats: function() {
+                    const total = this.tasks.length;
+                    const byStatus = {
+                        todo: this.tasks.filter(t => t.status === 'todo').length,
+                        'in-progress': this.tasks.filter(t => t.status === 'in-progress').length,
+                        completed: this.tasks.filter(t => t.status === 'completed').length
+                    };
+                    const overdue = this.tasks.filter(t => {
+                        if (!t.dueDate) return false;
+                        return new Date(t.dueDate) < new Date() && t.status !== 'completed';
+                    }).length;
+                    
+                    return { total, byStatus, overdue };
+                }
+            };
+            
+            // Charger les tâches sauvegardées
+            window.taskManager.loadTasks();
+        }
+
+        if (!window.aiTaskAnalyzer) {
+            window.aiTaskAnalyzer = {
+                isConfigured: function() {
+                    return false; // Mode démo
+                },
+                analyzeEmailForTasks: async function(email, options = {}) {
+                    // Analyse simple sans IA externe
+                    const subject = email.subject || 'Email sans sujet';
+                    const sender = email.from?.emailAddress?.name || 'Expéditeur inconnu';
+                    
+                    return {
+                        mainTask: {
+                            title: `Traiter: ${subject}`,
+                            description: `Email de ${sender}\n\nSujet: ${subject}\n\nContenu: ${email.bodyPreview || 'Aucun aperçu'}`,
+                            priority: 'medium',
+                            dueDate: null
+                        },
+                        summary: `Email de ${sender} concernant: ${subject}`,
+                        importance: 'medium',
+                        actionPoints: [
+                            'Lire le contenu complet',
+                            'Évaluer les actions requises',
+                            'Répondre si nécessaire'
+                        ],
+                        actionsHighlighted: [
+                            { action: 'Lire et analyser', deadline: null }
+                        ],
+                        insights: {
+                            responseExpected: subject.includes('?') || email.bodyPreview?.includes('?'),
+                            keyInfo: [`Expéditeur: ${sender}`, `Date: ${new Date(email.receivedDateTime).toLocaleDateString()}`],
+                            risks: []
+                        },
+                        suggestedReplies: [],
+                        subtasks: [],
+                        tags: ['email', sender.split('@')[1]?.split('.')[0] || 'unknown'].filter(Boolean)
+                    };
+                },
+                showConfigurationModal: function() {
+                    window.uiManager.showToast('Configuration IA non disponible en mode démo', 'info');
                 }
             };
         }
