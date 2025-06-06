@@ -2197,45 +2197,45 @@ Cordialement,
         const styles = document.createElement('style');
         styles.id = 'optimizedEmailPageStyles';
         styles.textContent = `
-            /* Layout principal - TOUT sur une ligne */
+            /* Layout principal - COMPACT et sans espaces inutiles */
             .emails-main-toolbar {
                 display: flex;
                 align-items: center;
-                gap: 20px;
-                padding: 20px 0;
-                border-bottom: 2px solid #f1f5f9;
-                margin-bottom: 20px;
-                min-height: 60px;
+                gap: 16px;
+                padding: 12px 0;
+                border-bottom: 1px solid #e5e7eb;
+                margin-bottom: 12px;
+                min-height: 50px;
             }
             
             .toolbar-left {
                 display: flex;
                 align-items: baseline;
-                gap: 12px;
-                min-width: 200px;
+                gap: 10px;
+                min-width: 180px;
                 flex-shrink: 0;
             }
             
             .emails-title {
                 margin: 0;
-                font-size: 28px;
+                font-size: 24px;
                 font-weight: 700;
                 color: #1f2937;
             }
             
             .emails-count-large {
-                font-size: 16px;
+                font-size: 14px;
                 color: #6b7280;
                 font-weight: 600;
                 background: #f3f4f6;
-                padding: 6px 12px;
-                border-radius: 16px;
+                padding: 4px 10px;
+                border-radius: 12px;
             }
             
             .toolbar-center {
                 flex: 1;
-                max-width: 500px;
-                min-width: 300px;
+                max-width: 400px;
+                min-width: 250px;
             }
             
             .search-wrapper-large {
@@ -2245,41 +2245,41 @@ Cordialement,
             
             .search-input-large {
                 width: 100%;
-                padding: 14px 20px 14px 50px;
-                border: 2px solid #e5e7eb;
-                border-radius: 14px;
-                font-size: 15px;
+                padding: 10px 16px 10px 40px;
+                border: 1px solid #d1d5db;
+                border-radius: 10px;
+                font-size: 14px;
                 background: white;
                 transition: all 0.2s ease;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
             
             .search-input-large:focus {
                 outline: none;
                 border-color: #667eea;
-                box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             }
             
             .search-icon-large {
                 position: absolute;
-                left: 18px;
+                left: 14px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 18px;
+                font-size: 16px;
             }
             
             .search-clear-large {
                 position: absolute;
-                right: 14px;
+                right: 10px;
                 top: 50%;
                 transform: translateY(-50%);
                 background: none;
                 border: none;
                 color: #9ca3af;
                 cursor: pointer;
-                padding: 6px;
-                border-radius: 6px;
+                padding: 4px;
+                border-radius: 4px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2297,69 +2297,69 @@ Cordialement,
             
             .view-modes-large {
                 display: flex;
-                gap: 6px;
+                gap: 3px;
                 background: #f3f4f6;
-                padding: 6px;
-                border-radius: 12px;
+                padding: 3px;
+                border-radius: 8px;
             }
             
             .toolbar-right {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 8px;
                 flex-shrink: 0;
             }
             
             .selection-info-large {
                 display: flex;
                 align-items: center;
-                gap: 10px;
-                padding: 12px 16px;
+                gap: 8px;
+                padding: 8px 12px;
                 background: #eff6ff;
-                border: 2px solid #bfdbfe;
-                border-radius: 12px;
-                font-size: 14px;
+                border: 1px solid #bfdbfe;
+                border-radius: 8px;
+                font-size: 13px;
                 color: #1e40af;
             }
             
             .selection-count-large {
-                font-weight: 700;
+                font-weight: 600;
             }
             
-            /* Boutons LARGES - Taille considérablement augmentée */
+            /* Boutons COMPACTS mais bien visibles */
             .btn-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
+                gap: 6px;
+                padding: 8px 14px;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
                 background: white;
                 color: #374151;
-                font-size: 15px;
+                font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 text-decoration: none;
                 white-space: nowrap;
-                min-height: 48px;
+                min-height: 38px;
                 box-sizing: border-box;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
             
             .btn-large:hover {
                 background: #f9fafb;
-                border-color: #d1d5db;
+                border-color: #9ca3af;
                 color: #1f2937;
                 transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
             
             .btn-large.active {
                 background: #667eea;
                 color: white;
                 border-color: #667eea;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                box-shadow: 0 2px 6px rgba(102, 126, 234, 0.25);
             }
             
             .btn-large.btn-primary-large {
@@ -2372,17 +2372,17 @@ Cordialement,
                 background: #5a67d8;
                 border-color: #5a67d8;
                 transform: translateY(-1px);
-                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+                box-shadow: 0 3px 8px rgba(102, 126, 234, 0.3);
             }
             
             .btn-large.btn-secondary-large {
-                background: #f3f4f6;
+                background: #f9fafb;
                 color: #4b5563;
                 border-color: #d1d5db;
             }
             
             .btn-large.btn-secondary-large:hover {
-                background: #e5e7eb;
+                background: #f3f4f6;
                 color: #374151;
                 transform: translateY(-1px);
             }
@@ -2391,41 +2391,41 @@ Cordialement,
                 font-weight: 600;
             }
             
-            /* Filtres de catégories LARGES */
+            /* Filtres de catégories COMPACTS */
             .category-filters-large {
                 display: flex;
-                gap: 12px;
+                gap: 8px;
                 flex-wrap: wrap;
-                margin-bottom: 24px;
-                padding: 20px;
-                background: #f9fafb;
-                border-radius: 16px;
-                border: 2px solid #e5e7eb;
+                margin-bottom: 16px;
+                padding: 12px 16px;
+                background: #f8fafc;
+                border-radius: 10px;
+                border: 1px solid #e2e8f0;
             }
             
             .category-pill-large {
                 display: inline-flex;
                 align-items: center;
-                gap: 10px;
-                padding: 14px 20px;
-                border: 2px solid #e5e7eb;
-                border-radius: 14px;
+                gap: 8px;
+                padding: 8px 14px;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
                 background: white;
                 color: #374151;
-                font-size: 15px;
+                font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                min-height: 52px;
+                min-height: 38px;
                 box-sizing: border-box;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
             }
             
             .category-pill-large:hover {
                 border-color: var(--cat-color, #667eea);
-                background: var(--cat-color, #667eea)15;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                background: var(--cat-color, #667eea)10;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
             }
             
             .category-pill-large.active {
@@ -2433,25 +2433,25 @@ Cordialement,
                 color: white;
                 border-color: var(--cat-color, #667eea);
                 transform: translateY(-1px);
-                box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             }
             
             .pill-icon-large {
-                font-size: 18px;
+                font-size: 16px;
             }
             
             .pill-text-large {
                 font-weight: 600;
-                font-size: 15px;
+                font-size: 14px;
             }
             
             .pill-count-large {
                 background: rgba(0,0,0,0.1);
-                padding: 4px 10px;
-                border-radius: 12px;
-                font-size: 13px;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 12px;
                 font-weight: 700;
-                min-width: 24px;
+                min-width: 20px;
                 text-align: center;
             }
             
@@ -3181,22 +3181,23 @@ Cordialement,
                 color: #78350f;
             }
             
-            /* Responsive design pour les boutons larges */
+            /* Responsive design COMPACT */
             @media (max-width: 1200px) {
                 .emails-main-toolbar {
                     flex-wrap: wrap;
-                    gap: 16px;
+                    gap: 12px;
                 }
                 
                 .toolbar-center {
                     order: 3;
                     flex: 1 1 100%;
                     max-width: none;
+                    margin: 8px 0;
                 }
                 
                 .view-modes-large {
                     flex-wrap: wrap;
-                    gap: 4px;
+                    gap: 2px;
                 }
             }
             
@@ -3207,8 +3208,9 @@ Cordialement,
                 
                 .emails-main-toolbar {
                     flex-direction: column;
-                    gap: 16px;
+                    gap: 10px;
                     align-items: stretch;
+                    padding: 8px 0;
                 }
                 
                 .toolbar-left,
@@ -3228,24 +3230,34 @@ Cordialement,
                 }
                 
                 .category-filters-large {
-                    padding: 16px;
-                    gap: 8px;
+                    padding: 10px 12px;
+                    gap: 6px;
+                    margin-bottom: 12px;
                 }
                 
                 .btn-large {
-                    padding: 10px 16px;
-                    font-size: 14px;
-                    min-height: 44px;
+                    padding: 6px 12px;
+                    font-size: 13px;
+                    min-height: 34px;
                 }
                 
                 .category-pill-large {
-                    padding: 12px 16px;
-                    font-size: 14px;
-                    min-height: 48px;
+                    padding: 6px 12px;
+                    font-size: 13px;
+                    min-height: 34px;
                 }
                 
                 .pill-text-large {
                     display: none;
+                }
+                
+                .emails-title {
+                    font-size: 20px;
+                }
+                
+                .emails-count-large {
+                    font-size: 12px;
+                    padding: 3px 8px;
                 }
             }
         `;
