@@ -27,15 +27,16 @@ class MinimalScanModule {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 overflow: hidden;
                 position: relative;
+                padding: 20px;
             }
             
             .scanner-card-minimal {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border-radius: 20px;
-                padding: 40px;
-                width: 90%;
-                max-width: 500px;
+                padding: 50px;
+                width: 100%;
+                max-width: 650px;
                 text-align: center;
                 box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -54,37 +55,37 @@ class MinimalScanModule {
             }
             
             .scanner-icon {
-                width: 60px;
-                height: 60px;
+                width: 80px;
+                height: 80px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 15px;
+                border-radius: 20px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 20px;
+                margin: 0 auto 25px;
                 color: white;
-                font-size: 24px;
+                font-size: 32px;
             }
             
             .scanner-title {
-                font-size: 24px;
+                font-size: 32px;
                 font-weight: 600;
                 color: #1a1a2e;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
             }
             
             .scanner-subtitle {
-                font-size: 14px;
+                font-size: 18px;
                 color: #6b7280;
-                margin-bottom: 30px;
+                margin-bottom: 35px;
             }
             
             /* Étapes visuelles */
             .steps-container {
                 display: flex;
                 justify-content: space-between;
-                margin-bottom: 30px;
-                padding: 0 10px;
+                margin-bottom: 35px;
+                padding: 0 20px;
             }
             
             .step {
@@ -98,7 +99,7 @@ class MinimalScanModule {
             .step:not(:last-child)::after {
                 content: '';
                 position: absolute;
-                top: 15px;
+                top: 20px;
                 right: -50%;
                 width: 100%;
                 height: 2px;
@@ -107,17 +108,17 @@ class MinimalScanModule {
             }
             
             .step-number {
-                width: 30px;
-                height: 30px;
+                width: 40px;
+                height: 40px;
                 background: #e5e7eb;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
+                font-size: 16px;
                 font-weight: 600;
                 color: #9ca3af;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
                 position: relative;
                 z-index: 2;
                 transition: all 0.3s ease;
@@ -129,47 +130,48 @@ class MinimalScanModule {
             }
             
             .step-label {
-                font-size: 11px;
+                font-size: 14px;
                 color: #6b7280;
                 text-align: center;
-                max-width: 60px;
+                max-width: 80px;
+                font-weight: 500;
             }
             
             .step.active .step-label {
                 color: #667eea;
-                font-weight: 500;
+                font-weight: 600;
             }
             
             /* Sélecteur de durée */
             .duration-section {
-                margin-bottom: 30px;
+                margin-bottom: 35px;
             }
             
             .duration-label {
-                font-size: 14px;
-                font-weight: 500;
+                font-size: 18px;
+                font-weight: 600;
                 color: #374151;
-                margin-bottom: 15px;
+                margin-bottom: 20px;
             }
             
             .duration-options {
                 display: flex;
-                gap: 8px;
+                gap: 12px;
                 justify-content: center;
                 flex-wrap: wrap;
             }
             
             .duration-option {
-                padding: 8px 16px;
+                padding: 12px 20px;
                 border: 2px solid #e5e7eb;
                 background: white;
-                border-radius: 10px;
-                font-size: 13px;
+                border-radius: 12px;
+                font-size: 15px;
                 font-weight: 500;
                 color: #6b7280;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                min-width: 70px;
+                min-width: 85px;
             }
             
             .duration-option.selected {
@@ -185,20 +187,20 @@ class MinimalScanModule {
             /* Bouton de scan */
             .scan-button-minimal {
                 width: 100%;
-                height: 50px;
+                height: 60px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 border: none;
-                border-radius: 12px;
+                border-radius: 15px;
                 color: white;
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
-                margin-bottom: 20px;
+                gap: 10px;
+                margin-bottom: 25px;
             }
             
             .scan-button-minimal:hover:not(:disabled) {
@@ -240,53 +242,72 @@ class MinimalScanModule {
             }
             
             .progress-text {
-                font-size: 14px;
+                font-size: 16px;
                 color: #6b7280;
-                margin-bottom: 5px;
+                margin-bottom: 8px;
+                font-weight: 500;
             }
             
             .progress-status {
-                font-size: 12px;
+                font-size: 14px;
                 color: #9ca3af;
             }
             
             /* Info badge */
             .scan-info {
                 background: rgba(102, 126, 234, 0.1);
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 12px;
+                border-radius: 10px;
+                padding: 15px;
+                font-size: 14px;
                 color: #667eea;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 6px;
+                gap: 8px;
+                font-weight: 500;
             }
             
             /* Responsive mobile */
             @media (max-width: 480px) {
                 .scanner-card-minimal {
                     width: 95%;
-                    padding: 30px 25px;
+                    padding: 35px 30px;
+                }
+                
+                .scanner-title {
+                    font-size: 28px;
+                }
+                
+                .scanner-subtitle {
+                    font-size: 16px;
                 }
                 
                 .steps-container {
-                    padding: 0 5px;
+                    padding: 0 10px;
                 }
                 
                 .step-label {
-                    font-size: 10px;
-                    max-width: 50px;
+                    font-size: 12px;
+                    max-width: 70px;
+                }
+                
+                .duration-label {
+                    font-size: 16px;
                 }
                 
                 .duration-options {
-                    gap: 6px;
+                    gap: 8px;
                 }
                 
                 .duration-option {
-                    padding: 6px 12px;
-                    font-size: 12px;
-                    min-width: 60px;
+                    padding: 10px 16px;
+                    font-size: 13px;
+                    min-width: 75px;
+                }
+                
+                .scan-button-minimal {
+                    height: 55px;
+                    font-size: 16px;
                 }
             }
             
