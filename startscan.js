@@ -88,35 +88,43 @@ class ModernScanStartModule {
             }
             
             .settings-link {
-                background: rgba(255, 255, 255, 0.2);
-                border: 1px solid rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.25);
+                border: 2px solid rgba(255, 255, 255, 0.4);
                 border-radius: 12px;
-                padding: 10px 14px;
+                padding: 12px 16px;
                 color: white;
                 text-decoration: none;
-                font-size: 13px;
-                font-weight: 600;
+                font-size: 14px;
+                font-weight: 700;
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 transition: all 0.3s ease;
                 cursor: pointer;
                 backdrop-filter: blur(10px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
                 z-index: 10;
                 position: relative;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
             }
             
             .settings-link:hover {
-                background: rgba(255, 255, 255, 0.3);
-                transform: translateY(-1px);
-                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+                background: rgba(255, 255, 255, 0.35);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
                 color: white;
                 text-decoration: none;
+                border-color: rgba(255, 255, 255, 0.6);
             }
             
             .settings-link i {
-                font-size: 14px;
+                font-size: 16px;
+                animation: rotate 4s linear infinite;
+            }
+            
+            @keyframes rotate {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
             }
             
             .modern-logo {
@@ -154,7 +162,39 @@ class ModernScanStartModule {
                 font-weight: 400;
             }
 
-            /* Section d'explication étendue */
+            /* Section d'aide intuitive */
+            .help-section {
+                margin-bottom: 20px;
+                flex-shrink: 0;
+            }
+
+            .help-content {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+                border: 1px solid #f59e0b;
+                border-radius: 12px;
+                padding: 16px 20px;
+                color: #92400e;
+                font-size: 14px;
+                line-height: 1.4;
+            }
+
+            .help-icon {
+                font-size: 20px;
+                color: #d97706;
+                flex-shrink: 0;
+            }
+
+            .help-text {
+                flex: 1;
+            }
+
+            .help-text strong {
+                color: #92400e;
+                font-weight: 700;
+            }
             .explanation-section {
                 margin-bottom: 25px;
                 text-align: left;
@@ -489,8 +529,17 @@ class ModernScanStartModule {
                 }
                 
                 .settings-link {
-                    padding: 8px 12px;
-                    font-size: 12px;
+                    padding: 10px 14px;
+                    font-size: 13px;
+                }
+
+                .help-content {
+                    padding: 14px 16px;
+                    font-size: 13px;
+                }
+
+                .help-icon {
+                    font-size: 18px;
                 }
                 
                 .modern-title {
@@ -661,7 +710,7 @@ class ModernScanStartModule {
                 <div class="scanner-card-modern">
                     <div class="modern-header">
                         <div class="header-top">
-                            <a href="#" class="settings-link" onclick="window.modernScanModule.openSettings(); return false;">
+                            <a href="#" class="settings-link" onclick="window.modernScanModule.openSettings(); return false;" title="Personnaliser les paramètres de scan">
                                 <i class="fas fa-cog"></i>
                                 <span>Paramètres</span>
                             </a>
@@ -672,6 +721,17 @@ class ModernScanStartModule {
                         </div>
                         <h1 class="modern-title">Scanner intelligent</h1>
                         <p class="modern-subtitle">Organisez vos emails automatiquement</p>
+                    </div>
+
+                    <div class="help-section">
+                        <div class="help-content">
+                            <div class="help-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="help-text">
+                                <strong>Nouveau ?</strong> Cliquez sur <strong>Paramètres</strong> en haut à droite pour personnaliser vos règles de catégorisation, filtres et préférences d'analyse.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="explanation-section">
@@ -844,18 +904,24 @@ class ModernScanStartModule {
     }
 
     openSettings() {
-        // Simuler l'ouverture des paramètres
+        // Toast plus explicite avec exemple concret
         if (window.uiManager?.showToast) {
-            window.uiManager.showToast('💡 Accédez aux paramètres pour personnaliser vos règles de scan, filtres et catégories d\'emails', 'info', 4000);
+            window.uiManager.showToast('⚙️ Les paramètres vous permettent de : configurer vos règles de catégorisation personnalisées, définir des filtres par expéditeur, ajuster les critères d\'analyse et personnaliser l\'organisation automatique', 'info', 6000);
         }
         
         // Si le système de pages existe, rediriger vers les paramètres
         if (window.pageManager) {
             setTimeout(() => {
-                window.pageManager.loadPage('parametres');
-            }, 1000);
+                window.pageManager.loadPage('settings');
+            }, 1500);
         } else {
-            console.log('[ModernScan] Settings page not available');
+            // Fallback si pageManager n'existe pas
+            console.log('[ModernScan] Settings page not available - simulating settings panel');
+            setTimeout(() => {
+                if (window.uiManager?.showToast) {
+                    window.uiManager.showToast('🔧 Fonctionnalité des paramètres en cours de développement. Utilisez le menu "Paramètres" en haut pour accéder aux options avancées.', 'warning', 4000);
+                }
+            }, 2000);
         }
     }
 
