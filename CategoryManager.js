@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 16.0 - Détection stricte avec validation des mots-clés
+// CategoryManager.js - Version 17.0 - Détection stricte avec catégories personnalisées
 
 class CategoryManager {
     constructor() {
@@ -6,23 +6,26 @@ class CategoryManager {
         this.isInitialized = false;
         this.debugMode = false;
         this.weightedKeywords = {};
+        this.customCategories = this.loadCustomCategories();
         this.initializeCategories();
         this.initializeWeightedDetection();
-        console.log('[CategoryManager] ✅ Version 16.0 - Détection stricte avec validation des mots-clés');
+        console.log('[CategoryManager] ✅ Version 17.0 - Détection stricte avec catégories personnalisées');
     }
 
     // ================================================
     // INITIALISATION DES CATÉGORIES
     // ================================================
     initializeCategories() {
-        this.categories = {
+        // Catégories par défaut
+        const defaultCategories = {
             // PRIORITÉ MAXIMALE - MARKETING & NEWS (détecté en premier)
             marketing_news: {
                 name: 'Marketing & News',
                 icon: '📰',
                 color: '#8b5cf6',
                 description: 'Newsletters et promotions',
-                priority: 100
+                priority: 100,
+                isDefault: true
             },
             
             // MÊME PRIORITÉ POUR TOUTES LES AUTRES CATÉGORIES
@@ -31,7 +34,8 @@ class CategoryManager {
                 icon: '🔒',
                 color: '#991b1b',
                 description: 'Alertes de sécurité, connexions et authentification',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             finance: {
@@ -39,7 +43,8 @@ class CategoryManager {
                 icon: '💰',
                 color: '#dc2626',
                 description: 'Factures et paiements',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             tasks: {
@@ -47,7 +52,8 @@ class CategoryManager {
                 icon: '✅',
                 color: '#ef4444',
                 description: 'Tâches à faire et demandes d\'action',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             commercial: {
@@ -55,7 +61,8 @@ class CategoryManager {
                 icon: '💼',
                 color: '#059669',
                 description: 'Opportunités, devis et contrats',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             meetings: {
@@ -63,7 +70,8 @@ class CategoryManager {
                 icon: '📅',
                 color: '#f59e0b',
                 description: 'Invitations et demandes de réunion',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             support: {
@@ -71,7 +79,8 @@ class CategoryManager {
                 icon: '🛠️',
                 color: '#f59e0b',
                 description: 'Tickets et assistance',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             reminders: {
@@ -79,7 +88,8 @@ class CategoryManager {
                 icon: '🔄',
                 color: '#10b981',
                 description: 'Rappels et suivis',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             project: {
@@ -87,7 +97,8 @@ class CategoryManager {
                 icon: '📊',
                 color: '#3b82f6',
                 description: 'Gestion de projet',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             hr: {
@@ -95,7 +106,8 @@ class CategoryManager {
                 icon: '👥',
                 color: '#10b981',
                 description: 'Ressources humaines',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             internal: {
@@ -103,7 +115,8 @@ class CategoryManager {
                 icon: '📢',
                 color: '#0ea5e9',
                 description: 'Annonces internes',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             notifications: {
@@ -111,7 +124,8 @@ class CategoryManager {
                 icon: '🔔',
                 color: '#94a3b8',
                 description: 'Notifications automatiques',
-                priority: 50
+                priority: 50,
+                isDefault: true
             },
             
             // CATÉGORIE CC - Pour les emails où vous êtes en copie
@@ -120,17 +134,159 @@ class CategoryManager {
                 icon: '📋',
                 color: '#64748b',
                 description: 'Emails où vous êtes en copie',
-                priority: 40
+                priority: 40,
+                isDefault: true
             }
         };
-        
+
+        // Fusionner les catégories par défaut avec les catégories personnalisées
+        this.categories = { ...defaultCategories, ...this.customCategories };
         this.isInitialized = true;
+    }
+
+    // ================================================
+    // GESTION DES CATÉGORIES PERSONNALISÉES
+    // ================================================
+    loadCustomCategories() {
+        try {
+            const saved = localStorage.getItem('customCategories');
+            return saved ? JSON.parse(saved) : {};
+        } catch (error) {
+            console.error('[CategoryManager] Erreur lors du chargement des catégories personnalisées:', error);
+            return {};
+        }
+    }
+
+    saveCustomCategories() {
+        try {
+            const customOnly = {};
+            Object.entries(this.categories).forEach(([id, category]) => {
+                if (!category.isDefault) {
+                    customOnly[id] = category;
+                }
+            });
+            localStorage.setItem('customCategories', JSON.stringify(customOnly));
+        } catch (error) {
+            console.error('[CategoryManager] Erreur lors de la sauvegarde des catégories personnalisées:', error);
+        }
+    }
+
+    addCustomCategory(categoryData) {
+        const id = this.generateCategoryId(categoryData.name);
+        
+        if (this.categories[id]) {
+            throw new Error('Une catégorie avec ce nom existe déjà');
+        }
+
+        const newCategory = {
+            name: categoryData.name,
+            icon: categoryData.icon || '📁',
+            color: categoryData.color || '#6b7280',
+            description: categoryData.description || '',
+            priority: categoryData.priority || 50,
+            isDefault: false,
+            isCustom: true
+        };
+
+        this.categories[id] = newCategory;
+        
+        // Initialiser les mots-clés pour la nouvelle catégorie
+        this.weightedKeywords[id] = {
+            absolute: categoryData.keywords?.absolute || [],
+            strong: categoryData.keywords?.strong || [],
+            weak: categoryData.keywords?.weak || [],
+            exclusions: categoryData.keywords?.exclusions || []
+        };
+
+        this.saveCustomCategories();
+        this.saveWeightedKeywords();
+        
+        return id;
+    }
+
+    updateCustomCategory(categoryId, categoryData) {
+        if (!this.categories[categoryId] || this.categories[categoryId].isDefault) {
+            throw new Error('Cette catégorie ne peut pas être modifiée');
+        }
+
+        this.categories[categoryId] = {
+            ...this.categories[categoryId],
+            name: categoryData.name,
+            icon: categoryData.icon,
+            color: categoryData.color,
+            description: categoryData.description,
+            priority: categoryData.priority || 50
+        };
+
+        if (categoryData.keywords) {
+            this.weightedKeywords[categoryId] = {
+                absolute: categoryData.keywords.absolute || [],
+                strong: categoryData.keywords.strong || [],
+                weak: categoryData.keywords.weak || [],
+                exclusions: categoryData.keywords.exclusions || []
+            };
+        }
+
+        this.saveCustomCategories();
+        this.saveWeightedKeywords();
+    }
+
+    deleteCustomCategory(categoryId) {
+        if (!this.categories[categoryId] || this.categories[categoryId].isDefault) {
+            throw new Error('Cette catégorie ne peut pas être supprimée');
+        }
+
+        delete this.categories[categoryId];
+        delete this.weightedKeywords[categoryId];
+        
+        this.saveCustomCategories();
+        this.saveWeightedKeywords();
+    }
+
+    generateCategoryId(name) {
+        return name.toLowerCase()
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+    }
+
+    // ================================================
+    // SAUVEGARDE DES MOTS-CLÉS PONDÉRÉS
+    // ================================================
+    saveWeightedKeywords() {
+        try {
+            localStorage.setItem('weightedKeywords', JSON.stringify(this.weightedKeywords));
+        } catch (error) {
+            console.error('[CategoryManager] Erreur lors de la sauvegarde des mots-clés:', error);
+        }
+    }
+
+    loadWeightedKeywords() {
+        try {
+            const saved = localStorage.getItem('weightedKeywords');
+            return saved ? JSON.parse(saved) : null;
+        } catch (error) {
+            console.error('[CategoryManager] Erreur lors du chargement des mots-clés:', error);
+            return null;
+        }
     }
 
     // ================================================
     // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS ÉTENDUS
     // ================================================
     initializeWeightedDetection() {
+        // Charger les mots-clés sauvegardés ou utiliser ceux par défaut
+        const savedKeywords = this.loadWeightedKeywords();
+        
+        if (savedKeywords) {
+            this.weightedKeywords = savedKeywords;
+        } else {
+            this.initializeDefaultKeywords();
+            this.saveWeightedKeywords();
+        }
+    }
+
+    initializeDefaultKeywords() {
         this.weightedKeywords = {
             // SÉCURITÉ - PATTERNS STRICTS
             security: {
@@ -443,6 +599,14 @@ class CategoryManager {
                     'code de vérification urgent', 'security alert critical',
                     'action required immediately'
                 ]
+            },
+
+            // CATÉGORIE CC - Pour les emails où vous êtes en copie
+            cc: {
+                absolute: [],
+                strong: [],
+                weak: [],
+                exclusions: []
             }
         };
     }
@@ -454,6 +618,17 @@ class CategoryManager {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
         
         const content = this.extractCompleteContent(email);
+        
+        // Vérification spéciale pour les emails en copie
+        if (this.isInCopy(email)) {
+            return {
+                category: 'cc',
+                score: 100,
+                confidence: 0.95,
+                matchedPatterns: [{ keyword: 'in_copy', type: 'cc', score: 100 }],
+                hasAbsolute: true
+            };
+        }
         
         // Vérification spéciale pour les emails personnels
         if (this.isPersonalEmail(email)) {
@@ -476,6 +651,32 @@ class CategoryManager {
         // Analyse normale pour les autres emails
         const allResults = this.analyzeAllCategories(content);
         return this.selectByPriorityWithThreshold(allResults);
+    }
+
+    // ================================================
+    // DÉTECTION EMAIL EN COPIE
+    // ================================================
+    isInCopy(email) {
+        if (!email.ccRecipients || !Array.isArray(email.ccRecipients)) return false;
+        
+        // Récupérer l'email de l'utilisateur connecté (à adapter selon votre système)
+        const userEmail = this.getCurrentUserEmail();
+        if (!userEmail) return false;
+        
+        return email.ccRecipients.some(recipient => 
+            recipient.emailAddress?.address?.toLowerCase() === userEmail.toLowerCase()
+        );
+    }
+
+    getCurrentUserEmail() {
+        // À adapter selon votre système d'authentification
+        // Pour l'instant, on essaie de récupérer depuis les paramètres ou le localStorage
+        try {
+            const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
+            return settings.userEmail || null;
+        } catch {
+            return null;
+        }
     }
 
     // ================================================
@@ -534,6 +735,8 @@ class CategoryManager {
         const results = {};
         
         for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
+            if (!this.categories[categoryId]) continue; // Ignorer si la catégorie n'existe plus
+            
             const score = this.calculateScore(content, keywords, categoryId);
             
             results[categoryId] = {
@@ -848,6 +1051,7 @@ class CategoryManager {
     getCategoryStats() {
         const stats = {
             totalCategories: Object.keys(this.categories).length,
+            customCategories: Object.values(this.categories).filter(c => c.isCustom).length,
             totalKeywords: 0,
             absoluteKeywords: 0,
             strongKeywords: 0,
@@ -908,4 +1112,4 @@ class CategoryManager {
 // Créer l'instance globale
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v16.0 loaded - Détection stricte avec validation des mots-clés');
+console.log('✅ CategoryManager v17.0 loaded - Détection stricte avec catégories personnalisées');
