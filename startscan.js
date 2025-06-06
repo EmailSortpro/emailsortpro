@@ -25,15 +25,11 @@ class ModernScanStartModule {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 0;
+                padding: 0 20px 20px 20px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin: 0 -100vw 0 -100vw;
+                margin: 0 -20px 0 -20px;
                 border-radius: 0;
                 position: relative;
-                overflow: hidden;
-                width: 200vw;
-                left: 50%;
-                transform: translateX(-50%);
             }
             
             .scanner-card-modern {
@@ -53,7 +49,6 @@ class ModernScanStartModule {
                 display: flex;
                 flex-direction: column;
                 overflow: visible;
-                margin: 20px;
             }
             
             .scanner-card-modern::before {
@@ -415,11 +410,8 @@ class ModernScanStartModule {
             @media (max-width: 640px) {
                 .modern-scanner {
                     min-height: 400px;
-                    padding: 0;
-                    margin: 0 -100vw 0 -100vw;
-                    width: 200vw;
-                    left: 50%;
-                    transform: translateX(-50%);
+                    padding: 0 10px 15px 10px;
+                    margin: 0 -10px 0 -10px;
                 }
                 
                 .scanner-card-modern {
@@ -427,7 +419,6 @@ class ModernScanStartModule {
                     border-radius: 20px;
                     max-width: none;
                     overflow: visible;
-                    margin: 15px;
                 }
                 
                 .modern-title {
