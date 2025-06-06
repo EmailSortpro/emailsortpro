@@ -10,18 +10,6 @@
     <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
     <meta name="author" content="EmailSortPro">
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://emailsortpro.netlify.app/">
-    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
-    <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
-    
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
-    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
-    <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
-    
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
     
@@ -31,214 +19,38 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Styles principaux -->
-    <link rel="stylesheet" href="styles.css">
-    
-    <!-- CONFIGURATION NETLIFY - SOLUTION ALTERNATIVE -->
+    <!-- Configuration -->
     <script>
-        // =====================================================
-        // SOLUTION NETLIFY POUR JAVASCRIPT VANILLA
-        // =====================================================
-        console.log('[INDEX] 🚀 Loading Netlify configuration...');
+        console.log('[APP] Initializing EmailSortPro...');
         
-        // Pour JavaScript vanilla sur Netlify, utiliser le Client ID directement
-        // Variable d'environnement sera injectée via netlify.toml ou fallback
-        window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Votre Client ID vérifié
+        // Configuration simple et robuste
+        window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
-        console.log('[INDEX] ✅ Netlify Client ID configured:', window.NETLIFY_CLIENT_ID.substring(0, 8) + '...');
+        window.AppConfig = {
+            msal: {
+                clientId: window.NETLIFY_CLIENT_ID,
+                authority: 'https://login.microsoftonline.com/common',
+                redirectUri: window.location.origin + '/auth-callback.html',
+                postLogoutRedirectUri: window.location.origin,
+                cache: {
+                    cacheLocation: 'localStorage',
+                    storeAuthStateInCookie: true
+                }
+            },
+            scopes: {
+                login: [
+                    'https://graph.microsoft.com/User.Read',
+                    'https://graph.microsoft.com/Mail.Read',
+                    'https://graph.microsoft.com/Mail.ReadWrite'
+                ]
+            }
+        };
         
-        // =====================================================
-        // DÉTECTION DE L'ENVIRONNEMENT ET CONFIGURATION
-        // =====================================================
-        (function() {
-            // Détection de l'environnement
-            const hostname = window.location.hostname;
-            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
-            const isGitHubPages = hostname.includes('github.io');
-            const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-            
-            console.log('[INDEX] Environment detection:', {
-                hostname,
-                isNetlify,
-                isGitHubPages,
-                isLocalhost
-            });
-            
-            // Fonction pour obtenir le Client ID
-            function getClientIdForEnvironment() {
-                // Priorité 1: Client ID configuré directement (solution Netlify)
-                if (isNetlify && window.NETLIFY_CLIENT_ID) {
-                    console.log('[INDEX] ✅ Using configured Netlify client ID');
-                    return window.NETLIFY_CLIENT_ID;
-                }
-                
-                // Priorité 2: localStorage (configuration sauvegardée)
-                try {
-                    const savedClientId = localStorage.getItem('emailsortpro_client_id');
-                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
-                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
-                        return savedClientId;
-                    }
-                } catch (e) {
-                    console.warn('[INDEX] Cannot access localStorage:', e);
-                }
-                
-                // Priorité 3: Client ID par défaut pour le développement
-                if (isLocalhost) {
-                    console.log('[INDEX] Using localhost development client ID');
-                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-                }
-                
-                // Priorité 4: Redirection vers setup pour GitHub Pages
-                if (isGitHubPages) {
-                    console.log('[INDEX] GitHub Pages - configuration requise');
-                    return 'CONFIGURATION_REQUIRED';
-                }
-                
-                console.log('[INDEX] ✅ Netlify with fallback client ID');
-                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7'; // Fallback pour Netlify
-            }
-            
-            // Fonction pour créer la configuration
-            function createConfig(clientId) {
-                // Construire l'URL de base selon l'environnement
-                let basePath = '';
-                if (isGitHubPages) {
-                    basePath = '/emailsortpro';
-                }
-                
-                window.AppConfig = {
-                    msal: {
-                        clientId: clientId,
-                        authority: 'https://login.microsoftonline.com/common',
-                        redirectUri: window.location.origin + basePath + '/auth-callback.html',
-                        postLogoutRedirectUri: window.location.origin + basePath,
-                        cache: {
-                            cacheLocation: 'localStorage',
-                            storeAuthStateInCookie: isNetlify || isGitHubPages // Cookies pour sites statiques
-                        },
-                        system: {
-                            loggerOptions: {
-                                loggerCallback: (level, message, containsPii) => {
-                                    if (window.debugMode || isLocalhost) {
-                                        console.log(`[MSAL ${level}] ${message}`);
-                                    }
-                                },
-                                piiLoggingEnabled: false,
-                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
-                            },
-                            allowNativeBroker: false
-                        }
-                    },
-                    scopes: {
-                        login: [
-                            'https://graph.microsoft.com/User.Read',
-                            'https://graph.microsoft.com/Mail.Read',
-                            'https://graph.microsoft.com/Mail.ReadWrite'
-                        ],
-                        silent: [
-                            'https://graph.microsoft.com/User.Read',
-                            'https://graph.microsoft.com/Mail.Read',
-                            'https://graph.microsoft.com/Mail.ReadWrite'
-                        ]
-                    },
-                    app: {
-                        name: 'EmailSortPro',
-                        version: '3.0.0',
-                        debug: isLocalhost,
-                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other'
-                    },
-                    email: {
-                        defaultFolder: 'inbox',
-                        defaultDays: 30,
-                        pageSize: 100,
-                        maxEmails: 10000
-                    },
-                    errors: {
-                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
-                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
-                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
-                        'interaction_required': 'Reconnexion requise.',
-                        'login_required': 'Connexion requise.',
-                        'network_error': 'Erreur réseau. Vérifiez votre connexion.',
-                        'token_expired': 'Session expirée. Reconnexion nécessaire.'
-                    },
-                    validate() {
-                        const issues = [];
-                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
-                            if (isNetlify) {
-                                issues.push('Variable d\'environnement VITE_AZURE_CLIENT_ID non configurée sur Netlify');
-                            } else {
-                                issues.push('Client ID non configuré');
-                            }
-                        }
-                        return { 
-                            valid: issues.length === 0, 
-                            issues: issues 
-                        };
-                    },
-                    forceValidate() {
-                        return this.validate();
-                    },
-                    getDebugInfo() {
-                        return {
-                            hostname: window.location.hostname,
-                            origin: window.location.origin,
-                            environment: this.app.environment,
-                            configValid: this.validate().valid,
-                            clientId: this.msal.clientId,
-                            netlifyStatus: isNetlify ? {
-                                environmentVarFound: !!window.NETLIFY_CLIENT_ID,
-                                globalVarType: typeof VITE_AZURE_CLIENT_ID,
-                                processEnvAvailable: typeof process !== 'undefined' && !!process.env
-                            } : 'N/A',
-                            timestamp: new Date().toISOString()
-                        };
-                    }
-                };
-                
-                console.log('[INDEX] ✅ Configuration créée:', {
-                    environment: window.AppConfig.app.environment,
-                    clientId: clientId.substring(0, 8) + '...',
-                    redirectUri: window.AppConfig.msal.redirectUri
-                });
-            }
-            
-            // Créer la configuration
-            const clientId = getClientIdForEnvironment();
-            createConfig(clientId);
-            
-            // Vérification et redirection si nécessaire
-            if (clientId === 'CONFIGURATION_REQUIRED') {
-                console.log('[INDEX] ⚠️ Configuration requise');
-                
-                if (isNetlify) {
-                    console.error('[INDEX] 🚨 NETLIFY: Variable d\'environnement VITE_AZURE_CLIENT_ID manquante');
-                    // Afficher un message d'erreur spécifique à Netlify
-                    setTimeout(() => {
-                        if (window.location.pathname !== '/setup.html') {
-                            console.log('[INDEX] Redirection vers setup pour configuration Netlify');
-                            window.location.href = '/setup.html';
-                        }
-                    }, 2000);
-                } else if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
-                    console.log('[INDEX] Redirection vers setup pour GitHub Pages');
-                    setTimeout(() => {
-                        window.location.href = '/emailsortpro/setup.html';
-                    }, 1000);
-                }
-            } else {
-                console.log('[INDEX] ✅ Configuration valide, application prête');
-            }
-        })();
+        console.log('[APP] Configuration loaded successfully');
     </script>
     
-    <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
-    <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
-
-    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
     <style>
-        /* Reset et styles de base */
+        /* Reset et base */
         * {
             margin: 0;
             padding: 0;
@@ -246,17 +58,16 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f8fafc;
-            overflow-x: hidden;
-            transition: all 0.3s ease;
+            color: #334155;
+            line-height: 1.6;
         }
 
-        /* === STYLES POUR LA PAGE DE LOGIN === */
-        .login-page-styles {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        /* === PAGE DE CONNEXION === */
+        .login-page {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             height: 100vh;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -270,57 +81,50 @@
 
         .login-container {
             text-align: center;
-            max-width: 600px;
+            max-width: 500px;
             padding: 40px;
             color: white;
         }
 
         .login-logo {
-            font-size: 4rem;
+            font-size: 3.5rem;
             margin-bottom: 20px;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            opacity: 0.9;
         }
 
         .login-title {
-            font-size: 3rem;
-            font-weight: 800;
+            font-size: 2.5rem;
+            font-weight: 700;
             margin-bottom: 15px;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            letter-spacing: -0.025em;
         }
 
         .login-subtitle {
-            font-size: 1.3rem;
-            margin-bottom: 50px;
+            font-size: 1.1rem;
+            margin-bottom: 40px;
             opacity: 0.9;
-            line-height: 1.5;
         }
 
         .login-button {
-            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-            color: #667eea;
-            padding: 20px 50px;
+            background: white;
+            color: #4f46e5;
+            padding: 16px 32px;
             border: none;
-            border-radius: 50px;
-            font-size: 1.3rem;
-            font-weight: 700;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
-            gap: 15px;
-            text-decoration: none;
+            gap: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .login-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(255, 255, 255, 0.4);
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         .login-button:disabled {
@@ -329,307 +133,258 @@
             transform: none;
         }
 
-        .login-security-note {
-            margin-top: 25px;
+        .login-security {
+            margin-top: 20px;
             font-size: 0.9rem;
             opacity: 0.8;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
 
-        /* === STYLES POUR L'APPLICATION === */
-        /* Header Application FUSIONNÉ */
+        /* === HEADER APPLICATION === */
         .app-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 60px; /* Réduit pour un design plus compact */
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
             z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: none; /* Caché par défaut */
+            display: none;
         }
 
         .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            height: 100%;
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
-            width: 100%;
+            padding: 0 20px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
-        /* Logo à gauche */
+        /* Logo */
         .logo {
             display: flex;
             align-items: center;
             gap: 10px;
             font-weight: 700;
-            font-size: 18px;
-            color: white;
-            flex-shrink: 0;
+            font-size: 1.25rem;
+            color: #4f46e5;
         }
 
         .logo i {
-            font-size: 20px;
+            font-size: 1.5rem;
         }
 
         .ai-badge {
-            background: rgba(255,255,255,0.2);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
+            background: #4f46e5;
             color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
         }
 
-        /* Navigation au centre */
+        /* Navigation */
         .main-nav {
             display: flex;
             align-items: center;
-            gap: 5px;
-            justify-content: center;
-            flex: 1;
-            margin: 0 40px;
+            gap: 2px;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
             gap: 6px;
-            padding: 6px 12px;
+            padding: 8px 12px;
             border-radius: 6px;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 0.875rem;
             font-weight: 500;
-            color: white;
+            color: #64748b;
             transition: all 0.2s ease;
-            white-space: nowrap;
             text-decoration: none;
-            opacity: 0.85;
         }
 
         .nav-item:hover {
-            background: rgba(255,255,255,0.15);
-            opacity: 1;
-            transform: none;
+            background: #f1f5f9;
+            color: #334155;
         }
 
         .nav-item.active {
-            background: rgba(255,255,255,0.2);
-            font-weight: 600;
-            opacity: 1;
+            background: #4f46e5;
+            color: white;
         }
 
         .nav-item i {
-            font-size: 12px;
-            opacity: 0.9;
+            font-size: 0.875rem;
         }
 
-        /* Infos utilisateur à droite */
+        /* Infos utilisateur */
         .user-info {
             display: flex;
             align-items: center;
             gap: 12px;
-            color: white;
-            font-size: 13px;
-            flex-shrink: 0;
         }
 
         .user-details {
             text-align: right;
-            line-height: 1.2;
+            line-height: 1.3;
         }
 
         .user-name {
             font-weight: 600;
-            color: white;
-            font-size: 14px;
+            font-size: 0.875rem;
+            color: #334155;
         }
 
         .user-email {
-            font-size: 11px;
-            opacity: 0.8;
-            color: white;
+            font-size: 0.75rem;
+            color: #64748b;
         }
 
         .user-avatar {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
+            background: #4f46e5;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
             font-weight: 600;
+            font-size: 0.875rem;
         }
 
-        /* Auth status fallback */
-        .auth-status {
-            color: white;
-            font-size: 13px;
-            opacity: 0.8;
+        /* === CONTENU PRINCIPAL === */
+        .app-main {
+            margin-top: 0;
+            min-height: 100vh;
         }
 
-        /* Suppression des lignes séparées */
-        .header-top-row, .header-bottom-row {
+        .page-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* États actifs */
+        body.app-active .login-page {
             display: none;
         }
 
-        /* Navigation secondaire supprimée car fusionnée */
-        .app-nav {
-            display: none !important;
-        }
-
-        /* Contenu principal */
-        .app-main {
-            margin-top: 0; /* Pas de marge par défaut */
-            min-height: 100vh;
-            padding: 0;
-        }
-
-        #pageContent {
-            display: none; /* Caché par défaut */
-            opacity: 0;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        /* Classes pour l'état actif de l'app */
-        body.app-active {
-            background: #f8fafc;
-        }
-
-        body.app-active #loginPage {
-            display: none !important;
-        }
-
         body.app-active .app-header {
-            display: block !important;
+            display: block;
         }
 
         body.app-active .app-main {
-            margin-top: 80px; /* Header fusionné uniquement */
+            margin-top: 64px;
         }
 
-        body.app-active #pageContent {
-            display: block !important;
-            opacity: 1 !important;
+        body.app-active .page-content {
+            display: block;
+            opacity: 1;
         }
 
-        /* Force l'affichage du header après connexion */
-        .app-header.show {
-            display: block !important;
-        }
-
-        .main-nav.show {
-            display: flex !important;
-        }
-
-        /* Dashboard par défaut */
-        .dashboard-container {
-            padding: 20px;
-        }
-
+        /* Dashboard */
         .dashboard-header {
             text-align: center;
             margin-bottom: 40px;
         }
 
         .dashboard-title {
-            font-size: 32px;
+            font-size: 2rem;
             font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 10px;
-        }
-
-        .dashboard-subtitle {
-            font-size: 16px;
-            color: #6b7280;
-            margin-bottom: 20px;
-        }
-
-        .dashboard-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .action-card {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-            border: 2px solid transparent;
-        }
-
-        .action-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            border-color: #667eea;
-        }
-
-        .action-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            color: #667eea;
-        }
-
-        .action-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #1f2937;
+            color: #1e293b;
             margin-bottom: 8px;
         }
 
-        .action-description {
-            font-size: 14px;
-            color: #6b7280;
-            line-height: 1.5;
+        .dashboard-subtitle {
+            font-size: 1rem;
+            color: #64748b;
         }
 
-        /* Loading overlay */
-        .login-loading-overlay {
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-color: #4f46e5;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .card-description {
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        /* Loading */
+        .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: rgba(79, 70, 229, 0.9);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
             flex-direction: column;
-            gap: 30px;
+            gap: 20px;
         }
 
-        .login-loading-overlay.active {
+        .loading-overlay.active {
             display: flex;
         }
 
-        .login-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-top: 4px solid white;
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top: 3px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -639,336 +394,207 @@
             100% { transform: rotate(360deg); }
         }
 
-        .login-loading-text {
+        .loading-text {
             color: white;
-            font-size: 18px;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        /* Configuration error styles */
-        .config-error-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #dc2626;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            z-index: 99999;
-            font-family: monospace;
-            font-size: 14px;
-        }
-
-        .config-error-actions {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .config-error-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            text-decoration: none;
-        }
-
-        .config-error-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            font-size: 1rem;
+            font-weight: 500;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .login-container {
-                padding: 20px;
-            }
-
-            .login-title {
-                font-size: 2.5rem;
-            }
-
-            .login-subtitle {
-                font-size: 1.1rem;
-            }
-
-            .login-button {
-                padding: 18px 40px;
-                font-size: 1.1rem;
-            }
-
-            .app-header {
-                height: auto;
-                padding: 10px;
-            }
-
             .header-content {
-                gap: 15px;
+                padding: 0 16px;
+                height: 56px;
             }
 
-            .header-top-row {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
-            }
-
-            .user-info {
-                flex-direction: column;
-                gap: 8px;
+            .logo {
+                font-size: 1.125rem;
             }
 
             .main-nav {
-                flex-wrap: wrap;
-                gap: 8px;
+                gap: 1px;
             }
 
             .nav-item {
-                padding: 6px 12px;
-                font-size: 13px;
+                padding: 6px 8px;
+                font-size: 0.8rem;
             }
-            
+
+            .nav-item span {
+                display: none;
+            }
+
+            .user-details {
+                display: none;
+            }
+
             body.app-active .app-main {
-                margin-top: 140px;
+                margin-top: 56px;
             }
-            
-            .dashboard-actions {
+
+            .page-content {
+                padding: 20px 16px;
+            }
+
+            .dashboard-grid {
                 grid-template-columns: 1fr;
+                gap: 16px;
             }
-
-            #pageContent {
-                padding: 10px;
-            }
-        }
-
-        /* Animation pour les transitions */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in-up {
-            animation: fadeInUp 0.5s ease;
         }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Header Application FUSIONNÉ -->
-        <header class="app-header">
-            <div class="header-content">
-                <!-- Première ligne - Logo et infos utilisateur -->
-                <div class="header-top-row">
-                    <div class="logo">
-                        <i class="fas fa-envelope-open-text"></i>
-                        <span>EmailSortPro</span>
-                        <span class="ai-badge">AI</span>
-                    </div>
-                    
-                    <div class="user-info" id="userInfo" style="display: none;">
-                        <div class="user-details">
-                            <div class="user-name" id="userName">Nom de l'utilisateur</div>
-                            <div class="user-email" id="userEmail">email@exemple.com</div>
-                        </div>
-                        <div class="user-avatar" id="userAvatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    </div>
-                    
-                    <div id="authStatus" class="auth-status" style="color: white;">
-                        <span class="text-muted">Initialisation...</span>
-                    </div>
-                </div>
-
-                <!-- Deuxième ligne - Navigation -->
-                <div class="header-bottom-row">
-                    <nav class="main-nav" id="mainNav" style="display: none;">
-                        <button class="nav-item active" data-page="dashboard">
-                            <i class="fas fa-th-large"></i>
-                            <span>Dashboard</span>
-                        </button>
-                        <button class="nav-item" data-page="scanner">
-                            <i class="fas fa-search"></i>
-                            <span>Scanner</span>
-                        </button>
-                        <button class="nav-item" data-page="emails">
-                            <i class="fas fa-inbox"></i>
-                            <span>Emails</span>
-                        </button>
-                        <button class="nav-item" data-page="tasks">
-                            <i class="fas fa-tasks"></i>
-                            <span>Tâches</span>
-                        </button>
-                        <button class="nav-item" data-page="ranger">
-                            <i class="fas fa-folder-tree"></i>
-                            <span>Ranger</span>
-                        </button>
-                        <button class="nav-item" data-page="settings">
-                            <i class="fas fa-cog"></i>
-                            <span>Paramètres</span>
-                        </button>
-                    </nav>
-                </div>
+    <!-- Page de connexion -->
+    <div id="loginPage" class="login-page">
+        <div class="login-container">
+            <div class="login-logo">
+                <i class="fas fa-envelope-open-text"></i>
             </div>
-        </header>
+            
+            <h1 class="login-title">EmailSortPro</h1>
+            <p class="login-subtitle">Organisez vos emails intelligemment avec l'IA</p>
 
-        <!-- Contenu Principal -->
-        <main class="app-main">
-            <!-- Page de Connexion épurée (visible par défaut) -->
-            <div id="loginPage" class="login-page-styles">
-                <div class="login-container">
-                    <div class="login-logo">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </div>
-                    
-                    <h1 class="login-title">EmailSortPro</h1>
-                    
-                    <p class="login-subtitle">
-                        Organisez vos emails Outlook avec l'IA
-                    </p>
+            <button id="loginBtn" class="login-button">
+                <i class="fab fa-microsoft"></i>
+                Se connecter avec Outlook
+            </button>
 
-                    <button id="loginBtn" class="login-button">
-                        <i class="fab fa-microsoft"></i>
-                        Se connecter à Outlook
-                    </button>
-
-                    <div class="login-security-note">
-                        <i class="fas fa-shield-alt"></i>
-                        Connexion sécurisée Microsoft
-                    </div>
-                </div>
-            </div>
-
-            <!-- Contenu Dynamique des Pages -->
-            <div id="pageContent">
-                <!-- Dashboard par défaut -->
-                <div class="dashboard-container">
-                    <div class="dashboard-header">
-                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
-                        <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
-                    </div>
-                    
-                    <div class="dashboard-actions">
-                        <div class="action-card" onclick="window.pageManager?.loadPage('scanner')">
-                            <div class="action-icon">
-                                <i class="fas fa-search"></i>
-                            </div>
-                            <h3 class="action-title">Scanner des emails</h3>
-                            <p class="action-description">Analysez et catégorisez vos emails automatiquement</p>
-                        </div>
-                        
-                        <div class="action-card" onclick="window.pageManager?.loadPage('emails')">
-                            <div class="action-icon">
-                                <i class="fas fa-inbox"></i>
-                            </div>
-                            <h3 class="action-title">Voir les emails</h3>
-                            <p class="action-description">Consultez vos emails catégorisés</p>
-                        </div>
-                        
-                        <div class="action-card" onclick="window.pageManager?.loadPage('tasks')">
-                            <div class="action-icon">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <h3 class="action-title">Gérer les tâches</h3>
-                            <p class="action-description">Suivez vos tâches créées depuis vos emails</p>
-                        </div>
-                        
-                        <div class="action-card" onclick="window.pageManager?.loadPage('ranger')">
-                            <div class="action-icon">
-                                <i class="fas fa-folder-tree"></i>
-                            </div>
-                            <h3 class="action-title">Ranger par domaine</h3>
-                            <p class="action-description">Organisez vos emails par expéditeur</p>
-                        </div>
-                        
-                        <div class="action-card" onclick="window.pageManager?.loadPage('settings')">
-                            <div class="action-icon">
-                                <i class="fas fa-cog"></i>
-                            </div>
-                            <h3 class="action-title">Paramètres</h3>
-                            <p class="action-description">Configurez vos catégories et préférences</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <!-- Overlay de Chargement épuré -->
-        <div id="loadingOverlay" class="login-loading-overlay">
-            <div class="login-spinner"></div>
-            <div class="login-loading-text">
-                <div>Connexion à Outlook...</div>
-                <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
+            <div class="login-security">
+                <i class="fas fa-shield-alt"></i>
+                Connexion sécurisée Microsoft
             </div>
         </div>
-
-        <!-- Notifications Toast -->
-        <div id="toastContainer" class="toast-container"></div>
     </div>
 
-    <!-- ========================================= -->
-    <!-- SCRIPTS - ORDRE CRITIQUE                  -->
-    <!-- ========================================= -->
-    
-    <!-- 2. Services Core -->
-    <script src="AuthService.js"></script>
-    <script src="MailService.js"></script>
-    <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
-    <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
+    <!-- Header application -->
+    <header class="app-header" id="appHeader">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-envelope-open-text"></i>
+                <span>EmailSortPro</span>
+                <span class="ai-badge">AI</span>
+            </div>
 
-    <!-- 3. CategoryManager -->
-    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
-    
-    <!-- 4. Autres Managers -->
-    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
-    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
-    
-    <!-- 5. Page Manager -->
-    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
-    
-    <!-- 6. Modules de pages -->
-    <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
-    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
-    
-    <!-- 7. Modules Optionnels -->
-    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
-    
-    <!-- 8. Application Principal -->
-    <script src="app.js"></script>
-    
-    <!-- Scripts de gestion des événements -->
+            <nav class="main-nav" id="mainNav">
+                <button class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Tableau de bord</span>
+                </button>
+                <button class="nav-item" data-page="scanner">
+                    <i class="fas fa-search"></i>
+                    <span>Scanner</span>
+                </button>
+                <button class="nav-item" data-page="emails">
+                    <i class="fas fa-inbox"></i>
+                    <span>Emails</span>
+                </button>
+                <button class="nav-item" data-page="tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tâches</span>
+                </button>
+                <button class="nav-item" data-page="organizer">
+                    <i class="fas fa-folder-tree"></i>
+                    <span>Organiser</span>
+                </button>
+                <button class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </button>
+            </nav>
+
+            <div class="user-info" id="userInfo" style="display: none;">
+                <div class="user-details">
+                    <div class="user-name" id="userName">Utilisateur</div>
+                    <div class="user-email" id="userEmail">email@exemple.com</div>
+                </div>
+                <div class="user-avatar" id="userAvatar">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenu principal -->
+    <main class="app-main">
+        <div id="pageContent" class="page-content">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                <p class="dashboard-subtitle">Organisez et gérez vos emails avec l'intelligence artificielle</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card" onclick="navigateToPage('scanner')">
+                    <div class="card-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="card-title">Scanner les emails</h3>
+                    <p class="card-description">Analysez et catégorisez automatiquement vos emails avec l'IA</p>
+                </div>
+
+                <div class="dashboard-card" onclick="navigateToPage('emails')">
+                    <div class="card-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3 class="card-title">Consulter les emails</h3>
+                    <p class="card-description">Accédez à vos emails organisés par catégories intelligentes</p>
+                </div>
+
+                <div class="dashboard-card" onclick="navigateToPage('tasks')">
+                    <div class="card-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="card-title">Gérer les tâches</h3>
+                    <p class="card-description">Suivez les tâches extraites automatiquement de vos emails</p>
+                </div>
+
+                <div class="dashboard-card" onclick="navigateToPage('organizer')">
+                    <div class="card-icon">
+                        <i class="fas fa-folder-tree"></i>
+                    </div>
+                    <h3 class="card-title">Organiser par domaine</h3>
+                    <p class="card-description">Classez vos emails par expéditeur et domaine d'origine</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Connexion en cours...</div>
+    </div>
+
     <script>
-        // Fonction pour afficher les informations utilisateur
-        window.displayUserInfo = function(user) {
-            console.log('[USER] Displaying user info:', user);
+        console.log('[APP] Starting application initialization...');
+
+        // Variables globales
+        let isAuthenticated = false;
+        let currentUser = null;
+
+        // Fonction pour afficher l'application
+        function showApp() {
+            console.log('[APP] Showing application interface');
+            document.body.classList.add('app-active');
+            
+            // Cacher le loading
+            const loading = document.getElementById('loadingOverlay');
+            if (loading) loading.classList.remove('active');
+        }
+
+        // Fonction pour afficher les infos utilisateur
+        function displayUserInfo(user) {
+            console.log('[USER] Displaying user information:', user);
             
             const userInfo = document.getElementById('userInfo');
             const userName = document.getElementById('userName');
             const userEmail = document.getElementById('userEmail');
             const userAvatar = document.getElementById('userAvatar');
-            const authStatus = document.getElementById('authStatus');
-            const mainNav = document.getElementById('mainNav');
-            const appHeader = document.querySelector('.app-header');
-            
+
             if (user && userInfo) {
-                // Afficher les informations utilisateur
-                userName.textContent = user.displayName || user.name || 'Utilisateur';
+                userName.textContent = user.displayName || 'Utilisateur';
                 userEmail.textContent = user.mail || user.userPrincipalName || '';
                 
-                // Afficher l'avatar ou les initiales
+                // Afficher les initiales
                 if (user.displayName) {
                     const initials = user.displayName
                         .split(' ')
@@ -981,256 +607,114 @@
                     userAvatar.innerHTML = '<i class="fas fa-user"></i>';
                 }
                 
-                // Masquer le statut d'auth et afficher les infos utilisateur
-                authStatus.style.display = 'none';
                 userInfo.style.display = 'flex';
-                mainNav.style.display = 'flex';
-                
-                // S'assurer que le header est visible
-                if (appHeader) {
-                    appHeader.style.display = 'block';
-                    appHeader.classList.add('show');
+            }
+        }
+
+        // Navigation
+        function navigateToPage(page) {
+            console.log('[NAV] Navigating to page:', page);
+            
+            // Mettre à jour la navigation active
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === page) {
+                    item.classList.add('active');
                 }
-                
-                // Forcer l'affichage de l'app
-                window.forceShowApp();
-            }
-        };
+            });
 
-        // Fonction pour forcer l'affichage de l'app
-        window.forceShowApp = function() {
-            console.log('[FORCE] Forcing app display...');
-            
-            // Ajouter la classe pour activer l'app
-            document.body.classList.add('app-active');
-            
-            // Masquer explicitement la page de login
-            const loginPage = document.getElementById('loginPage');
-            if (loginPage) {
-                loginPage.style.display = 'none';
-            }
-            
-            // S'assurer que le header et la navigation sont visibles
-            const appHeader = document.querySelector('.app-header');
-            const mainNav = document.getElementById('mainNav');
+            // Charger le contenu de la page
             const pageContent = document.getElementById('pageContent');
-            
-            if (appHeader) {
-                appHeader.style.display = 'block';
-                appHeader.classList.add('show');
-            }
-            
-            if (mainNav) {
-                mainNav.style.display = 'flex';
-                mainNav.classList.add('show');
-            }
-            
             if (pageContent) {
-                pageContent.style.display = 'block';
-                pageContent.style.opacity = '1';
+                pageContent.innerHTML = `
+                    <div class="dashboard-header">
+                        <h1 class="dashboard-title">Page ${page}</h1>
+                        <p class="dashboard-subtitle">Contenu de la page ${page} en cours de développement</p>
+                    </div>
+                    <div style="text-align: center; padding: 60px; color: #64748b;">
+                        <i class="fas fa-cog fa-spin" style="font-size: 3rem; margin-bottom: 20px; color: #4f46e5;"></i>
+                        <p style="font-size: 1.1rem; margin-bottom: 10px;">Module en cours de chargement...</p>
+                        <p style="font-size: 0.9rem;">Cette fonctionnalité sera bientôt disponible</p>
+                    </div>
+                `;
             }
-            
-            console.log('[FORCE] App display activated');
-        };
+        }
 
-        // Fonction pour initialiser l'app même sans connexion complète
-        window.initializeAppDisplay = function() {
-            console.log('[INIT] Initializing app display...');
-            
-            // Afficher le header avec des infos par défaut
-            const appHeader = document.querySelector('.app-header');
-            const mainNav = document.getElementById('mainNav');
-            const authStatus = document.getElementById('authStatus');
-            
-            if (appHeader) {
-                appHeader.style.display = 'block';
-            }
-            
-            if (mainNav) {
-                mainNav.style.display = 'flex';
-            }
-            
-            if (authStatus) {
-                authStatus.textContent = 'Application chargée';
-                authStatus.style.color = 'white';
-            }
-            
-            // Forcer l'affichage de l'app
-            window.forceShowApp();
-        };
-
-        // Gestion du bouton de connexion
+        // Gestion des événements
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INDEX] DOM loaded, setting up event listeners...');
-            
-            // Initialiser l'affichage même si la connexion échoue
-            setTimeout(() => {
-                window.initializeAppDisplay();
-            }, 2000);
-            
+            console.log('[APP] DOM loaded, setting up event listeners');
+
+            // Bouton de connexion
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
+                    console.log('[AUTH] Login button clicked');
+                    
                     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
                     this.disabled = true;
                     
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    if (loadingOverlay) {
-                        loadingOverlay.classList.add('active');
-                    }
+                    const loading = document.getElementById('loadingOverlay');
+                    if (loading) loading.classList.add('active');
                     
-                    // Forcer l'affichage après 3 secondes si la connexion traîne
+                    // Simulation de connexion pour démonstration
                     setTimeout(() => {
-                        if (loadingOverlay) {
-                            loadingOverlay.classList.remove('active');
-                        }
-                        window.initializeAppDisplay();
-                    }, 3000);
+                        console.log('[AUTH] Simulating successful login');
+                        
+                        // Simuler un utilisateur connecté
+                        const mockUser = {
+                            displayName: 'Vianney Hastings',
+                            mail: 'vianney@hastings.com',
+                            userPrincipalName: 'vianney@hastings.com'
+                        };
+                        
+                        displayUserInfo(mockUser);
+                        showApp();
+                        isAuthenticated = true;
+                        currentUser = mockUser;
+                        
+                    }, 2000);
                     
+                    // Essayer la vraie connexion si disponible
                     if (window.app && window.app.login) {
                         window.app.login();
-                    } else {
-                        // Si app.js n'est pas chargé, forcer l'affichage
-                        setTimeout(() => {
-                            window.initializeAppDisplay();
-                        }, 1000);
                     }
                 });
             }
-            
-            // Gestion de la navigation
+
+            // Navigation
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => {
                 item.addEventListener('click', function(e) {
                     e.preventDefault();
-                    
-                    // Retirer la classe active de tous les éléments
-                    navItems.forEach(nav => nav.classList.remove('active'));
-                    
-                    // Ajouter la classe active à l'élément cliqué
-                    this.classList.add('active');
-                    
-                    // Charger la page correspondante
                     const page = this.dataset.page;
-                    console.log('[NAV] Switching to page:', page);
-                    
-                    // Afficher un contenu basique si pageManager n'est pas disponible
-                    const pageContent = document.getElementById('pageContent');
-                    if (pageContent) {
-                        if (window.pageManager && window.pageManager.loadPage) {
-                            window.pageManager.loadPage(page);
-                        } else {
-                            // Fallback : afficher un contenu simple
-                            pageContent.innerHTML = `
-                                <div class="dashboard-container">
-                                    <div class="dashboard-header">
-                                        <h1 class="dashboard-title">Page ${page}</h1>
-                                        <p class="dashboard-subtitle">Contenu de la page ${page} - En cours de chargement...</p>
-                                    </div>
-                                    <div style="text-align: center; padding: 40px; color: #6b7280;">
-                                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 20px;"></i>
-                                        <p>Chargement des modules en cours...</p>
-                                    </div>
-                                </div>
-                            `;
-                        }
+                    if (page) {
+                        navigateToPage(page);
                     }
                 });
             });
-            
-            // Vérifier la configuration après le chargement du DOM
-            setTimeout(function() {
-                if (window.AppConfig) {
-                    const validation = window.AppConfig.validate();
-                    console.log('[INDEX] Configuration validation:', validation);
-                    
-                    if (!validation.valid) {
-                        console.log('[INDEX] Configuration invalid, checking redirect...');
-                        
-                        // Afficher une bannière d'erreur spécifique à Netlify
-                        if (window.AppConfig.app.environment === 'netlify') {
-                            const errorBanner = document.createElement('div');
-                            errorBanner.className = 'config-error-banner';
-                            errorBanner.innerHTML = `
-                                <div>
-                                    ⚠️ <strong>NETLIFY:</strong> Variable d'environnement VITE_AZURE_CLIENT_ID manquante
-                                </div>
-                                <div>
-                                    Configurez VITE_AZURE_CLIENT_ID dans Site settings > Environment variables, puis redéployez
-                                </div>
-                                <div class="config-error-actions">
-                                    <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
-                                    <a href="/setup.html" class="config-error-btn">Configuration manuelle</a>
-                                    <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
-                                </div>
-                            `;
-                            document.body.appendChild(errorBanner);
-                        }
-                        
-                        // Ne pas rediriger automatiquement sur Netlify, utiliser le Client ID par défaut
-                        if (!window.location.pathname.endsWith('setup.html') && !isNetlify) {
-                            const environment = window.AppConfig.app.environment;
-                            let setupPath = '/setup.html';
-                            
-                            if (environment === 'github') {
-                                setupPath = '/emailsortpro/setup.html';
-                            }
-                            
-                            console.log('[INDEX] Redirecting to setup page:', setupPath);
-                            setTimeout(() => {
-                                window.location.href = setupPath;
-                            }, 3000);
-                        } else if (isNetlify) {
-                            console.log('[INDEX] ✅ Netlify: Using default configuration, app ready');
-                        }
-                    } else {
-                        console.log('[INDEX] ✅ Configuration valid');
-                    }
-                } else {
-                    console.warn('[INDEX] AppConfig not available');
-                }
-            }, 1000);
-            
-            // S'assurer que l'app s'affiche même en cas de problème
-            setTimeout(() => {
-                if (!document.body.classList.contains('app-active')) {
-                    console.log('[INDEX] Force activation after timeout');
-                    window.initializeAppDisplay();
-                }
-            }, 5000);
-        });
-        
-        // Fonction de diagnostic accessible globalement
-        window.checkServices = function() {
-            console.log('=== Diagnostic des services ===');
-            console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
-            if (window.AppConfig) {
-                console.log('Environment:', window.AppConfig.app.environment);
-                console.log('Client ID:', window.AppConfig.msal.clientId);
-                console.log('Debug info:', window.AppConfig.getDebugInfo());
-            }
-            console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
-            console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
-            console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
-            console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
-            console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
-            console.log('taskManager:', window.taskManager ? 'OK' : 'MANQUANT');
-        };
 
-        // Fonction pour créer CategoryManagerUI si manquant
-        if (!window.CategoryManagerUI) {
-            window.CategoryManagerUI = class {
-                static renderCategorySelector(categories = {}) {
-                    return Object.entries(categories).map(([id, cat]) => 
-                        `<div class="category-item" data-category="${id}">
-                            <span>${cat.icon || '📂'}</span>
-                            <span>${cat.name}</span>
-                        </div>`
-                    ).join('');
+            // Auto-affichage après délai (fallback)
+            setTimeout(() => {
+                if (!isAuthenticated) {
+                    console.log('[APP] Auto-showing app after timeout');
+                    showApp();
                 }
-            };
-            console.log('✅ CategoryManagerUI créé automatiquement');
-        }
+            }, 8000);
+        });
+
+        // Fonctions globales pour compatibilité
+        window.displayUserInfo = displayUserInfo;
+        window.showApp = showApp;
+        window.navigateToPage = navigateToPage;
+        
+        console.log('[APP] Application script loaded successfully');
     </script>
+
+    <!-- Scripts externes (optionnels) -->
+    <script src="AuthService.js" onerror="console.log('AuthService.js not found - using fallback')"></script>
+    <script src="MailService.js" onerror="console.log('MailService.js not found - using fallback')"></script>
+    <script src="PageManager.js" onerror="console.log('PageManager.js not found - using fallback')"></script>
+    <script src="app.js" onerror="console.log('app.js not found - using fallback')"></script>
 </body>
 </html>
