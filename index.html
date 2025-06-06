@@ -87,7 +87,8 @@
                 }
                 return { 
                     valid: issues.length === 0, 
-                    issues: issues 
+                    issues: issues,
+                    environment: this.app.environment
                 };
             },
             forceValidate() {
@@ -105,7 +106,115 @@
             }
         };
         
-        console.log('[APP] Configuration loaded successfully');
+        // Créer les services intégrés pour éviter les dépendances externes
+        window.authService = {
+            isInitialized: false,
+            isAuthenticated: () => false,
+            initialize: async function() {
+                console.log('[AuthService] Built-in auth service initializing...');
+                if (typeof msal === 'undefined') {
+                    console.warn('[AuthService] MSAL not available, using mock mode');
+                    this.isInitialized = true;
+                    return;
+                }
+                
+                try {
+                    const msalConfig = {
+                        auth: {
+                            clientId: window.AppConfig.msal.clientId,
+                            authority: window.AppConfig.msal.authority,
+                            redirectUri: window.AppConfig.msal.redirectUri
+                        },
+                        cache: window.AppConfig.msal.cache
+                    };
+                    
+                    this.msalInstance = new msal.PublicClientApplication(msalConfig);
+                    await this.msalInstance.initialize();
+                    this.isInitialized = true;
+                    console.log('[AuthService] Built-in auth service initialized successfully');
+                } catch (error) {
+                    console.error('[AuthService] Initialization error:', error);
+                    this.isInitialized = true; // Continue anyway
+                }
+            },
+            login: async function() {
+                console.log('[AuthService] Built-in login attempt...');
+                if (this.msalInstance) {
+                    try {
+                        const loginRequest = {
+                            scopes: window.AppConfig.scopes.login,
+                            prompt: 'select_account'
+                        };
+                        await this.msalInstance.loginRedirect(loginRequest);
+                    } catch (error) {
+                        console.error('[AuthService] Login error:', error);
+                        throw error;
+                    }
+                } else {
+                    // Mock login pour démonstration
+                    console.log('[AuthService] Mock login - simulating successful authentication');
+                    setTimeout(() => {
+                        const mockUser = {
+                            displayName: 'Utilisateur Test',
+                            mail: 'test@example.com',
+                            userPrincipalName: 'test@example.com'
+                        };
+                        window.displayUserInfo(mockUser);
+                        window.showApp();
+                    }, 2000);
+                }
+            },
+            logout: async function() {
+                console.log('[AuthService] Built-in logout');
+                if (this.msalInstance) {
+                    await this.msalInstance.logoutRedirect();
+                } else {
+                    window.location.reload();
+                }
+            }
+        };
+        
+        window.mailService = {
+            initialized: false,
+            initialize: function() {
+                console.log('[MailService] Built-in mail service initialized');
+                this.initialized = true;
+            }
+        };
+        
+        window.uiManager = {
+            showToast: function(message, type = 'info', duration = 5000) {
+                console.log(`[Toast ${type}] ${message}`);
+                // Toast simple
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 12px 20px;
+                    background: ${type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#4f46e5'};
+                    color: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    z-index: 10000;
+                    font-size: 14px;
+                    max-width: 300px;
+                `;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, duration);
+            },
+            updateAuthStatus: function(user) {
+                if (user) {
+                    window.displayUserInfo(user);
+                }
+            }
+        };
+        
+        console.log('[APP] Configuration and built-in services loaded successfully');
     </script>
     
     <style>
@@ -705,6 +814,21 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[APP] DOM loaded, setting up event listeners');
 
+            // Initialiser immédiatement les services intégrés
+            console.log('[APP] Initializing built-in services...');
+            window.authService.initialize();
+            window.mailService.initialize();
+            
+            // Afficher l'app après un court délai pour s'assurer que tout est prêt
+            setTimeout(() => {
+                if (!appInitialized) {
+                    console.log('[APP] Auto-showing app with built-in services');
+                    showApp();
+                    // Charger le dashboard par défaut
+                    navigateToPage('dashboard');
+                }
+            }, 1000);
+
             // Bouton de connexion
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
@@ -717,28 +841,14 @@
                     const loading = document.getElementById('loadingOverlay');
                     if (loading) loading.classList.add('active');
                     
-                    // Simulation de connexion pour démonstration
-                    setTimeout(() => {
-                        console.log('[AUTH] Simulating successful login');
-                        
-                        // Simuler un utilisateur connecté
-                        const mockUser = {
-                            displayName: 'Vianney Hastings',
-                            mail: 'vianney@hastings.com',
-                            userPrincipalName: 'vianney@hastings.com'
-                        };
-                        
-                        displayUserInfo(mockUser);
-                        showApp();
-                        isAuthenticated = true;
-                        currentUser = mockUser;
-                        
-                    }, 2000);
-                    
-                    // Essayer la vraie connexion si disponible
-                    if (window.app && window.app.login) {
-                        window.app.login();
-                    }
+                    // Utiliser notre service d'auth intégré
+                    window.authService.login().catch(error => {
+                        console.error('[AUTH] Login failed:', error);
+                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter avec Outlook';
+                        this.disabled = false;
+                        if (loading) loading.classList.remove('active');
+                        window.uiManager.showToast('Erreur de connexion: ' + error.message, 'error');
+                    });
                 });
             }
 
@@ -753,15 +863,13 @@
                     }
                 });
             });
-
-            // Auto-affichage après délai (fallback)
-            setTimeout(() => {
-                if (!isAuthenticated) {
-                    console.log('[APP] Auto-showing app after timeout');
-                    showApp();
-                }
-            }, 8000);
         });
+
+        // Fonctions globales pour compatibilité
+        window.displayUserInfo = displayUserInfo;
+        window.showApp = showApp;
+        window.navigateToPage = navigateToPage;
+        window.startEmailScan = startEmailScan;
 
         // Fonctions globales pour compatibilité
         window.displayUserInfo = displayUserInfo;
@@ -806,10 +914,18 @@
         console.log('[APP] Application script loaded successfully');
     </script>
 
-    <!-- Scripts externes (optionnels) -->
-    <script src="AuthService.js" onerror="console.log('AuthService.js not found - using fallback')"></script>
-    <script src="MailService.js" onerror="console.log('MailService.js not found - using fallback')"></script>
-    <script src="PageManager.js" onerror="console.log('PageManager.js not found - using fallback')"></script>
-    <script src="app.js" onerror="console.log('app.js not found - using fallback')"></script>
+    <!-- Scripts externes (optionnels - l'app fonctionne sans eux) -->
+    <script>
+        // Remplacer les scripts externes par des stubs s'ils échouent
+        window.addEventListener('error', function(e) {
+            if (e.filename && (e.filename.includes('.js'))) {
+                console.warn('[APP] External script failed to load:', e.filename, 'App will continue with built-in services');
+            }
+        });
+    </script>
+    <script src="AuthService.js" onerror="console.log('External AuthService.js not found - using built-in service')"></script>
+    <script src="MailService.js" onerror="console.log('External MailService.js not found - using built-in service')"></script>
+    <script src="PageManager.js" onerror="console.log('External PageManager.js not found - using built-in navigation')"></script>
+    <script src="app.js" onerror="console.log('External app.js not found - using built-in app logic')"></script>
 </body>
 </html>
