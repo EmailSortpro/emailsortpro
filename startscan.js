@@ -20,15 +20,16 @@ class ModernScanStartModule {
         styles.textContent = `
             /* Scanner Ultra-Moderne Optimisé */
             .modern-scanner {
-                min-height: calc(100vh - 65px);
+                height: auto;
+                min-height: 500px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 15px;
+                padding: 20px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 margin: 0;
                 border-radius: 0;
-                overflow: hidden;
+                position: relative;
             }
             
             .scanner-card-modern {
@@ -39,14 +40,12 @@ class ModernScanStartModule {
                 max-width: 520px;
                 width: 100%;
                 height: auto;
-                max-height: calc(100vh - 100px);
                 text-align: center;
                 box-shadow: 
                     0 20px 60px rgba(0, 0, 0, 0.15),
                     0 0 0 1px rgba(255, 255, 255, 0.2) inset;
                 border: 1px solid rgba(255, 255, 255, 0.3);
                 position: relative;
-                overflow-y: auto;
                 display: flex;
                 flex-direction: column;
             }
@@ -291,13 +290,11 @@ class ModernScanStartModule {
                 opacity: 0;
                 transform: translateY(20px);
                 transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-                margin-top: 15px;
+                margin-top: 20px;
                 text-align: center;
-                flex: 1;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
-                min-height: 0;
             }
             
             .progress-section-modern.active {
@@ -411,14 +408,13 @@ class ModernScanStartModule {
             /* Responsive */
             @media (max-width: 640px) {
                 .modern-scanner {
-                    min-height: calc(100vh - 60px);
-                    padding: 10px;
+                    min-height: 400px;
+                    padding: 15px;
                 }
                 
                 .scanner-card-modern {
                     padding: 25px 20px;
                     border-radius: 20px;
-                    max-height: calc(100vh - 80px);
                 }
                 
                 .modern-title {
