@@ -33,7 +33,19 @@ class ModernScanStartModule {
                 margin: 0;
                 border-radius: 0;
                 overflow: hidden;
-                z-index: 1000;
+                z-index: 10000;
+            }
+            
+            /* Masquer la navigation quand le scanner est actif */
+            body:has(.modern-scanner) .main-nav,
+            body:has(.modern-scanner) nav,
+            body:has(.modern-scanner) header {
+                display: none !important;
+            }
+            
+            /* S'assurer que le scanner prend tout l'espace */
+            body:has(.modern-scanner) {
+                overflow: hidden !important;
             }
             
             .scanner-card-modern {
