@@ -4,7 +4,7 @@ class ModernScanStartModule {
     constructor() {
         this.isInitialized = false;
         this.scanInProgress = false;
-        this.selectedDays = 30;
+        this.selectedDays = 7;
         this.stylesAdded = false;
         this.scanStartTime = null;
         
@@ -175,26 +175,27 @@ class ModernScanStartModule {
             }
             
             .duration-options {
-                display: flex;
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
                 gap: 8px;
                 background: #f1f5f9;
-                padding: 4px;
+                padding: 8px;
                 border-radius: 16px;
-                margin-bottom: 20px;
+                margin-bottom: 16px;
             }
             
             .duration-option {
-                flex: 1;
                 padding: 12px 8px;
                 border: none;
                 background: transparent;
                 border-radius: 12px;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 500;
                 color: #64748b;
                 cursor: pointer;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 position: relative;
+                text-align: center;
             }
             
             .duration-option.selected {
@@ -214,7 +215,7 @@ class ModernScanStartModule {
             .duration-info {
                 font-size: 13px;
                 color: #9ca3af;
-                margin-top: 8px;
+                text-align: center;
             }
             
             /* Bouton de scan moderne */
@@ -376,8 +377,14 @@ class ModernScanStartModule {
                 }
                 
                 .duration-options {
-                    flex-direction: column;
-                    gap: 4px;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 6px;
+                    padding: 6px;
+                }
+                
+                .duration-option {
+                    padding: 10px 6px;
+                    font-size: 12px;
                 }
             }
             
@@ -508,18 +515,24 @@ class ModernScanStartModule {
                     <div class="duration-selector">
                         <div class="duration-label">Période d'analyse</div>
                         <div class="duration-options">
-                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(7)" data-days="7">
+                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(1)" data-days="1">
+                                1 jour
+                            </button>
+                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(3)" data-days="3">
+                                3 jours
+                            </button>
+                            <button class="duration-option selected" onclick="window.modernScanModule.selectDuration(7)" data-days="7">
                                 7 jours
                             </button>
-                            <button class="duration-option selected" onclick="window.modernScanModule.selectDuration(30)" data-days="30">
-                                30 jours
+                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(15)" data-days="15">
+                                15 jours
                             </button>
-                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(90)" data-days="90">
-                                3 mois
+                            <button class="duration-option" onclick="window.modernScanModule.selectDuration(30)" data-days="30">
+                                30 jours
                             </button>
                         </div>
                         <div class="duration-info" id="durationInfo">
-                            Analysera les emails des 30 derniers jours
+                            Analysera les emails des 7 derniers jours
                         </div>
                     </div>
                     
@@ -641,11 +654,11 @@ class ModernScanStartModule {
         // Mettre à jour l'info
         const info = document.getElementById('durationInfo');
         if (info) {
-            const text = days === 7 ? 'derniers jours' : 
-                        days === 30 ? 'derniers jours' : 
-                        'derniers mois';
-            const count = days === 90 ? '3' : days;
-            info.textContent = `Analysera les emails des ${count} ${text}`;
+            let text = 'derniers jours';
+            if (days === 1) text = 'dernier jour';
+            else if (days === 30) text = 'derniers jours';
+            
+            info.textContent = `Analysera les emails du${days === 1 ? '' : 's'} ${days} ${text}`;
         }
         
         console.log(`[ModernScan] Selected duration: ${days} days`);
