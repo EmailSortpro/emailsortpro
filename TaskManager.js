@@ -312,6 +312,20 @@ ${email.bodyPreview || 'Contenu non disponible'}`;
                     return new Date(a.dueDate) - new Date(b.dueDate);
                 });
                 break;
+            case 'sender':
+                sorted.sort((a, b) => {
+                    const senderA = (a.emailFromName || a.emailFrom || 'ZZZ').toLowerCase();
+                    const senderB = (b.emailFromName || b.emailFrom || 'ZZZ').toLowerCase();
+                    return senderA.localeCompare(senderB);
+                });
+                break;
+            case 'client':
+                sorted.sort((a, b) => {
+                    const clientA = (a.client || 'ZZZ').toLowerCase();
+                    const clientB = (b.client || 'ZZZ').toLowerCase();
+                    return clientA.localeCompare(clientB);
+                });
+                break;
             case 'created':
             default:
                 sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -521,6 +535,8 @@ class TasksView {
                             <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>🕒 Plus récent</option>
                             <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>🎯 Priorité</option>
                             <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>📅 Échéance</option>
+                            <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>👤 Expéditeur</option>
+                            <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>🏢 Client</option>
                         </select>
                         
                         <label class="toggle-large">
@@ -897,6 +913,17 @@ class TasksView {
                     <i class="fas fa-eye"></i>
                 </button>
             `);
+            
+            // Bouton pour voir l'email complet si c'est une tâche email
+            if (task.hasEmail) {
+                actions.push(`
+                    <button class="action-btn-modern email" 
+                            onclick="event.stopPropagation(); window.tasksView.showEmailModal('${task.id}')"
+                            title="Voir l'email complet">
+                        <i class="fas fa-envelope-open"></i>
+                    </button>
+                `);
+            }
         }
         
         actions.push(`
@@ -1014,7 +1041,279 @@ class TasksView {
         }
     }
 
-    showTaskDetails(taskId) {
+    showEmailModal(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+
+        // Modal de l'email complet - style PageManager
+        const uniqueId = 'email_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 900px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Email Complet</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        ${this.buildEmailContent(task)}
+                    </div>
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                            Fermer
+                        </button>
+                        ${task.hasEmail && !task.emailReplied && task.status !== 'completed' ? `
+                            <button onclick="window.tasksView.replyToEmailFromModal('${task.id}'); document.getElementById('${uniqueId}').remove();"
+                                    style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-reply"></i> Répondre
+                            </button>
+                        ` : ''}
+                        <button onclick="window.tasksView.showTaskDetails('${task.id}'); document.getElementById('${uniqueId}').remove();"
+                                style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-tasks"></i> Voir la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    buildEmailContent(task) {
+        const senderName = task.emailFromName || 'Inconnu';
+        const senderEmail = task.emailFrom || '';
+        const formattedDate = task.emailDate ? new Date(task.emailDate).toLocaleString('fr-FR') : '';
+        
+        return `
+            <div class="email-modal-content">
+                <!-- Email Header -->
+                <div class="email-header-section">
+                    <div class="email-header-row">
+                        <div class="email-sender-info">
+                            <div class="sender-avatar-email">${senderName.charAt(0).toUpperCase()}</div>
+                            <div class="sender-details-email">
+                                <div class="sender-name-email">${this.escapeHtml(senderName)}</div>
+                                <div class="sender-email-address">${this.escapeHtml(senderEmail)}</div>
+                                ${task.emailDomain ? `<div class="sender-domain-email">@${task.emailDomain}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="email-meta-info">
+                            <div class="email-date-full">${formattedDate}</div>
+                            ${task.hasAttachments ? '<div class="attachment-indicator"><i class="fas fa-paperclip"></i> Pièces jointes</div>' : ''}
+                            ${task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed') ? 
+                                '<div class="reply-status-indicator"><i class="fas fa-exclamation-circle"></i> Réponse requise</div>' : ''
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="email-subject-section">
+                        <h3 class="email-subject-full">
+                            <i class="fas fa-envelope"></i>
+                            ${this.escapeHtml(task.emailSubject || 'Sans sujet')}
+                        </h3>
+                    </div>
+                </div>
+
+                <!-- Email Body -->
+                <div class="email-body-section">
+                    <h4><i class="fas fa-align-left"></i> Contenu de l'email</h4>
+                    <div class="email-content-display">
+                        ${this.formatEmailContent(task.emailContent)}
+                    </div>
+                </div>
+
+                <!-- Quick Actions Section -->
+                <div class="email-actions-section">
+                    <h4><i class="fas fa-bolt"></i> Actions rapides</h4>
+                    <div class="quick-actions-grid">
+                        ${task.hasEmail && !task.emailReplied && task.status !== 'completed' ? `
+                            <button class="quick-action-btn reply-btn" onclick="window.tasksView.replyToEmailFromModal('${task.id}')">
+                                <i class="fas fa-reply"></i>
+                                <span>Répondre</span>
+                            </button>
+                        ` : ''}
+                        <button class="quick-action-btn forward-btn" onclick="window.tasksView.forwardEmail('${task.id}')">
+                            <i class="fas fa-share"></i>
+                            <span>Transférer</span>
+                        </button>
+                        ${task.status !== 'completed' ? `
+                            <button class="quick-action-btn complete-btn" onclick="window.tasksView.markCompleteFromModal('${task.id}')">
+                                <i class="fas fa-check"></i>
+                                <span>Marquer terminé</span>
+                            </button>
+                        ` : ''}
+                        <button class="quick-action-btn copy-btn" onclick="window.tasksView.copyEmailContent('${task.id}')">
+                            <i class="fas fa-copy"></i>
+                            <span>Copier le contenu</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Related Task Info -->
+                <div class="related-task-section">
+                    <h4><i class="fas fa-link"></i> Tâche associée</h4>
+                    <div class="task-link-card">
+                        <div class="task-link-header">
+                            <div class="priority-indicator priority-${task.priority}">
+                                ${this.getPriorityIcon(task.priority)}
+                            </div>
+                            <div class="task-link-info">
+                                <div class="task-link-title">${this.escapeHtml(task.title)}</div>
+                                <div class="task-link-meta">
+                                    <span class="status-badge status-${task.status}">
+                                        ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
+                                    </span>
+                                    <span class="task-link-date">Créée le ${new Date(task.createdAt).toLocaleDateString('fr-FR')}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="view-task-btn" onclick="window.tasksView.showTaskDetails('${task.id}')">
+                            <i class="fas fa-external-link-alt"></i>
+                            Voir la tâche complète
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    formatEmailContent(content) {
+        if (!content) return '<p class="no-content">Contenu non disponible</p>';
+        
+        // Si c'est du contenu structuré de notre système
+        if (content.includes('📧 RÉSUMÉ EXÉCUTIF') || content.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
+            return `<div class="structured-email-content">${content.replace(/\n/g, '<br>')}</div>`;
+        }
+        
+        // Nettoyer et formater le contenu HTML/texte
+        let formattedContent = this.escapeHtml(content);
+        
+        // Convertir les sauts de ligne
+        formattedContent = formattedContent.replace(/\n/g, '<br>');
+        
+        // Détecter et formater les URLs
+        formattedContent = formattedContent.replace(
+            /(https?:\/\/[^\s<]+)/g,
+            '<a href="$1" target="_blank" class="email-link">$1</a>'
+        );
+        
+        // Détecter et formater les emails
+        formattedContent = formattedContent.replace(
+            /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
+            '<a href="mailto:$1" class="email-link">$1</a>'
+        );
+        
+        return `<div class="email-text-content">${formattedContent}</div>`;
+    }
+
+    replyToEmailFromModal(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        const subject = `Re: ${task.emailSubject || 'Votre message'}`;
+        const to = task.emailFrom;
+        
+        // Créer un contenu de réponse plus intelligent
+        const originalDate = task.emailDate ? new Date(task.emailDate).toLocaleDateString('fr-FR') : '';
+        const senderName = task.emailFromName || task.emailFrom;
+        
+        const body = `Bonjour${senderName !== task.emailFrom ? ' ' + senderName : ''},
+
+Merci pour votre message${originalDate ? ' du ' + originalDate : ''}.
+
+[Votre réponse ici]
+
+Cordialement,
+[Votre nom]
+
+---
+Message original :
+De: ${senderName} <${task.emailFrom}>
+Date: ${originalDate}
+Objet: ${task.emailSubject || 'Sans sujet'}`;
+        
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
+        
+        // Marquer comme répondu
+        window.taskManager.updateTask(taskId, { emailReplied: true });
+        this.showToast('Email de réponse ouvert', 'success');
+        
+        // Fermer le modal
+        document.querySelectorAll('[id^="email_modal_"]').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
+    }
+
+    forwardEmail(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        const subject = `Fwd: ${task.emailSubject || 'Email transféré'}`;
+        const senderName = task.emailFromName || task.emailFrom;
+        const originalDate = task.emailDate ? new Date(task.emailDate).toLocaleDateString('fr-FR') : '';
+        
+        const body = `[Message transféré]
+
+---
+De: ${senderName} <${task.emailFrom}>
+Date: ${originalDate}
+Objet: ${task.emailSubject || 'Sans sujet'}
+
+${task.emailContent || 'Contenu non disponible'}`;
+        
+        const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
+        
+        this.showToast('Email de transfert ouvert', 'success');
+    }
+
+    markCompleteFromModal(taskId) {
+        window.taskManager.updateTask(taskId, { status: 'completed' });
+        this.showToast('Tâche marquée comme terminée', 'success');
+        
+        // Fermer le modal et rafraîchir
+        document.querySelectorAll('[id^="email_modal_"]').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
+        this.refreshView();
+    }
+
+    async copyEmailContent(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        const senderName = task.emailFromName || task.emailFrom;
+        const originalDate = task.emailDate ? new Date(task.emailDate).toLocaleDateString('fr-FR') : '';
+        
+        const content = `Email de: ${senderName} <${task.emailFrom}>
+Date: ${originalDate}
+Sujet: ${task.emailSubject || 'Sans sujet'}
+
+${task.emailContent || 'Contenu non disponible'}`;
+        
+        try {
+            await navigator.clipboard.writeText(content);
+            this.showToast('Contenu de l\'email copié', 'success');
+        } catch (error) {
+            // Fallback pour les navigateurs plus anciens
+            const textArea = document.createElement('textarea');
+            textArea.value = content;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            this.showToast('Contenu de l\'email copié', 'success');
+        }
+    }
         const task = window.taskManager.getTask(taskId);
         if (!task) return;
 
@@ -2245,6 +2544,11 @@ class TasksView {
                 color: #d97706;
             }
             
+            .action-btn-modern.email {
+                background: #e0f2fe;
+                color: #0277bd;
+            }
+            
             .action-btn-modern.delete {
                 background: #fee2e2;
                 color: #dc2626;
@@ -2824,6 +3128,322 @@ class TasksView {
                 font-weight: 500;
             }
 
+            /* Email Modal Styles */
+            .email-modal-content {
+                font-family: inherit;
+            }
+            
+            .email-header-section {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .email-header-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 12px;
+            }
+            
+            .email-sender-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .sender-avatar-email {
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                font-weight: 600;
+            }
+            
+            .sender-details-email {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .sender-name-email {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+            
+            .sender-email-address {
+                font-size: 14px;
+                color: #6b7280;
+            }
+            
+            .sender-domain-email {
+                font-size: 12px;
+                color: #9ca3af;
+                font-weight: 500;
+            }
+            
+            .email-meta-info {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 4px;
+                font-size: 13px;
+            }
+            
+            .email-date-full {
+                color: #4b5563;
+                font-weight: 500;
+            }
+            
+            .attachment-indicator {
+                color: #d97706;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            .reply-status-indicator {
+                color: #dc2626;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-weight: 600;
+            }
+            
+            .email-subject-section {
+                border-top: 1px solid #e5e7eb;
+                padding-top: 12px;
+            }
+            
+            .email-subject-full {
+                margin: 0;
+                font-size: 18px;
+                font-weight: 600;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .email-body-section {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .email-body-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                color: #374151;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .email-content-display {
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                padding: 16px;
+                max-height: 400px;
+                overflow-y: auto;
+            }
+            
+            .structured-email-content {
+                font-family: 'Courier New', monospace;
+                font-size: 13px;
+                line-height: 1.4;
+                white-space: pre-wrap;
+                color: #374151;
+            }
+            
+            .email-text-content {
+                line-height: 1.6;
+                color: #374151;
+            }
+            
+            .no-content {
+                color: #9ca3af;
+                font-style: italic;
+                text-align: center;
+                padding: 20px;
+            }
+            
+            .email-link {
+                color: #2563eb;
+                text-decoration: underline;
+            }
+            
+            .email-link:hover {
+                color: #1d4ed8;
+            }
+            
+            .email-actions-section {
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .email-actions-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                color: #075985;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .quick-actions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 12px;
+            }
+            
+            .quick-action-btn {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                padding: 12px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            
+            .quick-action-btn i {
+                font-size: 18px;
+            }
+            
+            .reply-btn {
+                background: #dbeafe;
+                color: #1e40af;
+            }
+            
+            .reply-btn:hover {
+                background: #bfdbfe;
+                transform: translateY(-1px);
+            }
+            
+            .forward-btn {
+                background: #fef3c7;
+                color: #92400e;
+            }
+            
+            .forward-btn:hover {
+                background: #fde68a;
+                transform: translateY(-1px);
+            }
+            
+            .complete-btn {
+                background: #dcfce7;
+                color: #166534;
+            }
+            
+            .complete-btn:hover {
+                background: #bbf7d0;
+                transform: translateY(-1px);
+            }
+            
+            .copy-btn {
+                background: #f3f4f6;
+                color: #4b5563;
+            }
+            
+            .copy-btn:hover {
+                background: #e5e7eb;
+                transform: translateY(-1px);
+            }
+            
+            .related-task-section {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+            }
+            
+            .related-task-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                color: #374151;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .task-link-card {
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .task-link-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
+            }
+            
+            .task-link-info {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .task-link-title {
+                font-weight: 600;
+                color: #1f2937;
+                font-size: 14px;
+            }
+            
+            .task-link-meta {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 12px;
+            }
+            
+            .task-link-date {
+                color: #6b7280;
+            }
+            
+            .view-task-btn {
+                background: #667eea;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: background 0.2s;
+            }
+            
+            .view-task-btn:hover {
+                background: #5a67d8;
+            }
+
             /* Form Elements */
             .form-group {
                 margin-bottom: 16px;
@@ -2912,6 +3532,10 @@ class TasksView {
                 
                 .kanban-column {
                     min-height: auto;
+                }
+                
+                .quick-actions-grid {
+                    grid-template-columns: repeat(2, 1fr);
                 }
             }
             
@@ -3033,6 +3657,29 @@ class TasksView {
                 .email-details-grid,
                 .metadata-grid {
                     grid-template-columns: 1fr;
+                }
+                
+                .quick-actions-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .email-header-row {
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                
+                .email-meta-info {
+                    align-items: flex-start;
+                }
+                
+                .task-link-card {
+                    flex-direction: column;
+                    gap: 12px;
+                    align-items: stretch;
+                }
+                
+                .view-task-btn {
+                    align-self: center;
                 }
             }
         `;
