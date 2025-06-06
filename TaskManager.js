@@ -1,4 +1,4 @@
-// TaskManager Pro v8.3 - CORRIGÉ avec contenu email complet et sections structurées
+// TaskManager Pro v8.4 - CORRIGÉ avec affichage email complet et suggestions de réponse
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v8.3 - CORRIGÉ avec contenu email complet...');
+            console.log('[TaskManager] Initializing v8.4 - CORRIGÉ avec affichage email complet...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -72,6 +72,27 @@ Pourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner ave
 
 Merci d'avance,
 Sarah Martin`,
+                // NOUVEAU: Contenu HTML complet de l'email
+                emailHtmlContent: `<div style="font-family: Arial, sans-serif; max-width: 600px;">
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
+                        <h1 style="margin: 0; font-size: 24px;">ACME Corp</h1>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9;">Marketing Department</p>
+                    </div>
+                    <div style="background: white; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+                        <p>Bonjour,</p>
+                        <p>J'espère que vous allez bien. Je vous contacte concernant notre <strong>campagne marketing Q2</strong> qui nécessite votre validation.</p>
+                        <div style="background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 6px; padding: 15px; margin: 20px 0;">
+                            <h3 style="margin: 0 0 10px 0; color: #1f2937;">Éléments préparés :</h3>
+                            <ul style="margin: 0; padding-left: 20px;">
+                                <li>Visuels créatifs pour les réseaux sociaux</li>
+                                <li><strong>Budget détaillé de 50k€</strong></li>
+                                <li>Calendrier de lancement</li>
+                            </ul>
+                        </div>
+                        <p><strong>Pourriez-vous valider ces éléments avant vendredi ?</strong> Nous devons coordonner avec l'équipe commerciale pour le lancement.</p>
+                        <p style="margin-top: 30px;">Merci d'avance,<br><strong>Sarah Martin</strong></p>
+                    </div>
+                </div>`,
                 tags: ['marketing', 'validation', 'q2'],
                 client: 'ACME Corp',
                 createdAt: new Date(Date.now() - 86400000).toISOString(),
@@ -93,6 +114,46 @@ Sarah Martin`,
                     'Deadline serrée pour le lancement',
                     'Coordination avec l\'équipe commerciale requise'
                 ],
+                // NOUVEAU: Suggestions de réponse personnalisées
+                suggestedReplies: [
+                    {
+                        tone: 'formel',
+                        subject: 'Re: Validation campagne marketing Q2 - Approuvé',
+                        content: `Bonjour Sarah,
+
+Merci pour ce dossier complet sur la campagne marketing Q2.
+
+Après examen des éléments fournis, je valide :
+✓ Les visuels créatifs - très bien conçus
+✓ Le budget de 50k€ - approuvé 
+✓ Le calendrier de lancement - cohérent avec nos objectifs
+
+Vous pouvez procéder au lancement en coordination avec l'équipe commerciale comme prévu.
+
+Excellente initiative, félicitations à toute l'équipe !
+
+Cordialement,
+[Votre nom]`
+                    },
+                    {
+                        tone: 'urgent',
+                        subject: 'Re: Validation campagne marketing Q2 - Questions urgentes',
+                        content: `Bonjour Sarah,
+
+J'ai examiné le dossier campagne Q2 avec attention.
+
+Avant validation finale, j'ai quelques questions urgentes :
+
+1. Budget 50k€ : quelle répartition LinkedIn vs Google Ads ?
+2. Cible 25-45 ans : avez-vous les personas détaillés ?
+3. Coordination commerciale : qui est le référent côté vente ?
+
+Pouvons-nous organiser un point rapidement demain pour clarifier ces aspects ?
+
+Dans l'attente de votre retour,
+[Votre nom]`
+                    }
+                ],
                 method: 'ai'
             }
         ];
@@ -110,6 +171,7 @@ Sarah Martin`,
         
         // EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
         const fullEmailContent = this.extractFullEmailContent(email, taskData);
+        const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
         
         // Construire la tâche complète avec toutes les données email
         const task = {
@@ -126,7 +188,8 @@ Sarah Martin`,
             emailFrom: taskData.emailFrom || (email?.from?.emailAddress?.address),
             emailFromName: taskData.emailFromName || (email?.from?.emailAddress?.name),
             emailSubject: taskData.emailSubject || email?.subject,
-            emailContent: fullEmailContent, // CONTENU COMPLET
+            emailContent: fullEmailContent, // CONTENU COMPLET TEXTE
+            emailHtmlContent: htmlEmailContent, // NOUVEAU: CONTENU HTML COMPLET
             emailDomain: taskData.emailDomain || (taskData.emailFrom ? taskData.emailFrom.split('@')[1] : ''),
             hasEmail: true,
             emailReplied: false,
@@ -140,6 +203,9 @@ Sarah Martin`,
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
             aiAnalysis: taskData.aiAnalysis || null,
+            
+            // NOUVEAU: Suggestions de réponse personnalisées
+            suggestedReplies: taskData.suggestedReplies || [],
             
             // MÉTADONNÉES
             tags: taskData.tags || [],
@@ -160,10 +226,13 @@ Sarah Martin`,
         console.log('[TaskManager] Task created successfully with full content:', {
             id: task.id,
             hasEmailContent: !!task.emailContent,
+            hasHtmlContent: !!task.emailHtmlContent,
             contentLength: task.emailContent?.length || 0,
+            htmlContentLength: task.emailHtmlContent?.length || 0,
             hasActions: task.actions?.length || 0,
             hasKeyInfo: task.keyInfo?.length || 0,
-            hasRisks: task.risks?.length || 0
+            hasRisks: task.risks?.length || 0,
+            hasSuggestedReplies: task.suggestedReplies?.length || 0
         });
         
         return task;
@@ -202,6 +271,33 @@ Sarah Martin`,
         return this.buildMinimalEmailContent(email, taskData);
     }
 
+    // NOUVELLE MÉTHODE POUR EXTRAIRE LE CONTENU HTML COMPLET
+    extractHtmlEmailContent(email, taskData) {
+        console.log('[TaskManager] Extracting HTML email content...');
+        
+        // Priorité 1: Contenu HTML passé directement dans taskData
+        if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
+            console.log('[TaskManager] Using HTML email content from taskData');
+            return taskData.emailHtmlContent;
+        }
+        
+        // Priorité 2: Contenu HTML de l'email
+        if (email?.body?.contentType === 'html' && email?.body?.content) {
+            console.log('[TaskManager] Using email HTML body content');
+            return this.cleanHtmlEmailContent(email.body.content);
+        }
+        
+        // Priorité 3: Contenu de l'email (même si text, on peut le formater)
+        if (email?.body?.content) {
+            console.log('[TaskManager] Converting text to HTML');
+            return this.convertTextToHtml(email.body.content, email);
+        }
+        
+        // Priorité 4: Construire un HTML à partir du contenu texte
+        const textContent = this.extractFullEmailContent(email, taskData);
+        return this.convertTextToHtml(textContent, email);
+    }
+
     cleanEmailContent(content) {
         if (!content) return '';
         
@@ -219,6 +315,64 @@ Sarah Martin`,
             .trim();
             
         return cleanContent.length > 100 ? cleanContent : '';
+    }
+
+    // NOUVELLE MÉTHODE POUR NETTOYER LE CONTENU HTML
+    cleanHtmlEmailContent(htmlContent) {
+        if (!htmlContent) return '';
+        
+        // Nettoyer le HTML en gardant la structure visuelle
+        let cleanHtml = htmlContent
+            // Supprimer les scripts et styles dangereux
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+            .replace(/on\w+="[^"]*"/gi, '') // Supprimer les événements JS
+            .replace(/javascript:/gi, '') // Supprimer javascript:
+            
+            // Nettoyer les attributs dangereux
+            .replace(/style="[^"]*"/gi, (match) => {
+                // Garder seulement les styles de mise en forme de base
+                const safeStyles = match.match(/(color|background|font-size|font-weight|text-align|margin|padding|border):[^;]*/gi);
+                return safeStyles ? `style="${safeStyles.join(';')}"` : '';
+            });
+        
+        // Encapsuler dans un conteneur sécurisé
+        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            ${cleanHtml}
+        </div>`;
+    }
+
+    // NOUVELLE MÉTHODE POUR CONVERTIR TEXTE EN HTML
+    convertTextToHtml(textContent, email) {
+        if (!textContent) return '';
+        
+        const senderName = email?.from?.emailAddress?.name || 'Expéditeur';
+        const senderEmail = email?.from?.emailAddress?.address || '';
+        const subject = email?.subject || 'Sans sujet';
+        const date = email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
+        
+        // Créer un HTML formaté à partir du texte
+        const htmlContent = textContent
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:([^\n]+)/g, '<strong>De:</strong>$1')
+            .replace(/Date:([^\n]+)/g, '<strong>Date:</strong>$1')
+            .replace(/Sujet:([^\n]+)/g, '<strong>Sujet:</strong>$1')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **texte** -> bold
+            .replace(/\*(.*?)\*/g, '<em>$1</em>') // *texte* -> italic
+            .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>'); // Links
+        
+        return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
+            <div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
+                <div style="font-size: 14px; color: #6b7280; margin-bottom: 10px;">
+                    <strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;<br>
+                    <strong>Date:</strong> ${date}<br>
+                    <strong>Sujet:</strong> ${subject}
+                </div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.8;">
+                ${htmlContent}
+            </div>
+        </div>`;
     }
 
     convertHtmlToText(htmlContent) {
@@ -312,6 +466,7 @@ Sujet: ${subject}
             emailFromName: taskData.emailFromName || null,
             emailSubject: taskData.emailSubject || null,
             emailContent: taskData.emailContent || '',
+            emailHtmlContent: taskData.emailHtmlContent || '', // NOUVEAU
             hasEmail: !!(taskData.emailId || taskData.emailFrom || taskData.emailContent),
             emailReplied: false,
             emailDate: taskData.emailDate || taskData.createdAt,
@@ -322,6 +477,7 @@ Sujet: ${subject}
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
+            suggestedReplies: taskData.suggestedReplies || [], // NOUVEAU
             
             // Metadata
             tags: taskData.tags || [],
@@ -753,6 +909,9 @@ class TasksView {
                             ${task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed') ? 
                                 '<span class="reply-needed">📧 Réponse requise</span>' : ''
                             }
+                            ${task.suggestedReplies && task.suggestedReplies.length > 0 ? 
+                                '<span class="has-suggestions">💡 Suggestions disponibles</span>' : ''
+                            }
                         </div>
                     ` : ''}
                 </div>
@@ -858,7 +1017,7 @@ class TasksView {
                  style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
                         z-index: 99999999; display: flex; align-items: center; justify-content: center; 
                         padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 12px; max-width: 900px; width: 100%; 
+                <div style="background: white; border-radius: 12px; max-width: 1000px; width: 100%; 
                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
                     <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
                         <h2 style="margin: 0; font-size: 20px;">Détails de la tâche</h2>
@@ -875,6 +1034,12 @@ class TasksView {
                                 style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
                             Fermer
                         </button>
+                        ${task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                            <button onclick="window.tasksView.showSuggestedReplies('${task.id}');"
+                                    style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-reply"></i> Voir suggestions de réponse
+                            </button>
+                        ` : ''}
                         ${task.status !== 'completed' ? `
                             <button onclick="window.tasksView.markComplete('${task.id}'); document.getElementById('${uniqueId}').remove();"
                                     style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">
@@ -890,7 +1055,7 @@ class TasksView {
         document.body.style.overflow = 'hidden';
     }
 
-    // CONTENU DES DÉTAILS AVEC CONTENU EMAIL COMPLET
+    // CONTENU DES DÉTAILS AVEC CONTENU EMAIL COMPLET ET SUGGESTIONS DE RÉPONSE
     buildTaskDetailsContent(task) {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const statusLabel = this.getStatusLabel(task.status);
@@ -989,18 +1154,202 @@ class TasksView {
                     </div>
                 ` : ''}
 
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <div class="details-section suggested-replies-section">
+                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse Personnalisées</h3>
+                        <div class="suggested-replies-container">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="suggested-reply-card">
+                                    <div class="reply-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <button class="copy-reply-btn" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${task.id}')">
+                                            <i class="fas fa-copy"></i> Copier
+                                        </button>
+                                    </div>
+                                    <div class="reply-subject">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                    <div class="reply-actions">
+                                        <button class="use-reply-btn" onclick="window.tasksView.useReply('${task.id}', ${idx})">
+                                            <i class="fas fa-paper-plane"></i> Utiliser cette réponse
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
                 ${task.emailContent && task.emailContent.length > 100 ? `
                     <div class="details-section">
                         <h3><i class="fas fa-envelope-open"></i> Contenu de l'Email</h3>
                         <div class="email-content-section">
-                            <div class="email-content-box">
-                                ${this.formatEmailContent(task.emailContent)}
-                            </div>
+                            ${task.emailHtmlContent ? `
+                                <div class="email-content-tabs">
+                                    <button class="tab-btn active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
+                                        <i class="fas fa-eye"></i> Vue formatée
+                                    </button>
+                                    <button class="tab-btn" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
+                                        <i class="fas fa-code"></i> Vue texte
+                                    </button>
+                                </div>
+                                <div class="email-content-box">
+                                    <div id="email-html-${task.id}" class="email-content-view active">
+                                        ${task.emailHtmlContent}
+                                    </div>
+                                    <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
+                                        ${this.formatEmailContent(task.emailContent)}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="email-content-box">
+                                    ${this.formatEmailContent(task.emailContent)}
+                                </div>
+                            `}
                         </div>
                     </div>
                 ` : ''}
             </div>
         `;
+    }
+
+    // NOUVELLE MÉTHODE POUR GÉRER LES ONGLETS EMAIL
+    switchEmailTab(tabType, taskId) {
+        // Gérer les onglets
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Gérer les contenus
+        const htmlView = document.getElementById(`email-html-${taskId}`);
+        const textView = document.getElementById(`email-text-${taskId}`);
+        
+        if (tabType === 'html') {
+            htmlView.style.display = 'block';
+            htmlView.classList.add('active');
+            textView.style.display = 'none';
+            textView.classList.remove('active');
+        } else {
+            htmlView.style.display = 'none';
+            htmlView.classList.remove('active');
+            textView.style.display = 'block';
+            textView.classList.add('active');
+        }
+    }
+
+    // NOUVELLE MÉTHODE POUR AFFICHER LES SUGGESTIONS DE RÉPONSE
+    showSuggestedReplies(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
+
+        const uniqueId = 'replies_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;"><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="ai-suggestions-info">
+                            <div class="ai-badge">
+                                <i class="fas fa-robot"></i>
+                                <span>Suggestions générées par Claude AI</span>
+                            </div>
+                            <p>Ces réponses ont été personnalisées selon le contexte de l'email de <strong>${task.emailFromName || 'l\'expéditeur'}</strong></p>
+                        </div>
+                        
+                        <div class="replies-list">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="reply-suggestion-card">
+                                    <div class="reply-card-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <div class="reply-card-actions">
+                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
+                                                <i class="fas fa-copy"></i> Copier
+                                            </button>
+                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
+                                                <i class="fas fa-paper-plane"></i> Utiliser
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="reply-subject-line">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content-preview">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    // NOUVELLE MÉTHODE POUR COPIER UNE RÉPONSE
+    async copyReplyToClipboard(replyIndex, taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast('Réponse copiée dans le presse-papiers', 'success');
+        } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            this.showToast('Erreur lors de la copie', 'error');
+        }
+    }
+
+    // NOUVELLE MÉTHODE POUR UTILISER UNE RÉPONSE
+    useReply(taskId, replyIndex) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const subject = reply.subject;
+        const body = reply.content;
+        const to = task.emailFrom;
+        
+        // Créer le lien mailto
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // Ouvrir le client email
+        window.open(mailtoLink);
+        
+        // Marquer comme répondu
+        window.taskManager.updateTask(taskId, { 
+            emailReplied: true,
+            status: task.status === 'todo' ? 'in-progress' : task.status
+        });
+        
+        this.showToast('Email de réponse ouvert dans votre client email', 'success');
+        
+        // Fermer les modals
+        document.querySelectorAll('[id^="replies_modal_"], [id^="task_details_modal_"]').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
     }
 
     // NOUVELLE MÉTHODE POUR FORMATER LE CONTENU EMAIL
@@ -1036,6 +1385,28 @@ class TasksView {
     getStatusLabel(status) {
         const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
         return labels[status] || 'À faire';
+    }
+
+    getReplyToneIcon(tone) {
+        const icons = {
+            formel: '👔',
+            informel: '😊',
+            urgent: '🚨',
+            neutre: '📝',
+            amical: '🤝'
+        };
+        return icons[tone] || '📝';
+    }
+
+    getReplyToneLabel(tone) {
+        const labels = {
+            formel: 'Formel',
+            informel: 'Informel',
+            urgent: 'Urgent',
+            neutre: 'Neutre',
+            amical: 'Amical'
+        };
+        return labels[tone] || 'Neutre';
     }
 
     formatDueDate(dateString) {
@@ -1190,6 +1561,13 @@ class TasksView {
         const task = window.taskManager.getTask(taskId);
         if (!task || !task.hasEmail) return;
         
+        // Si on a des suggestions de réponse, les montrer
+        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
+            this.showSuggestedReplies(taskId);
+            return;
+        }
+        
+        // Sinon, réponse basique
         const subject = `Re: ${task.emailSubject || 'Votre message'}`;
         const to = task.emailFrom;
         const body = `Bonjour,\n\nMerci pour votre message.\n\nCordialement,`;
@@ -1478,11 +1856,13 @@ class TasksView {
         }
     }
 
-    // STYLES IDENTIQUES À PAGEMANAGER + STYLES POUR CONTENU EMAIL
+    // STYLES IDENTIQUES À PAGEMANAGER + STYLES POUR CONTENU EMAIL ET SUGGESTIONS
     addModernTaskStyles() {
         // Utiliser les styles existants de PageManager s'ils sont déjà présents
         if (document.getElementById('optimizedEmailPageStyles')) {
             console.log('[TasksView] Using existing PageManager styles');
+            // Ajouter seulement les nouveaux styles spécifiques aux suggestions
+            this.addSuggestedRepliesStyles();
             return;
         }
         
@@ -1971,6 +2351,16 @@ class TasksView {
                 border: 1px solid #fde68a;
             }
             
+            .has-suggestions {
+                background: #dbeafe;
+                color: #1e40af;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid #bfdbfe;
+            }
+            
             .task-actions-condensed {
                 margin-left: 16px;
                 display: flex;
@@ -2294,13 +2684,61 @@ class TasksView {
                 padding: 16px 20px;
             }
             
+            .email-content-tabs {
+                display: flex;
+                gap: 5px;
+                margin-bottom: 16px;
+                background: #f3f4f6;
+                padding: 5px;
+                border-radius: 8px;
+            }
+            
+            .tab-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: transparent;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #6b7280;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .tab-btn.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            
+            .tab-btn:hover:not(.active) {
+                background: rgba(255,255,255,0.5);
+                color: #374151;
+            }
+            
             .email-content-box {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 8px;
                 padding: 16px;
-                max-height: 400px;
+                max-height: 500px;
                 overflow-y: auto;
+            }
+            
+            .email-content-view {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+            
+            .email-content-viewer {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
             }
             
             .email-original-content {
@@ -2401,6 +2839,276 @@ class TasksView {
         `;
         
         document.head.appendChild(styles);
+        
+        // Ajouter les styles spécifiques aux suggestions de réponse
+        this.addSuggestedRepliesStyles();
+    }
+
+    // NOUVEAUX STYLES POUR LES SUGGESTIONS DE RÉPONSE
+    addSuggestedRepliesStyles() {
+        if (document.getElementById('suggestedRepliesStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'suggestedRepliesStyles';
+        styles.textContent = `
+            /* Styles pour les suggestions de réponse */
+            .suggested-replies-section {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #7dd3fc;
+            }
+            
+            .suggested-replies-section h3 {
+                background: #f0f9ff;
+                border-bottom-color: #7dd3fc;
+                color: #075985;
+            }
+            
+            .suggested-replies-container {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .suggested-reply-card {
+                background: white;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 16px;
+                transition: all 0.2s ease;
+            }
+            
+            .suggested-reply-card:hover {
+                border-color: #7dd3fc;
+                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+            }
+            
+            .reply-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .reply-tone-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 12px;
+                border-radius: 16px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: capitalize;
+            }
+            
+            .reply-tone-badge.formel {
+                background: #f3f4f6;
+                color: #374151;
+                border: 1px solid #d1d5db;
+            }
+            
+            .reply-tone-badge.urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .reply-tone-badge.neutre {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .reply-tone-badge.amical {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .copy-reply-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                background: #f3f4f6;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                color: #374151;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .copy-reply-btn:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+            
+            .reply-subject {
+                font-size: 14px;
+                color: #4b5563;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .reply-content {
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                background: #f8fafc;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+                margin-bottom: 12px;
+            }
+            
+            .reply-actions {
+                display: flex;
+                justify-content: flex-end;
+            }
+            
+            .use-reply-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .use-reply-btn:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+            }
+            
+            /* Styles pour le modal des suggestions */
+            .ai-suggestions-info {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #7dd3fc;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .ai-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #0ea5e9;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            
+            .ai-suggestions-info p {
+                margin: 0;
+                color: #075985;
+                font-size: 14px;
+            }
+            
+            .replies-list {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .reply-suggestion-card {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                transition: all 0.2s ease;
+            }
+            
+            .reply-suggestion-card:hover {
+                border-color: #3b82f6;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+            
+            .reply-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .reply-card-actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .btn-sm {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid;
+            }
+            
+            .btn-sm.btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+            
+            .btn-sm.btn-secondary:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+            
+            .btn-sm.btn-primary {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+            
+            .btn-sm.btn-primary:hover {
+                background: #2563eb;
+                border-color: #2563eb;
+                transform: translateY(-1px);
+            }
+            
+            .reply-subject-line {
+                font-size: 13px;
+                color: #4b5563;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .reply-content-preview {
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                background: #f8fafc;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+        `;
+        
+        document.head.appendChild(styles);
     }
 }
 
@@ -2435,7 +3143,7 @@ function initializeTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v8.3 CORRIGÉ loaded - Avec contenu email complet et sections structurées');
+    console.log('✅ TaskManager v8.4 CORRIGÉ loaded - Avec affichage email complet et suggestions de réponse personnalisées');
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
