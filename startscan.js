@@ -27,11 +27,13 @@ class ModernScanStartModule {
                 justify-content: center;
                 padding: 0;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin: 0 -50px 0 -50px;
+                margin: 0 -100vw 0 -100vw;
                 border-radius: 0;
                 position: relative;
                 overflow: hidden;
-                width: calc(100% + 100px);
+                width: 200vw;
+                left: 50%;
+                transform: translateX(-50%);
             }
             
             .scanner-card-modern {
@@ -414,8 +416,10 @@ class ModernScanStartModule {
                 .modern-scanner {
                     min-height: 400px;
                     padding: 0;
-                    margin: 0 -30px 0 -30px;
-                    width: calc(100% + 60px);
+                    margin: 0 -100vw 0 -100vw;
+                    width: 200vw;
+                    left: 50%;
+                    transform: translateX(-50%);
                 }
                 
                 .scanner-card-modern {
