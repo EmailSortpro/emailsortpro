@@ -162,9 +162,9 @@ Dans l'attente de votre retour,
         this.saveTasks();
     }
 
-    // MÉTHODE PRINCIPALE POUR CRÉER UNE TÂCHE À PARTIR D'UN EMAIL - CORRIGÉE
-    createTaskFromEmail(taskData, email = null) {
-        console.log('[TaskManager] Creating task from email with full content:', taskData.title);
+    // MÉTHODE PRINCIPALE POUR CRÉER UNE TÂCHE À PARTIR D'UN EMAIL - CORRIGÉE AVEC IA
+    async createTaskFromEmail(taskData, email = null) {
+        console.log('[TaskManager] Creating task from email with AI-powered reply suggestions:', taskData.title);
         
         // Assurer un ID unique
         const taskId = taskData.id || this.generateId();
@@ -172,6 +172,25 @@ Dans l'attente de votre retour,
         // EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
         const fullEmailContent = this.extractFullEmailContent(email, taskData);
         const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
+        
+        // GÉNÉRER DES SUGGESTIONS DE RÉPONSE VIA IA SI NÉCESSAIRE
+        let suggestedReplies = taskData.suggestedReplies || [];
+        
+        // Si pas de suggestions fournies et qu'on a un email, générer via IA
+        if ((!suggestedReplies || suggestedReplies.length === 0) && 
+            (email || taskData.emailFrom) && 
+            window.aiTaskAnalyzer) {
+            
+            try {
+                console.log('[TaskManager] Generating AI-powered reply suggestions...');
+                suggestedReplies = await this.generateIntelligentReplySuggestions(email || taskData, taskData);
+                console.log('[TaskManager] Generated', suggestedReplies.length, 'AI reply suggestions');
+            } catch (error) {
+                console.warn('[TaskManager] AI reply generation failed:', error);
+                // Générer des suggestions de base en fallback
+                suggestedReplies = this.generateBasicReplySuggestions(email || taskData, taskData);
+            }
+        }
         
         // Construire la tâche complète avec toutes les données email
         const task = {
@@ -194,7 +213,7 @@ Dans l'attente de votre retour,
             hasEmail: true,
             emailReplied: false,
             emailDate: taskData.emailDate || email?.receivedDateTime,
-            needsReply: taskData.needsReply || false,
+            needsReply: taskData.needsReply !== false, // Par défaut true pour les emails
             hasAttachments: email?.hasAttachments || false,
             
             // DONNÉES STRUCTURÉES DE L'IA - COMPLÈTES
@@ -204,8 +223,10 @@ Dans l'attente de votre retour,
             risks: taskData.risks || [],
             aiAnalysis: taskData.aiAnalysis || null,
             
-            // NOUVEAU: Suggestions de réponse personnalisées
-            suggestedReplies: taskData.suggestedReplies || [],
+            // NOUVEAU: Suggestions de réponse personnalisées IA
+            suggestedReplies: suggestedReplies,
+            aiRepliesGenerated: suggestedReplies.length > 0,
+            aiRepliesGeneratedAt: suggestedReplies.length > 0 ? new Date().toISOString() : null,
             
             // MÉTADONNÉES
             tags: taskData.tags || [],
@@ -223,7 +244,7 @@ Dans l'attente de votre retour,
         this.saveTasks();
         this.emitTaskUpdate('create', task);
         
-        console.log('[TaskManager] Task created successfully with full content:', {
+        console.log('[TaskManager] Task created successfully with AI reply suggestions:', {
             id: task.id,
             hasEmailContent: !!task.emailContent,
             hasHtmlContent: !!task.emailHtmlContent,
@@ -232,10 +253,313 @@ Dans l'attente de votre retour,
             hasActions: task.actions?.length || 0,
             hasKeyInfo: task.keyInfo?.length || 0,
             hasRisks: task.risks?.length || 0,
-            hasSuggestedReplies: task.suggestedReplies?.length || 0
+            hasSuggestedReplies: task.suggestedReplies?.length || 0,
+            aiRepliesGenerated: task.aiRepliesGenerated
         });
         
         return task;
+    }
+
+    // NOUVELLE MÉTHODE POUR GÉNÉRER DES SUGGESTIONS DE RÉPONSE INTELLIGENTES VIA IA
+    async generateIntelligentReplySuggestions(email, taskData) {
+        if (!window.aiTaskAnalyzer) {
+            console.warn('[TaskManager] AITaskAnalyzer not available');
+            return this.generateBasicReplySuggestions(email, taskData);
+        }
+
+        try {
+            const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
+            const senderEmail = email.from?.emailAddress?.address || taskData.emailFrom || '';
+            const subject = email.subject || taskData.emailSubject || 'votre message';
+            const content = email.body?.content || email.bodyPreview || taskData.emailContent || '';
+            const urgency = taskData.priority || 'medium';
+            const hasActions = taskData.actions && taskData.actions.length > 0;
+            const keyInfo = taskData.keyInfo || [];
+            const risks = taskData.risks || [];
+
+            // Construire un prompt spécialisé pour la génération de réponses
+            const replyPrompt = `Tu es un assistant expert en communication professionnelle. Génère 3 suggestions de réponse personnalisées pour cet email.
+
+CONTEXTE DE L'EMAIL:
+Expéditeur: ${senderName} <${senderEmail}>
+Sujet: ${subject}
+Priorité détectée: ${urgency}
+Actions requises: ${hasActions ? 'Oui' : 'Non'}
+
+CONTENU DE L'EMAIL:
+${content}
+
+${keyInfo.length > 0 ? `INFORMATIONS CLÉS IDENTIFIÉES:\n${keyInfo.map(info => `• ${info}`).join('\n')}\n` : ''}
+
+${risks.length > 0 ? `POINTS D'ATTENTION:\n${risks.map(risk => `• ${risk}`).join('\n')}\n` : ''}
+
+INSTRUCTIONS:
+1. Analyse le contexte, le ton et l'urgence de l'email
+2. Génère 3 réponses différentes adaptées au contexte
+3. Varie les tons: professionnel, urgent si nécessaire, et une version plus détaillée
+4. Personalise avec le nom de l'expéditeur et les éléments spécifiques mentionnés
+5. Inclus des éléments concrets de l'email original
+
+FORMAT DE RÉPONSE JSON:
+{
+  "suggestions": [
+    {
+      "tone": "professionnel",
+      "subject": "Re: [sujet original]",
+      "content": "Réponse complète et personnalisée...",
+      "description": "Réponse professionnelle standard"
+    },
+    {
+      "tone": "urgent",
+      "subject": "Re: [sujet] - Traitement prioritaire",
+      "content": "Réponse adaptée à l'urgence...",
+      "description": "Réponse pour traitement urgent"
+    },
+    {
+      "tone": "détaillé",
+      "subject": "Re: [sujet] - Réponse détaillée",
+      "content": "Réponse complète avec tous les détails...",
+      "description": "Réponse complète et détaillée"
+    }
+  ]
+}`;
+
+            // Appeler l'IA pour générer les suggestions
+            const aiResponse = await this.callAIForReplySuggestions(replyPrompt);
+            
+            if (aiResponse && aiResponse.suggestions && Array.isArray(aiResponse.suggestions)) {
+                console.log('[TaskManager] AI generated', aiResponse.suggestions.length, 'reply suggestions');
+                return aiResponse.suggestions.map(suggestion => ({
+                    tone: suggestion.tone || 'neutre',
+                    subject: suggestion.subject || `Re: ${subject}`,
+                    content: suggestion.content || '',
+                    description: suggestion.description || '',
+                    generatedBy: 'claude-ai',
+                    generatedAt: new Date().toISOString()
+                }));
+            } else {
+                console.warn('[TaskManager] Invalid AI response format');
+                return this.generateBasicReplySuggestions(email, taskData);
+            }
+
+        } catch (error) {
+            console.error('[TaskManager] Error generating AI reply suggestions:', error);
+            return this.generateBasicReplySuggestions(email, taskData);
+        }
+    }
+
+    // MÉTHODE POUR APPELER L'IA CLAUDE SPÉCIFIQUEMENT POUR LES RÉPONSES
+    async callAIForReplySuggestions(prompt) {
+        if (!window.aiTaskAnalyzer) {
+            throw new Error('AITaskAnalyzer not available');
+        }
+
+        // Utiliser la même infrastructure que AITaskAnalyzer mais avec un prompt spécialisé
+        try {
+            // Vérifier si l'API est configurée
+            if (window.aiTaskAnalyzer.apiKey) {
+                console.log('[TaskManager] Using Claude API for reply suggestions');
+                return await this.callClaudeAPI(prompt);
+            } else {
+                console.log('[TaskManager] No API key, using local generation');
+                return this.generateBasicReplySuggestionsFromPrompt(prompt);
+            }
+        } catch (error) {
+            console.error('[TaskManager] AI API call failed:', error);
+            throw error;
+        }
+    }
+
+    // APPEL À L'API CLAUDE POUR LES SUGGESTIONS DE RÉPONSE
+    async callClaudeAPI(prompt) {
+        const apiUrl = 'https://api.anthropic.com/v1/messages';
+        const apiKey = window.aiTaskAnalyzer.apiKey;
+        
+        // Essayer d'abord le proxy local si disponible
+        if (window.aiTaskAnalyzer.useLocalProxy && window.aiTaskAnalyzer.localProxyUrl) {
+            try {
+                const response = await fetch(window.aiTaskAnalyzer.localProxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        apiKey: apiKey,
+                        model: 'claude-3-haiku-20240307',
+                        max_tokens: 2048,
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        temperature: 0.7,
+                        system: "Tu es un expert en communication professionnelle. Tu génères des réponses email personnalisées et adaptées au contexte. Réponds toujours en JSON valide avec des suggestions pratiques et utilisables."
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Local proxy error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return this.parseClaudeReplyResponse(data);
+                
+            } catch (error) {
+                console.warn('[TaskManager] Local proxy failed, trying CORS solutions:', error);
+            }
+        }
+
+        // Essayer les solutions CORS en fallback
+        for (const proxyUrl of window.aiTaskAnalyzer.corsProxies) {
+            try {
+                const targetUrl = encodeURIComponent(apiUrl);
+                const response = await fetch(proxyUrl + targetUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': apiKey,
+                        'anthropic-version': '2023-06-01'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-haiku-20240307',
+                        max_tokens: 2048,
+                        messages: [{
+                            role: 'user',
+                            content: prompt
+                        }],
+                        temperature: 0.7
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`CORS proxy error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                return this.parseClaudeReplyResponse(data);
+                
+            } catch (error) {
+                console.warn(`[TaskManager] CORS proxy ${proxyUrl} failed:`, error);
+            }
+        }
+
+        throw new Error('All Claude API methods failed');
+    }
+
+    // PARSER LA RÉPONSE DE CLAUDE POUR LES SUGGESTIONS
+    parseClaudeReplyResponse(response) {
+        try {
+            let jsonContent;
+            
+            // Gérer différents formats de réponse
+            if (typeof response === 'object' && response.content) {
+                if (Array.isArray(response.content)) {
+                    jsonContent = response.content[0]?.text || '';
+                } else {
+                    jsonContent = response.content;
+                }
+            } else if (typeof response === 'string') {
+                jsonContent = response;
+            } else {
+                jsonContent = JSON.stringify(response);
+            }
+            
+            // Extraire le JSON de la réponse
+            const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+                throw new Error('No JSON found in Claude response');
+            }
+            
+            const parsed = JSON.parse(jsonMatch[0]);
+            
+            // Valider la structure
+            if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
+                throw new Error('Invalid suggestions format');
+            }
+            
+            return parsed;
+            
+        } catch (error) {
+            console.error('[TaskManager] Parse Claude reply error:', error);
+            throw error;
+        }
+    }
+
+    // SUGGESTIONS DE BASE EN FALLBACK
+    generateBasicReplySuggestions(email, taskData) {
+        const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
+        const subject = email.subject || taskData.emailSubject || 'votre message';
+        const urgency = taskData.priority || 'medium';
+        const hasActions = taskData.actions && taskData.actions.length > 0;
+
+        const suggestions = [];
+
+        // Réponse professionnelle standard
+        suggestions.push({
+            tone: 'professionnel',
+            subject: `Re: ${subject}`,
+            content: `Bonjour ${senderName},
+
+Merci pour votre message concernant "${subject}".
+
+J'ai bien pris connaissance de votre demande et je m'en occupe rapidement. Je vous tiendrai informé de l'avancement.
+
+${hasActions ? 'Je traite les points que vous avez mentionnés et je vous reviens avec les éléments demandés.' : ''}
+
+Cordialement,
+[Votre nom]`,
+            description: 'Réponse professionnelle standard',
+            generatedBy: 'local-fallback',
+            generatedAt: new Date().toISOString()
+        });
+
+        // Réponse urgente si nécessaire
+        if (urgency === 'urgent' || urgency === 'high') {
+            suggestions.push({
+                tone: 'urgent',
+                subject: `Re: ${subject} - Traitement prioritaire`,
+                content: `Bonjour ${senderName},
+
+Je viens de prendre connaissance de votre message urgent.
+
+Je comprends l'importance de cette demande et je la traite en priorité absolue. Je vous reviens dans les meilleurs délais avec une réponse complète.
+
+${hasActions ? 'Toutes les actions nécessaires sont en cours de traitement.' : ''}
+
+Je reste à votre disposition pour toute information complémentaire.
+
+Cordialement,
+[Votre nom]`,
+                description: 'Réponse pour traitement urgent',
+                generatedBy: 'local-fallback',
+                generatedAt: new Date().toISOString()
+            });
+        }
+
+        // Réponse de confirmation détaillée
+        suggestions.push({
+            tone: 'détaillé',
+            subject: `Re: ${subject} - Confirmation de réception`,
+            content: `Bonjour ${senderName},
+
+Je vous confirme la bonne réception de votre message du ${new Date().toLocaleDateString('fr-FR')}.
+
+${hasActions ? 'J\'ai identifié les actions suivantes à mettre en œuvre et je vais les traiter dans l\'ordre de priorité :' : 'J\'étudie attentivement votre demande et je prépare une réponse appropriée.'}
+
+${taskData.actions ? taskData.actions.map((action, idx) => `${idx + 1}. ${action.text}`).join('\n') : ''}
+
+Je vous tiendrai informé de l'avancement et je vous recontacte rapidement avec les éléments demandés.
+
+N'hésitez pas à me recontacter si vous avez des questions complémentaires.
+
+Cordialement,
+[Votre nom]`,
+            description: 'Réponse complète et détaillée',
+            generatedBy: 'local-fallback',
+            generatedAt: new Date().toISOString()
+        });
+
+        console.log('[TaskManager] Generated', suggestions.length, 'basic reply suggestions');
+        return suggestions;
     }
 
     // NOUVELLE MÉTHODE POUR EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
@@ -860,7 +1184,7 @@ class TasksView {
         `;
     }
 
-    // RENDU IDENTIQUE À L'INTERFACE EMAIL DE PAGEMANAGER
+    // RENDU IDENTIQUE À L'INTERFACE EMAIL DE PAGEMANAGER AVEC BOUTON RÉPONDRE
     renderCondensedTaskItem(task) {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
@@ -872,6 +1196,10 @@ class TasksView {
             task.client || 'Interne';
             
         const dueDateInfo = this.formatDueDate(task.dueDate);
+        
+        // Déterminer si on montre le bouton de réponse
+        const showReplyButton = task.hasEmail && !task.emailReplied && task.status !== 'completed';
+        const hasAiSuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
         
         return `
             <div class="task-condensed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -906,12 +1234,27 @@ class TasksView {
                         <div class="task-email-line">
                             <i class="fas fa-envelope"></i>
                             <span class="email-from">${this.escapeHtml(task.emailFromName || task.emailFrom || 'Email')}</span>
-                            ${task.needsReply || (task.hasEmail && !task.emailReplied && task.status !== 'completed') ? 
+                            ${task.needsReply || showReplyButton ? 
                                 '<span class="reply-needed">📧 Réponse requise</span>' : ''
                             }
-                            ${task.suggestedReplies && task.suggestedReplies.length > 0 ? 
-                                '<span class="has-suggestions">💡 Suggestions disponibles</span>' : ''
+                            ${hasAiSuggestions ? 
+                                '<span class="has-ai-suggestions">🤖 Suggestions IA</span>' : ''
                             }
+                            ${task.aiRepliesGenerated ? 
+                                '<span class="ai-generated-badge">✨ IA</span>' : ''
+                            }
+                        </div>
+                    ` : ''}
+                    
+                    ${showReplyButton ? `
+                        <div class="task-reply-section">
+                            <button class="reply-to-email-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                                    title="${hasAiSuggestions ? 'Répondre avec suggestions IA' : 'Répondre à l\'email'}">
+                                <i class="fas fa-reply"></i>
+                                <span>Répondre au mail</span>
+                                ${hasAiSuggestions ? '<i class="fas fa-robot ai-icon"></i>' : ''}
+                            </button>
                         </div>
                     ` : ''}
                 </div>
@@ -936,12 +1279,13 @@ class TasksView {
             `);
         }
         
-        if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
+        // Bouton pour régénérer les suggestions IA
+        if (task.hasEmail && window.aiTaskAnalyzer?.apiKey) {
             actions.push(`
-                <button class="action-btn-modern reply" 
-                        onclick="event.stopPropagation(); window.tasksView.replyToEmail('${task.id}')"
-                        title="Répondre à l'email">
-                    <i class="fas fa-reply"></i>
+                <button class="action-btn-modern ai-refresh" 
+                        onclick="event.stopPropagation(); window.tasksView.regenerateAISuggestions('${task.id}')"
+                        title="Régénérer suggestions IA">
+                    <i class="fas fa-robot"></i>
                 </button>
             `);
         }
@@ -1270,6 +1614,19 @@ class TasksView {
                                 <span>Suggestions générées par Claude AI</span>
                             </div>
                             <p>Ces réponses ont été personnalisées selon le contexte de l'email de <strong>${task.emailFromName || 'l\'expéditeur'}</strong></p>
+                            ${task.aiRepliesGeneratedAt ? `
+                                <p class="ai-generation-time">
+                                    <i class="fas fa-clock"></i>
+                                    Générées le ${new Date(task.aiRepliesGeneratedAt).toLocaleString('fr-FR')}
+                                </p>
+                            ` : ''}
+                            ${window.aiTaskAnalyzer?.apiKey ? `
+                                <div class="ai-actions">
+                                    <button class="btn-sm btn-secondary" onclick="window.tasksView.regenerateAISuggestions('${taskId}')">
+                                        <i class="fas fa-sync"></i> Régénérer
+                                    </button>
+                                </div>
+                            ` : ''}
                         </div>
                         
                         <div class="replies-list">
@@ -1557,26 +1914,110 @@ class TasksView {
         this.showToast('Tâche marquée comme terminée', 'success');
     }
 
-    replyToEmail(taskId) {
+    // NOUVELLE MÉTHODE POUR RÉPONDRE AVEC IA
+    async replyToEmailWithAI(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task || !task.hasEmail) return;
         
-        // Si on a des suggestions de réponse, les montrer
+        // Si on a déjà des suggestions IA, les afficher
         if (task.suggestedReplies && task.suggestedReplies.length > 0) {
             this.showSuggestedReplies(taskId);
             return;
         }
         
-        // Sinon, réponse basique
+        // Sinon, générer des suggestions en temps réel
+        try {
+            this.showToast('Génération de suggestions IA...', 'info');
+            
+            const newSuggestions = await window.taskManager.generateIntelligentReplySuggestions(
+                { 
+                    from: { emailAddress: { name: task.emailFromName, address: task.emailFrom } },
+                    subject: task.emailSubject,
+                    body: { content: task.emailContent },
+                    bodyPreview: task.emailContent
+                }, 
+                task
+            );
+            
+            // Mettre à jour la tâche avec les nouvelles suggestions
+            if (newSuggestions && newSuggestions.length > 0) {
+                window.taskManager.updateTask(taskId, { 
+                    suggestedReplies: newSuggestions,
+                    aiRepliesGenerated: true,
+                    aiRepliesGeneratedAt: new Date().toISOString()
+                });
+                
+                this.showToast('Suggestions IA générées !', 'success');
+                this.showSuggestedReplies(taskId);
+                this.refreshView();
+            } else {
+                this.showToast('Impossible de générer des suggestions', 'warning');
+                this.replyToEmailBasic(taskId);
+            }
+            
+        } catch (error) {
+            console.error('[TasksView] Error generating AI suggestions:', error);
+            this.showToast('Erreur IA, réponse basique', 'warning');
+            this.replyToEmailBasic(taskId);
+        }
+    }
+
+    // MÉTHODE POUR RÉGÉNÉRER LES SUGGESTIONS IA
+    async regenerateAISuggestions(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        try {
+            this.showToast('Régénération des suggestions IA...', 'info');
+            
+            const newSuggestions = await window.taskManager.generateIntelligentReplySuggestions(
+                { 
+                    from: { emailAddress: { name: task.emailFromName, address: task.emailFrom } },
+                    subject: task.emailSubject,
+                    body: { content: task.emailContent },
+                    bodyPreview: task.emailContent
+                }, 
+                task
+            );
+            
+            if (newSuggestions && newSuggestions.length > 0) {
+                window.taskManager.updateTask(taskId, { 
+                    suggestedReplies: newSuggestions,
+                    aiRepliesGenerated: true,
+                    aiRepliesGeneratedAt: new Date().toISOString()
+                });
+                
+                this.showToast('Nouvelles suggestions IA générées !', 'success');
+                this.refreshView();
+            } else {
+                this.showToast('Impossible de régénérer les suggestions', 'warning');
+            }
+            
+        } catch (error) {
+            console.error('[TasksView] Error regenerating AI suggestions:', error);
+            this.showToast('Erreur lors de la régénération', 'error');
+        }
+    }
+
+    // MÉTHODE DE RÉPONSE BASIQUE EN FALLBACK
+    replyToEmailBasic(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
         const subject = `Re: ${task.emailSubject || 'Votre message'}`;
         const to = task.emailFrom;
-        const body = `Bonjour,\n\nMerci pour votre message.\n\nCordialement,`;
+        const body = `Bonjour ${task.emailFromName || ''},\n\nMerci pour votre message.\n\nCordialement,`;
         
         const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         window.open(mailtoLink);
         
         window.taskManager.updateTask(taskId, { emailReplied: true });
         this.showToast('Email de réponse ouvert', 'success');
+    }
+
+    replyToEmail(taskId) {
+        // Rediriger vers la méthode avec IA
+        this.replyToEmailWithAI(taskId);
     }
 
     deleteTask(taskId) {
@@ -2351,14 +2792,96 @@ class TasksView {
                 border: 1px solid #fde68a;
             }
             
-            .has-suggestions {
-                background: #dbeafe;
-                color: #1e40af;
+            .has-ai-suggestions {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
                 padding: 2px 8px;
                 border-radius: 6px;
                 font-size: 12px;
                 font-weight: 600;
-                border: 1px solid #bfdbfe;
+                border: 1px solid #5a67d8;
+                animation: aiGlow 2s infinite alternate;
+            }
+            
+            .ai-generated-badge {
+                background: #10b981;
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid #059669;
+            }
+            
+            @keyframes aiGlow {
+                0% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.5); }
+                100% { box-shadow: 0 0 15px rgba(102, 126, 234, 0.8); }
+            }
+            
+            .task-reply-section {
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid #f3f4f6;
+            }
+            
+            .reply-to-email-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+            }
+            
+            .reply-to-email-btn:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            
+            .reply-to-email-btn .ai-icon {
+                animation: aiPulse 1.5s infinite;
+                margin-left: 4px;
+            }
+            
+            @keyframes aiPulse {
+                0%, 100% { opacity: 0.7; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.1); }
+            }
+            
+            .action-btn-modern.ai-refresh {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border-color: #5a67d8;
+            }
+            
+            .action-btn-modern.ai-refresh:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                border-color: #4c51bf;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+            
+            .ai-generation-time {
+                font-size: 12px;
+                color: #6b7280;
+                margin-top: 8px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .ai-actions {
+                margin-top: 12px;
+                display: flex;
+                gap: 8px;
             }
             
             .task-actions-condensed {
