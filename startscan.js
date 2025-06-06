@@ -20,14 +20,14 @@ class MinimalScanModule {
         styles.textContent = `
             /* Scanner Ultra-Minimaliste */
             .minimal-scanner {
-                height: 100vh;
+                height: calc(100vh - 140px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 overflow: hidden;
                 position: fixed;
-                top: 0;
+                top: 140px;
                 left: 0;
                 right: 0;
                 bottom: 0;
