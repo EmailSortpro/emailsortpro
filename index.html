@@ -519,6 +519,15 @@
             opacity: 1 !important;
         }
 
+        /* Force l'affichage du header après connexion */
+        .app-header.show {
+            display: block !important;
+        }
+
+        .main-nav.show {
+            display: flex !important;
+        }
+
         /* Dashboard par défaut */
         .dashboard-container {
             padding: 20px;
@@ -941,6 +950,7 @@
             const userAvatar = document.getElementById('userAvatar');
             const authStatus = document.getElementById('authStatus');
             const mainNav = document.getElementById('mainNav');
+            const appHeader = document.querySelector('.app-header');
             
             if (user && userInfo) {
                 // Afficher les informations utilisateur
@@ -964,6 +974,15 @@
                 authStatus.style.display = 'none';
                 userInfo.style.display = 'flex';
                 mainNav.style.display = 'flex';
+                
+                // S'assurer que le header est visible
+                if (appHeader) {
+                    appHeader.style.display = 'block';
+                    appHeader.classList.add('show');
+                }
+                
+                // Forcer l'affichage de l'app
+                window.forceShowApp();
             }
         };
 
@@ -980,12 +999,63 @@
                 loginPage.style.display = 'none';
             }
             
+            // S'assurer que le header et la navigation sont visibles
+            const appHeader = document.querySelector('.app-header');
+            const mainNav = document.getElementById('mainNav');
+            const pageContent = document.getElementById('pageContent');
+            
+            if (appHeader) {
+                appHeader.style.display = 'block';
+                appHeader.classList.add('show');
+            }
+            
+            if (mainNav) {
+                mainNav.style.display = 'flex';
+                mainNav.classList.add('show');
+            }
+            
+            if (pageContent) {
+                pageContent.style.display = 'block';
+                pageContent.style.opacity = '1';
+            }
+            
             console.log('[FORCE] App display activated');
+        };
+
+        // Fonction pour initialiser l'app même sans connexion complète
+        window.initializeAppDisplay = function() {
+            console.log('[INIT] Initializing app display...');
+            
+            // Afficher le header avec des infos par défaut
+            const appHeader = document.querySelector('.app-header');
+            const mainNav = document.getElementById('mainNav');
+            const authStatus = document.getElementById('authStatus');
+            
+            if (appHeader) {
+                appHeader.style.display = 'block';
+            }
+            
+            if (mainNav) {
+                mainNav.style.display = 'flex';
+            }
+            
+            if (authStatus) {
+                authStatus.textContent = 'Application chargée';
+                authStatus.style.color = 'white';
+            }
+            
+            // Forcer l'affichage de l'app
+            window.forceShowApp();
         };
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded, setting up event listeners...');
+            
+            // Initialiser l'affichage même si la connexion échoue
+            setTimeout(() => {
+                window.initializeAppDisplay();
+            }, 2000);
             
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
@@ -998,8 +1068,21 @@
                         loadingOverlay.classList.add('active');
                     }
                     
+                    // Forcer l'affichage après 3 secondes si la connexion traîne
+                    setTimeout(() => {
+                        if (loadingOverlay) {
+                            loadingOverlay.classList.remove('active');
+                        }
+                        window.initializeAppDisplay();
+                    }, 3000);
+                    
                     if (window.app && window.app.login) {
                         window.app.login();
+                    } else {
+                        // Si app.js n'est pas chargé, forcer l'affichage
+                        setTimeout(() => {
+                            window.initializeAppDisplay();
+                        }, 1000);
                     }
                 });
             }
@@ -1018,8 +1101,28 @@
                     
                     // Charger la page correspondante
                     const page = this.dataset.page;
-                    if (window.pageManager && page) {
-                        window.pageManager.loadPage(page);
+                    console.log('[NAV] Switching to page:', page);
+                    
+                    // Afficher un contenu basique si pageManager n'est pas disponible
+                    const pageContent = document.getElementById('pageContent');
+                    if (pageContent) {
+                        if (window.pageManager && window.pageManager.loadPage) {
+                            window.pageManager.loadPage(page);
+                        } else {
+                            // Fallback : afficher un contenu simple
+                            pageContent.innerHTML = `
+                                <div class="dashboard-container">
+                                    <div class="dashboard-header">
+                                        <h1 class="dashboard-title">Page ${page}</h1>
+                                        <p class="dashboard-subtitle">Contenu de la page ${page} - En cours de chargement...</p>
+                                    </div>
+                                    <div style="text-align: center; padding: 40px; color: #6b7280;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 20px;"></i>
+                                        <p>Chargement des modules en cours...</p>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     }
                 });
             });
@@ -1076,6 +1179,14 @@
                     console.warn('[INDEX] AppConfig not available');
                 }
             }, 1000);
+            
+            // S'assurer que l'app s'affiche même en cas de problème
+            setTimeout(() => {
+                if (!document.body.classList.contains('app-active')) {
+                    console.log('[INDEX] Force activation after timeout');
+                    window.initializeAppDisplay();
+                }
+            }, 5000);
         });
         
         // Fonction de diagnostic accessible globalement
