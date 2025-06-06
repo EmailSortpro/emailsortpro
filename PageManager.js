@@ -296,6 +296,10 @@ class PageManager {
         const senderInitial = senderName.charAt(0).toUpperCase();
         const formattedDate = this.formatEmailDate(email.receivedDateTime);
         
+        // Extraire la deadline depuis l'analyse IA si disponible
+        const analysis = this.aiAnalysisResults.get(email.id);
+        const deadline = analysis?.mainTask?.dueDate || analysis?.actionsHighlighted?.find(a => a.deadline)?.deadline || null;
+        
         return `
             <div class="email-condensed ${isSelected ? 'selected' : ''}" 
                  data-id="${email.id}"
@@ -309,11 +313,19 @@ class PageManager {
                 <div class="sender-avatar-condensed">${senderInitial}</div>
                 
                 <div class="email-content-condensed">
-                    <div class="email-line-one">
-                        <span class="sender-name-condensed">${senderName}</span>
-                        <span class="email-date-condensed">${formattedDate}</span>
+                    <div class="email-header-line">
+                        <span class="sender-name-large">${senderName}</span>
+                        <span class="email-subject-large">${email.subject || 'Sans sujet'}</span>
+                        <div class="email-meta-right">
+                            ${deadline ? `
+                                <span class="email-deadline">
+                                    <i class="fas fa-clock"></i>
+                                    ${this.formatDeadline(deadline)}
+                                </span>
+                            ` : ''}
+                            <span class="email-date-large">${formattedDate}</span>
+                        </div>
                     </div>
-                    <div class="email-subject-condensed">${email.subject || 'Sans sujet'}</div>
                 </div>
                 
                 <div class="email-actions-condensed">
@@ -1314,6 +1326,34 @@ Cordialement,
             return `${Math.floor(diff / 3600000)}h`;
         } else {
             return date.toLocaleDateString('fr-FR');
+        }
+    }
+
+    formatDeadline(deadline) {
+        if (!deadline) return '';
+        
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `Échue il y a ${Math.abs(diffDays)}j`;
+            } else if (diffDays === 0) {
+                return 'Aujourd\'hui';
+            } else if (diffDays === 1) {
+                return 'Demain';
+            } else if (diffDays <= 7) {
+                return `${diffDays}j`;
+            } else {
+                return deadlineDate.toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'short' 
+                });
+            }
+        } catch (error) {
+            // Si la deadline n'est pas une date valide, l'afficher telle quelle
+            return deadline;
         }
     }
 
@@ -2459,11 +2499,11 @@ Cordialement,
                 background: rgba(255,255,255,0.25);
             }
             
-            /* Condensed Email View */
+            /* Condensed Email View AGRANDIE avec layout sur une ligne */
             .emails-condensed-list {
                 display: flex;
                 flex-direction: column;
-                gap: 2px;
+                gap: 3px;
                 background: #f9fafb;
                 border-radius: 8px;
                 overflow: hidden;
@@ -2473,10 +2513,11 @@ Cordialement,
                 display: flex;
                 align-items: center;
                 background: white;
-                padding: 12px 16px;
+                padding: 16px 20px;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 border-bottom: 1px solid #f3f4f6;
+                min-height: 60px;
             }
             
             .email-condensed:last-child {
@@ -2485,30 +2526,34 @@ Cordialement,
             
             .email-condensed:hover {
                 background: #f9fafb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             }
             
             .email-condensed.selected {
                 background: #eff6ff;
-                border-left: 3px solid #3b82f6;
+                border-left: 4px solid #3b82f6;
             }
             
             .email-checkbox-condensed {
-                margin-right: 12px;
+                margin-right: 16px;
                 cursor: pointer;
+                width: 18px;
+                height: 18px;
             }
             
             .sender-avatar-condensed {
-                width: 36px;
-                height: 36px;
+                width: 44px;
+                height: 44px;
                 background: linear-gradient(135deg, #667eea, #764ba2);
                 color: white;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-weight: 600;
-                font-size: 14px;
-                margin-right: 12px;
+                font-weight: 700;
+                font-size: 18px;
+                margin-right: 16px;
                 flex-shrink: 0;
             }
             
@@ -2517,51 +2562,78 @@ Cordialement,
                 min-width: 0;
             }
             
-            .email-line-one {
+            .email-header-line {
                 display: flex;
-                justify-content: space-between;
                 align-items: center;
-                margin-bottom: 2px;
+                width: 100%;
+                gap: 16px;
             }
             
-            .sender-name-condensed {
-                font-weight: 600;
+            .sender-name-large {
+                font-weight: 700;
                 color: #1f2937;
-                font-size: 14px;
+                font-size: 16px;
+                white-space: nowrap;
+                flex-shrink: 0;
+                min-width: 180px;
+            }
+            
+            .email-subject-large {
+                font-size: 16px;
+                color: #4b5563;
+                font-weight: 500;
+                flex: 1;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                margin-right: 8px;
+                margin-right: 16px;
             }
             
-            .email-date-condensed {
-                font-size: 12px;
-                color: #6b7280;
+            .email-meta-right {
+                display: flex;
+                align-items: center;
+                gap: 12px;
                 flex-shrink: 0;
             }
             
-            .email-subject-condensed {
+            .email-deadline {
+                display: flex;
+                align-items: center;
+                gap: 4px;
                 font-size: 13px;
-                color: #4b5563;
+                font-weight: 600;
+                color: #dc2626;
+                background: #fef2f2;
+                padding: 4px 8px;
+                border-radius: 6px;
+                border: 1px solid #fecaca;
+            }
+            
+            .email-deadline i {
+                font-size: 12px;
+            }
+            
+            .email-date-large {
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 500;
                 white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
             }
             
             .email-actions-condensed {
-                margin-left: 12px;
+                margin-left: 16px;
                 display: flex;
                 align-items: center;
             }
             
             .task-created-icon {
                 color: #10b981;
-                font-size: 18px;
+                font-size: 20px;
             }
             
             .create-task-icon {
                 color: #6b7280;
-                font-size: 18px;
+                font-size: 20px;
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
@@ -3181,27 +3253,65 @@ Cordialement,
                 color: #78350f;
             }
             
-            /* Responsive design - Boutons AGRANDIS */
-            @media (max-width: 1200px) {
-                .emails-main-toolbar {
-                    flex-wrap: wrap;
+            /* Responsive pour les emails agrandis */
+            @media (max-width: 1024px) {
+                .email-header-line {
                     gap: 12px;
                 }
                 
-                .toolbar-center {
-                    order: 3;
-                    flex: 1 1 100%;
-                    max-width: none;
-                    margin: 6px 0 0 0;
+                .sender-name-large {
+                    min-width: 150px;
+                    font-size: 15px;
                 }
                 
-                .view-modes-large {
-                    flex-wrap: wrap;
-                    gap: 4px;
+                .email-subject-large {
+                    font-size: 15px;
                 }
             }
             
             @media (max-width: 768px) {
+                .email-condensed {
+                    padding: 12px 16px;
+                    min-height: 50px;
+                }
+                
+                .sender-avatar-condensed {
+                    width: 36px;
+                    height: 36px;
+                    font-size: 16px;
+                    margin-right: 12px;
+                }
+                
+                .email-header-line {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 6px;
+                }
+                
+                .sender-name-large {
+                    min-width: auto;
+                    font-size: 15px;
+                }
+                
+                .email-subject-large {
+                    font-size: 14px;
+                    width: 100%;
+                }
+                
+                .email-meta-right {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+                
+                .email-deadline {
+                    font-size: 12px;
+                    padding: 3px 6px;
+                }
+                
+                .email-date-large {
+                    font-size: 13px;
+                }
+                
                 .btn-text-large {
                     display: none;
                 }
