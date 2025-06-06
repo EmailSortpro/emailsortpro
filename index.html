@@ -34,7 +34,7 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY - SOLUTION ALTERNATIVE - INCHANGÉE -->
+    <!-- CONFIGURATION NETLIFY - SOLUTION ALTERNATIVE -->
     <script>
         // =====================================================
         // SOLUTION NETLIFY POUR JAVASCRIPT VANILLA
@@ -236,7 +236,7 @@
     <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
     <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
-    <!-- Styles UNIQUEMENT MODIFIÉS pour le menu fusionné -->
+    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
     <style>
         /* Reset et styles de base */
         * {
@@ -339,17 +339,18 @@
             gap: 8px;
         }
 
-        /* === HEADER FUSIONNÉ (remplace app-header + app-nav) === */
+        /* === STYLES POUR L'APPLICATION === */
+        /* Header Application */
         .app-header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: 80px; /* Plus haut pour contenir le menu */
+            height: 60px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             z-index: 1000;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             display: none; /* Caché par défaut */
         }
 
@@ -359,141 +360,69 @@
             align-items: center;
             padding: 0 20px;
             height: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
         }
 
-        /* LOGO ET BRANDING */
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             font-weight: 700;
-            font-size: 20px;
-            color: white;
-            text-decoration: none;
-        }
-
-        .logo i {
-            font-size: 24px;
-            color: white;
+            font-size: 18px;
         }
 
         .ai-badge {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            padding: 4px 10px;
-            border-radius: 15px;
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-            margin-left: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
         }
 
-        /* NAVIGATION INTÉGRÉE */
-        .header-nav {
+        /* Navigation */
+        .app-nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 999;
+            overflow-x: auto;
+            display: none; /* Caché par défaut */
+        }
+
+        #mainNav {
             display: flex;
             align-items: center;
-            gap: 8px;
-            flex: 1;
-            justify-content: center;
-            max-width: 600px;
+            padding: 0 20px;
+            height: 100%;
+            gap: 10px;
         }
 
         .nav-item {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 10px 16px;
-            border-radius: 25px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: none;
+            border: none;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            color: white; /* BLANC COMME DEMANDÉ */
+            color: #6b7280;
             transition: all 0.2s ease;
             white-space: nowrap;
-            backdrop-filter: blur(10px);
         }
 
         .nav-item:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            color: white; /* RESTE BLANC AU HOVER */
+            background: #f3f4f6;
+            color: #374151;
         }
 
         .nav-item.active {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            color: white; /* RESTE BLANC QUAND ACTIF */
-        }
-
-        .nav-item i {
-            font-size: 16px;
-            opacity: 0.9;
-            color: white; /* ICÔNES BLANCHES */
-        }
-
-        /* SECTION UTILISATEUR */
-        #authStatus {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+            background: #667eea;
             color: white;
-            font-size: 14px;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: white;
-        }
-
-        .user-details {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .user-name {
-            font-size: 13px;
-            font-weight: 600;
-            line-height: 1;
-            color: white;
-        }
-
-        .user-email {
-            font-size: 11px;
-            opacity: 0.8;
-            line-height: 1;
-            color: white;
-        }
-
-        /* === SUPPRESSION DE L'ANCIEN NAV === */
-        .app-nav {
-            display: none !important;
         }
 
         /* Contenu principal */
@@ -525,8 +454,12 @@
             display: block !important;
         }
 
+        body.app-active .app-nav {
+            display: block !important;
+        }
+
         body.app-active .app-main {
-            margin-top: 80px; /* Header plus haut */
+            margin-top: 120px; /* Header + Nav */
         }
 
         body.app-active #pageContent {
@@ -680,41 +613,7 @@
         }
 
         /* Responsive */
-        @media (max-width: 1024px) {
-            .user-details {
-                display: none;
-            }
-            
-            .nav-item span {
-                display: none;
-            }
-            
-            .nav-item {
-                width: 44px;
-                height: 44px;
-                justify-content: center;
-                padding: 0;
-            }
-        }
-
         @media (max-width: 768px) {
-            .header-content {
-                padding: 0 15px;
-            }
-            
-            .logo span {
-                display: none;
-            }
-            
-            .header-nav {
-                gap: 6px;
-                max-width: none;
-            }
-            
-            #authStatus {
-                font-size: 12px;
-            }
-
             .login-container {
                 padding: 20px;
             }
@@ -732,8 +631,18 @@
                 font-size: 1.1rem;
             }
 
+            .app-nav {
+                height: auto;
+                padding: 10px;
+            }
+            
+            #mainNav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
             body.app-active .app-main {
-                margin-top: 70px;
+                margin-top: 140px;
             }
             
             .dashboard-actions {
@@ -742,26 +651,6 @@
 
             #pageContent {
                 padding: 10px;
-            }
-        }
-
-        @media (max-width: 640px) {
-            .app-header {
-                height: 70px;
-            }
-            
-            body.app-active .app-main {
-                margin-top: 70px;
-            }
-            
-            .header-nav {
-                gap: 4px;
-            }
-            
-            .nav-item {
-                width: 40px;
-                height: 40px;
-                font-size: 12px;
             }
         }
 
@@ -780,78 +669,53 @@
         .fade-in-up {
             animation: fadeInUp 0.5s ease;
         }
-
-        @keyframes slideInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .app-header {
-            animation: slideInDown 0.5s ease;
-        }
-
-        /* Toast container */
-        .toast-container {
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            z-index: 9999;
-            max-width: 400px;
-        }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- Header Application FUSIONNÉ -->
+        <!-- Header Application -->
         <header class="app-header">
             <div class="header-content">
-                <!-- LOGO ET BRANDING -->
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
                     <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
                 </div>
-
-                <!-- NAVIGATION INTÉGRÉE DANS LE HEADER -->
-                <nav class="header-nav">
-                    <button class="nav-item active" data-page="dashboard">
-                        <i class="fas fa-th-large"></i>
-                        <span>Dashboard</span>
-                    </button>
-                    <button class="nav-item" data-page="scanner">
-                        <i class="fas fa-search"></i>
-                        <span>Scanner</span>
-                    </button>
-                    <button class="nav-item" data-page="emails">
-                        <i class="fas fa-inbox"></i>
-                        <span>Emails</span>
-                    </button>
-                    <button class="nav-item" data-page="tasks">
-                        <i class="fas fa-tasks"></i>
-                        <span>Tâches</span>
-                    </button>
-                    <button class="nav-item" data-page="ranger">
-                        <i class="fas fa-folder-tree"></i>
-                        <span>Ranger</span>
-                    </button>
-                    <button class="nav-item" data-page="settings">
-                        <i class="fas fa-cog"></i>
-                        <span>Paramètres</span>
-                    </button>
-                </nav>
-
-                <!-- SECTION UTILISATEUR -->
                 <div id="authStatus" class="auth-status">
                     <span class="text-muted">Initialisation...</span>
                 </div>
             </div>
         </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <div id="mainNav">
+                <button class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-page="scanner">
+                    <i class="fas fa-search"></i>
+                    <span>Scanner</span>
+                </button>
+                <button class="nav-item" data-page="emails">
+                    <i class="fas fa-inbox"></i>
+                    <span>Emails</span>
+                </button>
+                <button class="nav-item" data-page="tasks">
+                    <i class="fas fa-tasks"></i>
+                    <span>Tâches</span>
+                </button>
+                <button class="nav-item" data-page="ranger">
+                    <i class="fas fa-folder-tree"></i>
+                    <span>Ranger</span>
+                </button>
+                <button class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Paramètres</span>
+                </button>
+            </div>
+        </nav>
 
         <!-- Contenu Principal -->
         <main class="app-main">
@@ -948,7 +812,7 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- SCRIPTS - ORDRE CRITIQUE INCHANGÉ        -->
+    <!-- SCRIPTS - ORDRE CRITIQUE                  -->
     <!-- ========================================= -->
     
     <!-- 2. Services Core -->
@@ -979,7 +843,7 @@
     <!-- 8. Application Principal -->
     <script src="app.js"></script>
     
-    <!-- Scripts de gestion des événements - INCHANGÉS -->
+    <!-- Scripts de gestion des événements -->
     <script>
         // Fonction pour forcer l'affichage de l'app
         window.forceShowApp = function() {
@@ -999,6 +863,8 @@
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('[INDEX] DOM loaded, setting up event listeners...');
+            
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
@@ -1016,20 +882,56 @@
                 });
             }
             
+            // Vérifier la configuration après le chargement du DOM
             setTimeout(function() {
-                // Vérifier si la configuration est valide
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
+                    console.log('[INDEX] Configuration validation:', validation);
+                    
                     if (!validation.valid) {
-                        console.log('Configuration invalide, vérification du Client ID...');
+                        console.log('[INDEX] Configuration invalid, checking redirect...');
                         
-                        // Si pas de Client ID valide et qu'on n'est pas déjà sur setup.html
-                        if (!window.location.pathname.endsWith('setup.html')) {
-                            const isGitHubPages = window.location.hostname.includes('github.io');
-                            const basePath = isGitHubPages ? '/emailsortpro' : '';
-                            window.location.href = window.location.origin + basePath + '/setup.html';
+                        // Afficher une bannière d'erreur spécifique à Netlify
+                        if (window.AppConfig.app.environment === 'netlify') {
+                            const errorBanner = document.createElement('div');
+                            errorBanner.className = 'config-error-banner';
+                            errorBanner.innerHTML = `
+                                <div>
+                                    ⚠️ <strong>NETLIFY:</strong> Variable d'environnement VITE_AZURE_CLIENT_ID manquante
+                                </div>
+                                <div>
+                                    Configurez VITE_AZURE_CLIENT_ID dans Site settings > Environment variables, puis redéployez
+                                </div>
+                                <div class="config-error-actions">
+                                    <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
+                                    <a href="/setup.html" class="config-error-btn">Configuration manuelle</a>
+                                    <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
+                                </div>
+                            `;
+                            document.body.appendChild(errorBanner);
                         }
+                        
+                        // Ne pas rediriger automatiquement sur Netlify, utiliser le Client ID par défaut
+                        if (!window.location.pathname.endsWith('setup.html') && !isNetlify) {
+                            const environment = window.AppConfig.app.environment;
+                            let setupPath = '/setup.html';
+                            
+                            if (environment === 'github') {
+                                setupPath = '/emailsortpro/setup.html';
+                            }
+                            
+                            console.log('[INDEX] Redirecting to setup page:', setupPath);
+                            setTimeout(() => {
+                                window.location.href = setupPath;
+                            }, 3000);
+                        } else if (isNetlify) {
+                            console.log('[INDEX] ✅ Netlify: Using default configuration, app ready');
+                        }
+                    } else {
+                        console.log('[INDEX] ✅ Configuration valid');
                     }
+                } else {
+                    console.warn('[INDEX] AppConfig not available');
                 }
             }, 1000);
         });
@@ -1038,20 +940,17 @@
         window.checkServices = function() {
             console.log('=== Diagnostic des services ===');
             console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
+            if (window.AppConfig) {
+                console.log('Environment:', window.AppConfig.app.environment);
+                console.log('Client ID:', window.AppConfig.msal.clientId);
+                console.log('Debug info:', window.AppConfig.getDebugInfo());
+            }
             console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
             console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
             console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
             console.log('taskManager:', window.taskManager ? 'OK' : 'MANQUANT');
-            
-            if (window.AppConfig) {
-                const validation = window.AppConfig.validate();
-                console.log('Configuration valide:', validation.valid);
-                if (!validation.valid) {
-                    console.log('Problèmes:', validation.issues);
-                }
-            }
         };
 
         // Fonction pour créer CategoryManagerUI si manquant
