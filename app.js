@@ -1,4 +1,4 @@
-// app.js - Application CORRIGÉE avec Header Unifié
+// app.js - Application CORRIGÉE avec affichage forcé
 
 class App {
     constructor() {
@@ -9,11 +9,11 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         
-        console.log('[App] Constructor - Application starting with unified header...');
+        console.log('[App] Constructor - Application starting...');
     }
 
     async init() {
-        console.log('[App] Initializing with unified header...');
+        console.log('[App] Initializing...');
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -54,7 +54,7 @@ class App {
             await this.handleInitializationError(error);
         } finally {
             this.isInitializing = false;
-            this.setupUnifiedHeaderListeners();
+            this.setupEventListeners();
         }
     }
 
@@ -96,7 +96,7 @@ class App {
                     this.user = await window.authService.getUserInfo();
                     this.isAuthenticated = true;
                     console.log('[App] User authenticated:', this.user.displayName || this.user.mail);
-                    this.showAppWithUnifiedHeader();
+                    this.showAppWithTransition();
                 } catch (userInfoError) {
                     console.error('[App] Error getting user info:', userInfoError);
                     if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
@@ -152,34 +152,36 @@ class App {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="config-error-page">
-                    <div class="config-error-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <h1 class="config-error-title">Configuration requise</h1>
-                    <div class="config-error-content">
-                        <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
-                        <ul style="margin-left: 20px;">
-                            ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
-                        </ul>
-                        <div style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
-                            <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
-                            <ol style="margin-left: 20px;">
-                                <li>Cliquez sur "Configurer l'application"</li>
-                                <li>Suivez l'assistant de configuration</li>
-                                <li>Entrez votre Azure Client ID</li>
-                            </ol>
+                <div class="hero-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
                         </div>
-                    </div>
-                    <div class="config-error-actions">
-                        <a href="setup.html" class="config-error-button">
-                            <i class="fas fa-cog"></i>
-                            Configurer l'application
-                        </a>
-                        <button onclick="location.reload()" class="config-error-button secondary">
-                            <i class="fas fa-refresh"></i>
-                            Actualiser
-                        </button>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Configuration requise</h1>
+                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
+                            <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
+                            <ul style="margin-left: 20px;">
+                                ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
+                            </ul>
+                            <div style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                                <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
+                                <ol style="margin-left: 20px;">
+                                    <li>Cliquez sur "Configurer l'application"</li>
+                                    <li>Suivez l'assistant de configuration</li>
+                                    <li>Entrez votre Azure Client ID</li>
+                                </ol>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <a href="setup.html" class="cta-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+                                <i class="fas fa-cog"></i>
+                                Configurer l'application
+                            </a>
+                            <button onclick="location.reload()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -188,26 +190,22 @@ class App {
         this.hideModernLoading();
     }
 
-    // NOUVELLE MÉTHODE - Configuration des event listeners pour header unifié
-    setupUnifiedHeaderListeners() {
-        console.log('[App] Setting up unified header listeners...');
+    setupEventListeners() {
+        console.log('[App] Setting up event listeners...');
         
-        // Navigation unifiée
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            const newLoginBtn = loginBtn.cloneNode(true);
+            loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+            
+            newLoginBtn.addEventListener('click', () => this.login());
+        }
+
         document.querySelectorAll('.nav-item').forEach(item => {
-            // Cloner pour éviter les doublons d'event listeners
             const newItem = item.cloneNode(true);
-            if (item.parentNode) {
-                item.parentNode.replaceChild(newItem, item);
-            }
+            item.parentNode.replaceChild(newItem, item);
             
             newItem.addEventListener('click', (e) => {
-                // Retirer la classe active de tous les éléments
-                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-                
-                // Ajouter la classe active à l'élément cliqué
-                newItem.classList.add('active');
-                
-                // Charger la page
                 const page = e.currentTarget.dataset.page;
                 if (page && window.pageManager) {
                     window.pageManager.loadPage(page);
@@ -215,24 +213,6 @@ class App {
             });
         });
 
-        // Bouton de déconnexion
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => this.logout());
-        }
-
-        // Bouton notifications
-        const notificationBtn = document.getElementById('notificationBtn');
-        if (notificationBtn) {
-            notificationBtn.addEventListener('click', () => {
-                console.log('[App] Notifications clicked');
-                if (window.uiManager) {
-                    window.uiManager.showToast('Notifications non implémentées', 'info');
-                }
-            });
-        }
-
-        // Gestionnaires d'erreur globaux
         window.addEventListener('error', (event) => {
             console.error('[App] Global error:', event.error);
             
@@ -264,8 +244,6 @@ class App {
                 console.log('[App] MSAL promise rejection:', event.reason.errorCode);
             }
         });
-
-        console.log('[App] Unified header listeners configured');
     }
 
     async login() {
@@ -399,12 +377,6 @@ class App {
         // S'assurer que l'app n'est pas en mode actif
         document.body.classList.remove('app-active');
         
-        // Masquer le header unifié
-        const unifiedHeader = document.querySelector('.unified-header');
-        if (unifiedHeader) {
-            unifiedHeader.style.display = 'none';
-        }
-        
         this.hideModernLoading();
         
         if (window.uiManager) {
@@ -412,9 +384,9 @@ class App {
         }
     }
 
-    // MÉTHODE CORRIGÉE - Affichage avec header unifié
-    showAppWithUnifiedHeader() {
-        console.log('[App] Showing application with unified header');
+    // MÉTHODE CORRIGÉE - Affichage forcé de l'application
+    showAppWithTransition() {
+        console.log('[App] Showing application with FORCED transition');
         
         this.hideModernLoading();
         
@@ -424,7 +396,8 @@ class App {
         
         // ÉTAPE 2: Forcer l'affichage des éléments
         const loginPage = document.getElementById('loginPage');
-        const unifiedHeader = document.querySelector('.unified-header');
+        const appHeader = document.querySelector('.app-header');
+        const appNav = document.querySelector('.app-nav');
         const pageContent = document.getElementById('pageContent');
         
         // Masquer la page de login
@@ -433,12 +406,20 @@ class App {
             console.log('[App] Login page hidden');
         }
         
-        // Afficher le header unifié
-        if (unifiedHeader) {
-            unifiedHeader.style.display = 'block';
-            unifiedHeader.style.opacity = '1';
-            unifiedHeader.style.visibility = 'visible';
-            console.log('[App] Unified header displayed');
+        // Afficher le header
+        if (appHeader) {
+            appHeader.style.display = 'block';
+            appHeader.style.opacity = '1';
+            appHeader.style.visibility = 'visible';
+            console.log('[App] Header displayed');
+        }
+        
+        // Afficher la navigation
+        if (appNav) {
+            appNav.style.display = 'block';
+            appNav.style.opacity = '1';
+            appNav.style.visibility = 'visible';
+            console.log('[App] Navigation displayed');
         }
         
         // Afficher le contenu
@@ -450,11 +431,14 @@ class App {
         }
         
         // ÉTAPE 3: Mettre à jour l'interface utilisateur
-        this.updateUserInfoInHeader();
+        if (window.uiManager) {
+            window.uiManager.updateAuthStatus(this.user);
+        }
         
         // ÉTAPE 4: Charger le dashboard immédiatement
         console.log('[App] Loading dashboard...');
         if (window.pageManager) {
+            // Petit délai pour s'assurer que tout est prêt
             setTimeout(() => {
                 window.pageManager.loadPage('dashboard');
                 console.log('[App] Dashboard loading requested');
@@ -471,59 +455,26 @@ class App {
         }, 500);
         
         // ÉTAPE 6: Forcer l'affichage avec CSS (sécurité)
-        this.forceUnifiedHeaderDisplay();
+        this.forceAppDisplay();
         
-        console.log('[App] ✅ Application with unified header fully displayed');
+        console.log('[App] ✅ Application fully displayed');
     }
 
-    // NOUVELLE MÉTHODE - Mise à jour des infos utilisateur dans le header unifié
-    updateUserInfoInHeader() {
-        if (!this.user) return;
-
-        const userAvatar = document.getElementById('userAvatar');
-        const userDetails = document.getElementById('userDetails');
-        
-        if (userAvatar && userDetails) {
-            // Mise à jour de l'avatar avec initiales
-            const initials = this.getInitials(this.user.displayName || this.user.mail);
-            userAvatar.innerHTML = initials;
-            
-            // Mise à jour des détails utilisateur
-            userDetails.innerHTML = `
-                <div class="user-name">${this.user.displayName || 'Utilisateur'}</div>
-                <div class="user-email">${this.user.mail || ''}</div>
-            `;
-            
-            console.log('[App] User info updated in unified header:', this.user.displayName || this.user.mail);
-        }
-
-        // Mettre à jour aussi via UIManager si disponible
-        if (window.uiManager) {
-            window.uiManager.updateAuthStatus(this.user);
-        }
-    }
-
-    // Méthode pour obtenir les initiales
-    getInitials(name) {
-        if (!name) return 'U';
-        
-        const parts = name.split(' ');
-        if (parts.length >= 2) {
-            return (parts[0][0] + parts[1][0]).toUpperCase();
-        }
-        return name.substring(0, 2).toUpperCase();
-    }
-
-    // NOUVELLE MÉTHODE - Forcer l'affichage via CSS pour header unifié
-    forceUnifiedHeaderDisplay() {
-        // Injecter du CSS pour forcer l'affichage du header unifié
+    // Nouvelle méthode pour forcer l'affichage via CSS
+    forceAppDisplay() {
+        // Injecter du CSS pour forcer l'affichage
         const forceDisplayStyle = document.createElement('style');
-        forceDisplayStyle.id = 'force-unified-display';
+        forceDisplayStyle.id = 'force-app-display';
         forceDisplayStyle.textContent = `
             body.app-active #loginPage {
                 display: none !important;
             }
-            body.app-active .unified-header {
+            body.app-active .app-header {
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+            }
+            body.app-active .app-nav {
                 display: block !important;
                 opacity: 1 !important;
                 visibility: visible !important;
@@ -533,21 +484,16 @@ class App {
                 opacity: 1 !important;
                 visibility: visible !important;
             }
-            /* Masquer les anciens éléments header/nav au cas où */
-            .app-header,
-            .app-nav {
-                display: none !important;
-            }
         `;
         
         // Supprimer l'ancien style s'il existe
-        const oldStyle = document.getElementById('force-unified-display');
+        const oldStyle = document.getElementById('force-app-display');
         if (oldStyle) {
             oldStyle.remove();
         }
         
         document.head.appendChild(forceDisplayStyle);
-        console.log('[App] Force unified header display CSS injected');
+        console.log('[App] Force display CSS injected');
     }
 
     showModernLoading(message = 'Chargement...') {
@@ -579,23 +525,25 @@ class App {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="config-error-page">
-                    <div class="config-error-icon">
-                        <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
-                    </div>
-                    <h1 class="config-error-title">Erreur d'application</h1>
-                    <div class="config-error-content">
-                        <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
-                    </div>
-                    <div class="config-error-actions">
-                        <button onclick="location.reload()" class="config-error-button">
-                            <i class="fas fa-refresh"></i>
-                            Actualiser la page
-                        </button>
-                        <button onclick="window.app.forceCleanup()" class="config-error-button secondary">
-                            <i class="fas fa-undo"></i>
-                            Réinitialiser
-                        </button>
+                <div class="hero-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
+                        <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
+                            <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                        </div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
+                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0;">
+                            <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
+                        </div>
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="location.reload()" class="cta-button">
+                                <i class="fas fa-refresh"></i>
+                                Actualiser la page
+                            </button>
+                            <button onclick="window.app.forceCleanup()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
+                                <i class="fas fa-undo"></i>
+                                Réinitialiser
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -652,36 +600,16 @@ window.emergencyReset = function() {
     window.location.reload();
 };
 
-// Fonction pour forcer l'affichage (accessible globalement) - Version header unifié
+// Fonction pour forcer l'affichage (accessible globalement)
 window.forceShowApp = function() {
-    console.log('[Global] Force show app with unified header triggered');
-    if (window.app && typeof window.app.showAppWithUnifiedHeader === 'function') {
-        window.app.showAppWithUnifiedHeader();
+    console.log('[Global] Force show app triggered');
+    if (window.app && typeof window.app.showAppWithTransition === 'function') {
+        window.app.showAppWithTransition();
     } else {
         // Fallback si l'app n'est pas prête
         document.body.classList.add('app-active');
         const loginPage = document.getElementById('loginPage');
         if (loginPage) loginPage.style.display = 'none';
-        const unifiedHeader = document.querySelector('.unified-header');
-        if (unifiedHeader) unifiedHeader.style.display = 'block';
-    }
-};
-
-// Fonction pour mettre à jour la navigation active (version unifiée)
-window.updateActiveNavigation = function(activePage) {
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-        if (item.dataset.page === activePage) {
-            item.classList.add('active');
-        }
-    });
-};
-
-// Fonction pour mettre à jour les infos utilisateur (accessible globalement)
-window.updateUserInfo = function(user) {
-    if (window.app && typeof window.app.updateUserInfoInHeader === 'function') {
-        window.app.user = user;
-        window.app.updateUserInfoInHeader();
     }
 };
 
@@ -714,13 +642,13 @@ function checkServicesReady() {
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating app instance with unified header...');
+    console.log('[App] DOM loaded, creating app instance...');
     
     window.app = new App();
     
     const waitForServices = () => {
         if (checkServicesReady()) {
-            console.log('[App] All services ready, initializing with unified header...');
+            console.log('[App] All services ready, initializing...');
             
             const scanStartStatus = window.app.checkScanStartModule();
             console.log('[App] ScanStart status:', scanStartStatus);
@@ -755,21 +683,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-// Amélioration du UIManager pour le header unifié
-if (window.uiManager) {
-    // Overrider la méthode updateAuthStatus pour le header unifié
-    const originalUpdateAuthStatus = window.uiManager.updateAuthStatus;
-    window.uiManager.updateAuthStatus = function(user) {
-        // Appeler la méthode originale
-        if (originalUpdateAuthStatus) {
-            originalUpdateAuthStatus.call(this, user);
-        }
-        
-        // Mettre à jour le header unifié
-        if (user && window.updateUserInfo) {
-            window.updateUserInfo(user);
-        }
-    };
-}
-
-console.log('✅ App loaded with UNIFIED HEADER and guaranteed visibility');
+console.log('✅ App loaded with FORCED display and guaranteed visibility');
