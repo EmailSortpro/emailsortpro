@@ -24,9 +24,9 @@ class ModernScanStartModule {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 20px;
+                padding: 40px 20px 20px 20px;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin: 0;
+                margin-top: 20px;
                 border-radius: 0;
                 position: relative;
                 overflow: hidden;
@@ -86,25 +86,32 @@ class ModernScanStartModule {
             }
             
             .settings-link {
-                background: rgba(102, 126, 234, 0.1);
-                border: 1px solid rgba(102, 126, 234, 0.2);
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.25);
                 border-radius: 12px;
-                padding: 8px 12px;
-                color: #667eea;
+                padding: 10px 14px;
+                color: white;
                 text-decoration: none;
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: 500;
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
                 transition: all 0.3s ease;
                 cursor: pointer;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             
             .settings-link:hover {
-                background: rgba(102, 126, 234, 0.15);
+                background: rgba(255, 255, 255, 0.25);
                 transform: translateY(-1px);
-                box-shadow: 0 3px 8px rgba(102, 126, 234, 0.2);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+                color: white;
+            }
+            
+            .settings-link i {
+                font-size: 14px;
             }
             
             .modern-logo {
@@ -461,7 +468,8 @@ class ModernScanStartModule {
             @media (max-width: 640px) {
                 .modern-scanner {
                     height: calc(100vh - 120px);
-                    padding: 15px;
+                    padding: 30px 15px 15px 15px;
+                    margin-top: 15px;
                 }
                 
                 .scanner-card-modern {
@@ -474,10 +482,13 @@ class ModernScanStartModule {
                     flex-direction: column;
                     align-items: center;
                     gap: 10px;
+                    margin-bottom: 10px;
                 }
                 
                 .settings-link {
                     align-self: flex-end;
+                    padding: 8px 12px;
+                    font-size: 12px;
                 }
                 
                 .modern-title {
@@ -651,7 +662,7 @@ class ModernScanStartModule {
                             <div></div>
                             <a href="#" class="settings-link" onclick="window.modernScanModule.openSettings(); return false;">
                                 <i class="fas fa-cog"></i>
-                                <span>Personnaliser</span>
+                                <span>Paramètres</span>
                             </a>
                         </div>
                         
