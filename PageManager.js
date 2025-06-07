@@ -1071,14 +1071,16 @@ class PageManager {
                 border-color: #9ca3af;
             }
             
-            /* ===== VUE GROUPÉE ===== */
+            /* ===== VUE GROUPÉE COMPACTE ===== */
             .emails-grouped-list {
                 display: flex;
                 flex-direction: column;
+                gap: 0;
             }
             
             .email-group {
                 border-bottom: 1px solid #f3f4f6;
+                margin: 0;
             }
             
             .email-group:last-child {
@@ -1088,11 +1090,14 @@ class PageManager {
             .group-header {
                 display: flex;
                 align-items: center;
-                gap: 16px;
-                padding: 16px 20px;
+                gap: 12px;
+                padding: 12px 16px;
                 cursor: pointer;
                 transition: background 0.2s ease;
                 background: white;
+                min-height: 56px;
+                max-height: 56px;
+                margin: 0;
             }
             
             .group-header:hover {
@@ -1105,15 +1110,15 @@ class PageManager {
             }
             
             .group-avatar {
-                width: 48px;
-                height: 48px;
-                border-radius: 12px;
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
                 font-weight: 700;
-                font-size: 16px;
+                font-size: 14px;
                 flex-shrink: 0;
             }
             
@@ -1125,19 +1130,21 @@ class PageManager {
             .group-name {
                 font-weight: 700;
                 color: #1f2937;
-                font-size: 16px;
+                font-size: 15px;
                 line-height: 1.3;
                 margin-bottom: 2px;
             }
             
             .group-meta {
-                font-size: 13px;
+                font-size: 12px;
                 color: #6b7280;
+                font-weight: 500;
             }
             
             .group-expand {
                 color: #9ca3af;
                 transition: transform 0.2s ease;
+                font-size: 14px;
             }
             
             .email-group.expanded .group-expand {
@@ -1148,6 +1155,8 @@ class PageManager {
             .group-content {
                 background: #fafbfc;
                 border-top: 1px solid #e5e7eb;
+                margin: 0;
+                padding: 0;
             }
             
             /* ===== ÉTAT VIDE ===== */
