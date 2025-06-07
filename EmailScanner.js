@@ -1,3 +1,5 @@
+// EmailScanner.js - Scanner d'emails CORRIGÉ avec catégorisation complète v4.0
+
 class EmailScanner {
     constructor() {
         this.emails = [];
