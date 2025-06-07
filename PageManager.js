@@ -320,72 +320,66 @@ class PageManager {
         // Générer couleur pour l'avatar
         const avatarColor = this.generateAvatarColor(senderName);
         
-        // Extraire le premier mot du sujet pour un aperçu court
-        const subjectPreview = (email.subject || 'Sans sujet').substring(0, 50);
-        const bodySnippet = (email.bodyPreview || '').substring(0, 80);
-        
         return `
             <div class="email-row ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <!-- Checkbox -->
+                <!-- Checkbox de sélection -->
                 <div class="email-checkbox">
                     <input type="checkbox" 
                            ${isSelected ? 'checked' : ''}
                            onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
                 </div>
                 
-                <!-- Avatar + Sender Info en une colonne compacte -->
-                <div class="sender-column">
-                    <div class="sender-avatar" style="background: ${avatarColor}">
-                        ${senderName.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="sender-details">
-                        <div class="sender-name">${this.escapeHtml(senderName)}</div>
-                        <div class="sender-domain">@${senderDomain}</div>
-                    </div>
+                <!-- Avatar de l'expéditeur -->
+                <div class="email-avatar" style="background: ${avatarColor}">
+                    ${senderName.charAt(0).toUpperCase()}
                 </div>
                 
-                <!-- Contenu principal de l'email -->
-                <div class="email-content-main">
-                    <div class="email-subject-line">
-                        <span class="subject-text">${this.escapeHtml(subjectPreview)}</span>
-                        ${email.hasAttachments ? '<i class="fas fa-paperclip attachment-icon"></i>' : ''}
-                        ${email.importance === 'high' ? '<i class="fas fa-exclamation priority-icon"></i>' : ''}
-                    </div>
-                    <div class="email-preview-line">
-                        ${this.escapeHtml(bodySnippet)}${bodySnippet.length >= 80 ? '...' : ''}
-                    </div>
+                <!-- Informations de l'expéditeur -->
+                <div class="email-sender-info">
+                    <div class="sender-name">${this.escapeHtml(senderName)}</div>
+                    <div class="sender-email">${this.escapeHtml(senderEmail)}</div>
                 </div>
                 
-                <!-- Status et Date -->
-                <div class="email-meta-column">
-                    <div class="email-time">
-                        ${this.formatEmailDate(email.receivedDateTime)}
-                    </div>
-                    ${hasTask ? '<div class="task-indicator"><i class="fas fa-check-circle"></i> Tâche</div>' : ''}
+                <!-- Sujet de l'email -->
+                <div class="email-subject">
+                    <div class="subject-text">${this.escapeHtml(email.subject || 'Sans sujet')}</div>
+                    <div class="email-preview">${this.escapeHtml(email.bodyPreview || '').substring(0, 100)}${email.bodyPreview && email.bodyPreview.length > 100 ? '...' : ''}</div>
                 </div>
                 
-                <!-- Actions rapides (apparaissent au hover) -->
-                <div class="email-actions-quick" onclick="event.stopPropagation()">
+                <!-- Badges et indicateurs -->
+                <div class="email-badges">
+                    ${email.hasAttachments ? '<span class="badge attachment"><i class="fas fa-paperclip"></i></span>' : ''}
+                    ${email.importance === 'high' ? '<span class="badge priority"><i class="fas fa-exclamation"></i></span>' : ''}
+                    ${hasTask ? '<span class="badge task-created"><i class="fas fa-check"></i> Tâche</span>' : ''}
+                </div>
+                
+                <!-- Date de réception -->
+                <div class="email-date">
+                    ${this.formatEmailDate(email.receivedDateTime)}
+                </div>
+                
+                <!-- Actions rapides -->
+                <div class="email-actions" onclick="event.stopPropagation()">
                     ${!hasTask ? `
-                        <button class="quick-btn create-task" 
+                        <button class="action-btn create-task" 
                                 onclick="window.pageManager.showTaskCreationModal('${email.id}')"
                                 title="Créer une tâche">
-                            <i class="fas fa-plus"></i>
+                            <i class="fas fa-tasks"></i>
                         </button>
                     ` : `
-                        <button class="quick-btn view-task" 
+                        <button class="action-btn view-task" 
                                 onclick="window.pageManager.openCreatedTask('${email.id}')"
                                 title="Voir la tâche">
-                            <i class="fas fa-check"></i>
+                            <i class="fas fa-check-circle"></i>
                         </button>
                     `}
-                    <button class="quick-btn view-email" 
+                    <button class="action-btn view-email" 
                             onclick="window.pageManager.showEmailModal('${email.id}')"
-                            title="Ouvrir l'email">
-                        <i class="fas fa-external-link-alt"></i>
+                            title="Voir l'email">
+                        <i class="fas fa-eye"></i>
                     </button>
                 </div>
             </div>
@@ -869,11 +863,10 @@ class PageManager {
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
             
-            /* ===== LIGNE D'EMAIL MODERNE ET CLAIRE ===== */
+            /* ===== LIGNE D'EMAIL MODERNE ===== */
             .emails-flat-list {
                 display: flex;
                 flex-direction: column;
-                gap: 0;
             }
             
             .email-row {
@@ -881,12 +874,11 @@ class PageManager {
                 align-items: center;
                 gap: 16px;
                 padding: 16px 20px;
-                border-bottom: 1px solid #f1f5f9;
+                border-bottom: 1px solid #f3f4f6;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 background: white;
-                min-height: 72px;
-                position: relative;
+                min-height: 80px;
             }
             
             .email-row:last-child {
@@ -895,8 +887,6 @@ class PageManager {
             
             .email-row:hover {
                 background: #f8fafc;
-                border-left: 3px solid #e2e8f0;
-                padding-left: 17px;
             }
             
             .email-row.selected {
@@ -911,10 +901,9 @@ class PageManager {
                 padding-left: 16px;
             }
             
-            /* ===== CHECKBOX ===== */
+            /* ===== ÉLÉMENTS DE LA LIGNE ===== */
             .email-checkbox {
                 flex-shrink: 0;
-                margin-right: 4px;
             }
             
             .email-checkbox input {
@@ -922,41 +911,30 @@ class PageManager {
                 height: 18px;
                 cursor: pointer;
                 accent-color: #3b82f6;
-                border-radius: 4px;
             }
             
-            /* ===== COLONNE EXPÉDITEUR COMPACTE ===== */
-            .sender-column {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex: 0 0 200px;
-                min-width: 0;
-            }
-            
-            .sender-avatar {
-                width: 44px;
-                height: 44px;
-                border-radius: 10px;
+            .email-avatar {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
                 font-weight: 700;
-                font-size: 16px;
+                font-size: 18px;
                 flex-shrink: 0;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
             
-            .sender-details {
+            .email-sender-info {
+                flex: 0 0 200px;
                 min-width: 0;
-                flex: 1;
             }
             
             .sender-name {
-                font-weight: 600;
+                font-weight: 700;
                 color: #1f2937;
-                font-size: 14px;
+                font-size: 15px;
                 line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -964,32 +942,18 @@ class PageManager {
                 margin-bottom: 2px;
             }
             
-            .sender-domain {
-                font-size: 11px;
+            .sender-email {
+                font-size: 13px;
                 color: #6b7280;
-                font-weight: 500;
-                background: #f3f4f6;
-                padding: 2px 6px;
-                border-radius: 4px;
-                display: inline-block;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                max-width: 100%;
             }
             
-            /* ===== CONTENU PRINCIPAL DE L'EMAIL ===== */
-            .email-content-main {
+            .email-subject {
                 flex: 1;
                 min-width: 0;
-                padding-right: 12px;
-            }
-            
-            .email-subject-line {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-bottom: 4px;
+                padding-right: 16px;
             }
             
             .subject-text {
@@ -997,85 +961,78 @@ class PageManager {
                 font-weight: 600;
                 color: #1f2937;
                 line-height: 1.3;
+                margin-bottom: 4px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                flex: 1;
-                min-width: 0;
             }
             
-            .attachment-icon {
-                color: #f59e0b;
-                font-size: 12px;
-                flex-shrink: 0;
-            }
-            
-            .priority-icon {
-                color: #ef4444;
-                font-size: 12px;
-                flex-shrink: 0;
-                animation: pulse-priority 2s infinite;
-            }
-            
-            .email-preview-line {
+            .email-preview {
                 font-size: 13px;
                 color: #6b7280;
                 line-height: 1.4;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                margin: 0;
             }
             
-            /* ===== COLONNE MÉTADONNÉES ===== */
-            .email-meta-column {
+            .email-badges {
                 display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                gap: 4px;
+                gap: 6px;
                 flex-shrink: 0;
-                min-width: 80px;
             }
             
-            .email-time {
-                font-size: 12px;
-                color: #6b7280;
-                font-weight: 500;
-                text-align: right;
-            }
-            
-            .task-indicator {
+            .badge {
                 display: flex;
                 align-items: center;
                 gap: 4px;
-                font-size: 10px;
-                color: #16a34a;
-                font-weight: 600;
-                background: #dcfce7;
-                padding: 2px 6px;
+                padding: 4px 8px;
                 border-radius: 6px;
-                white-space: nowrap;
+                font-size: 11px;
+                font-weight: 600;
             }
             
-            /* ===== ACTIONS RAPIDES ===== */
-            .email-actions-quick {
+            .badge.attachment {
+                background: #fef3c7;
+                color: #d97706;
+            }
+            
+            .badge.priority {
+                background: #fee2e2;
+                color: #dc2626;
+            }
+            
+            .badge.task-created {
+                background: #dcfce7;
+                color: #16a34a;
+            }
+            
+            .email-date {
+                flex-shrink: 0;
+                font-size: 13px;
+                color: #6b7280;
+                font-weight: 500;
+                width: 60px;
+                text-align: right;
+            }
+            
+            .email-actions {
                 display: flex;
                 gap: 4px;
                 flex-shrink: 0;
                 opacity: 0;
                 transition: opacity 0.2s ease;
-                margin-left: 8px;
             }
             
-            .email-row:hover .email-actions-quick {
+            .email-row:hover .email-actions {
                 opacity: 1;
             }
             
-            .quick-btn {
-                width: 28px;
-                height: 28px;
+            .action-btn {
+                width: 32px;
+                height: 32px;
                 border: 1px solid #e5e7eb;
-                border-radius: 6px;
+                border-radius: 8px;
                 background: white;
                 color: #6b7280;
                 cursor: pointer;
@@ -1083,51 +1040,35 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
                 transition: all 0.2s ease;
-                font-size: 11px;
+                font-size: 13px;
             }
             
-            .quick-btn:hover {
+            .action-btn:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             }
             
-            .quick-btn.create-task {
-                border-color: #3b82f6;
-                color: #3b82f6;
+            .action-btn.create-task:hover {
+                background: #dbeafe;
+                color: #2563eb;
+                border-color: #2563eb;
             }
             
-            .quick-btn.create-task:hover {
-                background: #3b82f6;
-                color: white;
-            }
-            
-            .quick-btn.view-task {
-                border-color: #16a34a;
-                color: #16a34a;
+            .action-btn.view-task {
                 background: #dcfce7;
+                color: #16a34a;
+                border-color: #16a34a;
             }
             
-            .quick-btn.view-task:hover {
+            .action-btn.view-task:hover {
                 background: #16a34a;
                 color: white;
             }
             
-            .quick-btn.view-email:hover {
+            .action-btn.view-email:hover {
                 background: #f3f4f6;
                 color: #374151;
                 border-color: #9ca3af;
-            }
-            
-            /* ===== ANIMATIONS ===== */
-            @keyframes pulse-priority {
-                0%, 100% { 
-                    opacity: 1; 
-                    transform: scale(1);
-                }
-                50% { 
-                    opacity: 0.7; 
-                    transform: scale(1.1);
-                }
             }
             
             /* ===== VUE GROUPÉE COMPACTE ===== */
