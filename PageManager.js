@@ -329,64 +329,29 @@ class PageManager {
         const isSelected = this.selectedEmails.has(email.id);
         const hasTask = this.createdTasks.has(email.id);
         const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        
-        const analysis = this.aiAnalysisResults.get(email.id);
         
         return `
             <div class="email-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <div class="email-card-content">
-                    <div class="email-checkbox-container">
-                        <input type="checkbox" 
-                               class="email-checkbox" 
-                               ${isSelected ? 'checked' : ''}
-                               onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
-                    </div>
-                    
-                    <div class="email-sender" title="${this.escapeHtml(senderName)}">
-                        ${this.escapeHtml(senderName)}
-                    </div>
-                    
-                    <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
-                        ${this.escapeHtml(email.subject || 'Sans sujet')}
-                    </div>
+                <div class="email-checkbox-container">
+                    <input type="checkbox" 
+                           class="email-checkbox" 
+                           ${isSelected ? 'checked' : ''}
+                           onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
                 </div>
                 
-                <div class="email-meta">
-                    <div class="email-badges">
-                        ${email.hasAttachments ? '<div class="email-badge attachment-badge" title="Pièces jointes"><i class="fas fa-paperclip"></i></div>' : ''}
-                        ${analysis ? '<div class="email-badge ai-badge" title="Analysé par IA"><i class="fas fa-robot"></i></div>' : ''}
-                        ${email.importance === 'high' ? '<div class="email-badge priority-badge" title="Priorité haute"><i class="fas fa-exclamation"></i></div>' : ''}
-                    </div>
-                    
-                    <div class="email-date">
-                        ${this.formatEmailDate(email.receivedDateTime)}
-                    </div>
-                    
-                    <div class="email-actions">
-                        ${hasTask ? `
-                            <button class="email-action-btn task-done" 
-                                    onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" 
-                                    title="Voir la tâche créée">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        ` : `
-                            <button class="email-action-btn create-task" 
-                                    onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" 
-                                    title="Créer une tâche">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        `}
-                        
-                        <button class="email-action-btn view-email" 
-                                onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" 
-                                title="Voir l'email">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>
+                <div class="email-sender-simple">
+                    ${this.escapeHtml(senderName)}
+                </div>
+                
+                <div class="email-subject-simple">
+                    ${this.escapeHtml(email.subject || 'Sans sujet')}
+                </div>
+                
+                <div class="email-time-simple">
+                    ${this.formatEmailDate(email.receivedDateTime)}
                 </div>
             </div>
         `;
@@ -1661,13 +1626,13 @@ class PageManager {
                 background: #fafbfc !important;
             }
             
-            /* ===== EMAILS ULTRA-SIMPLIFIÉS - UNE LIGNE ===== */
+            /* ===== EMAILS ULTRA-SIMPLIFIÉS - ÉPURÉS ===== */
             .group-content .email-card {
                 display: flex !important;
                 align-items: center !important;
-                justify-content: space-between !important;
+                gap: 12px !important;
                 margin: 0 !important;
-                padding: 8px 16px !important;
+                padding: 6px 16px !important;
                 border-bottom: 1px solid #f8fafc !important;
                 background: inherit !important;
                 border-left: none !important;
@@ -1676,9 +1641,9 @@ class PageManager {
                 border-radius: 0 !important;
                 cursor: pointer !important;
                 transition: background-color 0.15s ease !important;
-                min-height: 36px !important;
-                max-height: 36px !important;
-                height: 36px !important;
+                min-height: 32px !important;
+                max-height: 32px !important;
+                height: 32px !important;
                 box-sizing: border-box !important;
             }
             
@@ -1707,17 +1672,7 @@ class PageManager {
                 margin-bottom: 0 !important;
             }
             
-            /* ===== CONTENU EMAIL SIMPLIFIÉ ===== */
-            .email-card-content {
-                display: flex !important;
-                align-items: center !important;
-                gap: 8px !important;
-                flex: 1 !important;
-                min-width: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            
+            /* ===== ÉLÉMENTS SIMPLIFIÉS ===== */
             .email-checkbox-container {
                 flex-shrink: 0 !important;
                 margin: 0 !important;
@@ -1731,7 +1686,7 @@ class PageManager {
                 margin: 0 !important;
             }
             
-            .email-sender {
+            .email-sender-simple {
                 font-weight: 600 !important;
                 color: #1f2937 !important;
                 font-size: 13px !important;
@@ -1741,13 +1696,13 @@ class PageManager {
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                flex: 0 0 180px !important;
+                flex: 0 0 160px !important;
                 min-width: 0 !important;
             }
             
-            .email-subject {
+            .email-subject-simple {
                 font-size: 13px !important;
-                font-weight: 500 !important;
+                font-weight: 400 !important;
                 color: #374151 !important;
                 line-height: 1.2 !important;
                 overflow: hidden !important;
@@ -1759,119 +1714,30 @@ class PageManager {
                 min-width: 0 !important;
             }
             
-            .email-meta {
-                display: flex !important;
-                align-items: center !important;
-                gap: 4px !important;
-                flex-shrink: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            
-            .email-date {
+            .email-time-simple {
                 font-size: 11px !important;
                 color: #9ca3af !important;
                 font-weight: 500 !important;
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
-            }
-            
-            .email-actions {
-                display: flex !important;
-                gap: 2px !important;
-                flex-shrink: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                opacity: 0 !important;
-                transition: opacity 0.2s ease !important;
-            }
-            
-            .email-card:hover .email-actions {
-                opacity: 1 !important;
-            }
-            
-            .email-action-btn {
-                width: 24px !important;
-                height: 24px !important;
-                border: 1px solid #e5e7eb !important;
-                border-radius: 4px !important;
-                background: white !important;
-                color: #6b7280 !important;
-                cursor: pointer !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                transition: all 0.2s ease !important;
-                font-size: 11px !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            
-            .email-action-btn:hover {
-                transform: translateY(-1px) !important;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
-            }
-            
-            .email-action-btn.task-done {
-                background: #dcfce7 !important;
-                color: #16a34a !important;
-                border-color: #16a34a !important;
-                opacity: 1 !important;
-            }
-            
-            .email-action-btn.task-done:hover {
-                background: #16a34a !important;
-                color: white !important;
-            }
-            
-            .email-action-btn.create-task:hover {
-                background: #dbeafe !important;
-                color: #2563eb !important;
-                border-color: #2563eb !important;
-            }
-            
-            .email-action-btn.view-email:hover {
-                background: #f3f4f6 !important;
-                color: #374151 !important;
-                border-color: #9ca3af !important;
-            }
-            
-            /* Badges compacts */
-            .email-badges {
-                display: flex !important;
-                gap: 2px !important;
-                margin: 0 !important;
-                padding: 0 !important;
                 flex-shrink: 0 !important;
             }
             
-            .email-badge {
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                width: 16px !important;
-                height: 16px !important;
-                border-radius: 3px !important;
-                font-size: 9px !important;
-                font-weight: 600 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            
-            .attachment-badge {
-                background: #fef3c7 !important;
-                color: #d97706 !important;
-            }
-            
-            .ai-badge {
-                background: #dbeafe !important;
-                color: #2563eb !important;
-            }
-            
+            /* ===== SUPPRESSION DES ANCIENS STYLES ===== */
+            .email-card-content,
+            .email-sender,
+            .email-subject,
+            .email-meta,
+            .email-badges,
+            .email-badge,
+            .email-date,
+            .email-actions,
+            .email-action-btn,
+            .attachment-badge,
+            .ai-badge,
             .priority-badge {
-                background: #fee2e2 !important;
-                color: #dc2626 !important;
+                display: none !important;
             }
             
             /* Animation pulse */
