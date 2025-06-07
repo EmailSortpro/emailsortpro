@@ -1152,6 +1152,62 @@ class PageManager {
                 -webkit-box-orient: vertical;
             }
             
+            /* ===== SUPPRESSION FORCÉE DES 3 ESPACES IDENTIFIÉS ===== */
+            
+            /* 1. ESPACE ENTRE HEADER ET BARRE DE CONTRÔLES */
+            .emails-header {
+                margin-bottom: 0 !important;
+                padding: 0 4px !important;
+            }
+            
+            .emails-controls-bar {
+                margin: 0 4px 0 4px !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+            }
+            
+            /* 2. ESPACE ENTRE BARRE DE CONTRÔLES ET FILTRES */
+            .category-filters {
+                margin: 0 4px 0 4px !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+            }
+            
+            /* 3. ESPACE ENTRE FILTRES ET CONTENU */
+            .emails-content {
+                margin: 0 4px !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+            }
+            
+            /* FORÇAGE ABSOLU - tous les éléments collés */
+            .emails-header + .emails-controls-bar {
+                margin-top: 0 !important;
+                border-top: none !important;
+            }
+            
+            .emails-controls-bar + .category-filters {
+                margin-top: 0 !important;
+                border-top: none !important;
+            }
+            
+            .category-filters + .emails-content {
+                margin-top: 0 !important;
+                border-top: none !important;
+            }
+            
+            /* Suppression de tous les gaps et espacements */
+            .emails-header,
+            .emails-controls-bar,
+            .category-filters,
+            .emails-content {
+                gap: 0 !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
+                margin-block-start: 0 !important;
+                margin-block-end: 0 !important;
+            }
+
             /* ===== VUE GROUPÉE ULTRA-CONDENSÉE ET PROPRE ===== */
             .emails-grouped {
                 display: flex !important;
