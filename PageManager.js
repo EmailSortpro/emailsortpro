@@ -331,28 +331,18 @@ class PageManager {
         const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
         
         return `
-            <div class="email-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
+            <div class="email-line ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <div class="email-checkbox-container">
-                    <input type="checkbox" 
-                           class="email-checkbox" 
-                           ${isSelected ? 'checked' : ''}
-                           onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
-                </div>
+                <input type="checkbox" 
+                       class="email-check" 
+                       ${isSelected ? 'checked' : ''}
+                       onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
                 
-                <div class="email-sender-simple">
-                    ${this.escapeHtml(senderName)}
-                </div>
-                
-                <div class="email-subject-simple">
-                    ${this.escapeHtml(email.subject || 'Sans sujet')}
-                </div>
-                
-                <div class="email-time-simple">
-                    ${this.formatEmailDate(email.receivedDateTime)}
-                </div>
+                <span class="email-from">${this.escapeHtml(senderName)}</span>
+                <span class="email-title">${this.escapeHtml(email.subject || 'Sans sujet')}</span>
+                <span class="email-when">${this.formatEmailDate(email.receivedDateTime)}</span>
             </div>
         `;
     }
@@ -1626,125 +1616,100 @@ class PageManager {
                 background: #fafbfc !important;
             }
             
-            /* ===== EMAILS ALIGNÉS CORRECTEMENT ===== */
-            .group-content .email-card {
-                display: flex !important;
+            /* ===== AFFICHAGE EMAIL SIMPLE - UNE LIGNE ===== */
+            .group-content .email-line {
+                display: grid !important;
+                grid-template-columns: 20px 200px 1fr 60px !important;
                 align-items: center !important;
-                justify-content: flex-start !important;
                 gap: 16px !important;
-                margin: 0 !important;
-                padding: 12px 20px !important;
+                padding: 10px 20px !important;
                 border-bottom: 1px solid #f1f5f9 !important;
-                background: inherit !important;
-                border-left: none !important;
-                border-right: none !important;
-                border-top: none !important;
-                border-radius: 0 !important;
                 cursor: pointer !important;
-                transition: all 0.2s ease !important;
-                min-height: 48px !important;
-                max-height: 48px !important;
-                height: 48px !important;
+                transition: background-color 0.2s ease !important;
+                height: 44px !important;
+                min-height: 44px !important;
+                max-height: 44px !important;
                 box-sizing: border-box !important;
-                width: 100% !important;
             }
             
-            .group-content .email-card:hover {
-                background: #f8fafc !important;
+            .group-content .email-line:hover {
+                background-color: #f8fafc !important;
             }
             
-            .group-content .email-card.selected {
-                background: #eff6ff !important;
-                border-left: 4px solid #3b82f6 !important;
-                padding-left: 16px !important;
+            .group-content .email-line.selected {
+                background-color: #eff6ff !important;
+                border-left: 3px solid #3b82f6 !important;
+                padding-left: 17px !important;
             }
             
-            .group-content .email-card.has-task {
-                background: #f0fdf4 !important;
-                border-left: 4px solid #10b981 !important;
-                padding-left: 16px !important;
+            .group-content .email-line.has-task {
+                background-color: #f0fdf4 !important;
+                border-left: 3px solid #10b981 !important;
+                padding-left: 17px !important;
             }
             
-            /* ===== ÉLÉMENTS BIEN ALIGNÉS ===== */
-            .email-checkbox-container {
-                flex-shrink: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 18px !important;
+            .group-content .email-line:last-child {
+                border-bottom: none !important;
             }
             
-            .email-checkbox {
-                width: 18px !important;
-                height: 18px !important;
+            /* ===== ÉLÉMENTS DE CHAQUE EMAIL ===== */
+            .email-check {
+                width: 16px !important;
+                height: 16px !important;
                 cursor: pointer !important;
-                margin: 0 !important;
                 accent-color: #3b82f6 !important;
+                margin: 0 !important;
             }
             
-            .email-sender-simple {
+            .email-from {
                 font-weight: 600 !important;
                 color: #1f2937 !important;
                 font-size: 14px !important;
-                line-height: 1.3 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 180px !important;
-                flex-shrink: 0 !important;
-                text-align: left !important;
             }
             
-            .email-subject-simple {
+            .email-title {
+                color: #374151 !important;
                 font-size: 14px !important;
                 font-weight: 400 !important;
-                color: #374151 !important;
-                line-height: 1.3 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                flex: 1 !important;
-                min-width: 0 !important;
-                text-align: left !important;
             }
             
-            .email-time-simple {
-                font-size: 12px !important;
+            .email-when {
                 color: #6b7280 !important;
+                font-size: 12px !important;
                 font-weight: 500 !important;
+                text-align: right !important;
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                flex-shrink: 0 !important;
-                text-align: right !important;
-                width: 50px !important;
             }
             
-            /* ===== SUPPRESSION SÉLECTIVE DES ANCIENS STYLES ===== */
+            /* ===== MASQUER TOUS LES ANCIENS STYLES ===== */
+            .email-card,
+            .email-checkbox-container,
+            .email-checkbox,
+            .email-sender-simple,
+            .email-subject-simple,
+            .email-time-simple,
             .email-card-content,
-            .email-sender:not(.email-sender-simple),
-            .email-subject:not(.email-subject-simple),
+            .email-sender:not(.email-from),
+            .email-subject:not(.email-title),
             .email-meta,
             .email-badges,
             .email-badge,
-            .email-date:not(.email-time-simple),
+            .email-date:not(.email-when),
             .email-actions,
-            .email-action-btn,
-            .attachment-badge,
-            .ai-badge,
-            .priority-badge {
+            .email-action-btn {
                 display: none !important;
-            }
-            
-            /* ===== ASSURER L'AFFICHAGE DES NOUVEAUX ÉLÉMENTS ===== */
-            .email-sender-simple,
-            .email-subject-simple,
-            .email-time-simple {
-                display: block !important;
-                visibility: visible !important;
             }
             
             /* ===== AMÉLIORATION DES HEADERS DE GROUPE ===== */
