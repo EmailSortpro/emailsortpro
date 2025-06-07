@@ -1155,9 +1155,7 @@ class TasksView {
         `;
     }
 
-    // RENDU SIMPLIFIÉ : CLIENT | TITRE | DEADLINE | ACTION | ACTIONS
-    renderSimplifiedTaskItem(task) {
-        const isSelected = this.selectedTasks.has(task.id);
+asks.has(task.id);
         const isCompleted = task.status === 'completed';
         const priorityIcon = this.getPriorityIcon(task.priority);
         
@@ -2655,15 +2653,15 @@ class TasksView {
             
             .task-simplified {
                 display: grid;
-                grid-template-columns: 40px 30px 150px 1fr 120px 200px 80px 120px;
+                grid-template-columns: 40px 30px 150px 1fr 120px 180px 120px;
                 align-items: center;
                 background: white;
-                padding: 12px 16px;
+                padding: 14px 18px;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                border-bottom: 1px solid #f3f4f6;
-                min-height: 50px;
-                gap: 12px;
+                border-bottom: 1px solid #f1f5f9;
+                min-height: 56px;
+                gap: 16px;
             }
             
             .task-simplified:last-child {
@@ -2671,14 +2669,16 @@ class TasksView {
             }
             
             .task-simplified:hover {
-                background: #f9fafb;
+                background: #f8fafc;
                 transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+                box-shadow: 0 4px 12px rgba(148, 163, 184, 0.1);
+                border-bottom-color: #e2e8f0;
             }
             
             .task-simplified.selected {
-                background: #eff6ff;
-                border-left: 4px solid #3b82f6;
+                background: #f0f9ff;
+                border-left: 4px solid #0ea5e9;
+                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
             }
             
             .task-simplified.completed {
@@ -2707,27 +2707,31 @@ class TasksView {
             }
             
             .priority-urgent {
-                background: #fef2f2;
+                background: linear-gradient(135deg, #fef2f2, #fee2e2);
                 color: #dc2626;
-                border: 1px solid #fecaca;
+                border: 1px solid #fca5a5;
+                box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
             }
             
             .priority-high {
-                background: #fef3c7;
+                background: linear-gradient(135deg, #fffbeb, #fef3c7);
                 color: #d97706;
-                border: 1px solid #fde68a;
+                border: 1px solid #fbbf24;
+                box-shadow: 0 2px 4px rgba(217, 119, 6, 0.1);
             }
             
             .priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
+                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+                color: #0284c7;
+                border: 1px solid #7dd3fc;
+                box-shadow: 0 2px 4px rgba(2, 132, 199, 0.1);
             }
             
             .priority-low {
-                background: #f0fdf4;
+                background: linear-gradient(135deg, #f0fdf4, #dcfce7);
                 color: #16a34a;
-                border: 1px solid #bbf7d0;
+                border: 1px solid #86efac;
+                box-shadow: 0 2px 4px rgba(22, 163, 74, 0.1);
             }
             
             .task-client-simple {
@@ -2738,13 +2742,15 @@ class TasksView {
             .client-name {
                 font-size: 13px;
                 font-weight: 600;
-                color: #6b7280;
-                background: #f3f4f6;
-                padding: 4px 8px;
-                border-radius: 6px;
+                color: #475569;
+                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+                padding: 6px 12px;
+                border-radius: 8px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 1px 3px rgba(148, 163, 184, 0.1);
             }
             
             .task-title-simple {
@@ -2756,8 +2762,8 @@ class TasksView {
             
             .title-text {
                 font-weight: 600;
-                color: #1f2937;
-                font-size: 14px;
+                color: #1e293b;
+                font-size: 15px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -2765,9 +2771,10 @@ class TasksView {
             }
             
             .email-indicator {
-                color: #3b82f6;
-                font-size: 12px;
+                color: #0ea5e9;
+                font-size: 13px;
                 flex-shrink: 0;
+                margin-left: 8px;
             }
             
             .task-deadline-simple {
@@ -2788,39 +2795,57 @@ class TasksView {
             }
             
             .deadline-normal {
-                color: #6b7280;
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
+                color: #64748b;
+                background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+                border: 1px solid #e2e8f0;
             }
             
             .deadline-soon {
                 color: #d97706;
-                background: #fef3c7;
-                border: 1px solid #fde68a;
+                background: linear-gradient(135deg, #fffbeb, #fef3c7);
+                border: 1px solid #fbbf24;
             }
             
             .deadline-today {
                 color: #dc2626;
-                background: #fef2f2;
-                border: 1px solid #fecaca;
+                background: linear-gradient(135deg, #fef2f2, #fee2e2);
+                border: 1px solid #fca5a5;
             }
             
             .deadline-tomorrow {
                 color: #059669;
-                background: #ecfdf5;
-                border: 1px solid #a7f3d0;
+                background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+                border: 1px solid #86efac;
             }
             
             .deadline-overdue {
                 color: #dc2626;
-                background: #fef2f2;
-                border: 1px solid #fecaca;
-                animation: pulse 2s infinite;
+                background: linear-gradient(135deg, #fef2f2, #fee2e2);
+                border: 1px solid #fca5a5;
+                animation: pulseGlow 2s infinite;
+            }
+            
+            @keyframes pulseGlow {
+                0%, 100% { 
+                    opacity: 1; 
+                    box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+                }
+                50% { 
+                    opacity: 0.8; 
+                    box-shadow: 0 4px 8px rgba(220, 38, 38, 0.4);
+                }
             }
             
             .no-deadline {
-                color: #9ca3af;
+                color: #94a3b8;
                 font-style: italic;
+                font-size: 12px;
+            }
+            
+            .no-tags {
+                color: #94a3b8;
+                font-style: italic;
+                font-size: 12px;
             }
             
             .task-action-simple {
@@ -2844,24 +2869,26 @@ class TasksView {
             }
             
             .tag-simple {
-                background: linear-gradient(135deg, #667eea, #764ba2);
+                background: linear-gradient(135deg, #0ea5e9, #0284c7);
                 color: white;
-                padding: 2px 6px;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 500;
+                white-space: nowrap;
+                border: 1px solid rgba(255,255,255,0.2);
+                box-shadow: 0 1px 3px rgba(14, 165, 233, 0.2);
+            }
+            
+            .tags-more-simple {
+                background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+                color: #64748b;
+                padding: 3px 8px;
                 border-radius: 10px;
                 font-size: 10px;
                 font-weight: 500;
                 white-space: nowrap;
-                border: 1px solid rgba(255,255,255,0.2);
-            }
-            
-            .tags-more-simple {
-                background: #f3f4f6;
-                color: #6b7280;
-                padding: 2px 6px;
-                border-radius: 8px;
-                font-size: 10px;
-                font-weight: 500;
-                white-space: nowrap;
+                border: 1px solid #cbd5e1;
             }
             
             .task-actions-simple {
@@ -2872,79 +2899,87 @@ class TasksView {
             }
             
             .action-btn-simple {
-                width: 28px;
-                height: 28px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
+                width: 32px;
+                height: 32px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
                 background: white;
-                color: #6b7280;
+                color: #64748b;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: all 0.2s ease;
-                font-size: 12px;
+                font-size: 13px;
                 position: relative;
+                box-shadow: 0 1px 3px rgba(148, 163, 184, 0.1);
             }
             
             .action-btn-simple:hover {
-                background: #f3f4f6;
-                border-color: #9ca3af;
+                background: #f8fafc;
+                border-color: #cbd5e1;
                 transform: translateY(-1px);
+                box-shadow: 0 3px 6px rgba(148, 163, 184, 0.15);
             }
             
             .action-btn-simple.complete:hover {
-                background: #dcfce7;
-                border-color: #16a34a;
+                background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+                border-color: #22c55e;
                 color: #16a34a;
+                box-shadow: 0 3px 6px rgba(34, 197, 94, 0.2);
             }
             
             .action-btn-simple.reply:hover {
-                background: #dbeafe;
-                border-color: #2563eb;
-                color: #2563eb;
+                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+                border-color: #0ea5e9;
+                color: #0284c7;
+                box-shadow: 0 3px 6px rgba(14, 165, 233, 0.2);
             }
             
             .action-btn-simple.reply.ai-powered {
-                background: linear-gradient(135deg, #667eea, #764ba2);
+                background: linear-gradient(135deg, #0ea5e9, #0284c7);
                 color: white;
-                border-color: #5a67d8;
+                border-color: #0369a1;
+                box-shadow: 0 2px 4px rgba(14, 165, 233, 0.2);
             }
             
             .action-btn-simple.reply.ai-powered:hover {
-                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
-                border-color: #4c51bf;
+                background: linear-gradient(135deg, #0284c7, #0369a1);
+                border-color: #075985;
                 color: white;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
             }
             
             .ai-badge-mini {
                 position: absolute;
-                top: -4px;
-                right: -4px;
+                top: -3px;
+                right: -3px;
                 background: #10b981;
                 color: white;
                 border-radius: 50%;
-                width: 12px;
-                height: 12px;
+                width: 14px;
+                height: 14px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 8px;
-                border: 1px solid white;
+                border: 2px solid white;
+                box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
             }
             
             .action-btn-simple.details:hover {
-                background: #fef3c7;
-                border-color: #d97706;
+                background: linear-gradient(135deg, #fffbeb, #fef3c7);
+                border-color: #f59e0b;
                 color: #d97706;
+                box-shadow: 0 3px 6px rgba(245, 158, 11, 0.2);
             }
             
             .action-btn-simple.delete:hover {
-                background: #fef2f2;
-                border-color: #dc2626;
+                background: linear-gradient(135deg, #fef2f2, #fee2e2);
+                border-color: #ef4444;
                 color: #dc2626;
+                box-shadow: 0 3px 6px rgba(239, 68, 68, 0.2);
             }
             
             .empty-state-modern {
@@ -3570,16 +3605,17 @@ class TasksView {
             /* RESPONSIVE DESIGN */
             @media (max-width: 1200px) {
                 .task-simplified {
-                    grid-template-columns: 40px 30px 120px 1fr 100px 150px 60px 100px;
-                    gap: 8px;
+                    grid-template-columns: 40px 30px 120px 1fr 100px 140px 100px;
+                    gap: 12px;
                 }
                 
                 .client-name {
                     font-size: 12px;
+                    padding: 4px 8px;
                 }
                 
                 .title-text {
-                    font-size: 13px;
+                    font-size: 14px;
                 }
             }
             
@@ -3630,13 +3666,12 @@ class TasksView {
                 }
                 
                 .task-simplified {
-                    grid-template-columns: 30px 20px 1fr 80px 80px;
+                    grid-template-columns: 30px 24px 1fr 80px 80px;
                     padding: 12px 8px;
                     gap: 8px;
                 }
                 
                 .task-client-simple,
-                .task-action-simple,
                 .task-tags-simple {
                     display: none;
                 }
@@ -3651,9 +3686,9 @@ class TasksView {
                 }
                 
                 .action-btn-simple {
-                    width: 24px;
-                    height: 24px;
-                    font-size: 10px;
+                    width: 28px;
+                    height: 28px;
+                    font-size: 11px;
                 }
                 
                 .form-row {
