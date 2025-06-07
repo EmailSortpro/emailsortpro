@@ -794,18 +794,31 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'unifiedEmailStyles';
         styles.textContent = `
-            /* ===== BARRE PRINCIPALE UNIFIÉE ===== */
+            /* ===== BARRE PRINCIPALE RÉORGANISÉE ===== */
             .emails-unified-toolbar {
                 display: flex;
-                align-items: flex-start;
-                gap: 20px;
+                flex-direction: column;
+                gap: 12px;
                 padding: 16px 20px;
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
                 margin-bottom: 16px;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                min-height: auto;
+            }
+            
+            .toolbar-main-line {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                justify-content: space-between;
+            }
+            
+            .toolbar-view-line {
+                display: flex;
+                justify-content: center;
+                padding-top: 8px;
+                border-top: 1px solid #f3f4f6;
             }
             
             .toolbar-section {
@@ -816,17 +829,27 @@ class PageManager {
             
             .toolbar-left {
                 flex-shrink: 0;
-                min-width: 280px;
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            
-            .page-header-info {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                flex-wrap: wrap;
+                gap: 16px;
+            }
+            
+            .page-title {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                line-height: 1;
+            }
+            
+            .item-counter {
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 600;
+                background: #f3f4f6;
+                padding: 4px 12px;
+                border-radius: 12px;
+                white-space: nowrap;
             }
             
             .page-explanation {
@@ -839,7 +862,7 @@ class PageManager {
                 border-radius: 5px;
                 font-size: 12px;
                 line-height: 1.2;
-                max-width: 100%;
+                white-space: nowrap;
             }
             
             .explanation-icon {
@@ -851,15 +874,12 @@ class PageManager {
             .explanation-text {
                 color: #075985;
                 font-weight: 500;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
             }
             
             .toolbar-center {
                 flex: 1;
-                max-width: 500px;
-                justify-content: center;
+                max-width: 400px;
+                min-width: 200px;
             }
             
             .toolbar-right {
@@ -1580,32 +1600,35 @@ class PageManager {
             
             /* ===== RESPONSIVE ===== */
             @media (max-width: 1024px) {
-                .emails-unified-toolbar {
+                .toolbar-main-line {
                     flex-wrap: wrap;
                     gap: 12px;
                 }
                 
                 .toolbar-left {
-                    min-width: auto;
-                    width: 100%;
                     order: 1;
+                    width: 100%;
+                    justify-content: space-between;
                 }
                 
                 .toolbar-center {
-                    width: 100%;
-                    order: 3;
-                }
-                
-                .toolbar-center-right {
                     order: 2;
+                    width: 100%;
+                    max-width: none;
                 }
                 
                 .toolbar-right {
+                    order: 3;
+                    width: 100%;
+                    justify-content: flex-end;
+                }
+                
+                .toolbar-view-line {
                     order: 4;
                 }
                 
                 .page-explanation {
-                    font-size: 12px;
+                    font-size: 11px;
                 }
                 
                 .btn-text {
@@ -1616,9 +1639,13 @@ class PageManager {
             @media (max-width: 768px) {
                 .emails-unified-toolbar {
                     padding: 12px 16px;
+                    gap: 8px;
+                }
+                
+                .toolbar-main-line {
                     flex-direction: column;
                     align-items: stretch;
-                    gap: 16px;
+                    gap: 8px;
                 }
                 
                 .toolbar-section {
@@ -1627,22 +1654,13 @@ class PageManager {
                 }
                 
                 .toolbar-left {
-                    width: 100%;
-                    min-width: auto;
-                }
-                
-                .page-header-info {
-                    justify-content: space-between;
-                    width: 100%;
+                    flex-direction: column;
+                    gap: 8px;
+                    align-items: center;
                 }
                 
                 .page-explanation {
-                    display: none; /* Masquer l'explication sur mobile pour économiser l'espace */
-                }
-                
-                .toolbar-right {
-                    flex-wrap: wrap;
-                    justify-content: center;
+                    display: none;
                 }
                 
                 .view-mode-group {
@@ -1651,12 +1669,13 @@ class PageManager {
                 }
                 
                 .unified-category-filters {
-                    gap: 6px;
+                    gap: 4px;
+                    justify-content: center;
                 }
                 
                 .unified-filter-btn {
-                    padding: 8px 12px;
-                    font-size: 13px;
+                    padding: 6px 8px;
+                    font-size: 12px;
                 }
                 
                 .filter-label {
@@ -1664,33 +1683,39 @@ class PageManager {
                 }
                 
                 .unified-email-item {
-                    padding: 12px 16px;
-                    gap: 12px;
+                    padding: 6px 12px;
+                    gap: 8px;
+                    min-height: 44px;
+                    max-height: 44px;
                 }
                 
-                .email-header {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 8px;
+                .sender-avatar {
+                    width: 28px;
+                    height: 28px;
+                    font-size: 12px;
+                }
+                
+                .email-sender {
+                    min-width: 100px;
+                }
+                
+                .sender-name {
+                    max-width: 80px;
+                    font-size: 12px;
+                }
+                
+                .email-subject {
+                    font-size: 12px;
                 }
                 
                 .email-meta {
-                    align-self: flex-end;
+                    gap: 4px;
                 }
                 
-                .group-header {
-                    padding: 12px 16px;
-                }
-                
-                .email-stats-bar {
-                    flex-direction: column;
-                    gap: 12px;
-                    align-items: flex-start;
-                }
-                
-                .stats-group {
-                    flex-wrap: wrap;
-                    gap: 12px;
+                .action-btn {
+                    width: 20px;
+                    height: 20px;
+                    font-size: 9px;
                 }
             }
             
