@@ -1152,54 +1152,37 @@ class PageManager {
                 -webkit-box-orient: vertical;
             }
             
-            /* ===== ESPACEMENT HARMONIEUX ENTRE SECTIONS ===== */
+            /* ===== HARMONISATION TOTALE - TOUS LES BOUTONS MÊME TAILLE ===== */
             
-            /* Petit espace harmonieux entre les sections */
-            .emails-header {
-                margin-bottom: 12px !important;
-                padding: 0 4px !important;
+            /* HAUTEUR UNIVERSELLE POUR TOUS LES ÉLÉMENTS INTERACTIFS */
+            .view-btn,
+            .action-btn,
+            .category-filter,
+            .search-input,
+            .selection-clear,
+            .selection-action {
+                min-height: 44px !important;
+                max-height: 44px !important;
+                height: 44px !important;
+                box-sizing: border-box !important;
             }
             
-            .emails-controls-bar {
-                margin: 0 4px 12px 4px !important;
-            }
-            
-            .category-filters {
-                margin: 0 4px 12px 4px !important;
-            }
-            
-            .emails-content {
-                margin: 0 4px !important;
-            }
-
-            /* ===== BARRE DE CONTRÔLES MODERNISÉE ===== */
-            .emails-controls-bar {
-                display: flex !important;
-                align-items: center !important;
-                justify-content: space-between !important;
-                gap: 16px !important;
-                padding: 16px !important;
-                background: white !important;
-                border: 1px solid #e5e7eb !important;
-                border-radius: 12px !important;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
-            }
-            
-            /* ===== MODERNISATION DES BOUTONS DE VUE ===== */
+            /* ===== BOUTONS DE VUE - TAILLE HARMONISÉE ===== */
             .view-buttons {
                 display: flex !important;
                 background: #f8fafc !important;
                 border: 1px solid #e2e8f0 !important;
                 border-radius: 10px !important;
-                padding: 4px !important;
+                padding: 3px !important;
                 gap: 2px !important;
             }
             
             .view-btn {
                 display: flex !important;
                 align-items: center !important;
+                justify-content: center !important;
                 gap: 6px !important;
-                padding: 10px 16px !important;
+                padding: 0 16px !important;
                 border: none !important;
                 background: transparent !important;
                 color: #6b7280 !important;
@@ -1209,8 +1192,9 @@ class PageManager {
                 font-size: 13px !important;
                 font-weight: 500 !important;
                 white-space: nowrap !important;
-                min-height: 40px !important;
-                box-sizing: border-box !important;
+                height: 38px !important;
+                min-height: 38px !important;
+                max-height: 38px !important;
             }
             
             .view-btn:hover {
@@ -1227,12 +1211,13 @@ class PageManager {
                 border: 1px solid #d1d5db !important;
             }
             
-            /* ===== HARMONISATION DES BOUTONS D'ACTION ===== */
+            /* ===== BOUTONS D'ACTION - TAILLE HARMONISÉE ===== */
             .action-btn {
                 display: flex !important;
                 align-items: center !important;
+                justify-content: center !important;
                 gap: 8px !important;
-                padding: 12px 20px !important;
+                padding: 0 20px !important;
                 border: 2px solid transparent !important;
                 border-radius: 10px !important;
                 cursor: pointer !important;
@@ -1241,8 +1226,6 @@ class PageManager {
                 transition: all 0.3s ease !important;
                 position: relative !important;
                 white-space: nowrap !important;
-                min-height: 44px !important;
-                box-sizing: border-box !important;
             }
             
             .action-btn.primary {
@@ -1275,7 +1258,7 @@ class PageManager {
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
             }
 
-            /* ===== MODERNISATION DES FILTRES DE CATÉGORIES ===== */
+            /* ===== FILTRES DE CATÉGORIES - TAILLE HARMONISÉE ===== */
             .category-filters {
                 display: flex !important;
                 gap: 8px !important;
@@ -1285,8 +1268,9 @@ class PageManager {
             .category-filter {
                 display: flex !important;
                 align-items: center !important;
+                justify-content: center !important;
                 gap: 8px !important;
-                padding: 10px 16px !important;
+                padding: 0 16px !important;
                 border: 2px solid #e5e7eb !important;
                 border-radius: 10px !important;
                 background: white !important;
@@ -1295,8 +1279,7 @@ class PageManager {
                 transition: all 0.3s ease !important;
                 font-size: 13px !important;
                 font-weight: 500 !important;
-                min-height: 40px !important;
-                box-sizing: border-box !important;
+                white-space: nowrap !important;
             }
             
             .category-filter:hover {
@@ -1328,23 +1311,29 @@ class PageManager {
                 min-width: 20px !important;
                 text-align: center !important;
                 line-height: 1.2 !important;
+                flex-shrink: 0 !important;
             }
             
             .category-filter.active .filter-count {
                 background: rgba(255, 255, 255, 0.25) !important;
             }
 
-            /* ===== MODERNISATION DE LA RECHERCHE ===== */
+            /* ===== CHAMP DE RECHERCHE - TAILLE HARMONISÉE ===== */
+            .search-container {
+                position: relative !important;
+                width: 100% !important;
+            }
+            
             .search-input {
                 width: 100% !important;
-                padding: 12px 16px 12px 44px !important;
+                padding: 0 16px 0 44px !important;
                 border: 2px solid #e5e7eb !important;
                 border-radius: 10px !important;
                 font-size: 13px !important;
                 background: #f9fafb !important;
                 transition: all 0.3s ease !important;
-                min-height: 44px !important;
-                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
             }
             
             .search-input:focus {
@@ -1353,24 +1342,58 @@ class PageManager {
                 background: white !important;
                 box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1) !important;
             }
+            
+            .search-icon {
+                position: absolute !important;
+                left: 16px !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                color: #9ca3af !important;
+                font-size: 14px !important;
+                z-index: 2 !important;
+            }
+            
+            .search-clear {
+                position: absolute !important;
+                right: 12px !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                background: #ef4444 !important;
+                color: white !important;
+                border: none !important;
+                width: 20px !important;
+                height: 20px !important;
+                border-radius: 50% !important;
+                cursor: pointer !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 10px !important;
+                transition: background 0.2s !important;
+                z-index: 2 !important;
+            }
+            
+            .search-clear:hover {
+                background: #dc2626 !important;
+            }
 
-            /* ===== BOUTONS DE SÉLECTION HARMONISÉS ===== */
+            /* ===== BOUTONS DE SÉLECTION - TAILLE HARMONISÉE ===== */
             .selection-clear {
                 display: flex !important;
                 align-items: center !important;
+                justify-content: center !important;
                 gap: 6px !important;
                 background: #ef4444 !important;
                 color: white !important;
                 border: none !important;
-                padding: 10px 16px !important;
+                padding: 0 16px !important;
                 border-radius: 8px !important;
                 cursor: pointer !important;
                 font-weight: 600 !important;
                 font-size: 13px !important;
                 transition: all 0.2s ease !important;
                 flex-shrink: 0 !important;
-                min-height: 40px !important;
-                box-sizing: border-box !important;
+                white-space: nowrap !important;
             }
             
             .selection-clear:hover {
@@ -1382,18 +1405,21 @@ class PageManager {
             .selection-action {
                 display: flex !important;
                 align-items: center !important;
+                justify-content: center !important;
                 gap: 6px !important;
                 background: white !important;
                 color: #374151 !important;
                 border: 2px solid #d1d5db !important;
-                padding: 8px 12px !important;
+                padding: 0 12px !important;
                 border-radius: 8px !important;
                 cursor: pointer !important;
                 font-weight: 500 !important;
                 font-size: 12px !important;
                 transition: all 0.2s ease !important;
-                min-height: 36px !important;
-                box-sizing: border-box !important;
+                white-space: nowrap !important;
+                height: 40px !important;
+                min-height: 40px !important;
+                max-height: 40px !important;
             }
             
             .selection-action:hover {
@@ -1401,6 +1427,300 @@ class PageManager {
                 border-color: #9ca3af !important;
                 transform: translateY(-1px) !important;
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+            }
+
+            /* ===== BARRE DE CONTRÔLES ===== */
+            .emails-controls-bar {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 16px !important;
+                padding: 16px !important;
+                background: white !important;
+                border: 1px solid #e5e7eb !important;
+                border-radius: 12px !important;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+            }
+            
+            .controls-search {
+                flex: 0 0 300px !important;
+            }
+            
+            .controls-views {
+                flex: 1 !important;
+                display: flex !important;
+                justify-content: center !important;
+            }
+            
+            .controls-actions {
+                flex: 0 0 auto !important;
+                display: flex !important;
+                gap: 12px !important;
+            }
+
+            /* ===== ESPACEMENT HARMONIEUX ===== */
+            .emails-header {
+                margin-bottom: 12px !important;
+                padding: 0 4px !important;
+            }
+            
+            .emails-controls-bar {
+                margin: 0 4px 12px 4px !important;
+            }
+            
+            .category-filters {
+                margin: 0 4px 12px 4px !important;
+            }
+            
+            .emails-content {
+                margin: 0 4px !important;
+            }
+
+            /* ===== VUE GROUPÉE (inchangée) ===== */
+            .emails-grouped {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                border: 1px solid #e5e7eb !important;
+                border-radius: 12px !important;
+                overflow: hidden !important;
+            }
+            
+            .email-group {
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                background: white !important;
+                position: relative !important;
+            }
+            
+            .email-group + .email-group::before {
+                content: '' !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 1px !important;
+                background: #f1f5f9 !important;
+                z-index: 10 !important;
+            }
+            
+            .group-header {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 10px 16px !important;
+                margin: 0 !important;
+                background: white !important;
+                cursor: pointer !important;
+                transition: background-color 0.15s ease !important;
+                border: none !important;
+                min-height: 48px !important;
+                max-height: 48px !important;
+                height: 48px !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+                z-index: 20 !important;
+            }
+            
+            .group-header:hover {
+                background: #f8fafc !important;
+            }
+            
+            .email-group.expanded .group-header {
+                background: #f0f9ff !important;
+                border-bottom: 1px solid #e0e7ff !important;
+            }
+            
+            .group-info {
+                display: flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+            
+            .group-icon {
+                width: 32px !important;
+                height: 32px !important;
+                background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+                color: white !important;
+                border-radius: 6px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 12px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-weight: 600 !important;
+            }
+            
+            .group-avatar {
+                width: 32px !important;
+                height: 32px !important;
+                background: linear-gradient(135deg, #10b981, #047857) !important;
+                color: white !important;
+                border-radius: 6px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 14px !important;
+                font-weight: 700 !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .group-details {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .group-name {
+                font-weight: 600 !important;
+                color: #1f2937 !important;
+                font-size: 14px !important;
+                line-height: 1.2 !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+            
+            .group-count {
+                font-size: 11px !important;
+                color: #6b7280 !important;
+                font-weight: 600 !important;
+                background: #f3f4f6 !important;
+                padding: 2px 6px !important;
+                border-radius: 8px !important;
+                margin: 0 0 0 8px !important;
+                min-width: 20px !important;
+                text-align: center !important;
+                line-height: 1.3 !important;
+                flex-shrink: 0 !important;
+            }
+            
+            .group-controls {
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .group-date {
+                font-size: 11px !important;
+                color: #9ca3af !important;
+                font-weight: 500 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                white-space: nowrap !important;
+            }
+            
+            .group-toggle {
+                color: #9ca3af !important;
+                transition: all 0.2s ease !important;
+                font-size: 11px !important;
+                width: 16px !important;
+                height: 16px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                flex-shrink: 0 !important;
+            }
+            
+            .group-header:hover .group-toggle {
+                color: #6b7280 !important;
+            }
+            
+            .email-group.expanded .group-toggle {
+                transform: rotate(180deg) !important;
+                color: #3b82f6 !important;
+            }
+            
+            .group-content {
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+            }
+            
+            .email-group.expanded .group-content {
+                background: #fafbfc !important;
+            }
+            
+            /* Emails dans les groupes */
+            .group-content .email-card {
+                margin: 0 !important;
+                padding: 10px 16px !important;
+                border-bottom: 1px solid #f3f4f6 !important;
+                background: inherit !important;
+                border-left: none !important;
+                border-right: none !important;
+                border-top: none !important;
+                border-radius: 0 !important;
+            }
+            
+            .group-content .email-card:hover {
+                background: #f8fafc !important;
+            }
+            
+            .group-content .email-card:first-child {
+                margin-top: 0 !important;
+                padding-top: 10px !important;
+            }
+            
+            .group-content .email-card:last-child {
+                border-bottom: none !important;
+                margin-bottom: 0 !important;
+                padding-bottom: 10px !important;
+            }
+            
+            /* Animation pulse */
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+            }
+            
+            /* Responsive */
+            @media (max-width: 768px) {
+                .emails-controls-bar {
+                    flex-direction: column !important;
+                    gap: 12px !important;
+                    padding: 12px !important;
+                }
+                
+                .view-btn span,
+                .action-btn span {
+                    display: none !important;
+                }
+                
+                .category-filters {
+                    justify-content: center !important;
+                    gap: 6px !important;
+                }
+                
+                .filter-name {
+                    display: none !important;
+                }
             }
 
             /* ===== VUE GROUPÉE ULTRA-CONDENSÉE ET PROPRE ===== */
