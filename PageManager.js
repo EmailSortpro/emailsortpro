@@ -1626,10 +1626,11 @@ class PageManager {
                 background: #fafbfc !important;
             }
             
-            /* ===== EMAILS MODERNES - ALIGNÉS À GAUCHE ===== */
+            /* ===== EMAILS ALIGNÉS CORRECTEMENT ===== */
             .group-content .email-card {
                 display: flex !important;
                 align-items: center !important;
+                justify-content: flex-start !important;
                 gap: 16px !important;
                 margin: 0 !important;
                 padding: 12px 20px !important;
@@ -1645,11 +1646,11 @@ class PageManager {
                 max-height: 48px !important;
                 height: 48px !important;
                 box-sizing: border-box !important;
+                width: 100% !important;
             }
             
             .group-content .email-card:hover {
                 background: #f8fafc !important;
-                transform: translateX(2px) !important;
             }
             
             .group-content .email-card.selected {
@@ -1664,20 +1665,12 @@ class PageManager {
                 padding-left: 16px !important;
             }
             
-            .group-content .email-card:first-child {
-                margin-top: 0 !important;
-            }
-            
-            .group-content .email-card:last-child {
-                border-bottom: none !important;
-                margin-bottom: 0 !important;
-            }
-            
-            /* ===== ÉLÉMENTS MODERNES ET GRANDS ===== */
+            /* ===== ÉLÉMENTS BIEN ALIGNÉS ===== */
             .email-checkbox-container {
                 flex-shrink: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                width: 18px !important;
             }
             
             .email-checkbox {
@@ -1691,20 +1684,20 @@ class PageManager {
             .email-sender-simple {
                 font-weight: 600 !important;
                 color: #1f2937 !important;
-                font-size: 15px !important;
+                font-size: 14px !important;
                 line-height: 1.3 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                flex: 0 0 200px !important;
-                min-width: 0 !important;
+                width: 180px !important;
+                flex-shrink: 0 !important;
                 text-align: left !important;
             }
             
             .email-subject-simple {
-                font-size: 15px !important;
+                font-size: 14px !important;
                 font-weight: 400 !important;
                 color: #374151 !important;
                 line-height: 1.3 !important;
@@ -1719,7 +1712,7 @@ class PageManager {
             }
             
             .email-time-simple {
-                font-size: 13px !important;
+                font-size: 12px !important;
                 color: #6b7280 !important;
                 font-weight: 500 !important;
                 white-space: nowrap !important;
@@ -1727,23 +1720,31 @@ class PageManager {
                 padding: 0 !important;
                 flex-shrink: 0 !important;
                 text-align: right !important;
-                min-width: 40px !important;
+                width: 50px !important;
             }
             
-            /* ===== SUPPRESSION DES ANCIENS STYLES ===== */
+            /* ===== SUPPRESSION SÉLECTIVE DES ANCIENS STYLES ===== */
             .email-card-content,
-            .email-sender,
-            .email-subject,
+            .email-sender:not(.email-sender-simple),
+            .email-subject:not(.email-subject-simple),
             .email-meta,
             .email-badges,
             .email-badge,
-            .email-date,
+            .email-date:not(.email-time-simple),
             .email-actions,
             .email-action-btn,
             .attachment-badge,
             .ai-badge,
             .priority-badge {
                 display: none !important;
+            }
+            
+            /* ===== ASSURER L'AFFICHAGE DES NOUVEAUX ÉLÉMENTS ===== */
+            .email-sender-simple,
+            .email-subject-simple,
+            .email-time-simple {
+                display: block !important;
+                visibility: visible !important;
             }
             
             /* ===== AMÉLIORATION DES HEADERS DE GROUPE ===== */
