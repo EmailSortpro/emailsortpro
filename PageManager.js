@@ -1152,14 +1152,17 @@ class PageManager {
                 -webkit-box-orient: vertical;
             }
             
-            /* ===== VUE GROUPÉE COMPACTE ===== */
+            /* ===== VUE GROUPÉE ULTRA-COMPACTE ===== */
             .emails-grouped {
                 display: flex;
                 flex-direction: column;
+                gap: 0;
             }
             
             .email-group {
-                border-bottom: 1px solid #f3f4f6;
+                margin: 0;
+                border: none;
+                border-bottom: 1px solid #e5e7eb;
             }
             
             .email-group:last-child {
@@ -1170,11 +1173,14 @@ class PageManager {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 12px 16px;
+                padding: 8px 16px;
+                margin: 0;
                 background: #f8fafc;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                border-bottom: 1px solid #f3f4f6;
+                border: none;
+                border-bottom: 1px solid #e5e7eb;
+                min-height: 52px;
             }
             
             .group-header:hover {
@@ -1189,60 +1195,71 @@ class PageManager {
             .group-info {
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
             }
             
             .group-icon {
-                width: 38px;
-                height: 38px;
+                width: 32px;
+                height: 32px;
                 background: linear-gradient(135deg, #3b82f6, #8b5cf6);
                 color: white;
-                border-radius: 10px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+            
+            .group-avatar {
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 14px;
-            }
-            
-            .group-avatar {
-                width: 38px;
-                height: 38px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
                 font-weight: 700;
+                flex-shrink: 0;
             }
             
             .group-details {
                 display: flex;
                 flex-direction: column;
-                gap: 1px;
+                gap: 0;
+                flex: 1;
+                min-width: 0;
             }
             
             .group-name {
                 font-weight: 700;
                 color: #1f2937;
-                font-size: 15px;
+                font-size: 14px;
+                line-height: 1.2;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
             .group-count {
-                font-size: 12px;
+                font-size: 11px;
                 color: #6b7280;
                 font-weight: 500;
+                line-height: 1;
+                margin-top: 1px;
             }
             
             .group-controls {
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
+                flex-shrink: 0;
             }
             
             .group-date {
-                font-size: 12px;
+                font-size: 11px;
                 color: #6b7280;
                 font-weight: 500;
             }
@@ -1250,7 +1267,12 @@ class PageManager {
             .group-toggle {
                 color: #9ca3af;
                 transition: transform 0.3s ease;
-                font-size: 13px;
+                font-size: 12px;
+                width: 16px;
+                height: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .email-group.expanded .group-toggle {
@@ -1259,6 +1281,19 @@ class PageManager {
             
             .group-content {
                 background: white;
+                margin: 0;
+                padding: 0;
+            }
+            
+            /* Supprimer tout espacement vertical inutile */
+            .group-content .email-card:first-child {
+                border-top: none;
+                margin-top: 0;
+            }
+            
+            .group-content .email-card:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
             }
             
             /* ===== ÉTAT VIDE ===== */
