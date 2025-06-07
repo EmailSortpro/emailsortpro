@@ -1,5 +1,4 @@
-// CategoryManager.js - Version 16.1 - Correction intégration avec CategoriesPage
-// Détection stricte avec validation des mots-clés + intégration optimisée
+// CategoryManager.js - Version 16.0 - Détection stricte avec validation des mots-clés
 
 class CategoryManager {
     constructor() {
@@ -9,7 +8,7 @@ class CategoryManager {
         this.weightedKeywords = {};
         this.initializeCategories();
         this.initializeWeightedDetection();
-        console.log('[CategoryManager] ✅ Version 16.1 - Correction intégration avec CategoriesPage');
+        console.log('[CategoryManager] ✅ Version 16.0 - Détection stricte avec validation des mots-clés');
     }
 
     // ================================================
@@ -868,135 +867,12 @@ class CategoryManager {
     setDebugMode(enabled) {
         this.debugMode = enabled;
     }
-
-    // ================================================
-    // MÉTHODES POUR INTÉGRATION AVEC CATEGORIESPAGE
-    // ================================================
     
-    /**
-     * Méthode pour obtenir les catégories pré-sélectionnées pour les tâches
-     * Cette méthode fait le lien avec CategoriesPage
-     */
-    getTaskPreselectedCategories() {
-        // Déléguer à CategoriesPage s'il est disponible
-        if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
-            const preselected = window.categoriesPage.getTaskPreselectedCategories();
-            console.log('[CategoryManager] Catégories pré-sélectionnées récupérées via CategoriesPage:', preselected);
-            return preselected;
-        }
-        
-        // Fallback : lecture directe du localStorage
-        try {
-            const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
-            const preselected = settings.taskPreselectedCategories || [];
-            console.log('[CategoryManager] Catégories pré-sélectionnées récupérées via localStorage:', preselected);
-            return preselected;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur lors de la récupération des catégories pré-sélectionnées:', error);
-            return [];
-        }
-    }
-
-    /**
-     * Méthode pour vérifier si une catégorie est pré-sélectionnée pour les tâches
-     */
-    isCategoryPreselectedForTasks(categoryId) {
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        const isPreselected = preselectedCategories.includes(categoryId);
-        console.log(`[CategoryManager] Catégorie ${categoryId} pré-sélectionnée pour les tâches: ${isPreselected}`);
-        return isPreselected;
-    }
-
-    /**
-     * Méthode pour obtenir les paramètres d'automatisation
-     */
-    getAutomationSettings() {
-        try {
-            const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
-            return settings.automationSettings || {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            };
-        } catch (error) {
-            console.error('[CategoryManager] Erreur lors de la récupération des paramètres d\'automatisation:', error);
-            return {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            };
-        }
-    }
-
-    /**
-     * Méthode pour obtenir la catégorie d'exclusion d'un email
-     * Délègue à CategoriesPage si disponible
-     */
-    getExclusionCategory(email) {
-        if (window.categoriesPage && typeof window.categoriesPage.getExclusionCategory === 'function') {
-            return window.categoriesPage.getExclusionCategory(email);
-        }
-        
-        // Fallback : implémentation basique
-        try {
-            const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
-            if (!settings.categoryExclusions) return null;
-            
-            // Vérifier l'adresse email exacte
-            const fromEmail = email.from?.emailAddress?.address?.toLowerCase();
-            if (fromEmail && settings.categoryExclusions.emails) {
-                const emailRule = settings.categoryExclusions.emails.find(item => 
-                    item.value === fromEmail && item.category
-                );
-                if (emailRule) return emailRule.category;
-            }
-            
-            // Vérifier le domaine
-            const domain = fromEmail?.split('@')[1];
-            if (domain && settings.categoryExclusions.domains) {
-                const domainRule = settings.categoryExclusions.domains.find(item => 
-                    item.value === domain && item.category
-                );
-                if (domainRule) return domainRule.category;
-            }
-            
-            return null;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur lors de la vérification des exclusions:', error);
-            return null;
-        }
-    }
-
-    /**
-     * Méthode pour l'analyse complète d'un email avec prise en compte des exclusions
-     */
-    analyzeEmailWithExclusions(email) {
-        // Vérifier d'abord les exclusions
-        const exclusionCategory = this.getExclusionCategory(email);
-        if (exclusionCategory) {
-            console.log(`[CategoryManager] Email assigné par exclusion à la catégorie: ${exclusionCategory}`);
-            return {
-                category: exclusionCategory,
-                score: 1000, // Score très élevé pour les exclusions
-                confidence: 1.0,
-                matchedPatterns: [{ keyword: 'exclusion_rule', type: 'exclusion', score: 1000 }],
-                hasAbsolute: true,
-                isExclusion: true
-            };
-        }
-        
-        // Sinon, analyse normale
-        return this.analyzeEmail(email);
-    }
-
     // ================================================
     // MÉTHODE UTILITAIRE POUR ÉCHAPPER LES REGEX
     // ================================================
     escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\                strong: [
-                    'promo', 'deal', 'offer', 'sale');
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
     
     // ================================================
@@ -1010,7 +886,7 @@ class CategoryManager {
             toRecipients: [{ emailAddress: { address: 'user@example.com' } }]
         };
         
-        const result = this.analyzeEmailWithExclusions(testEmail);
+        const result = this.analyzeEmail(testEmail);
         
         console.log('\n[CategoryManager] TEST RESULT:');
         console.log(`Subject: "${subject}"`);
@@ -1018,7 +894,6 @@ class CategoryManager {
         console.log(`Score: ${result.score}pts`);
         console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
         console.log(`Matches:`, result.matchedPatterns);
-        console.log(`Is Exclusion: ${result.isExclusion || false}`);
         
         if (expectedCategory && result.category !== expectedCategory) {
             console.log(`❌ FAILED - Expected ${expectedCategory}, got ${result.category}`);
@@ -1028,65 +903,9 @@ class CategoryManager {
         
         return result;
     }
-
-    // ================================================
-    // MÉTHODE DE DIAGNOSTIC POUR LE DEBUGGING
-    // ================================================
-    diagnoseTaskPreselection() {
-        console.log('\n[CategoryManager] DIAGNOSTIC DES CATÉGORIES PRÉ-SÉLECTIONNÉES:');
-        
-        // Test via CategoriesPage
-        if (window.categoriesPage) {
-            console.log('✅ CategoriesPage disponible');
-            try {
-                const preselectedViaPage = window.categoriesPage.getTaskPreselectedCategories();
-                console.log('Catégories via CategoriesPage:', preselectedViaPage);
-            } catch (error) {
-                console.error('❌ Erreur via CategoriesPage:', error);
-            }
-        } else {
-            console.log('❌ CategoriesPage non disponible');
-        }
-        
-        // Test via localStorage direct
-        try {
-            const rawSettings = localStorage.getItem('categorySettings');
-            console.log('Raw localStorage:', rawSettings);
-            
-            if (rawSettings) {
-                const settings = JSON.parse(rawSettings);
-                console.log('Settings parsés:', settings);
-                console.log('taskPreselectedCategories:', settings.taskPreselectedCategories);
-                console.log('Type:', typeof settings.taskPreselectedCategories);
-                console.log('IsArray:', Array.isArray(settings.taskPreselectedCategories));
-            }
-        } catch (error) {
-            console.error('❌ Erreur localStorage:', error);
-        }
-        
-        // Test via la méthode publique
-        try {
-            const preselected = this.getTaskPreselectedCategories();
-            console.log('Via getTaskPreselectedCategories():', preselected);
-            
-            // Test pour chaque catégorie
-            Object.keys(this.categories).forEach(categoryId => {
-                const isPreselected = this.isCategoryPreselectedForTasks(categoryId);
-                console.log(`  - ${categoryId}: ${isPreselected ? '✅' : '❌'}`);
-            });
-        } catch (error) {
-            console.error('❌ Erreur méthode publique:', error);
-        }
-    }
 }
 
 // Créer l'instance globale
 window.categoryManager = new CategoryManager();
 
-// Méthode de diagnostic disponible globalement
-window.diagnoseCategoryPreselection = () => {
-    window.categoryManager.diagnoseTaskPreselection();
-};
-
-console.log('✅ CategoryManager v16.1 loaded - Correction intégration avec CategoriesPage');
-console.log('💡 Utilisez window.diagnoseCategoryPreselection() pour diagnostiquer les problèmes');
+console.log('✅ CategoryManager v16.0 loaded - Détection stricte avec validation des mots-clés');
