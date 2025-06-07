@@ -339,7 +339,7 @@ class PageManager {
         const isSelected = this.selectedEmails.has(email.id);
         const hasTask = this.createdTasks.has(email.id);
         const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Unknown';
-        const senderEmail = email.from?.emailAddress?.address || '';
+        const senderDomain = email.from?.emailAddress?.address?.split('@')[1] || '';
         const senderInitial = senderName.charAt(0).toUpperCase();
         const formattedDate = this.formatEmailDate(email.receivedDateTime);
         
@@ -347,95 +347,82 @@ class PageManager {
         const analysis = this.aiAnalysisResults.get(email.id);
         const deadline = analysis?.mainTask?.dueDate || analysis?.actionsHighlighted?.find(a => a.deadline)?.deadline || null;
         
+        // Category info
+        const categoryInfo = this.getCategoryInfo(email.category || 'other');
+        
         return `
             <div class="unified-email-item ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <!-- LIGNE 1: Expéditeur, date et indicateurs -->
-                <div class="email-header-line">
-                    <div class="email-header-left">
-                        <!-- Checkbox -->
-                        <div class="email-checkbox-wrapper">
-                            <input type="checkbox" 
-                                   class="email-checkbox" 
-                                   ${isSelected ? 'checked' : ''}
-                                   onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                <!-- Checkbox -->
+                <div class="email-checkbox-wrapper">
+                    <input type="checkbox" 
+                           class="email-checkbox" 
+                           ${isSelected ? 'checked' : ''}
+                           onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                </div>
+                
+                <!-- Sender Avatar -->
+                <div class="sender-avatar" style="background: linear-gradient(135deg, ${this.generateColorFromText(senderName)})">
+                    ${senderInitial}
+                </div>
+                
+                <!-- Email Content sur une seule ligne -->
+                <div class="email-main-content">
+                    <div class="email-header">
+                        <!-- Sender Info -->
+                        <div class="email-sender">
+                            <span class="sender-name" title="${this.escapeHtml(senderName)}">${this.escapeHtml(senderName)}</span>
+                            ${senderDomain ? `<span class="sender-domain">@${senderDomain}</span>` : ''}
                         </div>
                         
-                        <!-- Avatar -->
-                        <div class="sender-avatar" style="background: linear-gradient(135deg, ${this.generateColorFromText(senderName)})">
-                            ${senderInitial}
+                        <!-- Subject -->
+                        <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
+                            ${this.escapeHtml(email.subject || 'Sans sujet')}
                         </div>
                         
-                        <!-- Informations expéditeur -->
-                        <div class="email-sender-info">
-                            <div class="sender-name" title="${this.escapeHtml(senderName)}">
-                                ${this.escapeHtml(senderName)}
-                            </div>
-                            <div class="sender-email" title="${this.escapeHtml(senderEmail)}">
-                                ${this.escapeHtml(senderEmail)}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="email-meta-header">
-                        <!-- Date -->
-                        <span class="email-date">${formattedDate}</span>
-                        
-                        <!-- Indicateurs -->
-                        <div class="email-indicators">
+                        <!-- Meta Information -->
+                        <div class="email-meta">
+                            ${deadline ? `
+                                <span class="email-deadline ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}">
+                                    <i class="fas fa-clock"></i>
+                                    ${this.formatDeadline(deadline)}
+                                </span>
+                            ` : ''}
+                            
                             ${email.hasAttachments ? `
-                                <span class="indicator-icon attachment" title="Contient des pièces jointes">
+                                <span class="attachment-indicator" title="Contient des pièces jointes">
                                     <i class="fas fa-paperclip"></i>
                                 </span>
                             ` : ''}
                             
                             ${analysis ? `
-                                <span class="indicator-icon ai" title="Analysé par IA">
+                                <span class="ai-indicator" title="Analysé par IA">
                                     <i class="fas fa-robot"></i>
                                 </span>
                             ` : ''}
                             
-                            ${deadline ? `
-                                <span class="indicator-icon deadline" title="Échéance: ${deadline}">
-                                    <i class="fas fa-clock"></i>
-                                </span>
-                            ` : ''}
-                        </div>
-                        
-                        <!-- Actions -->
-                        <div class="email-actions">
-                            ${hasTask ? `
-                                <button class="action-btn task-created" onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" title="Voir la tâche créée">
-                                    <i class="fas fa-check-circle"></i>
-                                </button>
-                            ` : `
-                                <button class="action-btn create-task" onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" title="Créer une tâche">
-                                    <i class="fas fa-plus-circle"></i>
-                                </button>
-                            `}
-                            
-                            <button class="action-btn view-email" onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" title="Voir l'email complet">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                            <span class="email-date">${formattedDate}</span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- LIGNE 2: Sujet et échéance -->
-                <div class="email-content-line">
-                    <div class="email-subject-container">
-                        <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
-                            ${this.escapeHtml(email.subject || 'Sans sujet')}
-                        </div>
-                        ${deadline ? `
-                            <div class="email-deadline ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}">
-                                <i class="fas fa-clock"></i>
-                                ${this.formatDeadline(deadline)}
-                            </div>
-                        ` : ''}
-                    </div>
+                <!-- Actions compactes -->
+                <div class="email-actions">
+                    ${hasTask ? `
+                        <button class="action-btn task-created" onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" title="Voir la tâche créée">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                    ` : `
+                        <button class="action-btn create-task" onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" title="Créer une tâche">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                    `}
+                    
+                    <button class="action-btn view-email" onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" title="Voir l'email complet">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -807,12 +794,12 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'unifiedEmailStyles';
         styles.textContent = `
-            /* ===== BARRE PRINCIPALE CORRIGÉE ===== */
+            /* ===== BARRE PRINCIPALE RÉORGANISÉE ===== */
             .emails-unified-toolbar {
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
-                padding: 20px 24px;
+                padding: 16px 20px;
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
@@ -823,36 +810,21 @@ class PageManager {
             .toolbar-main-line {
                 display: flex;
                 align-items: center;
+                gap: 20px;
                 justify-content: space-between;
-                gap: 24px;
-                min-height: 48px;
             }
             
-            .toolbar-secondary-line {
+            .toolbar-view-line {
                 display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 20px;
+                justify-content: center;
                 padding-top: 8px;
                 border-top: 1px solid #f3f4f6;
-            }
-            
-            .toolbar-right-info {
-                flex-shrink: 0;
-                display: flex;
-                align-items: center;
-            }
-            
-            .unified-search-wrapper {
-                position: relative;
-                width: 320px;
-                flex-shrink: 0;
             }
             
             .toolbar-section {
                 display: flex;
                 align-items: center;
-                gap: 16px;
+                gap: 12px;
             }
             
             .toolbar-left {
@@ -862,76 +834,57 @@ class PageManager {
                 gap: 16px;
             }
             
-            .toolbar-center {
-                flex: 1;
-                max-width: 450px;
-                min-width: 250px;
-                display: flex;
-                justify-content: center;
-            }
-            
-            .toolbar-right {
-                flex-shrink: 0;
-                display: flex;
-                align-items: center;
-            }
-            
             .page-title {
                 margin: 0;
-                font-size: 28px;
+                font-size: 24px;
                 font-weight: 700;
                 color: #1f2937;
                 line-height: 1;
             }
             
             .item-counter {
-                font-size: 15px;
+                font-size: 14px;
                 color: #6b7280;
                 font-weight: 600;
                 background: #f3f4f6;
-                padding: 6px 14px;
-                border-radius: 16px;
+                padding: 4px 12px;
+                border-radius: 12px;
                 white-space: nowrap;
             }
             
-            .toolbar-description {
+            .page-explanation {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 6px 12px;
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                gap: 6px;
+                padding: 4px 10px;
+                background: #f0f9ff;
                 border: 1px solid #bae6fd;
-                border-radius: 8px;
-                font-size: 13px;
-                line-height: 1.4;
+                border-radius: 5px;
+                font-size: 12px;
+                line-height: 1.2;
+                white-space: nowrap;
             }
             
-            .description-icon {
+            .explanation-icon {
                 color: #0ea5e9;
-                font-size: 14px;
+                font-size: 11px;
                 flex-shrink: 0;
             }
             
-            .description-text {
+            .explanation-text {
                 color: #075985;
                 font-weight: 500;
             }
             
-            .selection-indicator {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                background: #eff6ff;
-                border: 1px solid #bfdbfe;
-                border-radius: 10px;
-                padding: 8px 16px;
-                font-size: 14px;
-                color: #1e40af;
-                font-weight: 600;
+            .toolbar-center {
+                flex: 1;
+                max-width: 400px;
+                min-width: 200px;
             }
             
-            .selection-count {
-                white-space: nowrap;
+            .toolbar-right {
+                flex-shrink: 0;
+                gap: 16px;
             }
             
             /* ===== TITRE ET COMPTEURS ===== */
@@ -969,16 +922,22 @@ class PageManager {
                 font-weight: 600;
             }
             
-            /* ===== RECHERCHE ÉLÉGANTE ===== */
+            /* ===== RECHERCHE UNIFIÉE ===== */
+            .unified-search-wrapper {
+                position: relative;
+                width: 100%;
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            
             .unified-search-input {
                 width: 100%;
-                padding: 10px 16px 10px 42px;
+                padding: 10px 16px 10px 44px;
                 border: 1px solid #d1d5db;
                 border-radius: 8px;
                 font-size: 14px;
                 background: #f9fafb;
                 transition: all 0.2s ease;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
             
             .unified-search-input:focus {
@@ -990,7 +949,7 @@ class PageManager {
             
             .search-icon {
                 position: absolute;
-                left: 14px;
+                left: 16px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
@@ -999,7 +958,7 @@ class PageManager {
             
             .search-clear-btn {
                 position: absolute;
-                right: 10px;
+                right: 12px;
                 top: 50%;
                 transform: translateY(-50%);
                 background: none;
@@ -1009,9 +968,6 @@ class PageManager {
                 padding: 4px;
                 border-radius: 4px;
                 transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
             }
             
             .search-clear-btn:hover {
