@@ -1,911 +1,714 @@
-// CategoryManager.js - Version 16.0 - Détection stricte avec validation des mots-clés
-
-class CategoryManager {
-    constructor() {
-        this.categories = {};
-        this.isInitialized = false;
-        this.debugMode = false;
-        this.weightedKeywords = {};
-        this.initializeCategories();
-        this.initializeWeightedDetection();
-        console.log('[CategoryManager] ✅ Version 16.0 - Détection stricte avec validation des mots-clés');
-    }
-
-    // ================================================
-    // INITIALISATION DES CATÉGORIES
-    // ================================================
-    initializeCategories() {
-        this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS (détecté en premier)
-            marketing_news: {
-                name: 'Marketing & News',
-                icon: '📰',
-                color: '#8b5cf6',
-                description: 'Newsletters et promotions',
-                priority: 100
-            },
-            
-            // MÊME PRIORITÉ POUR TOUTES LES AUTRES CATÉGORIES
-            security: {
-                name: 'Sécurité',
-                icon: '🔒',
-                color: '#991b1b',
-                description: 'Alertes de sécurité, connexions et authentification',
-                priority: 50
-            },
-            
-            finance: {
-                name: 'Finance',
-                icon: '💰',
-                color: '#dc2626',
-                description: 'Factures et paiements',
-                priority: 50
-            },
-            
-            tasks: {
-                name: 'Actions Requises',
-                icon: '✅',
-                color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
-                priority: 50
-            },
-            
-            commercial: {
-                name: 'Commercial',
-                icon: '💼',
-                color: '#059669',
-                description: 'Opportunités, devis et contrats',
-                priority: 50
-            },
-            
-            meetings: {
-                name: 'Réunions',
-                icon: '📅',
-                color: '#f59e0b',
-                description: 'Invitations et demandes de réunion',
-                priority: 50
-            },
-            
-            support: {
-                name: 'Support',
-                icon: '🛠️',
-                color: '#f59e0b',
-                description: 'Tickets et assistance',
-                priority: 50
-            },
-            
-            reminders: {
-                name: 'Relances',
-                icon: '🔄',
-                color: '#10b981',
-                description: 'Rappels et suivis',
-                priority: 50
-            },
-            
-            project: {
-                name: 'Projets',
-                icon: '📊',
-                color: '#3b82f6',
-                description: 'Gestion de projet',
-                priority: 50
-            },
-            
-            hr: {
-                name: 'RH',
-                icon: '👥',
-                color: '#10b981',
-                description: 'Ressources humaines',
-                priority: 50
-            },
-            
-            internal: {
-                name: 'Communication Interne',
-                icon: '📢',
-                color: '#0ea5e9',
-                description: 'Annonces internes',
-                priority: 50
-            },
-            
-            notifications: {
-                name: 'Notifications',
-                icon: '🔔',
-                color: '#94a3b8',
-                description: 'Notifications automatiques',
-                priority: 50
-            },
-            
-            // CATÉGORIE CC - Pour les emails où vous êtes en copie
-            cc: {
-                name: 'En Copie',
-                icon: '📋',
-                color: '#64748b',
-                description: 'Emails où vous êtes en copie',
-                priority: 40
-            }
-        };
-        
-        this.isInitialized = true;
-    }
-
-    // ================================================
-    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS ÉTENDUS
-    // ================================================
-    initializeWeightedDetection() {
-        this.weightedKeywords = {
-            // SÉCURITÉ - PATTERNS STRICTS
-            security: {
-                absolute: [
-                    // ALERTES DE CONNEXION
-                    'alerte de connexion', 'alert connexion', 'nouvelle connexion',
-                    'quelqu\'un s\'est connecté', 'connexion à votre compte',
-                    'activité suspecte', 'suspicious activity', 'login alert',
-                    'new sign-in', 'sign in detected', 'connexion détectée',
-                    'accès à votre compte', 'account accessed',
-                    
-                    // CODES ET AUTHENTIFICATION
-                    'code de vérification', 'verification code', 'security code',
-                    'two-factor', '2fa', 'authentification', 'authentication',
-                    'code d\'accès unique', 'one-time password', 'otp',
-                    
-                    // RÉINITIALISATION
-                    'password reset', 'réinitialisation mot de passe',
-                    'reset your password', 'changer votre mot de passe'
-                ],
-                
-                strong: [
-                    'sécurité', 'security', 'vérification', 'verify',
-                    'authentification', 'password', 'mot de passe'
-                ],
-                
-                weak: ['compte', 'account', 'accès'],
-                
-                // Exclure si c'est du marketing
-                exclusions: ['newsletter', 'unsubscribe', 'promotion', 'sale', 'offre']
-            },
-            
-            // RÉUNIONS - PATTERNS STRICTS
-            meetings: {
-                absolute: [
-                    'demande de réunion', 'meeting request', 'réunion',
-                    'schedule a meeting', 'planifier une réunion',
-                    'invitation réunion', 'meeting invitation',
-                    'book a meeting', 'réserver une réunion',
-                    'teams meeting', 'zoom meeting', 'google meet',
-                    'conference call', 'rendez-vous', 'rdv',
-                    'demande présentation', 'présentation prévue'
-                ],
-                
-                strong: [
-                    'meeting', 'réunion', 'schedule', 'planifier',
-                    'calendar', 'calendrier', 'appointment'
-                ],
-                
-                weak: ['présentation', 'agenda'],
-                
-                exclusions: ['newsletter', 'unsubscribe', 'promotion']
-            },
-            
-            // TÂCHES - PATTERNS STRICTS (sans confusion marketing)
-            tasks: {
-                absolute: [
-                    'action required', 'action requise', 'action needed',
-                    'please complete', 'veuillez compléter', 'to do',
-                    'task assigned', 'tâche assignée', 'deadline',
-                    'due date', 'échéance', 'livrable',
-                    'urgence', 'urgent', 'très urgent',
-                    'demande explication', 'explication requise',
-                    'merci de faire', 'pouvez-vous faire', 'pourriez-vous faire',
-                    'action à mener', 'à faire', 'à traiter',
-                    'demande d\'action', 'nécessite votre action',
-                    'en attente de', 'waiting for your action',
-                    'répondre avant', 'reply by', 'response needed',
-                    'confirmation requise', 'approval needed'
-                ],
-                
-                strong: [
-                    'urgent', 'asap', 'priority', 'priorité',
-                    'complete', 'compléter', 'action', 'faire',
-                    'deadline', 'échéance', 'avant le'
-                ],
-                
-                weak: ['demande', 'besoin', 'attente'],
-                
-                // Exclure les patterns marketing
-                exclusions: [
-                    'discount', 'promo', 'sale', 'offer', 'offre',
-                    'newsletter', 'unsubscribe', 'marketing',
-                    'shop now', 'buy now', 'limited time',
-                    'exclusive', 'special offer', 'just for you',
-                    'découvrez', 'new arrivals', 'collection'
-                ]
-            },
-            
-            // RELANCES - PATTERNS STRICTS
-            reminders: {
-                absolute: [
-                    'reminder:', 'rappel:', 'follow up', 'relance',
-                    'gentle reminder', 'rappel amical', 'following up',
-                    'quick reminder', 'petit rappel', 'friendly reminder',
-                    'je reviens vers vous', 'circling back',
-                    'comme convenu', 'suite à notre', 'faisant suite'
-                ],
-                
-                strong: [
-                    'reminder', 'rappel', 'follow', 'relance',
-                    'suite', 'convenu'
-                ],
-                
-                weak: ['previous', 'discussed'],
-                
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-            
-            // COMMERCIAL - PATTERNS STRICTS
-            commercial: {
-                absolute: [
-                    'devis', 'quotation', 'proposal', 'proposition',
-                    'contrat', 'contract', 'bon de commande',
-                    'purchase order', 'offre commerciale',
-                    'proposition commerciale', 'business proposal',
-                    'opportunité commerciale', 'commercial opportunity',
-                    'nouveau client', 'new customer',
-                    'signature contrat', 'contract signature'
-                ],
-                
-                strong: [
-                    'client', 'customer', 'prospect', 'opportunity',
-                    'commercial', 'business', 'marché', 'deal'
-                ],
-                
-                weak: ['offre', 'négociation'],
-                
-                exclusions: ['newsletter', 'unsubscribe', 'marketing', 'promotion', 'sale']
-            },
-            
-            // FINANCE - PATTERNS STRICTS
-            finance: {
-                absolute: [
-                    'facture', 'invoice', 'payment', 'paiement',
-                    'virement', 'transfer', 'remboursement',
-                    'relevé bancaire', 'bank statement',
-                    'déclaration fiscale', 'tax declaration',
-                    'impôts', 'taxes', 'fiscal',
-                    'reçu fiscal', 'tax receipt',
-                    'comptabilité', 'accounting',
-                    'bilan', 'balance sheet',
-                    'échéance de paiement', 'payment due',
-                    'rappel de paiement', 'payment reminder'
-                ],
-                
-                strong: [
-                    'montant', 'amount', 'total', 'facture',
-                    'fiscal', 'bancaire', 'bank', 'finance',
-                    'paiement', 'payment'
-                ],
-                
-                weak: ['euro', 'dollar', 'prix'],
-                
-                exclusions: ['newsletter', 'marketing', 'promotion', 'offre spéciale']
-            },
-            
-            // PROJETS - PATTERNS STRICTS
-            project: {
-                absolute: [
-                    'projet xx', 'project update', 'milestone',
-                    'sprint', 'livrable projet', 'gantt',
-                    'avancement projet', 'project status',
-                    'kickoff', 'kick off', 'lancement projet'
-                ],
-                
-                strong: [
-                    'projet', 'project', 'milestone', 'sprint',
-                    'agile', 'scrum'
-                ],
-                
-                weak: ['development', 'phase'],
-                
-                exclusions: ['newsletter', 'marketing']
-            },
-            
-            // RH - PATTERNS STRICTS
-            hr: {
-                absolute: [
-                    'bulletin de paie', 'payslip', 'contrat de travail',
-                    'congés', 'leave request', 'onboarding',
-                    'entretien annuel', 'performance review',
-                    'recrutement', 'recruitment', 'candidature'
-                ],
-                
-                strong: [
-                    'rh', 'hr', 'salaire', 'salary',
-                    'ressources humaines', 'human resources'
-                ],
-                
-                weak: ['employee', 'staff'],
-                
-                exclusions: ['newsletter', 'marketing']
-            },
-            
-            // SUPPORT - PATTERNS STRICTS
-            support: {
-                absolute: [
-                    'ticket #', 'ticket number', 'numéro de ticket',
-                    'case #', 'case number', 'incident #',
-                    'problème résolu', 'issue resolved', 'ticket résolu',
-                    'support ticket', 'ticket de support', 'help desk'
-                ],
-                
-                strong: [
-                    'support', 'assistance', 'help desk',
-                    'technical support', 'ticket'
-                ],
-                
-                weak: ['help', 'aide', 'issue'],
-                
-                exclusions: ['newsletter', 'marketing']
-            },
-            
-            // INTERNE - PATTERNS STRICTS
-            internal: {
-                absolute: [
-                    'all staff', 'tout le personnel', 'annonce interne',
-                    'company announcement', 'memo interne',
-                    'communication interne', 'internal communication',
-                    'note de service', 'bulletin interne'
-                ],
-                
-                strong: [
-                    'internal', 'interne', 'company wide',
-                    'personnel', 'staff'
-                ],
-                
-                weak: ['annonce', 'announcement'],
-                
-                exclusions: ['newsletter', 'unsubscribe', 'marketing', 'external']
-            },
-            
-            // NOTIFICATIONS - PATTERNS STRICTS
-            notifications: {
-                absolute: [
-                    'do not reply', 'ne pas répondre', 'noreply@',
-                    'automated message', 'notification automatique',
-                    'system notification', 'notification système',
-                    'ceci est un message automatique', 'this is an automated'
-                ],
-                
-                strong: [
-                    'automated', 'automatic', 'system',
-                    'notification', 'automatique'
-                ],
-                
-                weak: ['notification', 'alert'],
-                
-                // Exclure si c'est du marketing
-                exclusions: ['unsubscribe', 'newsletter', 'marketing', 'promotion', 'sale']
-            },
-            
-            // MARKETING & NEWS - PRIORITÉ MAXIMALE AVEC PATTERNS TRÈS STRICTS
-            marketing_news: {
-                absolute: [
-                    // DÉSINSCRIPTION - CRITÈRE CLÉ
-                    'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
-                    'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                    'gérer vos préférences', 'gérer la réception',
-                    'email preferences', 'préférences email',
-                    'ne plus recevoir', 'stop emails',
-                    'gérer vos abonnements', 'manage subscriptions',
-                    
-                    // NEWSLETTERS EXPLICITES
-                    'newsletter', 'mailing list', 'mailing',
-                    'this email was sent to', 'you are receiving this',
-                    'cet email vous est envoyé', 'vous recevez cet email',
-                    
-                    // MARKETING CLAIR
-                    'marketing', 'campaign', 'campagne',
-                    'limited offer', 'offre limitée', 'special offer',
-                    'showroom', 'promotion', 'promo', 'soldes',
-                    'vente privée', 'offre spéciale', 'réduction',
-                    '% de réduction', '% off', 'promo code', 'code promo',
-                    'flash sale', 'vente flash', 'black friday',
-                    'discount', 'remise', 'prix réduit',
-                    'exclusive offer', 'offre exclusive',
-                    'limited time', 'temps limité',
-                    
-                    // ACTUALITÉS
-                    'actualités', 'news update', 'weekly digest',
-                    'monthly newsletter', 'hebdomadaire', 'mensuel',
-                    'édition du', 'bulletin', 'flash info',
-                    
-                    // E-COMMERCE
-                    'shop now', 'acheter maintenant', 'buy now',
-                    'add to cart', 'ajouter au panier',
-                    'new collection', 'nouvelle collection',
-                    
-                    // RÉSEAUX SOCIAUX
-                    'follow us', 'suivez-nous', 'like us',
-                    'on instagram', 'on facebook',
-                    'recently added to their stories'
-                ],
-                
-                strong: [
-                    'promo', 'deal', 'offer', 'sale', 'discount',
-                    'newsletter', 'mailing', 'campaign', 'marketing',
-                    'abonné', 'subscriber', 'désinscription',
-                    'exclusive', 'special', 'limited', 'new',
-                    'collection', 'shop', 'store'
-                ],
-                
-                weak: ['update', 'discover', 'new'],
-                
-                // Très peu d'exclusions pour capturer le maximum
-                exclusions: [
-                    'facture urgente', 'paiement requis',
-                    'code de vérification urgent', 'security alert critical',
-                    'action required immediately'
-                ]
-            }
-        };
-    }
-
-    // ================================================
-    // ANALYSE AVEC SEUIL MINIMUM REQUIS
-    // ================================================
-    analyzeEmail(email) {
-        if (!email) return { category: 'other', score: 0, confidence: 0 };
-        
-        const content = this.extractCompleteContent(email);
-        
-        // Vérification spéciale pour les emails personnels
-        if (this.isPersonalEmail(email)) {
-            const enhancedContent = {
-                ...content,
-                text: content.text + ' demande action personnelle interne'
-            };
-            
-            const allResults = this.analyzeAllCategories(enhancedContent);
-            
-            // Boost pour la catégorie tasks si email personnel
-            if (allResults.tasks) {
-                allResults.tasks.score += 50;
-                allResults.tasks.confidence = Math.min(0.95, allResults.tasks.confidence + 0.2);
-            }
-            
-            return this.selectByPriorityWithThreshold(allResults);
-        }
-        
-        // Analyse normale pour les autres emails
-        const allResults = this.analyzeAllCategories(content);
-        return this.selectByPriorityWithThreshold(allResults);
-    }
-
-    // ================================================
-    // SÉLECTION PAR PRIORITÉ AVEC SEUIL MINIMUM
-    // ================================================
-    selectByPriorityWithThreshold(results) {
-        const MIN_SCORE_THRESHOLD = 30; // Score minimum requis pour la catégorisation
-        const MIN_CONFIDENCE_THRESHOLD = 0.5; // Confiance minimum requise
-        
-        // Trier par priorité décroissante puis par score
-        const sortedResults = Object.values(results)
-            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
-            .sort((a, b) => {
-                // D'abord par priorité
-                if (a.priority !== b.priority) {
-                    return b.priority - a.priority;
-                }
-                // Ensuite par score
-                return b.score - a.score;
-            });
-        
-        if (this.debugMode) {
-            console.log('[CategoryManager] Scores par catégorie (avec seuil):');
-            sortedResults.forEach(r => {
-                console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
-            });
-        }
-        
-        // Prendre le premier résultat qui passe le seuil
-        const bestResult = sortedResults[0];
-        
-        if (bestResult) {
-            return {
-                category: bestResult.category,
-                score: bestResult.score,
-                confidence: bestResult.confidence,
-                matchedPatterns: bestResult.matches,
-                hasAbsolute: bestResult.hasAbsolute
-            };
-        }
-        
-        // Si aucune catégorie ne passe le seuil, retourner 'other'
-        return {
-            category: 'other',
-            score: 0,
-            confidence: 0,
-            matchedPatterns: [],
-            hasAbsolute: false
-        };
-    }
-
-    // ================================================
-    // ANALYSE DE TOUTES LES CATÉGORIES
-    // ================================================
-    analyzeAllCategories(content) {
-        const results = {};
-        
-        for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
-            const score = this.calculateScore(content, keywords, categoryId);
-            
-            results[categoryId] = {
-                category: categoryId,
-                score: score.total,
-                hasAbsolute: score.hasAbsolute,
-                matches: score.matches,
-                confidence: this.calculateConfidence(score),
-                priority: this.categories[categoryId].priority
-            };
-        }
-        
-        return results;
-    }
-
-    // ================================================
-    // CALCUL DU SCORE AMÉLIORÉ AVEC VALIDATION STRICTE
-    // ================================================
-    calculateScore(content, keywords, categoryId) {
-        let totalScore = 0;
-        let hasAbsolute = false;
-        const matches = [];
-        const text = content.text;
-        
-        // Vérifier les exclusions d'abord
-        if (keywords.exclusions) {
-            for (const exclusion of keywords.exclusions) {
-                if (this.findInText(text, exclusion)) {
-                    // Pour marketing_news, les exclusions réduisent le score mais n'annulent pas
-                    if (categoryId === 'marketing_news') {
-                        totalScore -= 20;
-                    } else {
-                        // Pour les autres catégories, réduire fortement le score
-                        totalScore -= 100;
-                    }
-                }
-            }
-        }
-        
-        // Mots absolus (100 points)
-        if (keywords.absolute) {
-            for (const keyword of keywords.absolute) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 100;
-                    hasAbsolute = true;
-                    matches.push({ keyword, type: 'absolute', score: 100 });
-                    
-                    // Bonus si le mot apparaît dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 50;
-                        matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
-                    }
-                }
-            }
-        }
-        
-        // Mots forts (30 points) - seulement si pas trop de mots absolus
-        if (keywords.strong && matches.length < 5) {
-            for (const keyword of keywords.strong) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 30;
-                    matches.push({ keyword, type: 'strong', score: 30 });
-                }
-            }
-        }
-        
-        // Mots faibles (10 points) - seulement si pas de mots absolus
-        if (keywords.weak && !hasAbsolute) {
-            for (const keyword of keywords.weak) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 10;
-                    matches.push({ keyword, type: 'weak', score: 10 });
-                }
-            }
-        }
-        
-        // Bonus de domaine spécifique
-        if (categoryId === 'security' && 
-            (content.domain.includes('microsoft') || 
-             content.domain.includes('google') ||
-             content.domain.includes('apple') ||
-             content.domain.includes('security'))) {
-            totalScore += 50;
-            matches.push({ keyword: 'security_domain', type: 'domain', score: 50 });
-        }
-        
-        if (categoryId === 'finance' && 
-            (content.domain.includes('gouv.fr') || 
-             content.domain.includes('impots') ||
-             content.domain.includes('bank') ||
-             content.domain.includes('paypal'))) {
-            totalScore += 50;
-            matches.push({ keyword: 'finance_domain', type: 'domain', score: 50 });
-        }
-        
-        if (categoryId === 'marketing_news' && 
-            (content.domain.includes('newsletter') ||
-             content.domain.includes('mailchimp') ||
-             content.domain.includes('campaign') ||
-             content.domain.includes('marketing'))) {
-            totalScore += 30;
-            matches.push({ keyword: 'newsletter_domain', type: 'domain', score: 30 });
-        }
-        
-        if (categoryId === 'notifications' && 
-            (content.domain.includes('noreply') ||
-             content.domain.includes('notification') ||
-             content.domain.includes('donotreply'))) {
-            totalScore += 40;
-            matches.push({ keyword: 'notification_domain', type: 'domain', score: 40 });
-        }
-        
-        return { total: Math.max(0, totalScore), hasAbsolute, matches };
-    }
-
-    // ================================================
-    // DÉTECTION EMAIL PERSONNEL
-    // ================================================
-    isPersonalEmail(email) {
-        if (!email.from?.emailAddress?.address) return false;
-        
-        const fromEmail = email.from.emailAddress.address.toLowerCase();
-        const toEmails = (email.toRecipients || [])
-            .map(r => r.emailAddress?.address?.toLowerCase())
-            .filter(Boolean);
-        
-        // Vérifier si l'expéditeur s'envoie à lui-même
-        return toEmails.includes(fromEmail);
-    }
-
-    // ================================================
-    // EXTRACTION DU CONTENU AMÉLIORÉE
-    // ================================================
-    extractCompleteContent(email) {
-        let allText = '';
-        let subject = '';
-        
-        // Sujet (très important - répété pour augmenter le poids)
-        if (email.subject) {
-            subject = email.subject;
-            allText += (email.subject + ' ').repeat(5);
-        }
-        
-        // Expéditeur
-        if (email.from?.emailAddress?.address) {
-            allText += email.from.emailAddress.address + ' ';
-        }
-        if (email.from?.emailAddress?.name) {
-            allText += email.from.emailAddress.name + ' ';
-        }
-        
-        // Destinataires principaux
-        if (email.toRecipients && Array.isArray(email.toRecipients)) {
-            email.toRecipients.forEach(recipient => {
-                if (recipient.emailAddress?.address) {
-                    allText += recipient.emailAddress.address + ' ';
-                }
-                if (recipient.emailAddress?.name) {
-                    allText += recipient.emailAddress.name + ' ';
-                }
-            });
-        }
-        
-        // Destinataires en copie (CC)
-        if (email.ccRecipients && Array.isArray(email.ccRecipients)) {
-            email.ccRecipients.forEach(recipient => {
-                if (recipient.emailAddress?.address) {
-                    allText += recipient.emailAddress.address + ' ';
-                }
-                if (recipient.emailAddress?.name) {
-                    allText += recipient.emailAddress.name + ' ';
-                }
-            });
-        }
-        
-        // Corps
-        if (email.bodyPreview) {
-            allText += email.bodyPreview + ' ';
-        }
-        if (email.body?.content) {
-            allText += this.cleanHtml(email.body.content) + ' ';
-        }
-        
-        return {
-            text: allText.toLowerCase().trim(),
-            subject: subject.toLowerCase(),
-            domain: this.extractDomain(email.from?.emailAddress?.address),
-            hasHtml: !!(email.body?.content && email.body.content.includes('<')),
-            length: allText.length
-        };
-    }
-
-    // ================================================
-    // NETTOYAGE HTML
-    // ================================================
-    cleanHtml(html) {
-        if (!html) return '';
-        
-        return html
-            .replace(/<a[^>]*>(.*?)<\/a>/gi, ' $1 ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/&[^;]+;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    // ================================================
-    // EXTRACTION DOMAINE
-    // ================================================
-    extractDomain(email) {
-        if (!email || !email.includes('@')) return 'unknown';
-        return email.split('@')[1]?.toLowerCase() || 'unknown';
-    }
-
-    // ================================================
-    // RECHERCHE DE TEXTE AMÉLIORÉE
-    // ================================================
-    findInText(text, keyword) {
-        if (!text || !keyword) return false;
-        
-        // Normaliser le texte et le mot-clé
-        const normalizedText = text.toLowerCase()
-            .replace(/[éèêë]/g, 'e')
-            .replace(/[àâä]/g, 'a')
-            .replace(/[ùûü]/g, 'u')
-            .replace(/[ç]/g, 'c')
-            .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/'/g, '\'')
-            .replace(/-/g, ' ')
-            .replace(/\s+/g, ' ');
-        
-        const normalizedKeyword = keyword.toLowerCase()
-            .replace(/[éèêë]/g, 'e')
-            .replace(/[àâä]/g, 'a')
-            .replace(/[ùûü]/g, 'u')
-            .replace(/[ç]/g, 'c')
-            .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/'/g, '\'')
-            .replace(/-/g, ' ')
-            .replace(/\s+/g, ' ');
-        
-        // Recherche directe
-        if (normalizedText.includes(normalizedKeyword)) {
-            return true;
-        }
-        
-        // Pour les mots simples, vérifier s'ils sont présents comme mot complet
-        if (!normalizedKeyword.includes(' ')) {
-            const wordBoundaryPattern = `\\b${this.escapeRegex(normalizedKeyword)}\\b`;
-            try {
-                const regex = new RegExp(wordBoundaryPattern, 'i');
-                if (regex.test(normalizedText)) {
-                    return true;
-                }
-            } catch (e) {
-                // Continuer si regex échoue
-            }
-        }
-        
-        // Recherche avec espaces flexibles pour les phrases
-        if (normalizedKeyword.includes(' ')) {
-            const flexiblePattern = normalizedKeyword
-                .split(' ')
-                .filter(word => word.length > 0)
-                .map(word => this.escapeRegex(word))
-                .join('\\s+');
-            try {
-                const regex = new RegExp(flexiblePattern, 'i');
-                return regex.test(normalizedText);
-            } catch (e) {
-                return false;
-            }
-        }
-        
-        return false;
-    }
-
-    // ================================================
-    // CALCUL DE CONFIANCE AJUSTÉ
-    // ================================================
-    calculateConfidence(score) {
-        if (score.hasAbsolute) return 0.95;
-        if (score.total >= 200) return 0.90;
-        if (score.total >= 150) return 0.85;
-        if (score.total >= 100) return 0.80;
-        if (score.total >= 80) return 0.75;
-        if (score.total >= 60) return 0.70;
-        if (score.total >= 40) return 0.60;
-        if (score.total >= 30) return 0.55;
-        return 0.40;
-    }
-
-    // ================================================
-    // MÉTHODES PUBLIQUES
-    // ================================================
-    getCategories() {
-        return this.categories;
-    }
-    
-    getCategory(categoryId) {
-        if (categoryId === 'all') {
-            return { id: 'all', name: 'Tous', icon: '📧', color: '#1e293b' };
-        }
-        if (categoryId === 'other') {
-            return { id: 'other', name: 'Non classé', icon: '❓', color: '#64748b' };
-        }
-        return this.categories[categoryId] || null;
-    }
-    
-    getCategoryStats() {
-        const stats = {
-            totalCategories: Object.keys(this.categories).length,
-            totalKeywords: 0,
-            absoluteKeywords: 0,
-            strongKeywords: 0,
-            weakKeywords: 0
-        };
-        
-        for (const keywords of Object.values(this.weightedKeywords)) {
-            if (keywords.absolute) stats.absoluteKeywords += keywords.absolute.length;
-            if (keywords.strong) stats.strongKeywords += keywords.strong.length;
-            if (keywords.weak) stats.weakKeywords += keywords.weak.length;
-        }
-        
-        stats.totalKeywords = stats.absoluteKeywords + stats.strongKeywords + stats.weakKeywords;
-        return stats;
-    }
-    
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-    }
-    
-    // ================================================
-    // MÉTHODE UTILITAIRE POUR ÉCHAPPER LES REGEX
-    // ================================================
-    escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-    
-    // ================================================
-    // MÉTHODE DE TEST AMÉLIORÉE
-    // ================================================
-    testEmail(subject, expectedCategory = null) {
-        const testEmail = {
-            subject: subject,
-            body: { content: 'Test content' },
-            from: { emailAddress: { address: 'test@example.com' } },
-            toRecipients: [{ emailAddress: { address: 'user@example.com' } }]
-        };
-        
-        const result = this.analyzeEmail(testEmail);
-        
-        console.log('\n[CategoryManager] TEST RESULT:');
-        console.log(`Subject: "${subject}"`);
-        console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
-        console.log(`Score: ${result.score}pts`);
-        console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
-        console.log(`Matches:`, result.matchedPatterns);
-        
-        if (expectedCategory && result.category !== expectedCategory) {
-            console.log(`❌ FAILED - Expected ${expectedCategory}, got ${result.category}`);
-        } else {
-            console.log('✅ SUCCESS');
-        }
-        
-        return result;
-    }
+// PageManager.js - Version 10.0 - Interface moderne optimisée compacte
+class PageManager {
+constructor() {
+this.currentPage = null;
+this.selectedEmails = new Set();
+this.aiAnalysisResults = new Map();
+this.createdTasks = new Map();
+this.autoAnalyzeEnabled = true;
+this.searchTerm = '';
+this.temporaryEmailStorage = [];
+this.lastScanData = null;
+this.pages = {
+dashboard: (container) => this.renderDashboard(container),
+scanner: (container) => this.renderScanner(container),
+emails: (container) => this.renderEmails(container),
+tasks: (container) => this.renderTasks(container),
+categories: (container) => this.renderCategories(container),
+settings: (container) => this.renderSettings(container)
+};
+this.init();
 }
-
-// Créer l'instance globale
-window.categoryManager = new CategoryManager();
-
-console.log('✅ CategoryManager v16.0 loaded - Détection stricte avec validation des mots-clés');
+init() {
+console.log('[PageManager] Initialized v10.0 - Interface moderne optimisée');
+}
+async loadPage(pageName) {
+console.log(`[PageManager] Loading page: ${pageName}`);
+const pageContent = document.getElementById('pageContent');
+if (!pageContent) {
+console.error('[PageManager] Page content container not found');
+return;
+}
+this.updateNavigation(pageName);
+window.uiManager.showLoading(`Chargement ${pageName}...`);
+try {
+pageContent.innerHTML = '';
+if (this.pages[pageName]) {
+await this.pages[pageName](pageContent);
+this.currentPage = pageName;
+} else {
+throw new Error(`Page ${pageName} not found`);
+}
+window.uiManager.hideLoading();
+} catch (error) {
+console.error(`[PageManager] Error loading page:`, error);
+window.uiManager.hideLoading();
+window.uiManager.showToast(`Erreur: ${error.message}`, 'error');
+pageContent.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div><h3 class="empty-state-title">Erreur de chargement</h3><p class="empty-state-text">${error.message}</p><button class="btn btn-primary" onclick="window.pageManager.loadPage('dashboard')">Retour au tableau de bord</button></div>`;
+}
+}
+updateNavigation(activePage) {
+document.querySelectorAll('.nav-item').forEach(item => {
+if (item.dataset.page === activePage) {
+item.classList.add('active');
+} else {
+item.classList.remove('active');
+}
+});
+}
+async renderEmails(container) {
+const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+const categories = window.categoryManager?.getCategories() || {};
+this.currentViewMode = this.currentViewMode || 'grouped-domain';
+this.currentCategory = this.currentCategory || 'all';
+const renderEmailsPage = () => {
+const categoryCounts = this.calculateCategoryCounts(emails);
+const totalEmails = emails.length;
+const selectedCount = this.selectedEmails.size;
+container.innerHTML = `<div class="emails-header"><div class="header-title-section"><div class="header-explanation"><div class="explanation-main"><i class="fas fa-info-circle explanation-icon"></i><span class="explanation-text">${selectedCount > 0 ? `${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}. Créez des tâches ou modifiez la sélection.` : this.currentCategory === 'all' ? `Visualisez vos ${totalEmails} emails par domaine, expéditeur ou en liste complète. Sélectionnez des emails pour créer des tâches.` : `Affichage de la catégorie "${this.getCategoryDisplayName(this.currentCategory)}". Utilisez les filtres pour naviguer entre les catégories.`}</span></div>${selectedCount > 0 ? `<button class="selection-clear" onclick="window.pageManager.clearSelection()" title="Désélectionner tout"><i class="fas fa-times"></i><span>Désélectionner</span></button>` : `<div class="selection-actions"><button class="selection-action" onclick="window.pageManager.selectAllVisible()" title="Sélectionner tous les emails visibles"><i class="fas fa-check-square"></i><span>Sélectionner tout</span></button><button class="selection-action" onclick="window.pageManager.clearSelection()" title="Désélectionner tous les emails"><i class="fas fa-square"></i><span>Désélectionner tout</span></button></div>`}</div></div></div><div class="emails-controls-bar"><div class="controls-search"><div class="search-container"><i class="fas fa-search search-icon"></i><input type="text" class="search-input" id="emailSearchInput" placeholder="Rechercher emails..." value="${this.searchTerm}">${this.searchTerm ? `<button class="search-clear" id="searchClearBtn" onclick="window.pageManager.clearSearch()"><i class="fas fa-times"></i></button>` : ''}</div></div><div class="controls-views"><div class="view-buttons"><button class="view-btn ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" onclick="window.pageManager.changeViewMode('grouped-domain')" title="Par domaine"><i class="fas fa-globe"></i><span>Par domaine</span></button><button class="view-btn ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" onclick="window.pageManager.changeViewMode('grouped-sender')" title="Par expéditeur"><i class="fas fa-user"></i><span>Par expéditeur</span></button><button class="view-btn ${this.currentViewMode === 'flat' ? 'active' : ''}" onclick="window.pageManager.changeViewMode('flat')" title="Liste complète"><i class="fas fa-list"></i><span>Liste</span></button></div></div><div class="controls-actions"><button class="action-btn primary ${selectedCount > 0 ? 'with-selection' : ''}" onclick="${selectedCount > 0 ? 'window.pageManager.createTasksFromSelection()' : 'window.pageManager.createTasksFromAllVisible()'}"><i class="fas fa-tasks"></i><span>${selectedCount > 0 ? `Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}` : 'Créer tâches'}</span>${selectedCount > 0 ? `<span class="selection-count">${selectedCount}</span>` : ''}</button><button class="action-btn secondary" onclick="window.pageManager.refreshEmails()"><i class="fas fa-sync-alt"></i><span>Actualiser</span></button></div></div><div class="category-filters">${this.buildCategoryFilters(categoryCounts, totalEmails, categories)}</div><div class="emails-content" id="emailsContent">${this.renderEmailsList()}</div>`;
+this.addModernStyles();
+this.setupEmailsEventListeners();
+};
+renderEmailsPage();
+if (this.autoAnalyzeEnabled && emails.length > 0) {
+setTimeout(() => {
+this.analyzeFirstEmails(emails.slice(0, 5));
+}, 1000);
+}
+}
+buildCategoryFilters(categoryCounts, totalEmails, categories) {
+let filters = `<button class="category-filter ${this.currentCategory === 'all' ? 'active' : ''}" onclick="window.pageManager.filterByCategory('all')"><span class="filter-icon">📧</span><span class="filter-name">Tous</span><span class="filter-count">${totalEmails}</span></button>`;
+Object.entries(categories).forEach(([catId, category]) => {
+const count = categoryCounts[catId] || 0;
+if (count > 0) {
+filters += `<button class="category-filter ${this.currentCategory === catId ? 'active' : ''}" onclick="window.pageManager.filterByCategory('${catId}')" style="--category-color: ${category.color}"><span class="filter-icon">${category.icon}</span><span class="filter-name">${category.name}</span><span class="filter-count">${count}</span></button>`;
+}
+});
+const otherCount = categoryCounts.other || 0;
+if (otherCount > 0) {
+filters += `<button class="category-filter ${this.currentCategory === 'other' ? 'active' : ''}" onclick="window.pageManager.filterByCategory('other')"><span class="filter-icon">📌</span><span class="filter-name">Autre</span><span class="filter-count">${otherCount}</span></button>`;
+}
+return filters;
+}
+renderEmailsList() {
+const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+let filteredEmails = emails;
+if (this.currentCategory !== 'all') {
+filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+}
+if (this.searchTerm) {
+filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+}
+if (filteredEmails.length === 0) {
+return this.renderEmptyState();
+}
+switch (this.currentViewMode) {
+case 'flat':
+return this.renderFlatView(filteredEmails);
+case 'grouped-domain':
+case 'grouped-sender':
+return this.renderGroupedView(filteredEmails, this.currentViewMode);
+default:
+return this.renderFlatView(filteredEmails);
+}
+}
+renderEmptyState() {
+return `<div class="empty-state"><div class="empty-icon"><i class="fas fa-inbox"></i></div><h3 class="empty-title">Aucun email trouvé</h3><p class="empty-text">${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}</p>${this.searchTerm ? `<button class="btn primary" onclick="window.pageManager.clearSearch()"><i class="fas fa-undo"></i><span>Effacer la recherche</span></button>` : ''}</div>`;
+}
+renderFlatView(emails) {
+return `<div class="emails-list">${emails.map(email => this.renderEmailCard(email)).join('')}</div>`;
+}
+renderEmailCard(email) {
+const isSelected = this.selectedEmails.has(email.id);
+const hasTask = this.createdTasks.has(email.id);
+const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+const senderEmail = email.from?.emailAddress?.address || '';
+const senderDomain = senderEmail.split('@')[1] || '';
+const senderInitial = senderName.charAt(0).toUpperCase();
+const analysis = this.aiAnalysisResults.get(email.id);
+const deadline = analysis?.mainTask?.dueDate || null;
+return `<div class="email-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" data-email-id="${email.id}" onclick="window.pageManager.handleEmailClick(event, '${email.id}')"><div class="email-header"><div class="email-checkbox-container"><input type="checkbox" class="email-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')"></div><div class="email-avatar" style="background: ${this.generateGradient(senderName)}">${senderInitial}</div><div class="email-sender-info"><div class="sender-name" title="${this.escapeHtml(senderName)}">${this.escapeHtml(senderName)}</div>${senderDomain ? `<div class="sender-domain">@${senderDomain}</div>` : ''}</div><div class="email-meta-badges">${deadline ? `<span class="deadline-badge ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}"><i class="fas fa-clock"></i>${this.formatDeadline(deadline)}</span>` : ''}${email.hasAttachments ? `<span class="attachment-badge" title="Pièces jointes"><i class="fas fa-paperclip"></i></span>` : ''}${analysis ? `<span class="ai-badge" title="Analysé par IA"><i class="fas fa-robot"></i></span>` : ''}</div><div class="email-date">${this.formatEmailDate(email.receivedDateTime)}</div><div class="email-actions">${hasTask ? `<button class="email-action-btn task-done" onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" title="Voir la tâche créée"><i class="fas fa-check-circle"></i></button>` : `<button class="email-action-btn create-task" onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" title="Créer une tâche"><i class="fas fa-plus-circle"></i></button>`}<button class="email-action-btn view-email" onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" title="Voir l'email"><i class="fas fa-eye"></i></button></div></div><div class="email-content"><div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">${this.escapeHtml(email.subject || 'Sans sujet')}</div><div class="email-preview">${this.escapeHtml(email.bodyPreview || '').substring(0, 150)}${email.bodyPreview && email.bodyPreview.length > 150 ? '...' : ''}</div></div></div>`;
+}
+renderGroupedView(emails, groupMode) {
+const groups = this.createEmailGroups(emails, groupMode);
+return `<div class="emails-grouped">${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}</div>`;
+}
+renderEmailGroup(group, groupType) {
+const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+const icon = groupType === 'grouped-domain' ? '<i class="fas fa-globe"></i>' : `<div class="group-avatar">${group.name.charAt(0).toUpperCase()}</div>`;
+return `<div class="email-group" data-group-key="${group.key}"><div class="group-header" onclick="window.pageManager.toggleGroup('${group.key}')"><div class="group-info"><div class="group-icon">${icon}</div><div class="group-details"><div class="group-name">${displayName}</div><div class="group-count">${group.count} email${group.count > 1 ? 's' : ''}</div></div></div><div class="group-controls"><div class="group-date">${this.formatEmailDate(group.latestDate)}</div><i class="fas fa-chevron-down group-toggle"></i></div></div><div class="group-content" style="display: none;">${group.emails.map(email => this.renderEmailCard(email)).join('')}</div></div>`;
+}
+handleEmailClick(event, emailId) {
+if (event.target.type === 'checkbox') return;
+if (event.target.closest('.email-actions')) return;
+this.showEmailModal(emailId);
+}
+changeViewMode(mode) {
+this.currentViewMode = mode;
+document.querySelectorAll('.view-btn').forEach(btn => {
+btn.classList.remove('active');
+});
+event.target.closest('.view-btn').classList.add('active');
+const emailsContent = document.getElementById('emailsContent');
+if (emailsContent) {
+emailsContent.innerHTML = this.renderEmailsList();
+}
+}
+filterByCategory(categoryId) {
+this.currentCategory = categoryId;
+document.querySelectorAll('.category-filter').forEach(filter => {
+filter.classList.remove('active');
+});
+event.target.classList.add('active');
+const emailsContent = document.getElementById('emailsContent');
+if (emailsContent) {
+emailsContent.innerHTML = this.renderEmailsList();
+}
+}
+toggleEmailSelection(emailId) {
+if (this.selectedEmails.has(emailId)) {
+this.selectedEmails.delete(emailId);
+} else {
+this.selectedEmails.add(emailId);
+}
+this.renderEmails(document.getElementById('pageContent'));
+}
+clearSelection() {
+this.selectedEmails.clear();
+this.renderEmails(document.getElementById('pageContent'));
+}
+toggleGroup(groupKey) {
+const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+if (!group) return;
+const content = group.querySelector('.group-content');
+const toggle = group.querySelector('.group-toggle');
+if (content.style.display === 'none') {
+content.style.display = 'block';
+toggle.classList.remove('fa-chevron-down');
+toggle.classList.add('fa-chevron-up');
+group.classList.add('expanded');
+} else {
+content.style.display = 'none';
+toggle.classList.remove('fa-chevron-up');
+toggle.classList.add('fa-chevron-down');
+group.classList.remove('expanded');
+}
+}
+setupEmailsEventListeners() {
+const searchInput = document.getElementById('emailSearchInput');
+if (searchInput) {
+let searchTimeout;
+searchInput.addEventListener('input', (e) => {
+clearTimeout(searchTimeout);
+searchTimeout = setTimeout(() => {
+this.handleSearch(e.target.value);
+}, 300);
+});
+}
+}
+handleSearch(term) {
+this.searchTerm = term.trim();
+const emailsContent = document.getElementById('emailsContent');
+if (emailsContent) {
+emailsContent.innerHTML = this.renderEmailsList();
+}
+const clearBtn = document.getElementById('searchClearBtn');
+if (clearBtn) {
+clearBtn.style.display = this.searchTerm ? 'block' : 'none';
+}
+}
+clearSearch() {
+this.searchTerm = '';
+const searchInput = document.getElementById('emailSearchInput');
+if (searchInput) searchInput.value = '';
+const emailsContent = document.getElementById('emailsContent');
+if (emailsContent) {
+emailsContent.innerHTML = this.renderEmailsList();
+}
+}
+addModernStyles() {
+if (document.getElementById('modernEmailStyles')) return;
+const styles = document.createElement('style');
+styles.id = 'modernEmailStyles';
+styles.textContent = `*{box-sizing:border-box;}.emails-header{margin-bottom:20px;padding:0 4px;}.header-title-section{display:flex;align-items:center;justify-content:space-between;width:100%;}.header-explanation{display:flex;align-items:center;justify-content:space-between;width:100%;background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:16px 20px;}.explanation-main{display:flex;align-items:center;gap:12px;flex:1;}.explanation-icon{color:#0ea5e9;font-size:16px;flex-shrink:0;}.explanation-text{color:#075985;font-weight:600;font-size:14px;line-height:1.4;}.selection-clear{display:flex;align-items:center;gap:8px;background:#ef4444;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;transition:all 0.2s ease;flex-shrink:0;}.selection-clear:hover{background:#dc2626;transform:translateY(-1px);}.selection-actions{display:flex;gap:8px;flex-shrink:0;}.selection-action{display:flex;align-items:center;gap:6px;background:white;color:#374151;border:1px solid #d1d5db;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:500;font-size:12px;transition:all 0.2s ease;}.selection-action:hover{background:#f9fafb;border-color:#9ca3af;transform:translateY(-1px);}.emails-controls-bar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:20px;background:white;border:1px solid #e5e7eb;border-radius:16px;margin:0 4px 20px 4px;box-shadow:0 1px 3px rgba(0,0,0,0.1);}.controls-search{flex:0 0 300px;}.search-container{position:relative;width:100%;}.search-input{width:100%;padding:12px 16px 12px 44px;border:2px solid #e5e7eb;border-radius:12px;font-size:14px;background:#f9fafb;transition:all 0.3s ease;}.search-input:focus{outline:none;border-color:#3b82f6;background:white;box-shadow:0 0 0 4px rgba(59,130,246,0.1);}.search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:14px;}.search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:#ef4444;color:white;border:none;width:20px;height:20px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:background 0.2s;}.search-clear:hover{background:#dc2626;}.controls-views{flex:1;display:flex;justify-content:center;}.view-buttons{display:flex;background:#f3f4f6;border-radius:12px;padding:4px;}.view-btn{display:flex;align-items:center;gap:8px;padding:10px 16px;border:none;background:transparent;color:#6b7280;border-radius:8px;cursor:pointer;transition:all 0.2s ease;font-size:14px;font-weight:500;white-space:nowrap;}.view-btn:hover{background:rgba(255,255,255,0.5);color:#374151;}.view-btn.active{background:white;color:#1f2937;box-shadow:0 2px 4px rgba(0,0,0,0.1);font-weight:600;}.controls-actions{flex:0 0 auto;display:flex;gap:12px;}.action-btn{display:flex;align-items:center;gap:8px;padding:12px 20px;border:2px solid transparent;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:all 0.3s ease;position:relative;white-space:nowrap;}.action-btn.primary{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;box-shadow:0 4px 12px rgba(59,130,246,0.3);}.action-btn.primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(59,130,246,0.4);}.action-btn.primary.with-selection{background:linear-gradient(135deg,#10b981,#047857);box-shadow:0 4px 12px rgba(16,185,129,0.3);animation:pulse 2s infinite;}.action-btn.secondary{background:white;color:#374151;border-color:#d1d5db;}.action-btn.secondary:hover{background:#f9fafb;border-color:#9ca3af;transform:translateY(-1px);}.selection-count{position:absolute;top:-8px;right:-8px;background:#ef4444;color:white;font-size:12px;font-weight:700;padding:2px 6px;border-radius:10px;min-width:20px;text-align:center;border:2px solid white;}@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.02);}}.category-filters{display:flex;gap:8px;margin:0 4px 20px 4px;flex-wrap:wrap;}.category-filter{display:flex;align-items:center;gap:8px;padding:10px 16px;border:2px solid #e5e7eb;border-radius:12px;background:white;color:#374151;cursor:pointer;transition:all 0.3s ease;font-size:14px;font-weight:500;}.category-filter:hover{border-color:var(--category-color,#3b82f6);background:color-mix(in srgb,var(--category-color,#3b82f6) 5%,white);transform:translateY(-1px);}.category-filter.active{background:var(--category-color,#3b82f6);color:white;border-color:var(--category-color,#3b82f6);box-shadow:0 4px 12px color-mix(in srgb,var(--category-color,#3b82f6) 30%,transparent);}.filter-icon{font-size:16px;}.filter-count{background:rgba(0,0,0,0.1);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:700;min-width:20px;text-align:center;}.category-filter.active .filter-count{background:rgba(255,255,255,0.25);}.emails-content{background:white;border:1px solid #e5e7eb;border-radius:16px;margin:0 4px;overflow:hidden;min-height:400px;}.emails-list{display:flex;flex-direction:column;}.email-card{display:flex;flex-direction:column;padding:16px 20px;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:all 0.2s ease;background:white;}.email-card:last-child{border-bottom:none;}.email-card:hover{background:#f8fafc;}.email-card.selected{background:#eff6ff;border-left:4px solid #3b82f6;}.email-card.has-task{background:#f0fdf4;border-left:4px solid #10b981;}.email-header{display:flex;align-items:center;gap:12px;margin-bottom:8px;}.email-checkbox-container{flex-shrink:0;}.email-checkbox{width:18px;height:18px;cursor:pointer;}.email-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:16px;flex-shrink:0;}.email-sender-info{flex:1;min-width:0;}.sender-name{font-weight:700;color:#1f2937;font-size:15px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.sender-domain{font-size:12px;color:#6b7280;background:#f3f4f6;padding:2px 6px;border-radius:4px;display:inline-block;margin-top:2px;}.email-meta-badges{display:flex;gap:6px;align-items:center;flex-shrink:0;}.deadline-badge,.attachment-badge,.ai-badge{display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;}.deadline-badge.normal{background:#f3f4f6;color:#6b7280;}.deadline-badge.soon{background:#fef3c7;color:#d97706;}.deadline-badge.today{background:#fee2e2;color:#dc2626;}.deadline-badge.overdue{background:#dc2626;color:white;animation:blink 1s infinite;}.attachment-badge{background:#fef3c7;color:#d97706;}.ai-badge{background:#dbeafe;color:#2563eb;}.email-date{font-size:13px;color:#6b7280;font-weight:500;flex-shrink:0;}.email-actions{display:flex;gap:4px;flex-shrink:0;}.email-action-btn{width:32px;height:32px;border:1px solid #e5e7eb;border-radius:8px;background:white;color:#6b7280;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;font-size:14px;}.email-action-btn:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.1);}.email-action-btn.task-done{background:#dcfce7;color:#16a34a;border-color:#16a34a;}.email-action-btn.task-done:hover{background:#16a34a;color:white;}.email-action-btn.create-task:hover{background:#dbeafe;color:#2563eb;border-color:#2563eb;}.email-action-btn.view-email:hover{background:#f3f4f6;color:#374151;border-color:#9ca3af;}.email-content{margin-left:70px;padding-left:0;}.email-subject{font-size:16px;font-weight:600;color:#1f2937;line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.email-preview{font-size:14px;color:#6b7280;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}.emails-grouped{display:flex;flex-direction:column;}.email-group{border-bottom:1px solid #f3f4f6;}.email-group:last-child{border-bottom:none;}.group-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:#f8fafc;cursor:pointer;transition:all 0.2s ease;border-bottom:1px solid #f3f4f6;}.group-header:hover{background:#f1f5f9;}.email-group.expanded .group-header{background:#eff6ff;border-bottom-color:#bfdbfe;}.group-info{display:flex;align-items:center;gap:12px;}.group-icon{width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:white;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;}.group-avatar{width:44px;height:44px;background:linear-gradient(135deg,#10b981,#059669);color:white;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;}.group-details{display:flex;flex-direction:column;gap:2px;}.group-name{font-weight:700;color:#1f2937;font-size:16px;}.group-count{font-size:13px;color:#6b7280;font-weight:500;}.group-controls{display:flex;align-items:center;gap:12px;}.group-date{font-size:13px;color:#6b7280;font-weight:500;}.group-toggle{color:#9ca3af;transition:transform 0.3s ease;font-size:14px;}.email-group.expanded .group-toggle{transform:rotate(180deg);}.group-content{background:white;}.empty-state{text-align:center;padding:80px 20px;color:#6b7280;}.empty-icon{font-size:64px;margin-bottom:20px;color:#d1d5db;}.empty-title{font-size:24px;font-weight:700;color:#374151;margin:0 0 8px 0;}.empty-text{font-size:16px;margin:0 0 24px 0;line-height:1.5;}.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:all 0.3s ease;text-decoration:none;}.btn.primary{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;box-shadow:0 4px 12px rgba(59,130,246,0.3);}.btn.primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(59,130,246,0.4);}@keyframes blink{0%,50%{opacity:1;}51%,100%{opacity:0.5;}}@media (max-width:1024px){.emails-controls-bar{flex-direction:column;gap:16px;}.controls-search{flex:none;width:100%;}.controls-views{flex:none;width:100%;}.view-buttons{width:100%;justify-content:space-evenly;}.controls-actions{flex:none;width:100%;justify-content:center;}}@media (max-width:768px){.page-title{font-size:24px;}.header-title-section{flex-direction:column;align-items:stretch;gap:12px;}.emails-controls-bar{padding:16px;}.view-btn span{display:none;}.action-btn span{display:none;}.category-filters{justify-content:center;gap:6px;}.filter-name{display:none;}.email-card{padding:12px 16px;}.email-header{gap:8px;}.email-avatar{width:32px;height:32px;font-size:14px;}.email-content{margin-left:50px;}.sender-name{font-size:14px;}.email-subject{font-size:14px;}.email-preview{font-size:13px;}.email-action-btn{width:28px;height:28px;font-size:12px;}}@supports not (color:color-mix(in srgb,red,blue)){.category-filter:hover{background:rgba(59,130,246,0.05);}}`;
+document.head.appendChild(styles);
+}
+generateGradient(text) {
+let hash = 0;
+for (let i = 0; i < text.length; i++) {
+hash = text.charCodeAt(i) + ((hash << 5) - hash);
+}
+const hue = Math.abs(hash) % 360;
+const saturation = 65 + (Math.abs(hash) % 20);
+const lightness = 45 + (Math.abs(hash) % 15);
+return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
+}
+getDeadlineClass(deadline) {
+try {
+const deadlineDate = new Date(deadline);
+const now = new Date();
+const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+if (diffDays < 0) return 'overdue';
+if (diffDays === 0) return 'today';
+if (diffDays <= 3) return 'soon';
+return 'normal';
+} catch (error) {
+return 'normal';
+}
+}
+formatDeadline(deadline) {
+if (!deadline) return '';
+try {
+const deadlineDate = new Date(deadline);
+const now = new Date();
+const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+if (diffDays < 0) return `Échue`;
+if (diffDays === 0) return 'Aujourd\'hui';
+if (diffDays === 1) return 'Demain';
+if (diffDays <= 7) return `${diffDays}j`;
+return deadlineDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+} catch (error) {
+return deadline;
+}
+}
+formatEmailDate(dateString) {
+if (!dateString) return '';
+const date = new Date(dateString);
+const now = new Date();
+const diff = now - date;
+if (diff < 3600000) {
+return `${Math.floor(diff / 60000)}m`;
+} else if (diff < 86400000) {
+return `${Math.floor(diff / 3600000)}h`;
+} else if (diff < 604800000) {
+return `${Math.floor(diff / 86400000)}j`;
+} else {
+return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+}
+escapeHtml(text) {
+if (!text) return '';
+const div = document.createElement('div');
+div.textContent = text;
+return div.innerHTML;
+}
+calculateCategoryCounts(emails) {
+const counts = {};
+emails.forEach(email => {
+const cat = email.category || 'other';
+counts[cat] = (counts[cat] || 0) + 1;
+});
+return counts;
+}
+createEmailGroups(emails, groupMode) {
+const groups = {};
+emails.forEach(email => {
+let groupKey, groupName;
+if (groupMode === 'grouped-domain') {
+const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+groupKey = domain;
+groupName = domain;
+} else {
+const senderEmail = email.from?.emailAddress?.address || 'unknown';
+const senderName = email.from?.emailAddress?.name || senderEmail;
+groupKey = senderEmail;
+groupName = senderName;
+}
+if (!groups[groupKey]) {
+groups[groupKey] = {
+key: groupKey,
+name: groupName,
+emails: [],
+count: 0,
+latestDate: null
+};
+}
+groups[groupKey].emails.push(email);
+groups[groupKey].count++;
+const emailDate = new Date(email.receivedDateTime);
+if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
+groups[groupKey].latestDate = emailDate;
+}
+});
+return Object.values(groups).sort((a, b) => {
+if (!a.latestDate && !b.latestDate) return 0;
+if (!a.latestDate) return 1;
+if (!b.latestDate) return -1;
+return b.latestDate - a.latestDate;
+});
+}
+matchesSearch(email, searchTerm) {
+if (!searchTerm) return true;
+const search = searchTerm.toLowerCase();
+const subject = (email.subject || '').toLowerCase();
+const sender = (email.from?.emailAddress?.name || '').toLowerCase();
+const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
+const preview = (email.bodyPreview || '').toLowerCase();
+return subject.includes(search) || sender.includes(search) || senderEmail.includes(search) || preview.includes(search);
+}
+async createTasksFromSelection() {
+if (this.selectedEmails.size === 0) {
+window.uiManager.showToast('Aucun email sélectionné', 'warning');
+return;
+}
+let created = 0;
+window.uiManager.showLoading(`Création de ${this.selectedEmails.size} tâches...`);
+for (const emailId of this.selectedEmails) {
+const email = this.getEmailById(emailId);
+if (!email || this.createdTasks.has(emailId)) continue;
+try {
+let analysis = this.aiAnalysisResults.get(emailId);
+if (!analysis && window.aiTaskAnalyzer) {
+analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+this.aiAnalysisResults.set(emailId, analysis);
+}
+if (analysis && window.taskManager) {
+const taskData = this.buildTaskDataFromAnalysis(email, analysis);
+const task = window.taskManager.createTaskFromEmail(taskData, email);
+this.createdTasks.set(emailId, task.id);
+created++;
+}
+} catch (error) {
+console.error('[PageManager] Error creating task for email:', emailId, error);
+}
+}
+window.uiManager.hideLoading();
+if (created > 0) {
+window.taskManager?.saveTasks();
+window.uiManager.showToast(`${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''}`, 'success');
+this.clearSelection();
+} else {
+window.uiManager.showToast('Aucune tâche créée', 'warning');
+}
+}
+async createTasksFromAllVisible() {
+const emails = this.getVisibleEmails();
+if (emails.length === 0) {
+window.uiManager.showToast('Aucun email visible', 'warning');
+return;
+}
+const emailsToProcess = emails.filter(email => !this.createdTasks.has(email.id));
+if (emailsToProcess.length === 0) {
+window.uiManager.showToast('Toutes les tâches ont déjà été créées', 'info');
+return;
+}
+emailsToProcess.forEach(email => this.selectedEmails.add(email.id));
+await this.createTasksFromSelection();
+}
+getVisibleEmails() {
+const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+let filteredEmails = emails;
+if (this.currentCategory !== 'all') {
+filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+}
+if (this.searchTerm) {
+filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+}
+return filteredEmails;
+}
+getEmailById(emailId) {
+const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+return emails.find(e => e.id === emailId);
+}
+getTemporaryEmails() {
+return this.temporaryEmailStorage || [];
+}
+buildTaskDataFromAnalysis(email, analysis) {
+const senderName = email.from?.emailAddress?.name || 'Inconnu';
+const senderEmail = email.from?.emailAddress?.address || '';
+const senderDomain = senderEmail.split('@')[1] || 'unknown';
+return {
+id: this.generateTaskId(),
+title: analysis.mainTask?.title || `Email de ${senderName}`,
+description: analysis.mainTask?.description || analysis.summary || '',
+priority: analysis.mainTask?.priority || 'medium',
+dueDate: analysis.mainTask?.dueDate || null,
+status: 'todo',
+emailId: email.id,
+category: email.category || 'other',
+createdAt: new Date().toISOString(),
+aiGenerated: true,
+emailFrom: senderEmail,
+emailFromName: senderName,
+emailSubject: email.subject,
+emailDomain: senderDomain,
+emailDate: email.receivedDateTime,
+hasAttachments: email.hasAttachments || false,
+aiAnalysis: analysis,
+tags: [senderDomain, analysis.importance, ...(analysis.tags || [])].filter(Boolean),
+method: 'ai'
+};
+}
+generateTaskId() {
+return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+async refreshEmails() {
+window.uiManager.showLoading('Actualisation...');
+try {
+const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+if (emails.length > 0 && window.categoryManager) {
+emails.forEach(email => {
+const result = window.categoryManager.analyzeEmail(email);
+email.category = result.category || 'other';
+});
+}
+await this.loadPage('emails');
+window.uiManager.showToast('Emails actualisés', 'success');
+} catch (error) {
+window.uiManager.hideLoading();
+window.uiManager.showToast('Erreur d\'actualisation', 'error');
+}
+}
+async analyzeFirstEmails(emails) {
+for (const email of emails) {
+if (!this.aiAnalysisResults.has(email.id)) {
+try {
+const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email, {
+useApi: false,
+quickMode: true
+});
+this.aiAnalysisResults.set(email.id, analysis);
+} catch (error) {
+console.error('Auto-analysis error:', error);
+}
+}
+}
+const emailsContent = document.getElementById('emailsContent');
+if (emailsContent) {
+emailsContent.innerHTML = this.renderEmailsList();
+}
+}
+async showTaskCreationModal(emailId) {
+const email = this.getEmailById(emailId);
+if (!email) return;
+document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+let analysis;
+try {
+window.uiManager.showLoading('Analyse de l\'email...');
+analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email, { useApi: true });
+this.aiAnalysisResults.set(emailId, analysis);
+window.uiManager.hideLoading();
+} catch (error) {
+window.uiManager.hideLoading();
+window.uiManager.showToast('Erreur d\'analyse', 'error');
+return;
+}
+const uniqueId = 'task_creation_modal_' + Date.now();
+const modalHTML = `<div id="${uniqueId}" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:99999999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);"><div style="background:white;border-radius:16px;max-width:900px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.3);"><div style="padding:24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;font-size:24px;font-weight:700;color:#1f2937;">Créer une tâche</h2><button onclick="document.getElementById('${uniqueId}').remove();document.body.style.overflow='auto';" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;"><i class="fas fa-times"></i></button></div><div style="padding:24px;overflow-y:auto;flex:1;">${this.buildTaskCreationForm(email, analysis)}</div><div style="padding:24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:12px;"><button onclick="document.getElementById('${uniqueId}').remove();document.body.style.overflow='auto';" style="padding:12px 20px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-weight:600;">Annuler</button><button onclick="window.pageManager.createTaskFromModal('${emailId}');document.getElementById('${uniqueId}').remove();" style="padding:12px 20px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-check"></i> Créer la tâche</button></div></div></div>`;
+document.body.insertAdjacentHTML('beforeend', modalHTML);
+document.body.style.overflow = 'hidden';
+}
+buildTaskCreationForm(email, analysis) {
+const senderName = email.from?.emailAddress?.name || 'Inconnu';
+const senderEmail = email.from?.emailAddress?.address || '';
+const senderDomain = senderEmail.split('@')[1] || '';
+const enhancedTitle = analysis.mainTask.title.includes(senderName) ? analysis.mainTask.title : `${analysis.mainTask.title} - ${senderName}`;
+return `<div style="display:flex;flex-direction:column;gap:20px;"><div style="background:#f0f9ff;border:1px solid #0ea5e9;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;"><i class="fas fa-robot" style="color:#0ea5e9;font-size:20px;"></i><span style="color:#0c4a6e;font-weight:600;">Analyse intelligente par Claude AI</span></div><div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;"><div style="width:48px;height:48px;background:${this.generateGradient(senderName)};border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">${senderName.charAt(0).toUpperCase()}</div><div><div style="font-weight:700;color:#1f2937;font-size:16px;">${senderName}</div><div style="color:#6b7280;font-size:14px;">${senderEmail}</div><div style="color:#9ca3af;font-size:12px;">@${senderDomain}</div></div></div><div><label style="display:block;font-weight:600;color:#374151;margin-bottom:8px;">Titre de la tâche</label><input type="text" id="task-title" style="width:100%;padding:12px 16px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;transition:border-color 0.2s;" value="${enhancedTitle}" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'"/></div><div><label style="display:block;font-weight:600;color:#374151;margin-bottom:8px;">Description</label><textarea id="task-description" style="width:100%;padding:12px 16px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;resize:vertical;min-height:100px;transition:border-color 0.2s;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'" rows="4">${analysis.mainTask.description || analysis.summary || ''}</textarea></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;"><div><label style="display:block;font-weight:600;color:#374151;margin-bottom:8px;">Priorité</label><select id="task-priority" style="width:100%;padding:12px 16px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;transition:border-color 0.2s;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'"><option value="urgent" ${analysis.mainTask.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option><option value="high" ${analysis.mainTask.priority === 'high' ? 'selected' : ''}>⚡ Haute</option><option value="medium" ${analysis.mainTask.priority === 'medium' ? 'selected' : ''}>📌 Normale</option><option value="low" ${analysis.mainTask.priority === 'low' ? 'selected' : ''}>📄 Basse</option></select></div><div><label style="display:block;font-weight:600;color:#374151;margin-bottom:8px;">Date d'échéance</label><input type="date" id="task-duedate" style="width:100%;padding:12px 16px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;transition:border-color 0.2s;" onfocus="this.style.borderColor='#3b82f6'" onblur="this.style.borderColor='#e5e7eb'" value="${analysis.mainTask.dueDate || ''}"/></div></div><div><button onclick="window.pageManager.toggleEmailContext()" style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:600;color:#475569;transition:background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'"><i class="fas fa-chevron-right" id="context-toggle-icon" style="transition:transform 0.2s;"></i><span>Afficher le contenu original de l'email</span></button><div id="email-context-content" style="display:none;margin-top:12px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;"><div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;"><div style="margin-bottom:4px;"><strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;</div><div style="margin-bottom:4px;"><strong>Date:</strong> ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</div><div><strong>Sujet:</strong> ${email.subject || 'Sans sujet'}</div></div><div style="max-height:200px;overflow-y:auto;font-size:14px;line-height:1.5;color:#374151;">${this.getEmailContent(email)}</div></div></div></div>`;
+}
+toggleEmailContext() {
+const content = document.getElementById('email-context-content');
+const icon = document.getElementById('context-toggle-icon');
+if (content.style.display === 'none') {
+content.style.display = 'block';
+icon.classList.remove('fa-chevron-right');
+icon.classList.add('fa-chevron-down');
+icon.style.transform = 'rotate(90deg)';
+} else {
+content.style.display = 'none';
+icon.classList.remove('fa-chevron-down');
+icon.classList.add('fa-chevron-right');
+icon.style.transform = 'rotate(0deg)';
+}
+}
+async createTaskFromModal(emailId) {
+const email = this.getEmailById(emailId);
+const analysis = this.aiAnalysisResults.get(emailId);
+if (!email || !analysis) {
+window.uiManager.showToast('Données manquantes', 'error');
+return;
+}
+const title = document.getElementById('task-title')?.value;
+const description = document.getElementById('task-description')?.value;
+const priority = document.getElementById('task-priority')?.value;
+const dueDate = document.getElementById('task-duedate')?.value;
+if (!title) {
+window.uiManager.showToast('Le titre est requis', 'warning');
+return;
+}
+try {
+const taskData = this.buildTaskDataFromAnalysis(email, {
+...analysis,
+mainTask: {
+...analysis.mainTask,
+title,
+description,
+priority,
+dueDate
+}
+});
+const task = window.taskManager.createTaskFromEmail(taskData, email);
+this.createdTasks.set(emailId, task.id);
+window.taskManager.saveTasks();
+window.uiManager.showToast('Tâche créée avec succès', 'success');
+const emailsContent = document.getElementById('emailsContent');
+if (emailsContent) {
+emailsContent.innerHTML = this.renderEmailsList();
+}
+} catch (error) {
+console.error('Error creating task:', error);
+window.uiManager.showToast('Erreur lors de la création', 'error');
+}
+}
+showEmailModal(emailId) {
+const email = this.getEmailById(emailId);
+if (!email) return;
+document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+const uniqueId = 'email_modal_' + Date.now();
+const modalHTML = `<div id="${uniqueId}" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:99999999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);"><div style="background:white;border-radius:16px;max-width:800px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.3);"><div style="padding:24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;font-size:24px;font-weight:700;color:#1f2937;">Email Complet</h2><button onclick="document.getElementById('${uniqueId}').remove();document.body.style.overflow='auto';" style="background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280;"><i class="fas fa-times"></i></button></div><div style="padding:24px;overflow-y:auto;flex:1;"><div style="margin-bottom:24px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;"><div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-weight:700;color:#374151;min-width:60px;">De:</span><span style="color:#1f2937;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span></div><div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;"><span style="font-weight:700;color:#374151;min-width:60px;">Date:</span><span style="color:#1f2937;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span></div><div style="display:flex;align-items:center;gap:8px;"><span style="font-weight:700;color:#374151;min-width:60px;">Sujet:</span><span style="color:#1f2937;font-weight:600;">${email.subject || 'Sans sujet'}</span></div></div><div style="background:white;border:1px solid #e5e7eb;padding:20px;border-radius:12px;max-height:400px;overflow-y:auto;line-height:1.6;color:#374151;">${this.getEmailContent(email)}</div></div><div style="padding:24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:12px;"><button onclick="document.getElementById('${uniqueId}').remove();document.body.style.overflow='auto';" style="padding:12px 20px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-weight:600;">Fermer</button>${!this.createdTasks.has(emailId) ? `<button onclick="document.getElementById('${uniqueId}').remove();window.pageManager.showTaskCreationModal('${emailId}');" style="padding:12px 20px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-tasks"></i> Créer une tâche</button>` : ''}</div></div></div>`;
+document.body.insertAdjacentHTML('beforeend', modalHTML);
+document.body.style.overflow = 'hidden';
+}
+getEmailContent(email) {
+if (email.body?.content) {
+return email.body.content;
+}
+return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
+}
+openCreatedTask(emailId) {
+const taskId = this.createdTasks.get(emailId);
+if (!taskId) return;
+this.loadPage('tasks').then(() => {
+setTimeout(() => {
+if (window.tasksView?.showTaskDetails) {
+window.tasksView.showTaskDetails(taskId);
+}
+}, 100);
+});
+}
+selectAllVisible() {
+const emails = this.getVisibleEmails();
+emails.forEach(email => {
+this.selectedEmails.add(email.id);
+});
+this.renderEmails(document.getElementById('pageContent'));
+window.uiManager.showToast(`${emails.length} emails sélectionnés`, 'success');
+}
+exportEmails() {
+const emails = this.getVisibleEmails();
+if (emails.length === 0) {
+window.uiManager.showToast('Aucun email à exporter', 'warning');
+return;
+}
+const csvContent = [
+['Expéditeur', 'Nom', 'Sujet', 'Date', 'Catégorie', 'Avec pièces jointes'].join(','),
+...emails.map(email => [
+`"${email.from?.emailAddress?.address || ''}"`,
+`"${email.from?.emailAddress?.name || ''}"`,
+`"${email.subject || ''}"`,
+new Date(email.receivedDateTime).toLocaleDateString('fr-FR'),
+email.category || 'other',
+email.hasAttachments ? 'Oui' : 'Non'
+].join(','))
+].join('\n');
+const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+const link = document.createElement('a');
+const url = URL.createObjectURL(blob);
+link.setAttribute('href', url);
+link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
+link.style.visibility = 'hidden';
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+window.uiManager.showToast('Export terminé', 'success');
+}
+async renderDashboard(container) {
+const scanData = this.lastScanData;
+const taskStats = window.taskManager?.getStats() || {
+total: 0,
+byStatus: { todo: 0, 'in-progress': 0, completed: 0 },
+overdue: 0
+};
+const aiConfigured = window.aiTaskAnalyzer?.isConfigured() || false;
+container.innerHTML = `<div class="dashboard-header"><h1 class="dashboard-title">Tableau de bord</h1><div class="dashboard-actions"><button class="btn primary" onclick="window.pageManager.loadPage('scanner')"><i class="fas fa-search"></i> Nouveau scan</button></div></div>${!aiConfigured ? `<div class="ai-banner"><div class="ai-banner-icon"><i class="fas fa-magic"></i></div><div class="ai-banner-content"><h3>Activez l'IA pour des suggestions intelligentes</h3><p>Configurez Claude AI pour analyser vos emails automatiquement</p></div><button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">Configurer</button></div>` : ''}<div class="dashboard-stats">${this.createDashboardCard({
+icon: 'fas fa-tasks',
+label: 'Tâches totales',
+value: taskStats.total,
+color: '#3b82f6'
+})}${this.createDashboardCard({
+icon: 'fas fa-clock',
+label: 'À faire',
+value: taskStats.byStatus.todo,
+color: '#06b6d4'
+})}${this.createDashboardCard({
+icon: 'fas fa-check-circle',
+label: 'Terminées',
+value: taskStats.byStatus.completed,
+color: '#10b981'
+})}${this.createDashboardCard({
+icon: 'fas fa-exclamation-circle',
+label: 'En retard',
+value: taskStats.overdue,
+color: '#ef4444'
+})}</div>${scanData ? this.renderScanStats(scanData) : this.renderWelcome()}`;
+this.addDashboardStyles();
+}
+createDashboardCard({ icon, label, value, color }) {
+return `<div class="dashboard-card" style="--card-color: ${color}"><div class="card-icon"><i class="${icon}"></i></div><div class="card-content"><div class="card-value">${value}</div><div class="card-label">${label}</div></div></div>`;
+}
+renderWelcome() {
+return `<div class="welcome-card"><div class="welcome-content"><div class="welcome-icon"><i class="fas fa-envelope-open-text"></i></div><h2 class="welcome-title">Bienvenue!</h2><p class="welcome-text">Commencez par scanner vos emails pour les organiser automatiquement.</p><button class="btn primary large" onclick="window.pageManager.loadPage('scanner')"><i class="fas fa-search"></i> Démarrer le scan</button></div></div>`;
+}
+renderScanStats(scanData) {
+return `<div class="scan-stats-card"><h3>Résultats du dernier scan</h3><div class="scan-stats"><div class="stat"><span class="stat-number">${scanData.total}</span><span class="stat-label">emails analysés</span></div><div class="stat"><span class="stat-number">${scanData.categorized}</span><span class="stat-label">catégorisés</span></div></div></div>`;
+}
+async renderScanner(container) {
+console.log('[PageManager] Rendering scanner page...');
+if (window.scanStartModule && typeof window.scanStartModule.render === 'function' && window.scanStartModule.stylesAdded) {
+try {
+console.log('[PageManager] Using modern ScanStartModule');
+await window.scanStartModule.render(container);
+return;
+} catch (error) {
+console.error('[PageManager] Error with ScanStartModule, falling back:', error);
+}
+}
+console.log('[PageManager] Using fallback scanner interface');
+container.innerHTML = `<div class="empty-state"><div class="empty-icon"><i class="fas fa-search"></i></div><h3 class="empty-title">Scanner d'emails</h3><p class="empty-text">Module de scan en cours de chargement...</p></div>`;
+}
+async renderTasks(container) {
+if (window.tasksView && window.tasksView.render) {
+window.tasksView.render(container);
+} else {
+container.innerHTML = `<div class="page-header"><h1>Tâches</h1></div><div class="empty-state"><div class="empty-icon"><i class="fas fa-tasks"></i></div><h3 class="empty-title">Aucune tâche</h3><p class="empty-text">Créez des tâches à partir de vos emails</p></div>`;
+}
+}
+async renderCategories(container) {
+const categories = window.categoryManager?.getCategories() || {};
+container.innerHTML = `<div class="page-header"><h1>Catégories</h1></div><div class="categories-grid">${Object.entries(categories).map(([id, cat]) => `<div class="category-card"><div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">${cat.icon}</div><h3>${cat.name}</h3><p>${cat.description || ''}</p></div>`).join('')}</div>`;
+}
+async renderSettings(container) {
+if (window.categoriesPage) {
+window.categoriesPage.renderSettings(container);
+} else {
+container.innerHTML = `<div class="page-header"><h1>Paramètres</h1></div><div class="settings-card"><h3>Configuration IA</h3><button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()"><i class="fas fa-cog"></i> Configurer Claude AI</button></div>`;
+}
+}
+addDashboardStyles() {
+if (document.getElementById('dashboardStyles')) return;
+const styles = document.createElement('style');
+styles.id = 'dashboardStyles';
+styles.textContent = `.dashboard-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;}.dashboard-title{font-size:32px;font-weight:800;color:#111827;margin:0;}.dashboard-actions{display:flex;gap:12px;}.dashboard-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:32px;}.dashboard-card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:24px;display:flex;align-items:center;gap:20px;transition:all 0.3s ease;box-shadow:0 1px 3px rgba(0,0,0,0.1);}.dashboard-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.15);}.card-icon{width:60px;height:60px;background:var(--card-color);color:white;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;}.card-content{flex:1;}.card-value{font-size:32px;font-weight:800;color:#1f2937;line-height:1;margin-bottom:4px;}.card-label{font-size:14px;color:#6b7280;font-weight:600;}.welcome-card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:48px;text-align:center;}.welcome-content{max-width:400px;margin:0 auto;}.welcome-icon{font-size:64px;color:#3b82f6;margin-bottom:24px;}.welcome-title{font-size:28px;font-weight:700;color:#1f2937;margin:0 0 16px 0;}.welcome-text{font-size:16px;color:#6b7280;line-height:1.6;margin:0 0 32px 0;}.ai-banner{background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #0ea5e9;border-radius:16px;padding:24px;display:flex;align-items:center;gap:20px;margin-bottom:32px;}.ai-banner-icon{width:48px;height:48px;background:#0ea5e9;color:white;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;}.ai-banner-content{flex:1;}.ai-banner-content h3{margin:0 0 4px 0;font-size:18px;font-weight:700;color:#0c4a6e;}.ai-banner-content p{margin:0;color:#075985;font-size:14px;}.scan-stats-card{background:white;border:1px solid #e5e7eb;border-radius:16px;padding:24px;}.scan-stats-card h3{margin:0 0 20px 0;font-size:20px;font-weight:700;color:#1f2937;}.scan-stats{display:flex;gap:32px;}.stat{display:flex;flex-direction:column;align-items:center;gap:4px;}.stat-number{font-size:24px;font-weight:800;color:#3b82f6;}.stat-label{font-size:14px;color:#6b7280;font-weight:600;}.btn.large{padding:16px 32px;font-size:16px;}`;
+document.head.appendChild(styles);
+}
+getCategoryDisplayName(categoryId) {
+const categories = window.categoryManager?.getCategories() || {};
+return categories[categoryId]?.name || categoryId;
+}
+}
+window.pageManager = new PageManager();
+Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
+if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
+window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+}
+});
+console.log('✅ PageManager v10.0 loaded - Interface moderne optimisée compacte');
