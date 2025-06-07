@@ -1152,7 +1152,7 @@ class PageManager {
                 -webkit-box-orient: vertical;
             }
             
-            /* ===== VUE GROUPÉE MODERNE - TAILLE PARFAITE ===== */
+            /* ===== VUE GROUPÉE ULTRA-CONDENSÉE ET PROPRE ===== */
             .emails-grouped {
                 display: flex !important;
                 flex-direction: column !important;
@@ -1160,6 +1160,9 @@ class PageManager {
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
+                border: 1px solid #e5e7eb !important;
+                border-radius: 12px !important;
+                overflow: hidden !important;
             }
             
             .email-group {
@@ -1167,46 +1170,51 @@ class PageManager {
                 padding: 0 !important;
                 border: none !important;
                 background: white !important;
+                position: relative !important;
             }
             
-            .email-group + .email-group {
-                margin-top: 0 !important;
-                border-top: 1px solid #f1f5f9 !important;
+            .email-group + .email-group::before {
+                content: '' !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                height: 1px !important;
+                background: #f1f5f9 !important;
+                z-index: 10 !important;
             }
             
             .group-header {
                 display: flex !important;
                 justify-content: space-between !important;
                 align-items: center !important;
-                padding: 12px 20px !important;
+                padding: 10px 16px !important;
                 margin: 0 !important;
-                background: #ffffff !important;
+                background: white !important;
                 cursor: pointer !important;
-                transition: all 0.2s ease !important;
+                transition: background-color 0.15s ease !important;
                 border: none !important;
-                min-height: 56px !important;
-                max-height: 56px !important;
-                height: 56px !important;
+                min-height: 48px !important;
+                max-height: 48px !important;
+                height: 48px !important;
                 box-sizing: border-box !important;
                 position: relative !important;
+                z-index: 20 !important;
             }
             
             .group-header:hover {
                 background: #f8fafc !important;
-                transform: translateX(3px) !important;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
             }
             
             .email-group.expanded .group-header {
                 background: #f0f9ff !important;
-                border-left: 4px solid #3b82f6 !important;
-                padding-left: 16px !important;
+                border-bottom: 1px solid #e0e7ff !important;
             }
             
             .group-info {
                 display: flex !important;
                 align-items: center !important;
-                gap: 12px !important;
+                gap: 10px !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 flex: 1 !important;
@@ -1214,43 +1222,42 @@ class PageManager {
             }
             
             .group-icon {
-                width: 36px !important;
-                height: 36px !important;
-                background: linear-gradient(135deg, #667eea, #764ba2) !important;
+                width: 32px !important;
+                height: 32px !important;
+                background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
                 color: white !important;
-                border-radius: 8px !important;
+                border-radius: 6px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 12px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-weight: 600 !important;
+            }
+            
+            .group-avatar {
+                width: 32px !important;
+                height: 32px !important;
+                background: linear-gradient(135deg, #10b981, #047857) !important;
+                color: white !important;
+                border-radius: 6px !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
                 font-size: 14px !important;
+                font-weight: 700 !important;
                 flex-shrink: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3) !important;
-            }
-            
-            .group-avatar {
-                width: 36px !important;
-                height: 36px !important;
-                background: linear-gradient(135deg, #f093fb, #f5576c) !important;
-                color: white !important;
-                border-radius: 8px !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                font-size: 16px !important;
-                font-weight: 600 !important;
-                flex-shrink: 0 !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                box-shadow: 0 2px 6px rgba(240, 147, 251, 0.3) !important;
             }
             
             .group-details {
                 display: flex !important;
                 align-items: center !important;
-                gap: 12px !important;
-                flex: 1 !important;
+                justify-content: space-between !important;
+                width: 100% !important;
                 min-width: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
@@ -1258,8 +1265,8 @@ class PageManager {
             
             .group-name {
                 font-weight: 600 !important;
-                color: #1e293b !important;
-                font-size: 15px !important;
+                color: #1f2937 !important;
+                font-size: 14px !important;
                 line-height: 1.2 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
@@ -1267,67 +1274,62 @@ class PageManager {
                 margin: 0 !important;
                 padding: 0 !important;
                 flex: 1 !important;
+                min-width: 0 !important;
             }
             
             .group-count {
-                font-size: 12px !important;
-                color: #64748b !important;
+                font-size: 11px !important;
+                color: #6b7280 !important;
                 font-weight: 600 !important;
-                background: #f1f5f9 !important;
-                padding: 4px 8px !important;
-                border-radius: 12px !important;
-                margin: 0 !important;
-                min-width: 24px !important;
+                background: #f3f4f6 !important;
+                padding: 2px 6px !important;
+                border-radius: 8px !important;
+                margin: 0 0 0 8px !important;
+                min-width: 20px !important;
                 text-align: center !important;
-                line-height: 1.2 !important;
-                border: 1px solid #e2e8f0 !important;
+                line-height: 1.3 !important;
+                flex-shrink: 0 !important;
             }
             
             .group-controls {
                 display: flex !important;
                 align-items: center !important;
-                gap: 10px !important;
+                gap: 8px !important;
                 flex-shrink: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
             }
             
             .group-date {
-                font-size: 12px !important;
-                color: #94a3b8 !important;
+                font-size: 11px !important;
+                color: #9ca3af !important;
                 font-weight: 500 !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                letter-spacing: 0.01em !important;
+                white-space: nowrap !important;
             }
             
             .group-toggle {
-                color: #cbd5e1 !important;
+                color: #9ca3af !important;
                 transition: all 0.2s ease !important;
-                font-size: 12px !important;
-                width: 20px !important;
-                height: 20px !important;
+                font-size: 11px !important;
+                width: 16px !important;
+                height: 16px !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                background: #f8fafc !important;
-                border-radius: 4px !important;
-                border: 1px solid #e2e8f0 !important;
+                flex-shrink: 0 !important;
             }
             
             .group-header:hover .group-toggle {
-                color: #64748b !important;
-                background: #e2e8f0 !important;
-                border-color: #cbd5e1 !important;
+                color: #6b7280 !important;
             }
             
             .email-group.expanded .group-toggle {
                 transform: rotate(180deg) !important;
                 color: #3b82f6 !important;
-                background: #dbeafe !important;
-                border-color: #93c5fd !important;
             }
             
             .group-content {
@@ -1335,20 +1337,22 @@ class PageManager {
                 margin: 0 !important;
                 padding: 0 !important;
                 border: none !important;
-                border-left: 4px solid transparent !important;
             }
             
             .email-group.expanded .group-content {
-                border-left-color: #e0e7ff !important;
-                background: #fafbff !important;
+                background: #fafbfc !important;
             }
             
-            /* Emails dans les groupes - propres et espacés */
+            /* Emails dans les groupes - ultra condensés */
             .group-content .email-card {
                 margin: 0 !important;
-                padding: 12px 20px 12px 24px !important;
-                border-bottom: 1px solid #f8fafc !important;
+                padding: 10px 16px !important;
+                border-bottom: 1px solid #f3f4f6 !important;
                 background: inherit !important;
+                border-left: none !important;
+                border-right: none !important;
+                border-top: none !important;
+                border-radius: 0 !important;
             }
             
             .group-content .email-card:hover {
@@ -1356,88 +1360,99 @@ class PageManager {
             }
             
             .group-content .email-card:first-child {
-                border-top: 1px solid #f1f5f9 !important;
                 margin-top: 0 !important;
+                padding-top: 10px !important;
             }
             
             .group-content .email-card:last-child {
-                border-bottom: 1px solid #f1f5f9 !important;
-                margin-bottom: 0 !important;
-            }
-            
-            /* Effet de profondeur moderne */
-            .group-header::before {
-                content: '' !important;
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                bottom: 0 !important;
-                width: 0 !important;
-                background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
-                transition: width 0.3s ease !important;
-                z-index: 1 !important;
-            }
-            
-            .group-header:hover::before {
-                width: 3px !important;
-            }
-            
-            .email-group.expanded .group-header::before {
-                width: 4px !important;
-            }
-            
-            /* Suppression ABSOLUE des espaces entre groupes */
-            .emails-grouped > .email-group {
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            
-            .emails-grouped > .email-group:first-child {
-                border-top: none !important;
-            }
-            
-            .emails-grouped > .email-group:last-child {
                 border-bottom: none !important;
+                margin-bottom: 0 !important;
+                padding-bottom: 10px !important;
             }
             
-            /* Animation fluide pour l'expansion */
-            .group-content {
-                overflow: hidden !important;
-                transition: all 0.3s ease !important;
+            /* FORÇAGE ABSOLU - suppression de TOUS les espaces */
+            .emails-grouped > * {
+                margin: 0 !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
             }
             
-            /* Responsive optimisé */
+            .email-group,
+            .email-group + .email-group {
+                margin: 0 !important;
+                margin-top: 0 !important;
+                margin-bottom: 0 !important;
+                border-top: none !important;
+                border-bottom: none !important;
+                padding: 0 !important;
+                gap: 0 !important;
+            }
+            
+            /* Nettoyage total des espacements résiduels */
+            .emails-grouped::before,
+            .emails-grouped::after,
+            .email-group::before,
+            .email-group::after {
+                display: none !important;
+            }
+            
+            /* CSS de nettoyage pour éliminer tout espace */
+            .emails-grouped {
+                line-height: 0 !important;
+            }
+            
+            .emails-grouped > .email-group {
+                line-height: normal !important;
+                display: block !important;
+                float: none !important;
+                clear: none !important;
+            }
+            
+            /* Responsive ultra-compact */
             @media (max-width: 768px) {
                 .group-header {
-                    padding: 10px 16px !important;
-                    min-height: 52px !important;
-                    max-height: 52px !important;
-                    height: 52px !important;
+                    padding: 8px 12px !important;
+                    min-height: 44px !important;
+                    max-height: 44px !important;
+                    height: 44px !important;
                 }
                 
                 .group-icon,
                 .group-avatar {
-                    width: 32px !important;
-                    height: 32px !important;
-                    font-size: 12px !important;
+                    width: 28px !important;
+                    height: 28px !important;
+                    font-size: 11px !important;
                 }
                 
                 .group-name {
-                    font-size: 14px !important;
+                    font-size: 13px !important;
                 }
                 
                 .group-count {
-                    font-size: 11px !important;
-                    padding: 3px 6px !important;
+                    font-size: 10px !important;
+                    padding: 2px 5px !important;
                 }
                 
                 .group-date {
-                    font-size: 11px !important;
+                    font-size: 10px !important;
                 }
                 
                 .group-content .email-card {
-                    padding: 10px 16px 10px 20px !important;
+                    padding: 8px 12px !important;
                 }
+            }
+            
+            /* Sélecteur de secours pour éliminer tout espacement */
+            .emails-grouped,
+            .emails-grouped *,
+            .email-group,
+            .email-group * {
+                margin-block-start: 0 !important;
+                margin-block-end: 0 !important;
+                margin-inline-start: 0 !important;
+                margin-inline-end: 0 !important;
             }
             
             /* ===== ÉTAT VIDE ===== */
