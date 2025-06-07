@@ -339,7 +339,7 @@ class PageManager {
         const isSelected = this.selectedEmails.has(email.id);
         const hasTask = this.createdTasks.has(email.id);
         const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Unknown';
-        const senderEmail = email.from?.emailAddress?.address || '';
+        const senderDomain = email.from?.emailAddress?.address?.split('@')[1] || '';
         const senderInitial = senderName.charAt(0).toUpperCase();
         const formattedDate = this.formatEmailDate(email.receivedDateTime);
         
@@ -347,95 +347,82 @@ class PageManager {
         const analysis = this.aiAnalysisResults.get(email.id);
         const deadline = analysis?.mainTask?.dueDate || analysis?.actionsHighlighted?.find(a => a.deadline)?.deadline || null;
         
+        // Category info
+        const categoryInfo = this.getCategoryInfo(email.category || 'other');
+        
         return `
             <div class="unified-email-item ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <!-- LIGNE 1: Expéditeur, date et indicateurs -->
-                <div class="email-header-line">
-                    <div class="email-header-left">
-                        <!-- Checkbox -->
-                        <div class="email-checkbox-wrapper">
-                            <input type="checkbox" 
-                                   class="email-checkbox" 
-                                   ${isSelected ? 'checked' : ''}
-                                   onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                <!-- Checkbox -->
+                <div class="email-checkbox-wrapper">
+                    <input type="checkbox" 
+                           class="email-checkbox" 
+                           ${isSelected ? 'checked' : ''}
+                           onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                </div>
+                
+                <!-- Sender Avatar -->
+                <div class="sender-avatar" style="background: linear-gradient(135deg, ${this.generateColorFromText(senderName)})">
+                    ${senderInitial}
+                </div>
+                
+                <!-- Email Content sur une seule ligne -->
+                <div class="email-main-content">
+                    <div class="email-header">
+                        <!-- Sender Info -->
+                        <div class="email-sender">
+                            <span class="sender-name" title="${this.escapeHtml(senderName)}">${this.escapeHtml(senderName)}</span>
+                            ${senderDomain ? `<span class="sender-domain">@${senderDomain}</span>` : ''}
                         </div>
                         
-                        <!-- Avatar -->
-                        <div class="sender-avatar" style="background: linear-gradient(135deg, ${this.generateColorFromText(senderName)})">
-                            ${senderInitial}
+                        <!-- Subject -->
+                        <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
+                            ${this.escapeHtml(email.subject || 'Sans sujet')}
                         </div>
                         
-                        <!-- Informations expéditeur -->
-                        <div class="email-sender-info">
-                            <div class="sender-name" title="${this.escapeHtml(senderName)}">
-                                ${this.escapeHtml(senderName)}
-                            </div>
-                            <div class="sender-email" title="${this.escapeHtml(senderEmail)}">
-                                ${this.escapeHtml(senderEmail)}
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="email-meta-header">
-                        <!-- Date -->
-                        <span class="email-date">${formattedDate}</span>
-                        
-                        <!-- Indicateurs -->
-                        <div class="email-indicators">
+                        <!-- Meta Information -->
+                        <div class="email-meta">
+                            ${deadline ? `
+                                <span class="email-deadline ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}">
+                                    <i class="fas fa-clock"></i>
+                                    ${this.formatDeadline(deadline)}
+                                </span>
+                            ` : ''}
+                            
                             ${email.hasAttachments ? `
-                                <span class="indicator-icon attachment" title="Contient des pièces jointes">
+                                <span class="attachment-indicator" title="Contient des pièces jointes">
                                     <i class="fas fa-paperclip"></i>
                                 </span>
                             ` : ''}
                             
                             ${analysis ? `
-                                <span class="indicator-icon ai" title="Analysé par IA">
+                                <span class="ai-indicator" title="Analysé par IA">
                                     <i class="fas fa-robot"></i>
                                 </span>
                             ` : ''}
                             
-                            ${deadline ? `
-                                <span class="indicator-icon deadline" title="Échéance: ${deadline}">
-                                    <i class="fas fa-clock"></i>
-                                </span>
-                            ` : ''}
-                        </div>
-                        
-                        <!-- Actions -->
-                        <div class="email-actions">
-                            ${hasTask ? `
-                                <button class="action-btn task-created" onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" title="Voir la tâche créée">
-                                    <i class="fas fa-check-circle"></i>
-                                </button>
-                            ` : `
-                                <button class="action-btn create-task" onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" title="Créer une tâche">
-                                    <i class="fas fa-plus-circle"></i>
-                                </button>
-                            `}
-                            
-                            <button class="action-btn view-email" onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" title="Voir l'email complet">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                            <span class="email-date">${formattedDate}</span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- LIGNE 2: Sujet et échéance -->
-                <div class="email-content-line">
-                    <div class="email-subject-container">
-                        <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
-                            ${this.escapeHtml(email.subject || 'Sans sujet')}
-                        </div>
-                        ${deadline ? `
-                            <div class="email-deadline ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}">
-                                <i class="fas fa-clock"></i>
-                                ${this.formatDeadline(deadline)}
-                            </div>
-                        ` : ''}
-                    </div>
+                <!-- Actions compactes -->
+                <div class="email-actions">
+                    ${hasTask ? `
+                        <button class="action-btn task-created" onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" title="Voir la tâche créée">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                    ` : `
+                        <button class="action-btn create-task" onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" title="Créer une tâche">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                    `}
+                    
+                    <button class="action-btn view-email" onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" title="Voir l'email complet">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -807,119 +794,77 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'unifiedEmailStyles';
         styles.textContent = `
-            /* ===== BARRE PRINCIPALE CORRIGÉE ===== */
+            /* ===== BARRE PRINCIPALE UNIFIÉE ===== */
             .emails-unified-toolbar {
                 display: flex;
-                flex-direction: column;
-                gap: 12px;
-                padding: 20px 24px;
+                align-items: flex-start;
+                gap: 20px;
+                padding: 16px 20px;
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
                 margin-bottom: 16px;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            .toolbar-main-line {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 24px;
-                min-height: 48px;
-            }
-            
-            .toolbar-secondary-line {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 20px;
-                padding-top: 8px;
-                border-top: 1px solid #f3f4f6;
+                min-height: auto;
             }
             
             .toolbar-section {
                 display: flex;
                 align-items: center;
-                gap: 16px;
+                gap: 12px;
             }
             
             .toolbar-left {
                 flex-shrink: 0;
+                min-width: 280px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .page-header-info {
                 display: flex;
                 align-items: center;
-                gap: 16px;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            
+            .page-explanation {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 10px;
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 5px;
+                font-size: 12px;
+                line-height: 1.2;
+                max-width: 100%;
+            }
+            
+            .explanation-icon {
+                color: #0ea5e9;
+                font-size: 11px;
+                flex-shrink: 0;
+            }
+            
+            .explanation-text {
+                color: #075985;
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             
             .toolbar-center {
                 flex: 1;
-                max-width: 450px;
-                min-width: 250px;
-                display: flex;
+                max-width: 500px;
                 justify-content: center;
             }
             
             .toolbar-right {
                 flex-shrink: 0;
-                display: flex;
-                align-items: center;
-            }
-            
-            .page-title {
-                margin: 0;
-                font-size: 28px;
-                font-weight: 700;
-                color: #1f2937;
-                line-height: 1;
-            }
-            
-            .item-counter {
-                font-size: 15px;
-                color: #6b7280;
-                font-weight: 600;
-                background: #f3f4f6;
-                padding: 6px 14px;
-                border-radius: 16px;
-                white-space: nowrap;
-            }
-            
-            .toolbar-description {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 6px 12px;
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                border: 1px solid #bae6fd;
-                border-radius: 8px;
-                font-size: 13px;
-                line-height: 1.4;
-            }
-            
-            .description-icon {
-                color: #0ea5e9;
-                font-size: 14px;
-                flex-shrink: 0;
-            }
-            
-            .description-text {
-                color: #075985;
-                font-weight: 500;
-            }
-            
-            .selection-indicator {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                background: #eff6ff;
-                border: 1px solid #bfdbfe;
-                border-radius: 10px;
-                padding: 8px 16px;
-                font-size: 14px;
-                color: #1e40af;
-                font-weight: 600;
-            }
-            
-            .selection-count {
-                white-space: nowrap;
+                gap: 16px;
             }
             
             /* ===== TITRE ET COMPTEURS ===== */
@@ -957,22 +902,22 @@ class PageManager {
                 font-weight: 600;
             }
             
-            /* ===== RECHERCHE ÉLÉGANTE ===== */
+            /* ===== RECHERCHE UNIFIÉE ===== */
             .unified-search-wrapper {
                 position: relative;
                 width: 100%;
-                max-width: 420px;
+                max-width: 400px;
+                margin: 0 auto;
             }
             
             .unified-search-input {
                 width: 100%;
-                padding: 12px 18px 12px 46px;
+                padding: 10px 16px 10px 44px;
                 border: 1px solid #d1d5db;
-                border-radius: 10px;
-                font-size: 15px;
+                border-radius: 8px;
+                font-size: 14px;
                 background: #f9fafb;
                 transition: all 0.2s ease;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
             
             .unified-search-input:focus {
@@ -988,7 +933,7 @@ class PageManager {
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 16px;
+                font-size: 14px;
             }
             
             .search-clear-btn {
@@ -1000,12 +945,9 @@ class PageManager {
                 border: none;
                 color: #9ca3af;
                 cursor: pointer;
-                padding: 6px;
-                border-radius: 6px;
+                padding: 4px;
+                border-radius: 4px;
                 transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
             }
             
             .search-clear-btn:hover {
@@ -1638,35 +1580,32 @@ class PageManager {
             
             /* ===== RESPONSIVE ===== */
             @media (max-width: 1024px) {
-                .toolbar-main-line {
+                .emails-unified-toolbar {
                     flex-wrap: wrap;
                     gap: 12px;
                 }
                 
                 .toolbar-left {
-                    order: 1;
+                    min-width: auto;
                     width: 100%;
-                    justify-content: space-between;
+                    order: 1;
                 }
                 
                 .toolbar-center {
-                    order: 2;
                     width: 100%;
-                    max-width: none;
+                    order: 3;
+                }
+                
+                .toolbar-center-right {
+                    order: 2;
                 }
                 
                 .toolbar-right {
-                    order: 3;
-                    width: 100%;
-                    justify-content: flex-end;
-                }
-                
-                .toolbar-view-line {
                     order: 4;
                 }
                 
                 .page-explanation {
-                    font-size: 11px;
+                    font-size: 12px;
                 }
                 
                 .btn-text {
@@ -1677,13 +1616,9 @@ class PageManager {
             @media (max-width: 768px) {
                 .emails-unified-toolbar {
                     padding: 12px 16px;
-                    gap: 8px;
-                }
-                
-                .toolbar-main-line {
                     flex-direction: column;
                     align-items: stretch;
-                    gap: 8px;
+                    gap: 16px;
                 }
                 
                 .toolbar-section {
@@ -1692,13 +1627,22 @@ class PageManager {
                 }
                 
                 .toolbar-left {
-                    flex-direction: column;
-                    gap: 8px;
-                    align-items: center;
+                    width: 100%;
+                    min-width: auto;
+                }
+                
+                .page-header-info {
+                    justify-content: space-between;
+                    width: 100%;
                 }
                 
                 .page-explanation {
-                    display: none;
+                    display: none; /* Masquer l'explication sur mobile pour économiser l'espace */
+                }
+                
+                .toolbar-right {
+                    flex-wrap: wrap;
+                    justify-content: center;
                 }
                 
                 .view-mode-group {
@@ -1707,13 +1651,12 @@ class PageManager {
                 }
                 
                 .unified-category-filters {
-                    gap: 4px;
-                    justify-content: center;
+                    gap: 6px;
                 }
                 
                 .unified-filter-btn {
-                    padding: 6px 8px;
-                    font-size: 12px;
+                    padding: 8px 12px;
+                    font-size: 13px;
                 }
                 
                 .filter-label {
@@ -1721,39 +1664,33 @@ class PageManager {
                 }
                 
                 .unified-email-item {
-                    padding: 6px 12px;
+                    padding: 12px 16px;
+                    gap: 12px;
+                }
+                
+                .email-header {
+                    flex-direction: column;
+                    align-items: flex-start;
                     gap: 8px;
-                    min-height: 44px;
-                    max-height: 44px;
-                }
-                
-                .sender-avatar {
-                    width: 28px;
-                    height: 28px;
-                    font-size: 12px;
-                }
-                
-                .email-sender {
-                    min-width: 100px;
-                }
-                
-                .sender-name {
-                    max-width: 80px;
-                    font-size: 12px;
-                }
-                
-                .email-subject {
-                    font-size: 12px;
                 }
                 
                 .email-meta {
-                    gap: 4px;
+                    align-self: flex-end;
                 }
                 
-                .action-btn {
-                    width: 20px;
-                    height: 20px;
-                    font-size: 9px;
+                .group-header {
+                    padding: 12px 16px;
+                }
+                
+                .email-stats-bar {
+                    flex-direction: column;
+                    gap: 12px;
+                    align-items: flex-start;
+                }
+                
+                .stats-group {
+                    flex-wrap: wrap;
+                    gap: 12px;
                 }
             }
             
