@@ -105,18 +105,31 @@ class PageManager {
             container.innerHTML = `
                 <!-- BARRE PRINCIPALE UNIFIÉE - TOUT SUR UNE LIGNE -->
                 <div class="emails-unified-toolbar">
-                    <!-- Section Gauche: Titre et compteur -->
+                    <!-- Section Gauche: Titre, compteur et explication -->
                     <div class="toolbar-section toolbar-left">
-                        <h1 class="page-title">Emails</h1>
-                        <span class="item-counter">${totalEmails} email${totalEmails > 1 ? 's' : ''}</span>
-                        ${selectedCount > 0 ? `
-                            <div class="selection-indicator">
-                                <span class="selection-count">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
-                                <button class="btn-unified btn-clear" onclick="window.pageManager.clearSelection()" title="Désélectionner tout">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        ` : ''}
+                        <div class="page-header-info">
+                            <h1 class="page-title">Emails</h1>
+                            <span class="item-counter">${totalEmails} email${totalEmails > 1 ? 's' : ''}</span>
+                            ${selectedCount > 0 ? `
+                                <div class="selection-indicator">
+                                    <span class="selection-count">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                                    <button class="btn-unified btn-clear" onclick="window.pageManager.clearSelection()" title="Désélectionner tout">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="page-explanation">
+                            <i class="fas fa-info-circle explanation-icon"></i>
+                            <span class="explanation-text">
+                                ${selectedCount > 0 ? 
+                                    `${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}. Créez des tâches ou changez la vue.` :
+                                    this.currentCategory === 'all' ? 
+                                        'Visualisez vos emails par domaine, expéditeur ou en liste complète. Sélectionnez des emails pour créer des tâches.' :
+                                        `Affichage de la catégorie "${this.getCategoryInfo(this.currentCategory).name}". Utilisez les filtres pour naviguer.`
+                                }
+                            </span>
+                        </div>
                     </div>
                     
                     <!-- Section Centre: Recherche -->
@@ -165,17 +178,21 @@ class PageManager {
                         
                         <!-- Actions -->
                         <div class="action-group">
-                            ${selectedCount > 0 ? `
-                                <button class="btn-unified btn-primary" onclick="window.pageManager.createTasksFromSelection()" title="Créer des tâches pour les emails sélectionnés">
-                                    <i class="fas fa-tasks"></i>
-                                    <span class="btn-text">Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</span>
-                                </button>
-                            ` : `
-                                <button class="btn-unified btn-primary" onclick="window.pageManager.createTasksFromAllVisible()" title="Créer des tâches pour tous les emails visibles">
-                                    <i class="fas fa-tasks"></i>
-                                    <span class="btn-text">Créer tâches</span>
-                                </button>
-                            `}
+                            <!-- Bouton Créer tâches - TOUJOURS VISIBLE -->
+                            <button class="btn-unified btn-primary ${selectedCount > 0 ? 'with-selection' : ''}" 
+                                    onclick="${selectedCount > 0 ? 'window.pageManager.createTasksFromSelection()' : 'window.pageManager.createTasksFromAllVisible()'}" 
+                                    title="${selectedCount > 0 ? 
+                                        `Créer des tâches pour les ${selectedCount} emails sélectionnés` : 
+                                        'Créer des tâches pour tous les emails visibles'}">
+                                <i class="fas fa-tasks"></i>
+                                <span class="btn-text">
+                                    ${selectedCount > 0 ? 
+                                        `Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}` : 
+                                        'Créer tâches'
+                                    }
+                                </span>
+                                ${selectedCount > 0 ? `<span class="selection-badge">${selectedCount}</span>` : ''}
+                            </button>
                             
                             <button class="btn-unified btn-secondary" onclick="window.pageManager.refreshEmails()" title="Actualiser la liste des emails">
                                 <i class="fas fa-sync"></i>
@@ -800,7 +817,39 @@ class PageManager {
             
             .toolbar-left {
                 flex-shrink: 0;
-                min-width: 200px;
+                min-width: 300px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .page-header-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .page-explanation {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 12px;
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 6px;
+                font-size: 13px;
+                line-height: 1.3;
+            }
+            
+            .explanation-icon {
+                color: #0ea5e9;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+            
+            .explanation-text {
+                color: #075985;
+                font-weight: 500;
             }
             
             .toolbar-center {
@@ -942,9 +991,37 @@ class PageManager {
                 border-color: #3b82f6;
             }
             
-            .btn-unified.btn-primary:hover {
-                background: #2563eb;
-                border-color: #2563eb;
+            .btn-unified.btn-primary.with-selection {
+                background: linear-gradient(135deg, #10b981, #059669);
+                border-color: #10b981;
+                position: relative;
+                animation: selectionPulse 2s infinite;
+            }
+            
+            .btn-unified.btn-primary.with-selection:hover {
+                background: linear-gradient(135deg, #059669, #047857);
+                border-color: #059669;
+            }
+            
+            .selection-badge {
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                background: #ef4444;
+                color: white;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 10px;
+                min-width: 18px;
+                text-align: center;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            }
+            
+            @keyframes selectionPulse {
+                0%, 100% { box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); }
+                50% { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
             }
             
             .btn-unified.btn-secondary {
@@ -1512,12 +1589,25 @@ class PageManager {
                 
                 .toolbar-left {
                     min-width: auto;
+                    width: 100%;
+                    order: 1;
                 }
                 
                 .toolbar-center {
+                    width: 100%;
                     order: 3;
-                    flex-basis: 100%;
-                    max-width: none;
+                }
+                
+                .toolbar-center-right {
+                    order: 2;
+                }
+                
+                .toolbar-right {
+                    order: 4;
+                }
+                
+                .page-explanation {
+                    font-size: 12px;
                 }
                 
                 .btn-text {
@@ -1539,7 +1629,17 @@ class PageManager {
                 }
                 
                 .toolbar-left {
+                    width: 100%;
+                    min-width: auto;
+                }
+                
+                .page-header-info {
                     justify-content: space-between;
+                    width: 100%;
+                }
+                
+                .page-explanation {
+                    display: none; /* Masquer l'explication sur mobile pour économiser l'espace */
                 }
                 
                 .toolbar-right {
