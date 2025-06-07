@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 16.0 - Détection stricte avec validation des mots-clés
+// CategoryManager.js - Version 16.1 - Correction CC et exclusion spam
 
 class CategoryManager {
     constructor() {
@@ -8,7 +8,7 @@ class CategoryManager {
         this.weightedKeywords = {};
         this.initializeCategories();
         this.initializeWeightedDetection();
-        console.log('[CategoryManager] ✅ Version 16.0 - Détection stricte avec validation des mots-clés');
+        console.log('[CategoryManager] ✅ Version 16.1 - Correction CC et exclusion spam');
     }
 
     // ================================================
@@ -23,6 +23,15 @@ class CategoryManager {
                 color: '#8b5cf6',
                 description: 'Newsletters et promotions',
                 priority: 100
+            },
+            
+            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE POUR INTERCEPTION
+            cc: {
+                name: 'En Copie',
+                icon: '📋',
+                color: '#64748b',
+                description: 'Emails où vous êtes en copie',
+                priority: 90
             },
             
             // MÊME PRIORITÉ POUR TOUTES LES AUTRES CATÉGORIES
@@ -112,15 +121,6 @@ class CategoryManager {
                 color: '#94a3b8',
                 description: 'Notifications automatiques',
                 priority: 50
-            },
-            
-            // CATÉGORIE CC - Pour les emails où vous êtes en copie
-            cc: {
-                name: 'En Copie',
-                icon: '📋',
-                color: '#64748b',
-                description: 'Emails où vous êtes en copie',
-                priority: 40
             }
         };
         
@@ -443,17 +443,75 @@ class CategoryManager {
                     'code de vérification urgent', 'security alert critical',
                     'action required immediately'
                 ]
+            },
+
+            // CATÉGORIE CC - PATTERNS SIMPLES MAIS EFFICACES
+            cc: {
+                absolute: [
+                    // Ces patterns seront détectés différemment via isInCC()
+                    'copie pour information', 'for your information', 'fyi',
+                    'en copie', 'in copy', 'cc:', 'courtesy copy',
+                    'pour information', 'info copy'
+                ],
+                
+                strong: [
+                    'information', 'copie', 'copy'
+                ],
+                
+                weak: ['fyi', 'info'],
+                
+                exclusions: []
             }
         };
     }
 
     // ================================================
-    // ANALYSE AVEC SEUIL MINIMUM REQUIS
+    // ANALYSE AVEC SEUIL MINIMUM REQUIS ET DÉTECTION CC
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
         
+        // Filtrer les courriers indésirables en priorité
+        if (this.isSpamEmail(email)) {
+            if (this.debugMode) {
+                console.log('[CategoryManager] Email spam détecté, ignoré:', email.subject);
+            }
+            return { category: 'spam', score: 0, confidence: 0, isSpam: true };
+        }
+        
         const content = this.extractCompleteContent(email);
+        
+        // Vérification CC AVANT toute autre analyse
+        if (this.isInCC(email)) {
+            if (this.debugMode) {
+                console.log('[CategoryManager] Email en CC détecté:', email.subject);
+            }
+            
+            // Vérifier si ce n'est pas du marketing malgré le CC
+            const marketingCheck = this.analyzeCategory(content, this.weightedKeywords.marketing_news);
+            if (marketingCheck.score >= 80) {
+                if (this.debugMode) {
+                    console.log('[CategoryManager] Email CC mais marketing détecté:', email.subject);
+                }
+                return {
+                    category: 'marketing_news',
+                    score: marketingCheck.total,
+                    confidence: this.calculateConfidence(marketingCheck),
+                    matchedPatterns: marketingCheck.matches,
+                    hasAbsolute: marketingCheck.hasAbsolute,
+                    originallyCC: true
+                };
+            }
+            
+            return {
+                category: 'cc',
+                score: 100,
+                confidence: 0.95,
+                matchedPatterns: [{ keyword: 'email_in_cc', type: 'detected', score: 100 }],
+                hasAbsolute: true,
+                isCC: true
+            };
+        }
         
         // Vérification spéciale pour les emails personnels
         if (this.isPersonalEmail(email)) {
@@ -476,6 +534,152 @@ class CategoryManager {
         // Analyse normale pour les autres emails
         const allResults = this.analyzeAllCategories(content);
         return this.selectByPriorityWithThreshold(allResults);
+    }
+
+    // ================================================
+    // DÉTECTION SPAM / COURRIERS INDÉSIRABLES
+    // ================================================
+    isSpamEmail(email) {
+        // Vérifier si l'email est dans le dossier spam/junk
+        if (email.parentFolderId) {
+            const folderInfo = email.parentFolderId.toLowerCase();
+            if (folderInfo.includes('junk') || 
+                folderInfo.includes('spam') || 
+                folderInfo.includes('unwanted') ||
+                folderInfo.includes('indésirable') ||
+                folderInfo.includes('courrier indésirable')) {
+                return true;
+            }
+        }
+        
+        // Vérifier les catégories Outlook
+        if (email.categories && Array.isArray(email.categories)) {
+            const hasSpamCategory = email.categories.some(cat => 
+                cat.toLowerCase().includes('spam') ||
+                cat.toLowerCase().includes('junk') ||
+                cat.toLowerCase().includes('indésirable')
+            );
+            if (hasSpamCategory) return true;
+        }
+        
+        // Vérifier l'importance/priorité (souvent les spams ont une priorité bizarre)
+        if (email.importance === 'low' && email.flag?.flagStatus === 'flagged') {
+            // Pattern suspect: importance faible mais marqué - souvent spam
+            return this.hasSuspiciousSpamPatterns(email);
+        }
+        
+        // Patterns de spam dans le sujet
+        if (email.subject) {
+            const suspiciousSubjectPatterns = [
+                /\[spam\]/i,
+                /\*\*\*spam\*\*\*/i,
+                /urgent.{0,20}action.{0,20}required.{0,20}immediately/i,
+                /you.{0,10}have.{0,10}won/i,
+                /congratulations.{0,20}winner/i,
+                /free.{0,10}money/i,
+                /click.{0,10}here.{0,10}now/i
+            ];
+            
+            if (suspiciousSubjectPatterns.some(pattern => pattern.test(email.subject))) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    hasSuspiciousSpamPatterns(email) {
+        const content = this.extractCompleteContent(email);
+        const spamPatterns = [
+            'click here now', 'act now', 'urgent action required',
+            'you have won', 'congratulations winner', 'free money',
+            'limited time offer expires', 'this is not spam',
+            'remove from list', 'unsubscribe here'
+        ];
+        
+        let spamScore = 0;
+        spamPatterns.forEach(pattern => {
+            if (this.findInText(content.text, pattern)) {
+                spamScore += 1;
+            }
+        });
+        
+        return spamScore >= 2; // 2+ patterns = probable spam
+    }
+
+    // ================================================
+    // DÉTECTION EMAIL EN COPIE (CC)
+    // ================================================
+    isInCC(email) {
+        if (!email.ccRecipients || !Array.isArray(email.ccRecipients)) {
+            return false;
+        }
+        
+        // Obtenir l'adresse email de l'utilisateur connecté
+        const currentUserEmail = this.getCurrentUserEmail();
+        if (!currentUserEmail) {
+            // Si on ne peut pas déterminer l'utilisateur, vérifier si on a des CC
+            return email.ccRecipients.length > 0;
+        }
+        
+        // Vérifier si l'utilisateur est dans les CC
+        const isInCCList = email.ccRecipients.some(recipient => {
+            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+            return recipientEmail === currentUserEmail.toLowerCase();
+        });
+        
+        if (this.debugMode && isInCCList) {
+            console.log('[CategoryManager] Utilisateur trouvé en CC:', email.subject);
+        }
+        
+        return isInCCList;
+    }
+
+    getCurrentUserEmail() {
+        // Essayer de récupérer l'email de l'utilisateur connecté
+        // Méthode 1: depuis l'interface Graph API si disponible
+        if (window.graphClient && window.graphClient.me) {
+            try {
+                // Note: ceci devrait être fait de manière asynchrone normalement
+                // Pour l'instant, on utilise une méthode alternative
+                const userInfo = localStorage.getItem('currentUserInfo');
+                if (userInfo) {
+                    const parsed = JSON.parse(userInfo);
+                    return parsed.email || parsed.userPrincipalName;
+                }
+            } catch (e) {
+                console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur depuis le cache');
+            }
+        }
+        
+        // Méthode 2: analyser les emails reçus pour déduire l'adresse
+        // (cette méthode est moins fiable mais peut aider)
+        try {
+            const emailHistory = localStorage.getItem('recentEmails');
+            if (emailHistory) {
+                const emails = JSON.parse(emailHistory);
+                const toAddresses = emails.flatMap(email => 
+                    (email.toRecipients || []).map(r => r.emailAddress?.address)
+                ).filter(Boolean);
+                
+                // Prendre l'adresse la plus fréquente
+                const addressCounts = {};
+                toAddresses.forEach(addr => {
+                    addressCounts[addr] = (addressCounts[addr] || 0) + 1;
+                });
+                
+                const mostFrequent = Object.entries(addressCounts)
+                    .sort(([,a], [,b]) => b - a)[0];
+                
+                if (mostFrequent) {
+                    return mostFrequent[0];
+                }
+            }
+        } catch (e) {
+            console.warn('[CategoryManager] Impossible de déduire l\'email utilisateur');
+        }
+        
+        return null;
     }
 
     // ================================================
@@ -547,6 +751,13 @@ class CategoryManager {
         }
         
         return results;
+    }
+
+    // ================================================
+    // ANALYSE D'UNE CATÉGORIE SPÉCIFIQUE
+    // ================================================
+    analyzeCategory(content, keywords) {
+        return this.calculateScore(content, keywords, 'single');
     }
 
     // ================================================
@@ -842,6 +1053,9 @@ class CategoryManager {
         if (categoryId === 'other') {
             return { id: 'other', name: 'Non classé', icon: '❓', color: '#64748b' };
         }
+        if (categoryId === 'spam') {
+            return { id: 'spam', name: 'Spam', icon: '🚫', color: '#dc2626' };
+        }
         return this.categories[categoryId] || null;
     }
     
@@ -903,9 +1117,21 @@ class CategoryManager {
         
         return result;
     }
+
+    // ================================================
+    // MÉTHODE POUR METTRE À JOUR L'EMAIL UTILISATEUR
+    // ================================================
+    setCurrentUserEmail(email) {
+        if (email) {
+            localStorage.setItem('currentUserInfo', JSON.stringify({ email: email }));
+            if (this.debugMode) {
+                console.log('[CategoryManager] Email utilisateur défini:', email);
+            }
+        }
+    }
 }
 
 // Créer l'instance globale
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v16.0 loaded - Détection stricte avec validation des mots-clés');
+console.log('✅ CategoryManager v16.1 loaded - Correction CC et exclusion spam');
