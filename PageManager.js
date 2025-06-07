@@ -1,4 +1,4 @@
-// PageManager.js - Version 10.1 - Interface optimisée avec espaces supprimés
+// PageManager.js - Version 10.0 - Interface moderne optimisée avec affichage parfait
 
 class PageManager {
     constructor() {
@@ -26,7 +26,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v10.1 - Interface optimisée avec espaces supprimés');
+        console.log('[PageManager] Initialized v10.0 - Interface moderne optimisée');
     }
 
     // =====================================
@@ -87,7 +87,7 @@ class PageManager {
     }
 
     // =====================================
-    // EMAILS PAGE - INTERFACE OPTIMISÉE
+    // EMAILS PAGE - INTERFACE MODERNE
     // =====================================
     async renderEmails(container) {
         const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
@@ -139,7 +139,7 @@ class PageManager {
                     </div>
                 </div>
 
-                <!-- CONTRÔLES -->
+                <!-- CONTRÔLES COMPACTS -->
                 <div class="emails-controls">
                     <div class="search-container">
                         <i class="fas fa-search search-icon"></i>
@@ -190,18 +190,18 @@ class PageManager {
                     </div>
                 </div>
 
-                <!-- FILTRES DE CATÉGORIES -->
+                <!-- FILTRES DE CATÉGORIES COMPACTS -->
                 <div class="category-filters">
                     ${this.buildCategoryFilters(categoryCounts, totalEmails, categories)}
                 </div>
 
-                <!-- CONTENU DES EMAILS -->
+                <!-- CONTENU DES EMAILS SANS ESPACES -->
                 <div class="emails-content" id="emailsContent">
                     ${this.renderEmailsList()}
                 </div>
             `;
 
-            this.addOptimizedStyles();
+            this.addModernStyles();
             this.setupEmailsEventListeners();
         };
 
@@ -565,34 +565,48 @@ class PageManager {
     }
 
     // =====================================
-    // STYLES OPTIMISÉS - ESPACES SUPPRIMÉS
+    // STYLES MODERNES
     // =====================================
-    addOptimizedStyles() {
-        if (document.getElementById('optimizedEmailStyles')) return;
+    addModernStyles() {
+        if (document.getElementById('modernEmailStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'optimizedEmailStyles';
+        styles.id = 'modernEmailStyles';
         styles.textContent = `
             /* ===== RESET & BASE ===== */
             * {
                 box-sizing: border-box;
             }
             
-            /* ===== EXPLICATION PRINCIPALE ===== */
-            .emails-explanation {
-                margin-bottom: 12px;
-                padding: 0 4px;
+            /* ===== HEADER PRINCIPAL ===== */
+            .emails-header {
+                margin-bottom: 20px;
+                padding: 0 4px; /* Alignement avec le menu */
             }
             
-            .explanation-content {
+            .header-title-section {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                width: 100%;
+            }
+            
+            .header-explanation {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
                 background: #f0f9ff;
                 border: 1px solid #bae6fd;
                 border-radius: 12px;
-                padding: 12px 16px;
-                gap: 16px;
+                padding: 16px 20px;
+            }
+            
+            .explanation-main {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
             }
             
             .explanation-icon {
@@ -601,158 +615,160 @@ class PageManager {
                 flex-shrink: 0;
             }
             
-            .explanation-details {
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .explanation-title {
-                color: #0c4a6e;
-                font-weight: 700;
-                font-size: 14px;
-                line-height: 1.2;
-                margin-bottom: 2px;
-            }
-            
-            .explanation-subtitle {
+            .explanation-text {
                 color: #075985;
-                font-weight: 500;
-                font-size: 12px;
-                line-height: 1.3;
-                opacity: 0.9;
+                font-weight: 600;
+                font-size: 14px;
+                line-height: 1.4;
             }
             
             .selection-clear {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
                 background: #ef4444;
                 color: white;
                 border: none;
-                padding: 6px 12px;
-                border-radius: 6px;
+                padding: 8px 16px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-weight: 600;
-                font-size: 12px;
+                font-size: 13px;
                 transition: all 0.2s ease;
                 flex-shrink: 0;
             }
             
             .selection-clear:hover {
                 background: #dc2626;
+                transform: translateY(-1px);
             }
             
             .selection-actions {
                 display: flex;
-                gap: 6px;
+                gap: 8px;
                 flex-shrink: 0;
             }
             
             .selection-action {
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                gap: 6px;
                 background: white;
                 color: #374151;
                 border: 1px solid #d1d5db;
-                padding: 4px 8px;
-                border-radius: 4px;
+                padding: 6px 12px;
+                border-radius: 6px;
                 cursor: pointer;
                 font-weight: 500;
-                font-size: 11px;
+                font-size: 12px;
                 transition: all 0.2s ease;
             }
             
             .selection-action:hover {
                 background: #f9fafb;
                 border-color: #9ca3af;
+                transform: translateY(-1px);
             }
-
-            /* ===== CONTRÔLES - ESPACES SUPPRIMÉS ===== */
-            .emails-controls {
+            
+            /* ===== BARRE DE CONTRÔLES ===== */
+            .emails-controls-bar {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 16px;
-                padding: 12px 16px;
+                gap: 20px;
+                padding: 20px;
                 background: white;
                 border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                margin: 0 4px 4px 4px; /* ESPACE RÉDUIT */
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                border-radius: 16px;
+                margin: 0 4px 20px 4px; /* Alignement avec le menu */
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
             
             /* Recherche */
+            .controls-search {
+                flex: 0 0 300px;
+            }
+            
             .search-container {
                 position: relative;
-                flex: 0 0 240px;
+                width: 100%;
             }
             
             .search-input {
                 width: 100%;
-                padding: 8px 12px 8px 32px;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 13px;
+                padding: 12px 16px 12px 44px;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                font-size: 14px;
                 background: #f9fafb;
-                transition: all 0.2s ease;
+                transition: all 0.3s ease;
             }
             
             .search-input:focus {
                 outline: none;
                 border-color: #3b82f6;
                 background: white;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
             }
             
             .search-icon {
                 position: absolute;
-                left: 12px;
+                left: 16px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 12px;
+                font-size: 14px;
             }
             
             .search-clear {
                 position: absolute;
-                right: 8px;
+                right: 12px;
                 top: 50%;
                 transform: translateY(-50%);
                 background: #ef4444;
                 color: white;
                 border: none;
-                width: 16px;
-                height: 16px;
+                width: 20px;
+                height: 20px;
                 border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 8px;
+                font-size: 10px;
+                transition: background 0.2s;
+            }
+            
+            .search-clear:hover {
+                background: #dc2626;
             }
             
             /* Modes de vue */
+            .controls-views {
+                flex: 1;
+                display: flex;
+                justify-content: center;
+            }
+            
             .view-buttons {
                 display: flex;
                 background: #f3f4f6;
-                border-radius: 8px;
-                padding: 2px;
-                gap: 1px;
+                border-radius: 12px;
+                padding: 4px;
             }
             
             .view-btn {
                 display: flex;
                 align-items: center;
-                gap: 4px;
-                padding: 6px 10px;
+                gap: 8px;
+                padding: 10px 16px;
                 border: none;
                 background: transparent;
                 color: #6b7280;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: 500;
                 white-space: nowrap;
             }
@@ -765,28 +781,28 @@ class PageManager {
             .view-btn.active {
                 background: white;
                 color: #1f2937;
-                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 font-weight: 600;
             }
             
             /* Actions */
-            .action-buttons {
+            .controls-actions {
+                flex: 0 0 auto;
                 display: flex;
-                gap: 8px;
-                flex-shrink: 0;
+                gap: 12px;
             }
             
             .action-btn {
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                padding: 8px 12px;
-                border: 1px solid transparent;
-                border-radius: 8px;
+                gap: 8px;
+                padding: 12px 20px;
+                border: 2px solid transparent;
+                border-radius: 12px;
                 cursor: pointer;
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: 600;
-                transition: all 0.2s ease;
+                transition: all 0.3s ease;
                 position: relative;
                 white-space: nowrap;
             }
@@ -794,16 +810,17 @@ class PageManager {
             .action-btn.primary {
                 background: linear-gradient(135deg, #3b82f6, #1d4ed8);
                 color: white;
-                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
             }
             
             .action-btn.primary:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
             }
             
             .action-btn.primary.with-selection {
                 background: linear-gradient(135deg, #10b981, #047857);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
                 animation: pulse 2s infinite;
             }
             
@@ -811,49 +828,54 @@ class PageManager {
                 background: white;
                 color: #374151;
                 border-color: #d1d5db;
-                padding: 8px;
             }
             
             .action-btn.secondary:hover {
                 background: #f9fafb;
                 border-color: #9ca3af;
+                transform: translateY(-1px);
             }
             
             .selection-count {
                 position: absolute;
-                top: -6px;
-                right: -6px;
+                top: -8px;
+                right: -8px;
                 background: #ef4444;
                 color: white;
-                font-size: 10px;
+                font-size: 12px;
                 font-weight: 700;
-                padding: 1px 4px;
-                border-radius: 8px;
-                min-width: 16px;
+                padding: 2px 6px;
+                border-radius: 10px;
+                min-width: 20px;
                 text-align: center;
                 border: 2px solid white;
             }
-
-            /* ===== FILTRES - ESPACES SUPPRIMÉS ===== */
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.02); }
+            }
+            
+            /* ===== FILTRES DE CATÉGORIES ===== */
             .category-filters {
                 display: flex;
-                gap: 6px;
-                margin: 0 4px 2px 4px; /* ESPACE RÉDUIT */
+                gap: 8px;
+                margin: 0 4px 20px 4px; /* Alignement avec le menu */
                 flex-wrap: wrap;
             }
             
             .category-filter {
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                padding: 6px 10px;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
+                gap: 8px;
+                padding: 10px 16px;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
                 background: white;
                 color: #374151;
                 cursor: pointer;
-                transition: all 0.2s ease;
-                font-size: 12px;
+                transition: all 0.3s ease;
+                font-size: 14px;
                 font-weight: 500;
             }
             
@@ -867,48 +889,47 @@ class PageManager {
                 background: var(--category-color, #3b82f6);
                 color: white;
                 border-color: var(--category-color, #3b82f6);
-                box-shadow: 0 2px 6px color-mix(in srgb, var(--category-color, #3b82f6) 25%, transparent);
+                box-shadow: 0 4px 12px color-mix(in srgb, var(--category-color, #3b82f6) 30%, transparent);
             }
             
             .filter-icon {
-                font-size: 14px;
+                font-size: 16px;
             }
             
             .filter-count {
                 background: rgba(0, 0, 0, 0.1);
-                padding: 1px 6px;
-                border-radius: 6px;
-                font-size: 10px;
+                padding: 2px 8px;
+                border-radius: 8px;
+                font-size: 12px;
                 font-weight: 700;
-                min-width: 16px;
+                min-width: 20px;
                 text-align: center;
             }
             
             .category-filter.active .filter-count {
                 background: rgba(255, 255, 255, 0.25);
             }
-
-            /* ===== CONTENU - ESPACES SUPPRIMÉS ===== */
+            
+            /* ===== CONTENU DES EMAILS ===== */
             .emails-content {
                 background: white;
                 border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                margin: 0 4px; /* ALIGNÉ AVEC LE MENU */
+                border-radius: 16px;
+                margin: 0 4px; /* Alignement avec le menu */
                 overflow: hidden;
                 min-height: 400px;
             }
             
-            /* ===== LISTE D'EMAILS - COMPACTE ===== */
             .emails-list {
                 display: flex;
                 flex-direction: column;
-                gap: 0; /* PAS D'ESPACES ENTRE EMAILS */
+                gap: 0; /* Suppression des espaces entre emails */
             }
             
             .email-card {
                 display: flex;
                 flex-direction: column;
-                padding: 12px 16px;
+                padding: 12px 16px; /* Padding réduit */
                 border-bottom: 1px solid #f3f4f6;
                 cursor: pointer;
                 transition: all 0.2s ease;
@@ -925,20 +946,20 @@ class PageManager {
             
             .email-card.selected {
                 background: #eff6ff;
-                border-left: 3px solid #3b82f6;
+                border-left: 3px solid #3b82f6; /* Bordure plus fine */
             }
             
             .email-card.has-task {
                 background: #f0fdf4;
-                border-left: 3px solid #10b981;
+                border-left: 3px solid #10b981; /* Bordure plus fine */
             }
             
-            /* Header de l'email (ligne 1) */
+            /* Header de l'email (ligne 1) - Plus compact */
             .email-header {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                margin-bottom: 4px;
+                gap: 8px; /* Gap réduit */
+                margin-bottom: 4px; /* Margin réduite */
             }
             
             .email-checkbox-container {
@@ -946,13 +967,13 @@ class PageManager {
             }
             
             .email-checkbox {
-                width: 16px;
+                width: 16px; /* Taille réduite */
                 height: 16px;
                 cursor: pointer;
             }
             
             .email-avatar {
-                width: 32px;
+                width: 32px; /* Taille réduite */
                 height: 32px;
                 border-radius: 50%;
                 display: flex;
@@ -960,7 +981,7 @@ class PageManager {
                 justify-content: center;
                 color: white;
                 font-weight: 700;
-                font-size: 14px;
+                font-size: 14px; /* Taille réduite */
                 flex-shrink: 0;
             }
             
@@ -972,26 +993,26 @@ class PageManager {
             .sender-name {
                 font-weight: 700;
                 color: #1f2937;
-                font-size: 13px;
-                line-height: 1.1;
+                font-size: 13px; /* Taille réduite */
+                line-height: 1.1; /* Line-height réduit */
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
             
             .sender-domain {
-                font-size: 10px;
+                font-size: 10px; /* Taille réduite */
                 color: #6b7280;
                 background: #f3f4f6;
-                padding: 1px 4px;
-                border-radius: 3px;
+                padding: 1px 4px; /* Padding réduit */
+                border-radius: 3px; /* Border radius réduit */
                 display: inline-block;
-                margin-top: 1px;
+                margin-top: 1px; /* Margin réduite */
             }
             
             .email-meta-badges {
                 display: flex;
-                gap: 4px;
+                gap: 4px; /* Gap réduit */
                 align-items: center;
                 flex-shrink: 0;
             }
@@ -1001,11 +1022,173 @@ class PageManager {
             .ai-badge {
                 display: flex;
                 align-items: center;
-                gap: 2px;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 9px;
+                gap: 2px; /* Gap réduit */
+                padding: 2px 6px; /* Padding réduit */
+                border-radius: 4px; /* Border radius réduit */
+                font-size: 9px; /* Taille réduite */
                 font-weight: 600;
+            }
+            
+            .email-date {
+                font-size: 11px; /* Taille réduite */
+                color: #6b7280;
+                font-weight: 500;
+                flex-shrink: 0;
+            }
+            
+            .email-actions {
+                display: flex;
+                gap: 2px; /* Gap réduit */
+                flex-shrink: 0;
+            }
+            
+            .email-action-btn {
+                width: 24px; /* Taille réduite */
+                height: 24px;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px; /* Border radius réduit */
+                background: white;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                font-size: 11px; /* Taille réduite */
+            }
+            
+            /* Contenu de l'email (ligne 2) - Plus compact */
+            .email-content {
+                margin-left: 56px; /* Ajusté pour la nouvelle taille d'avatar */
+                padding-left: 0;
+            }
+            
+            .email-subject {
+                font-size: 14px; /* Taille réduite */
+                font-weight: 600;
+                color: #1f2937;
+                line-height: 1.2; /* Line-height réduit */
+                margin-bottom: 2px; /* Margin réduite */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .email-preview {
+                font-size: 12px; /* Taille réduite */
+                color: #6b7280;
+                line-height: 1.3; /* Line-height réduit */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 1; /* Une seule ligne pour plus de compacité */
+                -webkit-box-orient: vertical;
+            }
+            
+            /* ===== VUE GROUPÉE COMPACTE ===== */
+            .emails-grouped {
+                display: flex;
+                flex-direction: column;
+                gap: 0; /* Suppression des espaces entre groupes */
+            }
+            
+            .email-group {
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .email-group:last-child {
+                border-bottom: none;
+            }
+            
+            .group-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 16px; /* Padding réduit */
+                background: #f8fafc;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .group-header:hover {
+                background: #f1f5f9;
+            }
+            
+            .email-group.expanded .group-header {
+                background: #eff6ff;
+                border-bottom-color: #bfdbfe;
+            }
+            
+            .group-info {
+                display: flex;
+                align-items: center;
+                gap: 8px; /* Gap réduit */
+            }
+            
+            .group-icon {
+                width: 32px; /* Taille réduite */
+                height: 32px;
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                color: white;
+                border-radius: 8px; /* Border radius réduit */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px; /* Taille réduite */
+            }
+            
+            .group-avatar {
+                width: 32px; /* Taille réduite */
+                height: 32px;
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border-radius: 8px; /* Border radius réduit */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px; /* Taille réduite */
+                font-weight: 700;
+            }
+            
+            .group-details {
+                display: flex;
+                flex-direction: column;
+                gap: 1px; /* Gap réduit */
+            }
+            
+            .group-name {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 14px; /* Taille réduite */
+            }
+            
+            .group-count {
+                font-size: 11px; /* Taille réduite */
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            .group-controls {
+                display: flex;
+                align-items: center;
+                gap: 8px; /* Gap réduit */
+            }
+            
+            .group-date {
+                font-size: 11px; /* Taille réduite */
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            .group-toggle {
+                color: #9ca3af;
+                transition: transform 0.3s ease;
+                font-size: 12px; /* Taille réduite */
+            }
+            
+            .email-group.expanded .group-toggle {
+                transform: rotate(180deg);
             }
             
             .deadline-badge.normal {
@@ -1039,37 +1222,9 @@ class PageManager {
                 color: #2563eb;
             }
             
-            .email-date {
-                font-size: 11px;
-                color: #6b7280;
-                font-weight: 500;
-                flex-shrink: 0;
-            }
-            
-            .email-actions {
-                display: flex;
-                gap: 2px;
-                flex-shrink: 0;
-            }
-            
-            .email-action-btn {
-                width: 24px;
-                height: 24px;
-                border: 1px solid #e5e7eb;
-                border-radius: 6px;
-                background: white;
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                font-size: 11px;
-            }
-            
             .email-action-btn:hover {
                 transform: translateY(-1px);
-                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); /* Shadow réduite */
             }
             
             .email-action-btn.task-done {
@@ -1093,144 +1248,6 @@ class PageManager {
                 background: #f3f4f6;
                 color: #374151;
                 border-color: #9ca3af;
-            }
-            
-            /* Contenu de l'email (ligne 2) */
-            .email-content {
-                margin-left: 56px;
-                padding-left: 0;
-            }
-            
-            .email-subject {
-                font-size: 14px;
-                font-weight: 600;
-                color: #1f2937;
-                line-height: 1.2;
-                margin-bottom: 2px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .email-preview {
-                font-size: 12px;
-                color: #6b7280;
-                line-height: 1.3;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                display: -webkit-box;
-                -webkit-line-clamp: 1;
-                -webkit-box-orient: vertical;
-            }
-            
-            /* ===== VUE GROUPÉE - COMPACTE ===== */
-            .emails-grouped {
-                display: flex;
-                flex-direction: column;
-                gap: 0; /* PAS D'ESPACES ENTRE GROUPES */
-            }
-            
-            .email-group {
-                border-bottom: 1px solid #f3f4f6;
-            }
-            
-            .email-group:last-child {
-                border-bottom: none;
-            }
-            
-            .group-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 10px 16px;
-                background: #f8fafc;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border-bottom: 1px solid #f3f4f6;
-            }
-            
-            .group-header:hover {
-                background: #f1f5f9;
-            }
-            
-            .email-group.expanded .group-header {
-                background: #eff6ff;
-                border-bottom-color: #bfdbfe;
-            }
-            
-            .group-info {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .group-icon {
-                width: 32px;
-                height: 32px;
-                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-                color: white;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-            }
-            
-            .group-avatar {
-                width: 32px;
-                height: 32px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-                font-weight: 700;
-            }
-            
-            .group-details {
-                display: flex;
-                flex-direction: column;
-                gap: 1px;
-            }
-            
-            .group-name {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 14px;
-            }
-            
-            .group-count {
-                font-size: 11px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .group-controls {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .group-date {
-                font-size: 11px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .group-toggle {
-                color: #9ca3af;
-                transition: transform 0.3s ease;
-                font-size: 12px;
-            }
-            
-            .email-group.expanded .group-toggle {
-                transform: rotate(180deg);
-            }
-            
-            .group-content {
-                background: white;
             }
             
             /* ===== ÉTAT VIDE ===== */
@@ -1290,19 +1307,19 @@ class PageManager {
                 51%, 100% { opacity: 0.5; }
             }
             
-            @keyframes pulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.02); }
-            }
-            
             /* ===== RESPONSIVE ===== */
             @media (max-width: 1024px) {
-                .emails-controls {
+                .emails-controls-bar {
                     flex-direction: column;
-                    gap: 12px;
+                    gap: 16px;
                 }
                 
-                .search-container {
+                .controls-search {
+                    flex: none;
+                    width: 100%;
+                }
+                
+                .controls-views {
                     flex: none;
                     width: 100%;
                 }
@@ -1312,19 +1329,26 @@ class PageManager {
                     justify-content: space-evenly;
                 }
                 
-                .action-buttons {
+                .controls-actions {
+                    flex: none;
                     width: 100%;
                     justify-content: center;
                 }
             }
             
             @media (max-width: 768px) {
-                .explanation-title {
-                    font-size: 12px;
+                .page-title {
+                    font-size: 24px;
                 }
                 
-                .emails-controls {
-                    padding: 8px 12px;
+                .header-title-section {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 12px;
+                }
+                
+                .emails-controls-bar {
+                    padding: 16px;
                 }
                 
                 .view-btn span {
@@ -1336,7 +1360,8 @@ class PageManager {
                 }
                 
                 .category-filters {
-                    gap: 4px;
+                    justify-content: center;
+                    gap: 6px;
                 }
                 
                 .filter-name {
@@ -1344,39 +1369,39 @@ class PageManager {
                 }
                 
                 .email-card {
-                    padding: 8px 12px;
+                    padding: 12px 16px;
                 }
                 
                 .email-header {
-                    gap: 6px;
+                    gap: 8px;
                 }
                 
                 .email-avatar {
-                    width: 28px;
-                    height: 28px;
-                    font-size: 12px;
+                    width: 32px;
+                    height: 32px;
+                    font-size: 14px;
                 }
                 
                 .email-content {
-                    margin-left: 42px;
+                    margin-left: 50px;
                 }
                 
                 .sender-name {
-                    font-size: 12px;
+                    font-size: 14px;
                 }
                 
                 .email-subject {
-                    font-size: 13px;
+                    font-size: 14px;
                 }
                 
                 .email-preview {
-                    font-size: 11px;
+                    font-size: 13px;
                 }
                 
                 .email-action-btn {
-                    width: 20px;
-                    height: 20px;
-                    font-size: 9px;
+                    width: 28px;
+                    height: 28px;
+                    font-size: 12px;
                 }
             }
             
@@ -1392,9 +1417,8 @@ class PageManager {
     }
 
     // =====================================
-    // UTILITY METHODS (inchangées)
+    // UTILITY METHODS
     // =====================================
-    
     generateGradient(text) {
         let hash = 0;
         for (let i = 0; i < text.length; i++) {
@@ -1533,67 +1557,8 @@ class PageManager {
                preview.includes(search);
     }
 
-    getCategoryInfo(categoryId) {
-        if (categoryId === 'other') {
-            return { name: 'Autre', icon: '📌', color: '#6B7280' };
-        }
-        
-        const category = window.categoryManager?.getCategory(categoryId);
-        if (category) {
-            return {
-                name: category.name,
-                icon: category.icon,
-                color: category.color
-            };
-        }
-        
-        return { name: categoryId, icon: '📂', color: '#6B7280' };
-    }
-
-    getCategoryDisplayName(categoryId) {
-        if (categoryId === 'all') return 'Tous';
-        if (categoryId === 'other') return 'Autre';
-        
-        const category = window.categoryManager?.getCategory(categoryId);
-        return category ? category.name : categoryId;
-    }
-
-    getVisibleEmails() {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
-        let filteredEmails = emails;
-        
-        if (this.currentCategory !== 'all') {
-            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
-        }
-        
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        return filteredEmails;
-    }
-
-    getEmailById(emailId) {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
-        return emails.find(e => e.id === emailId);
-    }
-
-    getTemporaryEmails() {
-        return this.temporaryEmailStorage || [];
-    }
-
-    selectAllVisible() {
-        const emails = this.getVisibleEmails();
-        emails.forEach(email => {
-            this.selectedEmails.add(email.id);
-        });
-        
-        this.renderEmails(document.getElementById('pageContent'));
-        window.uiManager.showToast(`${emails.length} emails sélectionnés`, 'success');
-    }
-
     // =====================================
-    // TASK CREATION METHODS (inchangées)
+    // TASK CREATION METHODS
     // =====================================
     async createTasksFromSelection() {
         if (this.selectedEmails.size === 0) {
@@ -1652,6 +1617,30 @@ class PageManager {
         
         emailsToProcess.forEach(email => this.selectedEmails.add(email.id));
         await this.createTasksFromSelection();
+    }
+
+    getVisibleEmails() {
+        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        let filteredEmails = emails;
+        
+        if (this.currentCategory !== 'all') {
+            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+        }
+        
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        return filteredEmails;
+    }
+
+    getEmailById(emailId) {
+        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        return emails.find(e => e.id === emailId);
+    }
+
+    getTemporaryEmails() {
+        return this.temporaryEmailStorage || [];
     }
 
     buildTaskDataFromAnalysis(email, analysis) {
@@ -1730,16 +1719,283 @@ class PageManager {
     }
 
     // =====================================
-    // MODAL METHODS (simplifiées pour l'espace)
+    // MODAL METHODS
     // =====================================
     async showTaskCreationModal(emailId) {
-        // Modal simplifiée - implémentation complète identique à la version précédente
-        window.uiManager.showToast('Fonctionnalité de modal à implémenter', 'info');
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        let analysis;
+        try {
+            window.uiManager.showLoading('Analyse de l\'email...');
+            analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email, { useApi: true });
+            this.aiAnalysisResults.set(emailId, analysis);
+            window.uiManager.hideLoading();
+        } catch (error) {
+            window.uiManager.hideLoading();
+            window.uiManager.showToast('Erreur d\'analyse', 'error');
+            return;
+        }
+
+        const uniqueId = 'task_creation_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; 
+                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Créer une tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        ${this.buildTaskCreationForm(email, analysis)}
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Annuler
+                        </button>
+                        <button onclick="window.pageManager.createTaskFromModal('${emailId}'); document.getElementById('${uniqueId}').remove();"
+                                style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-check"></i> Créer la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    buildTaskCreationForm(email, analysis) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const senderDomain = senderEmail.split('@')[1] || '';
+        
+        const enhancedTitle = analysis.mainTask.title.includes(senderName) ? 
+            analysis.mainTask.title : 
+            `${analysis.mainTask.title} - ${senderName}`;
+        
+        return `
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-robot" style="color: #0ea5e9; font-size: 20px;"></i>
+                    <span style="color: #0c4a6e; font-weight: 600;">Analyse intelligente par Claude AI</span>
+                </div>
+                
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 48px; height: 48px; background: ${this.generateGradient(senderName)}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
+                        ${senderName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #1f2937; font-size: 16px;">${senderName}</div>
+                        <div style="color: #6b7280; font-size: 14px;">${senderEmail}</div>
+                        <div style="color: #9ca3af; font-size: 12px;">@${senderDomain}</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Titre de la tâche</label>
+                    <input type="text" id="task-title" 
+                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
+                           value="${enhancedTitle}" 
+                           onfocus="this.style.borderColor='#3b82f6'"
+                           onblur="this.style.borderColor='#e5e7eb'" />
+                </div>
+                
+                <div>
+                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Description</label>
+                    <textarea id="task-description" 
+                              style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px; transition: border-color 0.2s;"
+                              onfocus="this.style.borderColor='#3b82f6'"
+                              onblur="this.style.borderColor='#e5e7eb'"
+                              rows="4">${analysis.mainTask.description || analysis.summary || ''}</textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Priorité</label>
+                        <select id="task-priority" 
+                                style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
+                                onfocus="this.style.borderColor='#3b82f6'"
+                                onblur="this.style.borderColor='#e5e7eb'">
+                            <option value="urgent" ${analysis.mainTask.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
+                            <option value="high" ${analysis.mainTask.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="medium" ${analysis.mainTask.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                            <option value="low" ${analysis.mainTask.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Date d'échéance</label>
+                        <input type="date" id="task-duedate" 
+                               style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
+                               onfocus="this.style.borderColor='#3b82f6'"
+                               onblur="this.style.borderColor='#e5e7eb'"
+                               value="${analysis.mainTask.dueDate || ''}" />
+                    </div>
+                </div>
+                
+                <div>
+                    <button onclick="window.pageManager.toggleEmailContext()" 
+                            style="width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; transition: background 0.2s;"
+                            onmouseover="this.style.background='#f1f5f9'"
+                            onmouseout="this.style.background='#f8fafc'">
+                        <i class="fas fa-chevron-right" id="context-toggle-icon" style="transition: transform 0.2s;"></i>
+                        <span>Afficher le contenu original de l'email</span>
+                    </button>
+                    <div id="email-context-content" style="display: none; margin-top: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="margin-bottom: 4px;"><strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;</div>
+                            <div style="margin-bottom: 4px;"><strong>Date:</strong> ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</div>
+                            <div><strong>Sujet:</strong> ${email.subject || 'Sans sujet'}</div>
+                        </div>
+                        <div style="max-height: 200px; overflow-y: auto; font-size: 14px; line-height: 1.5; color: #374151;">
+                            ${this.getEmailContent(email)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    toggleEmailContext() {
+        const content = document.getElementById('email-context-content');
+        const icon = document.getElementById('context-toggle-icon');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-right');
+            icon.classList.add('fa-chevron-down');
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-right');
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    async createTaskFromModal(emailId) {
+        const email = this.getEmailById(emailId);
+        const analysis = this.aiAnalysisResults.get(emailId);
+        
+        if (!email || !analysis) {
+            window.uiManager.showToast('Données manquantes', 'error');
+            return;
+        }
+
+        const title = document.getElementById('task-title')?.value;
+        const description = document.getElementById('task-description')?.value;
+        const priority = document.getElementById('task-priority')?.value;
+        const dueDate = document.getElementById('task-duedate')?.value;
+
+        if (!title) {
+            window.uiManager.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        try {
+            const taskData = this.buildTaskDataFromAnalysis(email, {
+                ...analysis,
+                mainTask: {
+                    ...analysis.mainTask,
+                    title,
+                    description,
+                    priority,
+                    dueDate
+                }
+            });
+
+            const task = window.taskManager.createTaskFromEmail(taskData, email);
+            this.createdTasks.set(emailId, task.id);
+            
+            window.taskManager.saveTasks();
+            window.uiManager.showToast('Tâche créée avec succès', 'success');
+            
+            const emailsContent = document.getElementById('emailsContent');
+            if (emailsContent) {
+                emailsContent.innerHTML = this.renderEmailsList();
+            }
+            
+        } catch (error) {
+            console.error('Error creating task:', error);
+            window.uiManager.showToast('Erreur lors de la création', 'error');
+        }
     }
 
     showEmailModal(emailId) {
-        // Modal simplifiée - implémentation complète identique à la version précédente
-        window.uiManager.showToast('Fonctionnalité de modal à implémenter', 'info');
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        const uniqueId = 'email_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 16px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Email Complet</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; color: #374151; min-width: 60px;">De:</span>
+                                <span style="color: #1f2937;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
+                            </div>
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Date:</span>
+                                <span style="color: #1f2937;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Sujet:</span>
+                                <span style="color: #1f2937; font-weight: 600;">${email.subject || 'Sans sujet'}</span>
+                            </div>
+                        </div>
+                        <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; max-height: 400px; overflow-y: auto; line-height: 1.6; color: #374151;">
+                            ${this.getEmailContent(email)}
+                        </div>
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Fermer
+                        </button>
+                        ${!this.createdTasks.has(emailId) ? `
+                            <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManager.showTaskCreationModal('${emailId}');"
+                                    style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <i class="fas fa-tasks"></i> Créer une tâche
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    getEmailContent(email) {
+        if (email.body?.content) {
+            return email.body.content;
+        }
+        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
     }
 
     openCreatedTask(emailId) {
@@ -1755,8 +2011,50 @@ class PageManager {
         });
     }
 
+    selectAllVisible() {
+        const emails = this.getVisibleEmails();
+        emails.forEach(email => {
+            this.selectedEmails.add(email.id);
+        });
+        
+        this.renderEmails(document.getElementById('pageContent'));
+        window.uiManager.showToast(`${emails.length} emails sélectionnés`, 'success');
+    }
+
+    exportEmails() {
+        const emails = this.getVisibleEmails();
+        if (emails.length === 0) {
+            window.uiManager.showToast('Aucun email à exporter', 'warning');
+            return;
+        }
+        
+        const csvContent = [
+            ['Expéditeur', 'Nom', 'Sujet', 'Date', 'Catégorie', 'Avec pièces jointes'].join(','),
+            ...emails.map(email => [
+                `"${email.from?.emailAddress?.address || ''}"`,
+                `"${email.from?.emailAddress?.name || ''}"`,
+                `"${email.subject || ''}"`,
+                new Date(email.receivedDateTime).toLocaleDateString('fr-FR'),
+                email.category || 'other',
+                email.hasAttachments ? 'Oui' : 'Non'
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.uiManager.showToast('Export terminé', 'success');
+    }
+
     // =====================================
-    // OTHER PAGES (simplifiées)
+    // OTHER PAGES (Dashboard, Scanner, Tasks, Categories, Settings)
     // =====================================
     async renderDashboard(container) {
         const scanData = this.lastScanData;
@@ -2173,4 +2471,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v10.1 loaded - Interface optimisée avec espaces supprimés');
+console.log('✅ PageManager v10.0 loaded - Interface moderne optimisée avec affichage parfait');
