@@ -1083,6 +1083,8 @@ class TasksView {
         return `
             <div class="tasks-clean-container">
                 <div class="tasks-table-header">
+                    <div class="col-checkbox"></div>
+                    <div class="col-priority"></div>
                     <div class="col-sender">Destinataire</div>
                     <div class="col-title">Titre</div>
                     <div class="col-deadline">Échéance</div>
@@ -1512,8 +1514,29 @@ class TasksView {
                 ${task.emailContent && task.emailContent.length > 100 ? `
                     <div class="details-section-clean">
                         <h3><i class="fas fa-envelope-open"></i> Contenu de l'email</h3>
-                        <div class="email-content-clean">
-                            ${this.formatEmailContent(task.emailContent)}
+                        <div class="email-content-section-clean">
+                            ${task.emailHtmlContent ? `
+                                <div class="email-content-tabs-clean">
+                                    <button class="tab-btn-clean active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
+                                        <i class="fas fa-eye"></i> Vue formatée
+                                    </button>
+                                    <button class="tab-btn-clean" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
+                                        <i class="fas fa-code"></i> Vue texte
+                                    </button>
+                                </div>
+                                <div class="email-content-box-clean">
+                                    <div id="email-html-${task.id}" class="email-content-view-clean active">
+                                        ${task.emailHtmlContent}
+                                    </div>
+                                    <div id="email-text-${task.id}" class="email-content-view-clean" style="display: none;">
+                                        ${this.formatEmailContent(task.emailContent)}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="email-content-box-clean">
+                                    ${this.formatEmailContent(task.emailContent)}
+                                </div>
+                            `}
                         </div>
                     </div>
                 ` : ''}
@@ -1619,7 +1642,32 @@ class TasksView {
         document.body.style.overflow = 'auto';
     }
 
-    showCreateModal() {
+    // NOUVELLE MÉTHODE POUR GÉRER LES ONGLETS EMAIL
+    switchEmailTab(tabType, taskId) {
+        // Gérer les onglets
+        const modalId = document.querySelector(`#email-html-${taskId}`)?.closest('[id^="task_details_modal_"]')?.id;
+        if (!modalId) return;
+        
+        const tabs = document.querySelectorAll(`#${modalId} .tab-btn-clean`);
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Gérer les contenus
+        const htmlView = document.getElementById(`email-html-${taskId}`);
+        const textView = document.getElementById(`email-text-${taskId}`);
+        
+        if (tabType === 'html') {
+            htmlView.style.display = 'block';
+            htmlView.classList.add('active');
+            textView.style.display = 'none';
+            textView.classList.remove('active');
+        } else {
+            htmlView.style.display = 'none';
+            htmlView.classList.remove('active');
+            textView.style.display = 'block';
+            textView.classList.add('active');
+        }
+    }
         const uniqueId = 'create_task_modal_' + Date.now();
         
         const modalHTML = `
@@ -2257,9 +2305,9 @@ class TasksView {
             
             .tasks-table-header {
                 display: grid;
-                grid-template-columns: 200px 1fr 120px 100px 100px;
-                gap: 16px;
-                padding: 20px 24px;
+                grid-template-columns: 24px 4px 200px 1fr 120px 100px 100px;
+                gap: 12px;
+                padding: 16px 20px;
                 background: linear-gradient(135deg, #f8fafc, #e2e8f0);
                 border-bottom: 2px solid #e5e7eb;
                 font-weight: 700;
@@ -2267,6 +2315,38 @@ class TasksView {
                 color: #374151;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
+                align-items: center;
+            }
+            
+            .tasks-table-header .col-checkbox {
+                grid-column: 1;
+            }
+            
+            .tasks-table-header .col-priority {
+                grid-column: 2;
+            }
+            
+            .tasks-table-header .col-sender {
+                grid-column: 3;
+            }
+            
+            .tasks-table-header .col-title {
+                grid-column: 4;
+            }
+            
+            .tasks-table-header .col-deadline {
+                grid-column: 5;
+                text-align: center;
+            }
+            
+            .tasks-table-header .col-type {
+                grid-column: 6;
+                text-align: center;
+            }
+            
+            .tasks-table-header .col-actions {
+                grid-column: 7;
+                text-align: center;
             }
             
             .task-row-clean {
@@ -2793,7 +2873,98 @@ class TasksView {
                 line-height: 1.4;
             }
             
+            /* CONTENU EMAIL AVEC ONGLETS */
+            .email-content-section-clean {
+                padding: 16px 20px;
+            }
+            
+            .email-content-tabs-clean {
+                display: flex;
+                gap: 5px;
+                margin-bottom: 16px;
+                background: #f3f4f6;
+                padding: 5px;
+                border-radius: 8px;
+            }
+            
+            .tab-btn-clean {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: transparent;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #6b7280;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .tab-btn-clean.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            
+            .tab-btn-clean:hover:not(.active) {
+                background: rgba(255,255,255,0.5);
+                color: #374151;
+            }
+            
+            .email-content-box-clean {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                max-height: 500px;
+                overflow-y: auto;
+            }
+            
+            .email-content-view-clean {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+            
+            .email-content-view-clean.active {
+                display: block;
+            }
+            
+            .email-content-viewer {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 100%;
+            }
+            
             .email-content-clean .email-original {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+                white-space: pre-wrap;
+                background: white;
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid #e5e7eb;
+            }
+                max-width: 100%;
+                height: auto;
+                border-radius: 4px;
+            }
+            
+            .email-content-viewer table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            
+            .email-content-viewer td, .email-content-viewer th {
+                padding: 8px;
+                border: 1px solid #e5e7eb;
+            }
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 font-size: 14px;
                 line-height: 1.6;
