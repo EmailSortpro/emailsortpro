@@ -320,76 +320,172 @@ class PageManager {
         // Générer couleur pour l'avatar
         const avatarColor = this.generateAvatarColor(senderName);
         
-        // Extraire le premier mot du sujet pour un aperçu court
-        const subjectPreview = (email.subject || 'Sans sujet').substring(0, 50);
-        const bodySnippet = (email.bodyPreview || '').substring(0, 80);
+        // Traitement intelligent du sujet
+        const rawSubject = email.subject || 'Sans sujet';
+        const cleanSubject = this.cleanSubject(rawSubject);
+        
+        // Extraction d'informations business
+        const businessInfo = this.extractBusinessInfo(email);
         
         return `
             <div class="email-row ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <!-- Checkbox -->
-                <div class="email-checkbox">
+                <!-- Checkbox compact -->
+                <div class="email-check">
                     <input type="checkbox" 
                            ${isSelected ? 'checked' : ''}
                            onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
                 </div>
                 
-                <!-- Avatar + Sender Info en une colonne compacte -->
-                <div class="sender-column">
+                <!-- Avatar + Sender compact -->
+                <div class="sender-info">
                     <div class="sender-avatar" style="background: ${avatarColor}">
-                        ${senderName.charAt(0).toUpperCase()}
+                        ${this.getCompanyInitials(senderDomain)}
                     </div>
-                    <div class="sender-details">
-                        <div class="sender-name">${this.escapeHtml(senderName)}</div>
-                        <div class="sender-domain">@${senderDomain}</div>
-                    </div>
-                </div>
-                
-                <!-- Contenu principal de l'email -->
-                <div class="email-content-main">
-                    <div class="email-subject-line">
-                        <span class="subject-text">${this.escapeHtml(subjectPreview)}</span>
-                        ${email.hasAttachments ? '<i class="fas fa-paperclip attachment-icon"></i>' : ''}
-                        ${email.importance === 'high' ? '<i class="fas fa-exclamation priority-icon"></i>' : ''}
-                    </div>
-                    <div class="email-preview-line">
-                        ${this.escapeHtml(bodySnippet)}${bodySnippet.length >= 80 ? '...' : ''}
+                    <div class="sender-text">
+                        <div class="sender-company">${this.getCompanyName(senderDomain)}</div>
+                        <div class="sender-person">${this.getPersonName(senderName)}</div>
                     </div>
                 </div>
                 
-                <!-- Status et Date -->
-                <div class="email-meta-column">
-                    <div class="email-time">
-                        ${this.formatEmailDate(email.receivedDateTime)}
+                <!-- Contenu business -->
+                <div class="email-business-content">
+                    <div class="email-subject-clean">
+                        ${this.escapeHtml(cleanSubject)}
+                        ${businessInfo.urgency ? `<span class="urgency-tag">${businessInfo.urgency}</span>` : ''}
+                        ${email.hasAttachments ? '<i class="fas fa-paperclip attach-icon"></i>' : ''}
                     </div>
-                    ${hasTask ? '<div class="task-indicator"><i class="fas fa-check-circle"></i> Tâche</div>' : ''}
+                    <div class="business-tags">
+                        ${businessInfo.tags.map(tag => `<span class="biz-tag">${tag}</span>`).join('')}
+                    </div>
                 </div>
                 
-                <!-- Actions rapides (apparaissent au hover) -->
-                <div class="email-actions-quick" onclick="event.stopPropagation()">
+                <!-- Métrics business -->
+                <div class="email-metrics">
+                    <div class="metric-time">${this.formatBusinessTime(email.receivedDateTime)}</div>
+                    ${businessInfo.priority ? `<div class="metric-priority ${businessInfo.priority}">${this.getPriorityIcon(businessInfo.priority)}</div>` : ''}
+                    ${hasTask ? '<div class="metric-task"><i class="fas fa-check-circle"></i></div>' : ''}
+                </div>
+                
+                <!-- Actions business -->
+                <div class="email-biz-actions" onclick="event.stopPropagation()">
                     ${!hasTask ? `
-                        <button class="quick-btn create-task" 
+                        <button class="biz-btn task-btn" 
                                 onclick="window.pageManager.showTaskCreationModal('${email.id}')"
-                                title="Créer une tâche">
+                                title="Créer tâche">
                             <i class="fas fa-plus"></i>
                         </button>
                     ` : `
-                        <button class="quick-btn view-task" 
+                        <button class="biz-btn done-btn" 
                                 onclick="window.pageManager.openCreatedTask('${email.id}')"
-                                title="Voir la tâche">
+                                title="Tâche créée">
                             <i class="fas fa-check"></i>
                         </button>
                     `}
-                    <button class="quick-btn view-email" 
-                            onclick="window.pageManager.showEmailModal('${email.id}')"
-                            title="Ouvrir l'email">
-                        <i class="fas fa-external-link-alt"></i>
-                    </button>
                 </div>
             </div>
         `;
+    }
+
+    // Méthodes utilitaires business
+    cleanSubject(subject) {
+        // Supprime les préfixes courants
+        return subject
+            .replace(/^(RE|FW|FWD|TR):\s*/gi, '')
+            .replace(/^\[.*?\]\s*/, '')
+            .replace(/^(Urgent|URGENT):\s*/gi, '')
+            .trim();
+    }
+
+    extractBusinessInfo(email) {
+        const subject = (email.subject || '').toLowerCase();
+        const body = (email.bodyPreview || '').toLowerCase();
+        const content = subject + ' ' + body;
+        
+        const info = {
+            urgency: null,
+            priority: 'normal',
+            tags: []
+        };
+
+        // Détection d'urgence
+        if (/urgent|asap|immédiat|critique/i.test(content)) {
+            info.urgency = 'URGENT';
+            info.priority = 'high';
+        }
+
+        // Tags business
+        if (/réunion|meeting|rdv|rendez-vous/i.test(content)) info.tags.push('Réunion');
+        if (/facture|invoice|paiement|payment/i.test(content)) info.tags.push('Finance');
+        if (/contrat|contract|accord/i.test(content)) info.tags.push('Contrat');
+        if (/rapport|report|analyse/i.test(content)) info.tags.push('Rapport');
+        if (/projet|project/i.test(content)) info.tags.push('Projet');
+        if /(livraison|delivery|commande|order)/i.test(content)) info.tags.push('Commande');
+
+        // Priorité basée sur l'importance et le contenu
+        if (email.importance === 'high' || /urgent|critique/i.test(content)) {
+            info.priority = 'high';
+        } else if (/important|priorité/i.test(content)) {
+            info.priority = 'medium';
+        }
+
+        return info;
+    }
+
+    getCompanyName(domain) {
+        const companyMap = {
+            'gmail.com': 'Gmail',
+            'outlook.com': 'Outlook', 
+            'microsoft.com': 'Microsoft',
+            'google.com': 'Google',
+            'apple.com': 'Apple',
+            'amazon.com': 'Amazon',
+            'showroomprive.com': 'Showroomprivé'
+        };
+        
+        return companyMap[domain] || domain?.split('.')[0]?.charAt(0).toUpperCase() + domain?.split('.')[0]?.slice(1) || 'Inconnu';
+    }
+
+    getCompanyInitials(domain) {
+        if (!domain) return '?';
+        const company = this.getCompanyName(domain);
+        return company.length > 1 ? company.substring(0, 2).toUpperCase() : company.charAt(0).toUpperCase();
+    }
+
+    getPersonName(fullName) {
+        if (!fullName || fullName.includes('@')) return '';
+        const parts = fullName.split(' ');
+        if (parts.length > 1) {
+            return `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
+        }
+        return parts[0];
+    }
+
+    formatBusinessTime(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 3600000) { // < 1h
+            return `${Math.floor(diff / 60000)}min`;
+        } else if (diff < 86400000) { // < 24h
+            return `${Math.floor(diff / 3600000)}h`;
+        } else if (diff < 604800000) { // < 7j
+            return `${Math.floor(diff / 86400000)}j`;
+        } else {
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+    }
+
+    getPriorityIcon(priority) {
+        switch(priority) {
+            case 'high': return '🔴';
+            case 'medium': return '🟡';
+            default: return '';
+        }
     }
 
     renderGroupedView(emails, groupMode) {
@@ -869,7 +965,7 @@ class PageManager {
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
             
-            /* ===== LIGNE D'EMAIL MODERNE ET CLAIRE ===== */
+            /* ===== AFFICHAGE BUSINESS OPTIMISÉ ===== */
             .emails-flat-list {
                 display: flex;
                 flex-direction: column;
@@ -879,13 +975,14 @@ class PageManager {
             .email-row {
                 display: flex;
                 align-items: center;
-                gap: 16px;
-                padding: 16px 20px;
+                gap: 12px;
+                padding: 10px 16px;
                 border-bottom: 1px solid #f1f5f9;
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: all 0.15s ease;
                 background: white;
-                min-height: 72px;
+                min-height: 54px;
+                max-height: 54px;
                 position: relative;
             }
             
@@ -895,238 +992,296 @@ class PageManager {
             
             .email-row:hover {
                 background: #f8fafc;
-                border-left: 3px solid #e2e8f0;
-                padding-left: 17px;
+                border-left: 2px solid #e2e8f0;
+                padding-left: 14px;
             }
             
             .email-row.selected {
                 background: #eff6ff;
-                border-left: 4px solid #3b82f6;
-                padding-left: 16px;
+                border-left: 3px solid #3b82f6;
+                padding-left: 13px;
             }
             
             .email-row.has-task {
                 background: #f0fdf4;
-                border-left: 4px solid #10b981;
-                padding-left: 16px;
+                border-left: 3px solid #10b981;
+                padding-left: 13px;
             }
             
-            /* ===== CHECKBOX ===== */
-            .email-checkbox {
+            /* ===== CHECKBOX COMPACT ===== */
+            .email-check {
                 flex-shrink: 0;
-                margin-right: 4px;
+                width: 20px;
             }
             
-            .email-checkbox input {
-                width: 18px;
-                height: 18px;
+            .email-check input {
+                width: 16px;
+                height: 16px;
                 cursor: pointer;
                 accent-color: #3b82f6;
-                border-radius: 4px;
             }
             
-            /* ===== COLONNE EXPÉDITEUR COMPACTE ===== */
-            .sender-column {
+            /* ===== SENDER INFO BUSINESS ===== */
+            .sender-info {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                flex: 0 0 200px;
+                gap: 8px;
+                flex: 0 0 140px;
                 min-width: 0;
             }
             
             .sender-avatar {
-                width: 44px;
-                height: 44px;
-                border-radius: 10px;
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
                 font-weight: 700;
-                font-size: 16px;
+                font-size: 11px;
                 flex-shrink: 0;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255,255,255,0.2);
             }
             
-            .sender-details {
+            .sender-text {
                 min-width: 0;
                 flex: 1;
             }
             
-            .sender-name {
+            .sender-company {
                 font-weight: 600;
                 color: #1f2937;
-                font-size: 14px;
+                font-size: 12px;
+                line-height: 1.2;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .sender-person {
+                font-size: 10px;
+                color: #6b7280;
+                font-weight: 500;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                margin-top: 1px;
+            }
+            
+            /* ===== CONTENU BUSINESS ===== */
+            .email-business-content {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .email-subject-clean {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #1f2937;
                 line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                margin-bottom: 2px;
             }
             
-            .sender-domain {
+            .urgency-tag {
+                background: #fef2f2;
+                color: #dc2626;
+                font-size: 9px;
+                font-weight: 700;
+                padding: 1px 4px;
+                border-radius: 3px;
+                border: 1px solid #fecaca;
+                animation: blink-urgent 1.5s infinite;
+            }
+            
+            .attach-icon {
+                color: #f59e0b;
+                font-size: 11px;
+            }
+            
+            .business-tags {
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+            }
+            
+            .biz-tag {
+                background: #f3f4f6;
+                color: #4b5563;
+                font-size: 9px;
+                font-weight: 600;
+                padding: 1px 5px;
+                border-radius: 3px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            
+            /* ===== MÉTRIQUES BUSINESS ===== */
+            .email-metrics {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-shrink: 0;
+                min-width: 60px;
+                justify-content: flex-end;
+            }
+            
+            .metric-time {
                 font-size: 11px;
                 color: #6b7280;
                 font-weight: 500;
-                background: #f3f4f6;
-                padding: 2px 6px;
-                border-radius: 4px;
-                display: inline-block;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                max-width: 100%;
+                font-variant-numeric: tabular-nums;
             }
             
-            /* ===== CONTENU PRINCIPAL DE L'EMAIL ===== */
-            .email-content-main {
-                flex: 1;
-                min-width: 0;
-                padding-right: 12px;
-            }
-            
-            .email-subject-line {
+            .metric-priority {
+                font-size: 12px;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                margin-bottom: 4px;
+                justify-content: center;
+                width: 16px;
+                height: 16px;
             }
             
-            .subject-text {
-                font-size: 15px;
-                font-weight: 600;
-                color: #1f2937;
-                line-height: 1.3;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex: 1;
-                min-width: 0;
+            .metric-priority.high {
+                animation: pulse-high 2s infinite;
             }
             
-            .attachment-icon {
-                color: #f59e0b;
+            .metric-task {
+                color: #10b981;
                 font-size: 12px;
-                flex-shrink: 0;
-            }
-            
-            .priority-icon {
-                color: #ef4444;
-                font-size: 12px;
-                flex-shrink: 0;
-                animation: pulse-priority 2s infinite;
-            }
-            
-            .email-preview-line {
-                font-size: 13px;
-                color: #6b7280;
-                line-height: 1.4;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                margin: 0;
-            }
-            
-            /* ===== COLONNE MÉTADONNÉES ===== */
-            .email-meta-column {
-                display: flex;
-                flex-direction: column;
-                align-items: flex-end;
-                gap: 4px;
-                flex-shrink: 0;
-                min-width: 80px;
-            }
-            
-            .email-time {
-                font-size: 12px;
-                color: #6b7280;
-                font-weight: 500;
-                text-align: right;
-            }
-            
-            .task-indicator {
                 display: flex;
                 align-items: center;
-                gap: 4px;
-                font-size: 10px;
-                color: #16a34a;
-                font-weight: 600;
-                background: #dcfce7;
-                padding: 2px 6px;
-                border-radius: 6px;
-                white-space: nowrap;
+                justify-content: center;
+                width: 16px;
+                height: 16px;
             }
             
-            /* ===== ACTIONS RAPIDES ===== */
-            .email-actions-quick {
+            /* ===== ACTIONS BUSINESS ===== */
+            .email-biz-actions {
                 display: flex;
-                gap: 4px;
+                gap: 2px;
                 flex-shrink: 0;
                 opacity: 0;
                 transition: opacity 0.2s ease;
-                margin-left: 8px;
+                margin-left: 4px;
             }
             
-            .email-row:hover .email-actions-quick {
+            .email-row:hover .email-biz-actions {
                 opacity: 1;
             }
             
-            .quick-btn {
-                width: 28px;
-                height: 28px;
+            .biz-btn {
+                width: 24px;
+                height: 24px;
                 border: 1px solid #e5e7eb;
-                border-radius: 6px;
+                border-radius: 4px;
                 background: white;
                 color: #6b7280;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s ease;
-                font-size: 11px;
+                transition: all 0.15s ease;
+                font-size: 10px;
             }
             
-            .quick-btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            .biz-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
             
-            .quick-btn.create-task {
+            .biz-btn.task-btn {
                 border-color: #3b82f6;
                 color: #3b82f6;
             }
             
-            .quick-btn.create-task:hover {
+            .biz-btn.task-btn:hover {
                 background: #3b82f6;
                 color: white;
             }
             
-            .quick-btn.view-task {
-                border-color: #16a34a;
-                color: #16a34a;
-                background: #dcfce7;
+            .biz-btn.done-btn {
+                border-color: #10b981;
+                color: #10b981;
+                background: #ecfdf5;
             }
             
-            .quick-btn.view-task:hover {
-                background: #16a34a;
+            .biz-btn.done-btn:hover {
+                background: #10b981;
                 color: white;
             }
             
-            .quick-btn.view-email:hover {
-                background: #f3f4f6;
-                color: #374151;
-                border-color: #9ca3af;
+            /* ===== ANIMATIONS BUSINESS ===== */
+            @keyframes blink-urgent {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.6; }
             }
             
-            /* ===== ANIMATIONS ===== */
-            @keyframes pulse-priority {
-                0%, 100% { 
-                    opacity: 1; 
-                    transform: scale(1);
+            @keyframes pulse-high {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+            }
+            
+            /* ===== RESPONSIVENESS ENTERPRISE ===== */
+            @media (max-width: 1200px) {
+                .sender-info {
+                    flex: 0 0 120px;
                 }
-                50% { 
-                    opacity: 0.7; 
-                    transform: scale(1.1);
+                
+                .sender-company {
+                    font-size: 11px;
+                }
+                
+                .sender-person {
+                    font-size: 9px;
+                }
+                
+                .business-tags {
+                    max-width: 200px;
+                    overflow: hidden;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .email-row {
+                    padding: 8px 12px;
+                    gap: 8px;
+                    min-height: 48px;
+                    max-height: 48px;
+                }
+                
+                .sender-info {
+                    flex: 0 0 100px;
+                }
+                
+                .sender-avatar {
+                    width: 28px;
+                    height: 28px;
+                    font-size: 10px;
+                }
+                
+                .email-subject-clean {
+                    font-size: 12px;
+                }
+                
+                .business-tags {
+                    display: none;
+                }
+                
+                .email-biz-actions {
+                    opacity: 1;
+                }
+                
+                .metric-time {
+                    font-size: 10px;
                 }
             }
             
