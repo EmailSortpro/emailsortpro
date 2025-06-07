@@ -106,16 +106,36 @@ class PageManager {
                 <!-- HEADER PRINCIPAL -->
                 <div class="emails-header">
                     <div class="header-title-section">
-                        <h1 class="page-title">Emails</h1>
-                        <span class="email-counter">${totalEmails} email${totalEmails > 1 ? 's' : ''}</span>
-                        ${selectedCount > 0 ? `
-                            <div class="selection-badge">
-                                <span class="selection-text">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                        <div class="header-explanation">
+                            <div class="explanation-main">
+                                <i class="fas fa-info-circle explanation-icon"></i>
+                                <span class="explanation-text">
+                                    ${selectedCount > 0 ? 
+                                        `${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}. Créez des tâches ou modifiez la sélection.` :
+                                        this.currentCategory === 'all' ? 
+                                            `Visualisez vos ${totalEmails} emails par domaine, expéditeur ou en liste complète. Sélectionnez des emails pour créer des tâches.` :
+                                            `Affichage de la catégorie "${this.getCategoryDisplayName(this.currentCategory)}". Utilisez les filtres pour naviguer entre les catégories.`
+                                    }
+                                </span>
+                            </div>
+                            ${selectedCount > 0 ? `
                                 <button class="selection-clear" onclick="window.pageManager.clearSelection()" title="Désélectionner tout">
                                     <i class="fas fa-times"></i>
+                                    <span>Désélectionner</span>
                                 </button>
-                            </div>
-                        ` : ''}
+                            ` : `
+                                <div class="selection-actions">
+                                    <button class="selection-action" onclick="window.pageManager.selectAllVisible()" title="Sélectionner tous les emails visibles">
+                                        <i class="fas fa-check-square"></i>
+                                        <span>Sélectionner tout</span>
+                                    </button>
+                                    <button class="selection-action" onclick="window.pageManager.clearSelection()" title="Désélectionner tous les emails">
+                                        <i class="fas fa-square"></i>
+                                        <span>Désélectionner tout</span>
+                                    </button>
+                                </div>
+                            `}
+                        </div>
                     </div>
                 </div>
 
@@ -568,62 +588,94 @@ class PageManager {
             
             /* ===== HEADER PRINCIPAL ===== */
             .emails-header {
-                margin-bottom: 24px;
+                margin-bottom: 20px;
+                padding: 0 4px; /* Alignement avec le menu */
             }
             
             .header-title-section {
                 display: flex;
                 align-items: center;
-                gap: 16px;
-                flex-wrap: wrap;
+                justify-content: space-between;
+                width: 100%;
             }
             
-            .page-title {
-                font-size: 32px;
-                font-weight: 800;
-                color: #111827;
-                margin: 0;
-                line-height: 1;
-            }
-            
-            .email-counter {
-                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                color: white;
-                padding: 8px 16px;
-                border-radius: 12px;
-                font-size: 14px;
-                font-weight: 600;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-            }
-            
-            .selection-badge {
+            .header-explanation {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                background: #ecfdf5;
-                border: 1px solid #10b981;
-                border-radius: 8px;
-                padding: 6px 12px;
+                justify-content: space-between;
+                width: 100%;
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 12px;
+                padding: 16px 20px;
             }
             
-            .selection-text {
-                color: #047857;
-                font-size: 14px;
+            .explanation-main {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
+            }
+            
+            .explanation-icon {
+                color: #0ea5e9;
+                font-size: 16px;
+                flex-shrink: 0;
+            }
+            
+            .explanation-text {
+                color: #075985;
                 font-weight: 600;
+                font-size: 14px;
+                line-height: 1.4;
             }
             
             .selection-clear {
-                background: none;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #ef4444;
+                color: white;
                 border: none;
-                color: #059669;
+                padding: 8px 16px;
+                border-radius: 8px;
                 cursor: pointer;
-                padding: 2px;
-                border-radius: 4px;
-                transition: background 0.2s;
+                font-weight: 600;
+                font-size: 13px;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
             }
             
             .selection-clear:hover {
-                background: rgba(5, 150, 105, 0.1);
+                background: #dc2626;
+                transform: translateY(-1px);
+            }
+            
+            .selection-actions {
+                display: flex;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+            
+            .selection-action {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                background: white;
+                color: #374151;
+                border: 1px solid #d1d5db;
+                padding: 6px 12px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 500;
+                font-size: 12px;
+                transition: all 0.2s ease;
+            }
+            
+            .selection-action:hover {
+                background: #f9fafb;
+                border-color: #9ca3af;
+                transform: translateY(-1px);
             }
             
             /* ===== BARRE DE CONTRÔLES ===== */
@@ -636,7 +688,7 @@ class PageManager {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 16px;
-                margin-bottom: 20px;
+                margin: 0 4px 20px 4px; /* Alignement avec le menu */
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
             
@@ -816,7 +868,7 @@ class PageManager {
             .category-filters {
                 display: flex;
                 gap: 8px;
-                margin-bottom: 20px;
+                margin: 0 4px 20px 4px; /* Alignement avec le menu */
                 flex-wrap: wrap;
             }
             
@@ -871,6 +923,7 @@ class PageManager {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 16px;
+                margin: 0 4px; /* Alignement avec le menu */
                 overflow: hidden;
                 min-height: 400px;
             }
