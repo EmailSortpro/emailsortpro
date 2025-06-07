@@ -1626,41 +1626,42 @@ class PageManager {
                 background: #fafbfc !important;
             }
             
-            /* ===== EMAILS ULTRA-SIMPLIFIÉS - ÉPURÉS ===== */
+            /* ===== EMAILS MODERNES - ALIGNÉS À GAUCHE ===== */
             .group-content .email-card {
                 display: flex !important;
                 align-items: center !important;
-                gap: 12px !important;
+                gap: 16px !important;
                 margin: 0 !important;
-                padding: 6px 16px !important;
-                border-bottom: 1px solid #f8fafc !important;
+                padding: 12px 20px !important;
+                border-bottom: 1px solid #f1f5f9 !important;
                 background: inherit !important;
                 border-left: none !important;
                 border-right: none !important;
                 border-top: none !important;
                 border-radius: 0 !important;
                 cursor: pointer !important;
-                transition: background-color 0.15s ease !important;
-                min-height: 32px !important;
-                max-height: 32px !important;
-                height: 32px !important;
+                transition: all 0.2s ease !important;
+                min-height: 48px !important;
+                max-height: 48px !important;
+                height: 48px !important;
                 box-sizing: border-box !important;
             }
             
             .group-content .email-card:hover {
                 background: #f8fafc !important;
+                transform: translateX(2px) !important;
             }
             
             .group-content .email-card.selected {
                 background: #eff6ff !important;
-                border-left: 3px solid #3b82f6 !important;
-                padding-left: 13px !important;
+                border-left: 4px solid #3b82f6 !important;
+                padding-left: 16px !important;
             }
             
             .group-content .email-card.has-task {
                 background: #f0fdf4 !important;
-                border-left: 3px solid #10b981 !important;
-                padding-left: 13px !important;
+                border-left: 4px solid #10b981 !important;
+                padding-left: 16px !important;
             }
             
             .group-content .email-card:first-child {
@@ -1672,7 +1673,7 @@ class PageManager {
                 margin-bottom: 0 !important;
             }
             
-            /* ===== ÉLÉMENTS SIMPLIFIÉS ===== */
+            /* ===== ÉLÉMENTS MODERNES ET GRANDS ===== */
             .email-checkbox-container {
                 flex-shrink: 0 !important;
                 margin: 0 !important;
@@ -1680,31 +1681,33 @@ class PageManager {
             }
             
             .email-checkbox {
-                width: 14px !important;
-                height: 14px !important;
+                width: 18px !important;
+                height: 18px !important;
                 cursor: pointer !important;
                 margin: 0 !important;
+                accent-color: #3b82f6 !important;
             }
             
             .email-sender-simple {
                 font-weight: 600 !important;
                 color: #1f2937 !important;
-                font-size: 13px !important;
-                line-height: 1.2 !important;
+                font-size: 15px !important;
+                line-height: 1.3 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                flex: 0 0 160px !important;
+                flex: 0 0 200px !important;
                 min-width: 0 !important;
+                text-align: left !important;
             }
             
             .email-subject-simple {
-                font-size: 13px !important;
+                font-size: 15px !important;
                 font-weight: 400 !important;
                 color: #374151 !important;
-                line-height: 1.2 !important;
+                line-height: 1.3 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
@@ -1712,16 +1715,19 @@ class PageManager {
                 padding: 0 !important;
                 flex: 1 !important;
                 min-width: 0 !important;
+                text-align: left !important;
             }
             
             .email-time-simple {
-                font-size: 11px !important;
-                color: #9ca3af !important;
+                font-size: 13px !important;
+                color: #6b7280 !important;
                 font-weight: 500 !important;
                 white-space: nowrap !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 flex-shrink: 0 !important;
+                text-align: right !important;
+                min-width: 40px !important;
             }
             
             /* ===== SUPPRESSION DES ANCIENS STYLES ===== */
@@ -1738,6 +1744,163 @@ class PageManager {
             .ai-badge,
             .priority-badge {
                 display: none !important;
+            }
+            
+            /* ===== AMÉLIORATION DES HEADERS DE GROUPE ===== */
+            .group-header {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 12px 20px !important;
+                margin: 0 !important;
+                background: white !important;
+                cursor: pointer !important;
+                transition: all 0.2s ease !important;
+                border: none !important;
+                min-height: 52px !important;
+                max-height: 52px !important;
+                height: 52px !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+                z-index: 20 !important;
+            }
+            
+            .group-header:hover {
+                background: #f8fafc !important;
+                transform: translateX(2px) !important;
+            }
+            
+            .email-group.expanded .group-header {
+                background: #f0f9ff !important;
+                border-bottom: 1px solid #e0e7ff !important;
+            }
+            
+            .group-info {
+                display: flex !important;
+                align-items: center !important;
+                gap: 12px !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+            
+            .group-icon {
+                width: 36px !important;
+                height: 36px !important;
+                background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+                color: white !important;
+                border-radius: 8px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 14px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-weight: 600 !important;
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25) !important;
+            }
+            
+            .group-avatar {
+                width: 36px !important;
+                height: 36px !important;
+                background: linear-gradient(135deg, #10b981, #047857) !important;
+                color: white !important;
+                border-radius: 8px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 16px !important;
+                font-weight: 700 !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25) !important;
+            }
+            
+            .group-details {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .group-name {
+                font-weight: 700 !important;
+                color: #1f2937 !important;
+                font-size: 16px !important;
+                line-height: 1.3 !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                flex: 1 !important;
+                min-width: 0 !important;
+            }
+            
+            .group-count {
+                font-size: 12px !important;
+                color: #6b7280 !important;
+                font-weight: 600 !important;
+                background: #f3f4f6 !important;
+                padding: 4px 8px !important;
+                border-radius: 10px !important;
+                margin: 0 0 0 12px !important;
+                min-width: 24px !important;
+                text-align: center !important;
+                line-height: 1.2 !important;
+                flex-shrink: 0 !important;
+                border: 1px solid #e5e7eb !important;
+            }
+            
+            .group-controls {
+                display: flex !important;
+                align-items: center !important;
+                gap: 12px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .group-date {
+                font-size: 13px !important;
+                color: #6b7280 !important;
+                font-weight: 500 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                white-space: nowrap !important;
+            }
+            
+            .group-toggle {
+                color: #9ca3af !important;
+                transition: all 0.2s ease !important;
+                font-size: 14px !important;
+                width: 20px !important;
+                height: 20px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                flex-shrink: 0 !important;
+                background: #f3f4f6 !important;
+                border-radius: 4px !important;
+            }
+            
+            .group-header:hover .group-toggle {
+                color: #6b7280 !important;
+                background: #e5e7eb !important;
+            }
+            
+            .email-group.expanded .group-toggle {
+                transform: rotate(180deg) !important;
+                color: #3b82f6 !important;
+                background: #dbeafe !important;
             }
             
             /* Animation pulse */
