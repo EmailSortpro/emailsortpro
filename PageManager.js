@@ -368,48 +368,47 @@ class PageManager {
                     ${senderInitial}
                 </div>
                 
-                <!-- Email Content -->
+                <!-- Email Content sur une seule ligne -->
                 <div class="email-main-content">
-                    <!-- Header Line -->
                     <div class="email-header">
+                        <!-- Sender Info -->
                         <div class="email-sender">
-                            <span class="sender-name">${this.escapeHtml(senderName)}</span>
+                            <span class="sender-name" title="${this.escapeHtml(senderName)}">${this.escapeHtml(senderName)}</span>
                             ${senderDomain ? `<span class="sender-domain">@${senderDomain}</span>` : ''}
                         </div>
+                        
+                        <!-- Subject -->
+                        <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
+                            ${this.escapeHtml(email.subject || 'Sans sujet')}
+                        </div>
+                        
+                        <!-- Meta Information -->
                         <div class="email-meta">
                             ${deadline ? `
-                                <span class="email-deadline ${this.getDeadlineClass(deadline)}">
+                                <span class="email-deadline ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}">
                                     <i class="fas fa-clock"></i>
                                     ${this.formatDeadline(deadline)}
                                 </span>
                             ` : ''}
+                            
+                            ${email.hasAttachments ? `
+                                <span class="attachment-indicator" title="Contient des pièces jointes">
+                                    <i class="fas fa-paperclip"></i>
+                                </span>
+                            ` : ''}
+                            
+                            ${analysis ? `
+                                <span class="ai-indicator" title="Analysé par IA">
+                                    <i class="fas fa-robot"></i>
+                                </span>
+                            ` : ''}
+                            
                             <span class="email-date">${formattedDate}</span>
                         </div>
                     </div>
-                    
-                    <!-- Subject Line -->
-                    <div class="email-subject">
-                        ${this.escapeHtml(email.subject || 'Sans sujet')}
-                    </div>
-                    
-                    <!-- Preview Line -->
-                    ${email.bodyPreview ? `
-                        <div class="email-preview">
-                            ${this.escapeHtml(email.bodyPreview)}
-                        </div>
-                    ` : ''}
-                    
-                    <!-- Tags and Category -->
-                    <div class="email-tags">
-                        <span class="category-tag" style="--category-color: ${categoryInfo.color}">
-                            ${categoryInfo.icon} ${categoryInfo.name}
-                        </span>
-                        ${email.hasAttachments ? '<span class="attachment-tag"><i class="fas fa-paperclip"></i></span>' : ''}
-                        ${analysis ? '<span class="ai-tag"><i class="fas fa-robot"></i> Analysé</span>' : ''}
-                    </div>
                 </div>
                 
-                <!-- Actions -->
+                <!-- Actions compactes -->
                 <div class="email-actions">
                     ${hasTask ? `
                         <button class="action-btn task-created" onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" title="Voir la tâche créée">
@@ -798,7 +797,7 @@ class PageManager {
             /* ===== BARRE PRINCIPALE UNIFIÉE ===== */
             .emails-unified-toolbar {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 gap: 20px;
                 padding: 16px 20px;
                 background: white;
@@ -806,7 +805,7 @@ class PageManager {
                 border-radius: 12px;
                 margin-bottom: 16px;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                min-height: 60px;
+                min-height: auto;
             }
             
             .toolbar-section {
@@ -817,39 +816,44 @@ class PageManager {
             
             .toolbar-left {
                 flex-shrink: 0;
-                min-width: 300px;
+                min-width: 280px;
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 6px;
             }
             
             .page-header-info {
                 display: flex;
                 align-items: center;
                 gap: 12px;
+                flex-wrap: wrap;
             }
             
             .page-explanation {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 6px 12px;
+                gap: 6px;
+                padding: 4px 10px;
                 background: #f0f9ff;
                 border: 1px solid #bae6fd;
-                border-radius: 6px;
-                font-size: 13px;
-                line-height: 1.3;
+                border-radius: 5px;
+                font-size: 12px;
+                line-height: 1.2;
+                max-width: 100%;
             }
             
             .explanation-icon {
                 color: #0ea5e9;
-                font-size: 12px;
+                font-size: 11px;
                 flex-shrink: 0;
             }
             
             .explanation-text {
                 color: #075985;
                 font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             
             .toolbar-center {
@@ -1166,12 +1170,14 @@ class PageManager {
             .unified-email-item {
                 display: flex;
                 align-items: center;
-                gap: 16px;
-                padding: 16px 20px;
+                gap: 12px;
+                padding: 12px 16px;
                 border-bottom: 1px solid #f3f4f6;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                min-height: 80px;
+                min-height: 60px;
+                max-height: 60px;
+                overflow: hidden;
             }
             
             .unified-email-item:last-child {
@@ -1332,45 +1338,37 @@ class PageManager {
                 flex-wrap: wrap;
             }
             
-            .category-tag {
-                background: var(--category-color, #6b7280);
-                color: white;
-                padding: 2px 8px;
-                border-radius: 4px;
+            /* Indicateurs compacts */
+            .attachment-indicator,
+            .ai-indicator {
+                display: flex;
+                align-items: center;
                 font-size: 11px;
-                font-weight: 600;
-            }
-            
-            .attachment-tag {
-                background: #f3f4f6;
                 color: #6b7280;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 11px;
+                padding: 2px;
             }
             
-            .ai-tag {
-                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-                color: white;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 11px;
-                font-weight: 600;
+            .ai-indicator {
+                color: #3b82f6;
             }
             
-            /* ===== ACTIONS D'EMAIL ===== */
+            .attachment-indicator {
+                color: #f59e0b;
+            }
+            
+            /* ===== ACTIONS D'EMAIL COMPACTES ===== */
             .email-actions {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 4px;
                 flex-shrink: 0;
             }
             
             .action-btn {
-                width: 36px;
-                height: 36px;
+                width: 28px;
+                height: 28px;
                 border: 1px solid #e5e7eb;
-                border-radius: 6px;
+                border-radius: 4px;
                 background: white;
                 color: #6b7280;
                 cursor: pointer;
@@ -1378,7 +1376,7 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
                 transition: all 0.2s ease;
-                font-size: 14px;
+                font-size: 12px;
             }
             
             .action-btn:hover {
