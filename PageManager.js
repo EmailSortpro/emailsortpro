@@ -837,6 +837,18 @@ class PageManager {
                 border-top: 1px solid #f3f4f6;
             }
             
+            .toolbar-right-info {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+            }
+            
+            .unified-search-wrapper {
+                position: relative;
+                width: 320px;
+                flex-shrink: 0;
+            }
+            
             .toolbar-section {
                 display: flex;
                 align-items: center;
@@ -958,18 +970,12 @@ class PageManager {
             }
             
             /* ===== RECHERCHE ÉLÉGANTE ===== */
-            .unified-search-wrapper {
-                position: relative;
-                width: 100%;
-                max-width: 420px;
-            }
-            
             .unified-search-input {
                 width: 100%;
-                padding: 12px 18px 12px 46px;
+                padding: 10px 16px 10px 42px;
                 border: 1px solid #d1d5db;
-                border-radius: 10px;
-                font-size: 15px;
+                border-radius: 8px;
+                font-size: 14px;
                 background: #f9fafb;
                 transition: all 0.2s ease;
                 box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -984,24 +990,24 @@ class PageManager {
             
             .search-icon {
                 position: absolute;
-                left: 16px;
+                left: 14px;
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 16px;
+                font-size: 14px;
             }
             
             .search-clear-btn {
                 position: absolute;
-                right: 12px;
+                right: 10px;
                 top: 50%;
                 transform: translateY(-50%);
                 background: none;
                 border: none;
                 color: #9ca3af;
                 cursor: pointer;
-                padding: 6px;
-                border-radius: 6px;
+                padding: 4px;
+                border-radius: 4px;
                 transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
