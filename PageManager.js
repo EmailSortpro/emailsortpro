@@ -103,87 +103,80 @@ class PageManager {
             const selectedCount = this.selectedEmails.size;
             
             container.innerHTML = `
-                <!-- HEADER PRINCIPAL -->
-                <div class="emails-header">
-                    <div class="header-title-section">
-                        <div class="header-explanation">
-                            <div class="explanation-main">
-                                <i class="fas fa-info-circle explanation-icon"></i>
-                                <span class="explanation-text">
-                                    ${selectedCount > 0 ? 
-                                        `${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}. Créez des tâches ou modifiez la sélection.` :
-                                        this.currentCategory === 'all' ? 
-                                            `Visualisez vos ${totalEmails} emails par domaine, expéditeur ou en liste complète. Sélectionnez des emails pour créer des tâches.` :
-                                            `Affichage de la catégorie "${this.getCategoryDisplayName(this.currentCategory)}". Utilisez les filtres pour naviguer entre les catégories.`
-                                    }
-                                </span>
+                <!-- EXPLICATION PRINCIPALE -->
+                <div class="emails-explanation">
+                    <div class="explanation-content">
+                        <i class="fas fa-info-circle explanation-icon"></i>
+                        <div class="explanation-details">
+                            <div class="explanation-title">
+                                ${selectedCount > 0 ? 
+                                    `${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}` :
+                                    this.currentCategory === 'all' ? 
+                                        `${totalEmails} emails organisés par ${this.currentViewMode === 'grouped-domain' ? 'domaine' : this.currentViewMode === 'grouped-sender' ? 'expéditeur' : 'liste'}` :
+                                        `Catégorie "${this.getCategoryDisplayName(this.currentCategory)}" - ${this.getVisibleEmails().length} emails`
+                                }
                             </div>
-                            ${selectedCount > 0 ? `
-                                <button class="selection-clear" onclick="window.pageManager.clearSelection()" title="Désélectionner tout">
-                                    <i class="fas fa-times"></i>
-                                    <span>Désélectionner</span>
-                                </button>
-                            ` : `
-                                <div class="selection-actions">
-                                    <button class="selection-action" onclick="window.pageManager.selectAllVisible()" title="Sélectionner tous les emails visibles">
-                                        <i class="fas fa-check-square"></i>
-                                        <span>Sélectionner tout</span>
-                                    </button>
-                                    <button class="selection-action" onclick="window.pageManager.clearSelection()" title="Désélectionner tous les emails">
-                                        <i class="fas fa-square"></i>
-                                        <span>Désélectionner tout</span>
-                                    </button>
-                                </div>
-                            `}
+                            <div class="explanation-subtitle">
+                                ${selectedCount > 0 ? 
+                                    'Créez des tâches pour les emails sélectionnés ou modifiez votre sélection' :
+                                    'Changez l\'affichage, filtrez par catégories ou sélectionnez des emails pour créer des tâches automatiquement'
+                                }
+                            </div>
                         </div>
+                        ${selectedCount > 0 ? `
+                            <button class="selection-clear" onclick="window.pageManager.clearSelection()">
+                                <i class="fas fa-times"></i>
+                                <span>Désélectionner</span>
+                            </button>
+                        ` : `
+                            <div class="selection-actions">
+                                <button class="selection-action" onclick="window.pageManager.selectAllVisible()">
+                                    <i class="fas fa-check-square"></i>
+                                    <span>Tout sélectionner</span>
+                                </button>
+                            </div>
+                        `}
                     </div>
                 </div>
 
-                <!-- BARRE DE CONTRÔLES SUR UNE LIGNE -->
-                <div class="emails-controls-bar">
-                    <!-- Section Gauche: Recherche -->
-                    <div class="controls-search">
-                        <div class="search-container">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" 
-                                   class="search-input" 
-                                   id="emailSearchInput"
-                                   placeholder="Rechercher emails..." 
-                                   value="${this.searchTerm}">
-                            ${this.searchTerm ? `
-                                <button class="search-clear" id="searchClearBtn" onclick="window.pageManager.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : ''}
-                        </div>
+                <!-- CONTRÔLES COMPACTS -->
+                <div class="emails-controls">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" 
+                               class="search-input" 
+                               id="emailSearchInput"
+                               placeholder="Rechercher emails..." 
+                               value="${this.searchTerm}">
+                        ${this.searchTerm ? `
+                            <button class="search-clear" id="searchClearBtn" onclick="window.pageManager.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
                     </div>
                     
-                    <!-- Section Centre: Modes de vue -->
-                    <div class="controls-views">
-                        <div class="view-buttons">
-                            <button class="view-btn ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                    title="Par domaine">
-                                <i class="fas fa-globe"></i>
-                                <span>Par domaine</span>
-                            </button>
-                            <button class="view-btn ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                    title="Par expéditeur">
-                                <i class="fas fa-user"></i>
-                                <span>Par expéditeur</span>
-                            </button>
-                            <button class="view-btn ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('flat')"
-                                    title="Liste complète">
-                                <i class="fas fa-list"></i>
-                                <span>Liste</span>
-                            </button>
-                        </div>
+                    <div class="view-buttons">
+                        <button class="view-btn ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                title="Par domaine">
+                            <i class="fas fa-globe"></i>
+                            <span>Domaine</span>
+                        </button>
+                        <button class="view-btn ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                title="Par expéditeur">
+                            <i class="fas fa-user"></i>
+                            <span>Expéditeur</span>
+                        </button>
+                        <button class="view-btn ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                onclick="window.pageManager.changeViewMode('flat')"
+                                title="Liste complète">
+                            <i class="fas fa-list"></i>
+                            <span>Liste</span>
+                        </button>
                     </div>
                     
-                    <!-- Section Droite: Actions -->
-                    <div class="controls-actions">
+                    <div class="action-buttons">
                         <button class="action-btn primary ${selectedCount > 0 ? 'with-selection' : ''}" 
                                 onclick="${selectedCount > 0 ? 'window.pageManager.createTasksFromSelection()' : 'window.pageManager.createTasksFromAllVisible()'}">
                             <i class="fas fa-tasks"></i>
@@ -193,17 +186,16 @@ class PageManager {
                         
                         <button class="action-btn secondary" onclick="window.pageManager.refreshEmails()">
                             <i class="fas fa-sync-alt"></i>
-                            <span>Actualiser</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- FILTRES DE CATÉGORIES -->
+                <!-- FILTRES DE CATÉGORIES COMPACTS -->
                 <div class="category-filters">
                     ${this.buildCategoryFilters(categoryCounts, totalEmails, categories)}
                 </div>
 
-                <!-- CONTENU DES EMAILS -->
+                <!-- CONTENU DES EMAILS SANS ESPACES -->
                 <div class="emails-content" id="emailsContent">
                     ${this.renderEmailsList()}
                 </div>
@@ -928,16 +920,16 @@ class PageManager {
                 min-height: 400px;
             }
             
-            /* ===== LISTE D'EMAILS ===== */
             .emails-list {
                 display: flex;
                 flex-direction: column;
+                gap: 0; /* Suppression des espaces entre emails */
             }
             
             .email-card {
                 display: flex;
                 flex-direction: column;
-                padding: 16px 20px;
+                padding: 12px 16px; /* Padding réduit */
                 border-bottom: 1px solid #f3f4f6;
                 cursor: pointer;
                 transition: all 0.2s ease;
@@ -954,20 +946,20 @@ class PageManager {
             
             .email-card.selected {
                 background: #eff6ff;
-                border-left: 4px solid #3b82f6;
+                border-left: 3px solid #3b82f6; /* Bordure plus fine */
             }
             
             .email-card.has-task {
                 background: #f0fdf4;
-                border-left: 4px solid #10b981;
+                border-left: 3px solid #10b981; /* Bordure plus fine */
             }
             
-            /* Header de l'email (ligne 1) */
+            /* Header de l'email (ligne 1) - Plus compact */
             .email-header {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                margin-bottom: 8px;
+                gap: 8px; /* Gap réduit */
+                margin-bottom: 4px; /* Margin réduite */
             }
             
             .email-checkbox-container {
@@ -975,21 +967,21 @@ class PageManager {
             }
             
             .email-checkbox {
-                width: 18px;
-                height: 18px;
+                width: 16px; /* Taille réduite */
+                height: 16px;
                 cursor: pointer;
             }
             
             .email-avatar {
-                width: 40px;
-                height: 40px;
+                width: 32px; /* Taille réduite */
+                height: 32px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
                 font-weight: 700;
-                font-size: 16px;
+                font-size: 14px; /* Taille réduite */
                 flex-shrink: 0;
             }
             
@@ -1001,26 +993,26 @@ class PageManager {
             .sender-name {
                 font-weight: 700;
                 color: #1f2937;
-                font-size: 15px;
-                line-height: 1.2;
+                font-size: 13px; /* Taille réduite */
+                line-height: 1.1; /* Line-height réduit */
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
             }
             
             .sender-domain {
-                font-size: 12px;
+                font-size: 10px; /* Taille réduite */
                 color: #6b7280;
                 background: #f3f4f6;
-                padding: 2px 6px;
-                border-radius: 4px;
+                padding: 1px 4px; /* Padding réduit */
+                border-radius: 3px; /* Border radius réduit */
                 display: inline-block;
-                margin-top: 2px;
+                margin-top: 1px; /* Margin réduite */
             }
             
             .email-meta-badges {
                 display: flex;
-                gap: 6px;
+                gap: 4px; /* Gap réduit */
                 align-items: center;
                 flex-shrink: 0;
             }
@@ -1030,11 +1022,173 @@ class PageManager {
             .ai-badge {
                 display: flex;
                 align-items: center;
-                gap: 4px;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
+                gap: 2px; /* Gap réduit */
+                padding: 2px 6px; /* Padding réduit */
+                border-radius: 4px; /* Border radius réduit */
+                font-size: 9px; /* Taille réduite */
                 font-weight: 600;
+            }
+            
+            .email-date {
+                font-size: 11px; /* Taille réduite */
+                color: #6b7280;
+                font-weight: 500;
+                flex-shrink: 0;
+            }
+            
+            .email-actions {
+                display: flex;
+                gap: 2px; /* Gap réduit */
+                flex-shrink: 0;
+            }
+            
+            .email-action-btn {
+                width: 24px; /* Taille réduite */
+                height: 24px;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px; /* Border radius réduit */
+                background: white;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                font-size: 11px; /* Taille réduite */
+            }
+            
+            /* Contenu de l'email (ligne 2) - Plus compact */
+            .email-content {
+                margin-left: 56px; /* Ajusté pour la nouvelle taille d'avatar */
+                padding-left: 0;
+            }
+            
+            .email-subject {
+                font-size: 14px; /* Taille réduite */
+                font-weight: 600;
+                color: #1f2937;
+                line-height: 1.2; /* Line-height réduit */
+                margin-bottom: 2px; /* Margin réduite */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .email-preview {
+                font-size: 12px; /* Taille réduite */
+                color: #6b7280;
+                line-height: 1.3; /* Line-height réduit */
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 1; /* Une seule ligne pour plus de compacité */
+                -webkit-box-orient: vertical;
+            }
+            
+            /* ===== VUE GROUPÉE COMPACTE ===== */
+            .emails-grouped {
+                display: flex;
+                flex-direction: column;
+                gap: 0; /* Suppression des espaces entre groupes */
+            }
+            
+            .email-group {
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .email-group:last-child {
+                border-bottom: none;
+            }
+            
+            .group-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 16px; /* Padding réduit */
+                background: #f8fafc;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .group-header:hover {
+                background: #f1f5f9;
+            }
+            
+            .email-group.expanded .group-header {
+                background: #eff6ff;
+                border-bottom-color: #bfdbfe;
+            }
+            
+            .group-info {
+                display: flex;
+                align-items: center;
+                gap: 8px; /* Gap réduit */
+            }
+            
+            .group-icon {
+                width: 32px; /* Taille réduite */
+                height: 32px;
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                color: white;
+                border-radius: 8px; /* Border radius réduit */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px; /* Taille réduite */
+            }
+            
+            .group-avatar {
+                width: 32px; /* Taille réduite */
+                height: 32px;
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border-radius: 8px; /* Border radius réduit */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px; /* Taille réduite */
+                font-weight: 700;
+            }
+            
+            .group-details {
+                display: flex;
+                flex-direction: column;
+                gap: 1px; /* Gap réduit */
+            }
+            
+            .group-name {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 14px; /* Taille réduite */
+            }
+            
+            .group-count {
+                font-size: 11px; /* Taille réduite */
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            .group-controls {
+                display: flex;
+                align-items: center;
+                gap: 8px; /* Gap réduit */
+            }
+            
+            .group-date {
+                font-size: 11px; /* Taille réduite */
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            .group-toggle {
+                color: #9ca3af;
+                transition: transform 0.3s ease;
+                font-size: 12px; /* Taille réduite */
+            }
+            
+            .email-group.expanded .group-toggle {
+                transform: rotate(180deg);
             }
             
             .deadline-badge.normal {
@@ -1068,37 +1222,9 @@ class PageManager {
                 color: #2563eb;
             }
             
-            .email-date {
-                font-size: 13px;
-                color: #6b7280;
-                font-weight: 500;
-                flex-shrink: 0;
-            }
-            
-            .email-actions {
-                display: flex;
-                gap: 4px;
-                flex-shrink: 0;
-            }
-            
-            .email-action-btn {
-                width: 32px;
-                height: 32px;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                background: white;
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                font-size: 14px;
-            }
-            
             .email-action-btn:hover {
                 transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); /* Shadow réduite */
             }
             
             .email-action-btn.task-done {
@@ -1122,143 +1248,6 @@ class PageManager {
                 background: #f3f4f6;
                 color: #374151;
                 border-color: #9ca3af;
-            }
-            
-            /* Contenu de l'email (ligne 2) */
-            .email-content {
-                margin-left: 70px; /* Aligné avec le sender-info */
-                padding-left: 0;
-            }
-            
-            .email-subject {
-                font-size: 16px;
-                font-weight: 600;
-                color: #1f2937;
-                line-height: 1.3;
-                margin-bottom: 4px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .email-preview {
-                font-size: 14px;
-                color: #6b7280;
-                line-height: 1.4;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-            }
-            
-            /* ===== VUE GROUPÉE ===== */
-            .emails-grouped {
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .email-group {
-                border-bottom: 1px solid #f3f4f6;
-            }
-            
-            .email-group:last-child {
-                border-bottom: none;
-            }
-            
-            .group-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 16px 20px;
-                background: #f8fafc;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border-bottom: 1px solid #f3f4f6;
-            }
-            
-            .group-header:hover {
-                background: #f1f5f9;
-            }
-            
-            .email-group.expanded .group-header {
-                background: #eff6ff;
-                border-bottom-color: #bfdbfe;
-            }
-            
-            .group-info {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .group-icon {
-                width: 44px;
-                height: 44px;
-                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
-            }
-            
-            .group-avatar {
-                width: 44px;
-                height: 44px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                font-weight: 700;
-            }
-            
-            .group-details {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            
-            .group-name {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 16px;
-            }
-            
-            .group-count {
-                font-size: 13px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .group-controls {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .group-date {
-                font-size: 13px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .group-toggle {
-                color: #9ca3af;
-                transition: transform 0.3s ease;
-                font-size: 14px;
-            }
-            
-            .email-group.expanded .group-toggle {
-                transform: rotate(180deg);
-            }
-            
-            .group-content {
-                background: white;
             }
             
             /* ===== ÉTAT VIDE ===== */
