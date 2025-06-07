@@ -1152,148 +1152,196 @@ class PageManager {
                 -webkit-box-orient: vertical;
             }
             
-            /* ===== VUE GROUPÉE ULTRA-COMPACTE ===== */
+            /* ===== VUE GROUPÉE ULTRA-COMPACTE - FORÇAGE MAXIMUM ===== */
             .emails-grouped {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .email-group {
-                margin: 0;
-                border: none;
-                border-bottom: 1px solid #e5e7eb;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                border-bottom: 1px solid #e5e7eb !important;
             }
             
             .email-group:last-child {
-                border-bottom: none;
+                border-bottom: none !important;
             }
             
             .group-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px 16px;
-                margin: 0;
-                background: #f8fafc;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border: none;
-                border-bottom: 1px solid #e5e7eb;
-                min-height: 52px;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                padding: 6px 16px !important;
+                margin: 0 !important;
+                background: #f8fafc !important;
+                cursor: pointer !important;
+                transition: all 0.2s ease !important;
+                border: none !important;
+                border-bottom: 1px solid #e5e7eb !important;
+                min-height: 48px !important;
+                max-height: 48px !important;
+                height: 48px !important;
+                box-sizing: border-box !important;
             }
             
             .group-header:hover {
-                background: #f1f5f9;
+                background: #f1f5f9 !important;
             }
             
             .email-group.expanded .group-header {
-                background: #eff6ff;
-                border-bottom-color: #bfdbfe;
+                background: #eff6ff !important;
+                border-bottom-color: #bfdbfe !important;
             }
             
             .group-info {
-                display: flex;
-                align-items: center;
-                gap: 8px;
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-icon {
-                width: 32px;
-                height: 32px;
-                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-                color: white;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                flex-shrink: 0;
+                width: 30px !important;
+                height: 30px !important;
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+                color: white !important;
+                border-radius: 7px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 11px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-avatar {
-                width: 32px;
-                height: 32px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 14px;
-                font-weight: 700;
-                flex-shrink: 0;
+                width: 30px !important;
+                height: 30px !important;
+                background: linear-gradient(135deg, #10b981, #059669) !important;
+                color: white !important;
+                border-radius: 7px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 13px !important;
+                font-weight: 700 !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-details {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-                flex: 1;
-                min-width: 0;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 0 !important;
+                flex: 1 !important;
+                min-width: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-name {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 14px;
-                line-height: 1.2;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                font-weight: 700 !important;
+                color: #1f2937 !important;
+                font-size: 13px !important;
+                line-height: 1.2 !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-count {
-                font-size: 11px;
-                color: #6b7280;
-                font-weight: 500;
-                line-height: 1;
-                margin-top: 1px;
+                font-size: 10px !important;
+                color: #6b7280 !important;
+                font-weight: 500 !important;
+                line-height: 1 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-controls {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                flex-shrink: 0;
+                display: flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-date {
-                font-size: 11px;
-                color: #6b7280;
-                font-weight: 500;
+                font-size: 10px !important;
+                color: #6b7280 !important;
+                font-weight: 500 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .group-toggle {
-                color: #9ca3af;
-                transition: transform 0.3s ease;
-                font-size: 12px;
-                width: 16px;
-                height: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                color: #9ca3af !important;
+                transition: transform 0.3s ease !important;
+                font-size: 11px !important;
+                width: 14px !important;
+                height: 14px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             
             .email-group.expanded .group-toggle {
-                transform: rotate(180deg);
+                transform: rotate(180deg) !important;
             }
             
             .group-content {
-                background: white;
-                margin: 0;
-                padding: 0;
+                background: white !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
             }
             
-            /* Supprimer tout espacement vertical inutile */
+            /* Supprimer tout espacement vertical inutile - FORÇAGE */
             .group-content .email-card:first-child {
-                border-top: none;
-                margin-top: 0;
+                border-top: none !important;
+                margin-top: 0 !important;
+                padding-top: 12px !important;
             }
             
             .group-content .email-card:last-child {
-                border-bottom: none;
-                margin-bottom: 0;
+                border-bottom: none !important;
+                margin-bottom: 0 !important;
+                padding-bottom: 12px !important;
+            }
+            
+            .group-content .email-card {
+                margin: 0 !important;
+                padding: 10px 16px !important;
+            }
+            
+            /* Suppression FORCÉE de tous les espaces entre groupes */
+            .email-group + .email-group {
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+                border-top: none !important;
+            }
+            
+            /* CSS spécifique pour éliminer les gaps résiduels */
+            .emails-grouped > * {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .emails-grouped > *:not(:last-child) {
+                border-bottom: 1px solid #e5e7eb !important;
             }
             
             /* ===== ÉTAT VIDE ===== */
