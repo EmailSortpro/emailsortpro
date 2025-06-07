@@ -794,12 +794,12 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'unifiedEmailStyles';
         styles.textContent = `
-            /* ===== BARRE PRINCIPALE RÉORGANISÉE ===== */
+            /* ===== BARRE PRINCIPALE ÉLÉGANTE - COMPROMIS DESIGN ===== */
             .emails-unified-toolbar {
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
-                padding: 16px 20px;
+                gap: 8px;
+                padding: 20px 24px;
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
@@ -810,21 +810,39 @@ class PageManager {
             .toolbar-main-line {
                 display: flex;
                 align-items: center;
-                gap: 20px;
+                gap: 24px;
                 justify-content: space-between;
+                min-height: 48px;
             }
             
-            .toolbar-view-line {
+            .toolbar-description {
                 display: flex;
-                justify-content: center;
-                padding-top: 8px;
-                border-top: 1px solid #f3f4f6;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                font-size: 13px;
+                line-height: 1.4;
+                margin-top: 4px;
+            }
+            
+            .description-icon {
+                color: #0ea5e9;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+            
+            .description-text {
+                color: #075985;
+                font-weight: 500;
             }
             
             .toolbar-section {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 16px;
             }
             
             .toolbar-left {
@@ -832,59 +850,57 @@ class PageManager {
                 display: flex;
                 align-items: center;
                 gap: 16px;
+                min-width: 280px;
             }
             
             .page-title {
                 margin: 0;
-                font-size: 24px;
+                font-size: 28px;
                 font-weight: 700;
                 color: #1f2937;
                 line-height: 1;
             }
             
             .item-counter {
-                font-size: 14px;
+                font-size: 15px;
                 color: #6b7280;
                 font-weight: 600;
                 background: #f3f4f6;
-                padding: 4px 12px;
-                border-radius: 12px;
+                padding: 6px 14px;
+                border-radius: 16px;
                 white-space: nowrap;
             }
             
-            .page-explanation {
+            .selection-indicator {
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                padding: 4px 10px;
-                background: #f0f9ff;
-                border: 1px solid #bae6fd;
-                border-radius: 5px;
-                font-size: 12px;
-                line-height: 1.2;
+                gap: 10px;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+                border-radius: 10px;
+                padding: 8px 14px;
+                font-size: 14px;
+                color: #1e40af;
+                font-weight: 600;
+            }
+            
+            .selection-count {
                 white-space: nowrap;
-            }
-            
-            .explanation-icon {
-                color: #0ea5e9;
-                font-size: 11px;
-                flex-shrink: 0;
-            }
-            
-            .explanation-text {
-                color: #075985;
-                font-weight: 500;
             }
             
             .toolbar-center {
                 flex: 1;
-                max-width: 400px;
-                min-width: 200px;
+                max-width: 450px;
+                min-width: 250px;
+                display: flex;
+                justify-content: center;
             }
             
             .toolbar-right {
                 flex-shrink: 0;
-                gap: 16px;
+                gap: 20px;
+                display: flex;
+                align-items: center;
             }
             
             /* ===== TITRE ET COMPTEURS ===== */
@@ -922,22 +938,22 @@ class PageManager {
                 font-weight: 600;
             }
             
-            /* ===== RECHERCHE UNIFIÉE ===== */
+            /* ===== RECHERCHE ÉLÉGANTE ===== */
             .unified-search-wrapper {
                 position: relative;
                 width: 100%;
-                max-width: 400px;
-                margin: 0 auto;
+                max-width: 420px;
             }
             
             .unified-search-input {
                 width: 100%;
-                padding: 10px 16px 10px 44px;
+                padding: 12px 18px 12px 46px;
                 border: 1px solid #d1d5db;
-                border-radius: 8px;
-                font-size: 14px;
+                border-radius: 10px;
+                font-size: 15px;
                 background: #f9fafb;
                 transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
             
             .unified-search-input:focus {
@@ -953,7 +969,7 @@ class PageManager {
                 top: 50%;
                 transform: translateY(-50%);
                 color: #9ca3af;
-                font-size: 14px;
+                font-size: 16px;
             }
             
             .search-clear-btn {
@@ -965,9 +981,12 @@ class PageManager {
                 border: none;
                 color: #9ca3af;
                 cursor: pointer;
-                padding: 4px;
-                border-radius: 4px;
+                padding: 6px;
+                border-radius: 6px;
                 transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .search-clear-btn:hover {
