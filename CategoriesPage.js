@@ -1,5 +1,5 @@
 // CategoriesPage.js - Gestion minimaliste avec modals
-// Version 7.1 - Onglets optimisés sans doublons
+// Version 7.2 - Support CC et spam
 
 class CategoriesPage {
     constructor() {
@@ -116,6 +116,20 @@ class CategoriesPage {
                                        ${settings.preferences?.showNotifications !== false ? 'checked' : ''}
                                        onchange="window.categoriesPage.savePreferences()">
                                 <span>Notifications activées</span>
+                            </label>
+                            
+                            <label class="checkbox-compact">
+                                <input type="checkbox" id="excludeSpam" 
+                                       ${settings.preferences?.excludeSpam !== false ? 'checked' : ''}
+                                       onchange="window.categoriesPage.savePreferences()">
+                                <span>Exclure les courriers indésirables</span>
+                            </label>
+                            
+                            <label class="checkbox-compact">
+                                <input type="checkbox" id="detectCC" 
+                                       ${settings.preferences?.detectCC !== false ? 'checked' : ''}
+                                       onchange="window.categoriesPage.savePreferences()">
+                                <span>Détecter les emails en copie (CC)</span>
                             </label>
                         </div>
                     </div>
@@ -471,7 +485,9 @@ class CategoriesPage {
         settings.preferences = {
             darkMode: document.getElementById('darkMode')?.checked || false,
             compactView: document.getElementById('compactView')?.checked || false,
-            showNotifications: document.getElementById('showNotifications')?.checked !== false
+            showNotifications: document.getElementById('showNotifications')?.checked !== false,
+            excludeSpam: document.getElementById('excludeSpam')?.checked !== false,
+            detectCC: document.getElementById('detectCC')?.checked !== false
         };
         
         this.saveSettings(settings);
@@ -1202,7 +1218,7 @@ class CategoriesPage {
         const categories = window.categoryManager?.getCategories() || {};
         
         const exportData = {
-            version: '7.1',
+            version: '7.2',
             exportDate: new Date().toISOString(),
             settings: settings,
             categories: categories,
@@ -1316,7 +1332,9 @@ class CategoriesPage {
             preferences: {
                 darkMode: false,
                 compactView: false,
-                showNotifications: true
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
             }
         };
     }
@@ -2806,7 +2824,7 @@ if (window.pageManager && window.pageManager.pages) {
         }
     }, 100);
     
-    console.log('✅ CategoriesPage v7.1 loaded - Onglets optimisés sans doublons');
+    console.log('✅ CategoriesPage v7.2 loaded - Support CC et spam');
 } else {
     console.warn('⚠️ PageManager not ready, retrying...');
     setTimeout(() => {
@@ -2823,7 +2841,7 @@ if (window.pageManager && window.pageManager.pages) {
                 categoriesNavButton.style.display = 'none';
             }
             
-            console.log('✅ CategoriesPage v7.1 loaded - Onglets optimisés sans doublons (delayed)');
+            console.log('✅ CategoriesPage v7.2 loaded - Support CC et spam (delayed)');
         }
     }, 1000);
 }
