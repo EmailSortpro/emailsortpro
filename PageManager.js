@@ -1,4 +1,4 @@
-// PageManager.js - Version 10.0 - Interface moderne optimisée avec affichage parfait
+// PageManager.js - Version 9.2 - Interface unifiée et cohérente avec design professionnel
 
 class PageManager {
     constructor() {
@@ -26,7 +26,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v10.0 - Interface moderne optimisée');
+        console.log('[PageManager] Initialized v9.2 - Interface unifiée et cohérente');
     }
 
     // =====================================
@@ -87,13 +87,13 @@ class PageManager {
     }
 
     // =====================================
-    // EMAILS PAGE - INTERFACE MODERNE
+    // EMAILS PAGE - INTERFACE UNIFIÉE
     // =====================================
     async renderEmails(container) {
         const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
         const categories = window.categoryManager?.getCategories() || {};
         
-        // Initialize view mode
+        // Initialize view mode - grouped by domain by default
         this.currentViewMode = this.currentViewMode || 'grouped-domain';
         this.currentCategory = this.currentCategory || 'all';
 
@@ -103,119 +103,126 @@ class PageManager {
             const selectedCount = this.selectedEmails.size;
             
             container.innerHTML = `
-                <!-- HEADER PRINCIPAL -->
-                <div class="emails-header">
-                    <div class="header-title-section">
-                        <div class="header-explanation">
-                            <div class="explanation-main">
-                                <i class="fas fa-info-circle explanation-icon"></i>
-                                <span class="explanation-text">
-                                    ${selectedCount > 0 ? 
-                                        `${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}. Créez des tâches ou modifiez la sélection.` :
-                                        this.currentCategory === 'all' ? 
-                                            `Visualisez vos ${totalEmails} emails par domaine, expéditeur ou en liste complète. Sélectionnez des emails pour créer des tâches.` :
-                                            `Affichage de la catégorie "${this.getCategoryDisplayName(this.currentCategory)}". Utilisez les filtres pour naviguer entre les catégories.`
-                                    }
-                                </span>
-                            </div>
+                <!-- BARRE PRINCIPALE UNIFIÉE - TOUT SUR UNE LIGNE -->
+                <div class="emails-unified-toolbar">
+                    <!-- Section Gauche: Titre, compteur et explication -->
+                    <div class="toolbar-section toolbar-left">
+                        <div class="page-header-info">
+                            <h1 class="page-title">Emails</h1>
+                            <span class="item-counter">${totalEmails} email${totalEmails > 1 ? 's' : ''}</span>
                             ${selectedCount > 0 ? `
-                                <button class="selection-clear" onclick="window.pageManager.clearSelection()" title="Désélectionner tout">
-                                    <i class="fas fa-times"></i>
-                                    <span>Désélectionner</span>
-                                </button>
-                            ` : `
-                                <div class="selection-actions">
-                                    <button class="selection-action" onclick="window.pageManager.selectAllVisible()" title="Sélectionner tous les emails visibles">
-                                        <i class="fas fa-check-square"></i>
-                                        <span>Sélectionner tout</span>
-                                    </button>
-                                    <button class="selection-action" onclick="window.pageManager.clearSelection()" title="Désélectionner tous les emails">
-                                        <i class="fas fa-square"></i>
-                                        <span>Désélectionner tout</span>
+                                <div class="selection-indicator">
+                                    <span class="selection-count">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                                    <button class="btn-unified btn-clear" onclick="window.pageManager.clearSelection()" title="Désélectionner tout">
+                                        <i class="fas fa-times"></i>
                                     </button>
                                 </div>
-                            `}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BARRE DE CONTRÔLES SUR UNE LIGNE -->
-                <div class="emails-controls-bar">
-                    <!-- Section Gauche: Recherche -->
-                    <div class="controls-search">
-                        <div class="search-container">
-                            <i class="fas fa-search search-icon"></i>
-                            <input type="text" 
-                                   class="search-input" 
-                                   id="emailSearchInput"
-                                   placeholder="Rechercher emails..." 
-                                   value="${this.searchTerm}">
-                            ${this.searchTerm ? `
-                                <button class="search-clear" id="searchClearBtn" onclick="window.pageManager.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
                             ` : ''}
                         </div>
+                        <div class="page-explanation">
+                            <i class="fas fa-info-circle explanation-icon"></i>
+                            <span class="explanation-text">
+                                ${selectedCount > 0 ? 
+                                    `${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}. Créez des tâches ou changez la vue.` :
+                                    this.currentCategory === 'all' ? 
+                                        'Visualisez vos emails par domaine, expéditeur ou en liste complète. Sélectionnez des emails pour créer des tâches.' :
+                                        `Affichage de la catégorie "${this.getCategoryInfo(this.currentCategory).name}". Utilisez les filtres pour naviguer.`
+                                }
+                            </span>
+                        </div>
                     </div>
                     
-                    <!-- Section Centre: Modes de vue -->
-                    <div class="controls-views">
-                        <div class="view-buttons">
-                            <button class="view-btn ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                    title="Par domaine">
-                                <i class="fas fa-globe"></i>
-                                <span>Par domaine</span>
-                            </button>
-                            <button class="view-btn ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                    title="Par expéditeur">
-                                <i class="fas fa-user"></i>
-                                <span>Par expéditeur</span>
-                            </button>
-                            <button class="view-btn ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('flat')"
-                                    title="Liste complète">
-                                <i class="fas fa-list"></i>
-                                <span>Liste</span>
+                    <!-- Section Centre: Recherche -->
+                    <div class="toolbar-section toolbar-center">
+                        <div class="unified-search-wrapper">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" 
+                                   class="unified-search-input" 
+                                   id="emailSearchInput"
+                                   placeholder="Rechercher par expéditeur, sujet, contenu..." 
+                                   value="${this.searchTerm}">
+                            <button class="search-clear-btn" id="searchClearBtn" 
+                                    style="display: ${this.searchTerm ? 'flex' : 'none'}"
+                                    onclick="window.pageManager.clearSearch()">
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
                     
-                    <!-- Section Droite: Actions -->
-                    <div class="controls-actions">
-                        <button class="action-btn primary ${selectedCount > 0 ? 'with-selection' : ''}" 
-                                onclick="${selectedCount > 0 ? 'window.pageManager.createTasksFromSelection()' : 'window.pageManager.createTasksFromAllVisible()'}">
-                            <i class="fas fa-tasks"></i>
-                            <span>${selectedCount > 0 ? `Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}` : 'Créer tâches'}</span>
-                            ${selectedCount > 0 ? `<span class="selection-count">${selectedCount}</span>` : ''}
-                        </button>
+                    <!-- Section Droite: Actions principales -->
+                    <div class="toolbar-section toolbar-right">
+                        <!-- Modes de vue -->
+                        <div class="view-mode-group">
+                            <button class="btn-unified view-mode-btn ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                    data-mode="grouped-domain"
+                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                    title="Grouper par domaine">
+                                <i class="fas fa-globe"></i>
+                                <span class="btn-text">Par domaine</span>
+                            </button>
+                            <button class="btn-unified view-mode-btn ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                    data-mode="grouped-sender"
+                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                    title="Grouper par expéditeur">
+                                <i class="fas fa-user"></i>
+                                <span class="btn-text">Par expéditeur</span>
+                            </button>
+                            <button class="btn-unified view-mode-btn ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                    data-mode="flat"
+                                    onclick="window.pageManager.changeViewMode('flat')"
+                                    title="Vue liste complète">
+                                <i class="fas fa-list"></i>
+                                <span class="btn-text">Liste complète</span>
+                            </button>
+                        </div>
                         
-                        <button class="action-btn secondary" onclick="window.pageManager.refreshEmails()">
-                            <i class="fas fa-sync-alt"></i>
-                            <span>Actualiser</span>
-                        </button>
+                        <!-- Actions -->
+                        <div class="action-group">
+                            <!-- Bouton Créer tâches - TOUJOURS VISIBLE -->
+                            <button class="btn-unified btn-primary ${selectedCount > 0 ? 'with-selection' : ''}" 
+                                    onclick="${selectedCount > 0 ? 'window.pageManager.createTasksFromSelection()' : 'window.pageManager.createTasksFromAllVisible()'}" 
+                                    title="${selectedCount > 0 ? 
+                                        `Créer des tâches pour les ${selectedCount} emails sélectionnés` : 
+                                        'Créer des tâches pour tous les emails visibles'}">
+                                <i class="fas fa-tasks"></i>
+                                <span class="btn-text">
+                                    ${selectedCount > 0 ? 
+                                        `Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}` : 
+                                        'Créer tâches'
+                                    }
+                                </span>
+                                ${selectedCount > 0 ? `<span class="selection-badge">${selectedCount}</span>` : ''}
+                            </button>
+                            
+                            <button class="btn-unified btn-secondary" onclick="window.pageManager.refreshEmails()" title="Actualiser la liste des emails">
+                                <i class="fas fa-sync"></i>
+                                <span class="btn-text">Actualiser</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- FILTRES DE CATÉGORIES -->
-                <div class="category-filters">
-                    ${this.buildCategoryFilters(categoryCounts, totalEmails, categories)}
+                <!-- FILTRES DE CATÉGORIES UNIFIÉS -->
+                <div class="unified-category-filters">
+                    ${this.buildUnifiedCategoryFilters(categoryCounts, totalEmails, categories, this.currentCategory)}
                 </div>
 
-                <!-- CONTENU DES EMAILS -->
-                <div class="emails-content" id="emailsContent">
+                <!-- ZONE DE CONTENU PRINCIPAL -->
+                <div class="emails-content-area" id="emailsList">
                     ${this.renderEmailsList()}
                 </div>
+
+                <!-- STATISTIQUES EN BAS (optionnel) -->
+                ${this.renderEmailStats(emails, categoryCounts)}
             `;
 
-            this.addModernStyles();
+            this.addUnifiedEmailStyles();
             this.setupEmailsEventListeners();
         };
 
         renderEmailsPage();
         
-        // Auto-analyze if enabled
+        // Auto-analyze first emails if enabled
         if (this.autoAnalyzeEnabled && emails.length > 0) {
             setTimeout(() => {
                 this.analyzeFirstEmails(emails.slice(0, 5));
@@ -224,40 +231,45 @@ class PageManager {
     }
 
     // =====================================
-    // FILTRES DE CATÉGORIES
+    // CONSTRUCTION DES FILTRES UNIFIÉS
     // =====================================
-    buildCategoryFilters(categoryCounts, totalEmails, categories) {
+    buildUnifiedCategoryFilters(categoryCounts, totalEmails, categories, currentCategory) {
         let filters = `
-            <button class="category-filter ${this.currentCategory === 'all' ? 'active' : ''}" 
+            <button class="unified-filter-btn ${currentCategory === 'all' ? 'active' : ''}" 
+                    data-category="all"
                     onclick="window.pageManager.filterByCategory('all')">
                 <span class="filter-icon">📧</span>
-                <span class="filter-name">Tous</span>
+                <span class="filter-label">Tous</span>
                 <span class="filter-count">${totalEmails}</span>
             </button>
         `;
         
+        // Ajouter les catégories avec emails
         Object.entries(categories).forEach(([catId, category]) => {
             const count = categoryCounts[catId] || 0;
             if (count > 0) {
                 filters += `
-                    <button class="category-filter ${this.currentCategory === catId ? 'active' : ''}" 
+                    <button class="unified-filter-btn ${currentCategory === catId ? 'active' : ''}" 
+                            data-category="${catId}"
                             onclick="window.pageManager.filterByCategory('${catId}')"
                             style="--category-color: ${category.color}">
                         <span class="filter-icon">${category.icon}</span>
-                        <span class="filter-name">${category.name}</span>
+                        <span class="filter-label">${category.name}</span>
                         <span class="filter-count">${count}</span>
                     </button>
                 `;
             }
         });
         
+        // Ajouter "Autre" si nécessaire
         const otherCount = categoryCounts.other || 0;
         if (otherCount > 0) {
             filters += `
-                <button class="category-filter ${this.currentCategory === 'other' ? 'active' : ''}" 
+                <button class="unified-filter-btn ${currentCategory === 'other' ? 'active' : ''}" 
+                        data-category="other"
                         onclick="window.pageManager.filterByCategory('other')">
                     <span class="filter-icon">📌</span>
-                    <span class="filter-name">Autre</span>
+                    <span class="filter-label">Autre</span>
                     <span class="filter-count">${otherCount}</span>
                 </button>
             `;
@@ -266,9 +278,6 @@ class PageManager {
         return filters;
     }
 
-    // =====================================
-    // RENDU DES EMAILS
-    // =====================================
     renderEmailsList() {
         const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
         let filteredEmails = emails;
@@ -283,32 +292,33 @@ class PageManager {
         }
         
         if (filteredEmails.length === 0) {
-            return this.renderEmptyState();
+            return this.renderEmptyEmailState();
         }
 
+        // Render based on view mode
         switch (this.currentViewMode) {
             case 'flat':
-                return this.renderFlatView(filteredEmails);
+                return this.renderFlatEmailView(filteredEmails);
             case 'grouped-domain':
             case 'grouped-sender':
-                return this.renderGroupedView(filteredEmails, this.currentViewMode);
+                return this.renderGroupedEmailView(filteredEmails, this.currentViewMode);
             default:
-                return this.renderFlatView(filteredEmails);
+                return this.renderFlatEmailView(filteredEmails);
         }
     }
 
-    renderEmptyState() {
+    renderEmptyEmailState() {
         return `
-            <div class="empty-state">
-                <div class="empty-icon">
+            <div class="empty-state-modern">
+                <div class="empty-state-icon">
                     <i class="fas fa-inbox"></i>
                 </div>
-                <h3 class="empty-title">Aucun email trouvé</h3>
-                <p class="empty-text">
+                <h3 class="empty-state-title">Aucun email trouvé</h3>
+                <p class="empty-state-text">
                     ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
                 </p>
                 ${this.searchTerm ? `
-                    <button class="btn primary" onclick="window.pageManager.clearSearch()">
+                    <button class="btn-unified btn-primary" onclick="window.pageManager.clearSearch()">
                         <i class="fas fa-undo"></i>
                         <span>Effacer la recherche</span>
                     </button>
@@ -317,187 +327,290 @@ class PageManager {
         `;
     }
 
-    renderFlatView(emails) {
+    renderFlatEmailView(emails) {
         return `
-            <div class="emails-list">
-                ${emails.map(email => this.renderEmailCard(email)).join('')}
+            <div class="unified-emails-list">
+                ${emails.map(email => this.renderUnifiedEmailItem(email)).join('')}
             </div>
         `;
     }
 
-    renderEmailCard(email) {
+    renderUnifiedEmailItem(email) {
         const isSelected = this.selectedEmails.has(email.id);
         const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Unknown';
         const senderEmail = email.from?.emailAddress?.address || '';
-        const senderDomain = senderEmail.split('@')[1] || '';
         const senderInitial = senderName.charAt(0).toUpperCase();
+        const formattedDate = this.formatEmailDate(email.receivedDateTime);
         
+        // Extract deadline from AI analysis if available
         const analysis = this.aiAnalysisResults.get(email.id);
-        const deadline = analysis?.mainTask?.dueDate || null;
+        const deadline = analysis?.mainTask?.dueDate || analysis?.actionsHighlighted?.find(a => a.deadline)?.deadline || null;
         
         return `
-            <div class="email-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
+            <div class="unified-email-item ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
-                <!-- LIGNE 1: Checkbox, Avatar, Sender, Actions -->
-                <div class="email-header">
-                    <div class="email-checkbox-container">
-                        <input type="checkbox" 
-                               class="email-checkbox" 
-                               ${isSelected ? 'checked' : ''}
-                               onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
-                    </div>
-                    
-                    <div class="email-avatar" style="background: ${this.generateGradient(senderName)}">
-                        ${senderInitial}
-                    </div>
-                    
-                    <div class="email-sender-info">
-                        <div class="sender-name" title="${this.escapeHtml(senderName)}">${this.escapeHtml(senderName)}</div>
-                        ${senderDomain ? `<div class="sender-domain">@${senderDomain}</div>` : ''}
-                    </div>
-                    
-                    <div class="email-meta-badges">
-                        ${deadline ? `
-                            <span class="deadline-badge ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}">
-                                <i class="fas fa-clock"></i>
-                                ${this.formatDeadline(deadline)}
-                            </span>
-                        ` : ''}
+                <!-- LIGNE 1: Expéditeur, date et indicateurs -->
+                <div class="email-header-line">
+                    <div class="email-header-left">
+                        <!-- Checkbox -->
+                        <div class="email-checkbox-wrapper">
+                            <input type="checkbox" 
+                                   class="email-checkbox" 
+                                   ${isSelected ? 'checked' : ''}
+                                   onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                        </div>
                         
-                        ${email.hasAttachments ? `
-                            <span class="attachment-badge" title="Pièces jointes">
-                                <i class="fas fa-paperclip"></i>
-                            </span>
-                        ` : ''}
+                        <!-- Avatar -->
+                        <div class="sender-avatar" style="background: linear-gradient(135deg, ${this.generateColorFromText(senderName)})">
+                            ${senderInitial}
+                        </div>
                         
-                        ${analysis ? `
-                            <span class="ai-badge" title="Analysé par IA">
-                                <i class="fas fa-robot"></i>
-                            </span>
-                        ` : ''}
+                        <!-- Informations expéditeur -->
+                        <div class="email-sender-info">
+                            <div class="sender-name" title="${this.escapeHtml(senderName)}">
+                                ${this.escapeHtml(senderName)}
+                            </div>
+                            <div class="sender-email" title="${this.escapeHtml(senderEmail)}">
+                                ${this.escapeHtml(senderEmail)}
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="email-date">
-                        ${this.formatEmailDate(email.receivedDateTime)}
-                    </div>
-                    
-                    <div class="email-actions">
-                        ${hasTask ? `
-                            <button class="email-action-btn task-done" 
-                                    onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" 
-                                    title="Voir la tâche créée">
-                                <i class="fas fa-check-circle"></i>
+                    <div class="email-meta-header">
+                        <!-- Date -->
+                        <span class="email-date">${formattedDate}</span>
+                        
+                        <!-- Indicateurs -->
+                        <div class="email-indicators">
+                            ${email.hasAttachments ? `
+                                <span class="indicator-icon attachment" title="Contient des pièces jointes">
+                                    <i class="fas fa-paperclip"></i>
+                                </span>
+                            ` : ''}
+                            
+                            ${analysis ? `
+                                <span class="indicator-icon ai" title="Analysé par IA">
+                                    <i class="fas fa-robot"></i>
+                                </span>
+                            ` : ''}
+                            
+                            ${deadline ? `
+                                <span class="indicator-icon deadline" title="Échéance: ${deadline}">
+                                    <i class="fas fa-clock"></i>
+                                </span>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Actions -->
+                        <div class="email-actions">
+                            ${hasTask ? `
+                                <button class="action-btn task-created" onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')" title="Voir la tâche créée">
+                                    <i class="fas fa-check-circle"></i>
+                                </button>
+                            ` : `
+                                <button class="action-btn create-task" onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" title="Créer une tâche">
+                                    <i class="fas fa-plus-circle"></i>
+                                </button>
+                            `}
+                            
+                            <button class="action-btn view-email" onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" title="Voir l'email complet">
+                                <i class="fas fa-eye"></i>
                             </button>
-                        ` : `
-                            <button class="email-action-btn create-task" 
-                                    onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')" 
-                                    title="Créer une tâche">
-                                <i class="fas fa-plus-circle"></i>
-                            </button>
-                        `}
-                        
-                        <button class="email-action-btn view-email" 
-                                onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')" 
-                                title="Voir l'email">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- LIGNE 2: Sujet et aperçu -->
-                <div class="email-content">
-                    <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
-                        ${this.escapeHtml(email.subject || 'Sans sujet')}
-                    </div>
-                    <div class="email-preview">
-                        ${this.escapeHtml(email.bodyPreview || '').substring(0, 150)}${email.bodyPreview && email.bodyPreview.length > 150 ? '...' : ''}
+                <!-- LIGNE 2: Sujet et échéance -->
+                <div class="email-content-line">
+                    <div class="email-subject-container">
+                        <div class="email-subject" title="${this.escapeHtml(email.subject || 'Sans sujet')}">
+                            ${this.escapeHtml(email.subject || 'Sans sujet')}
+                        </div>
+                        ${deadline ? `
+                            <div class="email-deadline ${this.getDeadlineClass(deadline)}" title="Échéance: ${deadline}">
+                                <i class="fas fa-clock"></i>
+                                ${this.formatDeadline(deadline)}
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             </div>
         `;
     }
 
-    renderGroupedView(emails, groupMode) {
+    renderGroupedEmailView(emails, groupMode) {
         const groups = this.createEmailGroups(emails, groupMode);
         
         return `
-            <div class="emails-grouped">
+            <div class="grouped-emails-container">
                 ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
             </div>
         `;
     }
 
     renderEmailGroup(group, groupType) {
-        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+        const displayName = groupType === 'grouped-domain' ? 
+            `@${group.name}` : 
+            group.name;
+            
         const icon = groupType === 'grouped-domain' ? 
             '<i class="fas fa-globe"></i>' : 
-            `<div class="group-avatar">${group.name.charAt(0).toUpperCase()}</div>`;
+            group.avatar;
         
         return `
             <div class="email-group" data-group-key="${group.key}">
-                <div class="group-header" onclick="window.pageManager.toggleGroup('${group.key}')">
+                <div class="group-header" onclick="window.pageManager.toggleEmailGroup('${group.key}')">
                     <div class="group-info">
-                        <div class="group-icon">${icon}</div>
+                        <div class="group-icon">
+                            ${icon}
+                        </div>
                         <div class="group-details">
                             <div class="group-name">${displayName}</div>
-                            <div class="group-count">${group.count} email${group.count > 1 ? 's' : ''}</div>
+                            <div class="group-stats">${group.count} email${group.count > 1 ? 's' : ''}</div>
                         </div>
                     </div>
-                    <div class="group-controls">
-                        <div class="group-date">${this.formatEmailDate(group.latestDate)}</div>
-                        <i class="fas fa-chevron-down group-toggle"></i>
+                    <div class="group-meta">
+                        <span class="group-date">${this.formatEmailDate(group.latestDate)}</span>
+                        <i class="fas fa-chevron-down group-toggle-icon"></i>
                     </div>
                 </div>
                 
-                <div class="group-content" style="display: none;">
-                    ${group.emails.map(email => this.renderEmailCard(email)).join('')}
+                <div class="group-emails" style="display: none;">
+                    ${group.emails.map(email => this.renderUnifiedEmailItem(email)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderEmailStats(emails, categoryCounts) {
+        if (emails.length === 0) return '';
+        
+        const totalSize = emails.reduce((sum, email) => sum + (email.size || 0), 0);
+        const withAttachments = emails.filter(e => e.hasAttachments).length;
+        const analyzed = emails.filter(e => this.aiAnalysisResults.has(e.id)).length;
+        
+        return `
+            <div class="email-stats-bar">
+                <div class="stats-group">
+                    <span class="stat-item">
+                        <i class="fas fa-envelope"></i>
+                        ${emails.length} emails
+                    </span>
+                    ${withAttachments > 0 ? `
+                        <span class="stat-item">
+                            <i class="fas fa-paperclip"></i>
+                            ${withAttachments} avec pièces jointes
+                        </span>
+                    ` : ''}
+                    ${analyzed > 0 ? `
+                        <span class="stat-item">
+                            <i class="fas fa-robot"></i>
+                            ${analyzed} analysés par IA
+                        </span>
+                    ` : ''}
+                </div>
+                
+                <div class="stats-actions">
+                    <button class="stats-action-btn" onclick="window.pageManager.exportEmails()" title="Exporter la liste">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="stats-action-btn" onclick="window.pageManager.selectAllVisible()" title="Sélectionner tous les emails visibles">
+                        <i class="fas fa-check-square"></i>
+                    </button>
                 </div>
             </div>
         `;
     }
 
     // =====================================
-    // ÉVÉNEMENTS ET HANDLERS
+    // UTILITY METHODS
+    // =====================================
+    generateColorFromText(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const hue = Math.abs(hash) % 360;
+        const saturation = 65 + (Math.abs(hash) % 20);
+        const lightness = 45 + (Math.abs(hash) % 15);
+        
+        return `hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%)`;
+    }
+
+    getDeadlineClass(deadline) {
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return 'overdue';
+            if (diffDays === 0) return 'today';
+            if (diffDays <= 3) return 'soon';
+            return 'normal';
+        } catch (error) {
+            return 'normal';
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // =====================================
+    // EVENT HANDLERS
     // =====================================
     handleEmailClick(event, emailId) {
         if (event.target.type === 'checkbox') return;
-        if (event.target.closest('.email-actions')) return;
         this.showEmailModal(emailId);
     }
 
     changeViewMode(mode) {
         this.currentViewMode = mode;
         
-        // Update buttons
-        document.querySelectorAll('.view-btn').forEach(btn => {
+        // Update active button
+        document.querySelectorAll('.view-mode-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        event.target.closest('.view-btn').classList.add('active');
-        
-        // Re-render
-        const emailsContent = document.getElementById('emailsContent');
-        if (emailsContent) {
-            emailsContent.innerHTML = this.renderEmailsList();
+        const activeBtn = document.querySelector(`[data-mode="${mode}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
         }
+        
+        // Re-render emails list
+        const emailsList = document.getElementById('emailsList');
+        if (emailsList) {
+            emailsList.innerHTML = this.renderEmailsList();
+        }
+        
+        this.setupGroupToggles();
     }
 
     filterByCategory(categoryId) {
         this.currentCategory = categoryId;
         
-        // Update filters
-        document.querySelectorAll('.category-filter').forEach(filter => {
-            filter.classList.remove('active');
+        // Update active filter
+        document.querySelectorAll('.unified-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
         });
-        event.target.classList.add('active');
-        
-        // Re-render
-        const emailsContent = document.getElementById('emailsContent');
-        if (emailsContent) {
-            emailsContent.innerHTML = this.renderEmailsList();
+        const activeBtn = document.querySelector(`[data-category="${categoryId}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
         }
+        
+        // Re-render emails list
+        const emailsList = document.getElementById('emailsList');
+        if (emailsList) {
+            emailsList.innerHTML = this.renderEmailsList();
+        }
+        
+        this.setupGroupToggles();
     }
 
     toggleEmailSelection(emailId) {
@@ -506,6 +619,8 @@ class PageManager {
         } else {
             this.selectedEmails.add(emailId);
         }
+        
+        // Re-render to update selection UI
         this.renderEmails(document.getElementById('pageContent'));
     }
 
@@ -514,24 +629,49 @@ class PageManager {
         this.renderEmails(document.getElementById('pageContent'));
     }
 
-    toggleGroup(groupKey) {
+    selectAllVisible() {
+        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        let filteredEmails = emails;
+        
+        if (this.currentCategory !== 'all') {
+            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+        }
+        
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        filteredEmails.forEach(email => {
+            this.selectedEmails.add(email.id);
+        });
+        
+        this.renderEmails(document.getElementById('pageContent'));
+        window.uiManager.showToast(`${filteredEmails.length} emails sélectionnés`, 'success');
+    }
+
+    toggleEmailGroup(groupKey) {
         const group = document.querySelector(`[data-group-key="${groupKey}"]`);
         if (!group) return;
         
-        const content = group.querySelector('.group-content');
-        const toggle = group.querySelector('.group-toggle');
+        const emailsContainer = group.querySelector('.group-emails');
+        const toggleIcon = group.querySelector('.group-toggle-icon');
         
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            toggle.classList.remove('fa-chevron-down');
-            toggle.classList.add('fa-chevron-up');
+        if (emailsContainer.style.display === 'none') {
+            emailsContainer.style.display = 'block';
+            toggleIcon.classList.remove('fa-chevron-down');
+            toggleIcon.classList.add('fa-chevron-up');
             group.classList.add('expanded');
         } else {
-            content.style.display = 'none';
-            toggle.classList.remove('fa-chevron-up');
-            toggle.classList.add('fa-chevron-down');
+            emailsContainer.style.display = 'none';
+            toggleIcon.classList.remove('fa-chevron-up');
+            toggleIcon.classList.add('fa-chevron-down');
             group.classList.remove('expanded');
         }
+    }
+
+    setupGroupToggles() {
+        // Group toggles are handled by inline onclick handlers
+        console.log('[PageManager] Group toggles ready');
     }
 
     setupEmailsEventListeners() {
@@ -550,15 +690,17 @@ class PageManager {
     handleSearch(term) {
         this.searchTerm = term.trim();
         
-        const emailsContent = document.getElementById('emailsContent');
-        if (emailsContent) {
-            emailsContent.innerHTML = this.renderEmailsList();
+        const emailsList = document.getElementById('emailsList');
+        if (emailsList) {
+            emailsList.innerHTML = this.renderEmailsList();
         }
         
         const clearBtn = document.getElementById('searchClearBtn');
         if (clearBtn) {
-            clearBtn.style.display = this.searchTerm ? 'block' : 'none';
+            clearBtn.style.display = this.searchTerm ? 'flex' : 'none';
         }
+        
+        this.setupGroupToggles();
     }
 
     clearSearch() {
@@ -566,1006 +708,12 @@ class PageManager {
         const searchInput = document.getElementById('emailSearchInput');
         if (searchInput) searchInput.value = '';
         
-        const emailsContent = document.getElementById('emailsContent');
-        if (emailsContent) {
-            emailsContent.innerHTML = this.renderEmailsList();
-        }
-    }
-
-    // =====================================
-    // STYLES MODERNES
-    // =====================================
-    addModernStyles() {
-        if (document.getElementById('modernEmailStyles')) return;
-        
-        const styles = document.createElement('style');
-        styles.id = 'modernEmailStyles';
-        styles.textContent = `
-            /* ===== RESET & BASE ===== */
-            * {
-                box-sizing: border-box;
-            }
-            
-            /* ===== HEADER PRINCIPAL ===== */
-            .emails-header {
-                margin-bottom: 20px;
-                padding: 0 4px; /* Alignement avec le menu */
-            }
-            
-            .header-title-section {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-            }
-            
-            .header-explanation {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                width: 100%;
-                background: #f0f9ff;
-                border: 1px solid #bae6fd;
-                border-radius: 12px;
-                padding: 16px 20px;
-            }
-            
-            .explanation-main {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                flex: 1;
-            }
-            
-            .explanation-icon {
-                color: #0ea5e9;
-                font-size: 16px;
-                flex-shrink: 0;
-            }
-            
-            .explanation-text {
-                color: #075985;
-                font-weight: 600;
-                font-size: 14px;
-                line-height: 1.4;
-            }
-            
-            .selection-clear {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                background: #ef4444;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 8px;
-                cursor: pointer;
-                font-weight: 600;
-                font-size: 13px;
-                transition: all 0.2s ease;
-                flex-shrink: 0;
-            }
-            
-            .selection-clear:hover {
-                background: #dc2626;
-                transform: translateY(-1px);
-            }
-            
-            .selection-actions {
-                display: flex;
-                gap: 8px;
-                flex-shrink: 0;
-            }
-            
-            .selection-action {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                background: white;
-                color: #374151;
-                border: 1px solid #d1d5db;
-                padding: 6px 12px;
-                border-radius: 6px;
-                cursor: pointer;
-                font-weight: 500;
-                font-size: 12px;
-                transition: all 0.2s ease;
-            }
-            
-            .selection-action:hover {
-                background: #f9fafb;
-                border-color: #9ca3af;
-                transform: translateY(-1px);
-            }
-            
-            /* ===== BARRE DE CONTRÔLES ===== */
-            .emails-controls-bar {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 20px;
-                padding: 20px;
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                margin: 0 4px 20px 4px; /* Alignement avec le menu */
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            /* Recherche */
-            .controls-search {
-                flex: 0 0 300px;
-            }
-            
-            .search-container {
-                position: relative;
-                width: 100%;
-            }
-            
-            .search-input {
-                width: 100%;
-                padding: 12px 16px 12px 44px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                font-size: 14px;
-                background: #f9fafb;
-                transition: all 0.3s ease;
-            }
-            
-            .search-input:focus {
-                outline: none;
-                border-color: #3b82f6;
-                background: white;
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            }
-            
-            .search-icon {
-                position: absolute;
-                left: 16px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: #9ca3af;
-                font-size: 14px;
-            }
-            
-            .search-clear {
-                position: absolute;
-                right: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                background: #ef4444;
-                color: white;
-                border: none;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 10px;
-                transition: background 0.2s;
-            }
-            
-            .search-clear:hover {
-                background: #dc2626;
-            }
-            
-            /* Modes de vue */
-            .controls-views {
-                flex: 1;
-                display: flex;
-                justify-content: center;
-            }
-            
-            .view-buttons {
-                display: flex;
-                background: #f3f4f6;
-                border-radius: 12px;
-                padding: 4px;
-            }
-            
-            .view-btn {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 10px 16px;
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                font-size: 14px;
-                font-weight: 500;
-                white-space: nowrap;
-            }
-            
-            .view-btn:hover {
-                background: rgba(255, 255, 255, 0.5);
-                color: #374151;
-            }
-            
-            .view-btn.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                font-weight: 600;
-            }
-            
-            /* Actions */
-            .controls-actions {
-                flex: 0 0 auto;
-                display: flex;
-                gap: 12px;
-            }
-            
-            .action-btn {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                border: 2px solid transparent;
-                border-radius: 12px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                position: relative;
-                white-space: nowrap;
-            }
-            
-            .action-btn.primary {
-                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                color: white;
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            }
-            
-            .action-btn.primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-            }
-            
-            .action-btn.primary.with-selection {
-                background: linear-gradient(135deg, #10b981, #047857);
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-                animation: pulse 2s infinite;
-            }
-            
-            .action-btn.secondary {
-                background: white;
-                color: #374151;
-                border-color: #d1d5db;
-            }
-            
-            .action-btn.secondary:hover {
-                background: #f9fafb;
-                border-color: #9ca3af;
-                transform: translateY(-1px);
-            }
-            
-            .selection-count {
-                position: absolute;
-                top: -8px;
-                right: -8px;
-                background: #ef4444;
-                color: white;
-                font-size: 12px;
-                font-weight: 700;
-                padding: 2px 6px;
-                border-radius: 10px;
-                min-width: 20px;
-                text-align: center;
-                border: 2px solid white;
-            }
-            
-            @keyframes pulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.02); }
-            }
-            
-            /* ===== FILTRES DE CATÉGORIES ===== */
-            .category-filters {
-                display: flex;
-                gap: 8px;
-                margin: 0 4px 20px 4px; /* Alignement avec le menu */
-                flex-wrap: wrap;
-            }
-            
-            .category-filter {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                padding: 10px 16px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                background: white;
-                color: #374151;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                font-size: 14px;
-                font-weight: 500;
-            }
-            
-            .category-filter:hover {
-                border-color: var(--category-color, #3b82f6);
-                background: color-mix(in srgb, var(--category-color, #3b82f6) 5%, white);
-                transform: translateY(-1px);
-            }
-            
-            .category-filter.active {
-                background: var(--category-color, #3b82f6);
-                color: white;
-                border-color: var(--category-color, #3b82f6);
-                box-shadow: 0 4px 12px color-mix(in srgb, var(--category-color, #3b82f6) 30%, transparent);
-            }
-            
-            .filter-icon {
-                font-size: 16px;
-            }
-            
-            .filter-count {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 8px;
-                border-radius: 8px;
-                font-size: 12px;
-                font-weight: 700;
-                min-width: 20px;
-                text-align: center;
-            }
-            
-            .category-filter.active .filter-count {
-                background: rgba(255, 255, 255, 0.25);
-            }
-            
-            /* ===== CONTENU DES EMAILS ===== */
-            .emails-content {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                margin: 0 4px; /* Alignement avec le menu */
-                overflow: hidden;
-                min-height: 400px;
-            }
-            
-            /* ===== LISTE D'EMAILS ===== */
-            .emails-list {
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .email-card {
-                display: flex;
-                flex-direction: column;
-                padding: 16px 20px;
-                border-bottom: 1px solid #f3f4f6;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                background: white;
-            }
-            
-            .email-card:last-child {
-                border-bottom: none;
-            }
-            
-            .email-card:hover {
-                background: #f8fafc;
-            }
-            
-            .email-card.selected {
-                background: #eff6ff;
-                border-left: 4px solid #3b82f6;
-            }
-            
-            .email-card.has-task {
-                background: #f0fdf4;
-                border-left: 4px solid #10b981;
-            }
-            
-            /* Header de l'email (ligne 1) */
-            .email-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 8px;
-            }
-            
-            .email-checkbox-container {
-                flex-shrink: 0;
-            }
-            
-            .email-checkbox {
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-            }
-            
-            .email-avatar {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: 700;
-                font-size: 16px;
-                flex-shrink: 0;
-            }
-            
-            .email-sender-info {
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .sender-name {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                line-height: 1.2;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .sender-domain {
-                font-size: 12px;
-                color: #6b7280;
-                background: #f3f4f6;
-                padding: 2px 6px;
-                border-radius: 4px;
-                display: inline-block;
-                margin-top: 2px;
-            }
-            
-            .email-meta-badges {
-                display: flex;
-                gap: 6px;
-                align-items: center;
-                flex-shrink: 0;
-            }
-            
-            .deadline-badge,
-            .attachment-badge,
-            .ai-badge {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                font-weight: 600;
-            }
-            
-            .deadline-badge.normal {
-                background: #f3f4f6;
-                color: #6b7280;
-            }
-            
-            .deadline-badge.soon {
-                background: #fef3c7;
-                color: #d97706;
-            }
-            
-            .deadline-badge.today {
-                background: #fee2e2;
-                color: #dc2626;
-            }
-            
-            .deadline-badge.overdue {
-                background: #dc2626;
-                color: white;
-                animation: blink 1s infinite;
-            }
-            
-            .attachment-badge {
-                background: #fef3c7;
-                color: #d97706;
-            }
-            
-            .ai-badge {
-                background: #dbeafe;
-                color: #2563eb;
-            }
-            
-            .email-date {
-                font-size: 13px;
-                color: #6b7280;
-                font-weight: 500;
-                flex-shrink: 0;
-            }
-            
-            .email-actions {
-                display: flex;
-                gap: 4px;
-                flex-shrink: 0;
-            }
-            
-            .email-action-btn {
-                width: 32px;
-                height: 32px;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                background: white;
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                font-size: 14px;
-            }
-            
-            .email-action-btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            .email-action-btn.task-done {
-                background: #dcfce7;
-                color: #16a34a;
-                border-color: #16a34a;
-            }
-            
-            .email-action-btn.task-done:hover {
-                background: #16a34a;
-                color: white;
-            }
-            
-            .email-action-btn.create-task:hover {
-                background: #dbeafe;
-                color: #2563eb;
-                border-color: #2563eb;
-            }
-            
-            .email-action-btn.view-email:hover {
-                background: #f3f4f6;
-                color: #374151;
-                border-color: #9ca3af;
-            }
-            
-            /* Contenu de l'email (ligne 2) */
-            .email-content {
-                margin-left: 70px; /* Aligné avec le sender-info */
-                padding-left: 0;
-            }
-            
-            .email-subject {
-                font-size: 16px;
-                font-weight: 600;
-                color: #1f2937;
-                line-height: 1.3;
-                margin-bottom: 4px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .email-preview {
-                font-size: 14px;
-                color: #6b7280;
-                line-height: 1.4;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-            }
-            
-            /* ===== VUE GROUPÉE ===== */
-            .emails-grouped {
-                display: flex;
-                flex-direction: column;
-            }
-            
-            .email-group {
-                border-bottom: 1px solid #f3f4f6;
-            }
-            
-            .email-group:last-child {
-                border-bottom: none;
-            }
-            
-            .group-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 16px 20px;
-                background: #f8fafc;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border-bottom: 1px solid #f3f4f6;
-            }
-            
-            .group-header:hover {
-                background: #f1f5f9;
-            }
-            
-            .email-group.expanded .group-header {
-                background: #eff6ff;
-                border-bottom-color: #bfdbfe;
-            }
-            
-            .group-info {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .group-icon {
-                width: 44px;
-                height: 44px;
-                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 16px;
-            }
-            
-            .group-avatar {
-                width: 44px;
-                height: 44px;
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                font-weight: 700;
-            }
-            
-            .group-details {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            
-            .group-name {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 16px;
-            }
-            
-            .group-count {
-                font-size: 13px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .group-controls {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .group-date {
-                font-size: 13px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .group-toggle {
-                color: #9ca3af;
-                transition: transform 0.3s ease;
-                font-size: 14px;
-            }
-            
-            .email-group.expanded .group-toggle {
-                transform: rotate(180deg);
-            }
-            
-            .group-content {
-                background: white;
-            }
-            
-            /* ===== ÉTAT VIDE ===== */
-            .empty-state {
-                text-align: center;
-                padding: 80px 20px;
-                color: #6b7280;
-            }
-            
-            .empty-icon {
-                font-size: 64px;
-                margin-bottom: 20px;
-                color: #d1d5db;
-            }
-            
-            .empty-title {
-                font-size: 24px;
-                font-weight: 700;
-                color: #374151;
-                margin: 0 0 8px 0;
-            }
-            
-            .empty-text {
-                font-size: 16px;
-                margin: 0 0 24px 0;
-                line-height: 1.5;
-            }
-            
-            .btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 12px 24px;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                text-decoration: none;
-            }
-            
-            .btn.primary {
-                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                color: white;
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-            }
-            
-            .btn.primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-            }
-            
-            /* ===== ANIMATIONS ===== */
-            @keyframes blink {
-                0%, 50% { opacity: 1; }
-                51%, 100% { opacity: 0.5; }
-            }
-            
-            /* ===== RESPONSIVE ===== */
-            @media (max-width: 1024px) {
-                .emails-controls-bar {
-                    flex-direction: column;
-                    gap: 16px;
-                }
-                
-                .controls-search {
-                    flex: none;
-                    width: 100%;
-                }
-                
-                .controls-views {
-                    flex: none;
-                    width: 100%;
-                }
-                
-                .view-buttons {
-                    width: 100%;
-                    justify-content: space-evenly;
-                }
-                
-                .controls-actions {
-                    flex: none;
-                    width: 100%;
-                    justify-content: center;
-                }
-            }
-            
-            @media (max-width: 768px) {
-                .page-title {
-                    font-size: 24px;
-                }
-                
-                .header-title-section {
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: 12px;
-                }
-                
-                .emails-controls-bar {
-                    padding: 16px;
-                }
-                
-                .view-btn span {
-                    display: none;
-                }
-                
-                .action-btn span {
-                    display: none;
-                }
-                
-                .category-filters {
-                    justify-content: center;
-                    gap: 6px;
-                }
-                
-                .filter-name {
-                    display: none;
-                }
-                
-                .email-card {
-                    padding: 12px 16px;
-                }
-                
-                .email-header {
-                    gap: 8px;
-                }
-                
-                .email-avatar {
-                    width: 32px;
-                    height: 32px;
-                    font-size: 14px;
-                }
-                
-                .email-content {
-                    margin-left: 50px;
-                }
-                
-                .sender-name {
-                    font-size: 14px;
-                }
-                
-                .email-subject {
-                    font-size: 14px;
-                }
-                
-                .email-preview {
-                    font-size: 13px;
-                }
-                
-                .email-action-btn {
-                    width: 28px;
-                    height: 28px;
-                    font-size: 12px;
-                }
-            }
-            
-            /* Support pour les navigateurs sans color-mix */
-            @supports not (color: color-mix(in srgb, red, blue)) {
-                .category-filter:hover {
-                    background: rgba(59, 130, 246, 0.05);
-                }
-            }
-        `;
-        
-        document.head.appendChild(styles);
-    }
-
-    // =====================================
-    // UTILITY METHODS
-    // =====================================
-    generateGradient(text) {
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        const emailsList = document.getElementById('emailsList');
+        if (emailsList) {
+            emailsList.innerHTML = this.renderEmailsList();
         }
         
-        const hue = Math.abs(hash) % 360;
-        const saturation = 65 + (Math.abs(hash) % 20);
-        const lightness = 45 + (Math.abs(hash) % 15);
-        
-        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
-    }
-
-    getDeadlineClass(deadline) {
-        try {
-            const deadlineDate = new Date(deadline);
-            const now = new Date();
-            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) return 'overdue';
-            if (diffDays === 0) return 'today';
-            if (diffDays <= 3) return 'soon';
-            return 'normal';
-        } catch (error) {
-            return 'normal';
-        }
-    }
-
-    formatDeadline(deadline) {
-        if (!deadline) return '';
-        
-        try {
-            const deadlineDate = new Date(deadline);
-            const now = new Date();
-            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) return `Échue`;
-            if (diffDays === 0) return 'Aujourd\'hui';
-            if (diffDays === 1) return 'Demain';
-            if (diffDays <= 7) return `${diffDays}j`;
-            return deadlineDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        } catch (error) {
-            return deadline;
-        }
-    }
-
-    formatEmailDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 3600000) {
-            return `${Math.floor(diff / 60000)}m`;
-        } else if (diff < 86400000) {
-            return `${Math.floor(diff / 3600000)}h`;
-        } else if (diff < 604800000) {
-            return `${Math.floor(diff / 86400000)}j`;
-        } else {
-            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
-    }
-
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    calculateCategoryCounts(emails) {
-        const counts = {};
-        emails.forEach(email => {
-            const cat = email.category || 'other';
-            counts[cat] = (counts[cat] || 0) + 1;
-        });
-        return counts;
-    }
-
-    createEmailGroups(emails, groupMode) {
-        const groups = {};
-        
-        emails.forEach(email => {
-            let groupKey, groupName;
-            
-            if (groupMode === 'grouped-domain') {
-                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
-                groupKey = domain;
-                groupName = domain;
-            } else {
-                const senderEmail = email.from?.emailAddress?.address || 'unknown';
-                const senderName = email.from?.emailAddress?.name || senderEmail;
-                groupKey = senderEmail;
-                groupName = senderName;
-            }
-            
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    key: groupKey,
-                    name: groupName,
-                    emails: [],
-                    count: 0,
-                    latestDate: null
-                };
-            }
-            
-            groups[groupKey].emails.push(email);
-            groups[groupKey].count++;
-            
-            const emailDate = new Date(email.receivedDateTime);
-            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
-                groups[groupKey].latestDate = emailDate;
-            }
-        });
-        
-        return Object.values(groups).sort((a, b) => {
-            if (!a.latestDate && !b.latestDate) return 0;
-            if (!a.latestDate) return 1;
-            if (!b.latestDate) return -1;
-            return b.latestDate - a.latestDate;
-        });
-    }
-
-    matchesSearch(email, searchTerm) {
-        if (!searchTerm) return true;
-        
-        const search = searchTerm.toLowerCase();
-        const subject = (email.subject || '').toLowerCase();
-        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
-        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
-        const preview = (email.bodyPreview || '').toLowerCase();
-        
-        return subject.includes(search) || 
-               sender.includes(search) || 
-               senderEmail.includes(search) || 
-               preview.includes(search);
+        this.setupGroupToggles();
     }
 
     // =====================================
@@ -1585,12 +733,14 @@ class PageManager {
             if (!email || this.createdTasks.has(emailId)) continue;
             
             try {
+                // Get or create analysis
                 let analysis = this.aiAnalysisResults.get(emailId);
                 if (!analysis && window.aiTaskAnalyzer) {
                     analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
                     this.aiAnalysisResults.set(emailId, analysis);
                 }
                 
+                // Create task
                 if (analysis && window.taskManager) {
                     const taskData = this.buildTaskDataFromAnalysis(email, analysis);
                     const task = window.taskManager.createTaskFromEmail(taskData, email);
@@ -1626,7 +776,10 @@ class PageManager {
             return;
         }
         
+        // Select emails to process
         emailsToProcess.forEach(email => this.selectedEmails.add(email.id));
+        
+        // Create tasks
         await this.createTasksFromSelection();
     }
 
@@ -1643,6 +796,1125 @@ class PageManager {
         }
         
         return filteredEmails;
+    }
+
+    // =====================================
+    // STYLES UNIFIÉS
+    // =====================================
+    addUnifiedEmailStyles() {
+        if (document.getElementById('unifiedEmailStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'unifiedEmailStyles';
+        styles.textContent = `
+            /* ===== BARRE PRINCIPALE CORRIGÉE ===== */
+            .emails-unified-toolbar {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                padding: 20px 24px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                margin-bottom: 16px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            
+            .toolbar-main-line {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 24px;
+                min-height: 48px;
+            }
+            
+            .toolbar-secondary-line {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 20px;
+                padding-top: 8px;
+                border-top: 1px solid #f3f4f6;
+            }
+            
+            .toolbar-section {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .toolbar-left {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .toolbar-center {
+                flex: 1;
+                max-width: 450px;
+                min-width: 250px;
+                display: flex;
+                justify-content: center;
+            }
+            
+            .toolbar-right {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+            }
+            
+            .page-title {
+                margin: 0;
+                font-size: 28px;
+                font-weight: 700;
+                color: #1f2937;
+                line-height: 1;
+            }
+            
+            .item-counter {
+                font-size: 15px;
+                color: #6b7280;
+                font-weight: 600;
+                background: #f3f4f6;
+                padding: 6px 14px;
+                border-radius: 16px;
+                white-space: nowrap;
+            }
+            
+            .toolbar-description {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 12px;
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                font-size: 13px;
+                line-height: 1.4;
+            }
+            
+            .description-icon {
+                color: #0ea5e9;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+            
+            .description-text {
+                color: #075985;
+                font-weight: 500;
+            }
+            
+            .selection-indicator {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+                border-radius: 10px;
+                padding: 8px 16px;
+                font-size: 14px;
+                color: #1e40af;
+                font-weight: 600;
+            }
+            
+            .selection-count {
+                white-space: nowrap;
+            }
+            
+            /* ===== TITRE ET COMPTEURS ===== */
+            .page-title {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                line-height: 1;
+            }
+            
+            .item-counter {
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 600;
+                background: #f3f4f6;
+                padding: 4px 12px;
+                border-radius: 12px;
+                white-space: nowrap;
+            }
+            
+            .selection-indicator {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+                border-radius: 8px;
+                padding: 6px 12px;
+            }
+            
+            .selection-count {
+                font-size: 13px;
+                color: #1e40af;
+                font-weight: 600;
+            }
+            
+            /* ===== RECHERCHE ÉLÉGANTE ===== */
+            .unified-search-wrapper {
+                position: relative;
+                width: 100%;
+                max-width: 420px;
+            }
+            
+            .unified-search-input {
+                width: 100%;
+                padding: 12px 18px 12px 46px;
+                border: 1px solid #d1d5db;
+                border-radius: 10px;
+                font-size: 15px;
+                background: #f9fafb;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            
+            .unified-search-input:focus {
+                outline: none;
+                border-color: #3b82f6;
+                background: white;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .search-icon {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #9ca3af;
+                font-size: 16px;
+            }
+            
+            .search-clear-btn {
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: #9ca3af;
+                cursor: pointer;
+                padding: 6px;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .search-clear-btn:hover {
+                background: #f3f4f6;
+                color: #6b7280;
+            }
+            
+            /* ===== BOUTONS UNIFIÉS ===== */
+            .btn-unified {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 16px;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+                background: white;
+                color: #374151;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                white-space: nowrap;
+                min-height: 40px;
+                box-sizing: border-box;
+            }
+            
+            .btn-unified:hover {
+                background: #f9fafb;
+                border-color: #9ca3af;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            
+            .btn-unified.active {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.25);
+            }
+            
+            .btn-unified.btn-primary {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+            
+            .btn-unified.btn-primary.with-selection {
+                background: linear-gradient(135deg, #10b981, #059669);
+                border-color: #10b981;
+                position: relative;
+                animation: selectionPulse 2s infinite;
+            }
+            
+            .btn-unified.btn-primary.with-selection:hover {
+                background: linear-gradient(135deg, #059669, #047857);
+                border-color: #059669;
+            }
+            
+            .selection-badge {
+                position: absolute;
+                top: -6px;
+                right: -6px;
+                background: #ef4444;
+                color: white;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 10px;
+                min-width: 18px;
+                text-align: center;
+                border: 2px solid white;
+                box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            }
+            
+            @keyframes selectionPulse {
+                0%, 100% { box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); }
+                50% { box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); }
+            }
+            
+            .btn-unified.btn-secondary {
+                background: #f8fafc;
+                color: #475569;
+                border-color: #e2e8f0;
+            }
+            
+            .btn-unified.btn-secondary:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+            }
+            
+            .btn-unified.btn-clear {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+                padding: 6px 10px;
+                min-height: 32px;
+            }
+            
+            .btn-unified.btn-clear:hover {
+                background: #dc2626;
+                color: white;
+                border-color: #dc2626;
+            }
+            
+            /* ===== GROUPES DE BOUTONS ===== */
+            .view-mode-group {
+                display: flex;
+                gap: 2px;
+                background: #f3f4f6;
+                padding: 2px;
+                border-radius: 6px;
+            }
+            
+            .view-mode-btn {
+                border: none !important;
+                background: transparent !important;
+                color: #6b7280 !important;
+                padding: 8px 12px !important;
+                border-radius: 4px !important;
+                min-height: 36px !important;
+            }
+            
+            .view-mode-btn:hover {
+                background: rgba(255, 255, 255, 0.5) !important;
+                color: #374151 !important;
+            }
+            
+            .view-mode-btn.active {
+                background: white !important;
+                color: #1f2937 !important;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+                transform: none !important;
+            }
+            
+            .action-group {
+                display: flex;
+                gap: 8px;
+            }
+            
+            /* ===== FILTRES DE CATÉGORIES UNIFIÉS ===== */
+            .unified-category-filters {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-bottom: 16px;
+                padding: 0;
+            }
+            
+            .unified-filter-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 10px 16px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                background: white;
+                color: #374151;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                white-space: nowrap;
+                min-height: 40px;
+                box-sizing: border-box;
+            }
+            
+            .unified-filter-btn:hover {
+                border-color: var(--category-color, #3b82f6);
+                background: color-mix(in srgb, var(--category-color, #3b82f6) 8%, white);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            
+            .unified-filter-btn.active {
+                background: var(--category-color, #3b82f6);
+                color: white;
+                border-color: var(--category-color, #3b82f6);
+                box-shadow: 0 2px 6px color-mix(in srgb, var(--category-color, #3b82f6) 25%, transparent);
+            }
+            
+            .filter-icon {
+                font-size: 16px;
+            }
+            
+            .filter-label {
+                font-weight: 600;
+            }
+            
+            .filter-count {
+                background: rgba(0, 0, 0, 0.1);
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-size: 12px;
+                font-weight: 700;
+                min-width: 20px;
+                text-align: center;
+            }
+            
+            .unified-filter-btn.active .filter-count {
+                background: rgba(255, 255, 255, 0.25);
+            }
+            
+            /* ===== ZONE DE CONTENU ===== */
+            .emails-content-area {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                overflow: hidden;
+                min-height: 400px;
+            }
+            
+            /* ===== LISTE D'EMAILS UNIFIÉE ===== */
+            .unified-emails-list {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .unified-email-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                border-bottom: 1px solid #f3f4f6;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-height: 60px;
+                max-height: 60px;
+                overflow: hidden;
+            }
+            
+            .unified-email-item:last-child {
+                border-bottom: none;
+            }
+            
+            .unified-email-item:hover {
+                background: #f9fafb;
+            }
+            
+            .unified-email-item.selected {
+                background: #eff6ff;
+                border-left: 4px solid #3b82f6;
+            }
+            
+            .unified-email-item.has-task {
+                background: #f0fdf4;
+                border-left: 4px solid #10b981;
+            }
+            
+            /* ===== ÉLÉMENTS D'EMAIL ===== */
+            .email-checkbox-wrapper {
+                flex-shrink: 0;
+            }
+            
+            .email-checkbox {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            
+            .sender-avatar {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+            
+            .email-main-content {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .email-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .email-sender {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-width: 0;
+            }
+            
+            .sender-name {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .sender-domain {
+                font-size: 13px;
+                color: #6b7280;
+                background: #f3f4f6;
+                padding: 2px 8px;
+                border-radius: 4px;
+                white-space: nowrap;
+            }
+            
+            .email-meta {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-shrink: 0;
+            }
+            
+            .email-deadline {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 3px 8px;
+                border-radius: 4px;
+                white-space: nowrap;
+            }
+            
+            .email-deadline.normal {
+                background: #f3f4f6;
+                color: #6b7280;
+            }
+            
+            .email-deadline.soon {
+                background: #fef3c7;
+                color: #d97706;
+            }
+            
+            .email-deadline.today {
+                background: #fee2e2;
+                color: #dc2626;
+            }
+            
+            .email-deadline.overdue {
+                background: #dc2626;
+                color: white;
+                animation: pulse 2s infinite;
+            }
+            
+            .email-date {
+                font-size: 13px;
+                color: #6b7280;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            
+            .email-subject {
+                font-size: 15px;
+                font-weight: 600;
+                color: #374151;
+                line-height: 1.3;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 1;
+                -webkit-box-orient: vertical;
+            }
+            
+            .email-preview {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.4;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+            
+            .email-tags {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            
+            /* Indicateurs compacts */
+            .attachment-indicator,
+            .ai-indicator {
+                display: flex;
+                align-items: center;
+                font-size: 11px;
+                color: #6b7280;
+                padding: 2px;
+            }
+            
+            .ai-indicator {
+                color: #3b82f6;
+            }
+            
+            .attachment-indicator {
+                color: #f59e0b;
+            }
+            
+            /* ===== ACTIONS D'EMAIL COMPACTES ===== */
+            .email-actions {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            
+            .action-btn {
+                width: 28px;
+                height: 28px;
+                border: 1px solid #e5e7eb;
+                border-radius: 4px;
+                background: white;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                font-size: 12px;
+            }
+            
+            .action-btn:hover {
+                background: #f9fafb;
+                border-color: #d1d5db;
+                transform: translateY(-1px);
+            }
+            
+            .action-btn.task-created {
+                background: #dcfce7;
+                color: #16a34a;
+                border-color: #16a34a;
+            }
+            
+            .action-btn.task-created:hover {
+                background: #16a34a;
+                color: white;
+            }
+            
+            .action-btn.create-task:hover {
+                background: #dbeafe;
+                color: #2563eb;
+                border-color: #2563eb;
+            }
+            
+            .action-btn.view-email:hover {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #9ca3af;
+            }
+            
+            /* ===== VUE GROUPÉE ===== */
+            .grouped-emails-container {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .email-group {
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .email-group:last-child {
+                border-bottom: none;
+            }
+            
+            .group-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 16px 20px;
+                background: #f9fafb;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .group-header:hover {
+                background: #f3f4f6;
+            }
+            
+            .email-group.expanded .group-header {
+                background: #eff6ff;
+                border-bottom-color: #bfdbfe;
+            }
+            
+            .group-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .group-icon {
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+                color: white;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+            }
+            
+            .group-details {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .group-name {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 15px;
+            }
+            
+            .group-stats {
+                font-size: 13px;
+                color: #6b7280;
+            }
+            
+            .group-meta {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .group-date {
+                font-size: 13px;
+                color: #6b7280;
+            }
+            
+            .group-toggle-icon {
+                color: #9ca3af;
+                transition: transform 0.2s ease;
+            }
+            
+            .email-group.expanded .group-toggle-icon {
+                transform: rotate(180deg);
+            }
+            
+            .group-emails {
+                background: white;
+            }
+            
+            /* ===== STATISTIQUES ===== */
+            .email-stats-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 20px;
+                background: #f9fafb;
+                border-top: 1px solid #f3f4f6;
+                margin-top: 16px;
+            }
+            
+            .stats-group {
+                display: flex;
+                gap: 20px;
+                align-items: center;
+            }
+            
+            .stat-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 13px;
+                color: #6b7280;
+            }
+            
+            .stats-actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .stats-action-btn {
+                width: 32px;
+                height: 32px;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                background: white;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                font-size: 12px;
+            }
+            
+            .stats-action-btn:hover {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+            
+            /* ===== ÉTAT VIDE ===== */
+            .empty-state-modern {
+                text-align: center;
+                padding: 60px 20px;
+                color: #6b7280;
+            }
+            
+            .empty-state-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+                color: #d1d5db;
+            }
+            
+            .empty-state-title {
+                font-size: 20px;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 8px;
+            }
+            
+            .empty-state-text {
+                font-size: 14px;
+                margin-bottom: 20px;
+                line-height: 1.5;
+            }
+            
+            /* ===== RESPONSIVE ===== */
+            @media (max-width: 1024px) {
+                .toolbar-main-line {
+                    flex-wrap: wrap;
+                    gap: 12px;
+                }
+                
+                .toolbar-left {
+                    order: 1;
+                    width: 100%;
+                    justify-content: space-between;
+                }
+                
+                .toolbar-center {
+                    order: 2;
+                    width: 100%;
+                    max-width: none;
+                }
+                
+                .toolbar-right {
+                    order: 3;
+                    width: 100%;
+                    justify-content: flex-end;
+                }
+                
+                .toolbar-view-line {
+                    order: 4;
+                }
+                
+                .page-explanation {
+                    font-size: 11px;
+                }
+                
+                .btn-text {
+                    display: none;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .emails-unified-toolbar {
+                    padding: 12px 16px;
+                    gap: 8px;
+                }
+                
+                .toolbar-main-line {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 8px;
+                }
+                
+                .toolbar-section {
+                    width: 100%;
+                    justify-content: center;
+                }
+                
+                .toolbar-left {
+                    flex-direction: column;
+                    gap: 8px;
+                    align-items: center;
+                }
+                
+                .page-explanation {
+                    display: none;
+                }
+                
+                .view-mode-group {
+                    width: 100%;
+                    justify-content: space-evenly;
+                }
+                
+                .unified-category-filters {
+                    gap: 4px;
+                    justify-content: center;
+                }
+                
+                .unified-filter-btn {
+                    padding: 6px 8px;
+                    font-size: 12px;
+                }
+                
+                .filter-label {
+                    display: none;
+                }
+                
+                .unified-email-item {
+                    padding: 6px 12px;
+                    gap: 8px;
+                    min-height: 44px;
+                    max-height: 44px;
+                }
+                
+                .sender-avatar {
+                    width: 28px;
+                    height: 28px;
+                    font-size: 12px;
+                }
+                
+                .email-sender {
+                    min-width: 100px;
+                }
+                
+                .sender-name {
+                    max-width: 80px;
+                    font-size: 12px;
+                }
+                
+                .email-subject {
+                    font-size: 12px;
+                }
+                
+                .email-meta {
+                    gap: 4px;
+                }
+                
+                .action-btn {
+                    width: 20px;
+                    height: 20px;
+                    font-size: 9px;
+                }
+            }
+            
+            /* ===== ANIMATIONS ===== */
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+            
+            /* ===== UTILITAIRES ===== */
+            .btn-text {
+                font-weight: 600;
+            }
+            
+            /* Support pour color-mix si non supporté */
+            @supports not (color: color-mix(in srgb, red, blue)) {
+                .unified-filter-btn:hover {
+                    background: rgba(59, 130, 246, 0.08);
+                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
+    }
+
+    // =====================================
+    // AUTRES MÉTHODES (inchangées)
+    // =====================================
+    
+    // Garder toutes les autres méthodes existantes...
+    calculateCategoryCounts(emails) {
+        const counts = {};
+        emails.forEach(email => {
+            const cat = email.category || 'other';
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+        return counts;
+    }
+
+    createEmailGroups(emails, groupMode) {
+        const groups = {};
+        
+        emails.forEach(email => {
+            let groupKey;
+            let groupName;
+            let groupAvatar;
+            
+            if (groupMode === 'grouped-domain') {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                groupKey = domain;
+                groupName = domain;
+                groupAvatar = domain.charAt(0).toUpperCase();
+            } else {
+                const senderEmail = email.from?.emailAddress?.address || 'unknown';
+                const senderName = email.from?.emailAddress?.name || senderEmail;
+                groupKey = senderEmail;
+                groupName = senderName;
+                groupAvatar = senderName.charAt(0).toUpperCase();
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    key: groupKey,
+                    name: groupName,
+                    avatar: groupAvatar,
+                    emails: [],
+                    count: 0,
+                    latestDate: null
+                };
+            }
+            
+            groups[groupKey].emails.push(email);
+            groups[groupKey].count++;
+            
+            const emailDate = new Date(email.receivedDateTime);
+            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
+                groups[groupKey].latestDate = emailDate;
+            }
+        });
+        
+        return Object.values(groups).sort((a, b) => {
+            if (!a.latestDate && !b.latestDate) return 0;
+            if (!a.latestDate) return 1;
+            if (!b.latestDate) return -1;
+            return b.latestDate - a.latestDate;
+        });
+    }
+
+    // Méthodes utilitaires existantes...
+    formatEmailDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 3600000) {
+            return `${Math.floor(diff / 60000)}m`;
+        } else if (diff < 86400000) {
+            return `${Math.floor(diff / 3600000)}h`;
+        } else {
+            return date.toLocaleDateString('fr-FR');
+        }
+    }
+
+    formatDeadline(deadline) {
+        if (!deadline) return '';
+        
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `Échue il y a ${Math.abs(diffDays)}j`;
+            } else if (diffDays === 0) {
+                return 'Aujourd\'hui';
+            } else if (diffDays === 1) {
+                return 'Demain';
+            } else if (diffDays <= 7) {
+                return `${diffDays}j`;
+            } else {
+                return deadlineDate.toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'short' 
+                });
+            }
+        } catch (error) {
+            return deadline;
+        }
+    }
+
+    getCategoryInfo(categoryId) {
+        if (categoryId === 'other') {
+            return { name: 'Autre', icon: '📌', color: '#6B7280' };
+        }
+        
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (category) {
+            return {
+                name: category.name,
+                icon: category.icon,
+                color: category.color
+            };
+        }
+        
+        return { name: categoryId, icon: '📂', color: '#6B7280' };
+    }
+
+    matchesSearch(email, searchTerm) {
+        if (!searchTerm) return true;
+        
+        const search = searchTerm.toLowerCase();
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
+        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
+        const preview = (email.bodyPreview || '').toLowerCase();
+        
+        return subject.includes(search) || 
+               sender.includes(search) || 
+               senderEmail.includes(search) || 
+               preview.includes(search);
     }
 
     getEmailById(emailId) {
@@ -1670,20 +1942,63 @@ class PageManager {
             category: email.category || 'other',
             createdAt: new Date().toISOString(),
             aiGenerated: true,
+            
+            // Email details
             emailFrom: senderEmail,
             emailFromName: senderName,
             emailSubject: email.subject,
             emailDomain: senderDomain,
             emailDate: email.receivedDateTime,
             hasAttachments: email.hasAttachments || false,
+            
+            // AI Analysis
             aiAnalysis: analysis,
-            tags: [senderDomain, analysis.importance, ...(analysis.tags || [])].filter(Boolean),
+            
+            // Tags
+            tags: [
+                senderDomain,
+                analysis.importance,
+                ...(analysis.tags || [])
+            ].filter(Boolean),
+            
             method: 'ai'
         };
     }
 
     generateTaskId() {
         return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    exportEmails() {
+        const emails = this.getVisibleEmails();
+        if (emails.length === 0) {
+            window.uiManager.showToast('Aucun email à exporter', 'warning');
+            return;
+        }
+        
+        const csvContent = [
+            ['Expéditeur', 'Nom', 'Sujet', 'Date', 'Catégorie', 'Avec pièces jointes'].join(','),
+            ...emails.map(email => [
+                `"${email.from?.emailAddress?.address || ''}"`,
+                `"${email.from?.emailAddress?.name || ''}"`,
+                `"${email.subject || ''}"`,
+                new Date(email.receivedDateTime).toLocaleDateString('fr-FR'),
+                email.category || 'other',
+                email.hasAttachments ? 'Oui' : 'Non'
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.uiManager.showToast('Export terminé', 'success');
     }
 
     async refreshEmails() {
@@ -1693,6 +2008,7 @@ class PageManager {
             const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
             
             if (emails.length > 0 && window.categoryManager) {
+                // Re-categorize emails
                 emails.forEach(email => {
                     const result = window.categoryManager.analyzeEmail(email);
                     email.category = result.category || 'other';
@@ -1723,25 +2039,31 @@ class PageManager {
             }
         }
         
-        const emailsContent = document.getElementById('emailsContent');
-        if (emailsContent) {
-            emailsContent.innerHTML = this.renderEmailsList();
+        // Update display
+        const emailsList = document.getElementById('emailsList');
+        if (emailsList) {
+            emailsList.innerHTML = this.renderEmailsList();
+            this.setupGroupToggles();
         }
     }
 
     // =====================================
-    // MODAL METHODS
+    // MODAL METHODS (gardées de la version précédente)
     // =====================================
     async showTaskCreationModal(emailId) {
         const email = this.getEmailById(emailId);
         if (!email) return;
 
+        // Nettoyer tout modal existant
         document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
         
+        // Get or create AI analysis
         let analysis;
         try {
             window.uiManager.showLoading('Analyse de l\'email...');
-            analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email, { useApi: true });
+            analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email, {
+                useApi: true
+            });
             this.aiAnalysisResults.set(emailId, analysis);
             window.uiManager.hideLoading();
         } catch (error) {
@@ -1750,31 +2072,34 @@ class PageManager {
             return;
         }
 
+        // Créer un nouvel id unique
         const uniqueId = 'task_creation_modal_' + Date.now();
+
+        // Créer le modal avec style inline pour forcer l'affichage
         const modalHTML = `
             <div id="${uniqueId}" 
                  style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
                         z-index: 99999999; display: flex; align-items: center; justify-content: center; 
                         padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; 
-                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Créer une tâche</h2>
+                <div style="background: white; border-radius: 12px; max-width: 900px; width: 100%; 
+                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Créer une tâche à partir de cet email</h2>
                         <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
-                        ${this.buildTaskCreationForm(email, analysis)}
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        ${this.buildEnhancedTaskCreationModal(email, analysis)}
                     </div>
-                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
                         <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
                             Annuler
                         </button>
                         <button onclick="window.pageManager.createTaskFromModal('${emailId}'); document.getElementById('${uniqueId}').remove();"
-                                style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
                             <i class="fas fa-check"></i> Créer la tâche
                         </button>
                     </div>
@@ -1782,11 +2107,12 @@ class PageManager {
             </div>
         `;
 
+        // Ajouter au DOM
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
     }
 
-    buildTaskCreationForm(email, analysis) {
+    buildEnhancedTaskCreationModal(email, analysis) {
         const senderName = email.from?.emailAddress?.name || 'Inconnu';
         const senderEmail = email.from?.emailAddress?.address || '';
         const senderDomain = senderEmail.split('@')[1] || '';
@@ -1796,79 +2122,63 @@ class PageManager {
             `${analysis.mainTask.title} - ${senderName}`;
         
         return `
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
-                    <i class="fas fa-robot" style="color: #0ea5e9; font-size: 20px;"></i>
-                    <span style="color: #0c4a6e; font-weight: 600;">Analyse intelligente par Claude AI</span>
+            <div class="task-creation-form">
+                <div class="ai-suggestion-banner">
+                    <i class="fas fa-robot"></i>
+                    <span>Analyse intelligente par Claude AI</span>
                 </div>
                 
-                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
-                    <div style="width: 48px; height: 48px; background: ${this.generateGradient(senderName)}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
-                        ${senderName.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        <div style="font-weight: 700; color: #1f2937; font-size: 16px;">${senderName}</div>
-                        <div style="color: #6b7280; font-size: 14px;">${senderEmail}</div>
-                        <div style="color: #9ca3af; font-size: 12px;">@${senderDomain}</div>
+                <div class="sender-context-box">
+                    <div class="sender-avatar-small">${senderName.charAt(0).toUpperCase()}</div>
+                    <div class="sender-details">
+                        <div class="sender-name-bold">${senderName}</div>
+                        <div class="sender-email-small">${senderEmail}</div>
+                        <div class="sender-domain">@${senderDomain}</div>
                     </div>
                 </div>
                 
-                <div>
-                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Titre de la tâche</label>
-                    <input type="text" id="task-title" 
-                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
-                           value="${enhancedTitle}" 
-                           onfocus="this.style.borderColor='#3b82f6'"
-                           onblur="this.style.borderColor='#e5e7eb'" />
+                <div class="form-group">
+                    <label>Titre de la tâche</label>
+                    <input type="text" id="task-title" class="form-input" 
+                           value="${enhancedTitle}" />
                 </div>
                 
-                <div>
-                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Description</label>
-                    <textarea id="task-description" 
-                              style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px; transition: border-color 0.2s;"
-                              onfocus="this.style.borderColor='#3b82f6'"
-                              onblur="this.style.borderColor='#e5e7eb'"
-                              rows="4">${analysis.mainTask.description || analysis.summary || ''}</textarea>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="task-description" class="form-textarea" rows="4">${analysis.mainTask.description || analysis.summary || ''}</textarea>
                 </div>
                 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                    <div>
-                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Priorité</label>
-                        <select id="task-priority" 
-                                style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
-                                onfocus="this.style.borderColor='#3b82f6'"
-                                onblur="this.style.borderColor='#e5e7eb'">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Priorité</label>
+                        <select id="task-priority" class="form-select">
                             <option value="urgent" ${analysis.mainTask.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
                             <option value="high" ${analysis.mainTask.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
                             <option value="medium" ${analysis.mainTask.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
                             <option value="low" ${analysis.mainTask.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
                         </select>
                     </div>
-                    <div>
-                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Date d'échéance</label>
-                        <input type="date" id="task-duedate" 
-                               style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
-                               onfocus="this.style.borderColor='#3b82f6'"
-                               onblur="this.style.borderColor='#e5e7eb'"
+                    <div class="form-group">
+                        <label>Date d'échéance</label>
+                        <input type="date" id="task-duedate" class="form-input" 
                                value="${analysis.mainTask.dueDate || ''}" />
                     </div>
                 </div>
                 
-                <div>
-                    <button onclick="window.pageManager.toggleEmailContext()" 
-                            style="width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; transition: background 0.2s;"
-                            onmouseover="this.style.background='#f1f5f9'"
-                            onmouseout="this.style.background='#f8fafc'">
-                        <i class="fas fa-chevron-right" id="context-toggle-icon" style="transition: transform 0.2s;"></i>
+                <div class="email-context-section">
+                    <button class="context-toggle-btn" onclick="window.pageManager.toggleEmailContext()">
+                        <i class="fas fa-chevron-right" id="context-toggle-icon"></i>
                         <span>Afficher le contenu original de l'email</span>
                     </button>
-                    <div id="email-context-content" style="display: none; margin-top: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
-                        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
-                            <div style="margin-bottom: 4px;"><strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;</div>
-                            <div style="margin-bottom: 4px;"><strong>Date:</strong> ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</div>
-                            <div><strong>Sujet:</strong> ${email.subject || 'Sans sujet'}</div>
+                    <div class="email-context-content" id="email-context-content" style="display: none;">
+                        <div class="context-header">
+                            <div class="context-meta">
+                                <strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;<br>
+                                <strong>Date:</strong> ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}<br>
+                                <strong>Sujet:</strong> ${email.subject || 'Sans sujet'}
+                            </div>
                         </div>
-                        <div style="max-height: 200px; overflow-y: auto; font-size: 14px; line-height: 1.5; color: #374151;">
+                        <div class="context-body">
                             ${this.getEmailContent(email)}
                         </div>
                     </div>
@@ -1885,12 +2195,10 @@ class PageManager {
             content.style.display = 'block';
             icon.classList.remove('fa-chevron-right');
             icon.classList.add('fa-chevron-down');
-            icon.style.transform = 'rotate(90deg)';
         } else {
             content.style.display = 'none';
             icon.classList.remove('fa-chevron-down');
             icon.classList.add('fa-chevron-right');
-            icon.style.transform = 'rotate(0deg)';
         }
     }
 
@@ -1931,9 +2239,11 @@ class PageManager {
             window.taskManager.saveTasks();
             window.uiManager.showToast('Tâche créée avec succès', 'success');
             
-            const emailsContent = document.getElementById('emailsContent');
-            if (emailsContent) {
-                emailsContent.innerHTML = this.renderEmailsList();
+            // Update email display
+            const emailsList = document.getElementById('emailsList');
+            if (emailsList) {
+                emailsList.innerHTML = this.renderEmailsList();
+                this.setupGroupToggles();
             }
             
         } catch (error) {
@@ -1946,50 +2256,54 @@ class PageManager {
         const email = this.getEmailById(emailId);
         if (!email) return;
 
+        // Nettoyer tout modal existant
         document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
         
+        // Créer un nouvel id unique
         const uniqueId = 'email_modal_' + Date.now();
+
+        // Créer le modal avec style inline pour forcer l'affichage
         const modalHTML = `
             <div id="${uniqueId}" 
                  style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
                         z-index: 99999999; display: flex; align-items: center; justify-content: center; 
                         padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 16px; max-width: 800px; width: 100%; 
-                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Email Complet</h2>
+                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Email Complet</h2>
                         <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
-                        <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">De:</span>
-                                <span style="color: #1f2937;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div style="margin-bottom: 20px;">
+                            <div style="margin-bottom: 10px;">
+                                <span style="font-weight: bold;">De:</span>
+                                <span>${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
                             </div>
-                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Date:</span>
-                                <span style="color: #1f2937;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
+                            <div style="margin-bottom: 10px;">
+                                <span style="font-weight: bold;">Date:</span>
+                                <span>${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Sujet:</span>
-                                <span style="color: #1f2937; font-weight: 600;">${email.subject || 'Sans sujet'}</span>
+                            <div style="margin-bottom: 10px;">
+                                <span style="font-weight: bold;">Sujet:</span>
+                                <span>${email.subject || 'Sans sujet'}</span>
                             </div>
                         </div>
-                        <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; max-height: 400px; overflow-y: auto; line-height: 1.6; color: #374151;">
+                        <div style="border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; background: #f9fafb;">
                             ${this.getEmailContent(email)}
                         </div>
                     </div>
-                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
                         <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
                             Fermer
                         </button>
                         ${!this.createdTasks.has(emailId) ? `
                             <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManager.showTaskCreationModal('${emailId}');"
-                                    style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                    style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
                                 <i class="fas fa-tasks"></i> Créer une tâche
                             </button>
                         ` : ''}
@@ -1998,6 +2312,7 @@ class PageManager {
             </div>
         `;
 
+        // Ajouter au DOM
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
     }
@@ -2006,7 +2321,7 @@ class PageManager {
         if (email.body?.content) {
             return email.body.content;
         }
-        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
+        return `<p>${email.bodyPreview || 'Aucun contenu'}</p>`;
     }
 
     openCreatedTask(emailId) {
@@ -2022,50 +2337,8 @@ class PageManager {
         });
     }
 
-    selectAllVisible() {
-        const emails = this.getVisibleEmails();
-        emails.forEach(email => {
-            this.selectedEmails.add(email.id);
-        });
-        
-        this.renderEmails(document.getElementById('pageContent'));
-        window.uiManager.showToast(`${emails.length} emails sélectionnés`, 'success');
-    }
-
-    exportEmails() {
-        const emails = this.getVisibleEmails();
-        if (emails.length === 0) {
-            window.uiManager.showToast('Aucun email à exporter', 'warning');
-            return;
-        }
-        
-        const csvContent = [
-            ['Expéditeur', 'Nom', 'Sujet', 'Date', 'Catégorie', 'Avec pièces jointes'].join(','),
-            ...emails.map(email => [
-                `"${email.from?.emailAddress?.address || ''}"`,
-                `"${email.from?.emailAddress?.name || ''}"`,
-                `"${email.subject || ''}"`,
-                new Date(email.receivedDateTime).toLocaleDateString('fr-FR'),
-                email.category || 'other',
-                email.hasAttachments ? 'Oui' : 'Non'
-            ].join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        window.uiManager.showToast('Export terminé', 'success');
-    }
-
     // =====================================
-    // OTHER PAGES (Dashboard, Scanner, Tasks, Categories, Settings)
+    // OTHER PAGES (inchangées)
     // =====================================
     async renderDashboard(container) {
         const scanData = this.lastScanData;
@@ -2078,10 +2351,10 @@ class PageManager {
         const aiConfigured = window.aiTaskAnalyzer?.isConfigured() || false;
         
         container.innerHTML = `
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Tableau de bord</h1>
-                <div class="dashboard-actions">
-                    <button class="btn primary" onclick="window.pageManager.loadPage('scanner')">
+            <div class="page-header">
+                <h1>Tableau de bord</h1>
+                <div class="page-actions">
+                    <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
                         <i class="fas fa-search"></i> Nouveau scan
                     </button>
                 </div>
@@ -2094,71 +2367,55 @@ class PageManager {
                         <h3>Activez l'IA pour des suggestions intelligentes</h3>
                         <p>Configurez Claude AI pour analyser vos emails automatiquement</p>
                     </div>
-                    <button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
+                    <button class="btn btn-primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
                         Configurer
                     </button>
                 </div>
             ` : ''}
 
-            <div class="dashboard-stats">
-                ${this.createDashboardCard({
+            <div class="grid grid-4">
+                ${window.uiManager.createStatCard({
                     icon: 'fas fa-tasks',
                     label: 'Tâches totales',
                     value: taskStats.total,
-                    color: '#3b82f6'
+                    color: 'var(--primary)'
                 })}
-                ${this.createDashboardCard({
+                ${window.uiManager.createStatCard({
                     icon: 'fas fa-clock',
                     label: 'À faire',
                     value: taskStats.byStatus.todo,
-                    color: '#06b6d4'
+                    color: 'var(--info)'
                 })}
-                ${this.createDashboardCard({
+                ${window.uiManager.createStatCard({
                     icon: 'fas fa-check-circle',
                     label: 'Terminées',
                     value: taskStats.byStatus.completed,
-                    color: '#10b981'
+                    color: 'var(--success)'
                 })}
-                ${this.createDashboardCard({
+                ${window.uiManager.createStatCard({
                     icon: 'fas fa-exclamation-circle',
                     label: 'En retard',
                     value: taskStats.overdue,
-                    color: '#ef4444'
+                    color: 'var(--danger)'
                 })}
             </div>
 
             ${scanData ? this.renderScanStats(scanData) : this.renderWelcome()}
         `;
-
-        this.addDashboardStyles();
-    }
-
-    createDashboardCard({ icon, label, value, color }) {
-        return `
-            <div class="dashboard-card" style="--card-color: ${color}">
-                <div class="card-icon">
-                    <i class="${icon}"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-value">${value}</div>
-                    <div class="card-label">${label}</div>
-                </div>
-            </div>
-        `;
     }
 
     renderWelcome() {
         return `
-            <div class="welcome-card">
-                <div class="welcome-content">
-                    <div class="welcome-icon">
+            <div class="card">
+                <div class="empty-state">
+                    <div class="empty-state-icon">
                         <i class="fas fa-envelope-open-text"></i>
                     </div>
-                    <h2 class="welcome-title">Bienvenue!</h2>
-                    <p class="welcome-text">
+                    <h2 class="empty-state-title">Bienvenue!</h2>
+                    <p class="empty-state-text">
                         Commencez par scanner vos emails pour les organiser automatiquement.
                     </p>
-                    <button class="btn primary large" onclick="window.pageManager.loadPage('scanner')">
+                    <button class="btn btn-primary btn-large" onclick="window.pageManager.loadPage('scanner')">
                         <i class="fas fa-search"></i> Démarrer le scan
                     </button>
                 </div>
@@ -2168,17 +2425,10 @@ class PageManager {
 
     renderScanStats(scanData) {
         return `
-            <div class="scan-stats-card">
+            <div class="card">
                 <h3>Résultats du dernier scan</h3>
                 <div class="scan-stats">
-                    <div class="stat">
-                        <span class="stat-number">${scanData.total}</span>
-                        <span class="stat-label">emails analysés</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-number">${scanData.categorized}</span>
-                        <span class="stat-label">catégorisés</span>
-                    </div>
+                    <p>${scanData.total} emails analysés - ${scanData.categorized} catégorisés</p>
                 </div>
             </div>
         `;
@@ -2203,11 +2453,11 @@ class PageManager {
         console.log('[PageManager] Using fallback scanner interface');
         container.innerHTML = `
             <div class="empty-state">
-                <div class="empty-icon">
+                <div class="empty-state-icon">
                     <i class="fas fa-search"></i>
                 </div>
-                <h3 class="empty-title">Scanner d'emails</h3>
-                <p class="empty-text">Module de scan en cours de chargement...</p>
+                <h3 class="empty-state-title">Scanner d'emails</h3>
+                <p class="empty-state-text">Module de scan en cours de chargement...</p>
             </div>
         `;
     }
@@ -2221,11 +2471,11 @@ class PageManager {
                     <h1>Tâches</h1>
                 </div>
                 <div class="empty-state">
-                    <div class="empty-icon">
+                    <div class="empty-state-icon">
                         <i class="fas fa-tasks"></i>
                     </div>
-                    <h3 class="empty-title">Aucune tâche</h3>
-                    <p class="empty-text">Créez des tâches à partir de vos emails</p>
+                    <h3 class="empty-state-title">Aucune tâche</h3>
+                    <p class="empty-state-text">Créez des tâches à partir de vos emails</p>
                 </div>
             `;
         }
@@ -2241,7 +2491,7 @@ class PageManager {
             
             <div class="categories-grid">
                 ${Object.entries(categories).map(([id, cat]) => `
-                    <div class="category-card">
+                    <div class="card category-card">
                         <div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">
                             ${cat.icon}
                         </div>
@@ -2262,224 +2512,25 @@ class PageManager {
                     <h1>Paramètres</h1>
                 </div>
                 
-                <div class="settings-card">
+                <div class="card">
                     <h3>Configuration IA</h3>
-                    <button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
+                    <button class="btn btn-primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
                         <i class="fas fa-cog"></i> Configurer Claude AI
                     </button>
                 </div>
             `;
         }
     }
-
-    addDashboardStyles() {
-        if (document.getElementById('dashboardStyles')) return;
-        
-        const styles = document.createElement('style');
-        styles.id = 'dashboardStyles';
-        styles.textContent = `
-            .dashboard-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 32px;
-            }
-            
-            .dashboard-title {
-                font-size: 32px;
-                font-weight: 800;
-                color: #111827;
-                margin: 0;
-            }
-            
-            .dashboard-actions {
-                display: flex;
-                gap: 12px;
-            }
-            
-            .dashboard-stats {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin-bottom: 32px;
-            }
-            
-            .dashboard-card {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                padding: 24px;
-                display: flex;
-                align-items: center;
-                gap: 20px;
-                transition: all 0.3s ease;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            .dashboard-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
-            
-            .card-icon {
-                width: 60px;
-                height: 60px;
-                background: var(--card-color);
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-            }
-            
-            .card-content {
-                flex: 1;
-            }
-            
-            .card-value {
-                font-size: 32px;
-                font-weight: 800;
-                color: #1f2937;
-                line-height: 1;
-                margin-bottom: 4px;
-            }
-            
-            .card-label {
-                font-size: 14px;
-                color: #6b7280;
-                font-weight: 600;
-            }
-            
-            .welcome-card {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                padding: 48px;
-                text-align: center;
-            }
-            
-            .welcome-content {
-                max-width: 400px;
-                margin: 0 auto;
-            }
-            
-            .welcome-icon {
-                font-size: 64px;
-                color: #3b82f6;
-                margin-bottom: 24px;
-            }
-            
-            .welcome-title {
-                font-size: 28px;
-                font-weight: 700;
-                color: #1f2937;
-                margin: 0 0 16px 0;
-            }
-            
-            .welcome-text {
-                font-size: 16px;
-                color: #6b7280;
-                line-height: 1.6;
-                margin: 0 0 32px 0;
-            }
-            
-            .ai-banner {
-                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                border: 1px solid #0ea5e9;
-                border-radius: 16px;
-                padding: 24px;
-                display: flex;
-                align-items: center;
-                gap: 20px;
-                margin-bottom: 32px;
-            }
-            
-            .ai-banner-icon {
-                width: 48px;
-                height: 48px;
-                background: #0ea5e9;
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-            }
-            
-            .ai-banner-content {
-                flex: 1;
-            }
-            
-            .ai-banner-content h3 {
-                margin: 0 0 4px 0;
-                font-size: 18px;
-                font-weight: 700;
-                color: #0c4a6e;
-            }
-            
-            .ai-banner-content p {
-                margin: 0;
-                color: #075985;
-                font-size: 14px;
-            }
-            
-            .scan-stats-card {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                padding: 24px;
-            }
-            
-            .scan-stats-card h3 {
-                margin: 0 0 20px 0;
-                font-size: 20px;
-                font-weight: 700;
-                color: #1f2937;
-            }
-            
-            .scan-stats {
-                display: flex;
-                gap: 32px;
-            }
-            
-            .stat {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .stat-number {
-                font-size: 24px;
-                font-weight: 800;
-                color: #3b82f6;
-            }
-            
-            .stat-label {
-                font-size: 14px;
-                color: #6b7280;
-                font-weight: 600;
-            }
-            
-            .btn.large {
-                padding: 16px 32px;
-                font-size: 16px;
-            }
-        `;
-        
-        document.head.appendChild(styles);
-    }
 }
 
 // Create global instance
 window.pageManager = new PageManager();
 
-// Bind methods to preserve context
+// Bind methods
 Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
         window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
     }
 });
 
-console.log('✅ PageManager v10.0 loaded - Interface moderne optimisée avec affichage parfait');
+console.log('✅ PageManager v9.2 loaded - Interface unifiée et cohérente avec design professionnel');
