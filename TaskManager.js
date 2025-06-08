@@ -1406,7 +1406,7 @@ class TasksView {
                 <!-- Indicateur de priorité harmonisé -->
                 <div class="priority-bar-harmonized" style="background-color: ${priorityColor}"></div>
                 
-                <!-- Contenu principal harmonisé -->
+                <!-- Contenu principal harmonisé et centré -->
                 <div class="task-main-content-harmonized">
                     <div class="task-header-harmonized">
                         <h3 class="task-title-harmonized">${this.escapeHtml(task.title)}</h3>
@@ -2465,14 +2465,14 @@ class TasksView {
         return div.innerHTML;
     }
 
-    // STYLES HARMONISÉS ET UNIFORMISÉS
+    // STYLES HARMONISÉS ET UNIFORMISÉS AVEC CENTRAGE PARFAIT
     addHarmonizedTaskStyles() {
         if (document.getElementById('harmonizedTaskStyles')) return;
         
         const styles = document.createElement('style');
         styles.id = 'harmonizedTaskStyles';
         styles.textContent = `
-            /* ===== HARMONISATION ABSOLUE DE TOUS LES BOUTONS ===== */
+            /* ===== HARMONISATION ABSOLUE DE TOUS LES BOUTONS AVEC CENTRAGE PARFAIT ===== */
             
             /* Variables CSS pour cohérence parfaite */
             :root {
@@ -2522,7 +2522,7 @@ class TasksView {
                 --shadow-primary: 0 4px 12px rgba(99, 102, 241, 0.25);
             }
             
-            /* CLASSE DE BASE POUR TOUS LES BOUTONS */
+            /* CLASSE DE BASE POUR TOUS LES BOUTONS AVEC CENTRAGE PARFAIT */
             .btn-base,
             .btn-harmonized,
             .view-mode-harmonized,
@@ -2535,10 +2535,11 @@ class TasksView {
                 /* PADDING UNIFORME */
                 padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
                 
-                /* TYPOGRAPHIE IDENTIQUE */
+                /* TYPOGRAPHIE IDENTIQUE ET CENTRÉE */
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
                 line-height: var(--btn-line-height);
+                text-align: center;
                 
                 /* APPARENCE UNIFIÉE */
                 border: var(--border-width) solid transparent;
@@ -2549,7 +2550,7 @@ class TasksView {
                 white-space: nowrap;
                 box-sizing: border-box;
                 
-                /* DISPOSITION FLEX UNIFIÉE */
+                /* DISPOSITION FLEX UNIFIÉE AVEC CENTRAGE PARFAIT */
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
@@ -2559,6 +2560,9 @@ class TasksView {
                 user-select: none;
                 outline: none;
                 position: relative;
+                
+                /* CENTRAGE VERTICAL ET HORIZONTAL PARFAIT */
+                vertical-align: middle;
             }
             
             /* STYLES SPÉCIFIQUES POUR CHAQUE TYPE DE BOUTON */
@@ -2611,7 +2615,7 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* BOUTON CLEAR SELECTION - CARRÉ PARFAIT */
+            /* BOUTON CLEAR SELECTION - CARRÉ PARFAIT CENTRÉ */
             .btn-harmonized.btn-clear-selection {
                 background: #f3f4f6;
                 color: #6b7280;
@@ -2622,6 +2626,9 @@ class TasksView {
                 max-width: var(--btn-height);
                 padding: 0;
                 border-radius: var(--btn-border-radius);
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .btn-harmonized.btn-clear-selection:hover {
@@ -2650,13 +2657,17 @@ class TasksView {
                 box-shadow: var(--shadow-primary);
             }
             
-            /* MODES DE VUE - EXACTEMENT LA MÊME TAILLE */
+            /* MODES DE VUE - EXACTEMENT LA MÊME TAILLE ET PARFAITEMENT CENTRÉS */
             .view-mode-harmonized {
                 background: transparent;
                 color: #6b7280;
                 border-color: transparent;
                 min-width: 120px;
                 flex: 1;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .view-mode-harmonized:hover {
@@ -2673,13 +2684,17 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* STATUS PILLS - EXACTEMENT LA MÊME TAILLE */
+            /* STATUS PILLS - EXACTEMENT LA MÊME TAILLE ET CENTRÉS */
             .status-pill-harmonized {
                 background: white;
                 color: #374151;
                 border-color: #e5e7eb;
                 box-shadow: var(--shadow-base);
                 min-width: fit-content;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .status-pill-harmonized:hover {
@@ -2697,7 +2712,7 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* CONTAINER DES MODES DE VUE */
+            /* CONTAINER DES MODES DE VUE AVEC CENTRAGE */
             .view-modes-harmonized {
                 display: flex;
                 background: #f8fafc;
@@ -2707,9 +2722,11 @@ class TasksView {
                 gap: 2px;
                 height: var(--btn-height);
                 box-sizing: border-box;
+                align-items: center;
+                justify-content: center;
             }
             
-            /* INFO DE SÉLECTION */
+            /* INFO DE SÉLECTION PARFAITEMENT CENTRÉE */
             .selection-info-harmonized {
                 height: var(--btn-height);
                 padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
@@ -2724,10 +2741,12 @@ class TasksView {
                 white-space: nowrap;
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--btn-gap);
+                text-align: center;
             }
             
-            /* BADGE DE COMPTAGE */
+            /* BADGE DE COMPTAGE CENTRÉ */
             .count-badge-harmonized {
                 position: absolute;
                 top: -8px;
@@ -2742,19 +2761,29 @@ class TasksView {
                 text-align: center;
                 border: 2px solid white;
                 line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
-            /* ICÔNES ET TEXTE DANS LES PILLS */
+            /* ICÔNES ET TEXTE DANS LES PILLS AVEC CENTRAGE PARFAIT */
             .pill-icon-harmonized {
                 font-size: var(--btn-font-size);
                 line-height: 1;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .pill-text-harmonized {
                 font-weight: var(--btn-font-weight);
                 line-height: 1;
                 flex-shrink: 0;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .pill-count-harmonized {
@@ -2767,6 +2796,9 @@ class TasksView {
                 text-align: center;
                 line-height: 1;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .status-pill-harmonized.active .pill-count-harmonized {
@@ -2776,6 +2808,10 @@ class TasksView {
             .selection-count-harmonized {
                 font-weight: 700;
                 flex-shrink: 0;
+                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             /* Interface principale */
@@ -2804,16 +2840,20 @@ class TasksView {
                 box-sizing: border-box;
             }
             
-            /* SECTION RECHERCHE - HAUTEUR EXACTE */
+            /* SECTION RECHERCHE - HAUTEUR EXACTE ET CENTRÉE */
             .search-section-harmonized {
                 flex: 0 0 300px;
                 height: var(--btn-height);
+                display: flex;
+                align-items: center;
             }
             
             .search-box-harmonized {
                 position: relative;
                 width: 100%;
                 height: 100%;
+                display: flex;
+                align-items: center;
             }
             
             .search-input-harmonized {
@@ -2829,6 +2869,8 @@ class TasksView {
                 box-sizing: border-box;
                 line-height: var(--btn-line-height);
                 outline: none;
+                text-align: left;
+                vertical-align: middle;
             }
             
             .search-input-harmonized:focus {
@@ -2851,6 +2893,9 @@ class TasksView {
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
                 pointer-events: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .search-clear-harmonized {
@@ -2879,7 +2924,7 @@ class TasksView {
                 transform: translateY(-50%) scale(1.1);
             }
             
-            /* MODES DE VUE PARFAITEMENT ALIGNÉS */
+            /* MODES DE VUE PARFAITEMENT ALIGNÉS ET CENTRÉS */
             .view-modes-harmonized {
                 display: flex;
                 background: #f8fafc;
@@ -2890,6 +2935,7 @@ class TasksView {
                 height: var(--btn-height);
                 box-sizing: border-box;
                 align-items: center;
+                justify-content: center;
             }
             
             .view-mode-harmonized {
@@ -2911,6 +2957,7 @@ class TasksView {
                 box-sizing: border-box;
                 min-width: 120px;
                 flex: 1;
+                text-align: center;
             }
             
             .view-mode-harmonized:hover {
@@ -2927,7 +2974,7 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* ACTIONS PRINCIPALES - TOUTES À LA MÊME HAUTEUR */
+            /* ACTIONS PRINCIPALES - TOUTES À LA MÊME HAUTEUR ET CENTRÉES */
             .action-buttons-harmonized {
                 display: flex;
                 align-items: center;
@@ -2936,7 +2983,7 @@ class TasksView {
                 flex-shrink: 0;
             }
             
-            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur */
+            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur ET être centrés */
             .action-buttons-harmonized > *,
             .action-buttons-harmonized .btn-harmonized,
             .action-buttons-harmonized .selection-info-harmonized {
@@ -2944,9 +2991,12 @@ class TasksView {
                 min-height: var(--btn-height);
                 max-height: var(--btn-height);
                 box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
-            /* ===== FILTRES DE STATUT SANS ESPACES EXCESSIFS ===== */
+            /* ===== FILTRES DE STATUT SANS ESPACES EXCESSIFS ET PARFAITEMENT CENTRÉS ===== */
             .status-filters-harmonized {
                 display: flex;
                 gap: var(--gap-small);
@@ -2956,7 +3006,7 @@ class TasksView {
                 justify-content: flex-start;
             }
             
-            /* TOUS les pills de statut ont une taille AGRANDIE pour meilleure lisibilité */
+            /* TOUS les pills de statut ont une taille AGRANDIE pour meilleure lisibilité ET PARFAITEMENT CENTRÉS */
             .status-filters-harmonized .status-pill-harmonized {
                 height: 52px;
                 min-height: 52px;
@@ -2969,6 +3019,10 @@ class TasksView {
                 border-radius: 12px;
                 box-shadow: var(--shadow-base);
                 transition: all var(--transition-speed) ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
             }
             
             .status-pill-harmonized:hover {
@@ -2986,11 +3040,14 @@ class TasksView {
                 transform: translateY(-2px);
             }
             
-            /* ALIGNEMENT PARFAIT DU CONTENU DANS LES PILLS */
+            /* ALIGNEMENT PARFAIT DU CONTENU DANS LES PILLS AVEC CENTRAGE */
             .pill-icon-harmonized {
                 font-size: 16px;
                 line-height: 1;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .pill-text-harmonized {
@@ -2999,6 +3056,9 @@ class TasksView {
                 flex-shrink: 0;
                 text-align: center;
                 flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .pill-count-harmonized {
@@ -3011,6 +3071,9 @@ class TasksView {
                 text-align: center;
                 line-height: 1;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .status-pill-harmonized.active .pill-count-harmonized {
@@ -3086,7 +3149,7 @@ class TasksView {
                 gap: var(--gap-small);
             }
             
-            /* ===== CARTES DE TÂCHES SANS ESPACEMENT ===== */
+            /* ===== CARTES DE TÂCHES SANS ESPACEMENT ET PARFAITEMENT CENTRÉES ===== */
             .tasks-harmonized-list {
                 display: flex;
                 flex-direction: column;
@@ -3183,6 +3246,9 @@ class TasksView {
                 flex-shrink: 0;
                 appearance: none;
                 position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .task-checkbox-harmonized:checked {
@@ -3200,6 +3266,9 @@ class TasksView {
                 font-size: 12px;
                 font-weight: 700;
                 line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .priority-bar-harmonized {
@@ -3247,6 +3316,9 @@ class TasksView {
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+                text-align: left;
+                display: flex;
+                align-items: center;
             }
             
             .task-meta-harmonized {
@@ -3259,6 +3331,7 @@ class TasksView {
             .task-type-badge-harmonized {
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: 3px;
                 background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
                 color: #475569;
@@ -3270,11 +3343,13 @@ class TasksView {
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
                 white-space: nowrap;
                 line-height: 1;
+                text-align: center;
             }
             
             .deadline-badge-harmonized {
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: 3px;
                 font-size: 10px;
                 font-weight: 600;
@@ -3284,6 +3359,7 @@ class TasksView {
                 border: var(--border-width) solid;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
                 line-height: 1;
+                text-align: center;
             }
             
             .deadline-normal-harmonized {
@@ -3315,6 +3391,7 @@ class TasksView {
                 color: #9ca3af;
                 font-style: italic;
                 font-size: 10px;
+                text-align: center;
             }
             
             .task-recipient-harmonized {
@@ -3331,22 +3408,30 @@ class TasksView {
                 color: #9ca3af;
                 font-size: 12px;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .recipient-name-harmonized {
                 font-weight: 600;
                 color: #374151;
+                text-align: left;
+                display: flex;
+                align-items: center;
             }
             
             .reply-indicator-harmonized {
                 color: #dc2626;
                 font-weight: 600;
                 font-size: 10px;
+                text-align: center;
             }
             
             .task-actions-harmonized {
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--gap-tiny);
                 margin-left: var(--gap-medium);
                 flex-shrink: 0;
@@ -3368,6 +3453,7 @@ class TasksView {
                 backdrop-filter: blur(10px);
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
                 flex-shrink: 0;
+                text-align: center;
             }
             
             .action-btn-harmonized:hover {
@@ -3458,6 +3544,7 @@ class TasksView {
                 font-size: 14px;
                 flex-shrink: 0;
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                text-align: center;
             }
             
             .group-info-harmonized {
@@ -3471,12 +3558,14 @@ class TasksView {
                 font-size: 15px;
                 line-height: 1.3;
                 margin-bottom: 2px;
+                text-align: left;
             }
             
             .group-meta-harmonized {
                 font-size: 12px;
                 color: #6b7280;
                 font-weight: 500;
+                text-align: left;
             }
             
             .group-expand-harmonized {
@@ -3491,6 +3580,7 @@ class TasksView {
                 flex-shrink: 0;
                 border-radius: 6px;
                 background: #f8fafc;
+                text-align: center;
             }
             
             .group-expand-harmonized:hover {
@@ -3545,7 +3635,7 @@ class TasksView {
                 box-shadow: none;
             }
             
-            /* ===== ÉTAT VIDE HARMONISÉ ===== */
+            /* ===== ÉTAT VIDE HARMONISÉ ET CENTRÉ ===== */
             .empty-state-harmonized {
                 text-align: center;
                 padding: 60px 30px;
@@ -3554,6 +3644,10 @@ class TasksView {
                 border-radius: 20px;
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
             }
             
             .empty-state-icon-harmonized {
@@ -3564,6 +3658,9 @@ class TasksView {
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .empty-state-title-harmonized {
@@ -3575,6 +3672,7 @@ class TasksView {
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
+                text-align: center;
             }
             
             .empty-state-text-harmonized {
@@ -3586,6 +3684,7 @@ class TasksView {
                 line-height: 1.6;
                 color: #6b7280;
                 font-weight: 500;
+                text-align: center;
             }
             
             /* ===== CONTAINER PRINCIPAL ===== */
@@ -3593,7 +3692,7 @@ class TasksView {
                 background: transparent;
             }
             
-            /* ===== FORMULAIRES HARMONISÉS ===== */
+            /* ===== FORMULAIRES HARMONISÉS ET CENTRÉS ===== */
             .form-group {
                 margin-bottom: var(--gap-large);
             }
@@ -3604,6 +3703,7 @@ class TasksView {
                 font-weight: 700;
                 color: #374151;
                 font-size: var(--input-font-size);
+                text-align: left;
             }
             
             .form-input, .form-select, .form-textarea {
@@ -3618,6 +3718,7 @@ class TasksView {
                 font-weight: 500;
                 color: #374151;
                 box-sizing: border-box;
+                text-align: left;
             }
             
             .form-textarea {
@@ -3649,6 +3750,7 @@ class TasksView {
                 margin-bottom: 32px;
                 padding-bottom: 20px;
                 border-bottom: 2px solid #f3f4f6;
+                text-align: center;
             }
             
             .task-title-details {
@@ -3661,17 +3763,21 @@ class TasksView {
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
+                text-align: center;
             }
             
             .task-meta-badges {
                 display: flex;
                 gap: var(--gap-large);
                 flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
             }
             
             .priority-badge, .status-badge {
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--gap-small);
                 padding: var(--btn-padding);
                 height: var(--btn-height);
@@ -3681,6 +3787,7 @@ class TasksView {
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                 border: 2px solid;
                 box-sizing: border-box;
+                text-align: center;
             }
             
             .priority-urgent {
@@ -3746,6 +3853,7 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-medium);
+                text-align: left;
             }
             
             .email-details-grid {
@@ -3763,17 +3871,21 @@ class TasksView {
                 background: #f8fafc;
                 border-radius: 10px;
                 border: 1px solid #e2e8f0;
+                align-items: center;
             }
             
             .email-detail-item strong {
                 min-width: 100px;
                 color: #374151;
                 font-weight: 700;
+                text-align: left;
             }
             
             .email-detail-item span {
                 color: #4b5563;
                 font-weight: 500;
+                text-align: left;
+                flex: 1;
             }
             
             .description-content {
@@ -3789,6 +3901,7 @@ class TasksView {
                 border-radius: 12px;
                 border: 1px solid #e2e8f0;
                 color: #374151;
+                text-align: left;
             }
             
             .simple-description {
@@ -3796,6 +3909,7 @@ class TasksView {
                 line-height: 1.7;
                 color: #374151;
                 font-weight: 500;
+                text-align: left;
             }
             
             .actions-list-details {
@@ -3836,6 +3950,7 @@ class TasksView {
                 font-weight: 700;
                 flex-shrink: 0;
                 box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+                text-align: center;
             }
             
             .action-text {
@@ -3843,6 +3958,7 @@ class TasksView {
                 font-size: 15px;
                 color: #374151;
                 font-weight: 600;
+                text-align: left;
             }
             
             .action-deadline {
@@ -3853,6 +3969,7 @@ class TasksView {
                 padding: 6px 12px;
                 border-radius: 8px;
                 border: 1px solid #fecaca;
+                text-align: center;
             }
             
             .info-grid {
@@ -3880,6 +3997,14 @@ class TasksView {
                 color: #6366f1;
                 margin-top: 2px;
                 font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .info-item span {
+                text-align: left;
+                flex: 1;
             }
             
             .attention-section {
@@ -3923,6 +4048,9 @@ class TasksView {
                 color: #f59e0b;
                 margin-top: 2px;
                 font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .attention-item span {
@@ -3931,6 +4059,7 @@ class TasksView {
                 color: #92400e;
                 line-height: 1.5;
                 font-weight: 600;
+                text-align: left;
             }
             
             /* ===== SUGGESTIONS DE RÉPONSE HARMONISÉES ===== */
@@ -3977,6 +4106,7 @@ class TasksView {
             .reply-tone-badge {
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--gap-small);
                 padding: var(--btn-padding);
                 height: var(--btn-height);
@@ -3986,6 +4116,7 @@ class TasksView {
                 text-transform: capitalize;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 box-sizing: border-box;
+                text-align: center;
             }
             
             .reply-tone-badge.formel {
@@ -4015,6 +4146,7 @@ class TasksView {
             .use-reply-btn-compact {
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--gap-small);
                 padding: var(--btn-padding);
                 height: var(--btn-height);
@@ -4028,6 +4160,7 @@ class TasksView {
                 transition: all 0.2s ease;
                 box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
                 box-sizing: border-box;
+                text-align: center;
             }
             
             .use-reply-btn-compact:hover {
@@ -4045,6 +4178,7 @@ class TasksView {
                 border-radius: 8px;
                 border: 1px solid #e2e8f0;
                 font-weight: 500;
+                text-align: left;
             }
             
             .show-all-replies-btn {
@@ -4091,6 +4225,7 @@ class TasksView {
             .tab-btn {
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--gap-small);
                 padding: var(--btn-padding);
                 height: var(--btn-height);
@@ -4103,8 +4238,8 @@ class TasksView {
                 cursor: pointer;
                 transition: all 0.2s ease;
                 flex: 1;
-                justify-content: center;
                 box-sizing: border-box;
+                text-align: center;
             }
             
             .tab-btn.active {
@@ -4134,12 +4269,14 @@ class TasksView {
                 line-height: 1.7;
                 color: #374151;
                 font-weight: 500;
+                text-align: left;
             }
             
             .email-content-viewer {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 line-height: 1.7;
                 color: #333;
+                text-align: left;
             }
             
             .email-original-content {
@@ -4149,6 +4286,7 @@ class TasksView {
                 color: #374151;
                 white-space: pre-wrap;
                 font-weight: 500;
+                text-align: left;
             }
             
             .email-original-content strong {
@@ -4193,6 +4331,7 @@ class TasksView {
             .btn-sm {
                 display: inline-flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--gap-small);
                 padding: 8px 12px;
                 height: 32px;
@@ -4203,6 +4342,7 @@ class TasksView {
                 transition: all 0.2s ease;
                 border: 1px solid;
                 box-sizing: border-box;
+                text-align: center;
             }
             
             .btn-sm.btn-secondary {
@@ -4237,6 +4377,7 @@ class TasksView {
                 padding-bottom: 12px;
                 border-bottom: 1px solid #e5e7eb;
                 font-weight: 600;
+                text-align: left;
             }
             
             .reply-content-preview {
@@ -4251,6 +4392,7 @@ class TasksView {
                 max-height: 200px;
                 overflow-y: auto;
                 font-weight: 500;
+                text-align: left;
             }
             
             /* ===== ANIMATIONS ===== */
@@ -4280,7 +4422,7 @@ class TasksView {
                 animation: fadeInUp 0.3s ease-out;
             }
             
-            /* ===== RESPONSIVE AVEC PILLS AGRANDIS ===== */
+            /* ===== RESPONSIVE AVEC PILLS AGRANDIS ET CENTRAGE MAINTENU ===== */
             @media (max-width: 1200px) {
                 :root {
                     --btn-height: 42px;
@@ -4314,6 +4456,9 @@ class TasksView {
                     height: var(--btn-height);
                     min-height: var(--btn-height);
                     max-height: var(--btn-height);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
             }
             
@@ -4348,6 +4493,9 @@ class TasksView {
                     width: 100%;
                     order: 1;
                     height: var(--btn-height);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 .view-modes-harmonized {
@@ -4355,6 +4503,8 @@ class TasksView {
                     justify-content: space-around;
                     order: 2;
                     height: var(--btn-height);
+                    display: flex;
+                    align-items: center;
                 }
                 
                 .action-buttons-harmonized {
@@ -4364,12 +4514,17 @@ class TasksView {
                     order: 3;
                     height: auto;
                     min-height: var(--btn-height);
+                    display: flex;
+                    align-items: center;
                 }
                 
                 .view-mode-harmonized {
                     flex: 1;
                     min-width: 80px;
                     height: calc(var(--btn-height) - var(--gap-small));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 .status-filters-harmonized {
@@ -4389,6 +4544,9 @@ class TasksView {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
                 }
             }
             
@@ -4410,6 +4568,10 @@ class TasksView {
                     font-size: 11px;
                     min-width: 80px;
                     padding: 0 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .view-mode-harmonized span,
@@ -4421,6 +4583,10 @@ class TasksView {
                     min-width: 38px;
                     padding: 0 var(--gap-small);
                     height: calc(var(--btn-height) - var(--gap-small));
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .pill-text-harmonized {
@@ -4444,11 +4610,14 @@ class TasksView {
                     display: -webkit-box;
                     -webkit-line-clamp: 2;
                     -webkit-box-orient: vertical;
+                    text-align: left;
                 }
                 
                 .task-meta-harmonized {
                     width: 100%;
                     justify-content: space-between;
+                    display: flex;
+                    align-items: center;
                 }
                 
                 .priority-bar-harmonized {
@@ -4459,6 +4628,9 @@ class TasksView {
                 .task-actions-harmonized {
                     margin-left: var(--gap-small);
                     gap: 3px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 /* FORCER l'harmonisation sur mobile */
@@ -4466,6 +4638,10 @@ class TasksView {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    text-align: center !important;
                 }
             }
             
@@ -4491,6 +4667,10 @@ class TasksView {
                     font-size: 10px;
                     min-width: 70px;
                     padding: 0 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .tasks-page-modern {
@@ -4503,16 +4683,25 @@ class TasksView {
                 
                 .task-title-harmonized {
                     font-size: 12px;
+                    text-align: left;
                 }
                 
                 .task-type-badge-harmonized {
                     font-size: 9px;
                     padding: 3px 5px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .deadline-badge-harmonized {
                     font-size: 8px;
                     padding: 3px 5px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .task-recipient-harmonized {
@@ -4529,18 +4718,28 @@ class TasksView {
                     width: 16px;
                     height: 16px;
                     margin-right: var(--gap-small);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 .pill-count-harmonized {
                     padding: 2px 4px;
                     font-size: 9px;
                     min-width: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .search-clear-harmonized {
                     width: 24px;
                     height: 24px;
                     font-size: 9px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                 }
                 
                 /* FORCER l'harmonisation sur petit mobile */
@@ -4549,6 +4748,10 @@ class TasksView {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    text-align: center !important;
                 }
                 
                 .view-mode-harmonized {
@@ -4570,6 +4773,10 @@ class TasksView {
                     font-size: 9px;
                     min-width: 60px;
                     padding: 0 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .view-modes-harmonized {
@@ -4580,14 +4787,20 @@ class TasksView {
                     min-width: 34px;
                     padding: 0 4px;
                     height: calc(var(--btn-height) - var(--gap-small)) !important;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    text-align: center;
                 }
                 
                 .status-filters-harmonized {
                     gap: 4px;
+                    justify-content: center;
                 }
                 
                 .action-buttons-harmonized {
                     gap: 4px;
+                    justify-content: center;
                 }
                 
                 /* FORCER l'harmonisation sur très petit écran */
@@ -4595,6 +4808,10 @@ class TasksView {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    text-align: center !important;
                 }
             }
         `;
@@ -4630,7 +4847,7 @@ function initializeTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v9.0 loaded - Interface harmonisée');
+    console.log('✅ TaskManager v9.0 loaded - Interface harmonisée et centrée');
 }
 
 initializeTaskManager();
