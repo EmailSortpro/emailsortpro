@@ -2898,22 +2898,75 @@ class TasksView {
                 box-sizing: border-box;
             }
             
-            /* ===== FILTRES DE STATUT AVEC HARMONISATION ABSOLUE ===== */
+            /* ===== FILTRES DE STATUT AGRANDIS ET MIEUX ALIGNÉS ===== */
             .status-filters-harmonized {
                 display: flex;
                 gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
+                margin-bottom: var(--gap-large);
                 flex-wrap: wrap;
                 align-items: center;
                 justify-content: flex-start;
             }
             
-            /* TOUS les pills de statut ont EXACTEMENT la même taille */
+            /* TOUS les pills de statut ont une taille AGRANDIE pour meilleure lisibilité */
             .status-filters-harmonized .status-pill-harmonized {
-                height: var(--btn-height);
-                min-height: var(--btn-height);
-                max-height: var(--btn-height);
+                height: 52px;
+                min-height: 52px;
+                max-height: 52px;
+                padding: var(--btn-padding-vertical) 20px;
+                font-size: 14px;
+                font-weight: 700;
+                min-width: 120px;
                 box-sizing: border-box;
+                border-radius: 12px;
+                box-shadow: var(--shadow-base);
+                transition: all var(--transition-speed) ease;
+            }
+            
+            .status-pill-harmonized:hover {
+                border-color: #3b82f6;
+                background: #f0f9ff;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+            }
+            
+            .status-pill-harmonized.active {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
+                border-color: #3b82f6;
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+                transform: translateY(-2px);
+            }
+            
+            /* ALIGNEMENT PARFAIT DU CONTENU DANS LES PILLS */
+            .pill-icon-harmonized {
+                font-size: 16px;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+            
+            .pill-text-harmonized {
+                font-weight: 700;
+                line-height: 1;
+                flex-shrink: 0;
+                text-align: center;
+                flex: 1;
+            }
+            
+            .pill-count-harmonized {
+                background: rgba(0, 0, 0, 0.1);
+                padding: 6px 10px;
+                border-radius: 10px;
+                font-size: 12px;
+                font-weight: 800;
+                min-width: 24px;
+                text-align: center;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+            
+            .status-pill-harmonized.active .pill-count-harmonized {
+                background: rgba(255, 255, 255, 0.25);
             }
             
             /* Panneau de filtres avancés */
@@ -2985,11 +3038,11 @@ class TasksView {
                 gap: var(--gap-small);
             }
             
-            /* ===== CARTES DE TÂCHES PARFAITEMENT HARMONISÉES ===== */
+            /* ===== CARTES DE TÂCHES SANS ESPACEMENT ===== */
             .tasks-harmonized-list {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-small);
+                gap: 0;
                 background: transparent;
             }
             
@@ -2999,16 +3052,30 @@ class TasksView {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
+                border-radius: 0;
                 padding: var(--card-padding);
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
-                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+                box-shadow: none;
                 overflow: hidden;
                 min-height: var(--card-height);
                 max-height: var(--card-height);
                 box-sizing: border-box;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            /* PREMIER ET DERNIER ÉLÉMENT AVEC BORDURES ARRONDIES */
+            .task-harmonized-card:first-child {
+                border-top-left-radius: var(--card-border-radius);
+                border-top-right-radius: var(--card-border-radius);
+                border-top: var(--border-width) solid #e5e7eb;
+            }
+            
+            .task-harmonized-card:last-child {
+                border-bottom-left-radius: var(--card-border-radius);
+                border-bottom-right-radius: var(--card-border-radius);
+                border-bottom: var(--border-width) solid #e5e7eb;
             }
             
             .task-harmonized-card::before {
@@ -3025,9 +3092,11 @@ class TasksView {
             
             .task-harmonized-card:hover {
                 background: white;
-                transform: translateY(-2px);
+                transform: translateY(-1px);
                 box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
                 border-color: rgba(99, 102, 241, 0.2);
+                border-left: 3px solid #6366f1;
+                z-index: 1;
             }
             
             .task-harmonized-card:hover::before {
@@ -3036,15 +3105,17 @@ class TasksView {
             
             .task-harmonized-card.selected {
                 background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid #3b82f6;
                 border-color: #3b82f6;
                 transform: translateY(-1px);
                 box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+                z-index: 2;
             }
             
             .task-harmonized-card.completed {
                 opacity: 0.75;
                 background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-color: #22c55e;
+                border-left: 3px solid #22c55e;
             }
             
             .task-harmonized-card.completed .task-title-harmonized {
@@ -3290,11 +3361,11 @@ class TasksView {
                 color: #7c3aed;
             }
 
-            /* ===== VUE GROUPÉE HARMONISÉE ===== */
+            /* ===== VUE GROUPÉE SANS ESPACEMENT ===== */
             .tasks-grouped-harmonized {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-small);
+                gap: var(--gap-medium);
             }
             
             .task-group-harmonized {
@@ -3302,7 +3373,7 @@ class TasksView {
                 border: 1px solid #e5e7eb;
                 border-radius: var(--card-border-radius);
                 overflow: hidden;
-                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             }
             
             .group-header-harmonized {
@@ -3315,6 +3386,7 @@ class TasksView {
                 background: white;
                 min-height: var(--btn-height);
                 box-sizing: border-box;
+                border-bottom: 1px solid #f1f5f9;
             }
             
             .group-header-harmonized:hover {
@@ -3337,6 +3409,7 @@ class TasksView {
                 font-weight: 700;
                 font-size: 14px;
                 flex-shrink: 0;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
             
             .group-info-harmonized {
@@ -3347,13 +3420,13 @@ class TasksView {
             .group-name-harmonized {
                 font-weight: 700;
                 color: #1f2937;
-                font-size: 14px;
+                font-size: 15px;
                 line-height: 1.3;
                 margin-bottom: 2px;
             }
             
             .group-meta-harmonized {
-                font-size: 11px;
+                font-size: 12px;
                 color: #6b7280;
                 font-weight: 500;
             }
@@ -3361,23 +3434,30 @@ class TasksView {
             .group-expand-harmonized {
                 color: #9ca3af;
                 transition: transform 0.2s ease;
-                font-size: 13px;
-                width: 24px;
-                height: 24px;
+                font-size: 14px;
+                width: 28px;
+                height: 28px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
+                border-radius: 6px;
+                background: #f8fafc;
+            }
+            
+            .group-expand-harmonized:hover {
+                background: #f1f5f9;
+                color: #6b7280;
             }
             
             .task-group-harmonized.expanded .group-expand-harmonized {
                 transform: rotate(180deg);
                 color: #3b82f6;
+                background: #eff6ff;
             }
             
             .group-content-harmonized {
                 background: #fafbfc;
-                border-top: 1px solid #e5e7eb;
                 margin: 0;
                 padding: 0;
             }
@@ -3398,6 +3478,8 @@ class TasksView {
                 background: white;
                 transform: none;
                 box-shadow: none;
+                border-left: 3px solid #6366f1;
+                z-index: 1;
             }
             
             /* ===== ÉTAT VIDE HARMONISÉ ===== */
@@ -4135,12 +4217,20 @@ class TasksView {
                 animation: fadeInUp 0.3s ease-out;
             }
             
-            /* ===== RESPONSIVE AVEC HARMONISATION MAINTENUE ===== */
+            /* ===== RESPONSIVE AVEC PILLS AGRANDIS ===== */
             @media (max-width: 1200px) {
                 :root {
                     --btn-height: 42px;
                     --card-height: 84px;
                     --action-btn-size: 34px;
+                }
+                
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: 48px;
+                    min-height: 48px;
+                    max-height: 48px;
+                    font-size: 13px;
+                    min-width: 110px;
                 }
                 
                 .controls-bar-harmonized {
@@ -4157,7 +4247,6 @@ class TasksView {
                 
                 /* MAINTENIR l'harmonisation sur tablette */
                 .action-buttons-harmonized > *,
-                .status-filters-harmonized .status-pill-harmonized,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height);
                     min-height: var(--btn-height);
@@ -4173,6 +4262,15 @@ class TasksView {
                     --gap-small: 6px;
                     --gap-medium: 10px;
                     --gap-large: 14px;
+                }
+                
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: 44px;
+                    min-height: 44px;
+                    max-height: 44px;
+                    font-size: 12px;
+                    min-width: 100px;
+                    padding: 0 16px;
                 }
                 
                 .controls-bar-harmonized {
@@ -4224,8 +4322,7 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation sur tablette */
-                .action-buttons-harmonized > *,
-                .status-filters-harmonized .status-pill-harmonized {
+                .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -4241,6 +4338,15 @@ class TasksView {
                     --card-padding: 12px;
                     --action-btn-size: 30px;
                     --action-btn-font-size: 12px;
+                }
+                
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: 40px;
+                    min-height: 40px;
+                    max-height: 40px;
+                    font-size: 11px;
+                    min-width: 80px;
+                    padding: 0 12px;
                 }
                 
                 .view-mode-harmonized span,
@@ -4293,8 +4399,7 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation sur mobile */
-                .action-buttons-harmonized > *,
-                .status-filters-harmonized .status-pill-harmonized {
+                .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -4314,6 +4419,15 @@ class TasksView {
                     --gap-small: 4px;
                     --gap-medium: 8px;
                     --gap-large: 12px;
+                }
+                
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: 36px;
+                    min-height: 36px;
+                    max-height: 36px;
+                    font-size: 10px;
+                    min-width: 70px;
+                    padding: 0 10px;
                 }
                 
                 .tasks-page-modern {
@@ -4368,7 +4482,6 @@ class TasksView {
                 
                 /* FORCER l'harmonisation sur petit mobile */
                 .action-buttons-harmonized > *,
-                .status-filters-harmonized .status-pill-harmonized,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
@@ -4385,6 +4498,15 @@ class TasksView {
                     --btn-height: 34px;
                     --card-height: 68px;
                     --action-btn-size: 26px;
+                }
+                
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: 34px;
+                    min-height: 34px;
+                    max-height: 34px;
+                    font-size: 9px;
+                    min-width: 60px;
+                    padding: 0 8px;
                 }
                 
                 .view-modes-harmonized {
@@ -4406,8 +4528,7 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation sur très petit écran */
-                .action-buttons-harmonized > *,
-                .status-filters-harmonized .status-pill-harmonized {
+                .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
