@@ -1034,7 +1034,7 @@ Sujet: ${subject}
 }
 
 // =====================================
-// TASKSVIEW COMPLÈTEMENT RÉÉCRITE - INTERFACE EXACTE EMAILSORTPRO
+// MODERN TASKS VIEW - AVEC AFFICHAGE CONTENU COMPLET
 // =====================================
 class TasksView {
     constructor() {
@@ -1059,7 +1059,7 @@ class TasksView {
         });
     }
 
-    // MÉTHODE RENDER PRINCIPALE - INTERFACE EMAILSORTPRO
+    // MÉTHODE PRINCIPALE POUR RENDRE L'INTERFACE - IDENTIQUE À PAGEMANAGER
     render(container) {
         if (!container) {
             console.error('[TasksView] No container provided');
@@ -1068,8 +1068,10 @@ class TasksView {
 
         if (!window.taskManager || !window.taskManager.initialized) {
             container.innerHTML = `
-                <div class="loading-wrapper">
-                    <div class="loading-spinner"></div>
+                <div class="loading-state">
+                    <div class="loading-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
                     <p>Chargement des tâches...</p>
                 </div>
             `;
@@ -1084,320 +1086,906 @@ class TasksView {
 
         const stats = window.taskManager.getStats();
         
-        // INTERFACE IDENTIQUE À EMAILSORTPRO
+        // INTERFACE IDENTIQUE À PAGEMANAGER - MÊME STRUCTURE
         container.innerHTML = `
-            <div class="tasks-page">
-                <!-- En-tête avec titre et compteur -->
-                <div class="tasks-header">
-                    <div class="tasks-title-section">
-                        <h1 class="page-title">Tâches</h1>
-                        <span class="tasks-counter">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
+            <div class="tasks-page-modern">
+                <!-- Barre principale IDENTIQUE à PageManager -->
+                <div class="tasks-main-toolbar">
+                    <div class="toolbar-left">
+                        <h1 class="tasks-title">Tâches</h1>
+                        <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
                     </div>
                     
-                    <!-- Barre de recherche -->
-                    <div class="search-section">
-                        <div class="search-container">
-                            <i class="fas fa-search search-icon"></i>
+                    <div class="toolbar-center">
+                        <div class="search-wrapper-large">
+                            <i class="fas fa-search search-icon-large"></i>
                             <input type="text" 
-                                   class="search-input" 
+                                   class="search-input-large" 
                                    id="taskSearchInput"
                                    placeholder="Rechercher dans les tâches..." 
                                    value="${this.currentFilters.search}">
+                            <button class="search-clear-large" id="searchClearBtn" 
+                                    style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                                    onclick="window.tasksView.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     </div>
                     
-                    <!-- Actions à droite -->
-                    <div class="header-actions">
-                        <div class="view-modes">
-                            <button class="view-mode-btn ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('condensed')"
-                                    title="Vue condensée">
-                                <i class="fas fa-th-list"></i>
-                                <span>Condensé</span>
+                    <div class="toolbar-center-right">
+                        <div class="view-modes-large">
+                            <button class="btn-large ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
+                                    data-mode="condensed"
+                                    onclick="window.tasksView.changeViewMode('condensed')">
+                                <i class="fas fa-list"></i>
+                                <span class="btn-text-large">Condensé</span>
                             </button>
-                            <button class="view-mode-btn ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('detailed')"
-                                    title="Vue détaillée">
+                            <button class="btn-large ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                    data-mode="detailed"
+                                    onclick="window.tasksView.changeViewMode('detailed')">
                                 <i class="fas fa-th-large"></i>
-                                <span>Détaillé</span>
+                                <span class="btn-text-large">Détaillé</span>
                             </button>
                         </div>
-                        
-                        <button class="new-task-btn" onclick="window.tasksView.showCreateModal()">
+                    </div>
+                    
+                    <div class="toolbar-right">
+                        ${this.selectedTasks.size > 0 ? `
+                            <div class="selection-info-large">
+                                <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
+                                <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <button class="btn-large btn-primary-large" onclick="window.tasksView.bulkActions()">
+                                <i class="fas fa-cog"></i>
+                                <span class="btn-text-large">Actions</span>
+                            </button>
+                        ` : ''}
+                        <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
                             <i class="fas fa-plus"></i>
-                            <span>Nouvelle tâche</span>
+                            <span class="btn-text-large">Nouvelle tâche</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Filtres de statut (pills comme EmailSortPro) -->
-                <div class="status-filters">
-                    ${this.renderStatusPills(stats)}
+                <!-- Filtres de statut avec bouton filtres avancés -->
+                <div class="status-filters-large">
+                    ${this.buildLargeStatusPills(stats)}
+                    <button class="btn-large advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                            onclick="window.tasksView.toggleAdvancedFilters()">
+                        <i class="fas fa-filter"></i>
+                        <span class="btn-text-large">Filtres avancés</span>
+                        <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                    </button>
                 </div>
 
-                <!-- Filtres avancés (rétractable) -->
-                <div class="advanced-filters-toggle" onclick="window.tasksView.toggleAdvancedFilters()">
-                    <i class="fas fa-filter"></i>
-                    <span>Filtres avancés</span>
-                    <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
-                    ${this.getActiveFiltersCount() > 0 ? `<span class="active-filters-badge">${this.getActiveFiltersCount()}</span>` : ''}
-                </div>
+                <!-- Filtres avancés -->
+                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                    <div class="advanced-filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-flag"></i> Priorité
+                            </label>
+                            <select class="filter-select" id="priorityFilter" 
+                                    onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            </select>
+                        </div>
 
-                <div class="advanced-filters ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFilters">
-                    <div class="filters-row">
-                        <select class="filter-select" id="priorityFilter" onchange="window.tasksView.updateFilter('priority', this.value)">
-                            <option value="all">Toutes priorités</option>
-                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>Urgente</option>
-                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>Haute</option>
-                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>Normale</option>
-                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>Basse</option>
-                        </select>
-                        
-                        <select class="filter-select" id="clientFilter" onchange="window.tasksView.updateFilter('client', this.value)">
-                            ${this.buildClientFilterOptions()}
-                        </select>
-                        
-                        <select class="filter-select" id="sortByFilter" onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Plus récentes</option>
-                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Échéance</option>
-                            <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                        </select>
-                        
-                        <button class="reset-filters-btn" onclick="window.tasksView.resetAllFilters()">
-                            <i class="fas fa-undo"></i>
-                            Réinitialiser
-                        </button>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-building"></i> Client
+                            </label>
+                            <select class="filter-select" id="clientFilter" 
+                                    onchange="window.tasksView.updateFilter('client', this.value)">
+                                ${this.buildClientFilterOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-tags"></i> Tag
+                            </label>
+                            <select class="filter-select" id="tagFilter" 
+                                    onchange="window.tasksView.updateFilter('tag', this.value)">
+                                ${this.buildTagFilterOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-calendar"></i> Période
+                            </label>
+                            <select class="filter-select" id="dateRangeFilter" 
+                                    onchange="window.tasksView.updateFilter('dateRange', this.value)">
+                                <option value="all" ${this.currentFilters.dateRange === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="today" ${this.currentFilters.dateRange === 'today' ? 'selected' : ''}>Aujourd'hui</option>
+                                <option value="week" ${this.currentFilters.dateRange === 'week' ? 'selected' : ''}>Cette semaine</option>
+                                <option value="month" ${this.currentFilters.dateRange === 'month' ? 'selected' : ''}>Ce mois</option>
+                                <option value="older" ${this.currentFilters.dateRange === 'older' ? 'selected' : ''}>Plus ancien</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-sort"></i> Trier par
+                            </label>
+                            <select class="filter-select" id="sortByFilter" 
+                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                                <option value="updated" ${this.currentFilters.sortBy === 'updated' ? 'selected' : ''}>Dernière modif</option>
+                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                                <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                                <i class="fas fa-undo"></i> Réinitialiser
+                            </button>
+                            <div class="active-filters-count">
+                                ${this.getActiveFiltersCount()} filtres actifs
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Liste des tâches -->
-                <div class="tasks-container" id="tasksContainer">
+                <div class="tasks-container-modern" id="tasksContainer">
                     ${this.renderTasksList()}
                 </div>
             </div>
         `;
 
-        // Appliquer les styles
-        this.addTaskStyles();
+        // UTILISER LES MÊMES STYLES QUE PAGEMANAGER
+        this.addModernTaskStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Interface EmailSortPro rendered');
+        console.log('[TasksView] Modern interface rendered with PageManager styling');
     }
 
-    // PILLS DE STATUT IDENTIQUES À EMAILSORTPRO
-    renderStatusPills(stats) {
+    // MÉTHODES IDENTIQUES À PAGEMANAGER
+    buildLargeStatusPills(stats) {
         const pills = [
-            { id: 'all', label: 'Toutes', icon: '📋', count: stats.total, color: '#6366f1' },
-            { id: 'todo', label: 'À faire', icon: '⏳', count: stats.todo, color: '#3b82f6' },
-            { id: 'in-progress', label: 'En cours', icon: '🔄', count: stats.inProgress, color: '#f59e0b' },
-            { id: 'overdue', label: 'En retard', icon: '⚠️', count: stats.overdue, color: '#ef4444' },
-            { id: 'needsReply', label: 'À répondre', icon: '💬', count: stats.needsReply, color: '#8b5cf6' },
-            { id: 'completed', label: 'Terminées', icon: '✅', count: stats.completed, color: '#10b981' }
+            { id: 'all', name: 'Toutes', icon: '📋', count: stats.total },
+            { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
+            { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
+            { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
+            { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
+            { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
         ];
 
         return pills.map(pill => `
-            <button class="status-pill ${this.isStatusActive(pill.id) ? 'active' : ''}" 
-                    style="--pill-color: ${pill.color}"
-                    onclick="window.tasksView.filterByStatus('${pill.id}')">
-                <span class="pill-icon">${pill.icon}</span>
-                <span class="pill-label">${pill.label}</span>
-                <span class="pill-count">${pill.count}</span>
+            <button class="btn-large status-pill-large ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+                    data-filter="${pill.id}"
+                    onclick="window.tasksView.quickFilter('${pill.id}')">
+                <span class="pill-icon-large">${pill.icon}</span>
+                <span class="pill-text-large">${pill.name}</span>
+                <span class="pill-count-large">${pill.count}</span>
             </button>
         `).join('');
     }
 
-    // RENDU DE LA LISTE DES TÂCHES
     renderTasksList() {
         const tasks = window.taskManager.filterTasks(this.currentFilters);
+        const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
         
-        if (tasks.length === 0) {
+        if (filteredTasks.length === 0) {
             return this.renderEmptyState();
         }
 
-        return `
-            <div class="tasks-list">
-                ${tasks.map(task => this.renderTaskItem(task)).join('')}
-            </div>
-        `;
-    }
-
-    // RENDU D'UNE TÂCHE INDIVIDUELLE - STYLE EMAILSORTPRO
-    renderTaskItem(task) {
-        const isSelected = this.selectedTasks.has(task.id);
-        const isCompleted = task.status === 'completed';
-        const priorityColor = this.getPriorityColor(task.priority);
-        
-        // Informations principales
-        const senderInfo = task.hasEmail ? 
-            (task.emailFromName || task.emailFrom?.split('@')[0] || 'Email') : 
-            (task.client || 'Interne');
-        
-        const timeInfo = this.formatTimeInfo(task.createdAt);
-        const badges = this.getBadges(task);
-        
-        return `
-            <div class="task-item ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-task-id="${task.id}"
-                 onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
-                
-                <!-- Checkbox -->
-                <div class="task-checkbox">
-                    <input type="checkbox" 
-                           ${isSelected ? 'checked' : ''}
-                           onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
-                </div>
-                
-                <!-- Contenu principal -->
-                <div class="task-content">
-                    <div class="task-title" style="border-left: 3px solid ${priorityColor}">
-                        ${this.escapeHtml(task.title)}
-                    </div>
-                    <div class="task-meta">
-                        <span class="task-sender">${this.escapeHtml(senderInfo)}</span>
-                        ${badges.length > 0 ? `<span class="task-badges">${badges.join(' ')}</span>` : ''}
-                        <span class="task-time">${timeInfo}</span>
-                    </div>
-                </div>
-                
-                <!-- Actions -->
-                <div class="task-actions">
-                    ${this.renderTaskActions(task)}
-                </div>
-            </div>
-        `;
-    }
-
-    // ACTIONS DE LA TÂCHE
-    renderTaskActions(task) {
-        const actions = [];
-        
-        // Répondre (si email non répondu)
-        if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
-            actions.push(`
-                <button class="task-action reply" 
-                        onclick="event.stopPropagation(); window.tasksView.replyToEmail('${task.id}')"
-                        title="Répondre">
-                    <i class="fas fa-reply"></i>
-                </button>
-            `);
+        switch (this.currentViewMode) {
+            case 'detailed':
+                return this.renderDetailedView(filteredTasks);
+            case 'condensed':
+            default:
+                return this.renderCondensedView(filteredTasks);
         }
-        
-        // Marquer terminé
-        if (task.status !== 'completed') {
-            actions.push(`
-                <button class="task-action complete" 
-                        onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
-                        title="Marquer terminé">
-                    <i class="fas fa-check"></i>
-                </button>
-            `);
-        }
-        
-        // Plus d'options
-        actions.push(`
-            <button class="task-action more" 
-                    onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
-                    title="Voir détails">
-                <i class="fas fa-ellipsis-h"></i>
-            </button>
-        `);
-        
-        return actions.join('');
     }
 
-    // ÉTAT VIDE
     renderEmptyState() {
         return `
-            <div class="empty-state">
-                <div class="empty-icon">
+            <div class="empty-state-modern">
+                <div class="empty-state-icon">
                     <i class="fas fa-tasks"></i>
                 </div>
-                <h3>Aucune tâche trouvée</h3>
-                <p>${this.hasActiveFilters() ? 'Aucune tâche ne correspond à vos critères' : 'Vous n\'avez aucune tâche'}</p>
+                <h3 class="empty-state-title">Aucune tâche trouvée</h3>
+                <p class="empty-state-text">
+                    ${this.hasActiveFilters() ? 'Aucune tâche ne correspond à vos critères' : 'Vous n\'avez aucune tâche'}
+                </p>
                 ${this.hasActiveFilters() ? `
-                    <button class="btn-primary" onclick="window.tasksView.resetAllFilters()">
-                        Réinitialiser les filtres
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.resetAllFilters()">
+                        <i class="fas fa-undo"></i>
+                        <span>Réinitialiser les filtres</span>
                     </button>
                 ` : `
-                    <button class="btn-primary" onclick="window.tasksView.showCreateModal()">
-                        Créer votre première tâche
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
+                        <i class="fas fa-plus"></i>
+                        <span>Créer votre première tâche</span>
                     </button>
                 `}
             </div>
         `;
     }
 
-    // MÉTHODES UTILITAIRES
-    getPriorityColor(priority) {
-        const colors = {
-            urgent: '#ef4444',
-            high: '#f59e0b',
-            medium: '#3b82f6',
-            low: '#10b981'
+    renderCondensedView(tasks) {
+        return `
+            <div class="tasks-condensed-list">
+                ${tasks.map(task => this.renderCondensedTaskItem(task)).join('')}
+            </div>
+        `;
+    }
+
+renderCondensedTaskItem(task) {
+    const isSelected = this.selectedTasks.has(task.id);
+    const isCompleted = task.status === 'completed';
+    const priorityColor = this.getPriorityColor(task.priority);
+    const statusIcon = this.getSimpleStatusIcon(task.status);
+    
+    // Informations essentielles seulement
+    const senderInfo = task.hasEmail ? 
+        (task.emailFromName || task.emailFrom?.split('@')[0] || 'Email') : 
+        (task.client || 'Interne');
+        
+    const timeInfo = this.formatCompactTime(task.createdAt);
+    const dueDateInfo = task.dueDate ? this.formatCompactDueDate(task.dueDate) : null;
+    
+    // Badges discrets
+    const badges = [];
+    if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
+        badges.push('📧');
+    }
+    if (task.suggestedReplies && task.suggestedReplies.length > 0) {
+        badges.push('🤖');
+    }
+    if (task.hasAttachments) {
+        badges.push('📎');
+    }
+    
+    return `
+        <div class="task-elegant ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+             data-task-id="${task.id}"
+             onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
+            
+            <!-- Indicateur de priorité (barre colorée) -->
+            <div class="priority-bar" style="background: ${priorityColor}"></div>
+            
+            <!-- Checkbox discret -->
+            <input type="checkbox" 
+                   class="task-checkbox-elegant" 
+                   ${isSelected ? 'checked' : ''}
+                   onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+            
+            <!-- Statut avec icône simple -->
+            <div class="status-icon-elegant" title="Statut: ${this.getStatusLabel(task.status)}">
+                ${statusIcon}
+            </div>
+            
+            <!-- Contenu principal de la tâche -->
+            <div class="task-main-content">
+                <div class="task-title-elegant">${this.escapeHtml(task.title)}</div>
+                <div class="task-subtitle-elegant">
+                    <span class="sender-elegant">${this.escapeHtml(senderInfo)}</span>
+                    ${badges.length > 0 ? `<span class="badges-elegant">${badges.join(' ')}</span>` : ''}
+                </div>
+            </div>
+            
+            <!-- Informations temporelles -->
+            <div class="task-time-info">
+                ${dueDateInfo ? `<div class="due-date-compact ${dueDateInfo.class}">${dueDateInfo.text}</div>` : ''}
+                <div class="created-time-elegant">${timeInfo}</div>
+            </div>
+            
+            <!-- Actions rapides (visibles au survol) -->
+            <div class="task-actions-elegant">
+                ${task.hasEmail && !task.emailReplied && task.status !== 'completed' ? `
+                    <button class="action-elegant reply-action" 
+                            onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                            title="Répondre">
+                        <i class="fas fa-reply"></i>
+                    </button>
+                ` : ''}
+                
+                ${task.status !== 'completed' ? `
+                    <button class="action-elegant complete-action" 
+                            onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
+                            title="Marquer terminé">
+                        <i class="fas fa-check"></i>
+                    </button>
+                ` : ''}
+                
+                <button class="action-elegant more-action" 
+                        onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
+                        title="Voir détails">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// NOUVELLES MÉTHODES UTILITAIRES POUR L'AFFICHAGE SOBRE
+
+getPriorityColor(priority) {
+    const colors = {
+        urgent: '#ef4444',   // Rouge vif
+        high: '#f59e0b',     // Orange/Ambre
+        medium: '#3b82f6',   // Bleu
+        low: '#10b981'       // Vert
+    };
+    return colors[priority] || colors.medium;
+}
+
+getSimpleStatusIcon(status) {
+    const icons = {
+        todo: '<div class="status-dot status-todo"></div>',
+        'in-progress': '<div class="status-dot status-progress"></div>',
+        completed: '<i class="fas fa-check-circle status-completed"></i>'
+    };
+    return icons[status] || icons.todo;
+}
+
+formatCompactTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 3600000) { // Moins d'1h
+        return `${Math.floor(diff / 60000)}min`;
+    } else if (diff < 86400000) { // Moins d'1j
+        return `${Math.floor(diff / 3600000)}h`;
+    } else if (diff < 604800000) { // Moins d'1 semaine
+        return `${Math.floor(diff / 86400000)}j`;
+    } else {
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    }
+}
+
+formatCompactDueDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+        return {
+            text: `${Math.abs(diffDays)}j`,
+            class: 'overdue'
         };
-        return colors[priority] || colors.medium;
+    } else if (diffDays === 0) {
+        return {
+            text: 'Aujourd\'hui',
+            class: 'today'
+        };
+    } else if (diffDays === 1) {
+        return {
+            text: 'Demain',
+            class: 'tomorrow'
+        };
+    } else if (diffDays <= 7) {
+        return {
+            text: `${diffDays}j`,
+            class: 'soon'
+        };
+    } else {
+        return {
+            text: date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+            class: 'normal'
+        };
+    }
+}
+
+// NOUVEAUX STYLES CSS SOBRES ET ÉLÉGANTS
+
+addElegantTaskStyles() {
+    if (document.getElementById('elegantTaskStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'elegantTaskStyles';
+    styles.textContent = `
+        /* Conteneur principal des tâches */
+        .tasks-condensed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Ligne de tâche élégante */
+        .task-elegant {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f1f5f9;
+            position: relative;
+            min-height: 60px;
+        }
+        
+        .task-elegant:last-child {
+            border-bottom: none;
+        }
+        
+        .task-elegant:hover {
+            background: #fafbfc;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .task-elegant:hover .task-actions-elegant {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .task-elegant.selected {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .task-elegant.completed {
+            opacity: 0.6;
+        }
+        
+        .task-elegant.completed .task-title-elegant {
+            text-decoration: line-through;
+            color: #64748b;
+        }
+        
+        /* Barre de priorité */
+        .priority-bar {
+            width: 4px;
+            height: 40px;
+            border-radius: 2px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        
+        /* Checkbox discret */
+        .task-checkbox-elegant {
+            width: 16px;
+            height: 16px;
+            margin-right: 16px;
+            cursor: pointer;
+            border-radius: 3px;
+            border: 2px solid #cbd5e1;
+            background: white;
+            transition: all 0.2s ease;
+        }
+        
+        .task-checkbox-elegant:checked {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        /* Icône de statut */
+        .status-icon-elegant {
+            margin-right: 16px;
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 2px solid;
+        }
+        
+        .status-todo {
+            background: white;
+            border-color: #94a3b8;
+        }
+        
+        .status-progress {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-completed {
+            color: #10b981;
+            font-size: 16px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Contenu principal */
+        .task-main-content {
+            flex: 1;
+            min-width: 0;
+            margin-right: 16px;
+        }
+        
+        .task-title-elegant {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.4;
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .task-subtitle-elegant {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .sender-elegant {
+            font-weight: 500;
+            color: #475569;
+        }
+        
+        .badges-elegant {
+            display: flex;
+            gap: 4px;
+            font-size: 12px;
+        }
+        
+        /* Informations temporelles */
+        .task-time-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            margin-right: 16px;
+            flex-shrink: 0;
+            min-width: 80px;
+        }
+        
+        .due-date-compact {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .due-date-compact.overdue {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .due-date-compact.today {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        
+        .due-date-compact.tomorrow {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+        
+        .due-date-compact.soon {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .due-date-compact.normal {
+            background: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .created-time-elegant {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        
+        /* Actions rapides */
+        .task-actions-elegant {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .action-elegant {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        
+        .action-elegant:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .reply-action:hover {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .complete-action:hover {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .more-action:hover {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .task-elegant {
+                padding: 12px 16px;
+                min-height: 50px;
+            }
+            
+            .priority-bar {
+                height: 32px;
+                margin-right: 12px;
+            }
+            
+            .task-checkbox-elegant,
+            .status-icon-elegant {
+                margin-right: 12px;
+            }
+            
+            .task-main-content {
+                margin-right: 12px;
+            }
+            
+            .task-title-elegant {
+                font-size: 14px;
+            }
+            
+            .task-subtitle-elegant {
+                font-size: 12px;
+            }
+            
+            .task-time-info {
+                margin-right: 12px;
+                min-width: 60px;
+            }
+            
+            .due-date-compact {
+                font-size: 10px;
+                padding: 1px 6px;
+            }
+            
+            .created-time-elegant {
+                font-size: 11px;
+            }
+            
+            .action-elegant {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            
+            .task-actions-elegant {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+        
+        /* Animations douces */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .task-elegant {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Couleurs harmonieuses */
+        :root {
+            --color-primary: #3b82f6;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-gray-50: #f8fafc;
+            --color-gray-100: #f1f5f9;
+            --color-gray-200: #e2e8f0;
+            --color-gray-400: #94a3b8;
+            --color-gray-500: #64748b;
+            --color-gray-600: #475569;
+            --color-gray-900: #1e293b;
+        }
+    `;
+    
+    document.head.appendChild(styles);
+}
+
+    renderQuickActions(task, minimal = false) {
+        const actions = [];
+        
+        if (task.status !== 'completed') {
+            actions.push(`
+                <button class="action-btn-modern complete" 
+                        onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
+                        title="Marquer comme terminé">
+                    <i class="fas fa-check"></i>
+                </button>
+            `);
+        }
+        
+        // Bouton pour régénérer les suggestions IA
+        if (task.hasEmail && window.aiTaskAnalyzer?.apiKey) {
+            actions.push(`
+                <button class="action-btn-modern ai-refresh" 
+                        onclick="event.stopPropagation(); window.tasksView.regenerateAISuggestions('${task.id}')"
+                        title="Régénérer suggestions IA">
+                    <i class="fas fa-robot"></i>
+                </button>
+            `);
+        }
+        
+        if (!minimal) {
+            actions.push(`
+                <button class="action-btn-modern edit" 
+                        onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
+                        title="Voir les détails">
+                    <i class="fas fa-eye"></i>
+                </button>
+            `);
+        }
+        
+        // Bouton de suppression modifié avec confirmation
+        actions.push(`
+            <button class="action-btn-modern delete-btn" 
+                    onclick="event.stopPropagation(); window.tasksView.confirmDeleteTask('${task.id}')"
+                    title="Supprimer cette tâche"
+                    data-task-title="${this.escapeHtml(task.title)}">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        `);
+        
+        return actions.join('');
     }
 
-    getBadges(task) {
-        const badges = [];
-        
-        if (task.hasEmail && !task.emailReplied) {
-            badges.push('<span class="badge email">📧</span>');
-        }
-        
-        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
-            badges.push('<span class="badge ai">🤖</span>');
-        }
-        
-        if (task.hasAttachments) {
-            badges.push('<span class="badge attachment">📎</span>');
-        }
-        
-        return badges;
+    // NOUVELLE MÉTHODE POUR CONFIRMATION DE SUPPRESSION
+    confirmDeleteTask(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        const modalHTML = `
+            <div id="deleteConfirmModal" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 500px; width: 100%; 
+                           box-shadow: 0 10px 40px rgba(0,0,0,0.3); border: 1px solid #e5e7eb;">
+                    <div style="padding: 24px 24px 16px 24px; text-align: center;">
+                        <div style="width: 64px; height: 64px; background: #fef2f2; border-radius: 50%; 
+                                   display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 28px; color: #dc2626;"></i>
+                        </div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 20px; color: #1f2937;">Confirmer la suppression</h3>
+                        <p style="margin: 0 0 16px 0; color: #6b7280; line-height: 1.5;">
+                            Êtes-vous sûr de vouloir supprimer cette tâche ?
+                        </p>
+                        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">
+                                ${this.escapeHtml(task.title)}
+                            </div>
+                            ${task.hasEmail ? `
+                                <div style="font-size: 14px; color: #6b7280;">
+                                    <i class="fas fa-envelope"></i> Email de ${task.emailFromName || task.emailFrom}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p style="margin: 0; font-size: 14px; color: #dc2626; font-weight: 500;">
+                            ⚠️ Cette action est irréversible
+                        </p>
+                    </div>
+                    <div style="padding: 16px 24px 24px 24px; display: flex; justify-content: center; gap: 12px;">
+                        <button onclick="document.getElementById('deleteConfirmModal').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 10px 20px; background: #f3f4f6; border: 1px solid #d1d5db; 
+                                       border-radius: 8px; cursor: pointer; font-weight: 500; color: #374151;">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button onclick="window.tasksView.executeDelete('${task.id}'); document.getElementById('deleteConfirmModal').remove();"
+                                style="padding: 10px 20px; background: #dc2626; color: white; border: none; 
+                                       border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
     }
 
-    formatTimeInfo(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 3600000) { // < 1h
-            return `${Math.floor(diff / 60000)}m`;
-        } else if (diff < 86400000) { // < 1j
-            return `${Math.floor(diff / 3600000)}h`;
-        } else if (diff < 604800000) { // < 1 semaine
-            return `${Math.floor(diff / 86400000)}j`;
-        } else {
-            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
+    executeDelete(taskId) {
+        window.taskManager.deleteTask(taskId);
+        this.selectedTasks.delete(taskId);
+        document.body.style.overflow = 'auto';
+        this.showToast('Tâche supprimée définitivement', 'success');
     }
 
-    // GESTION DES ÉVÉNEMENTS
+    // MÉTHODE POUR FILTRER PAR TAG
+    filterByTag(tag) {
+        this.currentFilters.tag = tag;
+        this.showAdvancedFilters = true;
+        
+        // Mettre à jour le select
+        const tagFilter = document.getElementById('tagFilter');
+        if (tagFilter) {
+            tagFilter.value = tag;
+        }
+        
+        this.refreshView();
+        this.showToast(`Filtré par tag: #${tag}`, 'info');
+    }
+
+    // Event handlers et interactions IDENTIQUES À PAGEMANAGER
     handleTaskClick(event, taskId) {
-        if (event.ctrlKey || event.metaKey) {
-            this.toggleTaskSelection(taskId);
-        } else {
+        if (this.currentViewMode === 'condensed') {
             this.showTaskDetails(taskId);
+        } else {
+            this.toggleTaskSelection(taskId);
         }
     }
 
-    filterByStatus(statusId) {
-        // Reset autres filtres
+    quickFilter(filterId) {
         this.currentFilters = {
-            ...this.currentFilters,
             status: 'all',
+            priority: 'all',
+            category: 'all',
+            search: this.currentFilters.search,
+            sortBy: this.currentFilters.sortBy,
             overdue: false,
             needsReply: false
         };
 
-        // Appliquer le nouveau filtre
-        switch (statusId) {
+        switch (filterId) {
             case 'all':
                 break;
             case 'todo':
             case 'in-progress':
             case 'completed':
-                this.currentFilters.status = statusId;
+                this.currentFilters.status = filterId;
                 break;
             case 'overdue':
                 this.currentFilters.overdue = true;
@@ -1410,21 +1998,550 @@ class TasksView {
         this.refreshView();
     }
 
-    isStatusActive(statusId) {
-        switch (statusId) {
-            case 'all':
-                return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
-            case 'todo':
-            case 'in-progress': 
-            case 'completed':
-                return this.currentFilters.status === statusId;
-            case 'overdue':
-                return this.currentFilters.overdue;
-            case 'needsReply':
-                return this.currentFilters.needsReply;
-            default:
-                return false;
+    showTaskDetails(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        const uniqueId = 'task_details_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 1000px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Détails de la tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        ${this.buildTaskDetailsContent(task)}
+                    </div>
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                            Fermer
+                        </button>
+                        ${task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                            <button onclick="window.tasksView.showSuggestedReplies('${task.id}');"
+                                    style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-reply"></i> Voir suggestions de réponse
+                            </button>
+                        ` : ''}
+                        ${task.status !== 'completed' ? `
+                            <button onclick="window.tasksView.markComplete('${task.id}'); document.getElementById('${uniqueId}').remove();"
+                                    style="padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-check"></i> Marquer terminé
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    // CONTENU DES DÉTAILS AVEC CONTENU EMAIL COMPLET ET SUGGESTIONS DE RÉPONSE
+    buildTaskDetailsContent(task) {
+        const priorityIcon = this.getPriorityIcon(task.priority);
+        const statusLabel = this.getStatusLabel(task.status);
+        const dueDateInfo = this.formatDueDate(task.dueDate);
+        
+        return `
+            <div class="task-details-content">
+                <div class="details-header">
+                    <h1 class="task-title-details">${this.escapeHtml(task.title)}</h1>
+                    <div class="task-meta-badges">
+                        <span class="priority-badge priority-${task.priority}">
+                            ${priorityIcon} ${this.getPriorityLabel(task.priority)}
+                        </span>
+                        <span class="status-badge status-${task.status}">
+                            ${this.getStatusIcon(task.status)} ${statusLabel}
+                        </span>
+                        ${dueDateInfo.html}
+                    </div>
+                </div>
+
+                ${task.hasEmail ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
+                        <div class="email-details-grid">
+                            <div class="email-detail-item">
+                                <strong>Expéditeur:</strong>
+                                <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
+                            </div>
+                            ${task.emailFrom ? `
+                                <div class="email-detail-item">
+                                    <strong>Email:</strong>
+                                    <span>${this.escapeHtml(task.emailFrom)}</span>
+                                </div>
+                            ` : ''}
+                            ${task.emailSubject ? `
+                                <div class="email-detail-item">
+                                    <strong>Sujet:</strong>
+                                    <span>${this.escapeHtml(task.emailSubject)}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.description && task.description !== task.title ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-align-left"></i> Description</h3>
+                        <div class="description-content">
+                            ${this.formatDescription(task.description)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.actions && task.actions.length > 0 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-tasks"></i> Actions Requises</h3>
+                        <div class="actions-list-details">
+                            ${task.actions.map((action, idx) => `
+                                <div class="action-item-details">
+                                    <span class="action-number">${idx + 1}</span>
+                                    <span class="action-text">${this.escapeHtml(action.text)}</span>
+                                    ${action.deadline ? `
+                                        <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.keyInfo && task.keyInfo.length > 0 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-info-circle"></i> Informations Clés</h3>
+                        <div class="info-grid">
+                            ${task.keyInfo.map(info => `
+                                <div class="info-item">
+                                    <i class="fas fa-chevron-right"></i>
+                                    <span>${this.escapeHtml(info)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.risks && task.risks.length > 0 ? `
+                    <div class="details-section attention-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
+                        <div class="attention-list">
+                            ${task.risks.map(risk => `
+                                <div class="attention-item">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>${this.escapeHtml(risk)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <div class="details-section suggested-replies-section">
+                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse Personnalisées</h3>
+                        <div class="suggested-replies-container">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="suggested-reply-card">
+                                    <div class="reply-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <button class="copy-reply-btn" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${task.id}')">
+                                            <i class="fas fa-copy"></i> Copier
+                                        </button>
+                                    </div>
+                                    <div class="reply-subject">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                    <div class="reply-actions">
+                                        <button class="use-reply-btn" onclick="window.tasksView.useReply('${task.id}', ${idx})">
+                                            <i class="fas fa-paper-plane"></i> Utiliser cette réponse
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.emailContent && task.emailContent.length > 100 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope-open"></i> Contenu de l'Email</h3>
+                        <div class="email-content-section">
+                            ${task.emailHtmlContent ? `
+                                <div class="email-content-tabs">
+                                    <button class="tab-btn active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
+                                        <i class="fas fa-eye"></i> Vue formatée
+                                    </button>
+                                    <button class="tab-btn" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
+                                        <i class="fas fa-code"></i> Vue texte
+                                    </button>
+                                </div>
+                                <div class="email-content-box">
+                                    <div id="email-html-${task.id}" class="email-content-view active">
+                                        ${task.emailHtmlContent}
+                                    </div>
+                                    <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
+                                        ${this.formatEmailContent(task.emailContent)}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="email-content-box">
+                                    ${this.formatEmailContent(task.emailContent)}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // NOUVELLE MÉTHODE POUR GÉRER LES ONGLETS EMAIL
+    switchEmailTab(tabType, taskId) {
+        // Gérer les onglets
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Gérer les contenus
+        const htmlView = document.getElementById(`email-html-${taskId}`);
+        const textView = document.getElementById(`email-text-${taskId}`);
+        
+        if (tabType === 'html') {
+            htmlView.style.display = 'block';
+            htmlView.classList.add('active');
+            textView.style.display = 'none';
+            textView.classList.remove('active');
+        } else {
+            htmlView.style.display = 'none';
+            htmlView.classList.remove('active');
+            textView.style.display = 'block';
+            textView.classList.add('active');
         }
+    }
+
+    // NOUVELLE MÉTHODE POUR AFFICHER LES SUGGESTIONS DE RÉPONSE
+    showSuggestedReplies(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
+
+        const uniqueId = 'replies_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;"><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="ai-suggestions-info">
+                            <div class="ai-badge">
+                                <i class="fas fa-robot"></i>
+                                <span>Suggestions générées par Claude AI</span>
+                            </div>
+                            <p>Ces réponses ont été personnalisées selon le contexte de l'email de <strong>${task.emailFromName || 'l\'expéditeur'}</strong></p>
+                            ${task.aiRepliesGeneratedAt ? `
+                                <p class="ai-generation-time">
+                                    <i class="fas fa-clock"></i>
+                                    Générées le ${new Date(task.aiRepliesGeneratedAt).toLocaleString('fr-FR')}
+                                </p>
+                            ` : ''}
+                            ${window.aiTaskAnalyzer?.apiKey ? `
+                                <div class="ai-actions">
+                                    <button class="btn-sm btn-secondary" onclick="window.tasksView.regenerateAISuggestions('${taskId}')">
+                                        <i class="fas fa-sync"></i> Régénérer
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="replies-list">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="reply-suggestion-card">
+                                    <div class="reply-card-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <div class="reply-card-actions">
+                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
+                                                <i class="fas fa-copy"></i> Copier
+                                            </button>
+                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
+                                                <i class="fas fa-paper-plane"></i> Utiliser
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="reply-subject-line">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content-preview">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    // NOUVELLE MÉTHODE POUR COPIER UNE RÉPONSE
+    async copyReplyToClipboard(replyIndex, taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast('Réponse copiée dans le presse-papiers', 'success');
+        } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            this.showToast('Erreur lors de la copie', 'error');
+        }
+    }
+
+    // NOUVELLE MÉTHODE POUR UTILISER UNE RÉPONSE
+    useReply(taskId, replyIndex) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const subject = reply.subject;
+        const body = reply.content;
+        const to = task.emailFrom;
+        
+        // Créer le lien mailto
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // Ouvrir le client email
+        window.open(mailtoLink);
+        
+        // Marquer comme répondu
+        window.taskManager.updateTask(taskId, { 
+            emailReplied: true,
+            status: task.status === 'todo' ? 'in-progress' : task.status
+        });
+        
+        this.showToast('Email de réponse ouvert dans votre client email', 'success');
+        
+        // Fermer les modals
+        document.querySelectorAll('[id^="replies_modal_"], [id^="task_details_modal_"]').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
+    }
+
+    // NOUVELLE MÉTHODE POUR FORMATER LE CONTENU EMAIL
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        // Préserver la structure de l'email
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-original-content">${formattedContent}</div>`;
+    }
+
+    // Utility methods IDENTIQUES À PAGEMANAGER
+    getPriorityIcon(priority) {
+        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
+        return icons[priority] || '📌';
+    }
+
+    getPriorityLabel(priority) {
+        const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
+        return labels[priority] || 'Normale';
+    }
+
+    getStatusIcon(status) {
+        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
+        return icons[status] || '⏳';
+    }
+
+    getStatusLabel(status) {
+        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
+        return labels[status] || 'À faire';
+    }
+
+    getReplyToneIcon(tone) {
+        const icons = {
+            formel: '👔',
+            informel: '😊',
+            urgent: '🚨',
+            neutre: '📝',
+            amical: '🤝'
+        };
+        return icons[tone] || '📝';
+    }
+
+    getReplyToneLabel(tone) {
+        const labels = {
+            formel: 'Formel',
+            informel: 'Informel',
+            urgent: 'Urgent',
+            neutre: 'Neutre',
+            amical: 'Amical'
+        };
+        return labels[tone] || 'Neutre';
+    }
+
+    formatDueDate(dateString) {
+        if (!dateString) return { html: '', text: '' };
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'due-date-normal';
+        let text = '';
+        
+        if (diffDays < 0) {
+            className = 'due-date-overdue';
+            text = `En retard de ${Math.abs(diffDays)}j`;
+        } else if (diffDays === 0) {
+            className = 'due-date-today';
+            text = 'Aujourd\'hui';
+        } else if (diffDays === 1) {
+            className = 'due-date-tomorrow';
+            text = 'Demain';
+        } else if (diffDays <= 7) {
+            className = 'due-date-soon';
+            text = `${diffDays}j`;
+        } else {
+            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+        
+        return {
+            html: `<span class="due-date-badge ${className}">📅 ${text}</span>`,
+            text: text
+        };
+    }
+
+    formatRelativeDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 3600000) {
+            return `${Math.floor(diff / 60000)}m`;
+        } else if (diff < 86400000) {
+            return `${Math.floor(diff / 3600000)}h`;
+        } else if (diff < 604800000) {
+            return `${Math.floor(diff / 86400000)}j`;
+        } else {
+            return date.toLocaleDateString('fr-FR');
+        }
+    }
+
+    formatDescription(description) {
+        if (!description) return '';
+        
+        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
+            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
+        } else {
+            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
+        }
+    }
+
+    formatDeadline(deadline) {
+        if (!deadline) return '';
+        
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `Échue il y a ${Math.abs(diffDays)}j`;
+            } else if (diffDays === 0) {
+                return 'Aujourd\'hui';
+            } else if (diffDays === 1) {
+                return 'Demain';
+            } else if (diffDays <= 7) {
+                return `${diffDays}j`;
+            } else {
+                return deadlineDate.toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'short' 
+                });
+            }
+        } catch (error) {
+            return deadline;
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+            case 'todo': return this.currentFilters.status === 'todo';
+            case 'in-progress': return this.currentFilters.status === 'in-progress';
+            case 'completed': return this.currentFilters.status === 'completed';
+            case 'overdue': return this.currentFilters.overdue;
+            case 'needsReply': return this.currentFilters.needsReply;
+            default: return false;
+        }
+    }
+
+    hasActiveFilters() {
+        return this.currentFilters.status !== 'all' ||
+               this.currentFilters.priority !== 'all' ||
+               this.currentFilters.category !== 'all' ||
+               this.currentFilters.client !== 'all' ||
+               this.currentFilters.tag !== 'all' ||
+               this.currentFilters.dateRange !== 'all' ||
+               this.currentFilters.search !== '' ||
+               this.currentFilters.overdue ||
+               this.currentFilters.needsReply;
+    }
+
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
+        
+        document.querySelectorAll('.btn-large[data-mode]').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        const activeBtn = document.querySelector(`[data-mode="${mode}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+        
+        this.refreshView();
     }
 
     toggleTaskSelection(taskId) {
@@ -1433,27 +2550,328 @@ class TasksView {
         } else {
             this.selectedTasks.add(taskId);
         }
-        this.refreshView();
+        
+        this.updateSelectionUI();
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
     }
 
     clearSelection() {
         this.selectedTasks.clear();
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+    }
+
+    markComplete(taskId) {
+        window.taskManager.updateTask(taskId, { status: 'completed' });
+        this.showToast('Tâche marquée comme terminée', 'success');
+    }
+
+    // NOUVELLE MÉTHODE POUR RÉPONDRE AVEC IA
+    async replyToEmailWithAI(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        // Si on a déjà des suggestions IA, les afficher
+        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
+            this.showSuggestedReplies(taskId);
+            return;
+        }
+        
+        // Sinon, générer des suggestions en temps réel
+        try {
+            this.showToast('Génération de suggestions IA...', 'info');
+            
+            const newSuggestions = await window.taskManager.generateIntelligentReplySuggestions(
+                { 
+                    from: { emailAddress: { name: task.emailFromName, address: task.emailFrom } },
+                    subject: task.emailSubject,
+                    body: { content: task.emailContent },
+                    bodyPreview: task.emailContent
+                }, 
+                task
+            );
+            
+            // Mettre à jour la tâche avec les nouvelles suggestions
+            if (newSuggestions && newSuggestions.length > 0) {
+                window.taskManager.updateTask(taskId, { 
+                    suggestedReplies: newSuggestions,
+                    aiRepliesGenerated: true,
+                    aiRepliesGeneratedAt: new Date().toISOString()
+                });
+                
+                this.showToast('Suggestions IA générées !', 'success');
+                this.showSuggestedReplies(taskId);
+                this.refreshView();
+            } else {
+                this.showToast('Impossible de générer des suggestions', 'warning');
+                this.replyToEmailBasic(taskId);
+            }
+            
+        } catch (error) {
+            console.error('[TasksView] Error generating AI suggestions:', error);
+            this.showToast('Erreur IA, réponse basique', 'warning');
+            this.replyToEmailBasic(taskId);
+        }
+    }
+
+    // MÉTHODE POUR RÉGÉNÉRER LES SUGGESTIONS IA
+    async regenerateAISuggestions(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        try {
+            this.showToast('Régénération des suggestions IA...', 'info');
+            
+            const newSuggestions = await window.taskManager.generateIntelligentReplySuggestions(
+                { 
+                    from: { emailAddress: { name: task.emailFromName, address: task.emailFrom } },
+                    subject: task.emailSubject,
+                    body: { content: task.emailContent },
+                    bodyPreview: task.emailContent
+                }, 
+                task
+            );
+            
+            if (newSuggestions && newSuggestions.length > 0) {
+                window.taskManager.updateTask(taskId, { 
+                    suggestedReplies: newSuggestions,
+                    aiRepliesGenerated: true,
+                    aiRepliesGeneratedAt: new Date().toISOString()
+                });
+                
+                this.showToast('Nouvelles suggestions IA générées !', 'success');
+                this.refreshView();
+            } else {
+                this.showToast('Impossible de régénérer les suggestions', 'warning');
+            }
+            
+        } catch (error) {
+            console.error('[TasksView] Error regenerating AI suggestions:', error);
+            this.showToast('Erreur lors de la régénération', 'error');
+        }
+    }
+
+    // MÉTHODE DE RÉPONSE BASIQUE EN FALLBACK
+    replyToEmailBasic(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        const subject = `Re: ${task.emailSubject || 'Votre message'}`;
+        const to = task.emailFrom;
+        const body = `Bonjour ${task.emailFromName || ''},\n\nMerci pour votre message.\n\nCordialement,`;
+        
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
+        
+        window.taskManager.updateTask(taskId, { emailReplied: true });
+        this.showToast('Email de réponse ouvert', 'success');
+    }
+
+    replyToEmail(taskId) {
+        // Rediriger vers la méthode avec IA
+        this.replyToEmailWithAI(taskId);
+    }
+
+    deleteTask(taskId) {
+        // Rediriger vers la confirmation
+        this.confirmDeleteTask(taskId);
+    }
+
+    showCreateModal() {
+        // Implementation for creating new tasks
+        const uniqueId = 'create_task_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Créer une nouvelle tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="form-group">
+                            <label>Titre de la tâche *</label>
+                            <input type="text" id="new-task-title" class="form-input" placeholder="Titre de la tâche" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="new-task-description" class="form-textarea" rows="4" placeholder="Description détaillée..."></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Priorité</label>
+                                <select id="new-task-priority" class="form-select">
+                                    <option value="low">📄 Basse</option>
+                                    <option value="medium" selected>📌 Normale</option>
+                                    <option value="high">⚡ Haute</option>
+                                    <option value="urgent">🚨 Urgente</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Date d'échéance</label>
+                                <input type="date" id="new-task-duedate" class="form-input" />
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Client/Projet</label>
+                            <input type="text" id="new-task-client" class="form-input" placeholder="Nom du client ou projet" value="Interne" />
+                        </div>
+                    </div>
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                            Annuler
+                        </button>
+                        <button onclick="window.tasksView.createNewTask('${uniqueId}');"
+                                style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-plus"></i> Créer la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        
+        // Focus sur le titre
+        setTimeout(() => {
+            const titleInput = document.getElementById('new-task-title');
+            if (titleInput) titleInput.focus();
+        }, 100);
+    }
+
+    createNewTask(modalId) {
+        const title = document.getElementById('new-task-title')?.value?.trim();
+        const description = document.getElementById('new-task-description')?.value?.trim();
+        const priority = document.getElementById('new-task-priority')?.value;
+        const dueDate = document.getElementById('new-task-duedate')?.value;
+        const client = document.getElementById('new-task-client')?.value?.trim();
+
+        if (!title) {
+            this.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        const taskData = {
+            title,
+            description,
+            priority,
+            dueDate: dueDate || null,
+            client: client || 'Interne',
+            category: 'work',
+            method: 'manual'
+        };
+
+        try {
+            const task = window.taskManager.createTask(taskData);
+            document.getElementById(modalId).remove();
+            document.body.style.overflow = 'auto';
+            
+            this.showToast('Tâche créée avec succès', 'success');
+            this.refreshView();
+        } catch (error) {
+            console.error('[TasksView] Error creating task:', error);
+            this.showToast('Erreur lors de la création', 'error');
+        }
+    }
+
+    clearSearch() {
+        this.currentFilters.search = '';
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
         this.refreshView();
     }
 
-    changeViewMode(mode) {
-        this.currentViewMode = mode;
-        this.refreshView();
-    }
-
+    // NOUVELLES MÉTHODES POUR LES FILTRES AVANCÉS
     toggleAdvancedFilters() {
         this.showAdvancedFilters = !this.showAdvancedFilters;
-        this.refreshView();
+        
+        const panel = document.getElementById('advancedFiltersPanel');
+        const toggle = document.querySelector('.advanced-filters-toggle');
+        
+        if (panel) {
+            panel.classList.toggle('show', this.showAdvancedFilters);
+        }
+        
+        if (toggle) {
+            toggle.classList.toggle('active', this.showAdvancedFilters);
+            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
+                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
+            }
+        }
+    }
+
+    buildClientFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(task => {
+            if (task.client) {
+                clients.add(task.client);
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        Array.from(clients).sort().forEach(client => {
+            const count = tasks.filter(t => t.client === client).length;
+            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    buildTagFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const tags = new Set();
+        
+        tasks.forEach(task => {
+            if (task.tags && Array.isArray(task.tags)) {
+                task.tags.forEach(tag => tags.add(tag));
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.tag === 'all' ? 'selected' : ''}>Tous les tags</option>`;
+        
+        Array.from(tags).sort().forEach(tag => {
+            const count = tasks.filter(t => t.tags && t.tags.includes(tag)).length;
+            options += `<option value="${tag}" ${this.currentFilters.tag === tag ? 'selected' : ''}>#${tag} (${count})</option>`;
+        });
+        
+        return options;
     }
 
     updateFilter(filterType, value) {
         this.currentFilters[filterType] = value;
         this.refreshView();
+        console.log('[TasksView] Filter updated:', filterType, '=', value);
+    }
+
+    getActiveFiltersCount() {
+        let count = 0;
+        
+        if (this.currentFilters.status !== 'all') count++;
+        if (this.currentFilters.priority !== 'all') count++;
+        if (this.currentFilters.client !== 'all') count++;
+        if (this.currentFilters.tag !== 'all') count++;
+        if (this.currentFilters.dateRange !== 'all') count++;
+        if (this.currentFilters.search !== '') count++;
+        if (this.currentFilters.overdue) count++;
+        if (this.currentFilters.needsReply) count++;
+        
+        return count;
     }
 
     resetAllFilters() {
@@ -1470,129 +2888,114 @@ class TasksView {
             needsReply: false
         };
         
+        // Reset search input
         const searchInput = document.getElementById('taskSearchInput');
         if (searchInput) searchInput.value = '';
         
+        // Reset all filter selects
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.querySelector('option[value="all"]')) {
+                select.value = 'all';
+            } else if (select.id === 'sortByFilter') {
+                select.value = 'created';
+            }
+        });
+        
         this.refreshView();
+        this.showToast('Filtres réinitialisés', 'info');
     }
 
-    getActiveFiltersCount() {
-        let count = 0;
-        if (this.currentFilters.status !== 'all') count++;
-        if (this.currentFilters.priority !== 'all') count++;
-        if (this.currentFilters.client !== 'all') count++;
-        if (this.currentFilters.search !== '') count++;
-        if (this.currentFilters.overdue) count++;
-        if (this.currentFilters.needsReply) count++;
-        return count;
-    }
-
-    hasActiveFilters() {
-        return this.getActiveFiltersCount() > 0;
-    }
-
-    buildClientFilterOptions() {
-        const tasks = window.taskManager.getAllTasks();
-        const clients = new Set();
-        tasks.forEach(task => {
-            if (task.client) clients.add(task.client);
-        });
+    bulkActions() {
+        if (this.selectedTasks.size === 0) return;
         
-        let options = '<option value="all">Tous les clients</option>';
-        Array.from(clients).sort().forEach(client => {
-            const selected = this.currentFilters.client === client ? 'selected' : '';
-            options += `<option value="${client}" ${selected}>${client}</option>`;
-        });
+        const actions = [
+            'Marquer comme terminé',
+            'Changer la priorité',
+            'Supprimer',
+            'Exporter'
+        ];
         
-        return options;
-    }
-
-    // ACTIONS SUR LES TÂCHES
-    markComplete(taskId) {
-        window.taskManager.updateTask(taskId, { status: 'completed' });
-        this.showToast('Tâche marquée comme terminée', 'success');
-    }
-
-    replyToEmail(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.hasEmail) return;
+        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
         
-        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
-            this.showSuggestedReplies(taskId);
-        } else {
-            this.replyToEmailBasic(taskId);
+        if (!action) return;
+        
+        const actionIndex = parseInt(action) - 1;
+        
+        switch (actionIndex) {
+            case 0: // Marquer comme terminé
+                this.selectedTasks.forEach(taskId => {
+                    window.taskManager.updateTask(taskId, { status: 'completed' });
+                });
+                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+                this.clearSelection();
+                break;
+                
+            case 1: // Changer la priorité
+                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
+                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
+                if (priority && priorities[parseInt(priority)]) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
+                    });
+                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 2: // Supprimer
+                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?`)) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.deleteTask(taskId);
+                    });
+                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 3: // Exporter
+                this.exportSelectedTasks();
+                break;
         }
     }
 
-    replyToEmailBasic(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
+    exportSelectedTasks() {
+        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
         
-        const subject = `Re: ${task.emailSubject || 'Votre message'}`;
-        const to = task.emailFrom;
-        const body = `Bonjour ${task.emailFromName || ''},\n\nMerci pour votre message.\n\nCordialement,`;
+        const csvContent = [
+            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
+            ...tasks.map(task => [
+                `"${task.title}"`,
+                `"${task.description || ''}"`,
+                task.priority,
+                task.status,
+                task.dueDate || '',
+                task.client || '',
+                new Date(task.createdAt).toLocaleDateString('fr-FR')
+            ].join(','))
+        ].join('\n');
         
-        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        window.open(mailtoLink);
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         
-        window.taskManager.updateTask(taskId, { emailReplied: true });
-        this.showToast('Email de réponse ouvert', 'success');
+        this.showToast('Export terminé', 'success');
     }
 
-    showTaskDetails(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
-
-        // Modal simple pour les détails
-        const modalHTML = `
-            <div class="modal-overlay" onclick="this.remove()">
-                <div class="modal-content" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h2>Détails de la tâche</h2>
-                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <h3>${this.escapeHtml(task.title)}</h3>
-                        ${task.description ? `<p>${this.escapeHtml(task.description)}</p>` : ''}
-                        ${task.hasEmail ? `
-                            <div class="email-info">
-                                <strong>Email de:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom)}
-                                ${task.emailSubject ? `<br><strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject)}` : ''}
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Fermer</button>
-                        ${task.status !== 'completed' ? `
-                            <button class="btn-primary" onclick="window.tasksView.markComplete('${task.id}'); this.closest('.modal-overlay').remove();">
-                                Marquer terminé
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-
-    showSuggestedReplies(taskId) {
-        // Implémentation des suggestions de réponse
-        console.log('Affichage des suggestions pour:', taskId);
-    }
-
-    showCreateModal() {
-        // Modal de création de tâche
-        console.log('Création d\'une nouvelle tâche');
-    }
-
-    clearSearch() {
-        this.currentFilters.search = '';
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        this.refreshView();
+    updateSelectionUI() {
+        document.querySelectorAll('[data-task-id]').forEach(item => {
+            const taskId = item.dataset.taskId;
+            const isSelected = this.selectedTasks.has(taskId);
+            
+            item.classList.toggle('selected', isSelected);
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = isSelected;
+        });
     }
 
     refreshView() {
@@ -1601,26 +3004,10 @@ class TasksView {
             container.innerHTML = this.renderTasksList();
         }
         
-        // Mettre à jour les pills de statut
         const stats = window.taskManager.getStats();
-        const statusContainer = document.querySelector('.status-filters');
-        if (statusContainer) {
-            statusContainer.innerHTML = this.renderStatusPills(stats);
-        }
-    }
-
-    setupEventListeners() {
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.currentFilters.search = e.target.value.trim();
-                    this.refreshView();
-                }, 300);
-            });
-        }
+        document.querySelectorAll('.status-filters-large').forEach(container => {
+            container.innerHTML = this.buildLargeStatusPills(stats);
+        });
     }
 
     showToast(message, type = 'info') {
@@ -1631,652 +3018,1520 @@ class TasksView {
         }
     }
 
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    setupEventListeners() {
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
     }
 
-    // STYLES CSS COMPLETS
-    addTaskStyles() {
-        if (document.getElementById('emailSortProTaskStyles')) return;
+    handleSearch(value) {
+        this.currentFilters.search = value.trim();
+        this.refreshView();
+        
+        const clearBtn = document.getElementById('searchClearBtn');
+        if (clearBtn) {
+            clearBtn.style.display = this.currentFilters.search ? 'flex' : 'none';
+        }
+    }
+
+    // STYLES IDENTIQUES À PAGEMANAGER + STYLES POUR CONTENU EMAIL ET SUGGESTIONS
+    addModernTaskStyles() {
+        // Utiliser les styles existants de PageManager s'ils sont déjà présents
+        if (document.getElementById('optimizedEmailPageStyles')) {
+            console.log('[TasksView] Using existing PageManager styles');
+            // Ajouter seulement les nouveaux styles spécifiques aux suggestions
+            this.addSuggestedRepliesStyles();
+            return;
+        }
+        
+        if (document.getElementById('modernTaskStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'emailSortProTaskStyles';
+        styles.id = 'modernTaskStyles';
         styles.textContent = `
-            /* Variables */
-            :root {
-                --primary-color: #6366f1;
-                --success-color: #10b981;
-                --warning-color: #f59e0b;
-                --danger-color: #ef4444;
-                --purple-color: #8b5cf6;
-                --gray-50: #f9fafb;
-                --gray-100: #f3f4f6;
-                --gray-200: #e5e7eb;
-                --gray-300: #d1d5db;
-                --gray-400: #9ca3af;
-                --gray-500: #6b7280;
-                --gray-600: #4b5563;
-                --gray-700: #374151;
-                --gray-900: #111827;
-                --border-radius: 8px;
-                --box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            /* Page principale */
-            .tasks-page {
-                background: var(--gray-50);
-                min-height: 100vh;
+            /* STYLES IDENTIQUES À PAGEMANAGER */
+            .tasks-page-modern {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                padding: 20px;
+                background: #f8fafc;
+                min-height: 100vh;
+                padding: 0;
             }
             
-            /* En-tête */
-            .tasks-header {
+            .tasks-main-toolbar {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                margin-bottom: 20px;
-                gap: 20px;
-                flex-wrap: wrap;
+                gap: 12px;
+                padding: 4px 0 2px 0;
+                border: none;
+                margin: 0 0 4px 0;
+                min-height: 48px;
+                background: transparent;
             }
             
-            .tasks-title-section {
+            .toolbar-left {
                 display: flex;
                 align-items: baseline;
-                gap: 12px;
+                gap: 8px;
+                min-width: 160px;
+                flex-shrink: 0;
             }
             
-            .page-title {
-                font-size: 28px;
-                font-weight: 700;
-                color: var(--gray-900);
+            .tasks-title {
                 margin: 0;
+                font-size: 26px;
+                font-weight: 700;
+                color: #1f2937;
             }
             
-            .tasks-counter {
-                background: var(--gray-200);
-                color: var(--gray-600);
-                padding: 4px 12px;
-                border-radius: 16px;
-                font-size: 14px;
-                font-weight: 500;
+            .tasks-count-large {
+                font-size: 15px;
+                color: #6b7280;
+                font-weight: 600;
+                background: #f3f4f6;
+                padding: 5px 12px;
+                border-radius: 14px;
             }
             
-            .search-section {
+            .toolbar-center {
                 flex: 1;
-                max-width: 400px;
+                max-width: 450px;
+                min-width: 280px;
             }
             
-            .search-container {
+            .search-wrapper-large {
                 position: relative;
-            }
-            
-            .search-input {
                 width: 100%;
-                padding: 10px 16px 10px 40px;
-                border: 1px solid var(--gray-300);
-                border-radius: var(--border-radius);
-                font-size: 14px;
+            }
+            
+            .search-input-large {
+                width: 100%;
+                padding: 14px 18px 14px 48px;
+                border: 1px solid #d1d5db;
+                border-radius: 12px;
+                font-size: 15px;
                 background: white;
-                transition: border-color 0.2s;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
             
-            .search-input:focus {
+            .search-input-large:focus {
                 outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             }
             
-            .search-icon {
+            .search-icon-large {
                 position: absolute;
-                left: 12px;
+                left: 18px;
                 top: 50%;
                 transform: translateY(-50%);
-                color: var(--gray-400);
-                font-size: 14px;
+                color: #9ca3af;
+                font-size: 17px;
             }
             
-            .header-actions {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .view-modes {
-                display: flex;
-                background: var(--gray-100);
-                border-radius: var(--border-radius);
-                padding: 2px;
-            }
-            
-            .view-mode-btn {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                padding: 8px 12px;
-                border: none;
-                background: transparent;
-                border-radius: 6px;
-                color: var(--gray-600);
-                font-size: 14px;
-                cursor: pointer;
-                transition: all 0.2s;
-            }
-            
-            .view-mode-btn.active {
-                background: white;
-                color: var(--gray-900);
-                box-shadow: var(--box-shadow);
-            }
-            
-            .new-task-btn {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                background: var(--primary-color);
-                color: white;
-                border: none;
-                padding: 10px 16px;
-                border-radius: var(--border-radius);
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-            
-            .new-task-btn:hover {
-                background: #5856eb;
-            }
-            
-            /* Filtres de statut */
-            .status-filters {
-                display: flex;
-                gap: 8px;
-                margin-bottom: 16px;
-                flex-wrap: wrap;
-            }
-            
-            .status-pill {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                background: white;
-                border: 1px solid var(--gray-300);
-                border-radius: 20px;
-                padding: 8px 16px;
-                cursor: pointer;
-                transition: all 0.2s;
-                font-size: 14px;
-                font-weight: 500;
-                color: var(--gray-700);
-            }
-            
-            .status-pill:hover {
-                border-color: var(--pill-color);
-                background: var(--gray-50);
-            }
-            
-            .status-pill.active {
-                background: var(--pill-color);
-                border-color: var(--pill-color);
-                color: white;
-            }
-            
-            .pill-count {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 12px;
-                font-weight: 600;
-                min-width: 20px;
-                text-align: center;
-            }
-            
-            .status-pill.active .pill-count {
-                background: rgba(255, 255, 255, 0.2);
-            }
-            
-            /* Filtres avancés */
-            .advanced-filters-toggle {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                background: white;
-                border: 1px solid var(--gray-300);
-                border-radius: var(--border-radius);
-                padding: 10px 16px;
-                cursor: pointer;
-                margin-bottom: 16px;
-                font-size: 14px;
-                color: var(--gray-700);
-                transition: all 0.2s;
-                position: relative;
-            }
-            
-            .advanced-filters-toggle:hover {
-                background: var(--gray-50);
-            }
-            
-            .active-filters-badge {
+            .search-clear-large {
                 position: absolute;
-                top: -6px;
-                right: -6px;
-                background: var(--danger-color);
-                color: white;
-                padding: 2px 6px;
+                right: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: #9ca3af;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+            }
+            
+            .search-clear-large:hover {
+                background: #f3f4f6;
+                color: #6b7280;
+            }
+            
+            .toolbar-center-right {
+                flex-shrink: 0;
+            }
+            
+            .view-modes-large {
+                display: flex;
+                gap: 5px;
+                background: #f3f4f6;
+                padding: 5px;
                 border-radius: 10px;
-                font-size: 11px;
+            }
+            
+            .toolbar-right {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                flex-shrink: 0;
+            }
+            
+            .selection-info-large {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 14px;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+                border-radius: 10px;
+                font-size: 14px;
+                color: #1e40af;
+            }
+            
+            .selection-count-large {
                 font-weight: 600;
-                min-width: 18px;
+            }
+            
+            .btn-large {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 20px;
+                border: 1px solid #d1d5db;
+                border-radius: 10px;
+                background: white;
+                color: #374151;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                white-space: nowrap;
+                min-height: 46px;
+                box-sizing: border-box;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            
+            .btn-large:hover {
+                background: #f9fafb;
+                border-color: #9ca3af;
+                color: #1f2937;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            }
+            
+            .btn-large.active {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+                box-shadow: 0 3px 8px rgba(102, 126, 234, 0.25);
+            }
+            
+            .btn-large.btn-primary-large {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+            }
+            
+            .btn-large.btn-primary-large:hover {
+                background: #5a67d8;
+                border-color: #5a67d8;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+            }
+            
+            .btn-large.btn-secondary-large {
+                background: #f9fafb;
+                color: #4b5563;
+                border-color: #d1d5db;
+            }
+            
+            .btn-large.btn-secondary-large:hover {
+                background: #f3f4f6;
+                color: #374151;
+                transform: translateY(-1px);
+            }
+            
+            .btn-text-large {
+                font-weight: 600;
+            }
+            
+            .status-filters-large {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin: 0 0 16px 0;
+                padding: 0;
+                background: transparent;
+                border: none;
+            }
+            
+            .status-pill-large {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 20px;
+                border: 1px solid #d1d5db;
+                border-radius: 10px;
+                background: white;
+                color: #374151;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-height: 46px;
+                box-sizing: border-box;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            
+            .status-pill-large:hover {
+                border-color: #667eea;
+                background: #667eea12;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+            }
+            
+            .status-pill-large.active {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            }
+            
+            .pill-icon-large {
+                font-size: 17px;
+            }
+            
+            .pill-text-large {
+                font-weight: 600;
+                font-size: 15px;
+            }
+            
+            .pill-count-large {
+                background: rgba(0,0,0,0.1);
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 13px;
+                font-weight: 700;
+                min-width: 22px;
                 text-align: center;
             }
             
-            .advanced-filters {
-                background: white;
-                border: 1px solid var(--gray-300);
-                border-radius: var(--border-radius);
-                margin-bottom: 16px;
-                max-height: 0;
-                overflow: hidden;
-                transition: all 0.3s ease;
+            .status-pill-large.active .pill-count-large {
+                background: rgba(255,255,255,0.25);
             }
             
-            .advanced-filters.show {
-                max-height: 200px;
-                padding: 16px;
-            }
-            
-            .filters-row {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 12px;
-                align-items: center;
-            }
-            
-            .filter-select {
-                padding: 8px 12px;
-                border: 1px solid var(--gray-300);
-                border-radius: var(--border-radius);
-                background: white;
-                font-size: 14px;
-                color: var(--gray-700);
-            }
-            
-            .reset-filters-btn {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                background: var(--gray-100);
-                border: 1px solid var(--gray-300);
-                border-radius: var(--border-radius);
-                padding: 8px 12px;
-                cursor: pointer;
-                font-size: 14px;
-                color: var(--gray-700);
-                transition: background-color 0.2s;
-            }
-            
-            .reset-filters-btn:hover {
-                background: var(--gray-200);
-            }
-            
-            /* Container des tâches */
-            .tasks-container {
-                background: white;
-                border: 1px solid var(--gray-300);
-                border-radius: var(--border-radius);
-                box-shadow: var(--box-shadow);
-            }
-            
-            .tasks-list {
+            .tasks-condensed-list {
                 display: flex;
                 flex-direction: column;
+                gap: 3px;
+                background: #f9fafb;
+                border-radius: 8px;
+                overflow: hidden;
             }
             
-            /* Tâche individuelle */
-            .task-item {
+            .task-condensed {
                 display: flex;
                 align-items: center;
-                padding: 16px;
-                border-bottom: 1px solid var(--gray-100);
+                background: white;
+                padding: 16px 20px;
                 cursor: pointer;
-                transition: background-color 0.2s;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #f3f4f6;
+                min-height: 60px;
             }
             
-            .task-item:last-child {
+            .task-condensed:last-child {
                 border-bottom: none;
             }
             
-            .task-item:hover {
-                background: var(--gray-50);
+            .task-condensed:hover {
+                background: #f9fafb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             }
             
-            .task-item.selected {
-                background: rgba(99, 102, 241, 0.05);
-                border-left: 3px solid var(--primary-color);
+            .task-condensed.selected {
+                background: #eff6ff;
+                border-left: 4px solid #3b82f6;
             }
             
-            .task-item.completed {
-                opacity: 0.6;
+            .task-condensed.completed {
+                opacity: 0.7;
             }
             
-            .task-item.completed .task-title {
+            .task-condensed.completed .task-title-large {
                 text-decoration: line-through;
             }
             
-            .task-checkbox {
-                margin-right: 12px;
-            }
-            
-            .task-checkbox input {
-                width: 16px;
-                height: 16px;
+            .task-checkbox-condensed {
+                margin-right: 16px;
                 cursor: pointer;
+                width: 18px;
+                height: 18px;
             }
             
-            .task-content {
+            .task-indicators {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-right: 16px;
+                flex-shrink: 0;
+            }
+            
+            .priority-indicator {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .priority-high {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .status-indicator {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                background: #f3f4f6;
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+            }
+            
+            .task-content-condensed {
                 flex: 1;
                 min-width: 0;
             }
             
-            .task-title {
-                font-size: 15px;
-                font-weight: 600;
-                color: var(--gray-900);
-                margin-bottom: 4px;
-                padding-left: 8px;
-                border-left-width: 3px;
-                border-left-style: solid;
+            .task-header-line {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                gap: 16px;
             }
             
-            .task-meta {
+            .task-title-large {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 16px;
+                white-space: nowrap;
+                flex-shrink: 0;
+                min-width: 250px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .task-meta-right {
                 display: flex;
                 align-items: center;
                 gap: 12px;
+                flex-shrink: 0;
+                margin-left: auto;
+            }
+            
+            .client-badge {
+                background: #f3f4f6;
+                color: #6b7280;
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            
+            .due-date-badge {
+                display: flex;
+                align-items: center;
+                gap: 4px;
                 font-size: 13px;
-                color: var(--gray-500);
+                font-weight: 600;
+                padding: 4px 8px;
+                border-radius: 6px;
+                white-space: nowrap;
+            }
+            
+            .due-date-normal {
+                color: #6b7280;
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .due-date-soon {
+                color: #d97706;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+            }
+            
+            .due-date-today {
+                color: #dc2626;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+            }
+            
+            .due-date-overdue {
+                color: #dc2626;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                animation: pulse 2s infinite;
+            }
+            
+            .task-date-large {
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            
+            .task-email-line {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 4px;
+                font-size: 14px;
+                color: #6b7280;
+            }
+            
+            .email-from {
+                font-weight: 500;
+            }
+            
+            .reply-needed {
+                background: #fef3c7;
+                color: #d97706;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid #fde68a;
+            }
+            
+            .has-ai-suggestions {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid #5a67d8;
+                animation: aiGlow 2s infinite alternate;
+            }
+            
+            .ai-generated-badge {
+                background: #10b981;
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid #059669;
+            }
+            
+            @keyframes aiGlow {
+                0% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.5); }
+                100% { box-shadow: 0 0 15px rgba(102, 126, 234, 0.8); }
+            }
+            
+            .task-reply-section {
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid #f3f4f6;
+            }
+            
+            .reply-to-email-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+            }
+            
+            .reply-to-email-btn:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            
+            .reply-to-email-btn .ai-icon {
+                animation: aiPulse 1.5s infinite;
+                margin-left: 4px;
+            }
+            
+            @keyframes aiPulse {
+                0%, 100% { opacity: 0.7; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.1); }
+            }
+            
+            .action-btn-modern.ai-refresh {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border-color: #5a67d8;
+            }
+            
+            .action-btn-modern.ai-refresh:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                border-color: #4c51bf;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+            
+            .ai-generation-time {
+                font-size: 12px;
+                color: #6b7280;
+                margin-top: 8px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .ai-actions {
+                margin-top: 12px;
+                display: flex;
+                gap: 8px;
+            }
+            
+            .task-actions-condensed {
+                margin-left: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .action-btn-modern {
+                width: 32px;
+                height: 32px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                background: white;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                font-size: 14px;
+            }
+            
+            .action-btn-modern:hover {
+                background: #f3f4f6;
+                border-color: #9ca3af;
+                transform: translateY(-1px);
+            }
+            
+            .action-btn-modern.complete:hover {
+                background: #dcfce7;
+                border-color: #16a34a;
+                color: #16a34a;
+            }
+            
+            .action-btn-modern.reply:hover {
+                background: #dbeafe;
+                border-color: #2563eb;
+                color: #2563eb;
+            }
+            
+            .action-btn-modern.edit:hover {
+                background: #fef3c7;
+                border-color: #d97706;
+                color: #d97706;
+            }
+            
+            /* NOUVEAUX STYLES POUR FILTRES AVANCÉS */
+            .advanced-filters-toggle {
+                background: #f8fafc;
+                border-color: #e2e8f0;
+                color: #475569;
+            }
+            
+            .advanced-filters-toggle:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+            }
+            
+            .advanced-filters-toggle.active {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+            
+            .advanced-filters-panel {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                max-height: 0;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                opacity: 0;
+            }
+            
+            .advanced-filters-panel.show {
+                max-height: 500px;
+                opacity: 1;
+                padding: 20px;
+            }
+            
+            .advanced-filters-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                align-items: end;
+            }
+            
+            .filter-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .filter-label {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-weight: 600;
+                font-size: 14px;
+                color: #374151;
+            }
+            
+            .filter-select {
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                background: white;
+                font-size: 14px;
+                color: #374151;
+                cursor: pointer;
+                transition: border-color 0.2s ease;
+            }
+            
+            .filter-select:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .filter-actions {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .btn-small {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid;
+            }
+            
+            .btn-small.btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+            
+            .btn-small.btn-secondary:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+            
+            .active-filters-count {
+                font-size: 12px;
+                color: #6b7280;
+                text-align: center;
+                font-weight: 500;
+            }
+            
+            /* STYLES POUR LES TAGS DANS LES TÂCHES */
+            .task-tags-line {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 4px;
+                font-size: 12px;
+                color: #6b7280;
                 flex-wrap: wrap;
             }
             
-            .task-sender {
+            .task-tag {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 11px;
                 font-weight: 500;
-                color: var(--gray-600);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid rgba(255,255,255,0.2);
             }
             
-            .task-badges {
-                display: flex;
-                gap: 4px;
+            .task-tag:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
             }
             
-            .badge {
-                font-size: 12px;
+            .tags-more {
+                background: #f3f4f6;
+                color: #6b7280;
                 padding: 2px 6px;
                 border-radius: 10px;
-                background: var(--gray-100);
+                font-size: 10px;
+                font-weight: 500;
             }
             
-            .badge.email {
-                background: rgba(99, 102, 241, 0.1);
-                color: var(--primary-color);
+            /* NOUVEAU STYLE POUR LE BOUTON DE SUPPRESSION */
+            .action-btn-modern.delete-btn {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+                transition: all 0.3s ease;
             }
             
-            .badge.ai {
-                background: rgba(139, 92, 246, 0.1);
-                color: var(--purple-color);
+            .action-btn-modern.delete-btn:hover {
+                background: #dc2626;
+                color: white;
+                border-color: #dc2626;
+                transform: translateY(-1px) scale(1.05);
+                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
             }
             
-            .task-actions {
-                display: flex;
-                gap: 4px;
-                opacity: 0;
-                transition: opacity 0.2s;
-            }
-            
-            .task-item:hover .task-actions {
-                opacity: 1;
-            }
-            
-            .task-action {
-                width: 32px;
-                height: 32px;
-                border: none;
-                border-radius: 6px;
-                background: var(--gray-100);
-                color: var(--gray-600);
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s;
-                font-size: 13px;
-            }
-            
-            .task-action:hover {
-                background: var(--gray-200);
-            }
-            
-            .task-action.reply:hover {
-                background: rgba(99, 102, 241, 0.1);
-                color: var(--primary-color);
-            }
-            
-            .task-action.complete:hover {
-                background: rgba(16, 185, 129, 0.1);
-                color: var(--success-color);
-            }
-            
-            /* État vide */
-            .empty-state {
+            .empty-state-modern {
                 text-align: center;
                 padding: 60px 20px;
-                color: var(--gray-500);
+                color: #6b7280;
             }
             
-            .empty-icon {
+            .empty-state-icon {
                 font-size: 48px;
-                color: var(--gray-300);
+                margin-bottom: 20px;
+                color: #d1d5db;
+            }
+            
+            .empty-state-title {
+                font-size: 24px;
+                font-weight: 600;
+                color: #374151;
+                margin-bottom: 12px;
+            }
+            
+            .empty-state-text {
+                font-size: 16px;
+                margin-bottom: 24px;
+                max-width: 400px;
+                margin-left: auto;
+                margin-right: auto;
+                line-height: 1.5;
+            }
+            
+            /* Form styles pour les modals */
+            .form-group {
                 margin-bottom: 16px;
             }
             
-            .empty-state h3 {
-                font-size: 18px;
-                color: var(--gray-700);
-                margin-bottom: 8px;
+            .form-group label {
+                display: block;
+                margin-bottom: 6px;
+                font-weight: 600;
+                color: #374151;
+                font-size: 14px;
             }
             
-            .empty-state p {
+            .form-input, .form-select, .form-textarea {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 14px;
+                background: white;
+                transition: border-color 0.2s ease;
+            }
+            
+            .form-input:focus, .form-select:focus, .form-textarea:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+            
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+            
+            .form-textarea {
+                resize: vertical;
+                min-height: 80px;
+            }
+            
+            /* Task details modal styles */
+            .task-details-content {
+                max-width: none;
+            }
+            
+            .details-header {
                 margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e5e7eb;
             }
             
-            /* Boutons */
-            .btn-primary {
-                background: var(--primary-color);
+            .task-title-details {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                margin: 0 0 12px 0;
+                line-height: 1.3;
+            }
+            
+            .task-meta-badges {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            
+            .priority-badge, .status-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+            }
+            
+            .details-section {
+                margin-bottom: 24px;
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .details-section h3 {
+                margin: 0;
+                padding: 16px 20px;
+                background: white;
+                border-bottom: 1px solid #e5e7eb;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .email-details-grid {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .email-detail-item {
+                display: flex;
+                gap: 12px;
+                font-size: 14px;
+            }
+            
+            .email-detail-item strong {
+                min-width: 80px;
+                color: #374151;
+            }
+            
+            .description-content {
+                padding: 16px 20px;
+            }
+            
+            .structured-description {
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 13px;
+                line-height: 1.6;
+                background: white;
+                padding: 16px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .simple-description {
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+            
+            .actions-list-details {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .action-item-details {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .action-number {
+                width: 24px;
+                height: 24px;
+                background: #667eea;
                 color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: var(--border-radius);
-                font-size: 14px;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-            
-            .btn-primary:hover {
-                background: #5856eb;
-            }
-            
-            .btn-secondary {
-                background: var(--gray-100);
-                color: var(--gray-700);
-                border: 1px solid var(--gray-300);
-                padding: 10px 20px;
-                border-radius: var(--border-radius);
-                font-size: 14px;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-            
-            .btn-secondary:hover {
-                background: var(--gray-200);
-            }
-            
-            /* Loading */
-            .loading-wrapper {
-                text-align: center;
-                padding: 60px 20px;
-                color: var(--gray-500);
-            }
-            
-            .loading-spinner {
-                width: 40px;
-                height: 40px;
-                border: 3px solid var(--gray-200);
-                border-top: 3px solid var(--primary-color);
                 border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 16px;
-            }
-            
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-            
-            /* Modal */
-            .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.5);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                z-index: 1000;
-                padding: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                flex-shrink: 0;
             }
             
-            .modal-content {
-                background: white;
-                border-radius: var(--border-radius);
-                max-width: 600px;
-                width: 100%;
-                max-height: 90vh;
+            .action-text {
+                flex: 1;
+                font-size: 14px;
+                color: #374151;
+            }
+            
+            .action-deadline {
+                font-size: 12px;
+                color: #dc2626;
+                font-weight: 600;
+                background: #fef2f2;
+                padding: 4px 8px;
+                border-radius: 4px;
+                border: 1px solid #fecaca;
+            }
+            
+            .info-grid {
+                padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+                gap: 8px;
             }
             
-            .modal-header {
+            .info-item {
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px;
-                border-bottom: 1px solid var(--gray-200);
-            }
-            
-            .modal-header h2 {
-                margin: 0;
-                font-size: 20px;
-                color: var(--gray-900);
-            }
-            
-            .modal-close {
-                background: none;
-                border: none;
-                font-size: 20px;
-                color: var(--gray-400);
-                cursor: pointer;
-                padding: 4px;
-            }
-            
-            .modal-body {
-                padding: 20px;
-                overflow-y: auto;
-                flex: 1;
-            }
-            
-            .modal-footer {
-                display: flex;
-                justify-content: flex-end;
-                gap: 12px;
-                padding: 20px;
-                border-top: 1px solid var(--gray-200);
-            }
-            
-            .email-info {
-                background: var(--gray-50);
-                padding: 12px;
-                border-radius: var(--border-radius);
-                margin-top: 12px;
+                align-items: flex-start;
+                gap: 8px;
                 font-size: 14px;
-                color: var(--gray-700);
-                line-height: 1.5;
+                color: #374151;
+                line-height: 1.4;
+            }
+            
+            .attention-section {
+                background: #fef3c7;
+                border-color: #fbbf24;
+            }
+            
+            .attention-section h3 {
+                background: #fef9e8;
+                border-bottom-color: #fbbf24;
+                color: #92400e;
+            }
+            
+            .attention-list {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .attention-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 6px;
+                padding: 10px 12px;
+            }
+            
+            .attention-item i {
+                font-size: 14px;
+                color: #f59e0b;
+                margin-top: 2px;
+            }
+            
+            .attention-item span {
+                flex: 1;
+                font-size: 13px;
+                color: #92400e;
+                line-height: 1.4;
+            }
+            
+            /* NOUVEAUX STYLES POUR LE CONTENU EMAIL */
+            .email-content-section {
+                padding: 16px 20px;
+            }
+            
+            .email-content-tabs {
+                display: flex;
+                gap: 5px;
+                margin-bottom: 16px;
+                background: #f3f4f6;
+                padding: 5px;
+                border-radius: 8px;
+            }
+            
+            .tab-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: transparent;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #6b7280;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .tab-btn.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            
+            .tab-btn:hover:not(.active) {
+                background: rgba(255,255,255,0.5);
+                color: #374151;
+            }
+            
+            .email-content-box {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                max-height: 500px;
+                overflow-y: auto;
+            }
+            
+            .email-content-view {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+            
+            .email-content-viewer {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+            }
+            
+            .email-original-content {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+                white-space: pre-wrap;
+            }
+            
+            .email-original-content strong {
+                color: #1f2937;
+                font-weight: 600;
             }
             
             /* Responsive */
             @media (max-width: 768px) {
-                .tasks-page {
-                    padding: 12px;
-                }
-                
-                .tasks-header {
+                .tasks-main-toolbar {
                     flex-direction: column;
+                    gap: 10px;
                     align-items: stretch;
-                    gap: 12px;
+                    padding: 4px 0 2px 0;
+                    margin: 0 0 6px 0;
                 }
                 
-                .search-section {
+                .toolbar-left,
+                .toolbar-center,
+                .toolbar-center-right,
+                .toolbar-right {
+                    width: 100%;
                     max-width: none;
                 }
                 
-                .header-actions {
-                    justify-content: space-between;
+                .toolbar-right {
+                    justify-content: flex-end;
                 }
                 
-                .page-title {
-                    font-size: 24px;
+                .view-modes-large {
+                    justify-content: center;
                 }
                 
-                .status-filters {
+                .status-filters-large {
+                    padding: 0;
+                    gap: 8px;
+                    margin: 0 0 12px 0;
+                }
+                
+                .btn-large {
+                    padding: 10px 16px;
+                    font-size: 14px;
+                    min-height: 42px;
+                }
+                
+                .status-pill-large {
+                    padding: 10px 16px;
+                    font-size: 14px;
+                    min-height: 42px;
+                }
+                
+                .btn-text-large {
+                    display: none;
+                }
+                
+                .pill-text-large {
+                    display: none;
+                }
+                
+                .task-condensed {
+                    padding: 12px 16px;
+                    min-height: 50px;
+                }
+                
+                .task-indicators {
+                    margin-right: 12px;
+                }
+                
+                .task-header-line {
+                    flex-direction: column;
+                    align-items: flex-start;
                     gap: 6px;
                 }
                 
-                .status-pill {
-                    padding: 6px 12px;
-                    font-size: 13px;
+                .task-title-large {
+                    min-width: auto;
+                    font-size: 15px;
                 }
                 
-                .pill-label {
-                    display: none;
+                .task-meta-right {
+                    width: 100%;
+                    justify-content: space-between;
+                    margin-left: 0;
                 }
                 
-                .task-item {
-                    padding: 12px;
+                .form-row {
+                    grid-template-columns: 1fr;
                 }
-                
-                .task-title {
-                    font-size: 14px;
-                }
-                
-                .task-meta {
-                    font-size: 12px;
-                }
-                
-                .task-actions {
-                    opacity: 1;
-                }
-                
-                .view-mode-btn span {
-                    display: none;
-                }
-                
-                .new-task-btn span {
-                    display: none;
-                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
+        
+        // Ajouter les styles spécifiques aux suggestions de réponse
+        this.addSuggestedRepliesStyles();
+    }
+
+    // NOUVEAUX STYLES POUR LES SUGGESTIONS DE RÉPONSE
+    addSuggestedRepliesStyles() {
+        if (document.getElementById('suggestedRepliesStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'suggestedRepliesStyles';
+        styles.textContent = `
+            /* Styles pour les suggestions de réponse */
+            .suggested-replies-section {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #7dd3fc;
+            }
+            
+            .suggested-replies-section h3 {
+                background: #f0f9ff;
+                border-bottom-color: #7dd3fc;
+                color: #075985;
+            }
+            
+            .suggested-replies-container {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .suggested-reply-card {
+                background: white;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 16px;
+                transition: all 0.2s ease;
+            }
+            
+            .suggested-reply-card:hover {
+                border-color: #7dd3fc;
+                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
+            }
+            
+            .reply-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .reply-tone-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 12px;
+                border-radius: 16px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: capitalize;
+            }
+            
+            .reply-tone-badge.formel {
+                background: #f3f4f6;
+                color: #374151;
+                border: 1px solid #d1d5db;
+            }
+            
+            .reply-tone-badge.urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .reply-tone-badge.neutre {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .reply-tone-badge.amical {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .copy-reply-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                background: #f3f4f6;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                color: #374151;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .copy-reply-btn:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+            
+            .reply-subject {
+                font-size: 14px;
+                color: #4b5563;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .reply-content {
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                background: #f8fafc;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+                margin-bottom: 12px;
+            }
+            
+            .reply-actions {
+                display: flex;
+                justify-content: flex-end;
+            }
+            
+            .use-reply-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .use-reply-btn:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+            }
+            
+            /* Styles pour le modal des suggestions */
+            .ai-suggestions-info {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #7dd3fc;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .ai-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #0ea5e9;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            
+            .ai-suggestions-info p {
+                margin: 0;
+                color: #075985;
+                font-size: 14px;
+            }
+            
+            .replies-list {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .reply-suggestion-card {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                transition: all 0.2s ease;
+            }
+            
+            .reply-suggestion-card:hover {
+                border-color: #3b82f6;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+            
+            .reply-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .reply-card-actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .btn-sm {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid;
+            }
+            
+            .btn-sm.btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+            
+            .btn-sm.btn-secondary:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+            
+            .btn-sm.btn-primary {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+            
+            .btn-sm.btn-primary:hover {
+                background: #2563eb;
+                border-color: #2563eb;
+                transform: translateY(-1px);
+            }
+            
+            .reply-subject-line {
+                font-size: 13px;
+                color: #4b5563;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .reply-content-preview {
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.6;
+                white-space: pre-wrap;
+                background: #f8fafc;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+                max-height: 150px;
+                overflow-y: auto;
             }
         `;
         
@@ -2284,30 +4539,6 @@ class TasksView {
     }
 }
 
-// INITIALISATION GLOBALE
-function initializeTasksView() {
-    console.log('[TasksView] Initializing EmailSortPro interface...');
-    
-    if (!window.tasksView) {
-        window.tasksView = new TasksView();
-    }
-    
-    // Bind methods
-    Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
-        if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
-            window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
-        }
-    });
-    
-    console.log('✅ TasksView EmailSortPro interface loaded');
-}
-
-// Initialisation
-initializeTasksView();
-document.addEventListener('DOMContentLoaded', initializeTasksView);
-window.addEventListener('load', () => {
-    setTimeout(initializeTasksView, 500);
-});
 // =====================================
 // GLOBAL INITIALIZATION GARANTIE
 // =====================================
