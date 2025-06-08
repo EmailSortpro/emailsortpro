@@ -989,7 +989,7 @@ class TasksView {
         this.selectedTasks = new Set();
         this.currentViewMode = 'flat';
         this.showCompleted = false;
-        this.showAdvancedFilters = false;
+        this.showAdvancedFilters = true; // Affichage par défaut
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
@@ -2496,9 +2496,9 @@ class TasksView {
                 --pill-font-size: 13px;
                 --pill-border-radius: 10px;
                 
-                /* CARTES ET AUTRES ÉLÉMENTS */
-                --card-height: 88px;
-                --card-padding: 16px;
+                /* CARTES ET AUTRES ÉLÉMENTS - ESPACEMENTS RÉDUITS */
+                --card-height: 76px;
+                --card-padding: 14px;
                 --card-border-radius: 12px;
                 
                 /* INPUTS HARMONISÉS */
@@ -2999,25 +2999,27 @@ class TasksView {
                 justify-content: center;
             }
             
-            /* ===== FILTRES DE STATUT SANS ESPACES EXCESSIFS ET PARFAITEMENT CENTRÉS ===== */
+            /* ===== FILTRES DE STATUT ÉLARGIS SUR TOUTE LA LIGNE ===== */
             .status-filters-harmonized {
                 display: flex;
                 gap: var(--gap-small);
                 margin-bottom: var(--gap-medium);
-                flex-wrap: wrap;
+                flex-wrap: nowrap;
                 align-items: center;
-                justify-content: flex-start;
+                justify-content: stretch;
+                width: 100%;
             }
             
-            /* TOUS les pills de statut ont une taille AGRANDIE pour meilleure lisibilité ET PARFAITEMENT CENTRÉS */
+            /* TOUS les pills de statut ÉLARGIS pour occuper toute la ligne */
             .status-filters-harmonized .status-pill-harmonized {
-                height: 52px;
-                min-height: 52px;
-                max-height: 52px;
-                padding: var(--btn-padding-vertical) 20px;
+                height: 48px;
+                min-height: 48px;
+                max-height: 48px;
+                padding: var(--btn-padding-vertical) 16px;
                 font-size: 14px;
                 font-weight: 700;
-                min-width: 120px;
+                flex: 1;
+                min-width: 0;
                 box-sizing: border-box;
                 border-radius: 12px;
                 box-shadow: var(--shadow-base);
@@ -3083,18 +3085,19 @@ class TasksView {
                 background: rgba(255, 255, 255, 0.25);
             }
             
-            /* Panneau de filtres avancés */
+            /* Panneau de filtres avancés - TOUJOURS VISIBLE PAR DÉFAUT */
             .advanced-filters-panel {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 border-radius: var(--card-border-radius);
                 margin-bottom: var(--gap-large);
-                max-height: 0;
-                overflow: hidden;
+                max-height: 200px;
+                overflow: visible;
                 transition: all 0.3s ease;
-                opacity: 0;
+                opacity: 1;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                padding: var(--gap-large);
             }
             
             .advanced-filters-panel.show {
@@ -4550,11 +4553,12 @@ class TasksView {
                 }
                 
                 .status-filters-harmonized .status-pill-harmonized {
-                    height: 48px;
-                    min-height: 48px;
-                    max-height: 48px;
+                    height: 44px;
+                    min-height: 44px;
+                    max-height: 44px;
                     font-size: 13px;
-                    min-width: 110px;
+                    flex: 1;
+                    min-width: 0;
                 }
                 
                 .controls-bar-harmonized {
@@ -4592,12 +4596,13 @@ class TasksView {
                 }
                 
                 .status-filters-harmonized .status-pill-harmonized {
-                    height: 44px;
-                    min-height: 44px;
-                    max-height: 44px;
+                    height: 40px;
+                    min-height: 40px;
+                    max-height: 40px;
                     font-size: 12px;
-                    min-width: 100px;
-                    padding: 0 16px;
+                    flex: 1;
+                    min-width: 0;
+                    padding: 0 12px;
                 }
                 
                 .controls-bar-harmonized {
@@ -4680,13 +4685,19 @@ class TasksView {
                     --action-btn-font-size: 12px;
                 }
                 
+                .status-filters-harmonized {
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+                
                 .status-filters-harmonized .status-pill-harmonized {
-                    height: 40px;
-                    min-height: 40px;
-                    max-height: 40px;
+                    height: 36px;
+                    min-height: 36px;
+                    max-height: 36px;
                     font-size: 11px;
-                    min-width: 80px;
-                    padding: 0 12px;
+                    flex: 1 1 calc(50% - 4px);
+                    min-width: 0;
+                    padding: 0 10px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -4780,12 +4791,13 @@ class TasksView {
                 }
                 
                 .status-filters-harmonized .status-pill-harmonized {
-                    height: 36px;
-                    min-height: 36px;
-                    max-height: 36px;
+                    height: 32px;
+                    min-height: 32px;
+                    max-height: 32px;
                     font-size: 10px;
-                    min-width: 70px;
-                    padding: 0 10px;
+                    flex: 1 1 calc(50% - 2px);
+                    min-width: 0;
+                    padding: 0 8px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
@@ -4886,12 +4898,13 @@ class TasksView {
                 }
                 
                 .status-filters-harmonized .status-pill-harmonized {
-                    height: 34px;
-                    min-height: 34px;
-                    max-height: 34px;
+                    height: 30px;
+                    min-height: 30px;
+                    max-height: 30px;
                     font-size: 9px;
-                    min-width: 60px;
-                    padding: 0 8px;
+                    flex: 1 1 calc(33.33% - 3px);
+                    min-width: 0;
+                    padding: 0 6px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
