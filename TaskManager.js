@@ -1940,14 +1940,13 @@ getStatusPillsStyles() {
         `;
     }
 
-    renderCondensedView(tasks) {
-        return `
-            <div class="tasks-condensed-list">
-                ${tasks.map(task => this.renderCondensedTaskItem(task)).join('')}
-            </div>
-        `;
-    }
-
+renderCondensedView(tasks) {
+    return `
+        <div class="tasks-condensed-list">
+            ${tasks.map(task => this.renderCondensedTaskItem(task)).join('')}
+        </div>
+    `;
+}
 // RENDU CONDENSÉ ÉLÉGANT FINAL
 renderCondensedTaskItem(task) {
     const isSelected = this.selectedTasks.has(task.id);
