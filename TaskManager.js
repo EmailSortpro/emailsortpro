@@ -1059,196 +1059,177 @@ class TasksView {
         });
     }
 
-    // MÉTHODE PRINCIPALE POUR RENDRE L'INTERFACE - IDENTIQUE À PAGEMANAGER
-    render(container) {
-        if (!container) {
-            console.error('[TasksView] No container provided');
-            return;
-        }
+// MISE À JOUR DE LA MÉTHODE RENDER POUR UTILISER LES STYLES ÉLÉGANTS
+render(container) {
+    if (!container) {
+        console.error('[TasksView] No container provided');
+        return;
+    }
 
-        if (!window.taskManager || !window.taskManager.initialized) {
-            container.innerHTML = `
-                <div class="loading-state">
-                    <div class="loading-icon">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-                    <p>Chargement des tâches...</p>
-                </div>
-            `;
-            
-            setTimeout(() => {
-                if (window.taskManager && window.taskManager.initialized) {
-                    this.render(container);
-                }
-            }, 500);
-            return;
-        }
-
-        const stats = window.taskManager.getStats();
-        
-        // INTERFACE IDENTIQUE À PAGEMANAGER - MÊME STRUCTURE
+    if (!window.taskManager || !window.taskManager.initialized) {
         container.innerHTML = `
-            <div class="tasks-page-modern">
-                <!-- Barre principale IDENTIQUE à PageManager -->
-                <div class="tasks-main-toolbar">
-                    <div class="toolbar-left">
-                        <h1 class="tasks-title">Tâches</h1>
-                        <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
-                    </div>
-                    
-                    <div class="toolbar-center">
-                        <div class="search-wrapper-large">
-                            <i class="fas fa-search search-icon-large"></i>
-                            <input type="text" 
-                                   class="search-input-large" 
-                                   id="taskSearchInput"
-                                   placeholder="Rechercher dans les tâches..." 
-                                   value="${this.currentFilters.search}">
-                            <button class="search-clear-large" id="searchClearBtn" 
-                                    style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
-                                    onclick="window.tasksView.clearSearch()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="toolbar-center-right">
-                        <div class="view-modes-large">
-                            <button class="btn-large ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
-                                    data-mode="condensed"
-                                    onclick="window.tasksView.changeViewMode('condensed')">
-                                <i class="fas fa-list"></i>
-                                <span class="btn-text-large">Condensé</span>
-                            </button>
-                            <button class="btn-large ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    data-mode="detailed"
-                                    onclick="window.tasksView.changeViewMode('detailed')">
-                                <i class="fas fa-th-large"></i>
-                                <span class="btn-text-large">Détaillé</span>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="toolbar-right">
-                        ${this.selectedTasks.size > 0 ? `
-                            <div class="selection-info-large">
-                                <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
-                                <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <button class="btn-large btn-primary-large" onclick="window.tasksView.bulkActions()">
-                                <i class="fas fa-cog"></i>
-                                <span class="btn-text-large">Actions</span>
-                            </button>
-                        ` : ''}
-                        <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
-                            <i class="fas fa-plus"></i>
-                            <span class="btn-text-large">Nouvelle tâche</span>
+            <div class="loading-state">
+                <div class="loading-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Chargement des tâches...</p>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            if (window.taskManager && window.taskManager.initialized) {
+                this.render(container);
+            }
+        }, 500);
+        return;
+    }
+
+    const stats = window.taskManager.getStats();
+    
+    // Interface simplifiée et élégante
+    container.innerHTML = `
+        <div class="tasks-page-modern">
+            <!-- Barre principale simplifiée -->
+            <div class="tasks-main-toolbar">
+                <div class="toolbar-left">
+                    <h1 class="tasks-title">Tâches</h1>
+                    <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
+                </div>
+                
+                <div class="toolbar-center">
+                    <div class="search-wrapper-large">
+                        <i class="fas fa-search search-icon-large"></i>
+                        <input type="text" 
+                               class="search-input-large" 
+                               id="taskSearchInput"
+                               placeholder="Rechercher..." 
+                               value="${this.currentFilters.search}">
+                        <button class="search-clear-large" id="searchClearBtn" 
+                                style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                                onclick="window.tasksView.clearSearch()">
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
                 </div>
-
-                <!-- Filtres de statut avec bouton filtres avancés -->
-                <div class="status-filters-large">
-                    ${this.buildLargeStatusPills(stats)}
-                    <button class="btn-large advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
-                            onclick="window.tasksView.toggleAdvancedFilters()">
-                        <i class="fas fa-filter"></i>
-                        <span class="btn-text-large">Filtres avancés</span>
-                        <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                
+                <div class="toolbar-right">
+                    ${this.selectedTasks.size > 0 ? `
+                        <div class="selection-info-large">
+                            <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
+                            <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    ` : ''}
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
+                        <i class="fas fa-plus"></i>
+                        <span class="btn-text-large">Nouvelle tâche</span>
                     </button>
                 </div>
-
-                <!-- Filtres avancés -->
-                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
-                    <div class="advanced-filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-flag"></i> Priorité
-                            </label>
-                            <select class="filter-select" id="priorityFilter" 
-                                    onchange="window.tasksView.updateFilter('priority', this.value)">
-                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
-                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-building"></i> Client
-                            </label>
-                            <select class="filter-select" id="clientFilter" 
-                                    onchange="window.tasksView.updateFilter('client', this.value)">
-                                ${this.buildClientFilterOptions()}
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-tags"></i> Tag
-                            </label>
-                            <select class="filter-select" id="tagFilter" 
-                                    onchange="window.tasksView.updateFilter('tag', this.value)">
-                                ${this.buildTagFilterOptions()}
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-calendar"></i> Période
-                            </label>
-                            <select class="filter-select" id="dateRangeFilter" 
-                                    onchange="window.tasksView.updateFilter('dateRange', this.value)">
-                                <option value="all" ${this.currentFilters.dateRange === 'all' ? 'selected' : ''}>Toutes</option>
-                                <option value="today" ${this.currentFilters.dateRange === 'today' ? 'selected' : ''}>Aujourd'hui</option>
-                                <option value="week" ${this.currentFilters.dateRange === 'week' ? 'selected' : ''}>Cette semaine</option>
-                                <option value="month" ${this.currentFilters.dateRange === 'month' ? 'selected' : ''}>Ce mois</option>
-                                <option value="older" ${this.currentFilters.dateRange === 'older' ? 'selected' : ''}>Plus ancien</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-sort"></i> Trier par
-                            </label>
-                            <select class="filter-select" id="sortByFilter" 
-                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                                <option value="updated" ${this.currentFilters.sortBy === 'updated' ? 'selected' : ''}>Dernière modif</option>
-                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
-                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
-                                <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-actions">
-                            <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
-                                <i class="fas fa-undo"></i> Réinitialiser
-                            </button>
-                            <div class="active-filters-count">
-                                ${this.getActiveFiltersCount()} filtres actifs
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tasks-container-modern" id="tasksContainer">
-                    ${this.renderTasksList()}
-                </div>
             </div>
-        `;
 
-        // UTILISER LES MÊMES STYLES QUE PAGEMANAGER
-        this.addModernTaskStyles();
-        this.setupEventListeners();
-        console.log('[TasksView] Modern interface rendered with PageManager styling');
-    }
+            <!-- Filtres de statut simplifiés -->
+            <div class="status-filters-large">
+                ${this.buildSimpleStatusPills(stats)}
+            </div>
+
+            <!-- Liste des tâches avec le nouveau style -->
+            <div class="tasks-container-modern" id="tasksContainer">
+                ${this.renderTasksList()}
+            </div>
+        </div>
+    `;
+
+    // Appliquer les styles élégants
+    this.addElegantTaskStyles();
+    this.setupEventListeners();
+    console.log('[TasksView] Elegant interface rendered');
+}
+
+// FILTRES DE STATUT SIMPLIFIÉS ET ÉLÉGANTS
+buildSimpleStatusPills(stats) {
+    const pills = [
+        { id: 'all', name: 'Toutes', icon: '📋', count: stats.total },
+        { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
+        { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
+        { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
+    ];
+
+    return pills.map(pill => `
+        <button class="status-pill-elegant ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+                data-filter="${pill.id}"
+                onclick="window.tasksView.quickFilter('${pill.id}')">
+            <span class="pill-icon">${pill.icon}</span>
+            <span class="pill-text">${pill.name}</span>
+            <span class="pill-count">${pill.count}</span>
+        </button>
+    `).join('');
+}
+
+// STYLES POUR LES FILTRES SIMPLIFIÉS (à ajouter au CSS)
+getStatusPillsStyles() {
+    return `
+        .status-filters-large {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 0 0 16px 0;
+            padding: 0;
+        }
+        
+        .status-pill-elegant {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            color: #475569;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        
+        .status-pill-elegant:hover {
+            border-color: #3b82f6;
+            background: #f8fafc;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+        
+        .status-pill-elegant.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+        }
+        
+        .pill-icon {
+            font-size: 16px;
+        }
+        
+        .pill-text {
+            font-weight: 600;
+        }
+        
+        .pill-count {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .status-pill-elegant.active .pill-count {
+            background: rgba(255,255,255,0.25);
+        }
+    `;
+}
 
     // MÉTHODES IDENTIQUES À PAGEMANAGER
     buildLargeStatusPills(stats) {
@@ -1322,97 +1303,137 @@ class TasksView {
         `;
     }
 
-    // RENDU IDENTIQUE À L'INTERFACE EMAIL DE PAGEMANAGER AVEC BOUTON RÉPONDRE
-    renderCondensedTaskItem(task) {
-        const isSelected = this.selectedTasks.has(task.id);
-        const isCompleted = task.status === 'completed';
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusIcon = this.getStatusIcon(task.status);
+// NOUVELLE VERSION SOBRE ET ÉLÉGANTE
+renderCondensedTaskItem(task) {
+    const isSelected = this.selectedTasks.has(task.id);
+    const isCompleted = task.status === 'completed';
+    const priorityIcon = this.getPriorityIcon(task.priority);
+    
+    // Simplifier le client info - juste le domaine ou nom court
+    const clientInfo = task.hasEmail ? 
+        `@${(task.emailDomain || 'email').replace('www.', '')}` : 
+        (task.client || 'Interne');
         
-        const clientInfo = task.hasEmail ? 
-            `@${task.emailDomain || 'email'}` : 
-            task.client || 'Interne';
+    const dueDateInfo = this.formatDueDate(task.dueDate);
+    
+    // Nom de l'expéditeur simplifié
+    const senderName = task.emailFromName || task.emailFrom?.split('@')[0] || '';
+    
+    // Titre tronqué intelligemment
+    const truncatedTitle = this.smartTruncateTitle(task.title, 60);
+    
+    // Détecter si réponse nécessaire
+    const needsReply = task.hasEmail && !task.emailReplied && task.status !== 'completed';
+    
+    return `
+        <div class="task-condensed-elegant ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+             data-task-id="${task.id}"
+             onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
             
-        const dueDateInfo = this.formatDueDate(task.dueDate);
-        
-        // Déterminer si on montre le bouton de réponse
-        const showReplyButton = task.hasEmail && !task.emailReplied && task.status !== 'completed';
-        const hasAiSuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
-        
-        return `
-            <div class="task-condensed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-task-id="${task.id}"
-                 onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
-                
-                <input type="checkbox" 
-                       class="task-checkbox-condensed" 
-                       ${isSelected ? 'checked' : ''}
-                       onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
-                
-                <div class="task-indicators">
-                    <div class="priority-indicator priority-${task.priority}" title="Priorité ${task.priority}">
-                        ${priorityIcon}
-                    </div>
-                    <div class="status-indicator status-${task.status}" title="Statut: ${task.status}">
-                        ${statusIcon}
-                    </div>
-                </div>
-                
-                <div class="task-content-condensed">
-                    <div class="task-header-line">
-                        <span class="task-title-large">${this.escapeHtml(task.title)}</span>
-                        <div class="task-meta-right">
-                            <span class="client-badge">${clientInfo}</span>
-                            ${dueDateInfo.html}
-                            <span class="task-date-large">${this.formatRelativeDate(task.createdAt)}</span>
-                        </div>
+            <!-- Indicateur de priorité discret -->
+            <div class="priority-stripe priority-${task.priority}"></div>
+            
+            <!-- Checkbox minimaliste -->
+            <input type="checkbox" 
+                   class="task-checkbox-minimal" 
+                   ${isSelected ? 'checked' : ''}
+                   onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+            
+            <!-- Contenu principal -->
+            <div class="task-content-elegant">
+                <div class="task-main-line">
+                    <div class="task-left-info">
+                        ${senderName ? `<span class="sender-name">${this.escapeHtml(senderName)}</span>` : ''}
+                        <span class="task-title-elegant">${this.escapeHtml(truncatedTitle)}</span>
                     </div>
                     
-                    ${task.hasEmail ? `
-                        <div class="task-email-line">
-                            <i class="fas fa-envelope"></i>
-                            <span class="email-from">${this.escapeHtml(task.emailFromName || task.emailFrom || 'Email')}</span>
-                            ${task.needsReply || showReplyButton ? 
-                                '<span class="reply-needed">📧 Réponse requise</span>' : ''
-                            }
-                            ${hasAiSuggestions ? 
-                                '<span class="has-ai-suggestions">🤖 Suggestions IA</span>' : ''
-                            }
-                            ${task.aiRepliesGenerated ? 
-                                '<span class="ai-generated-badge">✨ IA</span>' : ''
-                            }
-                            ${task.tags && task.tags.length > 0 ? `
-                                <div class="task-tags-line">
-                                    <i class="fas fa-tags"></i>
-                                    ${task.tags.slice(0, 3).map(tag => `
-                                        <span class="task-tag" onclick="event.stopPropagation(); window.tasksView.filterByTag('${tag}')">#${tag}</span>
-                                    `).join('')}
-                                    ${task.tags.length > 3 ? `<span class="tags-more">+${task.tags.length - 3}</span>` : ''}
-                                </div>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-                    
-                    ${showReplyButton ? `
-                        <div class="task-reply-section">
-                            <button class="reply-to-email-btn" 
-                                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
-                                    title="${hasAiSuggestions ? 'Répondre avec suggestions IA' : 'Répondre à l\'email'}">
-                                <i class="fas fa-reply"></i>
-                                <span>Répondre au mail</span>
-                                ${hasAiSuggestions ? '<i class="fas fa-robot ai-icon"></i>' : ''}
-                            </button>
-                        </div>
-                    ` : ''}
+                    <div class="task-right-meta">
+                        <span class="client-tag">${clientInfo}</span>
+                        ${dueDateInfo.html}
+                        <span class="task-age">${this.formatRelativeDate(task.createdAt)}</span>
+                    </div>
                 </div>
                 
-                <div class="task-actions-condensed">
-                    ${this.renderQuickActions(task)}
-                </div>
+                ${needsReply ? `
+                    <div class="reply-indicator">
+                        <i class="fas fa-reply"></i>
+                        <span>Réponse attendue</span>
+                    </div>
+                ` : ''}
             </div>
-        `;
-    }
+            
+            <!-- Actions discrètes -->
+            <div class="task-actions-minimal">
+                ${this.renderMinimalActions(task)}
+            </div>
+        </div>
+    `;
+}
 
+// TRONCATURE INTELLIGENTE DU TITRE
+smartTruncateTitle(title, maxLength = 60) {
+    if (!title || title.length <= maxLength) return title;
+    
+    // Supprimer les emojis et caractères spéciaux pour calculer la longueur
+    const cleanTitle = title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+    
+    if (cleanTitle.length <= maxLength) return title;
+    
+    // Essayer de couper à un mot complet
+    const words = title.split(' ');
+    let truncated = '';
+    
+    for (let i = 0; i < words.length; i++) {
+        const testString = truncated + (truncated ? ' ' : '') + words[i];
+        if (testString.length > maxLength - 3) break;
+        truncated = testString;
+    }
+    
+    // Si on n'a pas réussi à garder au moins 2 mots, couper brutalement
+    if (truncated.split(' ').length < 2) {
+        truncated = title.substring(0, maxLength - 3);
+    }
+    
+    return truncated + '...';
+}
+
+// ACTIONS MINIMALISTES ET DISCRÈTES
+renderMinimalActions(task) {
+    const actions = [];
+    
+    // Bouton répondre si email non répondu
+    if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
+        actions.push(`
+            <button class="action-minimal reply" 
+                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                    title="Répondre">
+                <i class="fas fa-reply"></i>
+            </button>
+        `);
+    }
+    
+    // Bouton terminer si pas terminé
+    if (task.status !== 'completed') {
+        actions.push(`
+            <button class="action-minimal complete" 
+                    onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
+                    title="Marquer terminé">
+                <i class="fas fa-check"></i>
+            </button>
+        `);
+    }
+    
+    // Bouton détails (toujours présent)
+    actions.push(`
+        <button class="action-minimal details" 
+                onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
+                title="Voir détails">
+            <i class="fas fa-eye"></i>
+        </button>
+    `);
+    
+    return actions.join('');
+}
     renderQuickActions(task, minimal = false) {
         const actions = [];
         
@@ -1992,37 +2013,47 @@ class TasksView {
         return labels[tone] || 'Neutre';
     }
 
-    formatDueDate(dateString) {
-        if (!dateString) return { html: '', text: '' };
-        
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-        
-        let className = 'due-date-normal';
-        let text = '';
-        
-        if (diffDays < 0) {
-            className = 'due-date-overdue';
-            text = `En retard de ${Math.abs(diffDays)}j`;
-        } else if (diffDays === 0) {
-            className = 'due-date-today';
-            text = 'Aujourd\'hui';
-        } else if (diffDays === 1) {
-            className = 'due-date-tomorrow';
-            text = 'Demain';
-        } else if (diffDays <= 7) {
-            className = 'due-date-soon';
-            text = `${diffDays}j`;
-        } else {
-            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
-        
-        return {
-            html: `<span class="due-date-badge ${className}">📅 ${text}</span>`,
-            text: text
-        };
+// FORMAT DATE ÉLÉGANT ET SOBRE
+formatDueDate(dateString) {
+    if (!dateString) return { html: '', text: '' };
+    
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+    
+    let className = 'due-elegant-normal';
+    let text = '';
+    let icon = '📅';
+    
+    if (diffDays < 0) {
+        className = 'due-elegant-overdue';
+        text = `${Math.abs(diffDays)}j retard`;
+        icon = '⚠️';
+    } else if (diffDays === 0) {
+        className = 'due-elegant-today';
+        text = 'Aujourd\'hui';
+        icon = '🎯';
+    } else if (diffDays === 1) {
+        className = 'due-elegant-tomorrow';
+        text = 'Demain';
+        icon = '⭐';
+    } else if (diffDays <= 7) {
+        className = 'due-elegant-week';
+        text = `${diffDays}j`;
+        icon = '📅';
+    } else {
+        text = date.toLocaleDateString('fr-FR', { 
+            day: 'numeric', 
+            month: 'short' 
+        });
+        icon = '📅';
     }
+    
+    return {
+        html: `<span class="due-badge-elegant ${className}">${icon} ${text}</span>`,
+        text: text
+    };
+}
 
     formatRelativeDate(dateString) {
         const date = new Date(dateString);
