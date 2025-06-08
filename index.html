@@ -408,27 +408,27 @@
             color: rgba(255, 255, 255, 0.8) !important; /* TEXTE UTILISATEUR EN BLANC */
         }
 
-        /* Navigation SOBRE ET ÉLÉGANTE */
+        /* Navigation SOBRE ET CLASSE */
         .app-nav {
             position: fixed;
             top: 60px;
             left: 0;
             right: 0;
-            height: 60px;
+            height: 55px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             z-index: 999;
             overflow-x: auto;
             display: none; /* Caché par défaut */
-            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         #mainNav {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px 20px;
+            padding: 10px 20px;
             height: 100%;
-            gap: 6px;
+            gap: 2px;
             max-width: 1200px;
             margin: 0 auto;
         }
@@ -437,58 +437,37 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 16px;
-            border-radius: 18px;
+            padding: 8px 18px;
+            border-radius: 6px;
             background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: none;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
-            color: white; /* TEXTE EN BLANC */
+            color: rgba(255, 255, 255, 0.85);
             transition: all 0.2s ease;
             white-space: nowrap;
             position: relative;
-            overflow: hidden;
-        }
-
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transition: left 0.4s ease;
-        }
-
-        .nav-item:hover::before {
-            left: 100%;
         }
 
         .nav-item:hover {
             background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            color: white;
+            transform: translateY(0);
         }
 
         .nav-item.active {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
         .nav-item i {
             font-size: 14px;
-            position: relative;
-            z-index: 1;
+            opacity: 0.9;
         }
 
         .nav-item span {
-            position: relative;
-            z-index: 1;
             font-weight: 500;
         }
 
@@ -526,7 +505,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 120px; /* Header + Nav plus compact */
+            margin-top: 115px; /* Header + Nav sobre */
         }
 
         body.app-active #pageContent {
@@ -714,26 +693,26 @@
             }
 
             .app-nav {
-                height: 80px;
-                padding: 10px;
+                height: 60px;
+                padding: 8px;
             }
             
             #mainNav {
                 flex-wrap: nowrap;
                 justify-content: flex-start;
                 overflow-x: auto;
-                padding: 15px 10px;
-                gap: 10px;
+                padding: 12px 10px;
+                gap: 4px;
             }
 
             .nav-item {
                 flex-shrink: 0;
-                padding: 6px 12px;
+                padding: 6px 14px;
                 font-size: 12px;
             }
             
             body.app-active .app-main {
-                margin-top: 130px;
+                margin-top: 120px;
             }
             
             .dashboard-actions {
@@ -807,7 +786,8 @@
                     <span class="ai-badge">AI</span>
                 </div>
                 <div id="authStatus" class="auth-status">
-                    <span class="text-muted">Initialisation...</span>
+                    <div style="color: white; font-weight: 500;">Vianney Hastings</div>
+                    <div style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">vianney.hastings@hotmail.fr</div>
                 </div>
             </div>
         </header>
