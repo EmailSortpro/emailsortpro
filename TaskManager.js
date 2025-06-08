@@ -1028,25 +1028,8 @@ class TasksView {
         
         container.innerHTML = `
             <div class="tasks-page-modern">
-                <!-- Barre de contrôles harmonisée -->
-                <div class="controls-bar-harmonized">
-                    <!-- Section recherche -->
-                    <div class="search-section-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
-                            <input type="text" 
-                                   class="search-input-harmonized" 
-                                   id="taskSearchInput"
-                                   placeholder="Rechercher tâches..." 
-                                   value="${this.currentFilters.search}">
-                            ${this.currentFilters.search ? `
-                                <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
+                <!-- Barre de contrôles compacte harmonisée -->
+                <div class="controls-bar-compact-harmonized">
                     <!-- Modes de vue harmonisés -->
                     <div class="view-modes-harmonized">
                         <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
@@ -1116,12 +1099,32 @@ class TasksView {
                     </div>
                 </div>
 
-                <!-- Ligne explicative sous la barre de recherche -->
+                <!-- Ligne explicative -->
                 ${this.showHelpLine ? this.renderHelpLine() : ''}
 
-                <!-- Filtres de statut harmonisés -->
-                <div class="status-filters-harmonized">
-                    ${this.buildHarmonizedStatusPills(stats)}
+                <!-- Filtres de statut avec recherche intégrée -->
+                <div class="status-filters-with-search-harmonized">
+                    <!-- Section recherche intégrée -->
+                    <div class="search-section-inline-harmonized">
+                        <div class="search-box-harmonized">
+                            <i class="fas fa-search search-icon-harmonized"></i>
+                            <input type="text" 
+                                   class="search-input-harmonized" 
+                                   id="taskSearchInput"
+                                   placeholder="Rechercher tâches..." 
+                                   value="${this.currentFilters.search}">
+                            ${this.currentFilters.search ? `
+                                <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- Pills de statut -->
+                    <div class="status-pills-row-harmonized">
+                        ${this.buildHarmonizedStatusPills(stats)}
+                    </div>
                 </div>
                 
                 <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
@@ -2406,7 +2409,7 @@ class TasksView {
         }
         
         const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters-harmonized').forEach(container => {
+        document.querySelectorAll('.status-pills-row-harmonized').forEach(container => {
             container.innerHTML = this.buildHarmonizedStatusPills(stats);
         });
         
@@ -3023,8 +3026,8 @@ class TasksView {
                 font-size: var(--btn-font-size);
             }
             
-            /* ===== BARRE DE CONTRÔLES AVEC ALIGNEMENT PARFAIT ===== */
-            .controls-bar-harmonized {
+            /* ===== BARRE DE CONTRÔLES COMPACTE ===== */
+            .controls-bar-compact-harmonized {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -3040,12 +3043,58 @@ class TasksView {
                 box-sizing: border-box;
             }
             
-            /* SECTION RECHERCHE - HAUTEUR EXACTE ET CENTRÉE */
-            .search-section-harmonized {
+            /* ===== FILTRES DE STATUT AVEC RECHERCHE INTÉGRÉE ===== */
+            .status-filters-with-search-harmonized {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-large);
+                margin-bottom: var(--gap-medium);
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
+                border-radius: var(--card-border-radius);
+                padding: var(--gap-medium);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                box-sizing: border-box;
+            }
+            
+            /* SECTION RECHERCHE INLINE */
+            .search-section-inline-harmonized {
                 flex: 0 0 300px;
                 height: var(--btn-height);
                 display: flex;
                 align-items: center;
+            }
+            
+            /* PILLS DE STATUT EN LIGNE */
+            .status-pills-row-harmonized {
+                display: flex;
+                gap: var(--gap-small);
+                flex: 1;
+                align-items: center;
+                justify-content: stretch;
+                min-width: 0;
+            }
+            
+            /* TOUS les pills de statut dans la ligne */
+            .status-pills-row-harmonized .status-pill-harmonized {
+                height: 44px;
+                min-height: 44px;
+                max-height: 44px;
+                padding: var(--btn-padding-vertical) 14px;
+                font-size: 13px;
+                font-weight: 700;
+                flex: 1;
+                min-width: 0;
+                box-sizing: border-box;
+                border-radius: 10px;
+                box-shadow: var(--shadow-base);
+                transition: all var(--transition-speed) ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                white-space: nowrap;
             }
             
             .search-box-harmonized {
@@ -3196,51 +3245,8 @@ class TasksView {
                 justify-content: center;
             }
             
-            /* ===== FILTRES DE STATUT ÉLARGIS SUR TOUTE LA LIGNE ===== */
-            .status-filters-harmonized {
-                display: flex;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
-                flex-wrap: nowrap;
-                align-items: center;
-                justify-content: stretch;
-                width: 100%;
-            }
-            
-            /* TOUS les pills de statut ÉLARGIS pour occuper toute la ligne */
-            .status-filters-harmonized .status-pill-harmonized {
-                height: 48px;
-                min-height: 48px;
-                max-height: 48px;
-                padding: var(--btn-padding-vertical) 16px;
-                font-size: 14px;
-                font-weight: 700;
-                flex: 1;
-                min-width: 0;
-                box-sizing: border-box;
-                border-radius: 12px;
-                box-shadow: var(--shadow-base);
-                transition: all var(--transition-speed) ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-            }
-            
-            .status-pill-harmonized:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-            }
-            
-            .status-pill-harmonized.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
-            }
+            /* ===== FILTRES DE STATUT ÉLARGIS SUR TOUTE LA LIGNE - SUPPRIMÉ ===== */
+            /* Cette section est remplacée par .status-pills-row-harmonized */
             
             /* ALIGNEMENT PARFAIT DU CONTENU DANS LES PILLS AVEC CENTRAGE */
             .pill-icon-harmonized {
@@ -4830,14 +4836,20 @@ class TasksView {
                     padding: 0 12px;
                 }
                 
-                .controls-bar-harmonized {
+                .controls-bar-compact-harmonized {
                     flex-direction: column;
                     gap: var(--gap-medium);
                     align-items: stretch;
                     padding: var(--gap-large);
                 }
                 
-                .search-section-harmonized {
+                .status-filters-with-search-harmonized {
+                    flex-direction: column;
+                    gap: var(--gap-medium);
+                    align-items: stretch;
+                }
+                
+                .search-section-inline-harmonized {
                     flex: none;
                     width: 100%;
                     order: 1;
@@ -4847,10 +4859,18 @@ class TasksView {
                     justify-content: center;
                 }
                 
+                .status-pills-row-harmonized {
+                    order: 2;
+                    width: 100%;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                    gap: var(--gap-small);
+                }
+                
                 .view-modes-harmonized {
                     width: 100%;
                     justify-content: space-around;
-                    order: 2;
+                    order: 1;
                     height: var(--btn-height);
                     display: flex;
                     align-items: center;
@@ -4860,7 +4880,7 @@ class TasksView {
                     width: 100%;
                     justify-content: center;
                     flex-wrap: wrap;
-                    order: 3;
+                    order: 2;
                     height: auto;
                     min-height: var(--btn-height);
                     display: flex;
@@ -4934,12 +4954,12 @@ class TasksView {
                     font-size: 9px;
                 }
                 
-                .status-filters-harmonized {
+                .status-pills-row-harmonized {
                     flex-wrap: wrap;
                     justify-content: center;
                 }
                 
-                .status-filters-harmonized .status-pill-harmonized {
+                .status-pills-row-harmonized .status-pill-harmonized {
                     height: 36px;
                     min-height: 36px;
                     max-height: 36px;
@@ -5063,7 +5083,7 @@ class TasksView {
                     font-size: 8px;
                 }
                 
-                .status-filters-harmonized .status-pill-harmonized {
+                .status-pills-row-harmonized .status-pill-harmonized {
                     height: 32px;
                     min-height: 32px;
                     max-height: 32px;
@@ -5194,7 +5214,7 @@ class TasksView {
                     font-size: 7px;
                 }
                 
-                .status-filters-harmonized .status-pill-harmonized {
+                .status-pills-row-harmonized .status-pill-harmonized {
                     height: 30px;
                     min-height: 30px;
                     max-height: 30px;
@@ -5208,21 +5228,7 @@ class TasksView {
                     text-align: center;
                 }
                 
-                .view-modes-harmonized {
-                    gap: 1px;
-                }
-                
-                .view-mode-harmonized {
-                    min-width: 34px;
-                    padding: 0 4px;
-                    height: calc(var(--btn-height) - var(--gap-small)) !important;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .status-filters-harmonized {
+                .status-pills-row-harmonized {
                     gap: 4px;
                     justify-content: center;
                 }
