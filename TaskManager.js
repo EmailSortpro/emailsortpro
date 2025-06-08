@@ -1028,9 +1028,6 @@ class TasksView {
         
         container.innerHTML = `
             <div class="tasks-page-modern">
-                <!-- Ligne explicative identique aux emails -->
-                ${this.showHelpLine ? this.renderHelpLine() : ''}
-                
                 <!-- Barre de contrôles harmonisée -->
                 <div class="controls-bar-harmonized">
                     <!-- Section recherche -->
@@ -1081,12 +1078,24 @@ class TasksView {
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
+                            <button class="btn-harmonized btn-danger" onclick="window.tasksView.bulkMarkComplete()">
+                                <i class="fas fa-check"></i>
+                                <span>Terminer</span>
+                            </button>
+                            <button class="btn-harmonized btn-warning" onclick="window.tasksView.bulkDelete()">
+                                <i class="fas fa-trash"></i>
+                                <span>Supprimer</span>
+                            </button>
                             <button class="btn-harmonized btn-primary" onclick="window.tasksView.bulkActions()">
                                 <i class="fas fa-cog"></i>
-                                <span>Actions</span>
-                                <span class="count-badge-harmonized">${selectedCount}</span>
+                                <span>Plus</span>
                             </button>
                         ` : ''}
+                        
+                        <button class="btn-harmonized btn-secondary" onclick="window.tasksView.selectAllVisible()">
+                            <i class="fas fa-check-square"></i>
+                            <span>Tout sélectionner</span>
+                        </button>
                         
                         <button class="btn-harmonized btn-secondary" onclick="window.tasksView.refreshTasks()">
                             <i class="fas fa-sync-alt"></i>
@@ -1106,6 +1115,9 @@ class TasksView {
                         </button>
                     </div>
                 </div>
+
+                <!-- Ligne explicative sous la barre de recherche -->
+                ${this.showHelpLine ? this.renderHelpLine() : ''}
 
                 <!-- Filtres de statut harmonisés -->
                 <div class="status-filters-harmonized">
@@ -2348,23 +2360,60 @@ class TasksView {
         this.refreshView();
     }
 
-    toggleAdvancedFilters() {
-        this.showAdvancedFilters = !this.showAdvancedFilters;
+    // Nouvelles méthodes pour la sélection en masse
+    selectAllVisible() {
+        const tasks = window.taskManager.filterTasks(this.currentFilters);
+        const visibleTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
         
-        const panel = document.getElementById('advancedFiltersPanel');
-        const toggle = document.querySelector('.filters-toggle');
+        visibleTasks.forEach(task => {
+            this.selectedTasks.add(task.id);
+        });
         
-        if (panel) {
-            panel.classList.toggle('show', this.showAdvancedFilters);
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+        this.showToast(`${visibleTasks.length} tâche(s) sélectionnée(s)`, 'info');
+    }
+
+    bulkMarkComplete() {
+        if (this.selectedTasks.size === 0) return;
+        
+        if (confirm(`Marquer ${this.selectedTasks.size} tâche(s) comme terminée(s) ?`)) {
+            this.selectedTasks.forEach(taskId => {
+                window.taskManager.updateTask(taskId, { status: 'completed' });
+            });
+            
+            this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+            this.clearSelection();
+        }
+    }
+
+    bulkDelete() {
+        if (this.selectedTasks.size === 0) return;
+        
+        if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ? Cette action est irréversible.`)) {
+            this.selectedTasks.forEach(taskId => {
+                window.taskManager.deleteTask(taskId);
+            });
+            
+            this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+            this.clearSelection();
+        }
+    }
+
+    refreshView() {
+        const container = document.getElementById('tasksContainer');
+        if (container) {
+            container.innerHTML = this.renderTasksList();
         }
         
-        if (toggle) {
-            toggle.classList.toggle('active', this.showAdvancedFilters);
-            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
-            if (chevron) {
-                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
-                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
-            }
+        const stats = window.taskManager.getStats();
+        document.querySelectorAll('.status-filters-harmonized').forEach(container => {
+            container.innerHTML = this.buildHarmonizedStatusPills(stats);
+        });
+        
+        // Mettre à jour les boutons d'action si des tâches sont sélectionnées
+        const selectedCount = this.selectedTasks.size;
+        if (selectedCount > 0) {
+            this.render(document.querySelector('.tasks-page-modern')?.parentElement);
         }
     }
 
@@ -2736,6 +2785,34 @@ class TasksView {
                 color: #334155;
                 border-color: #cbd5e1;
                 transform: translateY(-1px);
+            }
+            
+            /* BOUTON DANGER - POUR SUPPRIMER */
+            .btn-harmonized.btn-danger {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+            }
+            
+            .btn-harmonized.btn-danger:hover {
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+            }
+            
+            /* BOUTON WARNING - POUR ACTIONS IMPORTANTES */
+            .btn-harmonized.btn-warning {
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+            }
+            
+            .btn-harmonized.btn-warning:hover {
+                background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
             }
             
             /* BOUTON CLEAR SELECTION - CARRÉ PARFAIT CENTRÉ */
