@@ -416,15 +416,14 @@
             color: rgba(255,255,255,0.8);
         }
 
-        /* Navigation MODERNISÉE */
+        /* Navigation MODERNISÉE avec fond transparent */
         .app-nav {
             position: fixed;
             top: 70px;
             left: 0;
             right: 0;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.3);
+            background: transparent; /* Fond transparent pour que les icônes s'intègrent au fond */
+            border-bottom: 1px solid rgba(255,255,255,0.1);
             z-index: 999;
             overflow-x: auto;
             display: none; /* Caché par défaut */
@@ -434,8 +433,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 30px;
-            min-height: 65px;
+            padding: 8px 30px; /* Padding réduit pour remonter les icônes */
+            min-height: 55px; /* Hauteur réduite */
             gap: 6px;
             max-width: 1400px;
             margin: 0 auto;
@@ -445,44 +444,44 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
-            padding: 12px 18px;
-            border-radius: 14px;
-            background: none;
+            gap: 4px; /* Gap réduit entre icône et texte */
+            padding: 8px 16px; /* Padding réduit */
+            border-radius: 12px;
+            background: transparent; /* Pas de fond par défaut */
             border: none;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: #64748b;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
-            min-width: 85px;
+            min-width: 75px;
             position: relative;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .nav-item i {
-            font-size: 20px;
-            margin-bottom: 2px;
+            font-size: 18px; /* Icône légèrement plus petite */
+            margin-bottom: 1px;
             transition: all 0.3s ease;
         }
 
         .nav-item:hover {
             background: rgba(102, 126, 234, 0.1);
             color: #667eea;
-            transform: translateY(-2px);
+            transform: translateY(-1px); /* Mouvement plus subtil */
         }
 
         .nav-item:hover i {
-            transform: scale(1.1);
+            transform: scale(1.08);
         }
 
         .nav-item.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
         }
 
         .nav-item.active::before {
@@ -491,10 +490,10 @@
             top: -2px;
             left: 50%;
             transform: translateX(-50%);
-            width: 30px;
-            height: 3px;
+            width: 25px;
+            height: 2px;
             background: rgba(255, 255, 255, 0.8);
-            border-radius: 0 0 3px 3px;
+            border-radius: 0 0 2px 2px;
         }
 
         /* Contenu principal */
@@ -531,7 +530,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 135px; /* Header + Nav condensé */
+            margin-top: 125px; /* Header + Nav plus compact */
         }
 
         body.app-active #pageContent {
@@ -762,25 +761,25 @@
             }
             
             #mainNav {
-                padding: 12px 20px;
-                min-height: 75px;
+                padding: 8px 20px;
+                min-height: 60px; /* Hauteur réduite pour mobile */
                 flex-wrap: wrap;
                 justify-content: center;
-                gap: 8px;
+                gap: 6px;
             }
 
             .nav-item {
-                min-width: 70px;
-                padding: 10px 14px;
+                min-width: 65px;
+                padding: 8px 12px;
                 font-size: 10px;
             }
 
             .nav-item i {
-                font-size: 18px;
+                font-size: 16px;
             }
             
             body.app-active .app-main {
-                margin-top: 145px;
+                margin-top: 130px;
             }
             
             .dashboard-container {
@@ -821,12 +820,12 @@
             animation: fadeInUp 0.5s ease;
         }
 
-        /* Effet glassmorphism pour la navigation */
+        /* Effet glassmorphism plus subtil pour la navigation */
         @supports (backdrop-filter: blur(20px)) {
             .app-nav {
-                background: rgba(255,255,255,0.85);
-                backdrop-filter: blur(20px);
-                border-bottom: 1px solid rgba(255,255,255,0.2);
+                background: rgba(248, 250, 252, 0.7); /* Très léger pour s'intégrer au fond */
+                backdrop-filter: blur(15px);
+                border-bottom: 1px solid rgba(255,255,255,0.15);
             }
         }
 
@@ -841,13 +840,13 @@
 
         @keyframes iconBounce {
             0%, 20%, 50%, 80%, 100% {
-                transform: translateY(0) scale(1.1);
+                transform: translateY(0) scale(1.08);
             }
             40% {
-                transform: translateY(-3px) scale(1.15);
+                transform: translateY(-2px) scale(1.12);
             }
             60% {
-                transform: translateY(-2px) scale(1.12);
+                transform: translateY(-1px) scale(1.1);
             }
         }
     </style>
