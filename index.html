@@ -446,27 +446,26 @@
             color: rgba(255, 255, 255, 0.8) !important;
         }
 
-        /* Navigation HOMOGÈNE ET PROPRE */
+        /* Navigation SIMPLE ET PROPRE */
         .app-nav {
             position: fixed;
             top: 60px;
             left: 0;
             right: 0;
-            height: 55px;
+            height: 50px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             z-index: 999;
-            display: none; /* Caché par défaut */
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
+            display: none;
         }
 
         #mainNav {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            display: flex;
             align-items: center;
+            justify-content: center;
             height: 100%;
-            width: 100%;
             gap: 0;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .nav-item {
@@ -474,37 +473,27 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 12px 8px;
+            padding: 10px 20px;
             background: transparent;
             border: none;
             cursor: pointer;
             font-size: 13px;
             font-weight: 500;
-            color: rgba(255, 255, 255, 0.85);
-            transition: all 0.2s ease;
+            color: white;
+            transition: background-color 0.2s ease;
             white-space: nowrap;
-            height: 100%;
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-item:last-child {
-            border-right: none;
         }
 
         .nav-item:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: white;
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .nav-item.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .nav-item i {
             font-size: 14px;
-            opacity: 0.9;
         }
 
         .nav-item span {
@@ -545,7 +534,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 115px; /* Header + Nav sobre */
+            margin-top: 110px; /* Header + Nav simple */
         }
 
         body.app-active #pageContent {
@@ -738,31 +727,37 @@
                 overflow: hidden; /* Pas de scroll sur mobile */
             }
             
+            .app-nav {
+                height: 50px;
+            }
+            
             #mainNav {
-                grid-template-columns: repeat(6, 1fr);
+                justify-content: center;
                 gap: 0;
+                overflow-x: auto;
+                padding: 0 10px;
             }
 
             .nav-item {
-                padding: 8px 4px;
-                font-size: 11px;
-                border-right: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 8px 15px;
+                font-size: 12px;
+                flex-shrink: 0;
             }
 
             .nav-item span {
-                display: none; /* Masquer le texte sur mobile, garder seulement les icônes */
-            }
-
-            .nav-item i {
-                font-size: 16px; /* Icônes plus grandes sur mobile */
+                display: block;
             }
 
             .user-name {
-                display: none; /* Masquer le nom sur mobile */
+                display: none;
             }
 
             .user-email {
                 font-size: 11px;
+            }
+
+            body.app-active .app-main {
+                margin-top: 110px;
             }
             
             body.app-active .app-main {
