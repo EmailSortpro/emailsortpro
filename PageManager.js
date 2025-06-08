@@ -238,9 +238,11 @@ class PageManager {
         return tabs.map(tab => `
             <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''}" 
                     onclick="window.pageManager.filterByCategory('${tab.id}')">
-                <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                <span class="pill-text-harmonized-multiline">${tab.name}</span>
-                <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                <div class="pill-content-row">
+                    <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
+                    <span class="pill-text-harmonized-multiline">${tab.name}</span>
+                    <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                </div>
             </button>
         `).join('');
     }
@@ -925,19 +927,18 @@ class PageManager {
             
             .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
                 height: auto;
-                min-height: 40px;
+                min-height: 48px;
                 padding: var(--gap-small) var(--gap-medium);
                 font-size: 12px;
                 font-weight: 700;
                 flex: 0 1 calc(16.666% - var(--gap-small));
-                min-width: 80px;
-                max-width: 150px;
+                min-width: 120px;
+                max-width: 180px;
                 box-sizing: border-box;
                 border-radius: var(--pill-border-radius);
                 box-shadow: var(--shadow-base);
                 transition: all var(--transition-speed) ease;
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
@@ -945,9 +946,16 @@ class PageManager {
                 color: #374151;
                 border: var(--border-width) solid #e5e7eb;
                 cursor: pointer;
-                gap: 2px;
                 position: relative;
                 overflow: hidden;
+            }
+            
+            .pill-content-row {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--gap-small);
+                width: 100%;
             }
             
             .status-pill-harmonized-multiline:hover {
@@ -966,36 +974,35 @@ class PageManager {
             }
             
             .pill-icon-harmonized-multiline {
-                font-size: 14px;
+                font-size: 16px;
                 line-height: 1;
                 flex-shrink: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin-bottom: 1px;
             }
             
             .pill-text-harmonized-multiline {
                 font-weight: 700;
-                font-size: 10px;
-                line-height: 1.1;
-                flex-shrink: 0;
+                font-size: 13px;
+                line-height: 1.2;
+                flex: 1;
                 text-align: center;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                word-break: break-word;
-                hyphens: auto;
-                margin-bottom: 1px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             
             .pill-count-harmonized-multiline {
                 background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 6px;
-                font-size: 9px;
+                padding: 3px 7px;
+                border-radius: 8px;
+                font-size: 11px;
                 font-weight: 800;
-                min-width: 16px;
+                min-width: 18px;
                 text-align: center;
                 line-height: 1;
                 flex-shrink: 0;
@@ -1639,10 +1646,22 @@ class PageManager {
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
                     flex: 0 1 calc(20% - var(--gap-small));
-                    min-width: 70px;
-                    max-width: 130px;
-                    min-height: 38px;
-                    font-size: 11px;
+                    min-width: 100px;
+                    max-width: 160px;
+                    min-height: 44px;
+                }
+                
+                .pill-text-harmonized-multiline {
+                    font-size: 12px;
+                }
+                
+                .pill-icon-harmonized-multiline {
+                    font-size: 15px;
+                }
+                
+                .pill-count-harmonized-multiline {
+                    font-size: 10px;
+                    padding: 2px 6px;
                 }
             }
             
@@ -1686,10 +1705,22 @@ class PageManager {
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
                     flex: 0 1 calc(25% - var(--gap-small));
-                    min-width: 60px;
-                    max-width: 110px;
-                    min-height: 36px;
-                    font-size: 10px;
+                    min-width: 80px;
+                    max-width: 140px;
+                    min-height: 42px;
+                }
+                
+                .pill-text-harmonized-multiline {
+                    font-size: 11px;
+                }
+                
+                .pill-icon-harmonized-multiline {
+                    font-size: 14px;
+                }
+                
+                .pill-count-harmonized-multiline {
+                    font-size: 9px;
+                    padding: 2px 5px;
                 }
             }
             
@@ -1700,11 +1731,9 @@ class PageManager {
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
                     flex: 0 1 calc(33.333% - var(--gap-small));
-                    min-width: 50px;
-                    max-width: 100px;
-                    min-height: 34px;
-                    font-size: 9px;
-                    padding: var(--gap-tiny) var(--gap-small);
+                    min-width: 70px;
+                    max-width: 120px;
+                    min-height: 40px;
                 }
                 
                 .view-mode-harmonized span,
@@ -1713,22 +1742,29 @@ class PageManager {
                 }
                 
                 .pill-text-harmonized-multiline {
-                    font-size: 9px;
+                    font-size: 10px;
+                }
+                
+                .pill-icon-harmonized-multiline {
+                    font-size: 13px;
+                }
+                
+                .pill-count-harmonized-multiline {
+                    font-size: 8px;
+                    padding: 2px 4px;
                 }
             }
             
             @media (max-width: 480px) {
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
                     flex: 0 1 calc(50% - var(--gap-tiny));
-                    min-width: 45px;
-                    max-width: 90px;
-                    min-height: 32px;
-                    font-size: 8px;
-                    padding: 2px var(--gap-tiny);
+                    min-width: 60px;
+                    max-width: 110px;
+                    min-height: 38px;
                 }
                 
                 .pill-text-harmonized-multiline {
-                    font-size: 8px;
+                    font-size: 9px;
                 }
                 
                 .pill-icon-harmonized-multiline {
