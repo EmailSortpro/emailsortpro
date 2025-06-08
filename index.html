@@ -446,7 +446,7 @@
             color: rgba(255, 255, 255, 0.8) !important;
         }
 
-        /* Navigation SOBRE ET CLASSE - SANS SCROLL */
+        /* Navigation SOBRE ET CLASSE - PLEINE LARGEUR */
         .app-nav {
             position: fixed;
             top: 60px;
@@ -463,18 +463,17 @@
         #mainNav {
             display: flex;
             align-items: center;
-            justify-content: center;
-            padding: 10px 20px;
+            justify-content: space-between;
+            padding: 10px 0;
             height: 100%;
-            gap: 2px;
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
             overflow: hidden; /* Pas de scroll */
         }
 
         .nav-item {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             padding: 8px 18px;
             border-radius: 6px;
@@ -487,16 +486,18 @@
             transition: all 0.2s ease;
             white-space: nowrap;
             position: relative;
+            flex: 1; /* Prendre toute la largeur disponible */
+            margin: 0 1px;
         }
 
         .nav-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
             color: white;
             transform: translateY(0);
         }
 
         .nav-item.active {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
@@ -738,18 +739,18 @@
             }
             
             #mainNav {
-                flex-wrap: nowrap;
-                justify-content: center; /* Centrer au lieu de flex-start */
+                justify-content: space-between;
                 overflow: hidden; /* Pas de scroll */
-                padding: 12px 10px;
-                gap: 1px; /* Gap réduit pour tout faire tenir */
+                padding: 12px 0;
+                gap: 0;
             }
 
             .nav-item {
-                flex-shrink: 1; /* Permettre la réduction */
-                padding: 6px 12px;
+                flex: 1;
+                padding: 6px 8px;
                 font-size: 11px;
-                min-width: auto;
+                margin: 0;
+                justify-content: center;
             }
 
             .nav-item span {
