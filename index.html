@@ -400,13 +400,21 @@
             color: white; /* TEXTE EN BLANC */
         }
 
-        /* Navigation MODERNE */
+        #authStatus {
+            color: white; /* TEXTE UTILISATEUR EN BLANC */
+        }
+
+        .text-muted {
+            color: rgba(255, 255, 255, 0.8) !important; /* TEXTE UTILISATEUR EN BLANC */
+        }
+
+        /* Navigation SOBRE ET ÉLÉGANTE */
         .app-nav {
             position: fixed;
             top: 60px;
             left: 0;
             right: 0;
-            height: 70px;
+            height: 60px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             z-index: 999;
             overflow-x: auto;
@@ -418,9 +426,9 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 15px 20px;
+            padding: 12px 20px;
             height: 100%;
-            gap: 8px;
+            gap: 6px;
             max-width: 1200px;
             margin: 0 auto;
         }
@@ -428,18 +436,17 @@
         .nav-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px 20px;
-            border-radius: 25px;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 18px;
             background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             color: white; /* TEXTE EN BLANC */
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             white-space: nowrap;
-            backdrop-filter: blur(10px);
             position: relative;
             overflow: hidden;
         }
@@ -451,8 +458,8 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s ease;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.4s ease;
         }
 
         .nav-item:hover::before {
@@ -460,22 +467,21 @@
         }
 
         .nav-item:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .nav-item.active {
-            background: rgba(255, 255, 255, 0.25);
-            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
             color: white;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .nav-item i {
-            font-size: 16px;
+            font-size: 14px;
             position: relative;
             z-index: 1;
         }
@@ -483,7 +489,7 @@
         .nav-item span {
             position: relative;
             z-index: 1;
-            font-weight: 600;
+            font-weight: 500;
         }
 
         /* Contenu principal */
@@ -520,7 +526,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 130px; /* Header + Nav */
+            margin-top: 120px; /* Header + Nav plus compact */
         }
 
         body.app-active #pageContent {
@@ -722,12 +728,12 @@
 
             .nav-item {
                 flex-shrink: 0;
-                padding: 10px 16px;
-                font-size: 13px;
+                padding: 6px 12px;
+                font-size: 12px;
             }
             
             body.app-active .app-main {
-                margin-top: 140px;
+                margin-top: 130px;
             }
             
             .dashboard-actions {
@@ -741,17 +747,17 @@
 
         @media (max-width: 480px) {
             .nav-item {
-                padding: 8px 12px;
-                font-size: 12px;
+                padding: 6px 10px;
+                font-size: 11px;
             }
 
             .nav-item i {
-                font-size: 14px;
+                font-size: 12px;
             }
 
             #mainNav {
-                gap: 6px;
-                padding: 12px 8px;
+                gap: 4px;
+                padding: 10px 8px;
             }
         }
 
