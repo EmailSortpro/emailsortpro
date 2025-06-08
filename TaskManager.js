@@ -1059,942 +1059,196 @@ class TasksView {
         });
     }
 
-// MÉTHODE RENDER MODERNE ET STRUCTURÉE
-render(container) {
-    if (!container) {
-        console.error('[TasksView] No container provided');
-        return;
-    }
+    // MÉTHODE PRINCIPALE POUR RENDRE L'INTERFACE - IDENTIQUE À PAGEMANAGER
+    render(container) {
+        if (!container) {
+            console.error('[TasksView] No container provided');
+            return;
+        }
 
-    if (!window.taskManager || !window.taskManager.initialized) {
-        container.innerHTML = `
-            <div class="modern-loading-state">
-                <div class="loading-spinner-modern">
-                    <div class="spinner-ring"></div>
+        if (!window.taskManager || !window.taskManager.initialized) {
+            container.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p>Chargement des tâches...</p>
                 </div>
-                <h3>Chargement des tâches...</h3>
-                <p>Préparation de l'interface</p>
-            </div>
-        `;
-        
-        setTimeout(() => {
-            if (window.taskManager && window.taskManager.initialized) {
-                this.render(container);
-            }
-        }, 500);
-        return;
-    }
+            `;
+            
+            setTimeout(() => {
+                if (window.taskManager && window.taskManager.initialized) {
+                    this.render(container);
+                }
+            }, 500);
+            return;
+        }
 
-    const stats = window.taskManager.getStats();
-    
-    container.innerHTML = `
-        <div class="tasks-page-ultra-modern">
-            <!-- Header moderne avec gradient -->
-            <div class="tasks-header-modern">
-                <div class="header-content">
-                    <div class="title-section">
-                        <h1 class="page-title-modern">
-                            <i class="fas fa-tasks title-icon"></i>
-                            Gestionnaire de Tâches
-                        </h1>
-                        <div class="stats-overview">
-                            <span class="stat-item">
-                                <span class="stat-number">${stats.total}</span>
-                                <span class="stat-label">Total</span>
-                            </span>
-                            <span class="stat-divider">•</span>
-                            <span class="stat-item">
-                                <span class="stat-number">${stats.todo}</span>
-                                <span class="stat-label">À faire</span>
-                            </span>
-                            <span class="stat-divider">•</span>
-                            <span class="stat-item urgent">
-                                <span class="stat-number">${stats.needsReply}</span>
-                                <span class="stat-label">À répondre</span>
-                            </span>
+        const stats = window.taskManager.getStats();
+        
+        // INTERFACE IDENTIQUE À PAGEMANAGER - MÊME STRUCTURE
+        container.innerHTML = `
+            <div class="tasks-page-modern">
+                <!-- Barre principale IDENTIQUE à PageManager -->
+                <div class="tasks-main-toolbar">
+                    <div class="toolbar-left">
+                        <h1 class="tasks-title">Tâches</h1>
+                        <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
+                    </div>
+                    
+                    <div class="toolbar-center">
+                        <div class="search-wrapper-large">
+                            <i class="fas fa-search search-icon-large"></i>
+                            <input type="text" 
+                                   class="search-input-large" 
+                                   id="taskSearchInput"
+                                   placeholder="Rechercher dans les tâches..." 
+                                   value="${this.currentFilters.search}">
+                            <button class="search-clear-large" id="searchClearBtn" 
+                                    style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                                    onclick="window.tasksView.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="header-actions">
-                        <div class="search-container-modern">
-                            <div class="search-input-wrapper">
-                                <i class="fas fa-search search-icon"></i>
-                                <input type="text" 
-                                       class="search-input-modern" 
-                                       id="taskSearchInput"
-                                       placeholder="Rechercher par titre, expéditeur ou client..." 
-                                       value="${this.currentFilters.search}">
-                                <button class="search-clear-btn" id="searchClearBtn" 
-                                        style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
-                                        onclick="window.tasksView.clearSearch()">
+                    <div class="toolbar-center-right">
+                        <div class="view-modes-large">
+                            <button class="btn-large ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
+                                    data-mode="condensed"
+                                    onclick="window.tasksView.changeViewMode('condensed')">
+                                <i class="fas fa-list"></i>
+                                <span class="btn-text-large">Condensé</span>
+                            </button>
+                            <button class="btn-large ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                    data-mode="detailed"
+                                    onclick="window.tasksView.changeViewMode('detailed')">
+                                <i class="fas fa-th-large"></i>
+                                <span class="btn-text-large">Détaillé</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="toolbar-right">
+                        ${this.selectedTasks.size > 0 ? `
+                            <div class="selection-info-large">
+                                <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
+                                <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
-                        </div>
-                        
-                        <button class="btn-modern btn-primary" onclick="window.tasksView.showCreateModal()">
+                            <button class="btn-large btn-primary-large" onclick="window.tasksView.bulkActions()">
+                                <i class="fas fa-cog"></i>
+                                <span class="btn-text-large">Actions</span>
+                            </button>
+                        ` : ''}
+                        <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
                             <i class="fas fa-plus"></i>
-                            <span>Nouvelle tâche</span>
+                            <span class="btn-text-large">Nouvelle tâche</span>
                         </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- Filtres modernes avec design épuré -->
-            <div class="filters-section-modern">
-                <div class="filters-container">
-                    ${this.buildModernFilters(stats)}
+                <!-- Filtres de statut avec bouton filtres avancés -->
+                <div class="status-filters-large">
+                    ${this.buildLargeStatusPills(stats)}
+                    <button class="btn-large advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                            onclick="window.tasksView.toggleAdvancedFilters()">
+                        <i class="fas fa-filter"></i>
+                        <span class="btn-text-large">Filtres avancés</span>
+                        <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                    </button>
                 </div>
-                
-                ${this.selectedTasks.size > 0 ? `
-                    <div class="selection-bar-modern">
-                        <div class="selection-info">
-                            <i class="fas fa-check-circle"></i>
-                            <span>${this.selectedTasks.size} tâche(s) sélectionnée(s)</span>
+
+                <!-- Filtres avancés -->
+                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                    <div class="advanced-filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-flag"></i> Priorité
+                            </label>
+                            <select class="filter-select" id="priorityFilter" 
+                                    onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            </select>
                         </div>
-                        <div class="selection-actions">
-                            <button class="btn-modern btn-ghost" onclick="window.tasksView.clearSelection()">
-                                <i class="fas fa-times"></i>
-                                Annuler
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-building"></i> Client
+                            </label>
+                            <select class="filter-select" id="clientFilter" 
+                                    onchange="window.tasksView.updateFilter('client', this.value)">
+                                ${this.buildClientFilterOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-tags"></i> Tag
+                            </label>
+                            <select class="filter-select" id="tagFilter" 
+                                    onchange="window.tasksView.updateFilter('tag', this.value)">
+                                ${this.buildTagFilterOptions()}
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-calendar"></i> Période
+                            </label>
+                            <select class="filter-select" id="dateRangeFilter" 
+                                    onchange="window.tasksView.updateFilter('dateRange', this.value)">
+                                <option value="all" ${this.currentFilters.dateRange === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="today" ${this.currentFilters.dateRange === 'today' ? 'selected' : ''}>Aujourd'hui</option>
+                                <option value="week" ${this.currentFilters.dateRange === 'week' ? 'selected' : ''}>Cette semaine</option>
+                                <option value="month" ${this.currentFilters.dateRange === 'month' ? 'selected' : ''}>Ce mois</option>
+                                <option value="older" ${this.currentFilters.dateRange === 'older' ? 'selected' : ''}>Plus ancien</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-sort"></i> Trier par
+                            </label>
+                            <select class="filter-select" id="sortByFilter" 
+                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                                <option value="updated" ${this.currentFilters.sortBy === 'updated' ? 'selected' : ''}>Dernière modif</option>
+                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                                <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                                <i class="fas fa-undo"></i> Réinitialiser
                             </button>
-                            <button class="btn-modern btn-success" onclick="window.tasksView.bulkComplete()">
-                                <i class="fas fa-check"></i>
-                                Marquer terminé
-                            </button>
-                            <button class="btn-modern btn-danger" onclick="window.tasksView.bulkDelete()">
-                                <i class="fas fa-trash"></i>
-                                Supprimer
-                            </button>
+                            <div class="active-filters-count">
+                                ${this.getActiveFiltersCount()} filtres actifs
+                            </div>
                         </div>
                     </div>
-                ` : ''}
-            </div>
+                </div>
 
-            <!-- Liste des tâches avec design cards moderne -->
-            <div class="tasks-content-modern" id="tasksContainer">
-                ${this.renderTasksList()}
-            </div>
-        </div>
-    `;
-
-    this.applyUltraModernStyles();
-    this.setupEventListeners();
-    console.log('[TasksView] Ultra-modern interface rendered');
-}
-
-// FILTRES MODERNES ET ÉPURÉS
-buildModernFilters(stats) {
-    const filters = [
-        { 
-            id: 'all', 
-            name: 'Toutes', 
-            icon: 'fas fa-layer-group', 
-            count: stats.total, 
-            color: 'blue',
-            description: 'Toutes les tâches'
-        },
-        { 
-            id: 'todo', 
-            name: 'À faire', 
-            icon: 'fas fa-clock', 
-            count: stats.todo, 
-            color: 'orange',
-            description: 'Tâches en attente'
-        },
-        { 
-            id: 'needsReply', 
-            name: 'À répondre', 
-            icon: 'fas fa-reply', 
-            count: stats.needsReply, 
-            color: 'red',
-            description: 'Emails nécessitant une réponse'
-        },
-        { 
-            id: 'completed', 
-            name: 'Terminées', 
-            icon: 'fas fa-check-circle', 
-            count: stats.completed, 
-            color: 'green',
-            description: 'Tâches accomplies'
-        }
-    ];
-
-    return `
-        <div class="filter-pills-modern">
-            ${filters.map(filter => `
-                <button class="filter-pill-modern ${this.isFilterActive(filter.id) ? 'active' : ''} ${filter.color}" 
-                        data-filter="${filter.id}"
-                        onclick="window.tasksView.quickFilter('${filter.id}')"
-                        title="${filter.description}">
-                    <div class="pill-icon-container">
-                        <i class="${filter.icon}"></i>
-                    </div>
-                    <div class="pill-content">
-                        <span class="pill-name">${filter.name}</span>
-                        <span class="pill-count">${filter.count}</span>
-                    </div>
-                    <div class="pill-indicator"></div>
-                </button>
-            `).join('')}
-        </div>
-        
-        <div class="secondary-filters-modern">
-            <div class="sort-selector">
-                <label for="sortSelect">
-                    <i class="fas fa-sort"></i>
-                    Trier par
-                </label>
-                <select id="sortSelect" class="select-modern" 
-                        onchange="window.tasksView.updateSort(this.value)">
-                    <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date de création</option>
-                    <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                    <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Échéance</option>
-                    <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
-                </select>
-            </div>
-            
-            <div class="view-options">
-                <div class="toggle-switch" onclick="window.tasksView.toggleCompactMode()">
-                    <input type="checkbox" id="compactMode" ${this.compactMode ? 'checked' : ''}>
-                    <label for="compactMode">
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-label">Mode compact</span>
-                    </label>
+                <div class="tasks-container-modern" id="tasksContainer">
+                    ${this.renderTasksList()}
                 </div>
             </div>
-        </div>
-    `;
-}
+        `;
 
-// MÉTHODE POUR APPLIQUER LES STYLES ÉLÉGANTS
-applyElegantStyles() {
-    // Supprimer les anciens styles s'ils existent
-    const oldStyles = document.getElementById('elegantTaskStyles');
-    if (oldStyles) {
-        oldStyles.remove();
+        // UTILISER LES MÊMES STYLES QUE PAGEMANAGER
+        this.addModernTaskStyles();
+        this.setupEventListeners();
+        console.log('[TasksView] Modern interface rendered with PageManager styling');
     }
-    
-    const styles = document.createElement('style');
-    styles.id = 'elegantTaskStyles';
-    styles.textContent = `
-        /* STYLES DE BASE */
-        .tasks-page-modern {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f8fafc;
-            min-height: 100vh;
-            padding: 0;
-        }
-        
-        .tasks-main-toolbar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 4px 0 2px 0;
-            border: none;
-            margin: 0 0 4px 0;
-            min-height: 48px;
-            background: transparent;
-        }
-        
-        .toolbar-left {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-            min-width: 160px;
-            flex-shrink: 0;
-        }
-        
-        .tasks-title {
-            margin: 0;
-            font-size: 26px;
-            font-weight: 700;
-            color: #1f2937;
-        }
-        
-        .tasks-count-large {
-            font-size: 15px;
-            color: #6b7280;
-            font-weight: 600;
-            background: #f3f4f6;
-            padding: 5px 12px;
-            border-radius: 14px;
-        }
-        
-        .toolbar-center {
-            flex: 1;
-            max-width: 450px;
-            min-width: 280px;
-        }
-        
-        .search-wrapper-large {
-            position: relative;
-            width: 100%;
-        }
-        
-        .search-input-large {
-            width: 100%;
-            padding: 14px 18px 14px 48px;
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-            font-size: 15px;
-            background: white;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .search-input-large:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .search-icon-large {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-            font-size: 17px;
-        }
-        
-        .search-clear-large {
-            position: absolute;
-            right: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #9ca3af;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        
-        .search-clear-large:hover {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
-        
-        .toolbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        
-        .selection-info-large {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 10px;
-            font-size: 14px;
-            color: #1e40af;
-        }
-        
-        .selection-count-large {
-            font-weight: 600;
-        }
-        
-        .btn-large {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border: 1px solid #d1d5db;
-            border-radius: 10px;
-            background: white;
-            color: #374151;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            white-space: nowrap;
-            min-height: 46px;
-            box-sizing: border-box;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .btn-large:hover {
-            background: #f9fafb;
-            border-color: #9ca3af;
-            color: #1f2937;
-            transform: translateY(-1px);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-        }
-        
-        .btn-large.btn-primary-large {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        
-        .btn-large.btn-primary-large:hover {
-            background: #5a67d8;
-            border-color: #5a67d8;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-large.btn-secondary-large {
-            background: #f9fafb;
-            color: #4b5563;
-            border-color: #d1d5db;
-        }
-        
-        .btn-large.btn-secondary-large:hover {
-            background: #f3f4f6;
-            color: #374151;
-            transform: translateY(-1px);
-        }
-        
-        .btn-text-large {
-            font-weight: 600;
-        }
-        
-        /* FILTRES ÉLÉGANTS */
-        .status-filters-large {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin: 0 0 16px 0;
-            padding: 0;
-        }
-        
-        .status-pill-elegant {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            background: white;
-            color: #475569;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        }
-        
-        .status-pill-elegant:hover {
-            border-color: #3b82f6;
-            background: #f8fafc;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-        }
-        
-        .status-pill-elegant.active {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
-            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
-        }
-        
-        .pill-icon {
-            font-size: 16px;
-        }
-        
-        .pill-text {
-            font-weight: 600;
-        }
-        
-        .pill-count {
-            background: rgba(0,0,0,0.1);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 700;
-            min-width: 20px;
-            text-align: center;
-        }
-        
-        .status-pill-elegant.active .pill-count {
-            background: rgba(255,255,255,0.25);
-        }
-        
-        /* LISTE DES TÂCHES ÉLÉGANTE */
-        .tasks-condensed-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-            border: 1px solid #f1f5f9;
-        }
-        
-        .task-condensed-elegant {
-            position: relative;
-            display: flex;
-            align-items: center;
-            background: white;
-            padding: 14px 16px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-bottom: 1px solid #f1f5f9;
-            min-height: 56px;
-        }
-        
-        .task-condensed-elegant:hover {
-            background: #fafbfc;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-        
-        .task-condensed-elegant.selected {
-            background: #f0f9ff;
-            border-left: 3px solid #3b82f6;
-        }
-        
-        .task-condensed-elegant.completed {
-            opacity: 0.6;
-            background: #f8fafc;
-        }
-        
-        /* Barre de priorité discrète */
-        .priority-stripe {
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            border-radius: 0 2px 2px 0;
-        }
-        
-        .priority-stripe.priority-urgent {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-        }
-        
-        .priority-stripe.priority-high {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .priority-stripe.priority-medium {
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-        }
-        
-        .priority-stripe.priority-low {
-            background: linear-gradient(135deg, #10b981, #059669);
-        }
-        
-        /* Checkbox minimaliste */
-        .task-checkbox-minimal {
-            margin-right: 14px;
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: #3b82f6;
-            flex-shrink: 0;
-        }
-        
-        /* Contenu principal */
-        .task-content-elegant {
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .task-main-line {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            gap: 16px;
-        }
-        
-        .task-left-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex: 1;
-            min-width: 0;
-        }
-        
-        .sender-name {
-            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
-            color: #0369a1;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            flex-shrink: 0;
-            border: 1px solid #7dd3fc;
-        }
-        
-        .task-title-elegant {
-            font-weight: 600;
-            color: #1e293b;
-            font-size: 15px;
-            line-height: 1.3;
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-        }
-        
-        .task-right-meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        
-        /* Tags et badges élégants */
-        .client-tag {
-            background: #f1f5f9;
-            color: #475569;
-            padding: 3px 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 500;
-            border: 1px solid #e2e8f0;
-            white-space: nowrap;
-        }
-        
-        .due-badge-elegant {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 8px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-        
-        .due-elegant-normal {
-            color: #64748b;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .due-elegant-week {
-            color: #0369a1;
-            background: #e0f2fe;
-            border: 1px solid #7dd3fc;
-        }
-        
-        .due-elegant-tomorrow {
-            color: #c2410c;
-            background: #fed7aa;
-            border: 1px solid #fdba74;
-        }
-        
-        .due-elegant-today {
-            color: #dc2626;
-            background: #fecaca;
-            border: 1px solid #f87171;
-            animation: pulse-gentle 2s infinite;
-        }
-        
-        .due-elegant-overdue {
-            color: #dc2626;
-            background: #fee2e2;
-            border: 1px solid #fca5a5;
-            animation: pulse-urgent 1.5s infinite;
-        }
-        
-        @keyframes pulse-gentle {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        
-        @keyframes pulse-urgent {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.9; transform: scale(1.02); }
-        }
-        
-        .task-age {
-            color: #94a3b8;
-            font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-        
-        /* Indicateur de réponse */
-        .reply-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 6px;
-            padding: 4px 8px;
-            background: linear-gradient(135deg, #fef3c7, #fed7aa);
-            color: #c2410c;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            border: 1px solid #fdba74;
-            width: fit-content;
-        }
-        
-        .reply-indicator i {
-            font-size: 10px;
-        }
-        
-        /* Actions minimalistes */
-        .task-actions-minimal {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: 12px;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        
-        .task-condensed-elegant:hover .task-actions-minimal {
-            opacity: 1;
-        }
-        
-        .action-minimal {
-            width: 28px;
-            height: 28px;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            background: white;
-            color: #64748b;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            font-size: 12px;
-        }
-        
-        .action-minimal:hover {
-            background: #f8fafc;
-            border-color: #cbd5e1;
-            transform: translateY(-1px);
-        }
-        
-        .action-minimal.reply:hover {
-            background: #dbeafe;
-            border-color: #3b82f6;
-            color: #3b82f6;
-        }
-        
-        .action-minimal.complete:hover {
-            background: #dcfce7;
-            border-color: #16a34a;
-            color: #16a34a;
-        }
-        
-        .action-minimal.details:hover {
-            background: #fef3c7;
-            border-color: #f59e0b;
-            color: #f59e0b;
-        }
-        
-        /* États spéciaux */
-        .task-condensed-elegant.completed .task-title-elegant {
-            text-decoration: line-through;
-            color: #94a3b8;
-        }
-        
-        .task-condensed-elegant.completed .sender-name {
-            opacity: 0.7;
-        }
-        
-        /* Empty state */
-        .empty-state-modern {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6b7280;
-        }
-        
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #d1d5db;
-        }
-        
-        .empty-state-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 12px;
-        }
-        
-        .empty-state-text {
-            font-size: 16px;
-            margin-bottom: 24px;
-            max-width: 400px;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.5;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .tasks-main-toolbar {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-                padding: 4px 0 2px 0;
-                margin: 0 0 6px 0;
-            }
-            
-            .toolbar-left,
-            .toolbar-center,
-            .toolbar-right {
-                width: 100%;
-                max-width: none;
-            }
-            
-            .toolbar-right {
-                justify-content: flex-end;
-            }
-            
-            .status-filters-large {
-                padding: 0;
-                gap: 8px;
-                margin: 0 0 12px 0;
-            }
-            
-            .btn-large {
-                padding: 10px 16px;
-                font-size: 14px;
-                min-height: 42px;
-            }
-            
-            .status-pill-elegant {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
-            
-            .btn-text-large {
-                display: none;
-            }
-            
-            .pill-text {
-                display: none;
-            }
-            
-            .task-condensed-elegant {
-                padding: 12px 14px;
-                min-height: 50px;
-            }
-            
-            .task-main-line {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-            }
-            
-            .task-right-meta {
-                width: 100%;
-                justify-content: space-between;
-            }
-            
-            .task-title-elegant {
-                font-size: 14px;
-            }
-            
-            .task-actions-minimal {
-                opacity: 1;
-                margin-left: 8px;
-            }
-            
-            .sender-name {
-                font-size: 11px;
-                padding: 2px 6px;
-            }
-        }
-    `;
-    
-    document.head.appendChild(styles);
-    console.log('[TasksView] Elegant styles applied successfully');
-}
-
-// FILTRES DE STATUT SIMPLIFIÉS ET ÉLÉGANTS
-buildSimpleStatusPills(stats) {
-    const pills = [
-        { id: 'all', name: 'Toutes', icon: '📋', count: stats.total },
-        { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
-        { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
-        { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
-    ];
-
-    return pills.map(pill => `
-        <button class="status-pill-elegant ${this.isFilterActive(pill.id) ? 'active' : ''}" 
-                data-filter="${pill.id}"
-                onclick="window.tasksView.quickFilter('${pill.id}')">
-            <span class="pill-icon">${pill.icon}</span>
-            <span class="pill-text">${pill.name}</span>
-            <span class="pill-count">${pill.count}</span>
-        </button>
-    `).join('');
-}
-
-// STYLES POUR LES FILTRES SIMPLIFIÉS (à ajouter au CSS)
-getStatusPillsStyles() {
-    return `
-        .status-filters-large {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin: 0 0 16px 0;
-            padding: 0;
-        }
-        
-        .status-pill-elegant {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            background: white;
-            color: #475569;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        }
-        
-        .status-pill-elegant:hover {
-            border-color: #3b82f6;
-            background: #f8fafc;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-        }
-        
-        .status-pill-elegant.active {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
-            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
-        }
-        
-        .pill-icon {
-            font-size: 16px;
-        }
-        
-        .pill-text {
-            font-weight: 600;
-        }
-        
-        .pill-count {
-            background: rgba(0,0,0,0.1);
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 700;
-            min-width: 20px;
-            text-align: center;
-        }
-        
-        .status-pill-elegant.active .pill-count {
-            background: rgba(255,255,255,0.25);
-        }
-    `;
-}
 
     // MÉTHODES IDENTIQUES À PAGEMANAGER
     buildLargeStatusPills(stats) {
@@ -2060,279 +1314,104 @@ getStatusPillsStyles() {
         `;
     }
 
-renderCondensedView(tasks) {
-    return `
-        <div class="tasks-condensed-list">
-            ${tasks.map(task => this.renderCondensedTaskItem(task)).join('')}
-        </div>
-    `;
-}
+    renderCondensedView(tasks) {
+        return `
+            <div class="tasks-condensed-list">
+                ${tasks.map(task => this.renderCondensedTaskItem(task)).join('')}
+            </div>
+        `;
+    }
 
-// CARTE DE TÂCHE ULTRA-MODERNE
-renderCondensedTaskItem(task) {
-    const isSelected = this.selectedTasks.has(task.id);
-    const isCompleted = task.status === 'completed';
-    const isCompact = this.compactMode;
-    
-    // Informations extraites
-    const clientInfo = task.hasEmail ? 
-        `${(task.emailDomain || 'email').replace('www.', '')}` : 
-        (task.client || 'Interne');
+    // RENDU IDENTIQUE À L'INTERFACE EMAIL DE PAGEMANAGER AVEC BOUTON RÉPONDRE
+    renderCondensedTaskItem(task) {
+        const isSelected = this.selectedTasks.has(task.id);
+        const isCompleted = task.status === 'completed';
+        const priorityIcon = this.getPriorityIcon(task.priority);
+        const statusIcon = this.getStatusIcon(task.status);
         
-    const dueDateInfo = this.formatDueDate(task.dueDate);
-    const senderName = task.emailFromName || task.emailFrom?.split('@')[0] || 'Système';
-    const truncatedTitle = this.smartTruncateTitle(task.title, isCompact ? 45 : 70);
-    const needsReply = task.hasEmail && !task.emailReplied && task.status !== 'completed';
-    const hasAISuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
-    
-    // Priorité avec couleurs modernes
-    const priorityConfig = {
-        urgent: { color: '#ef4444', bg: '#fef2f2', icon: 'fas fa-exclamation-triangle', label: 'Urgent' },
-        high: { color: '#f59e0b', bg: '#fef3c7', icon: 'fas fa-arrow-up', label: 'Haute' },
-        medium: { color: '#3b82f6', bg: '#eff6ff', icon: 'fas fa-minus', label: 'Normale' },
-        low: { color: '#10b981', bg: '#f0fdf4', icon: 'fas fa-arrow-down', label: 'Basse' }
-    };
-    
-    const priority = priorityConfig[task.priority] || priorityConfig.medium;
-    
-    return `
-        <div class="task-card-modern ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''} ${isCompact ? 'compact' : ''}" 
-             data-task-id="${task.id}"
-             onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
+        const clientInfo = task.hasEmail ? 
+            `@${task.emailDomain || 'email'}` : 
+            task.client || 'Interne';
             
-            <!-- Indicateur de priorité moderne -->
-            <div class="priority-indicator-modern" 
-                 style="background: ${priority.color};" 
-                 title="${priority.label}">
-            </div>
-            
-            <!-- Header de la carte -->
-            <div class="task-card-header">
-                <div class="task-selection">
-                    <input type="checkbox" 
-                           class="checkbox-modern" 
-                           ${isSelected ? 'checked' : ''}
-                           onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
-                </div>
+        const dueDateInfo = this.formatDueDate(task.dueDate);
+        
+        // Déterminer si on montre le bouton de réponse
+        const showReplyButton = task.hasEmail && !task.emailReplied && task.status !== 'completed';
+        const hasAiSuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
+        
+        return `
+            <div class="task-condensed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+                 data-task-id="${task.id}"
+                 onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
                 
-                <div class="task-sender-info">
-                    <div class="sender-avatar" style="background: ${this.generateAvatarColor(senderName)}">
-                        ${senderName.charAt(0).toUpperCase()}
-                    </div>
-                    <div class="sender-details">
-                        <span class="sender-name">${this.escapeHtml(senderName)}</span>
-                        <span class="sender-domain">@${clientInfo}</span>
-                    </div>
-                </div>
+                <input type="checkbox" 
+                       class="task-checkbox-condensed" 
+                       ${isSelected ? 'checked' : ''}
+                       onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                 
-                <div class="task-meta-badges">
-                    ${dueDateInfo.html}
-                    <div class="priority-badge" 
-                         style="background: ${priority.bg}; color: ${priority.color};"
-                         title="${priority.label}">
-                        <i class="${priority.icon}"></i>
-                    </div>
-                    <span class="task-time">${this.formatRelativeDate(task.createdAt)}</span>
-                </div>
-            </div>
-            
-            <!-- Contenu principal -->
-            <div class="task-card-body">
-                <h3 class="task-title-modern">${this.escapeHtml(truncatedTitle)}</h3>
-                
-                ${!isCompact && task.summary ? `
-                    <p class="task-summary">${this.escapeHtml(task.summary.substring(0, 120))}${task.summary.length > 120 ? '...' : ''}</p>
-                ` : ''}
-                
-                <!-- Indicateurs d'état -->
                 <div class="task-indicators">
-                    ${needsReply ? `
-                        <div class="indicator-badge reply-needed">
-                            <i class="fas fa-reply"></i>
-                            <span>Réponse attendue</span>
+                    <div class="priority-indicator priority-${task.priority}" title="Priorité ${task.priority}">
+                        ${priorityIcon}
+                    </div>
+                    <div class="status-indicator status-${task.status}" title="Statut: ${task.status}">
+                        ${statusIcon}
+                    </div>
+                </div>
+                
+                <div class="task-content-condensed">
+                    <div class="task-header-line">
+                        <span class="task-title-large">${this.escapeHtml(task.title)}</span>
+                        <div class="task-meta-right">
+                            <span class="client-badge">${clientInfo}</span>
+                            ${dueDateInfo.html}
+                            <span class="task-date-large">${this.formatRelativeDate(task.createdAt)}</span>
                         </div>
-                    ` : ''}
-                    
-                    ${hasAISuggestions ? `
-                        <div class="indicator-badge ai-ready">
-                            <i class="fas fa-robot"></i>
-                            <span>IA disponible</span>
-                        </div>
-                    ` : ''}
+                    </div>
                     
                     ${task.hasEmail ? `
-                        <div class="indicator-badge email-task">
+                        <div class="task-email-line">
                             <i class="fas fa-envelope"></i>
-                            <span>Email</span>
+                            <span class="email-from">${this.escapeHtml(task.emailFromName || task.emailFrom || 'Email')}</span>
+                            ${task.needsReply || showReplyButton ? 
+                                '<span class="reply-needed">📧 Réponse requise</span>' : ''
+                            }
+                            ${hasAiSuggestions ? 
+                                '<span class="has-ai-suggestions">🤖 Suggestions IA</span>' : ''
+                            }
+                            ${task.aiRepliesGenerated ? 
+                                '<span class="ai-generated-badge">✨ IA</span>' : ''
+                            }
+                            ${task.tags && task.tags.length > 0 ? `
+                                <div class="task-tags-line">
+                                    <i class="fas fa-tags"></i>
+                                    ${task.tags.slice(0, 3).map(tag => `
+                                        <span class="task-tag" onclick="event.stopPropagation(); window.tasksView.filterByTag('${tag}')">#${tag}</span>
+                                    `).join('')}
+                                    ${task.tags.length > 3 ? `<span class="tags-more">+${task.tags.length - 3}</span>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    ${showReplyButton ? `
+                        <div class="task-reply-section">
+                            <button class="reply-to-email-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                                    title="${hasAiSuggestions ? 'Répondre avec suggestions IA' : 'Répondre à l\'email'}">
+                                <i class="fas fa-reply"></i>
+                                <span>Répondre au mail</span>
+                                ${hasAiSuggestions ? '<i class="fas fa-robot ai-icon"></i>' : ''}
+                            </button>
                         </div>
                     ` : ''}
                 </div>
                 
-                ${!isCompact && (task.actions && task.actions.length > 0) ? `
-                    <div class="quick-actions-preview">
-                        <span class="actions-count">${task.actions.length} action(s) requise(s)</span>
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
-                ` : ''}
-            </div>
-            
-            <!-- Actions au hover -->
-            <div class="task-card-actions">
-                ${this.renderModernActions(task)}
-            </div>
-            
-            <!-- Progress bar pour les tâches avec actions -->
-            ${!isCompact && task.actions && task.actions.length > 0 ? `
-                <div class="task-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${this.calculateProgress(task)}%"></div>
-                    </div>
-                    <span class="progress-text">${this.calculateProgress(task)}% complété</span>
+                <div class="task-actions-condensed">
+                    ${this.renderQuickActions(task)}
                 </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-// TRONCATURE INTELLIGENTE DU TITRE
-smartTruncateTitle(title, maxLength = 60) {
-    if (!title || title.length <= maxLength) return title;
-    
-    // Supprimer les emojis et caractères spéciaux pour calculer la longueur
-    const cleanTitle = title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
-    
-    if (cleanTitle.length <= maxLength) return title;
-    
-    // Essayer de couper à un mot complet
-    const words = title.split(' ');
-    let truncated = '';
-    
-    for (let i = 0; i < words.length; i++) {
-        const testString = truncated + (truncated ? ' ' : '') + words[i];
-        if (testString.length > maxLength - 3) break;
-        truncated = testString;
-    }
-    
-    // Si on n'a pas réussi à garder au moins 2 mots, couper brutalement
-    if (truncated.split(' ').length < 2) {
-        truncated = title.substring(0, maxLength - 3);
-    }
-    
-    return truncated + '...';
-}
-
-// ACTIONS MINIMALISTES ET DISCRÈTES
-renderMinimalActions(task) {
-    const actions = [];
-    
-    // Bouton répondre si email non répondu
-    if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
-        actions.push(`
-            <button class="action-minimal reply" 
-                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
-                    title="Répondre">
-                <i class="fas fa-reply"></i>
-            </button>
-        `);
-    }
-    
-    // Bouton terminer si pas terminé
-    if (task.status !== 'completed') {
-        actions.push(`
-            <button class="action-minimal complete" 
-                    onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
-                    title="Marquer terminé">
-                <i class="fas fa-check"></i>
-            </button>
-        `);
-    }
-    
-    // Bouton détails (toujours présent)
-    actions.push(`
-        <button class="action-minimal details" 
-                onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
-                title="Voir détails">
-            <i class="fas fa-eye"></i>
-        </button>
-    `);
-    
-    return actions.join('');
-}
-
-// ACTIONS MODERNES AVEC DESIGN ÉPURÉ
-renderModernActions(task) {
-    const actions = [];
-    
-    // Action principale selon le contexte
-    if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
-        const hasAI = task.suggestedReplies && task.suggestedReplies.length > 0;
-        actions.push(`
-            <button class="action-btn-modern primary-action" 
-                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
-                    title="${hasAI ? 'Répondre avec suggestions IA' : 'Répondre à l\'email'}">
-                <i class="fas fa-reply"></i>
-                <span>Répondre</span>
-                ${hasAI ? '<i class="fas fa-robot ai-indicator"></i>' : ''}
-            </button>
-        `);
-    } else if (task.status !== 'completed') {
-        actions.push(`
-            <button class="action-btn-modern primary-action" 
-                    onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
-                    title="Marquer comme terminé">
-                <i class="fas fa-check"></i>
-                <span>Terminer</span>
-            </button>
-        `);
-    }
-    
-    // Actions secondaires
-    actions.push(`
-        <button class="action-btn-modern secondary-action" 
-                onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
-                title="Voir les détails">
-            <i class="fas fa-eye"></i>
-        </button>
-    `);
-    
-    if (task.hasEmail && window.aiTaskAnalyzer?.apiKey) {
-        actions.push(`
-            <button class="action-btn-modern secondary-action ai-action" 
-                    onclick="event.stopPropagation(); window.tasksView.regenerateAISuggestions('${task.id}')"
-                    title="Régénérer suggestions IA">
-                <i class="fas fa-magic"></i>
-            </button>
-        `);
-    }
-    
-    // Menu dropdown pour plus d'actions
-    actions.push(`
-        <div class="action-dropdown">
-            <button class="action-btn-modern secondary-action dropdown-trigger" 
-                    onclick="event.stopPropagation(); window.tasksView.toggleActionMenu('${task.id}')"
-                    title="Plus d'actions">
-                <i class="fas fa-ellipsis-h"></i>
-            </button>
-            <div class="dropdown-menu" id="actionMenu_${task.id}">
-                <button onclick="event.stopPropagation(); window.tasksView.editTask('${task.id}')">
-                    <i class="fas fa-edit"></i>
-                    Modifier
-                </button>
-                <button onclick="event.stopPropagation(); window.tasksView.duplicateTask('${task.id}')">
-                    <i class="fas fa-copy"></i>
-                    Dupliquer
-                </button>
-                <hr class="dropdown-divider">
-                <button class="danger" onclick="event.stopPropagation(); window.tasksView.confirmDeleteTask('${task.id}')">
-                    <i class="fas fa-trash"></i>
-                    Supprimer
-                </button>
             </div>
-        </div>
-    `);
-    
-    return actions.join('');
-}
+        `;
+    }
 
     renderQuickActions(task, minimal = false) {
         const actions = [];
@@ -2546,410 +1625,168 @@ renderModernActions(task) {
         document.body.style.overflow = 'hidden';
     }
 
-// MODAL DE DÉTAILS ULTRA-MODERNE ET STRUCTURÉ
-buildTaskDetailsContent(task) {
-    const priorityConfig = {
-        urgent: { color: '#ef4444', bg: '#fef2f2', icon: 'fas fa-exclamation-triangle', label: 'Urgent' },
-        high: { color: '#f59e0b', bg: '#fef3c7', icon: 'fas fa-arrow-up', label: 'Haute' },
-        medium: { color: '#3b82f6', bg: '#eff6ff', icon: 'fas fa-minus', label: 'Normale' },
-        low: { color: '#10b981', bg: '#f0fdf4', icon: 'fas fa-arrow-down', label: 'Basse' }
-    };
-    
-    const priority = priorityConfig[task.priority] || priorityConfig.medium;
-    const statusConfig = {
-        todo: { color: '#f59e0b', bg: '#fef3c7', icon: 'fas fa-clock', label: 'À faire' },
-        'in-progress': { color: '#3b82f6', bg: '#eff6ff', icon: 'fas fa-spinner', label: 'En cours' },
-        completed: { color: '#10b981', bg: '#f0fdf4', icon: 'fas fa-check-circle', label: 'Terminé' }
-    };
-    
-    const status = statusConfig[task.status] || statusConfig.todo;
-    const dueDateInfo = this.formatDueDate(task.dueDate);
-    
-    return `
-        <div class="task-details-modern">
-            <!-- Header élégant avec gradient -->
-            <div class="details-header-modern">
-                <div class="header-background" style="background: linear-gradient(135deg, ${priority.color}15, ${status.color}15)"></div>
-                <div class="header-content">
-                    <div class="task-avatar-large" style="background: ${this.generateAvatarColor(task.emailFromName || 'Task')}">
-                        ${task.hasEmail ? 
-                            (task.emailFromName ? task.emailFromName.charAt(0).toUpperCase() : 'E') : 
-                            'T'
-                        }
+    // CONTENU DES DÉTAILS AVEC CONTENU EMAIL COMPLET ET SUGGESTIONS DE RÉPONSE
+    buildTaskDetailsContent(task) {
+        const priorityIcon = this.getPriorityIcon(task.priority);
+        const statusLabel = this.getStatusLabel(task.status);
+        const dueDateInfo = this.formatDueDate(task.dueDate);
+        
+        return `
+            <div class="task-details-content">
+                <div class="details-header">
+                    <h1 class="task-title-details">${this.escapeHtml(task.title)}</h1>
+                    <div class="task-meta-badges">
+                        <span class="priority-badge priority-${task.priority}">
+                            ${priorityIcon} ${this.getPriorityLabel(task.priority)}
+                        </span>
+                        <span class="status-badge status-${task.status}">
+                            ${this.getStatusIcon(task.status)} ${statusLabel}
+                        </span>
+                        ${dueDateInfo.html}
                     </div>
-                    <div class="header-info">
-                        <h1 class="task-title-details-modern">${this.escapeHtml(task.title)}</h1>
-                        <div class="task-meta-details">
-                            <span class="meta-item">
-                                <i class="fas fa-clock"></i>
-                                Créé ${this.formatDetailedDate(task.createdAt)}
-                            </span>
-                            ${task.updatedAt !== task.createdAt ? `
-                                <span class="meta-item">
-                                    <i class="fas fa-edit"></i>
-                                    Modifié ${this.formatDetailedDate(task.updatedAt)}
-                                </span>
+                </div>
+
+                ${task.hasEmail ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
+                        <div class="email-details-grid">
+                            <div class="email-detail-item">
+                                <strong>Expéditeur:</strong>
+                                <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
+                            </div>
+                            ${task.emailFrom ? `
+                                <div class="email-detail-item">
+                                    <strong>Email:</strong>
+                                    <span>${this.escapeHtml(task.emailFrom)}</span>
+                                </div>
                             ` : ''}
-                        </div>
-                        <div class="status-badges-modern">
-                            <div class="badge-modern priority" style="background: ${priority.bg}; color: ${priority.color};">
-                                <i class="${priority.icon}"></i>
-                                ${priority.label}
-                            </div>
-                            <div class="badge-modern status" style="background: ${status.bg}; color: ${status.color};">
-                                <i class="${status.icon}"></i>
-                                ${status.label}
-                            </div>
-                            ${dueDateInfo.html ? `
-                                <div class="badge-modern due-date">
-                                    ${dueDateInfo.html}
+                            ${task.emailSubject ? `
+                                <div class="email-detail-item">
+                                    <strong>Sujet:</strong>
+                                    <span>${this.escapeHtml(task.emailSubject)}</span>
                                 </div>
                             ` : ''}
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Navigation par onglets -->
-            <div class="details-tabs-modern">
-                <button class="tab-btn-modern active" data-tab="overview" onclick="window.tasksView.switchDetailsTab('overview', '${task.id}')">
-                    <i class="fas fa-info-circle"></i>
-                    Aperçu
-                </button>
-                ${task.hasEmail ? `
-                    <button class="tab-btn-modern" data-tab="email" onclick="window.tasksView.switchDetailsTab('email', '${task.id}')">
-                        <i class="fas fa-envelope"></i>
-                        Email
-                        ${task.needsReply ? '<span class="notification-dot"></span>' : ''}
-                    </button>
                 ` : ''}
+
+                ${task.description && task.description !== task.title ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-align-left"></i> Description</h3>
+                        <div class="description-content">
+                            ${this.formatDescription(task.description)}
+                        </div>
+                    </div>
+                ` : ''}
+
                 ${task.actions && task.actions.length > 0 ? `
-                    <button class="tab-btn-modern" data-tab="actions" onclick="window.tasksView.switchDetailsTab('actions', '${task.id}')">
-                        <i class="fas fa-tasks"></i>
-                        Actions (${task.actions.length})
-                    </button>
-                ` : ''}
-                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
-                    <button class="tab-btn-modern" data-tab="replies" onclick="window.tasksView.switchDetailsTab('replies', '${task.id}')">
-                        <i class="fas fa-reply-all"></i>
-                        Suggestions IA (${task.suggestedReplies.length})
-                        <span class="ai-badge-mini">✨</span>
-                    </button>
-                ` : ''}
-            </div>
-
-            <!-- Contenu des onglets -->
-            <div class="details-content-modern">
-                <!-- Onglet Aperçu -->
-                <div class="tab-content-modern active" id="tab-overview-${task.id}">
-                    ${this.buildOverviewTab(task)}
-                </div>
-
-                <!-- Onglet Email -->
-                ${task.hasEmail ? `
-                    <div class="tab-content-modern" id="tab-email-${task.id}">
-                        ${this.buildEmailTab(task)}
+                    <div class="details-section">
+                        <h3><i class="fas fa-tasks"></i> Actions Requises</h3>
+                        <div class="actions-list-details">
+                            ${task.actions.map((action, idx) => `
+                                <div class="action-item-details">
+                                    <span class="action-number">${idx + 1}</span>
+                                    <span class="action-text">${this.escapeHtml(action.text)}</span>
+                                    ${action.deadline ? `
+                                        <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
                     </div>
                 ` : ''}
 
-                <!-- Onglet Actions -->
-                ${task.actions && task.actions.length > 0 ? `
-                    <div class="tab-content-modern" id="tab-actions-${task.id}">
-                        ${this.buildActionsTab(task)}
-                    </div>
-                ` : ''}
-
-                <!-- Onglet Suggestions IA -->
-                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
-                    <div class="tab-content-modern" id="tab-replies-${task.id}">
-                        ${this.buildRepliesTab(task)}
-                    </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
-}
-
-// CONTENU STRUCTURÉ POUR CHAQUE ONGLET
-
-// Onglet Aperçu
-buildOverviewTab(task) {
-    return `
-        <div class="overview-grid">
-            <!-- Description -->
-            ${task.description && task.description !== task.title ? `
-                <div class="info-card-modern">
-                    <div class="card-header-modern">
-                        <i class="fas fa-align-left"></i>
-                        <h3>Description</h3>
-                    </div>
-                    <div class="card-content-modern">
-                        ${this.formatDescription(task.description)}
-                    </div>
-                </div>
-            ` : ''}
-
-            <!-- Informations clés -->
-            ${task.keyInfo && task.keyInfo.length > 0 ? `
-                <div class="info-card-modern">
-                    <div class="card-header-modern">
-                        <i class="fas fa-key"></i>
-                        <h3>Informations Clés</h3>
-                    </div>
-                    <div class="card-content-modern">
-                        <div class="key-info-list">
+                ${task.keyInfo && task.keyInfo.length > 0 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-info-circle"></i> Informations Clés</h3>
+                        <div class="info-grid">
                             ${task.keyInfo.map(info => `
-                                <div class="key-info-item">
+                                <div class="info-item">
                                     <i class="fas fa-chevron-right"></i>
                                     <span>${this.escapeHtml(info)}</span>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
-                </div>
-            ` : ''}
+                ` : ''}
 
-            <!-- Points d'attention -->
-            ${task.risks && task.risks.length > 0 ? `
-                <div class="info-card-modern warning">
-                    <div class="card-header-modern">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Points d'Attention</h3>
-                    </div>
-                    <div class="card-content-modern">
-                        <div class="risks-list">
+                ${task.risks && task.risks.length > 0 ? `
+                    <div class="details-section attention-section">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
+                        <div class="attention-list">
                             ${task.risks.map(risk => `
-                                <div class="risk-item">
+                                <div class="attention-item">
                                     <i class="fas fa-exclamation-circle"></i>
                                     <span>${this.escapeHtml(risk)}</span>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
-                </div>
-            ` : ''}
+                ` : ''}
 
-            <!-- Métadonnées -->
-            <div class="info-card-modern">
-                <div class="card-header-modern">
-                    <i class="fas fa-info"></i>
-                    <h3>Métadonnées</h3>
-                </div>
-                <div class="card-content-modern">
-                    <div class="metadata-grid">
-                        <div class="metadata-item">
-                            <span class="metadata-label">Client</span>
-                            <span class="metadata-value">${task.client || 'Non spécifié'}</span>
-                        </div>
-                        <div class="metadata-item">
-                            <span class="metadata-label">Catégorie</span>
-                            <span class="metadata-value">${task.category || 'Général'}</span>
-                        </div>
-                        <div class="metadata-item">
-                            <span class="metadata-label">Méthode</span>
-                            <span class="metadata-value">${task.method === 'ai' ? 'IA' : 'Manuel'}</span>
-                        </div>
-                        ${task.tags && task.tags.length > 0 ? `
-                            <div class="metadata-item">
-                                <span class="metadata-label">Tags</span>
-                                <div class="tags-container">
-                                    ${task.tags.map(tag => `
-                                        <span class="tag-modern" onclick="window.tasksView.filterByTag('${tag}')">#${tag}</span>
-                                    `).join('')}
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <div class="details-section suggested-replies-section">
+                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse Personnalisées</h3>
+                        <div class="suggested-replies-container">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="suggested-reply-card">
+                                    <div class="reply-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <button class="copy-reply-btn" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${task.id}')">
+                                            <i class="fas fa-copy"></i> Copier
+                                        </button>
+                                    </div>
+                                    <div class="reply-subject">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                    <div class="reply-actions">
+                                        <button class="use-reply-btn" onclick="window.tasksView.useReply('${task.id}', ${idx})">
+                                            <i class="fas fa-paper-plane"></i> Utiliser cette réponse
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Onglet Email
-buildEmailTab(task) {
-    return `
-        <div class="email-tab-content">
-            <!-- Informations email -->
-            <div class="info-card-modern">
-                <div class="card-header-modern">
-                    <i class="fas fa-envelope"></i>
-                    <h3>Détails de l'Email</h3>
-                </div>
-                <div class="card-content-modern">
-                    <div class="email-details-modern">
-                        <div class="email-detail-row">
-                            <span class="detail-label">Expéditeur</span>
-                            <span class="detail-value">
-                                <strong>${this.escapeHtml(task.emailFromName || 'Inconnu')}</strong>
-                                ${task.emailFrom ? `<br><small>${this.escapeHtml(task.emailFrom)}</small>` : ''}
-                            </span>
-                        </div>
-                        ${task.emailSubject ? `
-                            <div class="email-detail-row">
-                                <span class="detail-label">Sujet</span>
-                                <span class="detail-value">${this.escapeHtml(task.emailSubject)}</span>
-                            </div>
-                        ` : ''}
-                        <div class="email-detail-row">
-                            <span class="detail-label">Statut</span>
-                            <span class="detail-value">
-                                ${task.emailReplied ? 
-                                    '<span class="status-replied"><i class="fas fa-check"></i> Répondu</span>' : 
-                                    '<span class="status-pending"><i class="fas fa-clock"></i> En attente de réponse</span>'
-                                }
-                            </span>
+                            `).join('')}
                         </div>
                     </div>
-                </div>
-            </div>
+                ` : ''}
 
-            <!-- Contenu de l'email -->
-            ${task.emailContent && task.emailContent.length > 100 ? `
-                <div class="info-card-modern">
-                    <div class="card-header-modern">
-                        <i class="fas fa-envelope-open"></i>
-                        <h3>Contenu de l'Email</h3>
-                        ${task.emailHtmlContent ? `
-                            <div class="view-toggle">
-                                <button class="toggle-btn active" onclick="window.tasksView.switchEmailView('formatted', '${task.id}')">
-                                    Formaté
-                                </button>
-                                <button class="toggle-btn" onclick="window.tasksView.switchEmailView('text', '${task.id}')">
-                                    Texte
-                                </button>
-                            </div>
-                        ` : ''}
-                    </div>
-                    <div class="card-content-modern">
-                        <div class="email-content-container">
+                ${task.emailContent && task.emailContent.length > 100 ? `
+                    <div class="details-section">
+                        <h3><i class="fas fa-envelope-open"></i> Contenu de l'Email</h3>
+                        <div class="email-content-section">
                             ${task.emailHtmlContent ? `
-                                <div id="email-formatted-${task.id}" class="email-content-view active">
-                                    ${task.emailHtmlContent}
+                                <div class="email-content-tabs">
+                                    <button class="tab-btn active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
+                                        <i class="fas fa-eye"></i> Vue formatée
+                                    </button>
+                                    <button class="tab-btn" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
+                                        <i class="fas fa-code"></i> Vue texte
+                                    </button>
                                 </div>
-                                <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
-                                    ${this.formatEmailContent(task.emailContent)}
+                                <div class="email-content-box">
+                                    <div id="email-html-${task.id}" class="email-content-view active">
+                                        ${task.emailHtmlContent}
+                                    </div>
+                                    <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
+                                        ${this.formatEmailContent(task.emailContent)}
+                                    </div>
                                 </div>
                             ` : `
-                                <div class="email-content-view">
+                                <div class="email-content-box">
                                     ${this.formatEmailContent(task.emailContent)}
                                 </div>
                             `}
                         </div>
                     </div>
-                </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-// Onglet Actions
-buildActionsTab(task) {
-    return `
-        <div class="actions-tab-content">
-            <div class="info-card-modern">
-                <div class="card-header-modern">
-                    <i class="fas fa-tasks"></i>
-                    <h3>Actions Requises</h3>
-                    <div class="progress-indicator">
-                        <span class="progress-text">${this.calculateProgress(task)}% complété</span>
-                        <div class="progress-bar-mini">
-                            <div class="progress-fill-mini" style="width: ${this.calculateProgress(task)}%"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-content-modern">
-                    <div class="actions-list-modern">
-                        ${task.actions.map((action, idx) => `
-                            <div class="action-item-modern" data-action-id="${idx}">
-                                <div class="action-checkbox">
-                                    <input type="checkbox" 
-                                           id="action_${task.id}_${idx}" 
-                                           ${action.completed ? 'checked' : ''}
-                                           onchange="window.tasksView.toggleActionComplete('${task.id}', ${idx})">
-                                    <label for="action_${task.id}_${idx}"></label>
-                                </div>
-                                <div class="action-content">
-                                    <div class="action-text ${action.completed ? 'completed' : ''}">${this.escapeHtml(action.text)}</div>
-                                    ${action.deadline ? `
-                                        <div class="action-deadline">
-                                            <i class="fas fa-calendar"></i>
-                                            ${this.formatDeadline(action.deadline)}
-                                        </div>
-                                    ` : ''}
-                                </div>
-                                <div class="action-number">${idx + 1}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Onglet Suggestions IA
-buildRepliesTab(task) {
-    return `
-        <div class="replies-tab-content">
-            <!-- Header IA -->
-            <div class="ai-header-modern">
-                <div class="ai-info">
-                    <div class="ai-avatar">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <div class="ai-details">
-                        <h3>Suggestions de Réponse Intelligentes</h3>
-                        <p>Réponses personnalisées générées par Claude AI</p>
-                        ${task.aiRepliesGeneratedAt ? `
-                            <small>Générées le ${new Date(task.aiRepliesGeneratedAt).toLocaleString('fr-FR')}</small>
-                        ` : ''}
-                    </div>
-                </div>
-                ${window.aiTaskAnalyzer?.apiKey ? `
-                    <button class="btn-modern btn-secondary" onclick="window.tasksView.regenerateAISuggestions('${task.id}')">
-                        <i class="fas fa-refresh"></i>
-                        Régénérer
-                    </button>
                 ` : ''}
             </div>
-
-            <!-- Liste des suggestions -->
-            <div class="suggestions-grid">
-                ${task.suggestedReplies.map((reply, idx) => `
-                    <div class="suggestion-card-modern">
-                        <div class="suggestion-header">
-                            <div class="tone-badge ${reply.tone}">
-                                ${this.getReplyToneIcon(reply.tone)}
-                                ${this.getReplyToneLabel(reply.tone)}
-                            </div>
-                            <div class="suggestion-actions">
-                                <button class="btn-icon-modern" 
-                                        onclick="window.tasksView.copyReplyToClipboard(${idx}, '${task.id}')"
-                                        title="Copier">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                                <button class="btn-icon-modern primary" 
-                                        onclick="window.tasksView.useReply('${task.id}', ${idx})"
-                                        title="Utiliser">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="suggestion-content">
-                            <div class="reply-subject">
-                                <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
-                            </div>
-                            <div class="reply-body">
-                                ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
+        `;
+    }
 
     // NOUVELLE MÉTHODE POUR GÉRER LES ONGLETS EMAIL
     switchEmailTab(tabType, taskId) {
@@ -3155,47 +1992,37 @@ buildRepliesTab(task) {
         return labels[tone] || 'Neutre';
     }
 
-// FORMAT DATE ÉLÉGANT ET SOBRE
-formatDueDate(dateString) {
-    if (!dateString) return { html: '', text: '' };
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-    
-    let className = 'due-elegant-normal';
-    let text = '';
-    let icon = '📅';
-    
-    if (diffDays < 0) {
-        className = 'due-elegant-overdue';
-        text = `${Math.abs(diffDays)}j retard`;
-        icon = '⚠️';
-    } else if (diffDays === 0) {
-        className = 'due-elegant-today';
-        text = 'Aujourd\'hui';
-        icon = '🎯';
-    } else if (diffDays === 1) {
-        className = 'due-elegant-tomorrow';
-        text = 'Demain';
-        icon = '⭐';
-    } else if (diffDays <= 7) {
-        className = 'due-elegant-week';
-        text = `${diffDays}j`;
-        icon = '📅';
-    } else {
-        text = date.toLocaleDateString('fr-FR', { 
-            day: 'numeric', 
-            month: 'short' 
-        });
-        icon = '📅';
+    formatDueDate(dateString) {
+        if (!dateString) return { html: '', text: '' };
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'due-date-normal';
+        let text = '';
+        
+        if (diffDays < 0) {
+            className = 'due-date-overdue';
+            text = `En retard de ${Math.abs(diffDays)}j`;
+        } else if (diffDays === 0) {
+            className = 'due-date-today';
+            text = 'Aujourd\'hui';
+        } else if (diffDays === 1) {
+            className = 'due-date-tomorrow';
+            text = 'Demain';
+        } else if (diffDays <= 7) {
+            className = 'due-date-soon';
+            text = `${diffDays}j`;
+        } else {
+            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+        
+        return {
+            html: `<span class="due-date-badge ${className}">📅 ${text}</span>`,
+            text: text
+        };
     }
-    
-    return {
-        html: `<span class="due-badge-elegant ${className}">${icon} ${text}</span>`,
-        text: text
-    };
-}
 
     formatRelativeDate(dateString) {
         const date = new Date(dateString);
