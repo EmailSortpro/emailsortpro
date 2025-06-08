@@ -2787,7 +2787,7 @@ class TasksView {
                 font-size: var(--btn-font-size);
             }
             
-            /* ===== BARRE DE CONTRÔLES AVEC HARMONISATION ABSOLUE ===== */
+            /* ===== BARRE DE CONTRÔLES AVEC ALIGNEMENT PARFAIT ===== */
             .controls-bar-harmonized {
                 display: flex;
                 align-items: center;
@@ -2798,7 +2798,7 @@ class TasksView {
                 border: var(--border-width) solid rgba(255, 255, 255, 0.2);
                 border-radius: var(--card-border-radius);
                 padding: var(--gap-medium);
-                margin-bottom: var(--gap-large);
+                margin-bottom: var(--gap-medium);
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
                 min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
                 box-sizing: border-box;
@@ -2879,6 +2879,54 @@ class TasksView {
                 transform: translateY(-50%) scale(1.1);
             }
             
+            /* MODES DE VUE PARFAITEMENT ALIGNÉS */
+            .view-modes-harmonized {
+                display: flex;
+                background: #f8fafc;
+                border: var(--border-width) solid #e2e8f0;
+                border-radius: var(--btn-border-radius);
+                padding: var(--gap-tiny);
+                gap: 2px;
+                height: var(--btn-height);
+                box-sizing: border-box;
+                align-items: center;
+            }
+            
+            .view-mode-harmonized {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--btn-gap);
+                padding: 0 var(--btn-padding-horizontal);
+                height: calc(var(--btn-height) - var(--gap-small));
+                border: none;
+                background: transparent;
+                color: #6b7280;
+                border-radius: calc(var(--btn-border-radius) - 2px);
+                cursor: pointer;
+                transition: all var(--transition-speed) ease;
+                font-size: var(--btn-font-size);
+                font-weight: var(--btn-font-weight);
+                white-space: nowrap;
+                box-sizing: border-box;
+                min-width: 120px;
+                flex: 1;
+            }
+            
+            .view-mode-harmonized:hover {
+                background: rgba(255, 255, 255, 0.8);
+                color: #374151;
+                transform: translateY(-1px);
+            }
+            
+            .view-mode-harmonized.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: var(--shadow-base);
+                font-weight: 700;
+                transform: translateY(-1px);
+            }
+            
             /* ACTIONS PRINCIPALES - TOUTES À LA MÊME HAUTEUR */
             .action-buttons-harmonized {
                 display: flex;
@@ -2898,11 +2946,11 @@ class TasksView {
                 box-sizing: border-box;
             }
             
-            /* ===== FILTRES DE STATUT AGRANDIS ET MIEUX ALIGNÉS ===== */
+            /* ===== FILTRES DE STATUT SANS ESPACES EXCESSIFS ===== */
             .status-filters-harmonized {
                 display: flex;
                 gap: var(--gap-small);
-                margin-bottom: var(--gap-large);
+                margin-bottom: var(--gap-medium);
                 flex-wrap: wrap;
                 align-items: center;
                 justify-content: flex-start;
@@ -3361,7 +3409,7 @@ class TasksView {
                 color: #7c3aed;
             }
 
-            /* ===== VUE GROUPÉE SANS ESPACEMENT ===== */
+            /* ===== VUE GROUPÉE SANS ESPACEMENT ENTRE LES TÂCHES ===== */
             .tasks-grouped-harmonized {
                 display: flex;
                 flex-direction: column;
@@ -3462,12 +3510,18 @@ class TasksView {
                 padding: 0;
             }
             
+            /* SUPPRESSION TOTALE DES ESPACES ENTRE LES TÂCHES GROUPÉES */
             .group-content-harmonized .task-harmonized-card {
                 border-radius: 0;
                 border: none;
                 border-bottom: 1px solid #f1f1f1;
                 background: #fafbfc;
                 margin: 0;
+                padding: var(--card-padding);
+                box-shadow: none;
+                min-height: var(--card-height);
+                max-height: var(--card-height);
+                box-sizing: border-box;
             }
             
             .group-content-harmonized .task-harmonized-card:last-child {
@@ -3480,6 +3534,15 @@ class TasksView {
                 box-shadow: none;
                 border-left: 3px solid #6366f1;
                 z-index: 1;
+            }
+            
+            .group-content-harmonized .task-harmonized-card.selected {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid #3b82f6;
+                border-color: #3b82f6;
+                z-index: 2;
+                transform: none;
+                box-shadow: none;
             }
             
             /* ===== ÉTAT VIDE HARMONISÉ ===== */
