@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.0 - Interface moderne épurée avec détails dans la ligne
+// PageManager.js - Version 11.1 - Interface moderne épurée avec boutons catégories multi-lignes
 
 class PageManager {
     constructor() {
@@ -26,7 +26,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v11.0 - Interface moderne épurée');
+        console.log('[PageManager] Initialized v11.1 - Interface moderne avec boutons catégories multi-lignes');
     }
 
     // =====================================
@@ -173,8 +173,14 @@ class PageManager {
                         </div>
                     </div>
 
-                    <!-- Filtres de catégories harmonisés -->
-                    <div class="status-filters-harmonized">
+                    <!-- Texte explicatif -->
+                    <div class="explanation-text-harmonized">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                    </div>
+
+                    <!-- Filtres de catégories harmonisés et multi-lignes -->
+                    <div class="status-filters-harmonized-multiline">
                         ${this.buildHarmonizedCategoryTabs(categoryCounts, totalEmails, categories)}
                     </div>
 
@@ -230,11 +236,11 @@ class PageManager {
         }
         
         return tabs.map(tab => `
-            <button class="status-pill-harmonized ${this.currentCategory === tab.id ? 'active' : ''}" 
+            <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''}" 
                     onclick="window.pageManager.filterByCategory('${tab.id}')">
-                <span class="pill-icon-harmonized">${tab.icon}</span>
-                <span class="pill-text-harmonized">${tab.name}</span>
-                <span class="pill-count-harmonized">${tab.count}</span>
+                <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
+                <span class="pill-text-harmonized-multiline">${tab.name}</span>
+                <span class="pill-count-harmonized-multiline">${tab.count}</span>
             </button>
         `).join('');
     }
@@ -450,7 +456,7 @@ class PageManager {
         this.currentCategory = categoryId;
         
         // Update tabs
-        document.querySelectorAll('.status-pill-harmonized').forEach(tab => {
+        document.querySelectorAll('.status-pill-harmonized-multiline').forEach(tab => {
             tab.classList.remove('active');
         });
         event.target.classList.add('active');
@@ -881,32 +887,57 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
             }
+
+            /* NOUVEAU : Texte explicatif */
+            .explanation-text-harmonized {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                border-radius: var(--card-border-radius);
+                padding: var(--gap-medium);
+                margin-bottom: var(--gap-medium);
+                display: flex;
+                align-items: center;
+                gap: var(--gap-medium);
+                color: #1e40af;
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 1.5;
+                backdrop-filter: blur(10px);
+            }
+
+            .explanation-text-harmonized i {
+                font-size: 16px;
+                color: #3b82f6;
+                flex-shrink: 0;
+            }
             
-            /* Filtres de statut identiques et élargis */
-            .status-filters-harmonized {
+            /* NOUVEAU : Filtres de statut multi-lignes et ajustés */
+            .status-filters-harmonized-multiline {
                 display: flex;
                 gap: var(--gap-small);
                 margin-bottom: var(--gap-medium);
-                flex-wrap: nowrap;
-                align-items: center;
-                justify-content: stretch;
+                flex-wrap: wrap;
+                align-items: stretch;
+                justify-content: flex-start;
                 width: 100%;
+                min-height: auto;
             }
             
-            .status-filters-harmonized .status-pill-harmonized {
-                height: var(--pill-height);
-                min-height: var(--pill-height);
-                max-height: var(--pill-height);
-                padding: var(--pill-padding-vertical) var(--pill-padding-horizontal);
-                font-size: var(--pill-font-size);
+            .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                height: auto;
+                min-height: 56px;
+                padding: var(--gap-medium) var(--gap-large);
+                font-size: 14px;
                 font-weight: 700;
-                flex: 1;
-                min-width: 0;
+                flex: 0 1 calc(20% - var(--gap-small));
+                min-width: 140px;
+                max-width: 200px;
                 box-sizing: border-box;
                 border-radius: var(--pill-border-radius);
                 box-shadow: var(--shadow-base);
                 transition: all var(--transition-speed) ease;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
@@ -914,16 +945,19 @@ class PageManager {
                 color: #374151;
                 border: var(--border-width) solid #e5e7eb;
                 cursor: pointer;
+                gap: var(--gap-tiny);
+                position: relative;
+                overflow: hidden;
             }
             
-            .status-pill-harmonized:hover {
+            .status-pill-harmonized-multiline:hover {
                 border-color: #3b82f6;
                 background: #f0f9ff;
                 transform: translateY(-2px);
                 box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
             }
             
-            .status-pill-harmonized.active {
+            .status-pill-harmonized-multiline.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 color: white;
                 border-color: #3b82f6;
@@ -931,33 +965,37 @@ class PageManager {
                 transform: translateY(-2px);
             }
             
-            .pill-icon-harmonized {
-                font-size: 16px;
+            .pill-icon-harmonized-multiline {
+                font-size: 18px;
                 line-height: 1;
                 flex-shrink: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                margin-bottom: 2px;
             }
             
-            .pill-text-harmonized {
+            .pill-text-harmonized-multiline {
                 font-weight: 700;
-                line-height: 1;
+                font-size: 13px;
+                line-height: 1.2;
                 flex-shrink: 0;
                 text-align: center;
-                flex: 1;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                word-break: break-word;
+                hyphens: auto;
+                margin-bottom: 2px;
             }
             
-            .pill-count-harmonized {
+            .pill-count-harmonized-multiline {
                 background: rgba(0, 0, 0, 0.1);
-                padding: 6px 10px;
-                border-radius: 10px;
-                font-size: 12px;
+                padding: 4px 8px;
+                border-radius: 8px;
+                font-size: 11px;
                 font-weight: 800;
-                min-width: 24px;
+                min-width: 20px;
                 text-align: center;
                 line-height: 1;
                 flex-shrink: 0;
@@ -966,7 +1004,7 @@ class PageManager {
                 justify-content: center;
             }
             
-            .status-pill-harmonized.active .pill-count-harmonized {
+            .status-pill-harmonized-multiline.active .pill-count-harmonized-multiline {
                 background: rgba(255, 255, 255, 0.25);
             }
             
@@ -1599,13 +1637,12 @@ class PageManager {
                     --action-btn-size: 34px;
                 }
                 
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 44px;
-                    min-height: 44px;
-                    max-height: 44px;
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                    flex: 0 1 calc(25% - var(--gap-small));
+                    min-width: 120px;
+                    max-width: 180px;
+                    min-height: 52px;
                     font-size: 13px;
-                    flex: 1;
-                    min-width: 0;
                 }
             }
             
@@ -1647,31 +1684,27 @@ class PageManager {
                     align-items: center;
                 }
                 
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 40px;
-                    min-height: 40px;
-                    max-height: 40px;
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                    flex: 0 1 calc(33.333% - var(--gap-small));
+                    min-width: 100px;
+                    max-width: 160px;
+                    min-height: 48px;
                     font-size: 12px;
-                    flex: 1;
-                    min-width: 0;
-                    padding: 0 12px;
                 }
             }
             
             @media (max-width: 768px) {
-                .status-filters-harmonized {
-                    flex-wrap: wrap;
+                .status-filters-harmonized-multiline {
                     justify-content: center;
                 }
                 
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 36px;
-                    min-height: 36px;
-                    max-height: 36px;
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                    flex: 0 1 calc(50% - var(--gap-small));
+                    min-width: 80px;
+                    max-width: 140px;
+                    min-height: 44px;
                     font-size: 11px;
-                    flex: 1 1 calc(50% - 4px);
-                    min-width: 0;
-                    padding: 0 10px;
+                    padding: var(--gap-small) var(--gap-medium);
                 }
                 
                 .view-mode-harmonized span,
@@ -1679,20 +1712,28 @@ class PageManager {
                     display: none;
                 }
                 
-                .pill-text-harmonized {
-                    display: none;
+                .pill-text-harmonized-multiline {
+                    font-size: 11px;
                 }
             }
             
             @media (max-width: 480px) {
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 32px;
-                    min-height: 32px;
-                    max-height: 32px;
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                    flex: 0 1 calc(50% - var(--gap-tiny));
+                    min-width: 70px;
+                    max-width: 120px;
+                    min-height: 40px;
                     font-size: 10px;
-                    flex: 1 1 calc(50% - 2px);
-                    min-width: 0;
-                    padding: 0 8px;
+                    padding: var(--gap-tiny) var(--gap-small);
+                }
+                
+                .pill-text-harmonized-multiline {
+                    font-size: 10px;
+                }
+                
+                .explanation-text-harmonized {
+                    font-size: 12px;
+                    padding: var(--gap-small);
                 }
             }
         `;
@@ -2716,4 +2757,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.0 loaded - Interface harmonisée avec TasksView');
+console.log('✅ PageManager v11.1 loaded - Interface harmonisée avec boutons catégories multi-lignes');
