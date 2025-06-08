@@ -446,7 +446,7 @@
             color: rgba(255, 255, 255, 0.8) !important;
         }
 
-        /* Navigation SOBRE ET CLASSE - PLEINE LARGEUR */
+        /* Navigation HOMOGÈNE ET PROPRE */
         .app-nav {
             position: fixed;
             top: 60px;
@@ -457,17 +457,16 @@
             z-index: 999;
             display: none; /* Caché par défaut */
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden; /* Pas de scroll du tout */
+            overflow: hidden;
         }
 
         #mainNav {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
             align-items: center;
-            justify-content: space-between;
-            padding: 10px 0;
             height: 100%;
             width: 100%;
-            overflow: hidden; /* Pas de scroll */
+            gap: 0;
         }
 
         .nav-item {
@@ -475,8 +474,7 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            padding: 8px 18px;
-            border-radius: 6px;
+            padding: 12px 8px;
             background: transparent;
             border: none;
             cursor: pointer;
@@ -485,21 +483,23 @@
             color: rgba(255, 255, 255, 0.85);
             transition: all 0.2s ease;
             white-space: nowrap;
-            position: relative;
-            flex: 1; /* Prendre toute la largeur disponible */
-            margin: 0 1px;
+            height: 100%;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-item:last-child {
+            border-right: none;
         }
 
         .nav-item:hover {
             background: rgba(255, 255, 255, 0.15);
             color: white;
-            transform: translateY(0);
         }
 
         .nav-item.active {
             background: rgba(255, 255, 255, 0.2);
             color: white;
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.3);
         }
 
         .nav-item i {
@@ -739,22 +739,22 @@
             }
             
             #mainNav {
-                justify-content: space-between;
-                overflow: hidden; /* Pas de scroll */
-                padding: 12px 0;
+                grid-template-columns: repeat(6, 1fr);
                 gap: 0;
             }
 
             .nav-item {
-                flex: 1;
-                padding: 6px 8px;
+                padding: 8px 4px;
                 font-size: 11px;
-                margin: 0;
-                justify-content: center;
+                border-right: 1px solid rgba(255, 255, 255, 0.1);
             }
 
             .nav-item span {
                 display: none; /* Masquer le texte sur mobile, garder seulement les icônes */
+            }
+
+            .nav-item i {
+                font-size: 16px; /* Icônes plus grandes sur mobile */
             }
 
             .user-name {
