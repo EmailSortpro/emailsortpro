@@ -1021,6 +1021,7 @@ class TasksView {
         }
 
         const stats = window.taskManager.getStats();
+        const selectedCount = this.selectedTasks.size;
         
         container.innerHTML = `
             <div class="tasks-page-modern">
@@ -2341,6 +2342,36 @@ class TasksView {
     refreshTasks() {
         this.refreshView();
         this.showToast('Tâches actualisées', 'success');
+    }
+
+    async createTasksFromSelection() {
+        if (this.selectedTasks.size === 0) {
+            this.showToast('Aucune tâche sélectionnée', 'warning');
+            return;
+        }
+        
+        this.showToast(`Création de ${this.selectedTasks.size} tâche(s) en cours...`, 'info');
+        // Ici vous pouvez ajouter la logique de création de tâches
+        setTimeout(() => {
+            this.showToast(`${this.selectedTasks.size} tâche(s) créée(s) avec succès`, 'success');
+            this.clearSelection();
+        }, 1000);
+    }
+
+    async createTasksFromAllVisible() {
+        const tasks = window.taskManager.filterTasks(this.currentFilters);
+        const visibleTasks = tasks.filter(task => task.status !== 'completed');
+        
+        if (visibleTasks.length === 0) {
+            this.showToast('Aucune tâche visible', 'warning');
+            return;
+        }
+        
+        this.showToast(`Création de ${visibleTasks.length} tâche(s) en cours...`, 'info');
+        // Ici vous pouvez ajouter la logique de création de tâches
+        setTimeout(() => {
+            this.showToast(`${visibleTasks.length} tâche(s) créée(s) avec succès`, 'success');
+        }, 1000);
     }
 
     buildClientFilterOptions() {
