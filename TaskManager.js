@@ -1059,7 +1059,7 @@ class TasksView {
         });
     }
 
-// MÉTHODE RENDER COMPLÈTE AVEC STYLES INTÉGRÉS
+// MÉTHODE RENDER MODERNE ET STRUCTURÉE
 render(container) {
     if (!container) {
         console.error('[TasksView] No container provided');
@@ -1068,11 +1068,12 @@ render(container) {
 
     if (!window.taskManager || !window.taskManager.initialized) {
         container.innerHTML = `
-            <div class="loading-state">
-                <div class="loading-icon">
-                    <i class="fas fa-spinner fa-spin"></i>
+            <div class="modern-loading-state">
+                <div class="loading-spinner-modern">
+                    <div class="spinner-ring"></div>
                 </div>
-                <p>Chargement des tâches...</p>
+                <h3>Chargement des tâches...</h3>
+                <p>Préparation de l'interface</p>
             </div>
         `;
         
@@ -1086,64 +1087,183 @@ render(container) {
 
     const stats = window.taskManager.getStats();
     
-    // Interface simplifiée et élégante
     container.innerHTML = `
-        <div class="tasks-page-modern">
-            <!-- Barre principale simplifiée -->
-            <div class="tasks-main-toolbar">
-                <div class="toolbar-left">
-                    <h1 class="tasks-title">Tâches</h1>
-                    <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
-                </div>
-                
-                <div class="toolbar-center">
-                    <div class="search-wrapper-large">
-                        <i class="fas fa-search search-icon-large"></i>
-                        <input type="text" 
-                               class="search-input-large" 
-                               id="taskSearchInput"
-                               placeholder="Rechercher..." 
-                               value="${this.currentFilters.search}">
-                        <button class="search-clear-large" id="searchClearBtn" 
-                                style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
-                                onclick="window.tasksView.clearSearch()">
-                            <i class="fas fa-times"></i>
+        <div class="tasks-page-ultra-modern">
+            <!-- Header moderne avec gradient -->
+            <div class="tasks-header-modern">
+                <div class="header-content">
+                    <div class="title-section">
+                        <h1 class="page-title-modern">
+                            <i class="fas fa-tasks title-icon"></i>
+                            Gestionnaire de Tâches
+                        </h1>
+                        <div class="stats-overview">
+                            <span class="stat-item">
+                                <span class="stat-number">${stats.total}</span>
+                                <span class="stat-label">Total</span>
+                            </span>
+                            <span class="stat-divider">•</span>
+                            <span class="stat-item">
+                                <span class="stat-number">${stats.todo}</span>
+                                <span class="stat-label">À faire</span>
+                            </span>
+                            <span class="stat-divider">•</span>
+                            <span class="stat-item urgent">
+                                <span class="stat-number">${stats.needsReply}</span>
+                                <span class="stat-label">À répondre</span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="header-actions">
+                        <div class="search-container-modern">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" 
+                                       class="search-input-modern" 
+                                       id="taskSearchInput"
+                                       placeholder="Rechercher par titre, expéditeur ou client..." 
+                                       value="${this.currentFilters.search}">
+                                <button class="search-clear-btn" id="searchClearBtn" 
+                                        style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                                        onclick="window.tasksView.clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button class="btn-modern btn-primary" onclick="window.tasksView.showCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            <span>Nouvelle tâche</span>
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Filtres modernes avec design épuré -->
+            <div class="filters-section-modern">
+                <div class="filters-container">
+                    ${this.buildModernFilters(stats)}
+                </div>
                 
-                <div class="toolbar-right">
-                    ${this.selectedTasks.size > 0 ? `
-                        <div class="selection-info-large">
-                            <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
-                            <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
+                ${this.selectedTasks.size > 0 ? `
+                    <div class="selection-bar-modern">
+                        <div class="selection-info">
+                            <i class="fas fa-check-circle"></i>
+                            <span>${this.selectedTasks.size} tâche(s) sélectionnée(s)</span>
+                        </div>
+                        <div class="selection-actions">
+                            <button class="btn-modern btn-ghost" onclick="window.tasksView.clearSelection()">
                                 <i class="fas fa-times"></i>
+                                Annuler
+                            </button>
+                            <button class="btn-modern btn-success" onclick="window.tasksView.bulkComplete()">
+                                <i class="fas fa-check"></i>
+                                Marquer terminé
+                            </button>
+                            <button class="btn-modern btn-danger" onclick="window.tasksView.bulkDelete()">
+                                <i class="fas fa-trash"></i>
+                                Supprimer
                             </button>
                         </div>
-                    ` : ''}
-                    <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
-                        <i class="fas fa-plus"></i>
-                        <span class="btn-text-large">Nouvelle tâche</span>
-                    </button>
-                </div>
+                    </div>
+                ` : ''}
             </div>
 
-            <!-- Filtres de statut simplifiés -->
-            <div class="status-filters-large">
-                ${this.buildSimpleStatusPills(stats)}
-            </div>
-
-            <!-- Liste des tâches avec le nouveau style -->
-            <div class="tasks-container-modern" id="tasksContainer">
+            <!-- Liste des tâches avec design cards moderne -->
+            <div class="tasks-content-modern" id="tasksContainer">
                 ${this.renderTasksList()}
             </div>
         </div>
     `;
 
-    // Appliquer les styles élégants DIRECTEMENT ICI
-    this.applyElegantStyles();
+    this.applyUltraModernStyles();
     this.setupEventListeners();
-    console.log('[TasksView] Elegant interface rendered');
+    console.log('[TasksView] Ultra-modern interface rendered');
+}
+
+// FILTRES MODERNES ET ÉPURÉS
+buildModernFilters(stats) {
+    const filters = [
+        { 
+            id: 'all', 
+            name: 'Toutes', 
+            icon: 'fas fa-layer-group', 
+            count: stats.total, 
+            color: 'blue',
+            description: 'Toutes les tâches'
+        },
+        { 
+            id: 'todo', 
+            name: 'À faire', 
+            icon: 'fas fa-clock', 
+            count: stats.todo, 
+            color: 'orange',
+            description: 'Tâches en attente'
+        },
+        { 
+            id: 'needsReply', 
+            name: 'À répondre', 
+            icon: 'fas fa-reply', 
+            count: stats.needsReply, 
+            color: 'red',
+            description: 'Emails nécessitant une réponse'
+        },
+        { 
+            id: 'completed', 
+            name: 'Terminées', 
+            icon: 'fas fa-check-circle', 
+            count: stats.completed, 
+            color: 'green',
+            description: 'Tâches accomplies'
+        }
+    ];
+
+    return `
+        <div class="filter-pills-modern">
+            ${filters.map(filter => `
+                <button class="filter-pill-modern ${this.isFilterActive(filter.id) ? 'active' : ''} ${filter.color}" 
+                        data-filter="${filter.id}"
+                        onclick="window.tasksView.quickFilter('${filter.id}')"
+                        title="${filter.description}">
+                    <div class="pill-icon-container">
+                        <i class="${filter.icon}"></i>
+                    </div>
+                    <div class="pill-content">
+                        <span class="pill-name">${filter.name}</span>
+                        <span class="pill-count">${filter.count}</span>
+                    </div>
+                    <div class="pill-indicator"></div>
+                </button>
+            `).join('')}
+        </div>
+        
+        <div class="secondary-filters-modern">
+            <div class="sort-selector">
+                <label for="sortSelect">
+                    <i class="fas fa-sort"></i>
+                    Trier par
+                </label>
+                <select id="sortSelect" class="select-modern" 
+                        onchange="window.tasksView.updateSort(this.value)">
+                    <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date de création</option>
+                    <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                    <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Échéance</option>
+                    <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
+                </select>
+            </div>
+            
+            <div class="view-options">
+                <div class="toggle-switch" onclick="window.tasksView.toggleCompactMode()">
+                    <input type="checkbox" id="compactMode" ${this.compactMode ? 'checked' : ''}>
+                    <label for="compactMode">
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Mode compact</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 // MÉTHODE POUR APPLIQUER LES STYLES ÉLÉGANTS
@@ -1947,68 +2067,129 @@ renderCondensedView(tasks) {
         </div>
     `;
 }
-// RENDU CONDENSÉ ÉLÉGANT FINAL
+
+// CARTE DE TÂCHE ULTRA-MODERNE
 renderCondensedTaskItem(task) {
     const isSelected = this.selectedTasks.has(task.id);
     const isCompleted = task.status === 'completed';
+    const isCompact = this.compactMode;
     
-    // Simplifier le client info - juste le domaine ou nom court
+    // Informations extraites
     const clientInfo = task.hasEmail ? 
-        `@${(task.emailDomain || 'email').replace('www.', '')}` : 
+        `${(task.emailDomain || 'email').replace('www.', '')}` : 
         (task.client || 'Interne');
         
     const dueDateInfo = this.formatDueDate(task.dueDate);
-    
-    // Nom de l'expéditeur simplifié
-    const senderName = task.emailFromName || task.emailFrom?.split('@')[0] || '';
-    
-    // Titre tronqué intelligemment
-    const truncatedTitle = this.smartTruncateTitle(task.title, 60);
-    
-    // Détecter si réponse nécessaire
+    const senderName = task.emailFromName || task.emailFrom?.split('@')[0] || 'Système';
+    const truncatedTitle = this.smartTruncateTitle(task.title, isCompact ? 45 : 70);
     const needsReply = task.hasEmail && !task.emailReplied && task.status !== 'completed';
+    const hasAISuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
+    
+    // Priorité avec couleurs modernes
+    const priorityConfig = {
+        urgent: { color: '#ef4444', bg: '#fef2f2', icon: 'fas fa-exclamation-triangle', label: 'Urgent' },
+        high: { color: '#f59e0b', bg: '#fef3c7', icon: 'fas fa-arrow-up', label: 'Haute' },
+        medium: { color: '#3b82f6', bg: '#eff6ff', icon: 'fas fa-minus', label: 'Normale' },
+        low: { color: '#10b981', bg: '#f0fdf4', icon: 'fas fa-arrow-down', label: 'Basse' }
+    };
+    
+    const priority = priorityConfig[task.priority] || priorityConfig.medium;
     
     return `
-        <div class="task-condensed-elegant ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+        <div class="task-card-modern ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''} ${isCompact ? 'compact' : ''}" 
              data-task-id="${task.id}"
              onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
             
-            <!-- Indicateur de priorité discret -->
-            <div class="priority-stripe priority-${task.priority}"></div>
+            <!-- Indicateur de priorité moderne -->
+            <div class="priority-indicator-modern" 
+                 style="background: ${priority.color};" 
+                 title="${priority.label}">
+            </div>
             
-            <!-- Checkbox minimaliste -->
-            <input type="checkbox" 
-                   class="task-checkbox-minimal" 
-                   ${isSelected ? 'checked' : ''}
-                   onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
-            
-            <!-- Contenu principal -->
-            <div class="task-content-elegant">
-                <div class="task-main-line">
-                    <div class="task-left-info">
-                        ${senderName ? `<span class="sender-name">${this.escapeHtml(senderName)}</span>` : ''}
-                        <span class="task-title-elegant">${this.escapeHtml(truncatedTitle)}</span>
+            <!-- Header de la carte -->
+            <div class="task-card-header">
+                <div class="task-selection">
+                    <input type="checkbox" 
+                           class="checkbox-modern" 
+                           ${isSelected ? 'checked' : ''}
+                           onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+                </div>
+                
+                <div class="task-sender-info">
+                    <div class="sender-avatar" style="background: ${this.generateAvatarColor(senderName)}">
+                        ${senderName.charAt(0).toUpperCase()}
                     </div>
-                    
-                    <div class="task-right-meta">
-                        <span class="client-tag">${clientInfo}</span>
-                        ${dueDateInfo.html}
-                        <span class="task-age">${this.formatRelativeDate(task.createdAt)}</span>
+                    <div class="sender-details">
+                        <span class="sender-name">${this.escapeHtml(senderName)}</span>
+                        <span class="sender-domain">@${clientInfo}</span>
                     </div>
                 </div>
                 
-                ${needsReply ? `
-                    <div class="reply-indicator">
-                        <i class="fas fa-reply"></i>
-                        <span>Réponse attendue</span>
+                <div class="task-meta-badges">
+                    ${dueDateInfo.html}
+                    <div class="priority-badge" 
+                         style="background: ${priority.bg}; color: ${priority.color};"
+                         title="${priority.label}">
+                        <i class="${priority.icon}"></i>
+                    </div>
+                    <span class="task-time">${this.formatRelativeDate(task.createdAt)}</span>
+                </div>
+            </div>
+            
+            <!-- Contenu principal -->
+            <div class="task-card-body">
+                <h3 class="task-title-modern">${this.escapeHtml(truncatedTitle)}</h3>
+                
+                ${!isCompact && task.summary ? `
+                    <p class="task-summary">${this.escapeHtml(task.summary.substring(0, 120))}${task.summary.length > 120 ? '...' : ''}</p>
+                ` : ''}
+                
+                <!-- Indicateurs d'état -->
+                <div class="task-indicators">
+                    ${needsReply ? `
+                        <div class="indicator-badge reply-needed">
+                            <i class="fas fa-reply"></i>
+                            <span>Réponse attendue</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${hasAISuggestions ? `
+                        <div class="indicator-badge ai-ready">
+                            <i class="fas fa-robot"></i>
+                            <span>IA disponible</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.hasEmail ? `
+                        <div class="indicator-badge email-task">
+                            <i class="fas fa-envelope"></i>
+                            <span>Email</span>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${!isCompact && (task.actions && task.actions.length > 0) ? `
+                    <div class="quick-actions-preview">
+                        <span class="actions-count">${task.actions.length} action(s) requise(s)</span>
+                        <i class="fas fa-chevron-right"></i>
                     </div>
                 ` : ''}
             </div>
             
-            <!-- Actions discrètes -->
-            <div class="task-actions-minimal">
-                ${this.renderMinimalActions(task)}
+            <!-- Actions au hover -->
+            <div class="task-card-actions">
+                ${this.renderModernActions(task)}
             </div>
+            
+            <!-- Progress bar pour les tâches avec actions -->
+            ${!isCompact && task.actions && task.actions.length > 0 ? `
+                <div class="task-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${this.calculateProgress(task)}%"></div>
+                    </div>
+                    <span class="progress-text">${this.calculateProgress(task)}% complété</span>
+                </div>
+            ` : ''}
         </div>
     `;
 }
@@ -2073,6 +2254,81 @@ renderMinimalActions(task) {
                 title="Voir détails">
             <i class="fas fa-eye"></i>
         </button>
+    `);
+    
+    return actions.join('');
+}
+
+// ACTIONS MODERNES AVEC DESIGN ÉPURÉ
+renderModernActions(task) {
+    const actions = [];
+    
+    // Action principale selon le contexte
+    if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
+        const hasAI = task.suggestedReplies && task.suggestedReplies.length > 0;
+        actions.push(`
+            <button class="action-btn-modern primary-action" 
+                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                    title="${hasAI ? 'Répondre avec suggestions IA' : 'Répondre à l\'email'}">
+                <i class="fas fa-reply"></i>
+                <span>Répondre</span>
+                ${hasAI ? '<i class="fas fa-robot ai-indicator"></i>' : ''}
+            </button>
+        `);
+    } else if (task.status !== 'completed') {
+        actions.push(`
+            <button class="action-btn-modern primary-action" 
+                    onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
+                    title="Marquer comme terminé">
+                <i class="fas fa-check"></i>
+                <span>Terminer</span>
+            </button>
+        `);
+    }
+    
+    // Actions secondaires
+    actions.push(`
+        <button class="action-btn-modern secondary-action" 
+                onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
+                title="Voir les détails">
+            <i class="fas fa-eye"></i>
+        </button>
+    `);
+    
+    if (task.hasEmail && window.aiTaskAnalyzer?.apiKey) {
+        actions.push(`
+            <button class="action-btn-modern secondary-action ai-action" 
+                    onclick="event.stopPropagation(); window.tasksView.regenerateAISuggestions('${task.id}')"
+                    title="Régénérer suggestions IA">
+                <i class="fas fa-magic"></i>
+            </button>
+        `);
+    }
+    
+    // Menu dropdown pour plus d'actions
+    actions.push(`
+        <div class="action-dropdown">
+            <button class="action-btn-modern secondary-action dropdown-trigger" 
+                    onclick="event.stopPropagation(); window.tasksView.toggleActionMenu('${task.id}')"
+                    title="Plus d'actions">
+                <i class="fas fa-ellipsis-h"></i>
+            </button>
+            <div class="dropdown-menu" id="actionMenu_${task.id}">
+                <button onclick="event.stopPropagation(); window.tasksView.editTask('${task.id}')">
+                    <i class="fas fa-edit"></i>
+                    Modifier
+                </button>
+                <button onclick="event.stopPropagation(); window.tasksView.duplicateTask('${task.id}')">
+                    <i class="fas fa-copy"></i>
+                    Dupliquer
+                </button>
+                <hr class="dropdown-divider">
+                <button class="danger" onclick="event.stopPropagation(); window.tasksView.confirmDeleteTask('${task.id}')">
+                    <i class="fas fa-trash"></i>
+                    Supprimer
+                </button>
+            </div>
+        </div>
     `);
     
     return actions.join('');
@@ -2290,168 +2546,410 @@ renderMinimalActions(task) {
         document.body.style.overflow = 'hidden';
     }
 
-    // CONTENU DES DÉTAILS AVEC CONTENU EMAIL COMPLET ET SUGGESTIONS DE RÉPONSE
-    buildTaskDetailsContent(task) {
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusLabel = this.getStatusLabel(task.status);
-        const dueDateInfo = this.formatDueDate(task.dueDate);
-        
-        return `
-            <div class="task-details-content">
-                <div class="details-header">
-                    <h1 class="task-title-details">${this.escapeHtml(task.title)}</h1>
-                    <div class="task-meta-badges">
-                        <span class="priority-badge priority-${task.priority}">
-                            ${priorityIcon} ${this.getPriorityLabel(task.priority)}
-                        </span>
-                        <span class="status-badge status-${task.status}">
-                            ${this.getStatusIcon(task.status)} ${statusLabel}
-                        </span>
-                        ${dueDateInfo.html}
+// MODAL DE DÉTAILS ULTRA-MODERNE ET STRUCTURÉ
+buildTaskDetailsContent(task) {
+    const priorityConfig = {
+        urgent: { color: '#ef4444', bg: '#fef2f2', icon: 'fas fa-exclamation-triangle', label: 'Urgent' },
+        high: { color: '#f59e0b', bg: '#fef3c7', icon: 'fas fa-arrow-up', label: 'Haute' },
+        medium: { color: '#3b82f6', bg: '#eff6ff', icon: 'fas fa-minus', label: 'Normale' },
+        low: { color: '#10b981', bg: '#f0fdf4', icon: 'fas fa-arrow-down', label: 'Basse' }
+    };
+    
+    const priority = priorityConfig[task.priority] || priorityConfig.medium;
+    const statusConfig = {
+        todo: { color: '#f59e0b', bg: '#fef3c7', icon: 'fas fa-clock', label: 'À faire' },
+        'in-progress': { color: '#3b82f6', bg: '#eff6ff', icon: 'fas fa-spinner', label: 'En cours' },
+        completed: { color: '#10b981', bg: '#f0fdf4', icon: 'fas fa-check-circle', label: 'Terminé' }
+    };
+    
+    const status = statusConfig[task.status] || statusConfig.todo;
+    const dueDateInfo = this.formatDueDate(task.dueDate);
+    
+    return `
+        <div class="task-details-modern">
+            <!-- Header élégant avec gradient -->
+            <div class="details-header-modern">
+                <div class="header-background" style="background: linear-gradient(135deg, ${priority.color}15, ${status.color}15)"></div>
+                <div class="header-content">
+                    <div class="task-avatar-large" style="background: ${this.generateAvatarColor(task.emailFromName || 'Task')}">
+                        ${task.hasEmail ? 
+                            (task.emailFromName ? task.emailFromName.charAt(0).toUpperCase() : 'E') : 
+                            'T'
+                        }
+                    </div>
+                    <div class="header-info">
+                        <h1 class="task-title-details-modern">${this.escapeHtml(task.title)}</h1>
+                        <div class="task-meta-details">
+                            <span class="meta-item">
+                                <i class="fas fa-clock"></i>
+                                Créé ${this.formatDetailedDate(task.createdAt)}
+                            </span>
+                            ${task.updatedAt !== task.createdAt ? `
+                                <span class="meta-item">
+                                    <i class="fas fa-edit"></i>
+                                    Modifié ${this.formatDetailedDate(task.updatedAt)}
+                                </span>
+                            ` : ''}
+                        </div>
+                        <div class="status-badges-modern">
+                            <div class="badge-modern priority" style="background: ${priority.bg}; color: ${priority.color};">
+                                <i class="${priority.icon}"></i>
+                                ${priority.label}
+                            </div>
+                            <div class="badge-modern status" style="background: ${status.bg}; color: ${status.color};">
+                                <i class="${status.icon}"></i>
+                                ${status.label}
+                            </div>
+                            ${dueDateInfo.html ? `
+                                <div class="badge-modern due-date">
+                                    ${dueDateInfo.html}
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- Navigation par onglets -->
+            <div class="details-tabs-modern">
+                <button class="tab-btn-modern active" data-tab="overview" onclick="window.tasksView.switchDetailsTab('overview', '${task.id}')">
+                    <i class="fas fa-info-circle"></i>
+                    Aperçu
+                </button>
                 ${task.hasEmail ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
-                        <div class="email-details-grid">
-                            <div class="email-detail-item">
-                                <strong>Expéditeur:</strong>
-                                <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
-                            </div>
-                            ${task.emailFrom ? `
-                                <div class="email-detail-item">
-                                    <strong>Email:</strong>
-                                    <span>${this.escapeHtml(task.emailFrom)}</span>
-                                </div>
-                            ` : ''}
-                            ${task.emailSubject ? `
-                                <div class="email-detail-item">
-                                    <strong>Sujet:</strong>
-                                    <span>${this.escapeHtml(task.emailSubject)}</span>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
+                    <button class="tab-btn-modern" data-tab="email" onclick="window.tasksView.switchDetailsTab('email', '${task.id}')">
+                        <i class="fas fa-envelope"></i>
+                        Email
+                        ${task.needsReply ? '<span class="notification-dot"></span>' : ''}
+                    </button>
                 ` : ''}
-
-                ${task.description && task.description !== task.title ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-align-left"></i> Description</h3>
-                        <div class="description-content">
-                            ${this.formatDescription(task.description)}
-                        </div>
-                    </div>
-                ` : ''}
-
                 ${task.actions && task.actions.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-tasks"></i> Actions Requises</h3>
-                        <div class="actions-list-details">
-                            ${task.actions.map((action, idx) => `
-                                <div class="action-item-details">
-                                    <span class="action-number">${idx + 1}</span>
-                                    <span class="action-text">${this.escapeHtml(action.text)}</span>
-                                    ${action.deadline ? `
-                                        <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
-                                    ` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
+                    <button class="tab-btn-modern" data-tab="actions" onclick="window.tasksView.switchDetailsTab('actions', '${task.id}')">
+                        <i class="fas fa-tasks"></i>
+                        Actions (${task.actions.length})
+                    </button>
+                ` : ''}
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <button class="tab-btn-modern" data-tab="replies" onclick="window.tasksView.switchDetailsTab('replies', '${task.id}')">
+                        <i class="fas fa-reply-all"></i>
+                        Suggestions IA (${task.suggestedReplies.length})
+                        <span class="ai-badge-mini">✨</span>
+                    </button>
+                ` : ''}
+            </div>
+
+            <!-- Contenu des onglets -->
+            <div class="details-content-modern">
+                <!-- Onglet Aperçu -->
+                <div class="tab-content-modern active" id="tab-overview-${task.id}">
+                    ${this.buildOverviewTab(task)}
+                </div>
+
+                <!-- Onglet Email -->
+                ${task.hasEmail ? `
+                    <div class="tab-content-modern" id="tab-email-${task.id}">
+                        ${this.buildEmailTab(task)}
                     </div>
                 ` : ''}
 
-                ${task.keyInfo && task.keyInfo.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-info-circle"></i> Informations Clés</h3>
-                        <div class="info-grid">
+                <!-- Onglet Actions -->
+                ${task.actions && task.actions.length > 0 ? `
+                    <div class="tab-content-modern" id="tab-actions-${task.id}">
+                        ${this.buildActionsTab(task)}
+                    </div>
+                ` : ''}
+
+                <!-- Onglet Suggestions IA -->
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <div class="tab-content-modern" id="tab-replies-${task.id}">
+                        ${this.buildRepliesTab(task)}
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// CONTENU STRUCTURÉ POUR CHAQUE ONGLET
+
+// Onglet Aperçu
+buildOverviewTab(task) {
+    return `
+        <div class="overview-grid">
+            <!-- Description -->
+            ${task.description && task.description !== task.title ? `
+                <div class="info-card-modern">
+                    <div class="card-header-modern">
+                        <i class="fas fa-align-left"></i>
+                        <h3>Description</h3>
+                    </div>
+                    <div class="card-content-modern">
+                        ${this.formatDescription(task.description)}
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Informations clés -->
+            ${task.keyInfo && task.keyInfo.length > 0 ? `
+                <div class="info-card-modern">
+                    <div class="card-header-modern">
+                        <i class="fas fa-key"></i>
+                        <h3>Informations Clés</h3>
+                    </div>
+                    <div class="card-content-modern">
+                        <div class="key-info-list">
                             ${task.keyInfo.map(info => `
-                                <div class="info-item">
+                                <div class="key-info-item">
                                     <i class="fas fa-chevron-right"></i>
                                     <span>${this.escapeHtml(info)}</span>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
-                ` : ''}
+                </div>
+            ` : ''}
 
-                ${task.risks && task.risks.length > 0 ? `
-                    <div class="details-section attention-section">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
-                        <div class="attention-list">
+            <!-- Points d'attention -->
+            ${task.risks && task.risks.length > 0 ? `
+                <div class="info-card-modern warning">
+                    <div class="card-header-modern">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Points d'Attention</h3>
+                    </div>
+                    <div class="card-content-modern">
+                        <div class="risks-list">
                             ${task.risks.map(risk => `
-                                <div class="attention-item">
+                                <div class="risk-item">
                                     <i class="fas fa-exclamation-circle"></i>
                                     <span>${this.escapeHtml(risk)}</span>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
-                ` : ''}
+                </div>
+            ` : ''}
 
-                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
-                    <div class="details-section suggested-replies-section">
-                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse Personnalisées</h3>
-                        <div class="suggested-replies-container">
-                            ${task.suggestedReplies.map((reply, idx) => `
-                                <div class="suggested-reply-card">
-                                    <div class="reply-header">
-                                        <div class="reply-tone-badge ${reply.tone}">
-                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
-                                        </div>
-                                        <button class="copy-reply-btn" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${task.id}')">
-                                            <i class="fas fa-copy"></i> Copier
-                                        </button>
-                                    </div>
-                                    <div class="reply-subject">
-                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
-                                    </div>
-                                    <div class="reply-content">
-                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
-                                    </div>
-                                    <div class="reply-actions">
-                                        <button class="use-reply-btn" onclick="window.tasksView.useReply('${task.id}', ${idx})">
-                                            <i class="fas fa-paper-plane"></i> Utiliser cette réponse
-                                        </button>
-                                    </div>
+            <!-- Métadonnées -->
+            <div class="info-card-modern">
+                <div class="card-header-modern">
+                    <i class="fas fa-info"></i>
+                    <h3>Métadonnées</h3>
+                </div>
+                <div class="card-content-modern">
+                    <div class="metadata-grid">
+                        <div class="metadata-item">
+                            <span class="metadata-label">Client</span>
+                            <span class="metadata-value">${task.client || 'Non spécifié'}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Catégorie</span>
+                            <span class="metadata-value">${task.category || 'Général'}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Méthode</span>
+                            <span class="metadata-value">${task.method === 'ai' ? 'IA' : 'Manuel'}</span>
+                        </div>
+                        ${task.tags && task.tags.length > 0 ? `
+                            <div class="metadata-item">
+                                <span class="metadata-label">Tags</span>
+                                <div class="tags-container">
+                                    ${task.tags.map(tag => `
+                                        <span class="tag-modern" onclick="window.tasksView.filterByTag('${tag}')">#${tag}</span>
+                                    `).join('')}
                                 </div>
-                            `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Onglet Email
+buildEmailTab(task) {
+    return `
+        <div class="email-tab-content">
+            <!-- Informations email -->
+            <div class="info-card-modern">
+                <div class="card-header-modern">
+                    <i class="fas fa-envelope"></i>
+                    <h3>Détails de l'Email</h3>
+                </div>
+                <div class="card-content-modern">
+                    <div class="email-details-modern">
+                        <div class="email-detail-row">
+                            <span class="detail-label">Expéditeur</span>
+                            <span class="detail-value">
+                                <strong>${this.escapeHtml(task.emailFromName || 'Inconnu')}</strong>
+                                ${task.emailFrom ? `<br><small>${this.escapeHtml(task.emailFrom)}</small>` : ''}
+                            </span>
+                        </div>
+                        ${task.emailSubject ? `
+                            <div class="email-detail-row">
+                                <span class="detail-label">Sujet</span>
+                                <span class="detail-value">${this.escapeHtml(task.emailSubject)}</span>
+                            </div>
+                        ` : ''}
+                        <div class="email-detail-row">
+                            <span class="detail-label">Statut</span>
+                            <span class="detail-value">
+                                ${task.emailReplied ? 
+                                    '<span class="status-replied"><i class="fas fa-check"></i> Répondu</span>' : 
+                                    '<span class="status-pending"><i class="fas fa-clock"></i> En attente de réponse</span>'
+                                }
+                            </span>
                         </div>
                     </div>
-                ` : ''}
+                </div>
+            </div>
 
-                ${task.emailContent && task.emailContent.length > 100 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-envelope-open"></i> Contenu de l'Email</h3>
-                        <div class="email-content-section">
+            <!-- Contenu de l'email -->
+            ${task.emailContent && task.emailContent.length > 100 ? `
+                <div class="info-card-modern">
+                    <div class="card-header-modern">
+                        <i class="fas fa-envelope-open"></i>
+                        <h3>Contenu de l'Email</h3>
+                        ${task.emailHtmlContent ? `
+                            <div class="view-toggle">
+                                <button class="toggle-btn active" onclick="window.tasksView.switchEmailView('formatted', '${task.id}')">
+                                    Formaté
+                                </button>
+                                <button class="toggle-btn" onclick="window.tasksView.switchEmailView('text', '${task.id}')">
+                                    Texte
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="card-content-modern">
+                        <div class="email-content-container">
                             ${task.emailHtmlContent ? `
-                                <div class="email-content-tabs">
-                                    <button class="tab-btn active" onclick="window.tasksView.switchEmailTab('html', '${task.id}')">
-                                        <i class="fas fa-eye"></i> Vue formatée
-                                    </button>
-                                    <button class="tab-btn" onclick="window.tasksView.switchEmailTab('text', '${task.id}')">
-                                        <i class="fas fa-code"></i> Vue texte
-                                    </button>
+                                <div id="email-formatted-${task.id}" class="email-content-view active">
+                                    ${task.emailHtmlContent}
                                 </div>
-                                <div class="email-content-box">
-                                    <div id="email-html-${task.id}" class="email-content-view active">
-                                        ${task.emailHtmlContent}
-                                    </div>
-                                    <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
-                                        ${this.formatEmailContent(task.emailContent)}
-                                    </div>
+                                <div id="email-text-${task.id}" class="email-content-view" style="display: none;">
+                                    ${this.formatEmailContent(task.emailContent)}
                                 </div>
                             ` : `
-                                <div class="email-content-box">
+                                <div class="email-content-view">
                                     ${this.formatEmailContent(task.emailContent)}
                                 </div>
                             `}
                         </div>
                     </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+// Onglet Actions
+buildActionsTab(task) {
+    return `
+        <div class="actions-tab-content">
+            <div class="info-card-modern">
+                <div class="card-header-modern">
+                    <i class="fas fa-tasks"></i>
+                    <h3>Actions Requises</h3>
+                    <div class="progress-indicator">
+                        <span class="progress-text">${this.calculateProgress(task)}% complété</span>
+                        <div class="progress-bar-mini">
+                            <div class="progress-fill-mini" style="width: ${this.calculateProgress(task)}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-content-modern">
+                    <div class="actions-list-modern">
+                        ${task.actions.map((action, idx) => `
+                            <div class="action-item-modern" data-action-id="${idx}">
+                                <div class="action-checkbox">
+                                    <input type="checkbox" 
+                                           id="action_${task.id}_${idx}" 
+                                           ${action.completed ? 'checked' : ''}
+                                           onchange="window.tasksView.toggleActionComplete('${task.id}', ${idx})">
+                                    <label for="action_${task.id}_${idx}"></label>
+                                </div>
+                                <div class="action-content">
+                                    <div class="action-text ${action.completed ? 'completed' : ''}">${this.escapeHtml(action.text)}</div>
+                                    ${action.deadline ? `
+                                        <div class="action-deadline">
+                                            <i class="fas fa-calendar"></i>
+                                            ${this.formatDeadline(action.deadline)}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div class="action-number">${idx + 1}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Onglet Suggestions IA
+buildRepliesTab(task) {
+    return `
+        <div class="replies-tab-content">
+            <!-- Header IA -->
+            <div class="ai-header-modern">
+                <div class="ai-info">
+                    <div class="ai-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="ai-details">
+                        <h3>Suggestions de Réponse Intelligentes</h3>
+                        <p>Réponses personnalisées générées par Claude AI</p>
+                        ${task.aiRepliesGeneratedAt ? `
+                            <small>Générées le ${new Date(task.aiRepliesGeneratedAt).toLocaleString('fr-FR')}</small>
+                        ` : ''}
+                    </div>
+                </div>
+                ${window.aiTaskAnalyzer?.apiKey ? `
+                    <button class="btn-modern btn-secondary" onclick="window.tasksView.regenerateAISuggestions('${task.id}')">
+                        <i class="fas fa-refresh"></i>
+                        Régénérer
+                    </button>
                 ` : ''}
             </div>
-        `;
-    }
+
+            <!-- Liste des suggestions -->
+            <div class="suggestions-grid">
+                ${task.suggestedReplies.map((reply, idx) => `
+                    <div class="suggestion-card-modern">
+                        <div class="suggestion-header">
+                            <div class="tone-badge ${reply.tone}">
+                                ${this.getReplyToneIcon(reply.tone)}
+                                ${this.getReplyToneLabel(reply.tone)}
+                            </div>
+                            <div class="suggestion-actions">
+                                <button class="btn-icon-modern" 
+                                        onclick="window.tasksView.copyReplyToClipboard(${idx}, '${task.id}')"
+                                        title="Copier">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="btn-icon-modern primary" 
+                                        onclick="window.tasksView.useReply('${task.id}', ${idx})"
+                                        title="Utiliser">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="suggestion-content">
+                            <div class="reply-subject">
+                                <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                            </div>
+                            <div class="reply-body">
+                                ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
 
     // NOUVELLE MÉTHODE POUR GÉRER LES ONGLETS EMAIL
     switchEmailTab(tabType, taskId) {
