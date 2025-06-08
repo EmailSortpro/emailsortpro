@@ -2472,40 +2472,310 @@ class TasksView {
         const styles = document.createElement('style');
         styles.id = 'harmonizedTaskStyles';
         styles.textContent = `
-            /* ===== HARMONISATION PARFAITE DES TAILLES ===== */
+            /* ===== HARMONISATION ABSOLUE DE TOUS LES BOUTONS ===== */
             
-            /* Variables CSS pour cohérence absolue */
+            /* Variables CSS pour cohérence parfaite */
             :root {
+                /* TAILLES UNIFIÉES POUR TOUS LES BOUTONS */
                 --btn-height: 44px;
-                --btn-padding: 12px 16px;
+                --btn-padding-horizontal: 16px;
+                --btn-padding-vertical: 0;
                 --btn-font-size: 13px;
                 --btn-border-radius: 10px;
                 --btn-font-weight: 600;
+                --btn-line-height: 1;
+                --btn-gap: 8px;
                 
+                /* MÊME HAUTEUR POUR TOUS LES PILLS */
                 --pill-height: 44px;
-                --pill-padding: 12px 16px;
+                --pill-padding-horizontal: 16px;
+                --pill-padding-vertical: 0;
                 --pill-font-size: 13px;
                 --pill-border-radius: 10px;
                 
+                /* CARTES ET AUTRES ÉLÉMENTS */
                 --card-height: 88px;
                 --card-padding: 16px;
                 --card-border-radius: 12px;
                 
+                /* INPUTS HARMONISÉS */
                 --input-height: 44px;
                 --input-padding: 12px 16px;
                 --input-font-size: 13px;
                 
+                /* BOUTONS D'ACTION */
                 --action-btn-size: 36px;
                 --action-btn-font-size: 13px;
                 
+                /* ESPACEMENTS UNIFORMES */
                 --gap-tiny: 4px;
                 --gap-small: 8px;
                 --gap-medium: 12px;
                 --gap-large: 16px;
                 --gap-xl: 20px;
                 
+                /* PROPRIÉTÉS COMMUNES */
                 --border-width: 1px;
                 --transition-speed: 0.2s;
+                --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
+                --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+                --shadow-primary: 0 4px 12px rgba(99, 102, 241, 0.25);
+            }
+            
+            /* CLASSE DE BASE POUR TOUS LES BOUTONS */
+            .btn-base,
+            .btn-harmonized,
+            .view-mode-harmonized,
+            .status-pill-harmonized {
+                /* DIMENSIONS EXACTES */
+                height: var(--btn-height);
+                min-height: var(--btn-height);
+                max-height: var(--btn-height);
+                
+                /* PADDING UNIFORME */
+                padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
+                
+                /* TYPOGRAPHIE IDENTIQUE */
+                font-size: var(--btn-font-size);
+                font-weight: var(--btn-font-weight);
+                line-height: var(--btn-line-height);
+                
+                /* APPARENCE UNIFIÉE */
+                border: var(--border-width) solid transparent;
+                border-radius: var(--btn-border-radius);
+                cursor: pointer;
+                transition: all var(--transition-speed) ease;
+                text-decoration: none;
+                white-space: nowrap;
+                box-sizing: border-box;
+                
+                /* DISPOSITION FLEX UNIFIÉE */
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: var(--btn-gap);
+                
+                /* COMPORTEMENT */
+                user-select: none;
+                outline: none;
+                position: relative;
+            }
+            
+            /* STYLES SPÉCIFIQUES POUR CHAQUE TYPE DE BOUTON */
+            .btn-harmonized {
+                background: white;
+                color: #374151;
+                border-color: #e5e7eb;
+                box-shadow: var(--shadow-base);
+                min-width: fit-content;
+            }
+            
+            .btn-harmonized:hover {
+                background: #f9fafb;
+                border-color: #6366f1;
+                color: #1f2937;
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-hover);
+            }
+            
+            .btn-harmonized:active {
+                transform: translateY(0);
+                box-shadow: var(--shadow-base);
+            }
+            
+            /* BOUTON PRIMARY - MÊME TAILLE */
+            .btn-harmonized.btn-primary {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: var(--shadow-primary);
+            }
+            
+            .btn-harmonized.btn-primary:hover {
+                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+            }
+            
+            /* BOUTON SECONDARY - MÊME TAILLE */
+            .btn-harmonized.btn-secondary {
+                background: #f8fafc;
+                color: #475569;
+                border-color: #e2e8f0;
+            }
+            
+            .btn-harmonized.btn-secondary:hover {
+                background: #f1f5f9;
+                color: #334155;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+            }
+            
+            /* BOUTON CLEAR SELECTION - CARRÉ PARFAIT */
+            .btn-harmonized.btn-clear-selection {
+                background: #f3f4f6;
+                color: #6b7280;
+                border: none;
+                width: var(--btn-height);
+                height: var(--btn-height);
+                min-width: var(--btn-height);
+                max-width: var(--btn-height);
+                padding: 0;
+                border-radius: var(--btn-border-radius);
+            }
+            
+            .btn-harmonized.btn-clear-selection:hover {
+                background: #e5e7eb;
+                color: #374151;
+                transform: translateY(-1px);
+            }
+            
+            /* BOUTON FILTERS TOGGLE */
+            .btn-harmonized.filters-toggle {
+                background: #f8fafc;
+                color: #475569;
+                border-color: #e2e8f0;
+            }
+            
+            .btn-harmonized.filters-toggle:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+            }
+            
+            .btn-harmonized.filters-toggle.active {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: var(--shadow-primary);
+            }
+            
+            /* MODES DE VUE - EXACTEMENT LA MÊME TAILLE */
+            .view-mode-harmonized {
+                background: transparent;
+                color: #6b7280;
+                border-color: transparent;
+                min-width: 120px;
+                flex: 1;
+            }
+            
+            .view-mode-harmonized:hover {
+                background: rgba(255, 255, 255, 0.8);
+                color: #374151;
+                transform: translateY(-1px);
+            }
+            
+            .view-mode-harmonized.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: var(--shadow-base);
+                font-weight: 700;
+                transform: translateY(-1px);
+            }
+            
+            /* STATUS PILLS - EXACTEMENT LA MÊME TAILLE */
+            .status-pill-harmonized {
+                background: white;
+                color: #374151;
+                border-color: #e5e7eb;
+                box-shadow: var(--shadow-base);
+                min-width: fit-content;
+            }
+            
+            .status-pill-harmonized:hover {
+                border-color: #3b82f6;
+                background: #f0f9ff;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            }
+            
+            .status-pill-harmonized.active {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
+                border-color: #3b82f6;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+                transform: translateY(-1px);
+            }
+            
+            /* CONTAINER DES MODES DE VUE */
+            .view-modes-harmonized {
+                display: flex;
+                background: #f8fafc;
+                border: var(--border-width) solid #e2e8f0;
+                border-radius: var(--btn-border-radius);
+                padding: var(--gap-tiny);
+                gap: 2px;
+                height: var(--btn-height);
+                box-sizing: border-box;
+            }
+            
+            /* INFO DE SÉLECTION */
+            .selection-info-harmonized {
+                height: var(--btn-height);
+                padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border: var(--border-width) solid #93c5fd;
+                border-radius: var(--btn-border-radius);
+                font-size: var(--btn-font-size);
+                font-weight: var(--btn-font-weight);
+                color: #1e40af;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+                box-sizing: border-box;
+                white-space: nowrap;
+                display: inline-flex;
+                align-items: center;
+                gap: var(--btn-gap);
+            }
+            
+            /* BADGE DE COMPTAGE */
+            .count-badge-harmonized {
+                position: absolute;
+                top: -8px;
+                right: -8px;
+                background: #ef4444;
+                color: white;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 3px 6px;
+                border-radius: 10px;
+                min-width: 18px;
+                text-align: center;
+                border: 2px solid white;
+                line-height: 1;
+            }
+            
+            /* ICÔNES ET TEXTE DANS LES PILLS */
+            .pill-icon-harmonized {
+                font-size: var(--btn-font-size);
+                line-height: 1;
+                flex-shrink: 0;
+            }
+            
+            .pill-text-harmonized {
+                font-weight: var(--btn-font-weight);
+                line-height: 1;
+                flex-shrink: 0;
+            }
+            
+            .pill-count-harmonized {
+                background: rgba(0, 0, 0, 0.1);
+                padding: 4px 8px;
+                border-radius: 8px;
+                font-size: 11px;
+                font-weight: 700;
+                min-width: 20px;
+                text-align: center;
+                line-height: 1;
+                flex-shrink: 0;
+            }
+            
+            .status-pill-harmonized.active .pill-count-harmonized {
+                background: rgba(255, 255, 255, 0.25);
+            }
+            
+            .selection-count-harmonized {
+                font-weight: 700;
+                flex-shrink: 0;
             }
             
             /* Interface principale */
@@ -2517,7 +2787,7 @@ class TasksView {
                 font-size: var(--btn-font-size);
             }
             
-            /* ===== BARRE DE CONTRÔLES PARFAITEMENT HARMONISÉE ===== */
+            /* ===== BARRE DE CONTRÔLES AVEC HARMONISATION ABSOLUE ===== */
             .controls-bar-harmonized {
                 display: flex;
                 align-items: center;
@@ -2534,7 +2804,7 @@ class TasksView {
                 box-sizing: border-box;
             }
             
-            /* Section recherche harmonisée - MÊME HAUTEUR */
+            /* SECTION RECHERCHE - HAUTEUR EXACTE */
             .search-section-harmonized {
                 flex: 0 0 300px;
                 height: var(--btn-height);
@@ -2557,14 +2827,19 @@ class TasksView {
                 background: #f9fafb;
                 transition: all var(--transition-speed) ease;
                 box-sizing: border-box;
-                line-height: 1;
+                line-height: var(--btn-line-height);
+                outline: none;
             }
             
             .search-input-harmonized:focus {
-                outline: none;
                 border-color: #3b82f6;
                 background: white;
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .search-input-harmonized::placeholder {
+                color: #9ca3af;
+                font-weight: 500;
             }
             
             .search-icon-harmonized {
@@ -2575,6 +2850,7 @@ class TasksView {
                 color: #9ca3af;
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
+                pointer-events: none;
             }
             
             .search-clear-harmonized {
@@ -2595,6 +2871,7 @@ class TasksView {
                 font-size: 11px;
                 font-weight: 700;
                 transition: all var(--transition-speed) ease;
+                outline: none;
             }
             
             .search-clear-harmonized:hover {
@@ -2602,260 +2879,41 @@ class TasksView {
                 transform: translateY(-50%) scale(1.1);
             }
             
-            /* Modes de vue PARFAITEMENT harmonisés */
-            .view-modes-harmonized {
-                display: flex;
-                background: #f8fafc;
-                border: var(--border-width) solid #e2e8f0;
-                border-radius: var(--btn-border-radius);
-                padding: var(--gap-tiny);
-                gap: 2px;
-                height: var(--btn-height);
-                box-sizing: border-box;
-            }
-            
-            .view-mode-harmonized {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
-                height: calc(var(--btn-height) - var(--gap-small));
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                border-radius: calc(var(--btn-border-radius) - 2px);
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                white-space: nowrap;
-                box-sizing: border-box;
-                min-width: 120px;
-            }
-            
-            .view-mode-harmonized:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
-                transform: translateY(-1px);
-            }
-            
-            .view-mode-harmonized.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                font-weight: 700;
-                transform: translateY(-1px);
-            }
-            
-            /* Actions principales PARFAITEMENT harmonisées */
+            /* ACTIONS PRINCIPALES - TOUTES À LA MÊME HAUTEUR */
             .action-buttons-harmonized {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-small);
                 height: var(--btn-height);
+                flex-shrink: 0;
             }
             
-            .selection-info-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
+            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur */
+            .action-buttons-harmonized > *,
+            .action-buttons-harmonized .btn-harmonized,
+            .action-buttons-harmonized .selection-info-harmonized {
                 height: var(--btn-height);
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border: var(--border-width) solid #93c5fd;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                color: #1e40af;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+                min-height: var(--btn-height);
+                max-height: var(--btn-height);
                 box-sizing: border-box;
-                white-space: nowrap;
             }
             
-            .selection-count-harmonized {
-                font-weight: 700;
-            }
-            
-            .btn-harmonized {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
-                height: var(--btn-height);
-                border: var(--border-width) solid transparent;
-                border-radius: var(--btn-border-radius);
-                background: white;
-                color: #374151;
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                text-decoration: none;
-                white-space: nowrap;
-                box-sizing: border-box;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-                position: relative;
-                line-height: 1;
-                min-width: fit-content;
-            }
-            
-            .btn-harmonized:hover {
-                background: #f9fafb;
-                border-color: #6366f1;
-                color: #1f2937;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            }
-            
-            .btn-harmonized.btn-primary {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border-color: transparent;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-            }
-            
-            .btn-harmonized.btn-primary:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
-            }
-            
-            .btn-harmonized.btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-            
-            .btn-harmonized.btn-secondary:hover {
-                background: #f1f5f9;
-                color: #334155;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
-            }
-            
-            .btn-harmonized.btn-clear-selection {
-                background: #f3f4f6;
-                color: #6b7280;
-                border: none;
-                width: var(--btn-height);
-                height: var(--btn-height);
-                padding: 0;
-                justify-content: center;
-                min-width: var(--btn-height);
-                border-radius: var(--btn-border-radius);
-            }
-            
-            .btn-harmonized.btn-clear-selection:hover {
-                background: #e5e7eb;
-                color: #374151;
-                transform: translateY(-1px);
-            }
-            
-            .btn-harmonized.filters-toggle {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-            
-            .btn-harmonized.filters-toggle:hover {
-                background: #f1f5f9;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
-            }
-            
-            .btn-harmonized.filters-toggle.active {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border-color: transparent;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-            }
-            
-            .count-badge-harmonized {
-                position: absolute;
-                top: -8px;
-                right: -8px;
-                background: #ef4444;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 3px 6px;
-                border-radius: 10px;
-                min-width: 18px;
-                text-align: center;
-                border: 2px solid white;
-                line-height: 1;
-            }
-            
-            /* ===== FILTRES DE STATUT PARFAITEMENT HARMONISÉS ===== */
+            /* ===== FILTRES DE STATUT AVEC HARMONISATION ABSOLUE ===== */
             .status-filters-harmonized {
                 display: flex;
                 gap: var(--gap-small);
                 margin-bottom: var(--gap-medium);
                 flex-wrap: wrap;
                 align-items: center;
+                justify-content: flex-start;
             }
             
-            .status-pill-harmonized {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--pill-padding);
-                height: var(--pill-height);
-                border: var(--border-width) solid #e5e7eb;
-                border-radius: var(--pill-border-radius);
-                background: white;
-                color: #374151;
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                font-size: var(--pill-font-size);
-                font-weight: var(--btn-font-weight);
+            /* TOUS les pills de statut ont EXACTEMENT la même taille */
+            .status-filters-harmonized .status-pill-harmonized {
+                height: var(--btn-height);
+                min-height: var(--btn-height);
+                max-height: var(--btn-height);
                 box-sizing: border-box;
-                white-space: nowrap;
-                min-width: fit-content;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-            
-            .status-pill-harmonized:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-            }
-            
-            .status-pill-harmonized.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-                transform: translateY(-1px);
-            }
-            
-            .pill-icon-harmonized {
-                font-size: var(--pill-font-size);
-                line-height: 1;
-            }
-            
-            .pill-text-harmonized {
-                font-weight: var(--btn-font-weight);
-                line-height: 1;
-            }
-            
-            .pill-count-harmonized {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 4px 8px;
-                border-radius: 8px;
-                font-size: 11px;
-                font-weight: 700;
-                min-width: 20px;
-                text-align: center;
-                line-height: 1;
-            }
-            
-            .status-pill-harmonized.active .pill-count-harmonized {
-                background: rgba(255, 255, 255, 0.25);
             }
             
             /* Panneau de filtres avancés */
@@ -4077,11 +4135,10 @@ class TasksView {
                 animation: fadeInUp 0.3s ease-out;
             }
             
-            /* ===== RESPONSIVE PARFAITEMENT HARMONISÉ ===== */
+            /* ===== RESPONSIVE AVEC HARMONISATION MAINTENUE ===== */
             @media (max-width: 1200px) {
                 :root {
                     --btn-height: 42px;
-                    --pill-height: 42px;
                     --card-height: 84px;
                     --action-btn-size: 34px;
                 }
@@ -4097,12 +4154,20 @@ class TasksView {
                 .view-mode-harmonized {
                     min-width: 100px;
                 }
+                
+                /* MAINTENIR l'harmonisation sur tablette */
+                .action-buttons-harmonized > *,
+                .status-filters-harmonized .status-pill-harmonized,
+                .view-modes-harmonized .view-mode-harmonized {
+                    height: var(--btn-height);
+                    min-height: var(--btn-height);
+                    max-height: var(--btn-height);
+                }
             }
             
             @media (max-width: 1024px) {
                 :root {
                     --btn-height: 40px;
-                    --pill-height: 40px;
                     --card-height: 80px;
                     --action-btn-size: 32px;
                     --gap-small: 6px;
@@ -4121,12 +4186,14 @@ class TasksView {
                     flex: none;
                     width: 100%;
                     order: 1;
+                    height: var(--btn-height);
                 }
                 
                 .view-modes-harmonized {
                     width: 100%;
                     justify-content: space-around;
                     order: 2;
+                    height: var(--btn-height);
                 }
                 
                 .action-buttons-harmonized {
@@ -4134,11 +4201,14 @@ class TasksView {
                     justify-content: center;
                     flex-wrap: wrap;
                     order: 3;
+                    height: auto;
+                    min-height: var(--btn-height);
                 }
                 
                 .view-mode-harmonized {
                     flex: 1;
                     min-width: 80px;
+                    height: calc(var(--btn-height) - var(--gap-small));
                 }
                 
                 .status-filters-harmonized {
@@ -4152,16 +4222,21 @@ class TasksView {
                 .advanced-filters-grid {
                     grid-template-columns: 1fr;
                 }
+                
+                /* FORCER l'harmonisation sur tablette */
+                .action-buttons-harmonized > *,
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: var(--btn-height) !important;
+                    min-height: var(--btn-height) !important;
+                    max-height: var(--btn-height) !important;
+                }
             }
             
             @media (max-width: 768px) {
                 :root {
                     --btn-height: 38px;
-                    --pill-height: 38px;
-                    --btn-padding: 10px 14px;
-                    --pill-padding: 10px 14px;
+                    --btn-padding-horizontal: 14px;
                     --btn-font-size: 12px;
-                    --pill-font-size: 12px;
                     --card-height: 76px;
                     --card-padding: 12px;
                     --action-btn-size: 30px;
@@ -4176,6 +4251,7 @@ class TasksView {
                 .view-mode-harmonized {
                     min-width: 38px;
                     padding: 0 var(--gap-small);
+                    height: calc(var(--btn-height) - var(--gap-small));
                 }
                 
                 .pill-text-harmonized {
@@ -4215,16 +4291,21 @@ class TasksView {
                     margin-left: var(--gap-small);
                     gap: 3px;
                 }
+                
+                /* FORCER l'harmonisation sur mobile */
+                .action-buttons-harmonized > *,
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: var(--btn-height) !important;
+                    min-height: var(--btn-height) !important;
+                    max-height: var(--btn-height) !important;
+                }
             }
             
             @media (max-width: 480px) {
                 :root {
                     --btn-height: 36px;
-                    --pill-height: 36px;
-                    --btn-padding: 8px 12px;
-                    --pill-padding: 8px 12px;
+                    --btn-padding-horizontal: 12px;
                     --btn-font-size: 11px;
-                    --pill-font-size: 11px;
                     --card-height: 72px;
                     --card-padding: 10px;
                     --action-btn-size: 28px;
@@ -4284,12 +4365,24 @@ class TasksView {
                     height: 24px;
                     font-size: 9px;
                 }
+                
+                /* FORCER l'harmonisation sur petit mobile */
+                .action-buttons-harmonized > *,
+                .status-filters-harmonized .status-pill-harmonized,
+                .view-modes-harmonized .view-mode-harmonized {
+                    height: var(--btn-height) !important;
+                    min-height: var(--btn-height) !important;
+                    max-height: var(--btn-height) !important;
+                }
+                
+                .view-mode-harmonized {
+                    height: calc(var(--btn-height) - var(--gap-small)) !important;
+                }
             }
             
             @media (max-width: 360px) {
                 :root {
                     --btn-height: 34px;
-                    --pill-height: 34px;
                     --card-height: 68px;
                     --action-btn-size: 26px;
                 }
@@ -4301,6 +4394,7 @@ class TasksView {
                 .view-mode-harmonized {
                     min-width: 34px;
                     padding: 0 4px;
+                    height: calc(var(--btn-height) - var(--gap-small)) !important;
                 }
                 
                 .status-filters-harmonized {
@@ -4309,6 +4403,14 @@ class TasksView {
                 
                 .action-buttons-harmonized {
                     gap: 4px;
+                }
+                
+                /* FORCER l'harmonisation sur très petit écran */
+                .action-buttons-harmonized > *,
+                .status-filters-harmonized .status-pill-harmonized {
+                    height: var(--btn-height) !important;
+                    min-height: var(--btn-height) !important;
+                    max-height: var(--btn-height) !important;
                 }
             }
         `;
