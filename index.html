@@ -391,6 +391,7 @@
             gap: 12px;
             font-weight: 700;
             font-size: 22px;
+            color: white;
         }
 
         .ai-badge {
@@ -400,6 +401,19 @@
             font-size: 12px;
             font-weight: 600;
             backdrop-filter: blur(10px);
+            color: white;
+        }
+
+        .auth-status {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .auth-status .text-muted {
+            color: rgba(255,255,255,0.8);
         }
 
         /* Navigation MODERNISÉE */
@@ -421,8 +435,8 @@
             align-items: center;
             justify-content: center;
             padding: 0 30px;
-            min-height: 80px;
-            gap: 8px;
+            min-height: 65px;
+            gap: 6px;
             max-width: 1400px;
             margin: 0 auto;
         }
@@ -431,26 +445,26 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            padding: 16px 24px;
-            border-radius: 16px;
+            gap: 6px;
+            padding: 12px 18px;
+            border-radius: 14px;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #64748b;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
-            min-width: 100px;
+            min-width: 85px;
             position: relative;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .nav-item i {
-            font-size: 24px;
-            margin-bottom: 4px;
+            font-size: 20px;
+            margin-bottom: 2px;
             transition: all 0.3s ease;
         }
 
@@ -517,7 +531,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 150px; /* Header + Nav modernisé */
+            margin-top: 135px; /* Header + Nav condensé */
         }
 
         body.app-active #pageContent {
@@ -748,25 +762,25 @@
             }
             
             #mainNav {
-                padding: 15px 20px;
-                min-height: 100px;
+                padding: 12px 20px;
+                min-height: 75px;
                 flex-wrap: wrap;
                 justify-content: center;
-                gap: 12px;
+                gap: 8px;
             }
 
             .nav-item {
-                min-width: 80px;
-                padding: 12px 16px;
-                font-size: 11px;
+                min-width: 70px;
+                padding: 10px 14px;
+                font-size: 10px;
             }
 
             .nav-item i {
-                font-size: 20px;
+                font-size: 18px;
             }
             
             body.app-active .app-main {
-                margin-top: 170px;
+                margin-top: 145px;
             }
             
             .dashboard-container {
@@ -867,7 +881,7 @@
                     <span class="ai-badge">AI</span>
                 </div>
                 <div id="authStatus" class="auth-status">
-                    <span class="text-muted">Initialisation...</span>
+                    <span class="text-muted">vianney hastings</span>
                 </div>
             </div>
         </header>
