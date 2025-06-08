@@ -1308,17 +1308,20 @@ class TasksView {
         
         const content = group.querySelector('.group-content-harmonized');
         const icon = group.querySelector('.group-expand-harmonized i');
+        const header = group.querySelector('.group-header-harmonized');
         
         if (content.style.display === 'none') {
             content.style.display = 'block';
             icon.classList.remove('fa-chevron-down');
             icon.classList.add('fa-chevron-up');
             group.classList.add('expanded');
+            header.classList.add('expanded-header');
         } else {
             content.style.display = 'none';
             icon.classList.remove('fa-chevron-up');
             icon.classList.add('fa-chevron-down');
             group.classList.remove('expanded');
+            header.classList.remove('expanded-header');
         }
     }
 
@@ -3495,54 +3498,110 @@ class TasksView {
                 color: #7c3aed;
             }
 
-            /* ===== VUE GROUPÉE SANS ESPACEMENT ENTRE LES TÂCHES ===== */
+            /* ===== VUE GROUPÉE IDENTIQUE À LA VUE LISTE ===== */
             .tasks-grouped-harmonized {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-medium);
+                gap: 0;
+                background: transparent;
             }
             
             .task-group-harmonized {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: var(--card-border-radius);
-                overflow: hidden;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                overflow: visible;
+                box-shadow: none;
+                margin: 0;
+                padding: 0;
             }
             
             .group-header-harmonized {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-medium);
-                padding: var(--gap-medium) var(--card-padding);
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
+                border-radius: 0;
+                padding: var(--card-padding);
                 cursor: pointer;
-                transition: background 0.2s ease;
-                background: white;
-                min-height: var(--btn-height);
+                transition: all 0.3s ease;
+                position: relative;
+                box-shadow: none;
+                overflow: hidden;
+                min-height: var(--card-height);
+                max-height: var(--card-height);
                 box-sizing: border-box;
-                border-bottom: 1px solid #f1f5f9;
+                border-bottom: 1px solid #e5e7eb;
+                gap: var(--gap-medium);
+            }
+            
+            /* PREMIER ET DERNIER EN-TÊTE AVEC BORDURES ARRONDIES */
+            .task-group-harmonized:first-child .group-header-harmonized {
+                border-top-left-radius: var(--card-border-radius);
+                border-top-right-radius: var(--card-border-radius);
+                border-top: var(--border-width) solid #e5e7eb;
+            }
+            
+            .task-group-harmonized:last-child .group-header-harmonized:not(.expanded-header) {
+                border-bottom-left-radius: var(--card-border-radius);
+                border-bottom-right-radius: var(--card-border-radius);
+                border-bottom: var(--border-width) solid #e5e7eb;
+            }
+            
+            .group-header-harmonized::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+                opacity: 0;
+                transition: all 0.3s ease;
             }
             
             .group-header-harmonized:hover {
-                background: #f8fafc;
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                border-color: rgba(99, 102, 241, 0.2);
+                border-left: 3px solid #6366f1;
+                z-index: 1;
+            }
+            
+            .group-header-harmonized:hover::before {
+                opacity: 1;
             }
             
             .task-group-harmonized.expanded .group-header-harmonized {
-                background: #f0f9ff;
-                border-bottom: 1px solid #e0e7ff;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid #3b82f6;
+                border-color: #3b82f6;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+                z-index: 2;
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
             }
             
             .group-avatar-harmonized {
-                width: 36px;
-                height: 36px;
-                border-radius: 10px;
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                border: 2px solid #d1d5db;
+                background: white;
+                transition: all var(--transition-speed) ease;
+                flex-shrink: 0;
+                appearance: none;
+                position: relative;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
                 font-weight: 700;
-                font-size: 14px;
-                flex-shrink: 0;
+                font-size: 12px;
+                margin-right: var(--gap-medium);
                 box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
                 text-align: center;
             }
@@ -3550,89 +3609,149 @@ class TasksView {
             .group-info-harmonized {
                 flex: 1;
                 min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: var(--gap-tiny);
+                height: 100%;
             }
             
             .group-name-harmonized {
                 font-weight: 700;
                 color: #1f2937;
                 font-size: 15px;
+                margin: 0;
                 line-height: 1.3;
-                margin-bottom: 2px;
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
                 text-align: left;
+                display: flex;
+                align-items: center;
             }
             
             .group-meta-harmonized {
-                font-size: 12px;
+                display: flex;
+                align-items: center;
+                gap: var(--gap-tiny);
                 color: #6b7280;
+                font-size: 12px;
                 font-weight: 500;
-                text-align: left;
+                line-height: 1.2;
             }
             
             .group-expand-harmonized {
-                color: #9ca3af;
-                transition: transform 0.2s ease;
-                font-size: 14px;
-                width: 28px;
-                height: 28px;
+                width: var(--action-btn-size);
+                height: var(--action-btn-size);
+                border: 2px solid transparent;
+                border-radius: var(--btn-border-radius);
+                background: rgba(255, 255, 255, 0.9);
+                color: #6b7280;
+                cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                transition: all 0.3s ease;
+                font-size: var(--action-btn-font-size);
+                backdrop-filter: blur(10px);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
                 flex-shrink: 0;
-                border-radius: 6px;
-                background: #f8fafc;
                 text-align: center;
+                margin-left: var(--gap-medium);
             }
             
             .group-expand-harmonized:hover {
-                background: #f1f5f9;
-                color: #6b7280;
+                background: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                color: #374151;
             }
             
             .task-group-harmonized.expanded .group-expand-harmonized {
-                transform: rotate(180deg);
+                transform: rotate(180deg) translateY(-1px);
                 color: #3b82f6;
-                background: #eff6ff;
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border-color: #3b82f6;
             }
             
             .group-content-harmonized {
-                background: #fafbfc;
+                background: transparent;
                 margin: 0;
                 padding: 0;
+                display: none;
             }
             
-            /* SUPPRESSION TOTALE DES ESPACES ENTRE LES TÂCHES GROUPÉES */
+            .task-group-harmonized.expanded .group-content-harmonized {
+                display: block;
+            }
+            
+            /* TÂCHES DANS LES GROUPES - IDENTIQUES À LA VUE LISTE */
             .group-content-harmonized .task-harmonized-card {
+                display: flex;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
                 border-radius: 0;
-                border: none;
-                border-bottom: 1px solid #f1f1f1;
-                background: #fafbfc;
-                margin: 0;
                 padding: var(--card-padding);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
                 box-shadow: none;
+                overflow: hidden;
                 min-height: var(--card-height);
                 max-height: var(--card-height);
                 box-sizing: border-box;
+                border-bottom: 1px solid #e5e7eb;
+                margin: 0;
             }
             
             .group-content-harmonized .task-harmonized-card:last-child {
-                border-bottom: none;
+                border-bottom-left-radius: var(--card-border-radius);
+                border-bottom-right-radius: var(--card-border-radius);
+                border-bottom: var(--border-width) solid #e5e7eb;
+            }
+            
+            .group-content-harmonized .task-harmonized-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+                opacity: 0;
+                transition: all 0.3s ease;
             }
             
             .group-content-harmonized .task-harmonized-card:hover {
                 background: white;
-                transform: none;
-                box-shadow: none;
+                transform: translateY(-1px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                border-color: rgba(99, 102, 241, 0.2);
                 border-left: 3px solid #6366f1;
                 z-index: 1;
+            }
+            
+            .group-content-harmonized .task-harmonized-card:hover::before {
+                opacity: 1;
             }
             
             .group-content-harmonized .task-harmonized-card.selected {
                 background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
                 border-left: 4px solid #3b82f6;
                 border-color: #3b82f6;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
                 z-index: 2;
-                transform: none;
-                box-shadow: none;
+            }
+            
+            .group-content-harmonized .task-harmonized-card.completed {
+                opacity: 0.75;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                border-left: 3px solid #22c55e;
             }
             
             /* ===== ÉTAT VIDE HARMONISÉ ET CENTRÉ ===== */
