@@ -383,22 +383,40 @@
             height: 100%;
         }
 
+        /* FORCER LE BLANC POUR LE HEADER */
+        .app-header,
+        .app-header *,
+        .header-content,
+        .header-content *,
+        #authStatus,
+        #authStatus *,
+        .auth-status,
+        .auth-status *,
+        .user-name,
+        .user-email {
+            color: white !important;
+        }
+
         .auth-status {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            color: white;
+            color: white !important;
+        }
+
+        .auth-status * {
+            color: white !important;
         }
 
         .user-name {
             font-weight: 500;
             font-size: 14px;
-            color: white;
+            color: white !important;
         }
 
         .user-email {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.8) !important;
             margin-top: 2px;
         }
 
@@ -419,15 +437,16 @@
             color: white; /* TEXTE EN BLANC */
         }
 
+        /* Suppression des styles pour le menu déroulant */
         #authStatus {
-            color: white; /* TEXTE UTILISATEUR EN BLANC */
+            color: white !important;
         }
 
         .text-muted {
-            color: rgba(255, 255, 255, 0.8) !important; /* TEXTE UTILISATEUR EN BLANC */
+            color: rgba(255, 255, 255, 0.8) !important;
         }
 
-        /* Navigation SOBRE ET CLASSE */
+        /* Navigation SOBRE ET CLASSE - SANS SCROLL */
         .app-nav {
             position: fixed;
             top: 60px;
@@ -436,9 +455,9 @@
             height: 55px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             z-index: 999;
-            overflow-x: auto;
             display: none; /* Caché par défaut */
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden; /* Pas de scroll du tout */
         }
 
         #mainNav {
@@ -450,6 +469,7 @@
             gap: 2px;
             max-width: 1200px;
             margin: 0 auto;
+            overflow: hidden; /* Pas de scroll */
         }
 
         .nav-item {
@@ -714,20 +734,34 @@
             .app-nav {
                 height: 60px;
                 padding: 8px;
+                overflow: hidden; /* Pas de scroll sur mobile */
             }
             
             #mainNav {
                 flex-wrap: nowrap;
-                justify-content: flex-start;
-                overflow-x: auto;
+                justify-content: center; /* Centrer au lieu de flex-start */
+                overflow: hidden; /* Pas de scroll */
                 padding: 12px 10px;
-                gap: 4px;
+                gap: 1px; /* Gap réduit pour tout faire tenir */
             }
 
             .nav-item {
-                flex-shrink: 0;
-                padding: 6px 14px;
-                font-size: 12px;
+                flex-shrink: 1; /* Permettre la réduction */
+                padding: 6px 12px;
+                font-size: 11px;
+                min-width: auto;
+            }
+
+            .nav-item span {
+                display: none; /* Masquer le texte sur mobile, garder seulement les icônes */
+            }
+
+            .user-name {
+                display: none; /* Masquer le nom sur mobile */
+            }
+
+            .user-email {
+                font-size: 11px;
             }
             
             body.app-active .app-main {
@@ -804,9 +838,9 @@
                     <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
                 </div>
-                <div id="authStatus" class="auth-status">
-                    <div class="user-name">Vianney Hastings</div>
-                    <div class="user-email">vianney.hastings@hotmail.fr</div>
+                <div id="authStatus" class="auth-status" style="color: white !important;">
+                    <div class="user-name" style="color: white !important; font-weight: 500; font-size: 14px;">Vianney Hastings</div>
+                    <div class="user-email" style="color: rgba(255, 255, 255, 0.8) !important; font-size: 12px; margin-top: 2px;">vianney.hastings@hotmail.fr</div>
                 </div>
             </div>
         </header>
