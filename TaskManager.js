@@ -1322,96 +1322,518 @@ class TasksView {
         `;
     }
 
-    // RENDU IDENTIQUE À L'INTERFACE EMAIL DE PAGEMANAGER AVEC BOUTON RÉPONDRE
-    renderCondensedTaskItem(task) {
-        const isSelected = this.selectedTasks.has(task.id);
-        const isCompleted = task.status === 'completed';
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusIcon = this.getStatusIcon(task.status);
+renderCondensedTaskItem(task) {
+    const isSelected = this.selectedTasks.has(task.id);
+    const isCompleted = task.status === 'completed';
+    const priorityColor = this.getPriorityColor(task.priority);
+    const statusIcon = this.getSimpleStatusIcon(task.status);
+    
+    // Informations essentielles seulement
+    const senderInfo = task.hasEmail ? 
+        (task.emailFromName || task.emailFrom?.split('@')[0] || 'Email') : 
+        (task.client || 'Interne');
         
-        const clientInfo = task.hasEmail ? 
-            `@${task.emailDomain || 'email'}` : 
-            task.client || 'Interne';
+    const timeInfo = this.formatCompactTime(task.createdAt);
+    const dueDateInfo = task.dueDate ? this.formatCompactDueDate(task.dueDate) : null;
+    
+    // Badges discrets
+    const badges = [];
+    if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
+        badges.push('📧');
+    }
+    if (task.suggestedReplies && task.suggestedReplies.length > 0) {
+        badges.push('🤖');
+    }
+    if (task.hasAttachments) {
+        badges.push('📎');
+    }
+    
+    return `
+        <div class="task-elegant ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+             data-task-id="${task.id}"
+             onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
             
-        const dueDateInfo = this.formatDueDate(task.dueDate);
-        
-        // Déterminer si on montre le bouton de réponse
-        const showReplyButton = task.hasEmail && !task.emailReplied && task.status !== 'completed';
-        const hasAiSuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
-        
-        return `
-            <div class="task-condensed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
-                 data-task-id="${task.id}"
-                 onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
-                
-                <input type="checkbox" 
-                       class="task-checkbox-condensed" 
-                       ${isSelected ? 'checked' : ''}
-                       onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
-                
-                <div class="task-indicators">
-                    <div class="priority-indicator priority-${task.priority}" title="Priorité ${task.priority}">
-                        ${priorityIcon}
-                    </div>
-                    <div class="status-indicator status-${task.status}" title="Statut: ${task.status}">
-                        ${statusIcon}
-                    </div>
-                </div>
-                
-                <div class="task-content-condensed">
-                    <div class="task-header-line">
-                        <span class="task-title-large">${this.escapeHtml(task.title)}</span>
-                        <div class="task-meta-right">
-                            <span class="client-badge">${clientInfo}</span>
-                            ${dueDateInfo.html}
-                            <span class="task-date-large">${this.formatRelativeDate(task.createdAt)}</span>
-                        </div>
-                    </div>
-                    
-                    ${task.hasEmail ? `
-                        <div class="task-email-line">
-                            <i class="fas fa-envelope"></i>
-                            <span class="email-from">${this.escapeHtml(task.emailFromName || task.emailFrom || 'Email')}</span>
-                            ${task.needsReply || showReplyButton ? 
-                                '<span class="reply-needed">📧 Réponse requise</span>' : ''
-                            }
-                            ${hasAiSuggestions ? 
-                                '<span class="has-ai-suggestions">🤖 Suggestions IA</span>' : ''
-                            }
-                            ${task.aiRepliesGenerated ? 
-                                '<span class="ai-generated-badge">✨ IA</span>' : ''
-                            }
-                            ${task.tags && task.tags.length > 0 ? `
-                                <div class="task-tags-line">
-                                    <i class="fas fa-tags"></i>
-                                    ${task.tags.slice(0, 3).map(tag => `
-                                        <span class="task-tag" onclick="event.stopPropagation(); window.tasksView.filterByTag('${tag}')">#${tag}</span>
-                                    `).join('')}
-                                    ${task.tags.length > 3 ? `<span class="tags-more">+${task.tags.length - 3}</span>` : ''}
-                                </div>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-                    
-                    ${showReplyButton ? `
-                        <div class="task-reply-section">
-                            <button class="reply-to-email-btn" 
-                                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
-                                    title="${hasAiSuggestions ? 'Répondre avec suggestions IA' : 'Répondre à l\'email'}">
-                                <i class="fas fa-reply"></i>
-                                <span>Répondre au mail</span>
-                                ${hasAiSuggestions ? '<i class="fas fa-robot ai-icon"></i>' : ''}
-                            </button>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <div class="task-actions-condensed">
-                    ${this.renderQuickActions(task)}
+            <!-- Indicateur de priorité (barre colorée) -->
+            <div class="priority-bar" style="background: ${priorityColor}"></div>
+            
+            <!-- Checkbox discret -->
+            <input type="checkbox" 
+                   class="task-checkbox-elegant" 
+                   ${isSelected ? 'checked' : ''}
+                   onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
+            
+            <!-- Statut avec icône simple -->
+            <div class="status-icon-elegant" title="Statut: ${this.getStatusLabel(task.status)}">
+                ${statusIcon}
+            </div>
+            
+            <!-- Contenu principal de la tâche -->
+            <div class="task-main-content">
+                <div class="task-title-elegant">${this.escapeHtml(task.title)}</div>
+                <div class="task-subtitle-elegant">
+                    <span class="sender-elegant">${this.escapeHtml(senderInfo)}</span>
+                    ${badges.length > 0 ? `<span class="badges-elegant">${badges.join(' ')}</span>` : ''}
                 </div>
             </div>
-        `;
+            
+            <!-- Informations temporelles -->
+            <div class="task-time-info">
+                ${dueDateInfo ? `<div class="due-date-compact ${dueDateInfo.class}">${dueDateInfo.text}</div>` : ''}
+                <div class="created-time-elegant">${timeInfo}</div>
+            </div>
+            
+            <!-- Actions rapides (visibles au survol) -->
+            <div class="task-actions-elegant">
+                ${task.hasEmail && !task.emailReplied && task.status !== 'completed' ? `
+                    <button class="action-elegant reply-action" 
+                            onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                            title="Répondre">
+                        <i class="fas fa-reply"></i>
+                    </button>
+                ` : ''}
+                
+                ${task.status !== 'completed' ? `
+                    <button class="action-elegant complete-action" 
+                            onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
+                            title="Marquer terminé">
+                        <i class="fas fa-check"></i>
+                    </button>
+                ` : ''}
+                
+                <button class="action-elegant more-action" 
+                        onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
+                        title="Voir détails">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// NOUVELLES MÉTHODES UTILITAIRES POUR L'AFFICHAGE SOBRE
+
+getPriorityColor(priority) {
+    const colors = {
+        urgent: '#ef4444',   // Rouge vif
+        high: '#f59e0b',     // Orange/Ambre
+        medium: '#3b82f6',   // Bleu
+        low: '#10b981'       // Vert
+    };
+    return colors[priority] || colors.medium;
+}
+
+getSimpleStatusIcon(status) {
+    const icons = {
+        todo: '<div class="status-dot status-todo"></div>',
+        'in-progress': '<div class="status-dot status-progress"></div>',
+        completed: '<i class="fas fa-check-circle status-completed"></i>'
+    };
+    return icons[status] || icons.todo;
+}
+
+formatCompactTime(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 3600000) { // Moins d'1h
+        return `${Math.floor(diff / 60000)}min`;
+    } else if (diff < 86400000) { // Moins d'1j
+        return `${Math.floor(diff / 3600000)}h`;
+    } else if (diff < 604800000) { // Moins d'1 semaine
+        return `${Math.floor(diff / 86400000)}j`;
+    } else {
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     }
+}
+
+formatCompactDueDate(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+        return {
+            text: `${Math.abs(diffDays)}j`,
+            class: 'overdue'
+        };
+    } else if (diffDays === 0) {
+        return {
+            text: 'Aujourd\'hui',
+            class: 'today'
+        };
+    } else if (diffDays === 1) {
+        return {
+            text: 'Demain',
+            class: 'tomorrow'
+        };
+    } else if (diffDays <= 7) {
+        return {
+            text: `${diffDays}j`,
+            class: 'soon'
+        };
+    } else {
+        return {
+            text: date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+            class: 'normal'
+        };
+    }
+}
+
+// NOUVEAUX STYLES CSS SOBRES ET ÉLÉGANTS
+
+addElegantTaskStyles() {
+    if (document.getElementById('elegantTaskStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'elegantTaskStyles';
+    styles.textContent = `
+        /* Conteneur principal des tâches */
+        .tasks-condensed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Ligne de tâche élégante */
+        .task-elegant {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f1f5f9;
+            position: relative;
+            min-height: 60px;
+        }
+        
+        .task-elegant:last-child {
+            border-bottom: none;
+        }
+        
+        .task-elegant:hover {
+            background: #fafbfc;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .task-elegant:hover .task-actions-elegant {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .task-elegant.selected {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .task-elegant.completed {
+            opacity: 0.6;
+        }
+        
+        .task-elegant.completed .task-title-elegant {
+            text-decoration: line-through;
+            color: #64748b;
+        }
+        
+        /* Barre de priorité */
+        .priority-bar {
+            width: 4px;
+            height: 40px;
+            border-radius: 2px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        
+        /* Checkbox discret */
+        .task-checkbox-elegant {
+            width: 16px;
+            height: 16px;
+            margin-right: 16px;
+            cursor: pointer;
+            border-radius: 3px;
+            border: 2px solid #cbd5e1;
+            background: white;
+            transition: all 0.2s ease;
+        }
+        
+        .task-checkbox-elegant:checked {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        /* Icône de statut */
+        .status-icon-elegant {
+            margin-right: 16px;
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 2px solid;
+        }
+        
+        .status-todo {
+            background: white;
+            border-color: #94a3b8;
+        }
+        
+        .status-progress {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-completed {
+            color: #10b981;
+            font-size: 16px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Contenu principal */
+        .task-main-content {
+            flex: 1;
+            min-width: 0;
+            margin-right: 16px;
+        }
+        
+        .task-title-elegant {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.4;
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .task-subtitle-elegant {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+        
+        .sender-elegant {
+            font-weight: 500;
+            color: #475569;
+        }
+        
+        .badges-elegant {
+            display: flex;
+            gap: 4px;
+            font-size: 12px;
+        }
+        
+        /* Informations temporelles */
+        .task-time-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            margin-right: 16px;
+            flex-shrink: 0;
+            min-width: 80px;
+        }
+        
+        .due-date-compact {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .due-date-compact.overdue {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .due-date-compact.today {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        
+        .due-date-compact.tomorrow {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+        
+        .due-date-compact.soon {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .due-date-compact.normal {
+            background: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .created-time-elegant {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        
+        /* Actions rapides */
+        .task-actions-elegant {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .action-elegant {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #64748b;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        
+        .action-elegant:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .reply-action:hover {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .complete-action:hover {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .more-action:hover {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .task-elegant {
+                padding: 12px 16px;
+                min-height: 50px;
+            }
+            
+            .priority-bar {
+                height: 32px;
+                margin-right: 12px;
+            }
+            
+            .task-checkbox-elegant,
+            .status-icon-elegant {
+                margin-right: 12px;
+            }
+            
+            .task-main-content {
+                margin-right: 12px;
+            }
+            
+            .task-title-elegant {
+                font-size: 14px;
+            }
+            
+            .task-subtitle-elegant {
+                font-size: 12px;
+            }
+            
+            .task-time-info {
+                margin-right: 12px;
+                min-width: 60px;
+            }
+            
+            .due-date-compact {
+                font-size: 10px;
+                padding: 1px 6px;
+            }
+            
+            .created-time-elegant {
+                font-size: 11px;
+            }
+            
+            .action-elegant {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            
+            .task-actions-elegant {
+                opacity: 1;
+                visibility: visible;
+            }
+        }
+        
+        /* Animations douces */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .task-elegant {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* Couleurs harmonieuses */
+        :root {
+            --color-primary: #3b82f6;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
+            --color-gray-50: #f8fafc;
+            --color-gray-100: #f1f5f9;
+            --color-gray-200: #e2e8f0;
+            --color-gray-400: #94a3b8;
+            --color-gray-500: #64748b;
+            --color-gray-600: #475569;
+            --color-gray-900: #1e293b;
+        }
+    `;
+    
+    document.head.appendChild(styles);
+}
 
     renderQuickActions(task, minimal = false) {
         const actions = [];
