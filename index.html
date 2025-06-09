@@ -1278,44 +1278,23 @@
         
         // Fonction pour forcer l'affichage de l'app de manière DÉFINITIVE (fallback)
         window.forceShowApp = function() {
-            console.log('[FORCE] Standard force - checking if brutal needed...');
+            console.log('[FORCE] Standard force - checking authentication first...');
             
             if (window.APP_STATE.forceMode) {
                 console.log('[FORCE] Already in brutal mode, skipping');
                 return;
             }
             
-            // Si l'utilisateur est authentifié, utiliser brutal force
-            if (window.APP_STATE.hasTokens || window.APP_STATE.authenticated) {
-                console.log('[FORCE] Using brutal force for authenticated user...');
+            // VÉRIFIER que l'utilisateur est vraiment authentifié
+            if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                console.log('[FORCE] User is authenticated - using brutal force...');
                 window.brutalForceShowApp();
                 return;
             }
             
-            // Sinon, force standard
-            window.APP_STATE.appShown = true;
-            window.APP_STATE.authenticated = true;
-            
-            document.body.classList.add('app-active');
-            
-            const loginPage = document.getElementById('loginPage');
-            if (loginPage) {
-                loginPage.style.display = 'none !important';
-                loginPage.style.visibility = 'hidden !important';
-                loginPage.style.opacity = '0 !important';
-                loginPage.style.zIndex = '-9999 !important';
-                loginPage.style.position = 'absolute !important';
-                loginPage.style.left = '-9999px !important';
-                loginPage.classList.add('force-hidden');
-            }
-            
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            if (loadingOverlay) {
-                loadingOverlay.classList.remove('active');
-                loadingOverlay.style.display = 'none !important';
-            }
-            
-            console.log('[FORCE] Standard force applied');
+            // Si pas authentifié, afficher la page de login
+            console.log('[FORCE] User not authenticated - showing login page');
+            window.showLoginPage();
         };
 
         // Fonction pour masquer le loading et afficher l'app
@@ -1571,22 +1550,6 @@
                     element.style.display = 'none';
                 }
             });
-        };  window.onAppDisplayed = function() {
-            console.log('[APP_DISPLAYED] App.js has displayed - ensuring brutal force');
-            window.APP_STATE.appShown = true;
-            
-            // Assurer avec brutal force
-            if (!window.APP_STATE.forceMode) {
-                setTimeout(() => {
-                    window.brutalForceShowApp();
-                }, 50);
-            }
-        };
-        
-        // Fonction de fallback BRUTALE
-        window.fallbackAppDisplay = function() {
-            console.log('[FALLBACK] Using BRUTAL fallback display...');
-            window.brutalForceShowApp();
         };
 
         // Fonction de diagnostic accessible globalement
