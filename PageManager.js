@@ -11,6 +11,7 @@ class PageManager {
         this.searchTerm = '';
         this.temporaryEmailStorage = [];
         this.lastScanData = null;
+        this.hideExplanation = localStorage.getItem('hideEmailExplanation') === 'true';
         
         // Page renderers
         this.pages = {
@@ -179,11 +180,16 @@ class PageManager {
                         </div>
                     </div>
 
-                    <!-- Texte explicatif -->
-                    <div class="explanation-text-harmonized">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
-                    </div>
+                    <!-- Texte explicatif avec possibilité de fermer -->
+                    ${!this.hideExplanation ? `
+                        <div class="explanation-text-harmonized">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                            <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    ` : ''}
 
                     <!-- Filtres de catégories harmonisés et multi-lignes optimisés -->
                     <div class="status-filters-harmonized-multiline">
@@ -212,7 +218,7 @@ class PageManager {
     }
 
     // =====================================
-    // FILTRES DE CATÉGORIES OPTIMISÉS POUR TEXTE LONG
+    // FILTRES DE CATÉGORIES OPTIMISÉS AVEC ICÔNES CENTRÉES
     // =====================================
     buildOptimizedCategoryTabs(categoryCounts, totalEmails, categories) {
         const tabs = [
@@ -246,13 +252,15 @@ class PageManager {
             return `
                 <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''} ${isLongText ? 'long-text' : ''}" 
                         onclick="window.pageManager.filterByCategory('${tab.id}')">
-                    <div class="pill-content-optimized">
-                        <div class="pill-icon-row">
+                    <div class="pill-content-centered">
+                        <div class="pill-icon-centered">
                             <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                            <span class="pill-count-harmonized-multiline">${tab.count}</span>
                         </div>
-                        <div class="pill-text-row">
+                        <div class="pill-text-centered">
                             <span class="pill-text-harmonized-multiline ${isLongText ? 'multiline' : ''}">${tab.name}</span>
+                        </div>
+                        <div class="pill-count-centered">
+                            <span class="pill-count-harmonized-multiline">${tab.count}</span>
                         </div>
                     </div>
                 </button>
@@ -497,6 +505,12 @@ class PageManager {
         this.renderEmails(document.getElementById('pageContent'));
     }
 
+    // NOUVEAU : Fonction pour masquer le message d'explication
+    hideExplanationMessage() {
+        this.hideExplanation = true;
+        localStorage.setItem('hideEmailExplanation', 'true');
+        this.renderEmails(document.getElementById('pageContent'));
+    }
     // NOUVEAU : Fonction pour sélectionner/désélectionner tous les emails visibles
     toggleAllSelection() {
         const visibleEmails = this.getVisibleEmails();
@@ -937,7 +951,7 @@ class PageManager {
                 justify-content: center;
             }
 
-            /* NOUVEAU : Texte explicatif */
+            /* NOUVEAU : Texte explicatif avec bouton de fermeture */
             .explanation-text-harmonized {
                 background: rgba(59, 130, 246, 0.1);
                 border: 1px solid rgba(59, 130, 246, 0.2);
@@ -952,6 +966,7 @@ class PageManager {
                 font-weight: 500;
                 line-height: 1.5;
                 backdrop-filter: blur(10px);
+                position: relative;
             }
 
             .explanation-text-harmonized i {
@@ -960,7 +975,32 @@ class PageManager {
                 flex-shrink: 0;
             }
             
-            /* NOUVEAU : Filtres de statut optimisés pour texte long */
+            .explanation-close-btn {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                color: #3b82f6;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+            
+            .explanation-close-btn:hover {
+                background: rgba(59, 130, 246, 0.2);
+                border-color: rgba(59, 130, 246, 0.3);
+                transform: scale(1.1);
+            }
+            
+            /* NOUVEAU : Structure centrée pour les filtres de catégories */
             .status-filters-harmonized-multiline {
                 display: flex;
                 gap: var(--gap-small);
@@ -999,11 +1039,11 @@ class PageManager {
             
             /* Optimisation pour texte long */
             .status-pill-harmonized-multiline.long-text {
-                min-height: 64px; /* Plus haut pour accueillir 2 lignes */
+                min-height: 64px;
                 padding: var(--gap-tiny) var(--gap-small);
             }
             
-            .pill-content-optimized {
+            .pill-content-centered {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -1011,22 +1051,33 @@ class PageManager {
                 gap: var(--gap-tiny);
                 width: 100%;
                 height: 100%;
+                text-align: center;
             }
             
-            .pill-icon-row {
+            .pill-icon-centered {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
+                justify-content: center;
                 width: 100%;
-                gap: var(--gap-small);
+                flex-shrink: 0;
             }
             
-            .pill-text-row {
+            .pill-text-centered {
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 width: 100%;
                 text-align: center;
+                flex: 1;
+                min-height: 0;
+            }
+            
+            .pill-count-centered {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                flex-shrink: 0;
             }
             
             .status-pill-harmonized-multiline:hover {
@@ -1045,17 +1096,17 @@ class PageManager {
             }
             
             .pill-icon-harmonized-multiline {
-                font-size: 16px;
+                font-size: 18px;
                 line-height: 1;
-                flex-shrink: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                margin-bottom: 2px;
             }
             
             .pill-text-harmonized-multiline {
                 font-weight: 700;
-                font-size: 13px;
+                font-size: 12px;
                 line-height: 1.2;
                 text-align: center;
                 display: flex;
@@ -1076,23 +1127,24 @@ class PageManager {
                 -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-height: 2.4em; /* 2 lignes max */
+                max-height: 2.4em;
                 line-height: 1.2;
+                font-size: 11px;
             }
             
             .pill-count-harmonized-multiline {
                 background: rgba(0, 0, 0, 0.1);
-                padding: 3px 7px;
+                padding: 2px 6px;
                 border-radius: 8px;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 800;
                 min-width: 18px;
                 text-align: center;
                 line-height: 1;
-                flex-shrink: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                margin-top: 2px;
             }
             
             .status-pill-harmonized-multiline.active .pill-count-harmonized-multiline {
