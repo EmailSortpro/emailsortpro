@@ -47,14 +47,10 @@ class DomainOrganizer {
                         </div>
                         <div class="step" data-step="review">
                             <div class="step-number">3</div>
-                            <div class="step-label">Révision</div>
-                        </div>
-                        <div class="step" data-step="confirm">
-                            <div class="step-number">4</div>
-                            <div class="step-label">Confirm</div>
+                            <div class="step-label">Validation</div>
                         </div>
                         <div class="step" data-step="execute">
-                            <div class="step-number">5</div>
+                            <div class="step-number">4</div>
                             <div class="step-label">Action</div>
                         </div>
                     </div>
@@ -173,12 +169,12 @@ class DomainOrganizer {
                     </div>
                 </div>
 
-                <!-- Étape 3: Révision des résultats -->
+                <!-- Étape 3: Révision et Confirmation fusionnées -->
                 <div class="step-content" id="reviewStep" style="display: none;">
                     <div class="card">
                         <h2 class="card-title">
                             <i class="fas fa-chart-bar"></i>
-                            Résultats
+                            Validation des résultats
                         </h2>
 
                         <div class="stats-section">
@@ -229,10 +225,39 @@ class DomainOrganizer {
                             </div>
                         </div>
 
+                        <!-- Section de confirmation intégrée -->
+                        <div class="confirmation-section">
+                            <div class="warning-box">
+                                <div class="warning-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="warning-content">
+                                    <h3>Actions à effectuer</h3>
+                                    <div class="summary-preview">
+                                        <div class="summary-item">
+                                            <span><strong id="confirmTotalEmails">0</strong> emails seront déplacés</span>
+                                        </div>
+                                        <div class="summary-item">
+                                            <span><strong id="confirmNewFolders">0</strong> nouveaux dossiers seront créés</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="action-section">
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="createFolders" checked>
-                                <label for="createFolders">Créer les nouveaux dossiers</label>
+                            <div class="options-row">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="createFolders" checked>
+                                    <label for="createFolders">Créer les nouveaux dossiers</label>
+                                </div>
+                                
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="finalConfirmation">
+                                    <label for="finalConfirmation">
+                                        <strong>Je confirme ces actions</strong>
+                                    </label>
+                                </div>
                             </div>
                             
                             <div class="action-buttons">
@@ -240,76 +265,17 @@ class DomainOrganizer {
                                     <i class="fas fa-arrow-left"></i>
                                     Retour
                                 </button>
-                                <button class="btn btn-primary" id="reviewBtn" onclick="window.domainOrganizer.proceedToConfirmation()">
-                                    <i class="fas fa-arrow-right"></i>
-                                    Continuer
+                                <button class="btn btn-danger" id="executeBtn" onclick="window.domainOrganizer.executeOrganization()" disabled>
+                                    <i class="fas fa-play"></i>
+                                    Lancer le rangement
+                                    <span class="btn-subtitle">Action irréversible</span>
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Étape 4: Confirmation -->
-                <div class="step-content" id="confirmStep" style="display: none;">
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
-                            Confirmation
-                        </h2>
-                        
-                        <div class="warning-box">
-                            <div class="warning-icon">
-                                <i class="fas fa-exclamation-triangle"></i>
-                            </div>
-                            <div class="warning-content">
-                                <h3>Actions irréversibles</h3>
-                                <p>Les actions suivantes vont être effectuées :</p>
-                                <ul id="actionsPreview">
-                                    <!-- Populated dynamically -->
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="confirmation-summary">
-                            <div class="summary-grid">
-                                <div class="summary-item">
-                                    <div class="summary-icon"><i class="fas fa-envelope"></i></div>
-                                    <div class="summary-text">
-                                        <strong id="confirmTotalEmails">0</strong> emails
-                                    </div>
-                                </div>
-                                <div class="summary-item">
-                                    <div class="summary-icon"><i class="fas fa-folder-plus"></i></div>
-                                    <div class="summary-text">
-                                        <strong id="confirmNewFolders">0</strong> dossiers
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="final-confirmation">
-                            <label class="checkbox-label large">
-                                <input type="checkbox" id="finalConfirmation">
-                                <div class="checkbox-content">
-                                    <strong>Je confirme ces actions</strong>
-                                </div>
-                            </label>
-                        </div>
-
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary" onclick="window.domainOrganizer.goToReview()">
-                                <i class="fas fa-arrow-left"></i>
-                                Retour
-                            </button>
-                            <button class="btn btn-danger" id="executeBtn" onclick="window.domainOrganizer.executeOrganization()" disabled>
-                                <i class="fas fa-play"></i>
-                                Lancer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Étape 5: Exécution -->
+                <!-- Étape 4: Exécution (anciennement étape 5) -->
                 <div class="step-content" id="executeStep" style="display: none;">
                     <div class="card">
                         <h2 class="card-title">
@@ -986,8 +952,18 @@ class DomainOrganizer {
                     padding-top: 16px;
                 }
 
-                .checkbox-group {
+                .options-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                     margin-bottom: 16px;
+                    gap: 16px;
+                }
+
+                .checkbox-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                 }
 
                 .checkbox-group input[type="checkbox"] {
@@ -997,9 +973,6 @@ class DomainOrganizer {
                 }
 
                 .checkbox-group label {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
                     cursor: pointer;
                     font-size: 14px;
                 }
@@ -1009,6 +982,23 @@ class DomainOrganizer {
                     justify-content: space-between;
                     align-items: center;
                     gap: 12px;
+                }
+
+                /* Section de confirmation intégrée */
+                .confirmation-section {
+                    margin: 16px 0;
+                }
+
+                .summary-preview {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    margin-top: 8px;
+                }
+
+                .summary-preview .summary-item {
+                    font-size: 13px;
+                    color: #92400e;
                 }
 
                 /* Avertissements */
@@ -1473,7 +1463,7 @@ class DomainOrganizer {
      * Vérifie si une étape est complétée
      */
     isStepCompleted(stepName, currentStep) {
-        const steps = ['configure', 'analyze', 'review', 'confirm', 'execute'];
+        const steps = ['configure', 'analyze', 'review', 'execute'];
         const stepIndex = steps.indexOf(stepName);
         const currentIndex = steps.indexOf(currentStep);
         return stepIndex < currentIndex;
@@ -2018,6 +2008,16 @@ class DomainOrganizer {
                 results.failed++;
                 results.errors.push({ domain, error: error.message });
                 this.addLogEntry(`✗ Erreur pour ${domain}: ${error.message}`, 'error');
+                
+                results.actions.push({
+                    domain: domain,
+                    action: action.action,
+                    targetFolder: action.targetFolder,
+                    emailCount: 0,
+                    folderCreated: false,
+                    success: false,
+                    error: error.message
+                });
             }
             
             processedDomains++;
@@ -2108,9 +2108,17 @@ class DomainOrganizer {
      */
     generateFinalActionsList(actions) {
         const actionsList = document.getElementById('finalActionsList');
-        if (!actionsList) return;
+        if (!actionsList) {
+            console.warn('[DomainOrganizer] finalActionsList element not found');
+            return;
+        }
         
         actionsList.innerHTML = '';
+        
+        if (!actions || actions.length === 0) {
+            actionsList.innerHTML = '<p>Aucune action effectuée.</p>';
+            return;
+        }
         
         actions.forEach(action => {
             const item = document.createElement('div');
@@ -2129,12 +2137,12 @@ class DomainOrganizer {
                         <div style="font-size: 12px; color: #6b7280;">
                             ${action.success ? 
                                 `Déplacé vers "${action.targetFolder}"${action.folderCreated ? ' (nouveau dossier)' : ''}` :
-                                `Erreur: ${action.error}`
+                                `Erreur: ${action.error || 'Erreur inconnue'}`
                             }
                         </div>
                     </div>
                 </div>
-                <div class="action-count">${action.emailCount} emails</div>
+                <div class="action-count">${action.emailCount || 0} emails</div>
             `;
             
             actionsList.appendChild(item);
@@ -2375,13 +2383,41 @@ class DomainOrganizer {
             let targetFolderId;
             
             if (action.action === 'create-new' && this.createFolders) {
-                const newFolder = await this.createFolder(action.targetFolder);
-                targetFolderId = newFolder.id;
-                result.folderCreated = true;
+                try {
+                    const newFolder = await this.createFolder(action.targetFolder);
+                    targetFolderId = newFolder.id;
+                    result.folderCreated = true;
+                } catch (error) {
+                    console.error(`[DomainOrganizer] Failed to create/find folder for ${domain}:`, error);
+                    
+                    // En cas d'échec, essayer d'utiliser un dossier existant
+                    if (action.existingFolderId) {
+                        console.log(`[DomainOrganizer] Fallback to existing folder for ${domain}`);
+                        targetFolderId = action.existingFolderId;
+                    } else {
+                        // Dernier recours : utiliser la boîte de réception
+                        console.log(`[DomainOrganizer] Using inbox as fallback for ${domain}`);
+                        const folders = await window.mailService.getFolders();
+                        const inboxFolder = folders.find(f => 
+                            f.displayName.toLowerCase() === 'inbox' || 
+                            f.displayName.toLowerCase() === 'boîte de réception'
+                        );
+                        if (inboxFolder) {
+                            targetFolderId = inboxFolder.id;
+                        } else {
+                            throw new Error(`Could not find fallback folder for ${domain}`);
+                        }
+                    }
+                }
             } else if (action.existingFolderId) {
                 targetFolderId = action.existingFolderId;
             } else {
-                throw new Error('No target folder specified');
+                throw new Error(`No target folder specified for ${domain}`);
+            }
+            
+            // Vérifier que le dossier cible existe
+            if (!targetFolderId) {
+                throw new Error(`No valid target folder ID for ${domain}`);
             }
             
             const batches = this.createBatches(emails, this.maxEmailsPerBatch);
@@ -2393,6 +2429,7 @@ class DomainOrganizer {
             result.success = true;
         } catch (error) {
             result.error = error.message;
+            console.error(`[DomainOrganizer] Error processing domain ${domain}:`, error);
         }
         
         return result;
@@ -2403,40 +2440,83 @@ class DomainOrganizer {
         
         // Vérifier d'abord si le dossier existe déjà
         try {
+            console.log(`[DomainOrganizer] Checking if folder "${folderName}" exists...`);
             const folders = await window.mailService.getFolders();
-            const existingFolder = folders.find(f => f.displayName.toLowerCase() === folderName.toLowerCase());
+            const existingFolder = folders.find(f => 
+                f.displayName.toLowerCase() === folderName.toLowerCase()
+            );
             if (existingFolder) {
-                console.log(`[DomainOrganizer] Folder "${folderName}" already exists, using existing one`);
+                console.log(`[DomainOrganizer] ✅ Folder "${folderName}" already exists, using existing one`);
                 return existingFolder;
             }
         } catch (error) {
             console.warn('[DomainOrganizer] Could not check existing folders:', error);
         }
         
-        const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ displayName: folderName })
-        });
-        
-        if (!response.ok) {
+        // Essayer de créer le dossier
+        try {
+            console.log(`[DomainOrganizer] Creating new folder "${folderName}"...`);
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ displayName: folderName })
+            });
+            
+            if (response.ok) {
+                const newFolder = await response.json();
+                console.log(`[DomainOrganizer] ✅ Folder "${folderName}" created successfully`);
+                return newFolder;
+            }
+            
+            // Si erreur 409 (conflit), le dossier existe déjà
             if (response.status === 409) {
-                // Dossier existe déjà, essayer de le récupérer
-                console.log(`[DomainOrganizer] Folder "${folderName}" already exists (409), fetching existing`);
-                const folders = await window.mailService.getFolders();
-                const existingFolder = folders.find(f => f.displayName.toLowerCase() === folderName.toLowerCase());
+                console.log(`[DomainOrganizer] Folder "${folderName}" already exists (409), searching again...`);
+                
+                // Attendre un peu puis chercher à nouveau
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Recharger la liste des dossiers
+                const updatedFolders = await window.mailService.getFolders();
+                
+                // Chercher avec différentes variantes
+                let existingFolder = updatedFolders.find(f => 
+                    f.displayName.toLowerCase() === folderName.toLowerCase()
+                );
+                
+                if (!existingFolder) {
+                    // Chercher avec des variantes de noms
+                    existingFolder = updatedFolders.find(f => 
+                        f.displayName.includes(folderName) || 
+                        folderName.includes(f.displayName)
+                    );
+                }
+                
                 if (existingFolder) {
+                    console.log(`[DomainOrganizer] ✅ Found existing folder: "${existingFolder.displayName}"`);
                     return existingFolder;
                 }
-                throw new Error(`Folder "${folderName}" exists but could not be found`);
+                
+                // Si vraiment pas trouvé, utiliser le dossier inbox par défaut
+                console.warn(`[DomainOrganizer] ⚠️ Could not find folder "${folderName}", using inbox as fallback`);
+                const inboxFolder = updatedFolders.find(f => 
+                    f.displayName.toLowerCase() === 'inbox' || 
+                    f.displayName.toLowerCase() === 'boîte de réception'
+                );
+                
+                if (inboxFolder) {
+                    return inboxFolder;
+                }
             }
+            
             throw new Error(`Failed to create folder: ${response.status} ${response.statusText}`);
+            
+        } catch (error) {
+            console.error(`[DomainOrganizer] Error creating folder "${folderName}":`, error);
+            throw error;
         }
-        
-        return await response.json();
     }
 
     async moveEmailBatch(emails, targetFolderId) {
