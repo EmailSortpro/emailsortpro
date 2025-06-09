@@ -1090,9 +1090,39 @@
             console.log('[FORCE] App display activated');
         };
 
+        // Fonction pour masquer le loading et afficher l'app
+        window.showApp = function() {
+            console.log('[SHOW_APP] Switching to app interface...');
+            
+            // Masquer le loading
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+            
+            // Activer l'interface app
+            document.body.classList.add('app-active');
+            
+            // Masquer explicitement la page de login
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
+            }
+            
+            console.log('[SHOW_APP] App interface activated');
+        };
+
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
+            
+            // Vérifier si l'utilisateur est déjà connecté
+            setTimeout(() => {
+                if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                    console.log('[INDEX] User already authenticated, showing app...');
+                    window.showApp();
+                }
+            }, 500);
             
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
@@ -1106,7 +1136,18 @@
                     }
                     
                     if (window.app && window.app.login) {
-                        window.app.login();
+                        window.app.login().then(() => {
+                            console.log('[LOGIN] Login successful, showing app...');
+                            window.showApp();
+                        }).catch((error) => {
+                            console.error('[LOGIN] Login failed:', error);
+                            // Réinitialiser le bouton en cas d'erreur
+                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+                            this.disabled = false;
+                            if (loadingOverlay) {
+                                loadingOverlay.classList.remove('active');
+                            }
+                        });
                     }
                 });
             }
@@ -1148,6 +1189,12 @@
             }, 1000);
         });
         
+        // Fonction globale pour basculer vers l'app après connexion
+        window.onAuthSuccess = function() {
+            console.log('[AUTH_SUCCESS] Authentication successful, switching to app...');
+            window.showApp();
+        };
+
         // Fonction de diagnostic accessible globalement
         window.checkServices = function() {
             console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
