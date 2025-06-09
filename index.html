@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmailSortProAI - Scanner d'Emails Intelligent avec IA</title>
+    <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
@@ -13,13 +13,13 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://emailsortpro.netlify.app/">
-    <meta property="og:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
+    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
-    <meta property="twitter:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
+    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Favicon -->
@@ -150,7 +150,7 @@
                         ]
                     },
                     app: {
-                        name: 'EmailSortProAI',
+                        name: 'EmailSortPro',
                         version: '3.0.1',
                         debug: isLocalhost,
                         environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
@@ -257,7 +257,7 @@
     <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
     <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
-    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
+    <!-- Styles pour la nouvelle page de connexion -->
     <style>
         /* Reset et styles de base */
         * {
@@ -273,9 +273,9 @@
             transition: all 0.3s ease;
         }
 
-        /* === STYLES POUR LA PAGE DE LOGIN === */
+        /* === STYLES POUR LA NOUVELLE PAGE DE LOGIN === */
         .login-page-styles {
-            background: #ffffff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh;
             overflow: hidden;
             display: flex;
@@ -287,108 +287,216 @@
             right: 0;
             bottom: 0;
             z-index: 10000;
+            color: white;
+            padding: 20px;
         }
 
         .login-container {
+            max-width: 800px;
+            width: 100%;
             text-align: center;
-            max-width: 600px;
-            padding: 40px;
-            color: #1f2937;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 40px 30px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
 
-        .login-logo {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
-            color: #667eea;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .login-title {
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 15px;
-            color: #1f2937;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .login-subtitle {
-            font-size: 1.3rem;
+        /* Header compact */
+        .header {
             margin-bottom: 30px;
-            color: #6b7280;
-            line-height: 1.5;
         }
 
-        .developer-info {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
+        .logo-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 40px;
-            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .developer-name {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 5px;
-        }
-
-        .developer-title {
-            font-size: 0.9rem;
-            color: #667eea;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .developer-email {
-            font-size: 0.9rem;
-            color: #6b7280;
-            font-family: monospace;
-        }
-
-        .login-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .logo-icon i {
+            font-size: 24px;
             color: white;
-            padding: 20px 50px;
+        }
+
+        .app-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin: 0;
+        }
+
+        .app-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            line-height: 1.4;
+            margin-bottom: 25px;
+        }
+
+        /* Section bouton de connexion */
+        .connect-section {
+            margin-bottom: 25px;
+        }
+
+        /* Bouton de connexion */
+        .connect-button {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 16px 35px;
             border: none;
             border-radius: 50px;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
             display: inline-flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
             text-decoration: none;
+            margin-bottom: 12px;
         }
 
-        .login-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
-            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        .connect-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669, #047857);
         }
 
-        .login-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
+        .security-note {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.8);
         }
 
-        .login-security-note {
-            margin-top: 25px;
-            font-size: 0.9rem;
-            color: #6b7280;
+        /* Étapes + RGPD fusionnées */
+        .process-flow {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .process-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .steps-horizontal {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .step-mini {
+            flex: 0 0 auto;
+            min-width: 90px;
+            max-width: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            position: relative;
+        }
+
+        .step-mini:not(:last-child)::after {
+            content: '→';
+            position: absolute;
+            right: -8px;
+            top: 15px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: bold;
+            z-index: 1;
+        }
+
+        .step-circle {
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .step-circle:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(1.05);
+        }
+
+        .step-circle i {
+            font-size: 12px;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.55rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            line-height: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+        }
+
+        .rgpd-compact {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 20px;
+        }
+
+        .rgpd-header {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .rgpd-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #10b981;
+            margin: 0;
+        }
+
+        .rgpd-text {
+            font-size: 0.8rem;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         /* === STYLES POUR L'APPLICATION === */
@@ -682,20 +790,39 @@
         /* Responsive */
         @media (max-width: 768px) {
             .login-container {
-                padding: 20px;
+                padding: 30px 20px;
             }
 
-            .login-title {
-                font-size: 2.5rem;
+            .app-title {
+                font-size: 1.8rem;
             }
 
-            .login-subtitle {
-                font-size: 1.1rem;
+            .logo-title {
+                flex-direction: column;
+                gap: 10px;
             }
 
-            .login-button {
-                padding: 18px 40px;
-                font-size: 1.1rem;
+            .step-mini {
+                min-width: 80px;
+                max-width: 95px;
+            }
+
+            .step-mini:not(:last-child)::after {
+                right: -6px;
+                font-size: 10px;
+            }
+
+            .step-label {
+                font-size: 0.5rem;
+            }
+
+            .step-circle {
+                width: 28px;
+                height: 28px;
+            }
+
+            .step-circle i {
+                font-size: 11px;
             }
 
             .app-nav {
@@ -720,6 +847,74 @@
                 padding: 10px;
             }
         }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 25px 15px;
+            }
+
+            .app-title {
+                font-size: 1.6rem;
+            }
+
+            .app-subtitle {
+                font-size: 0.9rem;
+            }
+
+            .connect-button {
+                padding: 14px 30px;
+                font-size: 1rem;
+            }
+
+            .step-mini {
+                min-width: 70px;
+                max-width: 85px;
+            }
+
+            .step-mini:not(:last-child)::after {
+                right: -5px;
+                font-size: 9px;
+            }
+
+            .step-label {
+                font-size: 0.45rem;
+            }
+
+            .step-circle {
+                width: 26px;
+                height: 26px;
+            }
+
+            .step-circle i {
+                font-size: 10px;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-container {
+            animation: slideInUp 0.6s ease forwards;
+        }
+
+        .step-mini {
+            animation: slideInUp 0.8s ease forwards;
+        }
+
+        .step-mini:nth-child(1) { animation-delay: 0.1s; }
+        .step-mini:nth-child(2) { animation-delay: 0.2s; }
+        .step-mini:nth-child(3) { animation-delay: 0.3s; }
+        .step-mini:nth-child(4) { animation-delay: 0.4s; }
+        .step-mini:nth-child(5) { animation-delay: 0.5s; }
 
         /* Animation pour les transitions */
         @keyframes fadeInUp {
@@ -763,7 +958,7 @@
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
-                    <span>EmailSortProAI</span>
+                    <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
                 </div>
                 <div id="authStatus" class="auth-status">
@@ -804,33 +999,80 @@
 
         <!-- Contenu Principal -->
         <main class="app-main">
-            <!-- Page de Connexion épurée (visible par défaut) -->
+            <!-- Nouvelle Page de Connexion avec design de la maquette -->
             <div id="loginPage" class="login-page-styles">
                 <div class="login-container">
-                    <div class="login-logo">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </div>
-                    
-                    <h1 class="login-title">EmailSortProAI</h1>
-                    
-                    <p class="login-subtitle">
-                        Organisez vos emails Outlook avec l'IA
-                    </p>
-
-                    <div class="developer-info">
-                        <div class="developer-name">VH</div>
-                        <div class="developer-title">Vianney Hastings</div>
-                        <div class="developer-email">vianney.hastings@hotmail.fr</div>
+                    <!-- Header compact -->
+                    <div class="header">
+                        <div class="logo-title">
+                            <div class="logo-icon">
+                                <i class="fas fa-envelope-open-text"></i>
+                            </div>
+                            <h1 class="app-title">EmailSortPro</h1>
+                        </div>
+                        <p class="app-subtitle">
+                            Assistant IA pour Outlook : analysez, catégorisez et créez automatiquement des tâches à partir de vos emails.
+                        </p>
                     </div>
 
-                    <button id="loginBtn" class="login-button">
-                        <i class="fab fa-microsoft"></i>
-                        Se connecter à Outlook
-                    </button>
+                    <!-- Bouton de connexion -->
+                    <div class="connect-section">
+                        <button id="loginBtn" class="connect-button">
+                            <i class="fab fa-microsoft"></i>
+                            Se connecter à Outlook
+                        </button>
+                        <div class="security-note">
+                            <i class="fas fa-lock"></i>
+                            Connexion sécurisée Microsoft
+                        </div>
+                    </div>
 
-                    <div class="login-security-note">
-                        <i class="fas fa-shield-alt"></i>
-                        Connexion sécurisée Microsoft
+                    <!-- Étapes + RGPD fusionnées -->
+                    <div class="process-flow">
+                        <div class="process-title">Processus en 5 étapes</div>
+                        <div class="steps-horizontal">
+                            <div class="step-mini">
+                                <div class="step-circle">
+                                    <i class="fas fa-plug"></i>
+                                </div>
+                                <div class="step-label">Connexion</div>
+                            </div>
+                            <div class="step-mini">
+                                <div class="step-circle">
+                                    <i class="fas fa-search"></i>
+                                </div>
+                                <div class="step-label">Scan IA</div>
+                            </div>
+                            <div class="step-mini">
+                                <div class="step-circle">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <div class="step-label">Analyse</div>
+                            </div>
+                            <div class="step-mini">
+                                <div class="step-circle">
+                                    <i class="fas fa-folder-tree"></i>
+                                </div>
+                                <div class="step-label">Rangement</div>
+                            </div>
+                            <div class="step-mini">
+                                <div class="step-circle">
+                                    <i class="fas fa-magic"></i>
+                                </div>
+                                <div class="step-label">Tâches</div>
+                            </div>
+                        </div>
+                        
+                        <!-- RGPD intégré -->
+                        <div class="rgpd-compact">
+                            <div class="rgpd-header">
+                                <i class="fas fa-shield-alt"></i>
+                                <div class="rgpd-title">100% RGPD & Sécurisé</div>
+                            </div>
+                            <div class="rgpd-text">
+                                <strong>Vos emails ne sont jamais stockés.</strong> L'application fonctionne entièrement en local. Aucune donnée transmise à nos serveurs.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -840,7 +1082,7 @@
                 <!-- Dashboard par défaut -->
                 <div class="dashboard-container">
                     <div class="dashboard-header">
-                        <h1 class="dashboard-title">Bienvenue dans EmailSortProAI</h1>
+                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
                         <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
                     </div>
                     
