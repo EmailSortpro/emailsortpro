@@ -1,4 +1,49 @@
-// PageManager.js - Version 11.2 - Catégories multi-lignes optimisées + bouton sélection
+.pill-text-harmonized-multiline {
+                    font-size: 7px;
+                }
+                
+                .pill-text-harmonized-multiline.multiline {
+                    font-size: 6px;
+                }
+                
+                .pill-icon-harmonized-multiline {
+                    font-size: 12px;
+                }                .view-mode-harmonized span,
+                .btn-harmonized span {
+                    display: none;
+                }
+                
+                .pill-text-harmonized-multiline {
+                    font-size: 8px;
+                }
+                
+                .pill-text-harmonized-multiline.multiline {
+                    font-size: 7px;
+                }
+                
+                .pill-icon-harmonized-multiline {
+                    font-size: 13px;
+                }                .pill-text-harmonized-multiline {
+                    font-size: 9px;
+                }
+                
+                .pill-text-harmonized-multiline.multiline {
+                    font-size: 8px;
+                }
+                
+                .pill-icon-harmonized-multiline {
+                    font-size: 14px;
+                }                .pill-text-harmonized-multiline {
+                    font-size: 10px;
+                }
+                
+                .pill-text-harmonized-multiline.multiline {
+                    font-size: 8px;
+                }
+                
+                .pill-icon-harmonized-multiline {
+                    font-size: 15px;
+                }// PageManager.js - Version 11.2 - Catégories multi-lignes optimisées + bouton sélection
 
 class PageManager {
     constructor() {
@@ -1796,22 +1841,10 @@ class PageManager {
                     line-height: 18px;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 10px;
-                }
-                
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 8px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 15px;
-                }
-                
                 .pill-count-harmonized-multiline {
                     font-size: 9px;
-                    padding: 2px 5px;
-                    height: 14px;
+                    padding: 1px 3px;
+                    height: 12px;
                 }
             }
             
@@ -1870,22 +1903,10 @@ class PageManager {
                     line-height: 17px;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 9px;
-                }
-                
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 8px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 14px;
-                }
-                
                 .pill-count-harmonized-multiline {
                     font-size: 8px;
-                    padding: 2px 4px;
-                    height: 13px;
+                    padding: 1px 3px;
+                    height: 11px;
                 }
             }
             
@@ -1911,27 +1932,10 @@ class PageManager {
                     line-height: 16px;
                 }
                 
-                .view-mode-harmonized span,
-                .btn-harmonized span {
-                    display: none;
-                }
-                
-                .pill-text-harmonized-multiline {
-                    font-size: 8px;
-                }
-                
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 7px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 13px;
-                }
-                
                 .pill-count-harmonized-multiline {
                     font-size: 7px;
-                    padding: 1px 4px;
-                    height: 12px;
+                    padding: 1px 3px;
+                    height: 10px;
                 }
             }
             
@@ -1953,22 +1957,10 @@ class PageManager {
                     line-height: 15px;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 7px;
-                }
-                
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 6px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 12px;
-                }
-                
                 .pill-count-harmonized-multiline {
                     font-size: 6px;
-                    padding: 1px 3px;
-                    height: 11px;
+                    padding: 1px 2px;
+                    height: 9px;
                 }
                 
                 .explanation-text-harmonized {
