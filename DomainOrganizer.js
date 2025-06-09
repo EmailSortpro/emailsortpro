@@ -705,36 +705,6 @@ class DomainOrganizer {
                     margin-bottom: 2px;
                 }
 
-                /* Notice de sécurité */
-                .safety-notice {
-                    background: #f0fdf4;
-                    border: 1px solid #bbf7d0;
-                    padding: 12px;
-                    border-radius: 6px;
-                    margin-bottom: 16px;
-                }
-
-                .safety-notice h4 {
-                    margin: 0 0 8px 0;
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: #166534;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-
-                .safety-notice ul {
-                    margin: 0;
-                    padding-left: 16px;
-                    font-size: 11px;
-                    color: #166534;
-                }
-
-                .safety-notice li {
-                    margin-bottom: 4px;
-                }
-
                 /* Résultats attendus */
                 .expected-results {
                     background: #eff6ff;
