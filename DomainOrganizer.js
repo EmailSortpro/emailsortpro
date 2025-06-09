@@ -1276,7 +1276,13 @@ class DomainOrganizer {
         
         if (this.isProcessing) return;
         
+        // Vérifier qu'au moins une date est sélectionnée
         const formData = this.getFormData();
+        if (!formData.startDate && !formData.endDate) {
+            window.uiManager?.showToast('Veuillez sélectionner au moins une date', 'warning');
+            return;
+        }
+        
         await this.startAnalysis(formData);
     }
 
@@ -1710,6 +1716,12 @@ class DomainOrganizer {
                     actionsToApply.set(domain, action);
                 }
             });
+            
+            if (actionsToApply.size === 0) {
+                window.uiManager?.showToast('Aucune action sélectionnée', 'warning');
+                this.goToReview();
+                return;
+            }
             
             const createFolders = document.getElementById('createFolders')?.checked ?? true;
             this.configure({ createFolders });
@@ -2170,6 +2182,18 @@ class DomainOrganizer {
     async createFolder(folderName) {
         const accessToken = await window.authService.getAccessToken();
         
+        // Vérifier d'abord si le dossier existe déjà
+        try {
+            const folders = await window.mailService.getFolders();
+            const existingFolder = folders.find(f => f.displayName.toLowerCase() === folderName.toLowerCase());
+            if (existingFolder) {
+                console.log(`[DomainOrganizer] Folder "${folderName}" already exists, using existing one`);
+                return existingFolder;
+            }
+        } catch (error) {
+            console.warn('[DomainOrganizer] Could not check existing folders:', error);
+        }
+        
         const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
             method: 'POST',
             headers: {
@@ -2179,7 +2203,19 @@ class DomainOrganizer {
             body: JSON.stringify({ displayName: folderName })
         });
         
-        if (!response.ok) throw new Error(`Failed to create folder: ${response.statusText}`);
+        if (!response.ok) {
+            if (response.status === 409) {
+                // Dossier existe déjà, essayer de le récupérer
+                console.log(`[DomainOrganizer] Folder "${folderName}" already exists (409), fetching existing`);
+                const folders = await window.mailService.getFolders();
+                const existingFolder = folders.find(f => f.displayName.toLowerCase() === folderName.toLowerCase());
+                if (existingFolder) {
+                    return existingFolder;
+                }
+                throw new Error(`Folder "${folderName}" exists but could not be found`);
+            }
+            throw new Error(`Failed to create folder: ${response.status} ${response.statusText}`);
+        }
         
         return await response.json();
     }
@@ -2383,19 +2419,11 @@ window.domainOrganizer.showPage = function() {
     setTimeout(async () => {
         await this.initializePage();
         
-        // Debug des étapes après initialisation
-        const allSteps = document.querySelectorAll('.step-content');
-        console.log('[DomainOrganizer] Steps after init:', allSteps.length);
-        allSteps.forEach((step, index) => {
-            console.log(`Step ${index}: id=${step.id}, display=${step.style.display}`);
-        });
+        // Réinitialiser l'état si nécessaire
+        this.isProcessing = false;
+        this.currentStep = 'configure';
         
-        // Forcer l'affichage de configStep
-        const configStep = document.getElementById('configStep');
-        if (configStep) {
-            configStep.style.display = 'block';
-            console.log('[DomainOrganizer] ✅ Configuration step forced visible');
-        }
+        console.log('[DomainOrganizer] ✅ Initialization complete');
     }, 200);
     
     // Mettre à jour la navigation active
