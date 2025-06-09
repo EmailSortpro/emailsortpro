@@ -1055,7 +1055,20 @@ class TasksView {
                         </button>
                     </div>
                     
--warning" onclick="window.tasksView.bulkDelete()">
+                    <!-- Actions principales harmonisées AVEC SÉLECTION RÉPARÉE -->
+                    <div class="action-buttons-harmonized">
+                        ${selectedCount > 0 ? `
+                            <div class="selection-info-harmonized">
+                                <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
+                                <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <button class="btn-harmonized btn-success" onclick="window.tasksView.bulkMarkComplete()">
+                                <i class="fas fa-check"></i>
+                                <span>Terminer</span>
+                            </button>
+                            <button class="btn-harmonized btn-warning" onclick="window.tasksView.bulkDelete()">
                                 <i class="fas fa-trash"></i>
                                 <span>Supprimer</span>
                             </button>
@@ -2915,59 +2928,27 @@ class TasksView {
                 min-width: fit-content; /* LARGEUR FIXE POUR ÉVITER LE SAUT */
             }
             
-            /* ACTIONS PRINCIPALES AVEC DEUX LIGNES POUR ÉVITER LE DÉCALAGE */
+            /* ACTIONS PRINCIPALES AVEC SÉLECTION RÉPARÉE */
             .action-buttons-harmonized {
                 display: flex;
-                flex-direction: column;
-                gap: var(--gap-small);
-                flex-shrink: 0;
-            }
-            
-            /* LIGNE PRINCIPALE TOUJOURS VISIBLE */
-            .main-actions-line {
-                display: flex;
                 align-items: center;
                 gap: var(--gap-small);
                 height: var(--btn-height);
                 flex-shrink: 0;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                scrollbar-width: none;
-                -ms-overflow-style: none;
+                flex-wrap: nowrap; /* EMPÊCHE LE RETOUR À LA LIGNE */
+                overflow-x: auto; /* PERMET LE SCROLL HORIZONTAL SI NÉCESSAIRE */
+                scrollbar-width: none; /* CACHE LA SCROLLBAR FIREFOX */
+                -ms-overflow-style: none; /* CACHE LA SCROLLBAR IE */
             }
             
-            .main-actions-line::-webkit-scrollbar {
-                display: none;
+            .action-buttons-harmonized::-webkit-scrollbar {
+                display: none; /* CACHE LA SCROLLBAR WEBKIT */
             }
             
-            /* LIGNE DE SÉLECTION QUI APPARAÎT DYNAMIQUEMENT */
-            .selection-actions-line {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                height: var(--btn-height);
-                flex-shrink: 0;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                scrollbar-width: none;
-                -ms-overflow-style: none;
-                background: rgba(59, 130, 246, 0.05);
-                padding: var(--gap-small);
-                border-radius: var(--btn-border-radius);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                animation: slideInDown 0.3s ease-out;
-            }
-            
-            .selection-actions-line::-webkit-scrollbar {
-                display: none;
-            }
-            
-            /* TOUS les boutons dans les deux lignes DOIVENT avoir la même hauteur ET être centrés SANS DÉCALAGE */
-            .main-actions-line > *,
-            .selection-actions-line > *,
-            .main-actions-line .btn-harmonized,
-            .selection-actions-line .btn-harmonized,
-            .selection-actions-line .selection-info-harmonized {
+            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur ET être centrés SANS DÉCALAGE */
+            .action-buttons-harmonized > *,
+            .action-buttons-harmonized .btn-harmonized,
+            .action-buttons-harmonized .selection-info-harmonized {
                 height: var(--btn-height);
                 min-height: var(--btn-height);
                 max-height: var(--btn-height);
@@ -4775,9 +4756,8 @@ class TasksView {
                     min-width: 100px;
                 }
                 
-                /* FORCER l'harmonisation et la sélection sur tablette */
-                .main-actions-line > *,
-                .selection-actions-line > *,
+                /* MAINTENIR l'harmonisation et la sélection sur tablette */
+                .action-buttons-harmonized > *,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height);
                     min-height: var(--btn-height);
@@ -4890,19 +4870,6 @@ class TasksView {
                     height: auto;
                     min-height: var(--btn-height);
                     display: flex;
-                    flex-direction: column;
-                    align-items: stretch;
-                    gap: var(--gap-small);
-                }
-                
-                .main-actions-line,
-                .selection-actions-line {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                    height: auto;
-                    min-height: var(--btn-height);
-                    display: flex;
                     align-items: center;
                     gap: var(--gap-small);
                 }
@@ -4929,8 +4896,7 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur tablette */
-                .main-actions-line > *,
-                .selection-actions-line > * {
+                .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -5055,8 +5021,7 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur mobile */
-                .main-actions-line > *,
-                .selection-actions-line > * {
+                .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -5191,8 +5156,7 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur petit mobile */
-                .main-actions-line > *,
-                .selection-actions-line > *,
+                .action-buttons-harmonized > *,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
@@ -5265,8 +5229,7 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur très petit écran */
-                .main-actions-line > *,
-                .selection-actions-line > * {
+                .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -5278,18 +5241,7 @@ class TasksView {
                 }
             }
             
-            /* ===== ANIMATIONS POUR LA LIGNE DE SÉLECTION ===== */
-            @keyframes slideInDown {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
+            /* ===== ANIMATIONS ===== */
             @keyframes pulse {
                 0%, 100% { 
                     opacity: 1; 
