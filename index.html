@@ -257,8 +257,9 @@
     <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
     <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
+    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
     <style>
-        /* === RESET ET BASE === */
+        /* Reset et styles de base */
         * {
             margin: 0;
             padding: 0;
@@ -266,328 +267,128 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #f8fafc;
             overflow-x: hidden;
-            line-height: 1.6;
             transition: all 0.3s ease;
         }
 
-        /* === STYLES POUR LA PAGE DE LOGIN MODERNE === */
-        #loginPage {
+        /* === STYLES POUR LA PAGE DE LOGIN === */
+        .login-page-styles {
+            background: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 15px;
-            color: white;
         }
 
         .login-container {
-            max-width: 900px;
-            width: 100%;
             text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 35px 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            padding: 40px;
+            color: #1f2937;
         }
 
-        /* === HEADER === */
-        .header {
-            margin-bottom: 25px;
+        .login-logo {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+            color: #667eea;
         }
 
-        .logo-section {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 10px;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
-        .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .logo-icon i {
-            font-size: 35px;
-            color: white;
-        }
-
-        .app-title {
-            font-size: 2.5rem;
+        .login-title {
+            font-size: 3rem;
             font-weight: 800;
-            margin: 0;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            background: linear-gradient(45deg, #ffffff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            margin-bottom: 15px;
+            color: #1f2937;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .app-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.95;
-            line-height: 1.4;
-            margin-bottom: 20px;
-            font-weight: 400;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
+        .login-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            color: #6b7280;
+            line-height: 1.5;
         }
 
-        /* === DÉVELOPPEUR INFO === */
         .developer-info {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
             border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-            backdrop-filter: blur(10px);
+            padding: 20px;
+            margin-bottom: 40px;
+            text-align: left;
         }
 
         .developer-name {
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            color: white;
-            margin-bottom: 3px;
-        }
-
-        .developer-title {
-            font-size: 0.85rem;
-            color: #10b981;
-            font-weight: 600;
+            color: #1f2937;
             margin-bottom: 5px;
         }
 
+        .developer-title {
+            font-size: 0.9rem;
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
         .developer-email {
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            color: #6b7280;
             font-family: monospace;
         }
 
-        /* === BOUTON DE CONNEXION === */
-        .connect-section {
-            margin-bottom: 25px;
-        }
-
-        .connect-button {
-            background: linear-gradient(135deg, #10b981, #059669);
+        .login-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 16px 35px;
+            padding: 20px 50px;
             border: none;
             border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
+            font-size: 1.3rem;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
             display: inline-flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-            min-width: 240px;
+            gap: 15px;
+            text-decoration: none;
         }
 
-        .connect-button:hover {
+        .login-button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.5);
-            background: linear-gradient(135deg, #059669, #047857);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
         }
 
-        .connect-button:active {
-            transform: translateY(-1px);
-        }
-
-        .connect-button:disabled {
+        .login-button:disabled {
             opacity: 0.7;
             cursor: not-allowed;
             transform: none;
         }
 
-        .connect-button i {
-            font-size: 1.2rem;
-        }
-
-        .security-note {
-            font-size: 0.85rem;
-            opacity: 0.9;
+        .login-security-note {
+            margin-top: 25px;
+            font-size: 0.9rem;
+            color: #6b7280;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        /* === PROCESSUS EN 3 ÉTAPES === */
-        .process-section {
-            background: linear-gradient(145deg, 
-                rgba(255, 255, 255, 0.15) 0%, 
-                rgba(255, 255, 255, 0.08) 100%);
-            border-radius: 18px;
-            padding: 25px 20px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            margin-bottom: 20px;
-            backdrop-filter: blur(20px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .process-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            color: white;
-            text-align: center;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            background: linear-gradient(45deg, #ffffff, #f0f0f0);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            max-width: 750px;
-            margin: 0 auto;
-        }
-
-        .step-card {
-            background: linear-gradient(145deg, 
-                rgba(255, 255, 255, 0.12) 0%, 
-                rgba(255, 255, 255, 0.06) 100%);
-            border-radius: 14px;
-            padding: 20px 12px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(15px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            min-height: 160px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .step-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #10b981, #059669, #047857);
-            border-radius: 14px 14px 0 0;
-        }
-
-        .step-card:hover {
-            transform: translateY(-5px) scale(1.02);
-            background: linear-gradient(145deg, 
-                rgba(255, 255, 255, 0.2) 0%, 
-                rgba(255, 255, 255, 0.1) 100%);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
-            border-color: rgba(255, 255, 255, 0.4);
-        }
-
-        .step-number {
-            width: 35px;
-            height: 35px;
-            background: linear-gradient(135deg, #10b981, #059669);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: white;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-        }
-
-        .step-icon {
-            font-size: 1.6rem;
-            color: white;
-            margin-bottom: 8px;
-            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .step-card:hover .step-icon {
-            transform: scale(1.1);
-            text-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-        }
-
-        .step-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 6px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-            line-height: 1.2;
-        }
-
-        .step-description {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.9);
-            line-height: 1.2;
-            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
-        }
-
-        /* === SECTION SÉCURITÉ === */
-        .security-section {
-            background: linear-gradient(135deg, 
-                rgba(16, 185, 129, 0.2) 0%, 
-                rgba(5, 150, 105, 0.15) 100%);
-            border: 2px solid rgba(16, 185, 129, 0.3);
-            border-radius: 12px;
-            padding: 18px 20px;
-            backdrop-filter: blur(15px);
-        }
-
-        .security-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
-        .security-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #10b981;
-            margin: 0;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .security-text {
-            font-size: 0.9rem;
-            line-height: 1.4;
-            color: white;
-            font-weight: 500;
-            text-shadow: 0 1px 5px rgba(0, 0, 0, 0.3);
         }
 
         /* === STYLES POUR L'APPLICATION === */
@@ -681,7 +482,6 @@
             margin-top: 0; /* Pas de marge par défaut */
             min-height: 100vh;
             padding: 0;
-            display: none; /* Caché par défaut */
         }
 
         #pageContent {
@@ -711,7 +511,6 @@
         }
 
         body.app-active .app-main {
-            display: block !important;
             margin-top: 120px; /* Header + Nav */
         }
 
@@ -787,203 +586,32 @@
         }
 
         /* Loading overlay */
-        .loading-overlay {
+        .login-loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(102, 126, 234, 0.95);
+            background: rgba(255, 255, 255, 0.95);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
             flex-direction: column;
-            gap: 25px;
-            backdrop-filter: blur(10px);
+            gap: 30px;
         }
 
-        .loading-overlay.active {
+        .login-loading-overlay.active {
             display: flex;
         }
 
-        .spinner {
+        .login-spinner {
             width: 60px;
             height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top: 4px solid #667eea;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-        }
-
-        .loading-text {
-            color: white;
-            font-size: 18px;
-            font-weight: 600;
-            text-align: center;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        /* === RESPONSIVE DESIGN === */
-        @media (max-width: 768px) {
-            .login-container {
-                padding: 35px 20px;
-                margin: 10px;
-            }
-
-            .app-title {
-                font-size: 2.2rem;
-            }
-
-            .app-subtitle {
-                font-size: 1.1rem;
-                margin-bottom: 25px;
-            }
-
-            .logo-section {
-                flex-direction: column;
-                gap: 12px;
-                margin-bottom: 20px;
-            }
-
-            .logo-icon {
-                width: 60px;
-                height: 60px;
-            }
-
-            .logo-icon i {
-                font-size: 35px;
-            }
-
-            .process-section {
-                padding: 30px 15px;
-            }
-
-            .process-title {
-                font-size: 1.8rem;
-                margin-bottom: 25px;
-            }
-
-            .steps-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .step-card {
-                padding: 20px 15px;
-                min-height: 180px;
-            }
-
-            .step-icon {
-                font-size: 1.8rem;
-            }
-
-            .step-title {
-                font-size: 1rem;
-            }
-
-            .step-description {
-                font-size: 0.85rem;
-            }
-
-            .connect-button {
-                padding: 16px 35px;
-                font-size: 1rem;
-                min-width: 240px;
-            }
-
-            .security-section {
-                padding: 20px;
-            }
-
-            .security-title {
-                font-size: 1.1rem;
-            }
-
-            .security-text {
-                font-size: 0.95rem;
-            }
-
-            .app-nav {
-                height: auto;
-                padding: 10px;
-            }
-            
-            #mainNav {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            body.app-active .app-main {
-                margin-top: 140px;
-            }
-            
-            .dashboard-actions {
-                grid-template-columns: 1fr;
-            }
-
-            #pageContent {
-                padding: 10px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .login-container {
-                padding: 25px 15px;
-                margin: 5px;
-            }
-
-            .app-title {
-                font-size: 1.8rem;
-            }
-
-            .app-subtitle {
-                font-size: 1rem;
-            }
-
-            .process-title {
-                font-size: 1.6rem;
-            }
-
-            .step-card {
-                min-height: 160px;
-                padding: 18px 12px;
-            }
-
-            .step-icon {
-                font-size: 1.6rem;
-            }
-
-            .step-title {
-                font-size: 0.95rem;
-            }
-
-            .step-description {
-                font-size: 0.8rem;
-            }
-
-            .connect-button {
-                padding: 14px 30px;
-                font-size: 0.95rem;
-                min-width: 220px;
-            }
-        }
-
-        /* === ANIMATIONS === */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
         }
 
         @keyframes spin {
@@ -991,19 +619,14 @@
             100% { transform: rotate(360deg); }
         }
 
-        .login-container {
-            animation: fadeInUp 0.8s ease;
+        .login-loading-text {
+            color: #1f2937;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
         }
 
-        .step-card {
-            animation: fadeInUp 0.6s ease forwards;
-        }
-
-        .step-card:nth-child(1) { animation-delay: 0.1s; }
-        .step-card:nth-child(2) { animation-delay: 0.2s; }
-        .step-card:nth-child(3) { animation-delay: 0.3s; }
-
-        /* === UTILITIES === */
+        /* Configuration error styles */
         .config-error-banner {
             position: fixed;
             top: 0;
@@ -1014,6 +637,7 @@
             padding: 15px;
             text-align: center;
             z-index: 99999;
+            font-family: monospace;
             font-size: 14px;
         }
 
@@ -1040,6 +664,7 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        /* Domain warning banner */
         .domain-warning {
             position: fixed;
             top: 0;
@@ -1052,6 +677,60 @@
             z-index: 99998;
             font-size: 14px;
             font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 20px;
+            }
+
+            .login-title {
+                font-size: 2.5rem;
+            }
+
+            .login-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .login-button {
+                padding: 18px 40px;
+                font-size: 1.1rem;
+            }
+
+            .app-nav {
+                height: auto;
+                padding: 10px;
+            }
+            
+            #mainNav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            body.app-active .app-main {
+                margin-top: 140px;
+            }
+            
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+            }
+
+            #pageContent {
+                padding: 10px;
+            }
+        }
+
+        /* Animation pour les transitions */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .fade-in-up {
@@ -1125,83 +804,33 @@
 
         <!-- Contenu Principal -->
         <main class="app-main">
-            <!-- Page de Connexion moderne avec nouveau design -->
-            <div id="loginPage">
+            <!-- Page de Connexion épurée (visible par défaut) -->
+            <div id="loginPage" class="login-page-styles">
                 <div class="login-container">
-                    <!-- Header -->
-                    <div class="header">
-                        <div class="logo-section">
-                            <div class="logo-icon">
-                                <i class="fas fa-envelope-open-text"></i>
-                            </div>
-                            <h1 class="app-title">EmailSortProAI</h1>
-                        </div>
-                        <p class="app-subtitle">
-                            Assistant IA pour Outlook : analysez et organisez vos emails automatiquement
-                        </p>
+                    <div class="login-logo">
+                        <i class="fas fa-envelope-open-text"></i>
                     </div>
+                    
+                    <h1 class="login-title">EmailSortProAI</h1>
+                    
+                    <p class="login-subtitle">
+                        Organisez vos emails Outlook avec l'IA
+                    </p>
 
-                    <!-- Info développeur -->
                     <div class="developer-info">
                         <div class="developer-name">VH</div>
                         <div class="developer-title">Vianney Hastings</div>
                         <div class="developer-email">vianney.hastings@hotmail.fr</div>
                     </div>
 
-                    <!-- Bouton de connexion -->
-                    <div class="connect-section">
-                        <button id="loginBtn" class="connect-button">
-                            <i class="fab fa-microsoft"></i>
-                            Se connecter à Outlook
-                        </button>
-                        <div class="security-note">
-                            <i class="fas fa-shield-alt"></i>
-                            Connexion sécurisée Microsoft
-                        </div>
-                    </div>
+                    <button id="loginBtn" class="login-button">
+                        <i class="fab fa-microsoft"></i>
+                        Se connecter à Outlook
+                    </button>
 
-                    <!-- Processus simplifié en 3 étapes -->
-                    <div class="process-section">
-                        <h2 class="process-title">Comment ça marche</h2>
-                        <div class="steps-grid">
-                            <div class="step-card">
-                                <div class="step-number">1</div>
-                                <div class="step-icon">
-                                    <i class="fas fa-plug"></i>
-                                </div>
-                                <h3 class="step-title">Connexion</h3>
-                                <p class="step-description">Connectez-vous sécurisé à Outlook</p>
-                            </div>
-                            
-                            <div class="step-card">
-                                <div class="step-number">2</div>
-                                <div class="step-icon">
-                                    <i class="fas fa-brain"></i>
-                                </div>
-                                <h3 class="step-title">Analyse IA</h3>
-                                <p class="step-description">L'IA analyse et catégorise vos emails</p>
-                            </div>
-                            
-                            <div class="step-card">
-                                <div class="step-number">3</div>
-                                <div class="step-icon">
-                                    <i class="fas fa-tasks"></i>
-                                </div>
-                                <h3 class="step-title">Organisation</h3>
-                                <p class="step-description">Création automatique de tâches et tri</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section RGPD -->
-                    <div class="security-section">
-                        <div class="security-header">
-                            <i class="fas fa-shield-alt"></i>
-                            <h3 class="security-title">100% RGPD & Sécurisé</h3>
-                        </div>
-                        <p class="security-text">
-                            <strong>Vos emails ne sont jamais stockés.</strong> Traitement entièrement local. Aucune donnée transmise.
-                        </p>
+                    <div class="login-security-note">
+                        <i class="fas fa-shield-alt"></i>
+                        Connexion sécurisée Microsoft
                     </div>
                 </div>
             </div>
@@ -1260,10 +889,10 @@
             </div>
         </main>
 
-        <!-- Overlay de Chargement -->
-        <div id="loadingOverlay" class="loading-overlay">
-            <div class="spinner"></div>
-            <div class="loading-text">
+        <!-- Overlay de Chargement épuré -->
+        <div id="loadingOverlay" class="login-loading-overlay">
+            <div class="login-spinner"></div>
+            <div class="login-loading-text">
                 <div>Connexion à Outlook...</div>
                 <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
             </div>
@@ -1342,14 +971,6 @@
                     
                     if (window.app && window.app.login) {
                         window.app.login();
-                    } else {
-                        // Simulation pour la démonstration
-                        setTimeout(() => {
-                            alert('Connexion simulée - Intégrez avec votre système d\'authentification');
-                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                            this.disabled = false;
-                            if (loadingOverlay) loadingOverlay.classList.remove('active');
-                        }, 2000);
                     }
                 });
             }
