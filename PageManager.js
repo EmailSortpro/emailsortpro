@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.1 - Interface moderne épurée avec boutons catégories multi-lignes
+// PageManager.js - Version 11.2 - Texte explicatif en haut et catégories deux lignes optimisées
 
 class PageManager {
     constructor() {
@@ -26,7 +26,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v11.1 - Interface moderne avec boutons catégories multi-lignes');
+        console.log('[PageManager] Initialized v11.2 - Texte explicatif en haut et catégories deux lignes optimisées');
     }
 
     // =====================================
@@ -104,6 +104,12 @@ class PageManager {
             
             container.innerHTML = `
                 <div class="tasks-page-modern">
+                    <!-- Texte explicatif en premier -->
+                    <div class="explanation-text-harmonized-top">
+                        <i class="fas fa-info-circle"></i>
+                        <span><strong>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</strong></span>
+                    </div>
+
                     <!-- Barre de contrôles harmonisée avec TasksView -->
                     <div class="controls-bar-harmonized">
                         <!-- Section recherche -->
@@ -173,13 +179,7 @@ class PageManager {
                         </div>
                     </div>
 
-                    <!-- Texte explicatif -->
-                    <div class="explanation-text-harmonized">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
-                    </div>
-
-                    <!-- Filtres de catégories harmonisés et multi-lignes -->
+                    <!-- Filtres de catégories harmonisés et optimisés deux lignes -->
                     <div class="status-filters-harmonized-multiline">
                         ${this.buildHarmonizedCategoryTabs(categoryCounts, totalEmails, categories)}
                     </div>
@@ -235,16 +235,24 @@ class PageManager {
             });
         }
         
-        return tabs.map(tab => `
-            <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''}" 
-                    onclick="window.pageManager.filterByCategory('${tab.id}')">
-                <div class="pill-content-row">
-                    <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                    <span class="pill-text-harmonized-multiline">${tab.name}</span>
-                    <span class="pill-count-harmonized-multiline">${tab.count}</span>
-                </div>
-            </button>
-        `).join('');
+        return tabs.map(tab => {
+            // Optimisation pour les noms à deux mots
+            const nameWords = tab.name.split(' ');
+            const displayName = nameWords.length > 1 ? 
+                `<span class="pill-text-line1">${nameWords[0]}</span><span class="pill-text-line2">${nameWords.slice(1).join(' ')}</span>` :
+                `<span class="pill-text-single">${tab.name}</span>`;
+
+            return `
+                <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''}" 
+                        onclick="window.pageManager.filterByCategory('${tab.id}')">
+                    <div class="pill-content-row-optimized">
+                        <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
+                        <div class="pill-text-harmonized-multiline-optimized">${displayName}</div>
+                        <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                    </div>
+                </button>
+            `;
+        }).join('');
     }
 
     // =====================================
@@ -612,6 +620,49 @@ class PageManager {
                 padding: var(--gap-large);
                 font-size: var(--btn-font-size);
             }
+
+            /* NOUVEAU : Texte explicatif en haut et mis en avant */
+            .explanation-text-harmonized-top {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                border: none;
+                border-radius: var(--card-border-radius);
+                padding: var(--gap-large);
+                margin-bottom: var(--gap-medium);
+                display: flex;
+                align-items: center;
+                gap: var(--gap-medium);
+                color: white;
+                font-size: 15px;
+                font-weight: 600;
+                line-height: 1.5;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .explanation-text-harmonized-top::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+                pointer-events: none;
+            }
+
+            .explanation-text-harmonized-top i {
+                font-size: 20px;
+                color: rgba(255, 255, 255, 0.9);
+                flex-shrink: 0;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+            }
+
+            .explanation-text-harmonized-top span {
+                flex: 1;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            }
             
             /* Barre de contrôles identique */
             .controls-bar-harmonized {
@@ -889,31 +940,8 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
             }
-
-            /* NOUVEAU : Texte explicatif */
-            .explanation-text-harmonized {
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
-                display: flex;
-                align-items: center;
-                gap: var(--gap-medium);
-                color: #1e40af;
-                font-size: 14px;
-                font-weight: 500;
-                line-height: 1.5;
-                backdrop-filter: blur(10px);
-            }
-
-            .explanation-text-harmonized i {
-                font-size: 16px;
-                color: #3b82f6;
-                flex-shrink: 0;
-            }
             
-            /* NOUVEAU : Filtres de statut multi-lignes et ajustés */
+            /* NOUVEAU : Filtres de statut multi-lignes optimisés */
             .status-filters-harmonized-multiline {
                 display: flex;
                 gap: var(--gap-small);
@@ -950,12 +978,14 @@ class PageManager {
                 overflow: hidden;
             }
             
-            .pill-content-row {
+            .pill-content-row-optimized {
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: var(--gap-small);
                 width: 100%;
+                flex-direction: column;
+                min-height: 100%;
             }
             
             .status-pill-harmonized-multiline:hover {
@@ -974,35 +1004,67 @@ class PageManager {
             }
             
             .pill-icon-harmonized-multiline {
-                font-size: 16px;
+                font-size: 14px;
                 line-height: 1;
                 flex-shrink: 0;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                margin-bottom: 2px;
             }
             
-            .pill-text-harmonized-multiline {
-                font-weight: 700;
-                font-size: 13px;
-                line-height: 1.2;
-                flex: 1;
-                text-align: center;
+            /* NOUVEAU : Optimisation texte deux lignes */
+            .pill-text-harmonized-multiline-optimized {
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
+                line-height: 1.1;
+                flex: 1;
+                text-align: center;
+                gap: 1px;
+                margin-bottom: 2px;
+            }
+            
+            .pill-text-line1 {
+                font-weight: 700;
+                font-size: 11px;
+                display: block;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                max-width: 100%;
+            }
+            
+            .pill-text-line2 {
+                font-weight: 600;
+                font-size: 10px;
+                display: block;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                opacity: 0.8;
+            }
+            
+            .pill-text-single {
+                font-weight: 700;
+                font-size: 11px;
+                display: block;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                margin-bottom: 2px;
             }
             
             .pill-count-harmonized-multiline {
                 background: rgba(0, 0, 0, 0.1);
-                padding: 3px 7px;
-                border-radius: 8px;
-                font-size: 11px;
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 10px;
                 font-weight: 800;
-                min-width: 18px;
+                min-width: 16px;
                 text-align: center;
                 line-height: 1;
                 flex-shrink: 0;
@@ -1518,32 +1580,6 @@ class PageManager {
                 display: block;
             }
             
-            .group-content-harmonized .task-harmonized-card {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                box-shadow: none;
-                overflow: hidden;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                box-sizing: border-box;
-                border-bottom: 1px solid #e5e7eb;
-                margin: 0;
-            }
-            
-            .group-content-harmonized .task-harmonized-card:last-child {
-                border-bottom-left-radius: var(--card-border-radius);
-                border-bottom-right-radius: var(--card-border-radius);
-                border-bottom: var(--border-width) solid #e5e7eb;
-            }
-            
             .group-content-harmonized .task-harmonized-card::before {
                 content: '';
                 position: absolute;
@@ -1651,17 +1687,21 @@ class PageManager {
                     min-height: 44px;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 12px;
+                .pill-text-line1, .pill-text-single {
+                    font-size: 10px;
+                }
+                
+                .pill-text-line2 {
+                    font-size: 9px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 15px;
+                    font-size: 13px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 10px;
-                    padding: 2px 6px;
+                    font-size: 9px;
+                    padding: 2px 5px;
                 }
             }
             
@@ -1710,17 +1750,21 @@ class PageManager {
                     min-height: 42px;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 11px;
+                .pill-text-line1, .pill-text-single {
+                    font-size: 9px;
+                }
+                
+                .pill-text-line2 {
+                    font-size: 8px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 14px;
+                    font-size: 12px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 9px;
-                    padding: 2px 5px;
+                    font-size: 8px;
+                    padding: 2px 4px;
                 }
             }
             
@@ -1741,17 +1785,21 @@ class PageManager {
                     display: none;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 10px;
+                .pill-text-line1, .pill-text-single {
+                    font-size: 8px;
+                }
+                
+                .pill-text-line2 {
+                    font-size: 7px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 13px;
+                    font-size: 11px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 8px;
-                    padding: 2px 4px;
+                    font-size: 7px;
+                    padding: 1px 3px;
                 }
             }
             
@@ -1763,20 +1811,24 @@ class PageManager {
                     min-height: 38px;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 9px;
+                .pill-text-line1, .pill-text-single {
+                    font-size: 7px;
+                }
+                
+                .pill-text-line2 {
+                    font-size: 6px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 12px;
+                    font-size: 10px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 8px;
-                    padding: 1px 4px;
+                    font-size: 6px;
+                    padding: 1px 3px;
                 }
                 
-                .explanation-text-harmonized {
+                .explanation-text-harmonized-top {
                     font-size: 12px;
                     padding: var(--gap-small);
                 }
@@ -2802,4 +2854,30 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.1 loaded - Interface harmonisée avec boutons catégories multi-lignes');
+console.log('✅ PageManager v11.2 loaded - Texte explicatif en haut et catégories deux lignes optimisées');harmonized-card {
+                display: flex;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
+                border-radius: 0;
+                padding: var(--card-padding);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                box-shadow: none;
+                overflow: hidden;
+                min-height: var(--card-height);
+                max-height: var(--card-height);
+                box-sizing: border-box;
+                border-bottom: 1px solid #e5e7eb;
+                margin: 0;
+            }
+            
+            .group-content-harmonized .task-harmonized-card:last-child {
+                border-bottom-left-radius: var(--card-border-radius);
+                border-bottom-right-radius: var(--card-border-radius);
+                border-bottom: var(--border-width) solid #e5e7eb;
+            }
+            
+            .group-content-harmonized .task-
