@@ -47,7 +47,9 @@
         window.APP_STATE = {
             initialized: false,
             authenticated: false,
-            appShown: false
+            appShown: false,
+            hasTokens: false,
+            loginInProgress: false
         };
         
         // =====================================================
@@ -1136,7 +1138,7 @@
             window.forceShowApp();
         };
 
-        // Vérification précoce IMMÉDIATE de l'authentification RENFORCÉE
+        // Vérification précoce INTELLIGENTE de l'authentification
         const earlyAuthCheck = () => {
             console.log('[EARLY_AUTH] Starting early auth check...');
             
@@ -1146,15 +1148,11 @@
                 const msalToken = localStorage.getItem('msal.token.keys');
                 
                 if (msalAccount && msalToken) {
-                    console.log('[EARLY_AUTH] Tokens detected in localStorage, user likely authenticated');
+                    console.log('[EARLY_AUTH] Tokens detected, waiting for app.js to handle authentication...');
                     
-                    // Marquer immédiatement l'état
-                    window.APP_STATE.authenticated = true;
-                    
-                    // Activer l'app immédiatement
-                    setTimeout(() => {
-                        window.forceShowApp();
-                    }, 100);
+                    // NE PAS forcer l'affichage immédiatement
+                    // Laisser app.js gérer le processus normal
+                    window.APP_STATE.hasTokens = true;
                     
                     return true;
                 }
@@ -1162,32 +1160,29 @@
                 console.warn('[EARLY_AUTH] Error checking localStorage:', error);
             }
             
-            console.log('[EARLY_AUTH] No tokens found, showing login');
+            console.log('[EARLY_AUTH] No tokens found, login will be required');
             return false;
         };
 
-        // Exécuter la vérification précoce TOUT DE SUITE
+        // Exécuter la vérification précoce sans forcer l'affichage
         earlyAuthCheck();
 
-        // Gestionnaire principal DOMContentLoaded CORRIGÉ
+        // Gestionnaire principal DOMContentLoaded SIMPLIFIÉ
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
             
-            // Si l'app est déjà affichée, ne pas réinitialiser
-            if (window.APP_STATE.appShown) {
-                console.log('[INDEX] App already shown via early auth, skipping additional setup');
-                return;
-            }
-            
-            // Configuration du bouton de login SANS CONFLIT
+            // Configuration du bouton de login SIMPLE
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
-                // Remplacer l'événement existant pour éviter les conflits
-                const newLoginBtn = loginBtn.cloneNode(true);
-                loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
-                
-                newLoginBtn.addEventListener('click', function() {
+                loginBtn.addEventListener('click', function() {
                     console.log('[LOGIN] Login button clicked');
+                    
+                    if (window.APP_STATE.loginInProgress) {
+                        console.log('[LOGIN] Login already in progress, ignoring click');
+                        return;
+                    }
+                    
+                    window.APP_STATE.loginInProgress = true;
                     
                     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
                     this.disabled = true;
@@ -1197,28 +1192,32 @@
                         loadingOverlay.classList.add('active');
                     }
                     
-                    // Appeler directement la fonction de login de l'app
-                    if (window.app && window.app.login) {
-                        window.app.login().then(() => {
-                            console.log('[LOGIN] Login successful, forcing app display...');
-                            window.forceShowApp();
-                        }).catch((error) => {
-                            console.error('[LOGIN] Login failed:', error);
-                            // Réinitialiser le bouton en cas d'erreur
+                    // Attendre que app.js soit prêt
+                    const waitForApp = (attempts = 0) => {
+                        if (window.app && window.app.login) {
+                            window.app.login().catch((error) => {
+                                console.error('[LOGIN] Login failed:', error);
+                                window.APP_STATE.loginInProgress = false;
+                                this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+                                this.disabled = false;
+                                if (loadingOverlay) {
+                                    loadingOverlay.classList.remove('active');
+                                }
+                            });
+                        } else if (attempts < 50) {
+                            setTimeout(() => waitForApp(attempts + 1), 100);
+                        } else {
+                            console.error('[LOGIN] App not ready after 5 seconds');
+                            window.APP_STATE.loginInProgress = false;
                             this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                             this.disabled = false;
                             if (loadingOverlay) {
                                 loadingOverlay.classList.remove('active');
                             }
-                        });
-                    } else {
-                        console.warn('[LOGIN] App or login method not available');
-                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                        this.disabled = false;
-                        if (loadingOverlay) {
-                            loadingOverlay.classList.remove('active');
                         }
-                    }
+                    };
+                    
+                    waitForApp();
                 });
             }
             
@@ -1258,8 +1257,14 @@
         
         // FONCTION GLOBALE POUR CALLBACK D'AUTHENTIFICATION RÉUSSIE
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful, forcing app display...');
-            window.forceShowApp();
+            console.log('[AUTH_SUCCESS] Authentication successful via app.js');
+            
+            // Marquer l'état
+            window.APP_STATE.authenticated = true;
+            window.APP_STATE.loginInProgress = false;
+            
+            // Laisser app.js gérer l'affichage naturellement
+            // window.forceShowApp(); // RETIRÉ pour éviter les conflits
         };
 
         // Fonction de diagnostic accessible globalement
