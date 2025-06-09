@@ -1138,37 +1138,31 @@ class TasksView {
                             <button class="bulk-action-btn complete" onclick="window.tasksView.bulkMarkCompleted()">
                                 <i class="fas fa-check-circle"></i>
                                 <span>Marquer terminé</span>
-                                <small>${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</small>
                             </button>
                             
                             <button class="bulk-action-btn priority" onclick="window.tasksView.bulkChangePriority()">
                                 <i class="fas fa-flag"></i>
                                 <span>Changer priorité</span>
-                                <small>Modifier toutes</small>
                             </button>
                             
                             <button class="bulk-action-btn status" onclick="window.tasksView.bulkChangeStatus()">
                                 <i class="fas fa-tasks"></i>
                                 <span>Changer statut</span>
-                                <small>En cours, terminé...</small>
                             </button>
                             
                             <button class="bulk-action-btn archive" onclick="window.tasksView.bulkArchive()">
                                 <i class="fas fa-archive"></i>
                                 <span>Archiver</span>
-                                <small>Marquer comme archivé</small>
                             </button>
                             
                             <button class="bulk-action-btn export" onclick="window.tasksView.bulkExport()">
                                 <i class="fas fa-download"></i>
                                 <span>Exporter CSV</span>
-                                <small>Télécharger sélection</small>
                             </button>
                             
                             <button class="bulk-action-btn delete" onclick="window.tasksView.bulkDelete()">
                                 <i class="fas fa-trash"></i>
                                 <span>Supprimer</span>
-                                <small>Action irréversible</small>
                             </button>
                         </div>
                     </div>
@@ -3045,77 +3039,69 @@ class TasksView {
                 border-color: #9ca3af;
             }
 
-            /* Grille d'actions groupées */
+            /* Grille d'actions groupées harmonisées */
             .bulk-actions-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: var(--gap-md);
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: var(--gap-sm);
             }
             
             .bulk-action-btn {
                 display: flex;
-                flex-direction: column;
                 align-items: center;
-                justify-content: center;
-                padding: var(--gap-lg);
+                justify-content: flex-start;
+                padding: var(--btn-padding);
                 background: white;
-                border: 2px solid #e5e7eb;
+                border: 1px solid #e5e7eb;
                 border-radius: var(--btn-border-radius);
                 cursor: pointer;
-                transition: all 0.3s ease;
-                text-align: center;
-                min-height: 100px;
+                transition: var(--transition);
+                text-align: left;
+                height: var(--btn-height);
+                min-height: var(--btn-height);
+                max-height: var(--btn-height);
                 position: relative;
                 overflow: hidden;
-            }
-            
-            .bulk-action-btn::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
-                opacity: 0;
-                transition: all 0.3s ease;
+                gap: var(--btn-gap);
+                box-shadow: var(--shadow-sm);
+                font-size: var(--btn-font-size);
+                font-weight: var(--btn-font-weight);
             }
             
             .bulk-action-btn:hover {
                 border-color: #6366f1;
                 background: #f8fafc;
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-lg);
-            }
-            
-            .bulk-action-btn:hover::before {
-                opacity: 1;
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
             }
             
             .bulk-action-btn i {
-                font-size: 24px;
-                margin-bottom: var(--gap-sm);
+                font-size: var(--btn-font-size);
                 color: #6b7280;
-                transition: all 0.3s ease;
+                transition: var(--transition);
+                flex-shrink: 0;
+                width: 16px;
+                text-align: center;
             }
             
             .bulk-action-btn span {
-                font-weight: 700;
+                font-weight: var(--btn-font-weight);
                 color: #1f2937;
-                margin-bottom: var(--gap-xs);
-                font-size: 14px;
+                font-size: var(--btn-font-size);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                flex: 1;
             }
             
             .bulk-action-btn small {
-                color: #6b7280;
-                font-size: 11px;
-                font-weight: 500;
+                display: none;
             }
 
-            /* Couleurs spécifiques pour chaque action */
+            /* Couleurs spécifiques pour chaque action harmonisées */
             .bulk-action-btn.complete:hover {
                 border-color: #16a34a;
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+                background: #f0fdf4;
             }
             
             .bulk-action-btn.complete:hover i {
@@ -3124,7 +3110,7 @@ class TasksView {
             
             .bulk-action-btn.priority:hover {
                 border-color: #f59e0b;
-                background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+                background: #fffbeb;
             }
             
             .bulk-action-btn.priority:hover i {
@@ -3133,7 +3119,7 @@ class TasksView {
             
             .bulk-action-btn.status:hover {
                 border-color: #3b82f6;
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                background: #eff6ff;
             }
             
             .bulk-action-btn.status:hover i {
@@ -3142,7 +3128,7 @@ class TasksView {
             
             .bulk-action-btn.archive:hover {
                 border-color: #8b5cf6;
-                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+                background: #f3e8ff;
             }
             
             .bulk-action-btn.archive:hover i {
@@ -3151,7 +3137,7 @@ class TasksView {
             
             .bulk-action-btn.export:hover {
                 border-color: #10b981;
-                background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+                background: #ecfdf5;
             }
             
             .bulk-action-btn.export:hover i {
@@ -3160,7 +3146,7 @@ class TasksView {
             
             .bulk-action-btn.delete:hover {
                 border-color: #ef4444;
-                background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+                background: #fef2f2;
             }
             
             .bulk-action-btn.delete:hover i {
@@ -3833,7 +3819,8 @@ class TasksView {
                 }
                 
                 .bulk-actions-grid {
-                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                    gap: var(--gap-xs);
                 }
             }
             
@@ -3849,6 +3836,11 @@ class TasksView {
                 
                 .bulk-actions-grid {
                     grid-template-columns: repeat(2, 1fr);
+                    gap: var(--gap-xs);
+                }
+                
+                .bulk-action-btn span {
+                    font-size: 12px;
                 }
             }
         `;
