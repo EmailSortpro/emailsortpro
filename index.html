@@ -257,9 +257,8 @@
     <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
     <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
-    <!-- Styles pour la nouvelle page de connexion -->
     <style>
-        /* Reset et styles de base */
+        /* === RESET ET BASE === */
         * {
             margin: 0;
             padding: 0;
@@ -267,140 +266,107 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f8fafc;
             overflow-x: hidden;
-            transition: all 0.3s ease;
         }
 
-        /* === STYLES POUR LA NOUVELLE PAGE DE LOGIN === */
-        .login-page-styles {
+        /* === PAGE DE CONNEXION === */
+        .login-page {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 10000;
-            color: white;
             padding: 20px;
+            color: white;
         }
 
         .login-container {
-            max-width: 1000px;
+            max-width: 900px;
             width: 100%;
             text-align: center;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 50px 40px;
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 60px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
         }
 
-        /* Header compact */
+        /* === HEADER === */
         .header {
-            margin-bottom: 30px;
+            margin-bottom: 50px;
         }
 
-        .logo-title {
+        .logo-section {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
         .logo-icon {
-            width: 70px;
-            height: 70px;
+            width: 80px;
+            height: 80px;
             background: rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .logo-icon i {
-            font-size: 40px;
+            font-size: 48px;
             color: white;
         }
 
         .app-title {
-            font-size: 4rem;
+            font-size: 3.5rem;
             font-weight: 800;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             margin: 0;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .app-subtitle {
-            font-size: 1.8rem;
+            font-size: 1.4rem;
             opacity: 0.9;
-            line-height: 1.4;
+            line-height: 1.5;
             margin-bottom: 40px;
-            font-weight: 500;
+            font-weight: 400;
         }
 
-        /* Section bouton de connexion */
+        /* === BOUTON DE CONNEXION === */
         .connect-section {
-            margin-bottom: 40px;
+            margin-bottom: 50px;
         }
 
-        /* Bouton de connexion amélioré */
         .connect-button {
             background: linear-gradient(135deg, #10b981, #059669);
             color: white;
-            padding: 20px 45px;
+            padding: 18px 40px;
             border: none;
             border-radius: 50px;
-            font-size: 1.4rem;
-            font-weight: 700;
+            font-size: 1.2rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
             display: inline-flex;
             align-items: center;
-            gap: 15px;
-            text-decoration: none;
-            margin-bottom: 15px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .connect-button:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .connect-button:hover:before {
-            left: 100%;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
         .connect-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4);
-            background: linear-gradient(135deg, #059669, #047857);
-        }
-
-        .connect-button.loading {
-            pointer-events: none;
         }
 
         .connect-button i {
-            font-size: 1.6rem;
+            font-size: 1.2rem;
         }
 
         .security-note {
@@ -410,231 +376,121 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 500;
         }
 
-        /* Étapes processus ULTRA PROPRE ET LISIBLE */
-        .process-flow {
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 20px;
-            padding: 50px 30px;
-            margin-bottom: 0;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(15px);
+        /* === PROCESSUS EN 5 ÉTAPES === */
+        .process-section {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 40px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: 40px;
         }
 
         .process-title {
-            font-size: 2.8rem;
-            font-weight: 800;
-            margin-bottom: 60px;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 40px;
             color: white;
-            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            text-align: center;
         }
 
-        .steps-horizontal {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 20px;
-            max-width: 100%;
+        .steps-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            max-width: 800px;
             margin: 0 auto;
             position: relative;
         }
 
-        /* Ligne de connexion entre les étapes */
-        .steps-horizontal::before {
+        /* Ligne de connexion */
+        .steps-container::before {
             content: '';
             position: absolute;
-            top: 45px;
-            left: 12.5%;
-            right: 12.5%;
-            height: 3px;
-            background: linear-gradient(90deg, 
-                rgba(255, 255, 255, 0.6) 0%,
-                rgba(255, 255, 255, 0.8) 25%,
-                rgba(255, 255, 255, 0.8) 75%,
-                rgba(255, 255, 255, 0.6) 100%
-            );
-            border-radius: 2px;
+            top: 40px;
+            left: 12%;
+            right: 12%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.3);
             z-index: 1;
         }
 
-        .step-mini {
+        .step {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 12px;
             position: relative;
-            padding: 25px 15px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            transition: all 0.4s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
             z-index: 2;
         }
 
-        .step-mini:hover {
-            background: rgba(255, 255, 255, 0.18);
-            transform: translateY(-8px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
         .step-circle {
-            width: 90px;
-            height: 90px;
-            background: linear-gradient(135deg, 
-                rgba(255, 255, 255, 0.25) 0%, 
-                rgba(255, 255, 255, 0.15) 100%
-            );
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 3px solid rgba(255, 255, 255, 0.6);
-            transition: all 0.4s ease;
-            flex-shrink: 0;
-            box-shadow: 
-                0 10px 30px rgba(0, 0, 0, 0.2),
-                inset 0 2px 10px rgba(255, 255, 255, 0.2);
-            position: relative;
-            z-index: 3;
+            transition: all 0.3s ease;
         }
 
         .step-circle:hover {
-            background: linear-gradient(135deg, 
-                rgba(255, 255, 255, 0.4) 0%, 
-                rgba(255, 255, 255, 0.25) 100%
-            );
-            transform: scale(1.1);
-            border-color: white;
-            box-shadow: 
-                0 15px 40px rgba(0, 0, 0, 0.3),
-                inset 0 2px 15px rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
         }
 
         .step-circle i {
-            font-size: 36px;
+            font-size: 32px;
             color: white;
-            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
         }
 
         .step-label {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: white;
-            text-align: center;
-            line-height: 1.4;
-            width: 100%;
-            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
-            background: linear-gradient(135deg, 
-                rgba(0, 0, 0, 0.3) 0%,
-                rgba(0, 0, 0, 0.2) 100%
-            );
-            padding: 12px 8px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        .rgpd-compact {
-            background: linear-gradient(135deg, 
-                rgba(16, 185, 129, 0.25) 0%,
-                rgba(16, 185, 129, 0.15) 100%
-            );
-            border: 2px solid rgba(16, 185, 129, 0.5);
-            border-radius: 16px;
-            padding: 30px;
-            margin-top: 50px;
-            backdrop-filter: blur(15px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-
-        .rgpd-header {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .rgpd-header i {
-            font-size: 2rem;
-            color: #10b981;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        .rgpd-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #10b981;
-            margin: 0;
-            text-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-        }
-
-        .rgpd-text {
-            font-size: 1.4rem;
-            line-height: 1.6;
-            color: white;
+            font-size: 0.9rem;
             font-weight: 600;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            color: white;
             text-align: center;
+            line-height: 1.3;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            white-space: nowrap;
         }
 
-        /* Barre de progression optionnelle */
-        .progress-bar {
-            width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #10b981, #059669);
-            width: 0%;
-            border-radius: 2px;
-            transition: width 1s ease;
-        }
-
-        .rgpd-compact {
-            background: rgba(16, 185, 129, 0.2);
-            border: 2px solid rgba(16, 185, 129, 0.4);
+        /* === SECTION RGPD === */
+        .security-section {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
             border-radius: 12px;
             padding: 25px;
-            margin-top: 40px;
-            backdrop-filter: blur(10px);
         }
 
-        .rgpd-header {
+        .security-header {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
-        .rgpd-title {
-            font-size: 1.6rem;
-            font-weight: 800;
+        .security-title {
+            font-size: 1.3rem;
+            font-weight: 700;
             color: #10b981;
             margin: 0;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
-        .rgpd-text {
-            font-size: 1.3rem;
+        .security-text {
+            font-size: 1.1rem;
             line-height: 1.5;
             color: white;
-            font-weight: 600;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            font-weight: 500;
         }
 
-        /* === STYLES POUR L'APPLICATION === */
-        /* Header Application */
+        /* === APPLICATION === */
         .app-header {
             position: fixed;
             top: 0;
@@ -645,7 +501,7 @@
             color: white;
             z-index: 1000;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: none; /* Caché par défaut */
+            display: none;
         }
 
         .header-content {
@@ -671,7 +527,6 @@
             font-size: 12px;
         }
 
-        /* Navigation */
         .app-nav {
             position: fixed;
             top: 60px;
@@ -682,7 +537,7 @@
             border-bottom: 1px solid #e5e7eb;
             z-index: 999;
             overflow-x: auto;
-            display: none; /* Caché par défaut */
+            display: none;
         }
 
         #mainNav {
@@ -719,15 +574,14 @@
             color: white;
         }
 
-        /* Contenu principal */
         .app-main {
-            margin-top: 0; /* Pas de marge par défaut */
+            margin-top: 0;
             min-height: 100vh;
             padding: 0;
         }
 
         #pageContent {
-            display: none; /* Caché par défaut */
+            display: none;
             opacity: 0;
             width: 100%;
             max-width: 1200px;
@@ -735,7 +589,7 @@
             padding: 20px;
         }
 
-        /* Classes pour l'état actif de l'app */
+        /* === ÉTATS ACTIFS === */
         body.app-active {
             background: #f8fafc;
         }
@@ -753,7 +607,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 120px; /* Header + Nav */
+            margin-top: 120px;
         }
 
         body.app-active #pageContent {
@@ -761,7 +615,7 @@
             opacity: 1 !important;
         }
 
-        /* Dashboard par défaut */
+        /* === DASHBOARD === */
         .dashboard-container {
             padding: 20px;
         }
@@ -827,8 +681,8 @@
             line-height: 1.5;
         }
 
-        /* Loading overlay amélioré */
-        .login-loading-overlay {
+        /* === LOADING OVERLAY === */
+        .loading-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -840,19 +694,19 @@
             justify-content: center;
             z-index: 9999;
             flex-direction: column;
-            gap: 30px;
+            gap: 25px;
             backdrop-filter: blur(10px);
         }
 
-        .login-loading-overlay.active {
+        .loading-overlay.active {
             display: flex;
         }
 
-        .login-spinner {
-            width: 80px;
-            height: 80px;
-            border: 6px solid rgba(255, 255, 255, 0.3);
-            border-top: 6px solid #ffffff;
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -862,101 +716,14 @@
             100% { transform: rotate(360deg); }
         }
 
-        .login-loading-text {
+        .loading-text {
             color: white;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
             text-align: center;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
-        .login-loading-subtext {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 16px;
-            font-weight: 400;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        /* Configuration error styles */
-        .config-error-banner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #dc2626;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            z-index: 99999;
-            font-family: monospace;
-            font-size: 14px;
-        }
-
-        .config-error-actions {
-            margin-top: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .config-error-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            text-decoration: none;
-        }
-
-        .config-error-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Domain warning banner */
-        .domain-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #f59e0b;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            z-index: 99998;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        /* Responsive ultra-propre - STRUCTURE CLAIRE */
-        @media (max-width: 968px) {
-            .steps-horizontal {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 15px;
-            }
-
-            .step-circle {
-                width: 70px;
-                height: 70px;
-            }
-
-            .step-circle i {
-                font-size: 28px;
-            }
-
-            .step-label {
-                font-size: 0.95rem;
-                padding: 10px 6px;
-            }
-
-            .process-title {
-                font-size: 2.4rem;
-            }
-        }
-
+        /* === RESPONSIVE === */
         @media (max-width: 768px) {
             .login-container {
                 padding: 40px 20px;
@@ -968,40 +735,37 @@
             }
 
             .app-subtitle {
-                font-size: 1.3rem;
-            }
-
-            .connect-button {
-                padding: 18px 40px;
                 font-size: 1.2rem;
             }
 
-            .logo-title {
+            .logo-section {
                 flex-direction: column;
-                gap: 10px;
+                gap: 15px;
             }
 
-            .process-flow {
-                padding: 40px 15px;
+            .steps-container {
+                flex-direction: column;
+                gap: 25px;
             }
 
-            .steps-horizontal {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 10px;
+            .steps-container::before {
+                display: none;
             }
 
-            .steps-horizontal::before {
-                top: 35px;
-                height: 2px;
-            }
-
-            .step-mini {
-                padding: 20px 8px;
+            .step {
+                flex-direction: row;
+                text-align: left;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 15px;
+                border-radius: 12px;
+                width: 100%;
+                max-width: 300px;
             }
 
             .step-circle {
                 width: 60px;
                 height: 60px;
+                flex-shrink: 0;
             }
 
             .step-circle i {
@@ -1009,21 +773,10 @@
             }
 
             .step-label {
-                font-size: 0.85rem;
-                padding: 8px 4px;
-            }
-
-            .process-title {
-                font-size: 2rem;
-                margin-bottom: 40px;
-            }
-
-            .rgpd-title {
-                font-size: 1.4rem;
-            }
-
-            .rgpd-text {
-                font-size: 1.2rem;
+                white-space: normal;
+                background: none;
+                padding: 0;
+                text-align: left;
             }
 
             .app-nav {
@@ -1052,7 +805,6 @@
         @media (max-width: 480px) {
             .login-container {
                 padding: 30px 15px;
-                max-width: 98%;
             }
 
             .app-title {
@@ -1060,7 +812,7 @@
             }
 
             .app-subtitle {
-                font-size: 1.1rem;
+                font-size: 1rem;
             }
 
             .connect-button {
@@ -1068,23 +820,8 @@
                 font-size: 1rem;
             }
 
-            .process-flow {
-                padding: 30px 10px;
-            }
-
-            .steps-horizontal {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 6px;
-            }
-
-            .steps-horizontal::before {
-                top: 30px;
-                left: 15%;
-                right: 15%;
-            }
-
-            .step-mini {
-                padding: 15px 4px;
+            .process-section {
+                padding: 30px 15px;
             }
 
             .step-circle {
@@ -1097,32 +834,12 @@
             }
 
             .step-label {
-                font-size: 0.7rem;
-                padding: 6px 2px;
-                line-height: 1.2;
-            }
-
-            .process-title {
-                font-size: 1.6rem;
-                margin-bottom: 30px;
-            }
-
-            .rgpd-compact {
-                padding: 20px;
-                margin-top: 30px;
-            }
-
-            .rgpd-title {
-                font-size: 1.2rem;
-            }
-
-            .rgpd-text {
-                font-size: 1rem;
+                font-size: 0.8rem;
             }
         }
 
-        /* Animations améliorées */
-        @keyframes slideInUp {
+        /* === ANIMATIONS === */
+        @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(30px);
@@ -1133,46 +850,43 @@
             }
         }
 
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-            }
-            50% {
-                transform: scale(1.05);
-            }
-        }
-
         .login-container {
-            animation: slideInUp 0.6s ease forwards;
+            animation: fadeInUp 0.6s ease;
         }
 
-        .step-mini {
-            animation: slideInUp 0.8s ease forwards;
+        /* === UTILITAIRES === */
+        .config-error-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #dc2626;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            z-index: 99999;
+            font-size: 14px;
         }
 
-        .step-mini:nth-child(1) { animation-delay: 0.1s; }
-        .step-mini:nth-child(2) { animation-delay: 0.2s; }
-        .step-mini:nth-child(3) { animation-delay: 0.3s; }
-        .step-mini:nth-child(4) { animation-delay: 0.4s; }
-        .step-mini:nth-child(5) { animation-delay: 0.5s; }
-
-        .connect-button:hover {
-            animation: pulse 2s infinite;
+        .domain-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #f59e0b;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            z-index: 99998;
+            font-size: 14px;
+            font-weight: 600;
         }
 
-        .fade-in-up {
-            animation: fadeInUp 0.5s ease;
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
         }
     </style>
 </head>
@@ -1242,12 +956,12 @@
 
         <!-- Contenu Principal -->
         <main class="app-main">
-            <!-- Nouvelle Page de Connexion avec design amélioré -->
-            <div id="loginPage" class="login-page-styles">
+            <!-- Page de Connexion Sobre et Élégante -->
+            <div id="loginPage" class="login-page">
                 <div class="login-container">
-                    <!-- Header compact -->
+                    <!-- Header -->
                     <div class="header">
-                        <div class="logo-title">
+                        <div class="logo-section">
                             <div class="logo-icon">
                                 <i class="fas fa-envelope-open-text"></i>
                             </div>
@@ -1270,58 +984,52 @@
                         </div>
                     </div>
 
-                    <!-- Étapes processus AGRANDIES -->
-                    <div class="process-flow">
-                        <div class="process-title">Processus en 5 étapes</div>
-                        
-                        <!-- Barre de progression -->
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressBar"></div>
-                        </div>
-                        
-                        <div class="steps-horizontal">
-                            <div class="step-mini">
+                    <!-- Processus en 5 étapes -->
+                    <div class="process-section">
+                        <h2 class="process-title">Processus en 5 étapes</h2>
+                        <div class="steps-container">
+                            <div class="step">
                                 <div class="step-circle">
                                     <i class="fas fa-plug"></i>
                                 </div>
                                 <div class="step-label">Connexion Outlook</div>
                             </div>
-                            <div class="step-mini">
+                            <div class="step">
                                 <div class="step-circle">
                                     <i class="fas fa-search"></i>
                                 </div>
-                                <div class="step-label">Scanner les emails</div>
+                                <div class="step-label">Scanner emails</div>
                             </div>
-                            <div class="step-mini">
+                            <div class="step">
                                 <div class="step-circle">
                                     <i class="fas fa-brain"></i>
                                 </div>
                                 <div class="step-label">Analyse IA</div>
                             </div>
-                            <div class="step-mini">
+                            <div class="step">
                                 <div class="step-circle">
                                     <i class="fas fa-folder-tree"></i>
                                 </div>
                                 <div class="step-label">Catégorisation</div>
                             </div>
-                            <div class="step-mini">
+                            <div class="step">
                                 <div class="step-circle">
                                     <i class="fas fa-magic"></i>
                                 </div>
                                 <div class="step-label">Création tâches</div>
                             </div>
                         </div>
-                        
-                        <!-- RGPD intégré -->
-                        <div class="rgpd-compact">
-                            <div class="rgpd-header">
-                                <i class="fas fa-shield-alt"></i>
-                                <div class="rgpd-title">100% RGPD & Sécurisé</div>
-                            </div>
-                            <div class="rgpd-text">
-                                <strong>Vos emails ne sont jamais stockés.</strong> L'application fonctionne entièrement en local. Aucune donnée transmise à nos serveurs.
-                            </div>
+                    </div>
+
+                    <!-- Section RGPD -->
+                    <div class="security-section">
+                        <div class="security-header">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3 class="security-title">100% RGPD & Sécurisé</h3>
                         </div>
+                        <p class="security-text">
+                            <strong>Vos emails ne sont jamais stockés.</strong> L'application fonctionne entièrement en local. Aucune donnée transmise à nos serveurs.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1380,12 +1088,12 @@
             </div>
         </main>
 
-        <!-- Overlay de chargement amélioré -->
-        <div id="loadingOverlay" class="login-loading-overlay">
-            <div class="login-spinner"></div>
-            <div class="login-loading-text">
+        <!-- Overlay de Chargement -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <div class="loading-text">
                 <div>Connexion à Outlook...</div>
-                <div class="login-loading-subtext">Authentification en cours</div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 10px;">Authentification en cours</div>
             </div>
         </div>
 
@@ -1432,62 +1140,32 @@
         // Fonction pour forcer l'affichage de l'app
         window.forceShowApp = function() {
             console.log('[FORCE] Forcing app display...');
-            
-            // Ajouter la classe pour activer l'app
             document.body.classList.add('app-active');
-            
-            // Masquer explicitement la page de login
             const loginPage = document.getElementById('loginPage');
             if (loginPage) {
                 loginPage.style.display = 'none';
             }
-            
             console.log('[FORCE] App display activated');
         };
 
-        // Animation de la barre de progression
-        window.updateProgress = function(percent) {
-            const progressBar = document.getElementById('progressBar');
-            if (progressBar) {
-                progressBar.style.width = percent + '%';
-            }
-        };
-
-        // Gestion du bouton de connexion améliorée
+        // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
             
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
-                    // Animation du bouton
-                    this.classList.add('loading');
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion en cours...';
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
                     this.disabled = true;
                     
-                    // Afficher l'overlay de chargement
                     const loadingOverlay = document.getElementById('loadingOverlay');
                     if (loadingOverlay) {
                         loadingOverlay.classList.add('active');
                     }
                     
-                    // Animation de la barre de progression
-                    let progress = 0;
-                    const progressInterval = setInterval(() => {
-                        progress += Math.random() * 20;
-                        if (progress > 90) progress = 90;
-                        window.updateProgress(progress);
-                    }, 200);
-                    
-                    // Appeler la fonction de connexion
                     if (window.app && window.app.login) {
-                        window.app.login().then(() => {
-                            clearInterval(progressInterval);
-                            window.updateProgress(100);
-                        }).catch(() => {
-                            clearInterval(progressInterval);
+                        window.app.login().catch(() => {
                             // Réinitialiser le bouton en cas d'erreur
-                            this.classList.remove('loading');
                             this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                             this.disabled = false;
                             loadingOverlay.classList.remove('active');
@@ -1496,71 +1174,49 @@
                 });
             }
             
-            // Vérifier la configuration après le chargement du DOM
+            // Vérifier la configuration
             setTimeout(function() {
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
-                    console.log('[INDEX] Configuration validation for new domain:', validation);
-                    
-                    const debugInfo = window.AppConfig.getDebugInfo();
-                    console.log('[INDEX] Debug info for emailsortpro.netlify.app:', debugInfo);
+                    console.log('[INDEX] Configuration validation:', validation);
                     
                     if (!validation.valid) {
-                        console.log('[INDEX] Configuration invalid for new domain:', validation.issues);
+                        console.log('[INDEX] Configuration invalid:', validation.issues);
                         
                         const errorBanner = document.createElement('div');
                         errorBanner.className = 'config-error-banner';
                         errorBanner.innerHTML = `
                             <div>
-                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour emailsortpro.netlify.app
+                                ⚠️ <strong>CONFIGURATION:</strong> ${validation.issues.join(', ')}
                             </div>
                             <div>
-                                Vérifiez votre configuration Azure App Registration
-                            </div>
-                            <div class="config-error-actions">
-                                <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
-                                <a href="/setup.html" class="config-error-btn">Configuration</a>
-                                <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
+                                <button onclick="this.parentElement.parentElement.remove()" 
+                                        style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;padding:5px 10px;border-radius:4px;cursor:pointer;margin:5px;">
+                                    Masquer
+                                </button>
                             </div>
                         `;
                         document.body.appendChild(errorBanner);
                     } else {
-                        console.log('[INDEX] ✅ Configuration valid for emailsortpro.netlify.app');
+                        console.log('[INDEX] ✅ Configuration valid');
                     }
-                } else {
-                    console.warn('[INDEX] AppConfig not available');
                 }
             }, 1000);
         });
-        
-        // Fonction de diagnostic accessible globalement
+
+        // Fonction de diagnostic
         window.checkServices = function() {
-            console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
+            console.log('=== Diagnostic des services ===');
             console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
-            if (window.AppConfig) {
-                console.log('Environment:', window.AppConfig.app.environment);
-                console.log('Domain:', window.AppConfig.app.domain);
-                console.log('Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
-                console.log('Redirect URI:', window.AppConfig.msal.redirectUri);
-                console.log('Debug info:', window.AppConfig.getDebugInfo());
-            }
             console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
             console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
             console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
-            console.log('taskManager:', window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT');
-            console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
+            console.log('taskManager:', window.taskManager ? 'OK' : 'MANQUANT');
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
-            console.log('Current hostname:', window.location.hostname);
-            console.log('Expected hostname: emailsortpro.netlify.app');
-            console.log('=== Ordre de chargement ===');
-            console.log('1. TaskManager chargé AVANT PageManager');
-            console.log('2. TasksView créé dans TaskManager');
-            console.log('3. PageManager délègue les tâches à TasksView');
-            console.log('4. Interface unifiée entre emails et tâches');
         };
 
-        // Fonction pour créer CategoryManagerUI si manquant
+        // Créer CategoryManagerUI si manquant
         if (!window.CategoryManagerUI) {
             window.CategoryManagerUI = class {
                 static renderCategorySelector(categories = {}) {
@@ -1575,15 +1231,7 @@
             console.log('✅ CategoryManagerUI créé automatiquement');
         }
 
-        // Log de confirmation du domaine
         console.log('[INDEX] ✅ Configuration loaded for emailsortpro.netlify.app');
-        console.log('[INDEX] Current hostname:', window.location.hostname);
-        console.log('[INDEX] Expected hostname: emailsortpro.netlify.app');
-        console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
-        console.log('[INDEX] 🎯 ORDRE DE CHARGEMENT CORRIGÉ:');
-        console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
-        console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
-        console.log('[INDEX] 3. PageManager délègue les tâches à TasksView');
     </script>
 </body>
 </html>
