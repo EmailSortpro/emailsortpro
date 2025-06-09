@@ -1055,20 +1055,7 @@ class TasksView {
                         </button>
                     </div>
                     
-                    <!-- Actions principales harmonisées AVEC SÉLECTION RÉPARÉE -->
-                    <div class="action-buttons-harmonized">
-                        ${selectedCount > 0 ? `
-                            <div class="selection-info-harmonized">
-                                <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
-                                <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <button class="btn-harmonized btn-success" onclick="window.tasksView.bulkMarkComplete()">
-                                <i class="fas fa-check"></i>
-                                <span>Terminer</span>
-                            </button>
-                            <button class="btn-harmonized btn-warning" onclick="window.tasksView.bulkDelete()">
+-warning" onclick="window.tasksView.bulkDelete()">
                                 <i class="fas fa-trash"></i>
                                 <span>Supprimer</span>
                             </button>
@@ -2928,27 +2915,59 @@ class TasksView {
                 min-width: fit-content; /* LARGEUR FIXE POUR ÉVITER LE SAUT */
             }
             
-            /* ACTIONS PRINCIPALES AVEC SÉLECTION RÉPARÉE */
+            /* ACTIONS PRINCIPALES AVEC DEUX LIGNES POUR ÉVITER LE DÉCALAGE */
             .action-buttons-harmonized {
+                display: flex;
+                flex-direction: column;
+                gap: var(--gap-small);
+                flex-shrink: 0;
+            }
+            
+            /* LIGNE PRINCIPALE TOUJOURS VISIBLE */
+            .main-actions-line {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-small);
                 height: var(--btn-height);
                 flex-shrink: 0;
-                flex-wrap: nowrap; /* EMPÊCHE LE RETOUR À LA LIGNE */
-                overflow-x: auto; /* PERMET LE SCROLL HORIZONTAL SI NÉCESSAIRE */
-                scrollbar-width: none; /* CACHE LA SCROLLBAR FIREFOX */
-                -ms-overflow-style: none; /* CACHE LA SCROLLBAR IE */
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
             }
             
-            .action-buttons-harmonized::-webkit-scrollbar {
-                display: none; /* CACHE LA SCROLLBAR WEBKIT */
+            .main-actions-line::-webkit-scrollbar {
+                display: none;
             }
             
-            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur ET être centrés SANS DÉCALAGE */
-            .action-buttons-harmonized > *,
-            .action-buttons-harmonized .btn-harmonized,
-            .action-buttons-harmonized .selection-info-harmonized {
+            /* LIGNE DE SÉLECTION QUI APPARAÎT DYNAMIQUEMENT */
+            .selection-actions-line {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-small);
+                height: var(--btn-height);
+                flex-shrink: 0;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                background: rgba(59, 130, 246, 0.05);
+                padding: var(--gap-small);
+                border-radius: var(--btn-border-radius);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                animation: slideInDown 0.3s ease-out;
+            }
+            
+            .selection-actions-line::-webkit-scrollbar {
+                display: none;
+            }
+            
+            /* TOUS les boutons dans les deux lignes DOIVENT avoir la même hauteur ET être centrés SANS DÉCALAGE */
+            .main-actions-line > *,
+            .selection-actions-line > *,
+            .main-actions-line .btn-harmonized,
+            .selection-actions-line .btn-harmonized,
+            .selection-actions-line .selection-info-harmonized {
                 height: var(--btn-height);
                 min-height: var(--btn-height);
                 max-height: var(--btn-height);
@@ -4756,8 +4775,9 @@ class TasksView {
                     min-width: 100px;
                 }
                 
-                /* MAINTENIR l'harmonisation et la sélection sur tablette */
-                .action-buttons-harmonized > *,
+                /* FORCER l'harmonisation et la sélection sur tablette */
+                .main-actions-line > *,
+                .selection-actions-line > *,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height);
                     min-height: var(--btn-height);
@@ -4870,6 +4890,19 @@ class TasksView {
                     height: auto;
                     min-height: var(--btn-height);
                     display: flex;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: var(--gap-small);
+                }
+                
+                .main-actions-line,
+                .selection-actions-line {
+                    width: 100%;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                    height: auto;
+                    min-height: var(--btn-height);
+                    display: flex;
                     align-items: center;
                     gap: var(--gap-small);
                 }
@@ -4896,7 +4929,8 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur tablette */
-                .action-buttons-harmonized > * {
+                .main-actions-line > *,
+                .selection-actions-line > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -5021,7 +5055,8 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur mobile */
-                .action-buttons-harmonized > * {
+                .main-actions-line > *,
+                .selection-actions-line > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -5156,7 +5191,8 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur petit mobile */
-                .action-buttons-harmonized > *,
+                .main-actions-line > *,
+                .selection-actions-line > *,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
@@ -5229,7 +5265,8 @@ class TasksView {
                 }
                 
                 /* FORCER l'harmonisation et la sélection sur très petit écran */
-                .action-buttons-harmonized > * {
+                .main-actions-line > *,
+                .selection-actions-line > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
                     max-height: var(--btn-height) !important;
@@ -5241,7 +5278,18 @@ class TasksView {
                 }
             }
             
-            /* ===== ANIMATIONS ===== */
+            /* ===== ANIMATIONS POUR LA LIGNE DE SÉLECTION ===== */
+            @keyframes slideInDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
             @keyframes pulse {
                 0%, 100% { 
                     opacity: 1; 
@@ -5292,28 +5340,36 @@ function initializeTaskManager() {
         window.tasksView = new TasksView();
     }
     
-    Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
-        if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
-            window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
-        }
-    });
+    // Bind methods properly
+    if (window.taskManager) {
+        Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
+            if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
+                window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
+            }
+        });
+    }
 
-    Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
-        if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
-            window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
-        }
-    });
+    if (window.tasksView) {
+        Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
+            if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
+                window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
+            }
+        });
+    }
     
     console.log('✅ TaskManager v9.1 loaded - Interface harmonisée avec ligne explicative EN PREMIÈRE LIGNE et sélection réparée');
 }
 
+// Initialize immediately
 initializeTaskManager();
 
+// Also initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TaskManager] DOM ready, ensuring initialization...');
     initializeTaskManager();
 });
 
+// Fallback initialization
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
