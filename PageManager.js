@@ -218,7 +218,7 @@ class PageManager {
     }
 
     // =====================================
-    // FILTRES DE CATÉGORIES AVEC ICÔNE + NOMBRE EN LIGNE
+    // FILTRES DE CATÉGORIES AVEC ICÔNE + NOMBRE CÔTE À CÔTE
     // =====================================
     buildOptimizedCategoryTabs(categoryCounts, totalEmails, categories) {
         const tabs = [
@@ -252,12 +252,10 @@ class PageManager {
             return `
                 <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''} ${isLongText ? 'long-text' : ''}" 
                         onclick="window.pageManager.filterByCategory('${tab.id}')">
-                    <div class="pill-content-inline">
-                        <div class="pill-top-row">
-                            <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                            <span class="pill-count-harmonized-multiline">${tab.count}</span>
-                        </div>
-                        <div class="pill-bottom-row">
+                    <div class="pill-content-horizontal">
+                        <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
+                        <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                        <div class="pill-text-below">
                             <span class="pill-text-harmonized-multiline ${isLongText ? 'multiline' : ''}">${tab.name}</span>
                         </div>
                     </div>
