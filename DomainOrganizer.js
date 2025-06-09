@@ -1172,10 +1172,43 @@ class DomainOrganizer {
         // Définir les dates par défaut
         this.setDefaultDates();
         
-        // Afficher l'étape initiale
-        this.showStep('configure');
+        // Forcer l'affichage de l'étape de configuration
+        this.forceShowConfigStep();
         
         return true;
+    }
+
+    /**
+     * Force l'affichage de l'étape de configuration
+     */
+    forceShowConfigStep() {
+        // Cacher toutes les étapes
+        document.querySelectorAll('.step-content').forEach(content => {
+            content.style.display = 'none';
+        });
+        
+        // Afficher configStep spécifiquement
+        const configStep = document.getElementById('configStep');
+        if (configStep) {
+            configStep.style.display = 'block';
+            this.currentStep = 'configure';
+            
+            // Mettre à jour l'indicateur d'étapes
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active', 'completed');
+                if (step.dataset.step === 'configure') {
+                    step.classList.add('active');
+                }
+            });
+            
+            console.log('[DomainOrganizer] ✅ Configuration step is now visible');
+        } else {
+            console.error('[DomainOrganizer] ❌ configStep element not found in DOM');
+            
+            // Debug: lister tous les éléments step-content
+            const allSteps = document.querySelectorAll('.step-content');
+            console.log('[DomainOrganizer] Available step elements:', Array.from(allSteps).map(s => s.id));
+        }
     }
 
     /**
@@ -2415,16 +2448,19 @@ window.domainOrganizer.showPage = function() {
     // Injecter notre HTML
     pageContent.innerHTML = this.getPageHTML();
     
-    // Attendre un peu puis initialiser
+    // Attendre que le HTML soit injecté puis initialiser
     setTimeout(async () => {
-        await this.initializePage();
-        
-        // Réinitialiser l'état si nécessaire
+        // Réinitialiser l'état
         this.isProcessing = false;
         this.currentStep = 'configure';
+        this.currentAnalysis = null;
+        this.selectedActions.clear();
+        
+        // Initialiser la page
+        await this.initializePage();
         
         console.log('[DomainOrganizer] ✅ Initialization complete');
-    }, 200);
+    }, 300); // Augmenté le délai pour s'assurer que le DOM est prêt
     
     // Mettre à jour la navigation active
     document.querySelectorAll('.nav-item').forEach(item => {
