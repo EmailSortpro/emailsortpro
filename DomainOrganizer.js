@@ -1867,6 +1867,7 @@ class DomainOrganizer {
     generateDomainDetails(domainData) {
         const existingFolders = Array.from(this.existingFolders.values());
         const isNewFolder = domainData.action === 'create-new';
+        const allEmails = this.emailsByDomain.get(domainData.domain) || [];
         
         return `
             <div class="details-grid">
@@ -1892,18 +1893,623 @@ class DomainOrganizer {
                     </select>
                 </div>
             </div>
-            <div class="email-samples">
-                <h5><i class="fas fa-envelope"></i> Aperçu des emails (${domainData.samples.length} sur ${domainData.count})</h5>
-                <div class="sample-list">
-                    ${domainData.samples.map(sample => `
-                        <div class="sample-item">
-                            <div class="sample-from">${sample.from}</div>
-                            <div class="sample-subject">${sample.subject}</div>
+            
+            <div class="email-management">
+                <div class="emails-header">
+                    <h5>
+                        <i class="fas fa-envelope"></i> 
+                        Emails (${allEmails.length} au total)
+                    </h5>
+                    <div class="email-controls">
+                        <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.selectAllEmailsInDomain('${domainData.domain}')">
+                            <i class="fas fa-check-square"></i> Tout sélectionner
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.deselectAllEmailsInDomain('${domainData.domain}')">
+                            <i class="fas fa-square"></i> Tout désélectionner
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="window.domainOrganizer.showAllEmails('${domainData.domain}')">
+                            <i class="fas fa-list"></i> Voir tous (${allEmails.length})
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="email-samples">
+                    <div class="sample-list" id="emails-${domainData.domain}">
+                        ${this.renderEmailList(domainData.domain, allEmails.slice(0, 5))}
+                    </div>
+                    ${allEmails.length > 5 ? `
+                        <div class="load-more">
+                            <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.loadMoreEmails('${domainData.domain}')">
+                                <i class="fas fa-chevron-down"></i>
+                                Voir plus (${allEmails.length - 5} emails restants)
+                            </button>
                         </div>
-                    `).join('')}
+                    ` : ''}
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Rend la liste des emails
+     */
+    renderEmailList(domain, emails) {
+        return emails.map((email, index) => {
+            const emailId = email.id || `email-${domain}-${index}`;
+            const isSelected = this.isEmailSelected(domain, emailId);
+            
+            return `
+                <div class="email-item ${isSelected ? 'selected' : ''}" data-email-id="${emailId}">
+                    <div class="email-checkbox-container">
+                        <input type="checkbox" 
+                               class="email-checkbox" 
+                               data-domain="${domain}" 
+                               data-email-id="${emailId}"
+                               ${isSelected ? 'checked' : ''}
+                               onchange="window.domainOrganizer.handleEmailToggle(event)">
+                    </div>
+                    <div class="email-content" onclick="window.domainOrganizer.toggleEmailSelection('${domain}', '${emailId}')">
+                        <div class="email-header">
+                            <span class="email-from">${email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Expéditeur inconnu'}</span>
+                            <span class="email-date">${this.formatEmailDate(email.receivedDateTime)}</span>
+                        </div>
+                        <div class="email-subject">${email.subject || 'Sans sujet'}</div>
+                        <div class="email-preview">${this.getEmailPreview(email)}</div>
+                    </div>
+                    <div class="email-actions">
+                        <select class="email-folder-select" 
+                                data-domain="${domain}" 
+                                data-email-id="${emailId}"
+                                onchange="window.domainOrganizer.handleIndividualEmailFolderChange(event)"
+                                onclick="event.stopPropagation()">
+                            <option value="default">Dossier par défaut</option>
+                            ${this.generateFolderOptionsForEmail(domain)}
+                        </select>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Génère les options de dossiers pour un email individuel
+     */
+    generateFolderOptionsForEmail(domain) {
+        const existingFolders = Array.from(this.existingFolders.values());
+        const domainAction = this.selectedActions.get(domain);
+        
+        let options = '';
+        
+        // Option par défaut (dossier du domaine)
+        if (domainAction) {
+            options += `<option value="domain-default" selected>📁 ${domainAction.targetFolder}</option>`;
+        }
+        
+        // Dossiers existants
+        existingFolders.forEach(folder => {
+            options += `<option value="${folder.id}">📂 ${folder.displayName}</option>`;
+        });
+        
+        // Option pour nouveau dossier
+        options += `<option value="custom">➕ Nouveau dossier...</option>`;
+        
+        return options;
+    }
+
+    /**
+     * Affiche tous les emails d'un domaine dans une modale
+     */
+    showAllEmails(domain) {
+        const allEmails = this.emailsByDomain.get(domain) || [];
+        const domainData = this.domainAnalysis.get(domain);
+        
+        // Créer une modale pour tous les emails
+        this.createAllEmailsModal(domain, domainData, allEmails);
+    }
+
+    /**
+     * Crée une modale pour afficher tous les emails
+     */
+    createAllEmailsModal(domain, domainData, allEmails) {
+        // Supprimer toute modale existante
+        const existingModal = document.getElementById('allEmailsModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        const modal = document.createElement('div');
+        modal.id = 'allEmailsModal';
+        modal.innerHTML = `
+            <div class="modal-overlay" onclick="this.parentElement.remove()">
+                <div class="modal-content large-modal" onclick="event.stopPropagation()">
+                    <div class="modal-header">
+                        <h3>
+                            <i class="fas fa-at"></i>
+                            Tous les emails de ${domain}
+                        </h3>
+                        <div class="modal-controls">
+                            <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.selectAllEmailsInModal('${domain}')">
+                                <i class="fas fa-check-square"></i> Tout sélectionner
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.deselectAllEmailsInModal('${domain}')">
+                                <i class="fas fa-square"></i> Tout désélectionner
+                            </button>
+                            <button class="modal-close" onclick="this.closest('#allEmailsModal').remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="emails-stats">
+                            <span><strong>${allEmails.length}</strong> emails au total</span>
+                            <span>Dossier proposé: <strong>${domainData.suggestedFolder}</strong></span>
+                            <span id="selectedCount-${domain}">
+                                <strong>${this.getSelectedEmailsCount(domain)}</strong> sélectionnés
+                            </span>
+                        </div>
+                        
+                        <div class="all-emails-list" id="allEmailsList-${domain}">
+                            ${this.renderEmailList(domain, allEmails)}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('#allEmailsModal').remove()">
+                            Fermer
+                        </button>
+                        <button class="btn btn-primary" onclick="window.domainOrganizer.applyEmailSelections('${domain}')">
+                            <i class="fas fa-check"></i>
+                            Appliquer les sélections
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter les styles étendus
+        this.addExtendedModalStyles();
+        
+        document.body.appendChild(modal);
+    }
+
+    /**
+     * Ajoute les styles étendus pour les modales
+     */
+    addExtendedModalStyles() {
+        if (document.getElementById('extendedModalStyles')) return;
+        
+        const style = document.createElement('style');
+        style.id = 'extendedModalStyles';
+        style.textContent = `
+            .large-modal {
+                max-width: 90vw;
+                max-height: 90vh;
+                width: 1000px;
+            }
+            
+            .modal-controls {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .emails-stats {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 20px;
+                padding: 12px;
+                background: #f8fafc;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            
+            .all-emails-list {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+            
+            .email-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 12px;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                margin-bottom: 8px;
+                transition: all 0.2s ease;
+                cursor: pointer;
+            }
+            
+            .email-item:hover {
+                background: #f9fafb;
+                border-color: #d1d5db;
+            }
+            
+            .email-item.selected {
+                background: #eff6ff;
+                border-color: #3b82f6;
+            }
+            
+            .email-checkbox-container {
+                display: flex;
+                align-items: flex-start;
+                padding-top: 2px;
+            }
+            
+            .email-checkbox {
+                width: 16px;
+                height: 16px;
+                cursor: pointer;
+            }
+            
+            .email-content {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .email-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+            }
+            
+            .email-from {
+                font-weight: 600;
+                color: #111827;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                max-width: 200px;
+            }
+            
+            .email-date {
+                font-size: 12px;
+                color: #6b7280;
+                flex-shrink: 0;
+            }
+            
+            .email-subject {
+                font-weight: 500;
+                color: #374151;
+                margin-bottom: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .email-preview {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.3;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+            
+            .email-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                min-width: 150px;
+            }
+            
+            .email-folder-select {
+                padding: 4px 8px;
+                border: 1px solid #d1d5db;
+                border-radius: 4px;
+                font-size: 12px;
+                background: white;
+                cursor: pointer;
+            }
+            
+            .load-more {
+                text-align: center;
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid #e5e7eb;
+            }
+            
+            .email-management {
+                margin-top: 16px;
+            }
+            
+            .emails-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            
+            .emails-header h5 {
+                margin: 0;
+                font-size: 14px;
+                color: #374151;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .email-controls {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    /**
+     * Formate la date d'un email
+     */
+    formatEmailDate(dateString) {
+        if (!dateString) return '';
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) return 'Hier';
+        if (diffDays < 7) return `Il y a ${diffDays} jours`;
+        if (diffDays < 30) return `Il y a ${Math.ceil(diffDays / 7)} semaines`;
+        
+        return date.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        });
+    }
+
+    /**
+     * Obtient un aperçu du contenu de l'email
+     */
+    getEmailPreview(email) {
+        if (email.bodyPreview) {
+            return email.bodyPreview.substring(0, 150) + '...';
+        }
+        return 'Aucun aperçu disponible';
+    }
+
+    /**
+     * Vérifie si un email est sélectionné
+     */
+    isEmailSelected(domain, emailId) {
+        if (!this.selectedEmails) {
+            this.selectedEmails = new Map();
+        }
+        
+        if (!this.selectedEmails.has(domain)) {
+            this.selectedEmails.set(domain, new Set());
+        }
+        
+        return this.selectedEmails.get(domain).has(emailId);
+    }
+
+    /**
+     * Gère la sélection d'un email individuel
+     */
+    handleEmailToggle(event) {
+        const domain = event.target.dataset.domain;
+        const emailId = event.target.dataset.emailId;
+        const isChecked = event.target.checked;
+        
+        this.toggleEmailSelection(domain, emailId, isChecked);
+    }
+
+    /**
+     * Toggle la sélection d'un email
+     */
+    toggleEmailSelection(domain, emailId, forceState = null) {
+        if (!this.selectedEmails) {
+            this.selectedEmails = new Map();
+        }
+        
+        if (!this.selectedEmails.has(domain)) {
+            this.selectedEmails.set(domain, new Set());
+        }
+        
+        const domainEmails = this.selectedEmails.get(domain);
+        const shouldSelect = forceState !== null ? forceState : !domainEmails.has(emailId);
+        
+        if (shouldSelect) {
+            domainEmails.add(emailId);
+        } else {
+            domainEmails.delete(emailId);
+        }
+        
+        // Mettre à jour l'interface
+        this.updateEmailSelectionUI(domain, emailId, shouldSelect);
+        this.updateEmailSelectionCount(domain);
+    }
+
+    /**
+     * Met à jour l'interface de sélection d'un email
+     */
+    updateEmailSelectionUI(domain, emailId, isSelected) {
+        // Mettre à jour la checkbox
+        const checkbox = document.querySelector(`input[data-email-id="${emailId}"]`);
+        if (checkbox) {
+            checkbox.checked = isSelected;
+        }
+        
+        // Mettre à jour l'apparence de l'item
+        const emailItem = document.querySelector(`[data-email-id="${emailId}"]`);
+        if (emailItem) {
+            if (isSelected) {
+                emailItem.classList.add('selected');
+            } else {
+                emailItem.classList.remove('selected');
+            }
+        }
+    }
+
+    /**
+     * Met à jour le compteur d'emails sélectionnés
+     */
+    updateEmailSelectionCount(domain) {
+        const count = this.getSelectedEmailsCount(domain);
+        const counter = document.getElementById(`selectedCount-${domain}`);
+        if (counter) {
+            counter.innerHTML = `<strong>${count}</strong> sélectionnés`;
+        }
+    }
+
+    /**
+     * Obtient le nombre d'emails sélectionnés pour un domaine
+     */
+    getSelectedEmailsCount(domain) {
+        if (!this.selectedEmails || !this.selectedEmails.has(domain)) {
+            return 0;
+        }
+        return this.selectedEmails.get(domain).size;
+    }
+
+    /**
+     * Sélectionne tous les emails d'un domaine
+     */
+    selectAllEmailsInDomain(domain) {
+        const allEmails = this.emailsByDomain.get(domain) || [];
+        allEmails.forEach(email => {
+            const emailId = email.id || `email-${domain}-${allEmails.indexOf(email)}`;
+            this.toggleEmailSelection(domain, emailId, true);
+        });
+    }
+
+    /**
+     * Désélectionne tous les emails d'un domaine
+     */
+    deselectAllEmailsInDomain(domain) {
+        if (this.selectedEmails && this.selectedEmails.has(domain)) {
+            const emailIds = Array.from(this.selectedEmails.get(domain));
+            emailIds.forEach(emailId => {
+                this.toggleEmailSelection(domain, emailId, false);
+            });
+        }
+    }
+
+    /**
+     * Sélectionne tous les emails dans la modale
+     */
+    selectAllEmailsInModal(domain) {
+        this.selectAllEmailsInDomain(domain);
+    }
+
+    /**
+     * Désélectionne tous les emails dans la modale
+     */
+    deselectAllEmailsInModal(domain) {
+        this.deselectAllEmailsInDomain(domain);
+    }
+
+    /**
+     * Applique les sélections d'emails
+     */
+    applyEmailSelections(domain) {
+        const selectedCount = this.getSelectedEmailsCount(domain);
+        const totalCount = (this.emailsByDomain.get(domain) || []).length;
+        
+        // Mettre à jour l'action du domaine
+        if (this.selectedActions.has(domain)) {
+            const action = this.selectedActions.get(domain);
+            action.selectedEmailsCount = selectedCount;
+            action.emailCount = selectedCount; // Utiliser seulement les emails sélectionnés
+        }
+        
+        // Fermer la modale
+        document.getElementById('allEmailsModal')?.remove();
+        
+        // Mettre à jour le résumé
+        this.updateActionSummary();
+        
+        // Afficher un message de confirmation
+        window.uiManager?.showToast(
+            `${selectedCount} emails sélectionnés sur ${totalCount} pour ${domain}`, 
+            'success'
+        );
+    }
+
+    /**
+     * Gère le changement de dossier pour un email individuel
+     */
+    handleIndividualEmailFolderChange(event) {
+        const domain = event.target.dataset.domain;
+        const emailId = event.target.dataset.emailId;
+        const selectedValue = event.target.value;
+        
+        if (selectedValue === 'custom') {
+            const newFolderName = prompt('Nom du nouveau dossier:');
+            if (newFolderName) {
+                this.setEmailCustomFolder(domain, emailId, newFolderName);
+            } else {
+                // Remettre la valeur par défaut si annulé
+                event.target.value = 'default';
+            }
+        } else {
+            this.setEmailFolder(domain, emailId, selectedValue);
+        }
+    }
+
+    /**
+     * Définit un dossier personnalisé pour un email
+     */
+    setEmailCustomFolder(domain, emailId, folderName) {
+        if (!this.individualEmailFolders) {
+            this.individualEmailFolders = new Map();
+        }
+        
+        this.individualEmailFolders.set(`${domain}-${emailId}`, {
+            type: 'custom',
+            folderName: folderName
+        });
+        
+        window.uiManager?.showToast(`Email configuré pour aller dans "${folderName}"`, 'success');
+    }
+
+    /**
+     * Définit le dossier pour un email individuel
+     */
+    setEmailFolder(domain, emailId, folderId) {
+        if (!this.individualEmailFolders) {
+            this.individualEmailFolders = new Map();
+        }
+        
+        if (folderId === 'default' || folderId === 'domain-default') {
+            // Supprimer la configuration individuelle
+            this.individualEmailFolders.delete(`${domain}-${emailId}`);
+        } else {
+            // Configurer le dossier spécifique
+            const folder = this.existingFolders.get(folderId) || 
+                          Array.from(this.existingFolders.values()).find(f => f.id === folderId);
+            
+            if (folder) {
+                this.individualEmailFolders.set(`${domain}-${emailId}`, {
+                    type: 'existing',
+                    folderId: folderId,
+                    folderName: folder.displayName
+                });
+            }
+        }
+    }
+
+    /**
+     * Charge plus d'emails pour un domaine
+     */
+    loadMoreEmails(domain) {
+        const allEmails = this.emailsByDomain.get(domain) || [];
+        const container = document.getElementById(`emails-${domain}`);
+        if (!container) return;
+        
+        // Remplacer tout le contenu par tous les emails
+        container.innerHTML = this.renderEmailList(domain, allEmails);
+        
+        // Supprimer le bouton "Voir plus"
+        const loadMoreButton = container.parentElement.querySelector('.load-more');
+        if (loadMoreButton) {
+            loadMoreButton.remove();
+        }
     }
 
     /**
