@@ -1457,7 +1457,7 @@ class DomainOrganizer {
             </td>
             <td>
                 <div class="domain-name">
-                    <i class="fas fa-at" style="color: #6b7280; font-size: 14px;"></i>
+                    <i class="fas fa-at" style="color: #6b7280; font-size: 12px;"></i>
                     ${domainData.domain}
                 </div>
             </td>
@@ -1473,13 +1473,8 @@ class DomainOrganizer {
             </td>
             <td>
                 <span class="action-badge ${isNewFolder ? 'action-new' : 'action-existing'}">
-                    ${isNewFolder ? 'Nouveau dossier' : 'Dossier existant'}
+                    ${isNewFolder ? 'Nouveau' : 'Existant'}
                 </span>
-            </td>
-            <td>
-                <button class="preview-btn" onclick="window.domainOrganizer.showPreview('${domainData.domain}')" title="Voir les exemples d'emails">
-                    <i class="fas fa-eye"></i>
-                </button>
             </td>
         `;
         
@@ -1614,12 +1609,13 @@ class DomainOrganizer {
         
         const totalEmails = selectedActions.reduce((sum, action) => sum + action.emailCount, 0);
         const newFolders = selectedActions.filter(action => action.action === 'create-new').length;
-        const estimatedTime = this.calculateEstimatedTime(totalEmails, newFolders);
         
         // Mettre à jour les éléments de confirmation
-        document.getElementById('confirmTotalEmails').textContent = totalEmails.toLocaleString();
-        document.getElementById('confirmNewFolders').textContent = newFolders;
-        document.getElementById('estimatedTime').textContent = estimatedTime;
+        const confirmTotalEmails = document.getElementById('confirmTotalEmails');
+        const confirmNewFolders = document.getElementById('confirmNewFolders');
+        
+        if (confirmTotalEmails) confirmTotalEmails.textContent = totalEmails.toLocaleString();
+        if (confirmNewFolders) confirmNewFolders.textContent = newFolders;
         
         // Générer la liste des actions
         this.generateActionsPreview(selectedActions);
