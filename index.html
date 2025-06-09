@@ -1094,6 +1094,12 @@
         window.showApp = function() {
             console.log('[SHOW_APP] Switching to app interface...');
             
+            // Si l'app est déjà affichée, ne rien faire
+            if (appAlreadyShown) {
+                console.log('[SHOW_APP] App already shown, skipping...');
+                return;
+            }
+            
             // Masquer le loading
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (loadingOverlay) {
@@ -1109,20 +1115,62 @@
                 loginPage.style.display = 'none';
             }
             
+            appAlreadyShown = true;
             console.log('[SHOW_APP] App interface activated');
         };
 
         // Variable pour éviter les vérifications multiples
         let authCheckInProgress = false;
+        let appAlreadyShown = false;
+
+        // Vérification précoce IMMÉDIATE de l'authentification
+        const earlyAuthCheck = () => {
+            // Vérifier le localStorage pour des tokens existants
+            try {
+                const msalAccount = localStorage.getItem('msal.account.keys');
+                const msalToken = localStorage.getItem('msal.token.keys');
+                
+                if (msalAccount && msalToken) {
+                    console.log('[EARLY_AUTH] Tokens detected in localStorage, user likely authenticated');
+                    
+                    // Cacher immédiatement la page de login
+                    const loginPage = document.getElementById('loginPage');
+                    if (loginPage) {
+                        loginPage.style.display = 'none';
+                        console.log('[EARLY_AUTH] Login page immediately hidden');
+                    }
+                    
+                    // Activer l'app immédiatement
+                    document.body.classList.add('app-active');
+                    appAlreadyShown = true;
+                    console.log('[EARLY_AUTH] App mode activated immediately');
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
+            }
+            
+            return false;
+        };
+
+        // Exécuter la vérification précoce TOUT DE SUITE
+        earlyAuthCheck();
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
             
+            // Si l'app est déjà affichée depuis la vérification précoce, ne rien faire
+            if (appAlreadyShown) {
+                console.log('[INDEX] App already shown via early auth, skipping additional checks');
+                return;
+            }
+            
             // Fonction de vérification d'authentification sécurisée
             const safeAuthCheck = () => {
-                if (authCheckInProgress) {
-                    console.log('[INDEX] Auth check already in progress, skipping...');
+                if (authCheckInProgress || appAlreadyShown) {
+                    console.log('[INDEX] Auth check already in progress or app shown, skipping...');
                     return false;
                 }
                 
@@ -1140,13 +1188,13 @@
                 return false;
             };
             
-            // Vérification avec délai pour éviter les conflits MSAL
+            // Vérification avec délai seulement si pas déjà fait
             setTimeout(() => {
                 if (!safeAuthCheck()) {
                     // Une seule retry après 1 seconde
                     setTimeout(safeAuthCheck, 1000);
                 }
-            }, 500);
+            }, 300);
             
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
