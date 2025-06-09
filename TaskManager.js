@@ -1,4 +1,4 @@
-// TaskManager Pro v9.1 - Interface Harmonisée avec Actions Intégrées
+// TaskManager Pro v9.2 - Interface avec Bouton Actions Groupées
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v9.1 - Interface Harmonisée avec Actions...');
+            console.log('[TaskManager] Initializing v9.2 - Interface avec Bouton Actions Groupées...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -971,7 +971,7 @@ Sujet: ${subject}
 }
 
 // =====================================
-// MODERN TASKS VIEW - INTERFACE HARMONISÉE AVEC ACTIONS INTÉGRÉES
+// MODERN TASKS VIEW - INTERFACE AVEC BOUTON ACTIONS GROUPÉES
 // =====================================
 class TasksView {
     constructor() {
@@ -991,6 +991,7 @@ class TasksView {
         this.showCompleted = false;
         this.showAdvancedFilters = false;
         this.hideExplanation = localStorage.getItem('hideTasksExplanation') === 'true';
+        this.bulkActionsVisible = false;
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
@@ -1039,19 +1040,19 @@ class TasksView {
                     </div>
                 ` : ''}
 
-                <!-- Barre de contrôles harmonisée avec sélection intégrée -->
-                <div class="controls-bar-harmonized">
+                <!-- Barre de contrôles avec bouton Actions intégré -->
+                <div class="controls-bar-enhanced">
                     <!-- Section recherche -->
-                    <div class="search-section-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
+                    <div class="search-section-enhanced">
+                        <div class="search-box-enhanced">
+                            <i class="fas fa-search search-icon-enhanced"></i>
                             <input type="text" 
-                                   class="search-input-harmonized" 
+                                   class="search-input-enhanced" 
                                    id="taskSearchInput"
                                    placeholder="Rechercher tâches..." 
                                    value="${this.currentFilters.search}">
                             ${this.currentFilters.search ? `
-                                <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
+                                <button class="search-clear-enhanced" onclick="window.tasksView.clearSearch()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             ` : ''}
@@ -1059,20 +1060,20 @@ class TasksView {
                     </div>
                     
                     <!-- Modes de vue harmonisés -->
-                    <div class="view-modes-harmonized">
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                    <div class="view-modes-enhanced">
+                        <button class="view-mode-enhanced ${this.currentViewMode === 'flat' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('flat')"
                                 title="Liste">
                             <i class="fas fa-list"></i>
                             <span>Liste</span>
                         </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                        <button class="view-mode-enhanced ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('grouped-domain')"
                                 title="Par domaine">
                             <i class="fas fa-globe"></i>
                             <span>Domaine</span>
                         </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                        <button class="view-mode-enhanced ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('grouped-sender')"
                                 title="Par expéditeur">
                             <i class="fas fa-user"></i>
@@ -1080,77 +1081,37 @@ class TasksView {
                         </button>
                     </div>
                     
-                    <!-- Actions principales avec sélection intégrée -->
-                    <div class="action-buttons-harmonized">
-                        <!-- Bouton Sélectionner tout / Désélectionner -->
-                        <button class="btn-harmonized btn-selection-toggle" 
+                    <!-- Section Actions avec bouton centralisé -->
+                    <div class="actions-section-enhanced">
+                        <!-- Bouton Actions centralisé avec compteur -->
+                        <button class="btn-actions-centralized ${selectedCount > 0 ? 'active' : ''}" 
+                                onclick="window.tasksView.toggleBulkActionsPanel()"
+                                ${selectedCount === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-bolt"></i>
+                            <span>Actions</span>
+                            ${selectedCount > 0 ? `<span class="action-count-badge">${selectedCount}</span>` : ''}
+                            <i class="fas fa-chevron-${this.bulkActionsVisible ? 'up' : 'down'} action-chevron"></i>
+                        </button>
+                        
+                        <!-- Boutons de contrôle standards -->
+                        <button class="btn-enhanced btn-select-toggle" 
                                 onclick="window.tasksView.toggleAllSelection()"
                                 title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
                             <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
-                            <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
-                            ${visibleTasks.length > 0 ? `<span class="count-badge-small">${visibleTasks.length}</span>` : ''}
+                            <span>${allVisible ? 'Désélectionner' : 'Sélectionner'} (${visibleTasks.length})</span>
                         </button>
                         
-                        <!-- Informations de sélection et actions -->
-                        ${selectedCount > 0 ? `
-                            <div class="selection-info-harmonized">
-                                <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
-                                <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Actions principales -->
-                            <button class="btn-harmonized btn-primary" onclick="window.tasksView.bulkMarkCompleted()">
-                                <i class="fas fa-check"></i>
-                                <span>Terminer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</span>
-                                <span class="count-badge-harmonized">${selectedCount}</span>
-                            </button>
-                            
-                            <!-- Menu actions groupées -->
-                            <div class="dropdown-action-harmonized">
-                                <button class="btn-harmonized btn-secondary dropdown-toggle" onclick="window.tasksView.toggleBulkActions(event)">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                    <span>Actions</span>
-                                    <i class="fas fa-chevron-down"></i>
-                                </button>
-                                <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
-                                    <button class="dropdown-item-harmonized" onclick="window.tasksView.bulkChangePriority()">
-                                        <i class="fas fa-flag"></i>
-                                        <span>Changer priorité</span>
-                                    </button>
-                                    <button class="dropdown-item-harmonized" onclick="window.tasksView.bulkChangeStatus()">
-                                        <i class="fas fa-tasks"></i>
-                                        <span>Changer statut</span>
-                                    </button>
-                                    <button class="dropdown-item-harmonized" onclick="window.tasksView.bulkArchive()">
-                                        <i class="fas fa-archive"></i>
-                                        <span>Archiver</span>
-                                    </button>
-                                    <div class="dropdown-divider"></div>
-                                    <button class="dropdown-item-harmonized" onclick="window.tasksView.bulkExport()">
-                                        <i class="fas fa-download"></i>
-                                        <span>Exporter</span>
-                                    </button>
-                                    <button class="dropdown-item-harmonized danger" onclick="window.tasksView.bulkDelete()">
-                                        <i class="fas fa-trash"></i>
-                                        <span>Supprimer</span>
-                                    </button>
-                                </div>
-                            </div>
-                        ` : ''}
-                        
-                        <button class="btn-harmonized btn-secondary" onclick="window.tasksView.refreshTasks()">
+                        <button class="btn-enhanced btn-secondary" onclick="window.tasksView.refreshTasks()">
                             <i class="fas fa-sync-alt"></i>
                             <span>Actualiser</span>
                         </button>
                         
-                        <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
+                        <button class="btn-enhanced btn-primary" onclick="window.tasksView.showCreateModal()">
                             <i class="fas fa-plus"></i>
                             <span>Nouvelle</span>
                         </button>
                         
-                        <button class="btn-harmonized filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                        <button class="btn-enhanced filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
                                 onclick="window.tasksView.toggleAdvancedFilters()">
                             <i class="fas fa-filter"></i>
                             <span>Filtres</span>
@@ -1159,9 +1120,64 @@ class TasksView {
                     </div>
                 </div>
 
+                <!-- Panneau d'actions groupées optimisé -->
+                <div class="bulk-actions-panel ${this.bulkActionsVisible && selectedCount > 0 ? 'show' : ''}" id="bulkActionsPanel">
+                    <div class="bulk-actions-content">
+                        <div class="bulk-actions-header">
+                            <div class="selection-info">
+                                <i class="fas fa-check-square"></i>
+                                <span class="selection-text">${selectedCount} tâche${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}</span>
+                                <button class="clear-selection-btn" onclick="window.tasksView.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                    <span>Effacer</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bulk-actions-grid">
+                            <!-- Actions principales -->
+                            <button class="bulk-action-btn complete" onclick="window.tasksView.bulkMarkCompleted()">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Marquer terminé</span>
+                                <small>${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</small>
+                            </button>
+                            
+                            <button class="bulk-action-btn priority" onclick="window.tasksView.bulkChangePriority()">
+                                <i class="fas fa-flag"></i>
+                                <span>Changer priorité</span>
+                                <small>Modifier toutes</small>
+                            </button>
+                            
+                            <button class="bulk-action-btn status" onclick="window.tasksView.bulkChangeStatus()">
+                                <i class="fas fa-tasks"></i>
+                                <span>Changer statut</span>
+                                <small>En cours, terminé...</small>
+                            </button>
+                            
+                            <button class="bulk-action-btn archive" onclick="window.tasksView.bulkArchive()">
+                                <i class="fas fa-archive"></i>
+                                <span>Archiver</span>
+                                <small>Marquer comme archivé</small>
+                            </button>
+                            
+                            <button class="bulk-action-btn export" onclick="window.tasksView.bulkExport()">
+                                <i class="fas fa-download"></i>
+                                <span>Exporter CSV</span>
+                                <small>Télécharger sélection</small>
+                            </button>
+                            
+                            <button class="bulk-action-btn delete" onclick="window.tasksView.bulkDelete()">
+                                <i class="fas fa-trash"></i>
+                                <span>Supprimer</span>
+                                <small>Action irréversible</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Filtres de statut harmonisés -->
-                <div class="status-filters-harmonized">
-                    ${this.buildHarmonizedStatusPills(stats)}
+                <div class="status-filters-enhanced">
+                    ${this.buildEnhancedStatusPills(stats)}
                 </div>
                 
                 <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
@@ -1204,27 +1220,54 @@ class TasksView {
                         </div>
 
                         <div class="filter-actions">
-                            <button class="btn-harmonized btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                            <button class="btn-enhanced btn-secondary" onclick="window.tasksView.resetAllFilters()">
                                 <i class="fas fa-undo"></i> Réinitialiser
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="tasks-container-harmonized" id="tasksContainer">
+                <div class="tasks-container-enhanced" id="tasksContainer">
                     ${this.renderTasksList()}
                 </div>
             </div>
         `;
 
-        this.addHarmonizedTaskStyles();
+        this.addEnhancedTaskStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Harmonized interface rendered with integrated actions');
+        console.log('[TasksView] Enhanced interface rendered with centralized actions button');
     }
 
     // =====================================
-    // MÉTHODES DE SÉLECTION HARMONISÉES AVEC PAGEMANAGER
+    // MÉTHODES DE SÉLECTION ET ACTIONS GROUPÉES
     // =====================================
+    
+    toggleBulkActionsPanel() {
+        this.bulkActionsVisible = !this.bulkActionsVisible;
+        
+        const panel = document.getElementById('bulkActionsPanel');
+        const button = document.querySelector('.btn-actions-centralized');
+        const chevron = button?.querySelector('.action-chevron');
+        
+        if (panel) {
+            panel.classList.toggle('show', this.bulkActionsVisible && this.selectedTasks.size > 0);
+        }
+        
+        if (chevron) {
+            chevron.classList.toggle('fa-chevron-down', !this.bulkActionsVisible);
+            chevron.classList.toggle('fa-chevron-up', this.bulkActionsVisible);
+        }
+        
+        if (button) {
+            button.classList.toggle('expanded', this.bulkActionsVisible);
+        }
+    }
+    
+    hideExplanationMessage() {
+        this.hideExplanation = true;
+        localStorage.setItem('hideTasksExplanation', 'true');
+        this.refreshTasksView();
+    }
     
     toggleAllSelection() {
         const visibleTasks = this.getVisibleTasks();
@@ -1258,13 +1301,14 @@ class TasksView {
 
     clearSelection() {
         this.selectedTasks.clear();
+        this.bulkActionsVisible = false;
         this.refreshTasksView();
         this.showToast('Sélection effacée', 'info');
     }
 
     refreshTasksView() {
         // Re-render seulement le contenu nécessaire pour éviter les conflits
-        const tasksContainer = document.querySelector('.tasks-container-harmonized');
+        const tasksContainer = document.querySelector('.tasks-container-enhanced');
         if (tasksContainer) {
             tasksContainer.innerHTML = this.renderTasksList();
         }
@@ -1297,31 +1341,6 @@ class TasksView {
         const tasks = window.taskManager.filterTasks(this.currentFilters);
         const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
         return filteredTasks;
-    }
-
-    // =====================================
-    // ACTIONS GROUPÉES HARMONISÉES
-    // =====================================
-    
-    hideExplanationMessage() {
-        this.hideExplanation = true;
-        localStorage.setItem('hideTasksExplanation', 'true');
-        this.refreshTasksView();
-    }
-    
-    toggleBulkActions(event) {
-        event.stopPropagation();
-        const menu = document.getElementById('bulkActionsMenu');
-        if (menu) {
-            menu.classList.toggle('show');
-        }
-        
-        // Fermer le menu si on clique ailleurs
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.dropdown-action-harmonized')) {
-                menu?.classList.remove('show');
-            }
-        }, { once: true });
     }
 
     async bulkMarkCompleted() {
@@ -1434,7 +1453,7 @@ class TasksView {
         this.clearSelection();
     }
 
-    buildHarmonizedStatusPills(stats) {
+    buildEnhancedStatusPills(stats) {
         const pills = [
             { id: 'all', name: 'Tous', icon: '📧', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
@@ -1445,12 +1464,12 @@ class TasksView {
         ];
 
         return pills.map(pill => `
-            <button class="status-pill-harmonized ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+            <button class="status-pill-enhanced ${this.isFilterActive(pill.id) ? 'active' : ''}" 
                     data-filter="${pill.id}"
                     onclick="window.tasksView.quickFilter('${pill.id}')">
-                <span class="pill-icon-harmonized">${pill.icon}</span>
-                <span class="pill-text-harmonized">${pill.name}</span>
-                <span class="pill-count-harmonized">${pill.count}</span>
+                <span class="pill-icon-enhanced">${pill.icon}</span>
+                <span class="pill-text-enhanced">${pill.name}</span>
+                <span class="pill-count-enhanced">${pill.count}</span>
             </button>
         `).join('');
     }
@@ -1476,8 +1495,8 @@ class TasksView {
 
     renderFlatView(tasks) {
         return `
-            <div class="tasks-harmonized-list">
-                ${tasks.map(task => this.renderHarmonizedTaskItem(task)).join('')}
+            <div class="tasks-enhanced-list">
+                ${tasks.map(task => this.renderEnhancedTaskItem(task)).join('')}
             </div>
         `;
     }
@@ -1486,7 +1505,7 @@ class TasksView {
         const groups = this.createTaskGroups(tasks, groupMode);
         
         return `
-            <div class="tasks-grouped-harmonized">
+            <div class="tasks-grouped-enhanced">
                 ${groups.map(group => this.renderTaskGroup(group, groupMode)).join('')}
             </div>
         `;
@@ -1497,25 +1516,25 @@ class TasksView {
         const avatarColor = this.generateAvatarColor(group.name);
         
         return `
-            <div class="task-group-harmonized" data-group-key="${group.key}">
-                <div class="group-header-harmonized" onclick="window.tasksView.toggleGroup('${group.key}')">
-                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+            <div class="task-group-enhanced" data-group-key="${group.key}">
+                <div class="group-header-enhanced" onclick="window.tasksView.toggleGroup('${group.key}')">
+                    <div class="group-avatar-enhanced" style="background: ${avatarColor}">
                         ${groupType === 'grouped-domain' ? 
                             '<i class="fas fa-globe"></i>' : 
                             group.name.charAt(0).toUpperCase()
                         }
                     </div>
-                    <div class="group-info-harmonized">
-                        <div class="group-name-harmonized">${displayName}</div>
-                        <div class="group-meta-harmonized">${group.count} tâche${group.count > 1 ? 's' : ''} • ${this.formatRelativeDate(group.latestDate)}</div>
+                    <div class="group-info-enhanced">
+                        <div class="group-name-enhanced">${displayName}</div>
+                        <div class="group-meta-enhanced">${group.count} tâche${group.count > 1 ? 's' : ''} • ${this.formatRelativeDate(group.latestDate)}</div>
                     </div>
-                    <div class="group-expand-harmonized">
+                    <div class="group-expand-enhanced">
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
                 
-                <div class="group-content-harmonized" style="display: none;">
-                    ${group.tasks.map(task => this.renderHarmonizedTaskItem(task)).join('')}
+                <div class="group-content-enhanced" style="display: none;">
+                    ${group.tasks.map(task => this.renderEnhancedTaskItem(task)).join('')}
                 </div>
             </div>
         `;
@@ -1576,9 +1595,9 @@ class TasksView {
         const group = document.querySelector(`[data-group-key="${groupKey}"]`);
         if (!group) return;
         
-        const content = group.querySelector('.group-content-harmonized');
-        const icon = group.querySelector('.group-expand-harmonized i');
-        const header = group.querySelector('.group-header-harmonized');
+        const content = group.querySelector('.group-content-enhanced');
+        const icon = group.querySelector('.group-expand-enhanced i');
+        const header = group.querySelector('.group-header-enhanced');
         
         if (content.style.display === 'none') {
             content.style.display = 'block';
@@ -1624,21 +1643,21 @@ class TasksView {
 
     renderEmptyState() {
         return `
-            <div class="empty-state-harmonized">
-                <div class="empty-state-icon-harmonized">
+            <div class="empty-state-enhanced">
+                <div class="empty-state-icon-enhanced">
                     <i class="fas fa-tasks"></i>
                 </div>
-                <h3 class="empty-state-title-harmonized">Aucune tâche trouvée</h3>
-                <p class="empty-state-text-harmonized">
+                <h3 class="empty-state-title-enhanced">Aucune tâche trouvée</h3>
+                <p class="empty-state-text-enhanced">
                     ${this.hasActiveFilters() ? 'Aucune tâche ne correspond à vos critères' : 'Vous n\'avez aucune tâche'}
                 </p>
                 ${this.hasActiveFilters() ? `
-                    <button class="btn-harmonized btn-primary" onclick="window.tasksView.resetAllFilters()">
+                    <button class="btn-enhanced btn-primary" onclick="window.tasksView.resetAllFilters()">
                         <i class="fas fa-undo"></i>
                         <span>Réinitialiser les filtres</span>
                     </button>
                 ` : `
-                    <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
+                    <button class="btn-enhanced btn-primary" onclick="window.tasksView.showCreateModal()">
                         <i class="fas fa-plus"></i>
                         <span>Créer votre première tâche</span>
                     </button>
@@ -1647,7 +1666,7 @@ class TasksView {
         `;
     }
 
-    renderHarmonizedTaskItem(task) {
+    renderEnhancedTaskItem(task) {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
         
@@ -1666,51 +1685,51 @@ class TasksView {
         const priorityColor = this.getPriorityColor(task.priority);
         
         return `
-            <div class="task-harmonized-card ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+            <div class="task-enhanced-card ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-task-id="${task.id}"
                  onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
                 
-                <!-- Checkbox de sélection harmonisé -->
+                <!-- Checkbox de sélection -->
                 <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
+                       class="task-checkbox-enhanced" 
                        ${isSelected ? 'checked' : ''}
                        onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                 
-                <!-- Indicateur de priorité harmonisé -->
-                <div class="priority-bar-harmonized" style="background-color: ${priorityColor}"></div>
+                <!-- Indicateur de priorité -->
+                <div class="priority-bar-enhanced" style="background-color: ${priorityColor}"></div>
                 
-                <!-- Contenu principal harmonisé et centré -->
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(task.title)}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">${taskTypeDisplay.icon} ${taskTypeDisplay.label}</span>
+                <!-- Contenu principal -->
+                <div class="task-main-content-enhanced">
+                    <div class="task-header-enhanced">
+                        <h3 class="task-title-enhanced">${this.escapeHtml(task.title)}</h3>
+                        <div class="task-meta-enhanced">
+                            <span class="task-type-badge-enhanced">${taskTypeDisplay.icon} ${taskTypeDisplay.label}</span>
                             ${dueDateDisplay.html}
                         </div>
                     </div>
                     
-                    <div class="task-recipient-harmonized">
+                    <div class="task-recipient-enhanced">
                         <i class="fas ${task.hasEmail ? 'fa-envelope' : 'fa-user'}"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(recipient)}</span>
-                        ${task.hasEmail && task.needsReply ? '<span class="reply-indicator-harmonized">• Réponse requise</span>' : ''}
+                        <span class="recipient-name-enhanced">${this.escapeHtml(recipient)}</span>
+                        ${task.hasEmail && task.needsReply ? '<span class="reply-indicator-enhanced">• Réponse requise</span>' : ''}
                     </div>
                 </div>
                 
-                <!-- Actions rapides harmonisées -->
-                <div class="task-actions-harmonized">
-                    ${this.renderHarmonizedActions(task)}
+                <!-- Actions rapides -->
+                <div class="task-actions-enhanced">
+                    ${this.renderEnhancedActions(task)}
                 </div>
             </div>
         `;
     }
 
-    renderHarmonizedActions(task) {
+    renderEnhancedActions(task) {
         const actions = [];
         
         // Bouton principal selon l'état
         if (task.status !== 'completed') {
             actions.push(`
-                <button class="action-btn-harmonized complete" 
+                <button class="action-btn-enhanced complete" 
                         onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
                         title="Marquer comme terminé">
                     <i class="fas fa-check"></i>
@@ -1721,7 +1740,7 @@ class TasksView {
         // Bouton répondre pour les emails
         if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
             actions.push(`
-                <button class="action-btn-harmonized reply" 
+                <button class="action-btn-enhanced reply" 
                         onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
                         title="Répondre à l'email">
                     <i class="fas fa-reply"></i>
@@ -1731,7 +1750,7 @@ class TasksView {
         
         // Bouton détails
         actions.push(`
-            <button class="action-btn-harmonized details" 
+            <button class="action-btn-enhanced details" 
                     onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
                     title="Voir les détails">
                 <i class="fas fa-eye"></i>
@@ -1776,35 +1795,35 @@ class TasksView {
 
     formatDueDateSimple(dateString) {
         if (!dateString) {
-            return { html: '<span class="no-deadline-harmonized">Pas d\'échéance</span>', text: '' };
+            return { html: '<span class="no-deadline-enhanced">Pas d\'échéance</span>', text: '' };
         }
         
         const date = new Date(dateString);
         const now = new Date();
         const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
         
-        let className = 'deadline-normal-harmonized';
+        let className = 'deadline-normal-enhanced';
         let text = '';
         let bgColor = '#f3f4f6';
         let textColor = '#6b7280';
         
         if (diffDays < 0) {
-            className = 'deadline-overdue-harmonized';
+            className = 'deadline-overdue-enhanced';
             text = `En retard (${Math.abs(diffDays)}j)`;
             bgColor = '#fef2f2';
             textColor = '#dc2626';
         } else if (diffDays === 0) {
-            className = 'deadline-today-harmonized';
+            className = 'deadline-today-enhanced';
             text = 'Aujourd\'hui';
             bgColor = '#fef3c7';
             textColor = '#d97706';
         } else if (diffDays === 1) {
-            className = 'deadline-tomorrow-harmonized';
+            className = 'deadline-tomorrow-enhanced';
             text = 'Demain';
             bgColor = '#fef3c7';
             textColor = '#d97706';
         } else if (diffDays <= 7) {
-            className = 'deadline-week-harmonized';
+            className = 'deadline-week-enhanced';
             text = `${diffDays} jour${diffDays > 1 ? 's' : ''}`;
             bgColor = '#eff6ff';
             textColor = '#2563eb';
@@ -1817,7 +1836,7 @@ class TasksView {
         }
         
         return {
-            html: `<span class="deadline-badge-harmonized ${className}" style="background-color: ${bgColor}; color: ${textColor};">
+            html: `<span class="deadline-badge-enhanced ${className}" style="background-color: ${bgColor}; color: ${textColor};">
                 📅 ${text}
             </span>`,
             text: text
@@ -2252,7 +2271,7 @@ class TasksView {
             </div>
         `;
 
-        document.body.insertAdjarentHTML('beforeend', modalHTML);
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
     }
 
@@ -2587,8 +2606,8 @@ class TasksView {
         }
         
         const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters-harmonized').forEach(container => {
-            container.innerHTML = this.buildHarmonizedStatusPills(stats);
+        document.querySelectorAll('.status-filters-enhanced').forEach(container => {
+            container.innerHTML = this.buildEnhancedStatusPills(stats);
         });
     }
 
@@ -2617,7 +2636,7 @@ class TasksView {
         this.currentFilters.search = value.trim();
         this.refreshView();
         
-        const clearBtn = document.querySelector('.search-clear-harmonized');
+        const clearBtn = document.querySelector('.search-clear-enhanced');
         if (clearBtn) {
             clearBtn.style.display = this.currentFilters.search ? 'flex' : 'none';
         }
@@ -2630,16 +2649,14 @@ class TasksView {
         return div.innerHTML;
     }
 
-    // STYLES HARMONISÉS ET UNIFORMISÉS AVEC CENTRAGE PARFAIT - REPRIS DE PAGEMANAGER
-    addHarmonizedTaskStyles() {
-        if (document.getElementById('harmonizedTaskStyles')) return;
+    // STYLES AMÉLIORÉS AVEC BOUTON ACTIONS CENTRALISÉ
+    addEnhancedTaskStyles() {
+        if (document.getElementById('enhancedTaskStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'harmonizedTaskStyles';
+        styles.id = 'enhancedTaskStyles';
         styles.textContent = `
-            /* Reprendre exactement les mêmes styles que PageManager */
-            
-            /* Variables CSS identiques */
+            /* Variables CSS */
             :root {
                 --btn-height: 44px;
                 --btn-padding-horizontal: 16px;
@@ -2738,9 +2755,8 @@ class TasksView {
                 transform: scale(1.1);
             }
             
-            /* Reprendre tous les autres styles CSS de PageManager */
-            /* Barre de contrôles */
-            .controls-bar-harmonized {
+            /* Barre de contrôles améliorée */
+            .controls-bar-enhanced {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -2757,14 +2773,14 @@ class TasksView {
             }
             
             /* Section recherche */
-            .search-section-harmonized {
+            .search-section-enhanced {
                 flex: 0 0 300px;
                 height: var(--btn-height);
                 display: flex;
                 align-items: center;
             }
             
-            .search-box-harmonized {
+            .search-box-enhanced {
                 position: relative;
                 width: 100%;
                 height: 100%;
@@ -2772,7 +2788,7 @@ class TasksView {
                 align-items: center;
             }
             
-            .search-input-harmonized {
+            .search-input-enhanced {
                 width: 100%;
                 height: var(--btn-height);
                 padding: 0 var(--gap-medium) 0 44px;
@@ -2789,13 +2805,13 @@ class TasksView {
                 vertical-align: middle;
             }
             
-            .search-input-harmonized:focus {
+            .search-input-enhanced:focus {
                 border-color: #3b82f6;
                 background: white;
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
-            .search-icon-harmonized {
+            .search-icon-enhanced {
                 position: absolute;
                 left: var(--gap-medium);
                 top: 50%;
@@ -2809,7 +2825,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .search-clear-harmonized {
+            .search-clear-enhanced {
                 position: absolute;
                 right: var(--gap-small);
                 top: 50%;
@@ -2830,13 +2846,13 @@ class TasksView {
                 outline: none;
             }
             
-            .search-clear-harmonized:hover {
+            .search-clear-enhanced:hover {
                 background: #dc2626;
                 transform: translateY(-50%) scale(1.1);
             }
             
-            /* Modes de vue harmonisés */
-            .view-modes-harmonized {
+            /* Modes de vue */
+            .view-modes-enhanced {
                 display: flex;
                 background: #f8fafc;
                 border: var(--border-width) solid #e2e8f0;
@@ -2849,7 +2865,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .view-mode-harmonized {
+            .view-mode-enhanced {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2871,13 +2887,13 @@ class TasksView {
                 text-align: center;
             }
             
-            .view-mode-harmonized:hover {
+            .view-mode-enhanced:hover {
                 background: rgba(255, 255, 255, 0.8);
                 color: #374151;
                 transform: translateY(-1px);
             }
             
-            .view-mode-harmonized.active {
+            .view-mode-enhanced.active {
                 background: white;
                 color: #1f2937;
                 box-shadow: var(--shadow-base);
@@ -2885,8 +2901,8 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* Actions principales harmonisées */
-            .action-buttons-harmonized {
+            /* Section Actions avec bouton centralisé */
+            .actions-section-enhanced {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-small);
@@ -2894,141 +2910,55 @@ class TasksView {
                 flex-shrink: 0;
             }
             
-            .action-buttons-harmonized > *,
-            .action-buttons-harmonized .btn-harmonized,
-            .action-buttons-harmonized .selection-info-harmonized {
-                height: var(--btn-height);
-                min-height: var(--btn-height);
-                max-height: var(--btn-height);
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .btn-harmonized {
-                background: white;
-                color: #374151;
-                border: var(--border-width) solid #e5e7eb;
-                border-radius: var(--btn-border-radius);
-                padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                text-decoration: none;
-                white-space: nowrap;
-                box-shadow: var(--shadow-base);
-                min-width: fit-content;
-                gap: var(--btn-gap);
-            }
-            
-            .btn-harmonized:hover {
-                background: #f9fafb;
-                border-color: #6366f1;
-                color: #1f2937;
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-hover);
-            }
-            
-            .btn-harmonized.btn-primary {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border-color: transparent;
-                box-shadow: var(--shadow-primary);
-            }
-            
-            .btn-harmonized.btn-primary:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
-            }
-            
-            .btn-harmonized.btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-            
-            .btn-harmonized.btn-secondary:hover {
-                background: #f1f5f9;
-                color: #334155;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
-            }
-            
-            /* Bouton sélection/désélection */
-            .btn-harmonized.btn-selection-toggle {
-                background: #f0f9ff;
-                color: #0369a1;
-                border-color: #0ea5e9;
+            /* Bouton Actions centralisé */
+            .btn-actions-centralized {
                 position: relative;
-            }
-            
-            .btn-harmonized.btn-selection-toggle:hover {
-                background: #e0f2fe;
-                color: #0c4a6e;
-                border-color: #0284c7;
-                transform: translateY(-1px);
-            }
-            
-            .count-badge-small {
-                background: #0ea5e9;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 2px 5px;
-                border-radius: 6px;
-                margin-left: 4px;
-                min-width: 16px;
-                text-align: center;
-                line-height: 1;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .btn-harmonized.btn-clear-selection {
-                background: #f3f4f6;
-                color: #6b7280;
-                border: none;
-                width: var(--btn-height);
-                height: var(--btn-height);
-                min-width: var(--btn-height);
-                max-width: var(--btn-height);
-                padding: 0;
-                border-radius: var(--btn-border-radius);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-            }
-            
-            .btn-harmonized.btn-clear-selection:hover {
-                background: #e5e7eb;
-                color: #374151;
-                transform: translateY(-1px);
-            }
-            
-            .selection-info-harmonized {
+                gap: var(--btn-gap);
+                padding: var(--btn-padding-vertical) 20px;
                 height: var(--btn-height);
-                padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border: var(--border-width) solid #93c5fd;
+                background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+                color: white;
+                border: none;
                 border-radius: var(--btn-border-radius);
                 font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                color: #1e40af;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+                font-weight: 700;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+                min-width: 140px;
                 box-sizing: border-box;
-                white-space: nowrap;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                gap: var(--btn-gap);
                 text-align: center;
             }
             
-            .count-badge-harmonized {
+            .btn-actions-centralized:disabled {
+                background: #e5e7eb;
+                color: #9ca3af;
+                cursor: not-allowed;
+                box-shadow: none;
+                opacity: 0.6;
+            }
+            
+            .btn-actions-centralized:not(:disabled):hover {
+                background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
+            }
+            
+            .btn-actions-centralized.active {
+                background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+                box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+                transform: translateY(-1px);
+            }
+            
+            .btn-actions-centralized.expanded {
+                background: linear-gradient(135deg, #5b21b6 0%, #4c1d95 100%);
+                transform: translateY(-1px);
+            }
+            
+            .action-count-badge {
                 position: absolute;
                 top: -8px;
                 right: -8px;
@@ -3045,79 +2975,287 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                animation: pulse 2s infinite;
             }
             
-            /* Dropdown pour actions groupées */
-            .dropdown-action-harmonized {
-                position: relative;
-                display: inline-block;
+            .action-chevron {
+                margin-left: var(--gap-tiny);
+                font-size: 10px;
+                transition: all 0.3s ease;
             }
             
-            .dropdown-toggle {
-                position: relative;
-            }
-            
-            .dropdown-menu-harmonized {
-                position: absolute;
-                top: calc(100% + 8px);
-                right: 0;
+            /* Boutons standards */
+            .btn-enhanced {
                 background: white;
-                border: 1px solid #e5e7eb;
+                color: #374151;
+                border: var(--border-width) solid #e5e7eb;
                 border-radius: var(--btn-border-radius);
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-                min-width: 200px;
-                z-index: 1000;
-                padding: 8px 0;
-                opacity: 0;
-                visibility: hidden;
-                transform: translateY(-10px);
-                transition: all 0.2s ease;
+                padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
+                font-size: var(--btn-font-size);
+                font-weight: var(--btn-font-weight);
+                cursor: pointer;
+                transition: all var(--transition-speed) ease;
+                text-decoration: none;
+                white-space: nowrap;
+                box-shadow: var(--shadow-base);
+                min-width: fit-content;
+                gap: var(--btn-gap);
+                height: var(--btn-height);
+                min-height: var(--btn-height);
+                max-height: var(--btn-height);
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
-            .dropdown-menu-harmonized.show {
+            .btn-enhanced:hover {
+                background: #f9fafb;
+                border-color: #6366f1;
+                color: #1f2937;
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-hover);
+            }
+            
+            .btn-enhanced.btn-primary {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                border-color: transparent;
+                box-shadow: var(--shadow-primary);
+            }
+            
+            .btn-enhanced.btn-primary:hover {
+                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+            }
+            
+            .btn-enhanced.btn-secondary {
+                background: #f8fafc;
+                color: #475569;
+                border-color: #e2e8f0;
+            }
+            
+            .btn-enhanced.btn-secondary:hover {
+                background: #f1f5f9;
+                color: #334155;
+                border-color: #cbd5e1;
+                transform: translateY(-1px);
+            }
+            
+            .btn-enhanced.btn-select-toggle {
+                background: #f0f9ff;
+                color: #0369a1;
+                border-color: #0ea5e9;
+                position: relative;
+            }
+            
+            .btn-enhanced.btn-select-toggle:hover {
+                background: #e0f2fe;
+                color: #0c4a6e;
+                border-color: #0284c7;
+                transform: translateY(-1px);
+            }
+            
+            /* Panneau d'actions groupées optimisé */
+            .bulk-actions-panel {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: var(--card-border-radius);
+                margin-bottom: var(--gap-large);
+                max-height: 0;
+                overflow: hidden;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                opacity: 0;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                transform: translateY(-10px);
+            }
+            
+            .bulk-actions-panel.show {
+                max-height: 300px;
                 opacity: 1;
-                visibility: visible;
+                padding: var(--gap-large);
                 transform: translateY(0);
             }
             
-            .dropdown-item-harmonized {
+            .bulk-actions-content {
+                display: flex;
+                flex-direction: column;
+                gap: var(--gap-large);
+            }
+            
+            .bulk-actions-header {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
-                padding: 10px 16px;
-                background: none;
-                border: none;
-                width: 100%;
-                text-align: left;
-                color: #374151;
-                font-size: var(--btn-font-size);
-                font-weight: 500;
+                justify-content: space-between;
+                padding-bottom: var(--gap-medium);
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .selection-info {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-medium);
+                color: #1f2937;
+                font-weight: 600;
+            }
+            
+            .selection-info i {
+                color: #3b82f6;
+                font-size: 18px;
+            }
+            
+            .selection-text {
+                font-size: 16px;
+                font-weight: 700;
+            }
+            
+            .clear-selection-btn {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-tiny);
+                padding: 6px 12px;
+                background: #f3f4f6;
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
             
-            .dropdown-item-harmonized:hover {
-                background: #f8fafc;
-                color: #1f2937;
-            }
-            
-            .dropdown-item-harmonized.danger {
-                color: #dc2626;
-            }
-            
-            .dropdown-item-harmonized.danger:hover {
-                background: #fef2f2;
-                color: #b91c1c;
-            }
-            
-            .dropdown-divider {
-                height: 1px;
+            .clear-selection-btn:hover {
                 background: #e5e7eb;
-                margin: 8px 0;
+                color: #374151;
+                border-color: #9ca3af;
             }
             
-            /* Filtres de statut harmonisés */
-            .status-filters-harmonized {
+            /* Grille d'actions groupées */
+            .bulk-actions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: var(--gap-medium);
+            }
+            
+            .bulk-action-btn {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: var(--gap-large);
+                background: white;
+                border: 2px solid #e5e7eb;
+                border-radius: var(--card-border-radius);
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: center;
+                min-height: 100px;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .bulk-action-btn::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+                opacity: 0;
+                transition: all 0.3s ease;
+            }
+            
+            .bulk-action-btn:hover {
+                border-color: #6366f1;
+                background: #f8fafc;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+            }
+            
+            .bulk-action-btn:hover::before {
+                opacity: 1;
+            }
+            
+            .bulk-action-btn i {
+                font-size: 24px;
+                margin-bottom: var(--gap-small);
+                color: #6b7280;
+                transition: all 0.3s ease;
+            }
+            
+            .bulk-action-btn span {
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: var(--gap-tiny);
+                font-size: 14px;
+            }
+            
+            .bulk-action-btn small {
+                color: #6b7280;
+                font-size: 11px;
+                font-weight: 500;
+            }
+            
+            /* Couleurs spécifiques pour chaque action */
+            .bulk-action-btn.complete:hover {
+                border-color: #16a34a;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            }
+            
+            .bulk-action-btn.complete:hover i {
+                color: #16a34a;
+            }
+            
+            .bulk-action-btn.priority:hover {
+                border-color: #f59e0b;
+                background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            }
+            
+            .bulk-action-btn.priority:hover i {
+                color: #f59e0b;
+            }
+            
+            .bulk-action-btn.status:hover {
+                border-color: #3b82f6;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            }
+            
+            .bulk-action-btn.status:hover i {
+                color: #3b82f6;
+            }
+            
+            .bulk-action-btn.archive:hover {
+                border-color: #8b5cf6;
+                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            }
+            
+            .bulk-action-btn.archive:hover i {
+                color: #8b5cf6;
+            }
+            
+            .bulk-action-btn.export:hover {
+                border-color: #10b981;
+                background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            }
+            
+            .bulk-action-btn.export:hover i {
+                color: #10b981;
+            }
+            
+            .bulk-action-btn.delete:hover {
+                border-color: #ef4444;
+                background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+            }
+            
+            .bulk-action-btn.delete:hover i {
+                color: #ef4444;
+            }
+            
+            /* Filtres de statut */
+            .status-filters-enhanced {
                 display: flex;
                 gap: var(--gap-small);
                 margin-bottom: var(--gap-medium);
@@ -3126,7 +3264,7 @@ class TasksView {
                 justify-content: flex-start;
             }
             
-            .status-filters-harmonized .status-pill-harmonized {
+            .status-pill-enhanced {
                 height: 52px;
                 min-height: 52px;
                 max-height: 52px;
@@ -3149,14 +3287,14 @@ class TasksView {
                 gap: var(--gap-small);
             }
             
-            .status-pill-harmonized:hover {
+            .status-pill-enhanced:hover {
                 border-color: #3b82f6;
                 background: #f0f9ff;
                 transform: translateY(-2px);
                 box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
             }
             
-            .status-pill-harmonized.active {
+            .status-pill-enhanced.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 color: white;
                 border-color: #3b82f6;
@@ -3164,7 +3302,7 @@ class TasksView {
                 transform: translateY(-2px);
             }
             
-            .pill-icon-harmonized {
+            .pill-icon-enhanced {
                 font-size: 16px;
                 line-height: 1;
                 flex-shrink: 0;
@@ -3173,7 +3311,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .pill-text-harmonized {
+            .pill-text-enhanced {
                 font-weight: 700;
                 line-height: 1;
                 flex-shrink: 0;
@@ -3184,7 +3322,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .pill-count-harmonized {
+            .pill-count-enhanced {
                 background: rgba(0, 0, 0, 0.1);
                 padding: 6px 10px;
                 border-radius: 10px;
@@ -3199,7 +3337,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .status-pill-harmonized.active .pill-count-harmonized {
+            .status-pill-enhanced.active .pill-count-enhanced {
                 background: rgba(255, 255, 255, 0.25);
             }
             
@@ -3273,19 +3411,19 @@ class TasksView {
             }
             
             /* Container des tâches */
-            .tasks-container-harmonized {
+            .tasks-container-enhanced {
                 background: transparent;
             }
             
-            /* Liste de tâches harmonisée avec emails */
-            .tasks-harmonized-list {
+            /* Liste de tâches harmonisée */
+            .tasks-enhanced-list {
                 display: flex;
                 flex-direction: column;
                 gap: 0;
                 background: transparent;
             }
             
-            .task-harmonized-card {
+            .task-enhanced-card {
                 display: flex;
                 align-items: center;
                 background: rgba(255, 255, 255, 0.95);
@@ -3304,19 +3442,19 @@ class TasksView {
                 border-bottom: 1px solid #e5e7eb;
             }
             
-            .task-harmonized-card:first-child {
+            .task-enhanced-card:first-child {
                 border-top-left-radius: var(--card-border-radius);
                 border-top-right-radius: var(--card-border-radius);
                 border-top: var(--border-width) solid #e5e7eb;
             }
             
-            .task-harmonized-card:last-child {
+            .task-enhanced-card:last-child {
                 border-bottom-left-radius: var(--card-border-radius);
                 border-bottom-right-radius: var(--card-border-radius);
                 border-bottom: var(--border-width) solid #e5e7eb;
             }
             
-            .task-harmonized-card::before {
+            .task-enhanced-card::before {
                 content: '';
                 position: absolute;
                 top: 0;
@@ -3328,7 +3466,7 @@ class TasksView {
                 transition: all 0.3s ease;
             }
             
-            .task-harmonized-card:hover {
+            .task-enhanced-card:hover {
                 background: white;
                 transform: translateY(-1px);
                 box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -3337,11 +3475,11 @@ class TasksView {
                 z-index: 1;
             }
             
-            .task-harmonized-card:hover::before {
+            .task-enhanced-card:hover::before {
                 opacity: 1;
             }
             
-            .task-harmonized-card.selected {
+            .task-enhanced-card.selected {
                 background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
                 border-left: 4px solid #3b82f6;
                 border-color: #3b82f6;
@@ -3350,18 +3488,18 @@ class TasksView {
                 z-index: 2;
             }
             
-            .task-harmonized-card.completed {
+            .task-enhanced-card.completed {
                 opacity: 0.75;
                 background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
                 border-left: 3px solid #22c55e;
             }
             
-            .task-harmonized-card.completed .task-title-harmonized {
+            .task-enhanced-card.completed .task-title-enhanced {
                 text-decoration: line-through;
                 color: #6b7280;
             }
             
-            .task-checkbox-harmonized {
+            .task-checkbox-enhanced {
                 margin-right: var(--gap-medium);
                 cursor: pointer;
                 width: 20px;
@@ -3378,12 +3516,12 @@ class TasksView {
                 justify-content: center;
             }
             
-            .task-checkbox-harmonized:checked {
+            .task-checkbox-enhanced:checked {
                 background: #6366f1;
                 border-color: #6366f1;
             }
             
-            .task-checkbox-harmonized:checked::after {
+            .task-checkbox-enhanced:checked::after {
                 content: '✓';
                 position: absolute;
                 top: 50%;
@@ -3398,7 +3536,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .priority-bar-harmonized {
+            .priority-bar-enhanced {
                 width: 4px;
                 height: 56px;
                 border-radius: 2px;
@@ -3408,13 +3546,13 @@ class TasksView {
                 flex-shrink: 0;
             }
             
-            .task-harmonized-card:hover .priority-bar-harmonized {
+            .task-enhanced-card:hover .priority-bar-enhanced {
                 height: 60px;
                 width: 5px;
                 box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
             }
             
-            .task-main-content-harmonized {
+            .task-main-content-enhanced {
                 flex: 1;
                 min-width: 0;
                 display: flex;
@@ -3424,7 +3562,7 @@ class TasksView {
                 height: 100%;
             }
             
-            .task-header-harmonized {
+            .task-header-enhanced {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
@@ -3432,7 +3570,7 @@ class TasksView {
                 margin-bottom: var(--gap-tiny);
             }
             
-            .task-title-harmonized {
+            .task-title-enhanced {
                 font-weight: 700;
                 color: #1f2937;
                 font-size: 15px;
@@ -3448,14 +3586,14 @@ class TasksView {
                 align-items: center;
             }
             
-            .task-meta-harmonized {
+            .task-meta-enhanced {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-small);
                 flex-shrink: 0;
             }
             
-            .task-type-badge-harmonized {
+            .task-type-badge-enhanced {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -3473,7 +3611,7 @@ class TasksView {
                 text-align: center;
             }
             
-            .deadline-badge-harmonized {
+            .deadline-badge-enhanced {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -3489,39 +3627,39 @@ class TasksView {
                 text-align: center;
             }
             
-            .deadline-normal-harmonized {
+            .deadline-normal-enhanced {
                 background: #f8fafc;
                 color: #64748b;
                 border-color: #e2e8f0;
             }
             
-            .deadline-week-harmonized {
+            .deadline-week-enhanced {
                 background: #eff6ff;
                 color: #2563eb;
                 border-color: #bfdbfe;
             }
             
-            .deadline-today-harmonized, .deadline-tomorrow-harmonized {
+            .deadline-today-enhanced, .deadline-tomorrow-enhanced {
                 background: #fef3c7;
                 color: #d97706;
                 border-color: #fde68a;
             }
             
-            .deadline-overdue-harmonized {
+            .deadline-overdue-enhanced {
                 background: #fef2f2;
                 color: #dc2626;
                 border-color: #fecaca;
                 animation: pulse 2s infinite;
             }
             
-            .no-deadline-harmonized {
+            .no-deadline-enhanced {
                 color: #9ca3af;
                 font-style: italic;
                 font-size: 10px;
                 text-align: center;
             }
             
-            .task-recipient-harmonized {
+            .task-recipient-enhanced {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-tiny);
@@ -3531,7 +3669,7 @@ class TasksView {
                 line-height: 1.2;
             }
             
-            .task-recipient-harmonized i {
+            .task-recipient-enhanced i {
                 color: #9ca3af;
                 font-size: 12px;
                 flex-shrink: 0;
@@ -3540,7 +3678,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .recipient-name-harmonized {
+            .recipient-name-enhanced {
                 font-weight: 600;
                 color: #374151;
                 text-align: left;
@@ -3548,14 +3686,14 @@ class TasksView {
                 align-items: center;
             }
             
-            .reply-indicator-harmonized {
+            .reply-indicator-enhanced {
                 color: #dc2626;
                 font-weight: 600;
                 font-size: 10px;
                 text-align: center;
             }
             
-            .task-actions-harmonized {
+            .task-actions-enhanced {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -3564,7 +3702,7 @@ class TasksView {
                 flex-shrink: 0;
             }
             
-            .action-btn-harmonized {
+            .action-btn-enhanced {
                 width: var(--action-btn-size);
                 height: var(--action-btn-size);
                 border: 2px solid transparent;
@@ -3583,54 +3721,54 @@ class TasksView {
                 text-align: center;
             }
             
-            .action-btn-harmonized:hover {
+            .action-btn-enhanced:hover {
                 background: white;
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             }
             
-            .action-btn-harmonized.complete {
+            .action-btn-enhanced.complete {
                 color: #16a34a;
                 border-color: transparent;
             }
             
-            .action-btn-harmonized.complete:hover {
+            .action-btn-enhanced.complete:hover {
                 background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
                 border-color: #16a34a;
                 color: #15803d;
             }
             
-            .action-btn-harmonized.reply {
+            .action-btn-enhanced.reply {
                 color: #3b82f6;
                 border-color: transparent;
             }
             
-            .action-btn-harmonized.reply:hover {
+            .action-btn-enhanced.reply:hover {
                 background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
                 border-color: #3b82f6;
                 color: #2563eb;
             }
             
-            .action-btn-harmonized.details {
+            .action-btn-enhanced.details {
                 color: #8b5cf6;
                 border-color: transparent;
             }
             
-            .action-btn-harmonized.details:hover {
+            .action-btn-enhanced.details:hover {
                 background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
                 border-color: #8b5cf6;
                 color: #7c3aed;
             }
 
             /* Vue groupée identique */
-            .tasks-grouped-harmonized {
+            .tasks-grouped-enhanced {
                 display: flex;
                 flex-direction: column;
                 gap: 0;
                 background: transparent;
             }
             
-            .task-group-harmonized {
+            .task-group-enhanced {
                 background: transparent;
                 border: none;
                 border-radius: 0;
@@ -3640,7 +3778,7 @@ class TasksView {
                 padding: 0;
             }
             
-            .group-header-harmonized {
+            .group-header-enhanced {
                 display: flex;
                 align-items: center;
                 background: rgba(255, 255, 255, 0.95);
@@ -3660,19 +3798,19 @@ class TasksView {
                 gap: var(--gap-medium);
             }
             
-            .task-group-harmonized:first-child .group-header-harmonized {
+            .task-group-enhanced:first-child .group-header-enhanced {
                 border-top-left-radius: var(--card-border-radius);
                 border-top-right-radius: var(--card-border-radius);
                 border-top: var(--border-width) solid #e5e7eb;
             }
             
-            .task-group-harmonized:last-child .group-header-harmonized:not(.expanded-header) {
+            .task-group-enhanced:last-child .group-header-enhanced:not(.expanded-header) {
                 border-bottom-left-radius: var(--card-border-radius);
                 border-bottom-right-radius: var(--card-border-radius);
                 border-bottom: var(--border-width) solid #e5e7eb;
             }
             
-            .group-header-harmonized::before {
+            .group-header-enhanced::before {
                 content: '';
                 position: absolute;
                 top: 0;
@@ -3684,7 +3822,7 @@ class TasksView {
                 transition: all 0.3s ease;
             }
             
-            .group-header-harmonized:hover {
+            .group-header-enhanced:hover {
                 background: white;
                 transform: translateY(-1px);
                 box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -3693,11 +3831,11 @@ class TasksView {
                 z-index: 1;
             }
             
-            .group-header-harmonized:hover::before {
+            .group-header-enhanced:hover::before {
                 opacity: 1;
             }
             
-            .task-group-harmonized.expanded .group-header-harmonized {
+            .task-group-enhanced.expanded .group-header-enhanced {
                 background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
                 border-left: 4px solid #3b82f6;
                 border-color: #3b82f6;
@@ -3708,7 +3846,7 @@ class TasksView {
                 border-bottom-right-radius: 0;
             }
             
-            .group-avatar-harmonized {
+            .group-avatar-enhanced {
                 width: 20px;
                 height: 20px;
                 border-radius: 6px;
@@ -3729,7 +3867,7 @@ class TasksView {
                 text-align: center;
             }
             
-            .group-info-harmonized {
+            .group-info-enhanced {
                 flex: 1;
                 min-width: 0;
                 display: flex;
@@ -3739,7 +3877,7 @@ class TasksView {
                 height: 100%;
             }
             
-            .group-name-harmonized {
+            .group-name-enhanced {
                 font-weight: 700;
                 color: #1f2937;
                 font-size: 15px;
@@ -3755,7 +3893,7 @@ class TasksView {
                 align-items: center;
             }
             
-            .group-meta-harmonized {
+            .group-meta-enhanced {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-tiny);
@@ -3765,7 +3903,7 @@ class TasksView {
                 line-height: 1.2;
             }
             
-            .group-expand-harmonized {
+            .group-expand-enhanced {
                 width: var(--action-btn-size);
                 height: var(--action-btn-size);
                 border: 2px solid transparent;
@@ -3785,32 +3923,32 @@ class TasksView {
                 margin-left: var(--gap-medium);
             }
             
-            .group-expand-harmonized:hover {
+            .group-expand-enhanced:hover {
                 background: white;
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
                 color: #374151;
             }
             
-            .task-group-harmonized.expanded .group-expand-harmonized {
+            .task-group-enhanced.expanded .group-expand-enhanced {
                 transform: rotate(180deg) translateY(-1px);
                 color: #3b82f6;
                 background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
                 border-color: #3b82f6;
             }
             
-            .group-content-harmonized {
+            .group-content-enhanced {
                 background: transparent;
                 margin: 0;
                 padding: 0;
                 display: none;
             }
             
-            .task-group-harmonized.expanded .group-content-harmonized {
+            .task-group-enhanced.expanded .group-content-enhanced {
                 display: block;
             }
             
-            .group-content-harmonized .task-harmonized-card {
+            .group-content-enhanced .task-enhanced-card {
                 display: flex;
                 align-items: center;
                 background: rgba(255, 255, 255, 0.95);
@@ -3830,13 +3968,13 @@ class TasksView {
                 margin: 0;
             }
             
-            .group-content-harmonized .task-harmonized-card:last-child {
+            .group-content-enhanced .task-enhanced-card:last-child {
                 border-bottom-left-radius: var(--card-border-radius);
                 border-bottom-right-radius: var(--card-border-radius);
                 border-bottom: var(--border-width) solid #e5e7eb;
             }
             
-            .group-content-harmonized .task-harmonized-card::before {
+            .group-content-enhanced .task-enhanced-card::before {
                 content: '';
                 position: absolute;
                 top: 0;
@@ -3848,7 +3986,7 @@ class TasksView {
                 transition: all 0.3s ease;
             }
             
-            .group-content-harmonized .task-harmonized-card:hover {
+            .group-content-enhanced .task-enhanced-card:hover {
                 background: white;
                 transform: translateY(-1px);
                 box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -3857,11 +3995,11 @@ class TasksView {
                 z-index: 1;
             }
             
-            .group-content-harmonized .task-harmonized-card:hover::before {
+            .group-content-enhanced .task-enhanced-card:hover::before {
                 opacity: 1;
             }
             
-            .group-content-harmonized .task-harmonized-card.selected {
+            .group-content-enhanced .task-enhanced-card.selected {
                 background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
                 border-left: 4px solid #3b82f6;
                 border-color: #3b82f6;
@@ -3870,14 +4008,14 @@ class TasksView {
                 z-index: 2;
             }
             
-            .group-content-harmonized .task-harmonized-card.completed {
+            .group-content-enhanced .task-enhanced-card.completed {
                 opacity: 0.75;
                 background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
                 border-left: 3px solid #22c55e;
             }
             
-            /* État vide harmonisé */
-            .empty-state-harmonized {
+            /* État vide */
+            .empty-state-enhanced {
                 text-align: center;
                 padding: 60px 30px;
                 background: rgba(255, 255, 255, 0.8);
@@ -3891,7 +4029,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .empty-state-icon-harmonized {
+            .empty-state-icon-enhanced {
                 font-size: 48px;
                 margin-bottom: 20px;
                 color: #d1d5db;
@@ -3904,7 +4042,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .empty-state-title-harmonized {
+            .empty-state-title-enhanced {
                 font-size: 22px;
                 font-weight: 700;
                 color: #374151;
@@ -3916,7 +4054,7 @@ class TasksView {
                 text-align: center;
             }
             
-            .empty-state-text-harmonized {
+            .empty-state-text-enhanced {
                 font-size: 15px;
                 margin-bottom: 24px;
                 max-width: 400px;
@@ -3928,7 +4066,7 @@ class TasksView {
                 text-align: center;
             }
 
-            /* Tous les autres styles conservés de l'original... */
+            /* Animations */
             @keyframes pulse {
                 0%, 100% { 
                     opacity: 1; 
@@ -3940,16 +4078,16 @@ class TasksView {
                 }
             }
             
-            /* Responsive design conservé */
+            /* Responsive design */
             @media (max-width: 1024px) {
-                .controls-bar-harmonized {
+                .controls-bar-enhanced {
                     flex-direction: column;
                     gap: var(--gap-medium);
                     align-items: stretch;
                     padding: var(--gap-large);
                 }
                 
-                .search-section-harmonized {
+                .search-section-enhanced {
                     flex: none;
                     width: 100%;
                     order: 1;
@@ -3959,7 +4097,7 @@ class TasksView {
                     justify-content: center;
                 }
                 
-                .view-modes-harmonized {
+                .view-modes-enhanced {
                     width: 100%;
                     justify-content: space-around;
                     order: 2;
@@ -3968,7 +4106,7 @@ class TasksView {
                     align-items: center;
                 }
                 
-                .action-buttons-harmonized {
+                .actions-section-enhanced {
                     width: 100%;
                     justify-content: center;
                     flex-wrap: wrap;
@@ -3979,16 +4117,24 @@ class TasksView {
                     align-items: center;
                     gap: var(--gap-small);
                 }
+                
+                .bulk-actions-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                }
             }
             
             @media (max-width: 768px) {
-                .view-mode-harmonized span,
-                .btn-harmonized span {
+                .view-mode-enhanced span,
+                .btn-enhanced span {
                     display: none;
                 }
                 
-                .action-buttons-harmonized {
+                .actions-section-enhanced {
                     gap: var(--gap-tiny);
+                }
+                
+                .bulk-actions-grid {
+                    grid-template-columns: repeat(2, 1fr);
                 }
             }
         `;
@@ -4002,7 +4148,7 @@ class TasksView {
 // =====================================
 
 function initializeTaskManager() {
-    console.log('[TaskManager] Initializing global instances v9.1...');
+    console.log('[TaskManager] Initializing global instances v9.2...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -4024,7 +4170,7 @@ function initializeTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v9.1 loaded - Interface harmonisée avec actions intégrées');
+    console.log('✅ TaskManager v9.2 loaded - Interface avec Bouton Actions Groupées');
 }
 
 initializeTaskManager();
