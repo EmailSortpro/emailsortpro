@@ -49,7 +49,8 @@
             authenticated: false,
             appShown: false,
             hasTokens: false,
-            loginInProgress: false
+            loginInProgress: false,
+            forceMode: false
         };
         
         // =====================================================
@@ -1091,22 +1092,212 @@
         // FONCTION DE CONTRÔLE D'ÉTAT RENFORCÉES
         // ========================================
         
-        // Fonction pour forcer l'affichage de l'app de manière DÉFINITIVE
-        window.forceShowApp = function() {
-            console.log('[FORCE] 🚀 FORCING IMMEDIATE APP DISPLAY...');
-            
-            if (window.APP_STATE.appShown) {
-                console.log('[FORCE] App already shown, but ensuring it stays shown');
-            }
+        // ========================================
+        // FONCTION DE FORCE BRUTALE - AFFICHAGE IMMÉDIAT
+        // ========================================
+        
+        // Fonction BRUTALE pour forcer l'affichage IMMÉDIAT
+        window.brutalForceShowApp = function() {
+            console.log('[BRUTAL] 🔥 BRUTAL FORCE APP DISPLAY - NO MERCY!');
             
             // Marquer l'état DÉFINITIVEMENT
             window.APP_STATE.appShown = true;
             window.APP_STATE.authenticated = true;
+            window.APP_STATE.forceMode = true;
             
-            // 1. FORCER la classe CSS immédiatement
+            // 1. DÉTRUIRE la page de login IMMÉDIATEMENT
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.remove(); // SUPPRESSION TOTALE
+                console.log('[BRUTAL] 💥 Login page DESTROYED');
+            }
+            
+            // 2. INJECTER CSS BRUTAL pour empêcher tout retour
+            const brutalCSS = document.createElement('style');
+            brutalCSS.id = 'brutal-force-css';
+            brutalCSS.innerHTML = `
+                /* BRUTAL FORCE CSS - NO LOGIN PAGE EVER */
+                #loginPage,
+                .login-page-styles,
+                .login-container {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    height: 0 !important;
+                    width: 0 !important;
+                    overflow: hidden !important;
+                    position: absolute !important;
+                    left: -99999px !important;
+                    top: -99999px !important;
+                    z-index: -99999 !important;
+                    pointer-events: none !important;
+                }
+                
+                /* FORCE APP ELEMENTS */
+                body {
+                    background: #f8fafc !important;
+                }
+                
+                .app-header {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    z-index: 1000 !important;
+                }
+                
+                .app-nav {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    position: fixed !important;
+                    top: 60px !important;
+                    left: 0 !important;
+                    right: 0 !important;
+                    z-index: 999 !important;
+                }
+                
+                #pageContent {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    margin-top: 120px !important;
+                    padding: 20px !important;
+                }
+                
+                .app-main {
+                    margin-top: 120px !important;
+                    min-height: 100vh !important;
+                }
+                
+                /* LOADING HIDDEN */
+                .login-loading-overlay {
+                    display: none !important;
+                }
+            `;
+            
+            // Remplacer tout CSS existant de force
+            const existingCSS = document.getElementById('brutal-force-css');
+            if (existingCSS) {
+                existingCSS.remove();
+            }
+            document.head.appendChild(brutalCSS);
+            
+            // 3. FORCER la classe body
+            document.body.className = 'app-active';
+            
+            // 4. AFFICHER les éléments de l'app
+            const appHeader = document.querySelector('.app-header');
+            const appNav = document.querySelector('.app-nav');
+            const pageContent = document.getElementById('pageContent');
+            const appMain = document.querySelector('.app-main');
+            
+            [appHeader, appNav, pageContent, appMain].forEach(element => {
+                if (element) {
+                    element.style.display = 'block';
+                    element.style.visibility = 'visible';
+                    element.style.opacity = '1';
+                }
+            });
+            
+            // 5. MASQUER définitivement le loading
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove(); // SUPPRESSION TOTALE
+            }
+            
+            // 6. CRÉER le contenu du dashboard si nécessaire
+            if (pageContent && !pageContent.innerHTML.includes('dashboard-container')) {
+                pageContent.innerHTML = `
+                    <div class="dashboard-container">
+                        <div class="dashboard-header">
+                            <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                            <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
+                        </div>
+                        
+                        <div class="dashboard-actions">
+                            <div class="action-card" onclick="window.pageManager?.loadPage('scanner')">
+                                <div class="action-icon">
+                                    <i class="fas fa-search"></i>
+                                </div>
+                                <h3 class="action-title">Scanner des emails</h3>
+                                <p class="action-description">Analysez et catégorisez vos emails automatiquement</p>
+                            </div>
+                            
+                            <div class="action-card" onclick="window.pageManager?.loadPage('emails')">
+                                <div class="action-icon">
+                                    <i class="fas fa-inbox"></i>
+                                </div>
+                                <h3 class="action-title">Voir les emails</h3>
+                                <p class="action-description">Consultez vos emails catégorisés</p>
+                            </div>
+                            
+                            <div class="action-card" onclick="window.pageManager?.loadPage('tasks')">
+                                <div class="action-icon">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                                <h3 class="action-title">Gérer les tâches</h3>
+                                <p class="action-description">Suivez vos tâches créées depuis vos emails</p>
+                            </div>
+                            
+                            <div class="action-card" onclick="window.pageManager?.loadPage('ranger')">
+                                <div class="action-icon">
+                                    <i class="fas fa-folder-tree"></i>
+                                </div>
+                                <h3 class="action-title">Ranger par domaine</h3>
+                                <p class="action-description">Organisez vos emails par expéditeur</p>
+                            </div>
+                            
+                            <div class="action-card" onclick="window.pageManager?.loadPage('settings')">
+                                <div class="action-icon">
+                                    <i class="fas fa-cog"></i>
+                                </div>
+                                <h3 class="action-title">Paramètres</h3>
+                                <p class="action-description">Configurez vos catégories et préférences</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            console.log('[BRUTAL] 🔥 BRUTAL FORCE COMPLETE - APP PERMANENTLY DISPLAYED');
+            
+            // 7. Charger le dashboard via PageManager si disponible
+            setTimeout(() => {
+                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                    console.log('[BRUTAL] Loading dashboard via PageManager...');
+                    window.pageManager.loadPage('dashboard');
+                } else {
+                    console.log('[BRUTAL] PageManager not ready, dashboard already visible');
+                }
+            }, 100);
+        };
+        
+        // Fonction pour forcer l'affichage de l'app de manière DÉFINITIVE (fallback)
+        window.forceShowApp = function() {
+            console.log('[FORCE] Standard force - checking if brutal needed...');
+            
+            if (window.APP_STATE.forceMode) {
+                console.log('[FORCE] Already in brutal mode, skipping');
+                return;
+            }
+            
+            // Si l'utilisateur est authentifié, utiliser brutal force
+            if (window.APP_STATE.hasTokens || window.APP_STATE.authenticated) {
+                console.log('[FORCE] Using brutal force for authenticated user...');
+                window.brutalForceShowApp();
+                return;
+            }
+            
+            // Sinon, force standard
+            window.APP_STATE.appShown = true;
+            window.APP_STATE.authenticated = true;
+            
             document.body.classList.add('app-active');
             
-            // 2. MASQUER définitivement la page de login
             const loginPage = document.getElementById('loginPage');
             if (loginPage) {
                 loginPage.style.display = 'none !important';
@@ -1118,81 +1309,13 @@
                 loginPage.classList.add('force-hidden');
             }
             
-            // 3. AFFICHER définitivement les éléments de l'app
-            const appHeader = document.querySelector('.app-header');
-            const appNav = document.querySelector('.app-nav');
-            const pageContent = document.getElementById('pageContent');
-            
-            if (appHeader) {
-                appHeader.style.display = 'block !important';
-                appHeader.style.visibility = 'visible !important';
-                appHeader.style.opacity = '1 !important';
-            }
-            
-            if (appNav) {
-                appNav.style.display = 'block !important';
-                appNav.style.visibility = 'visible !important';
-                appNav.style.opacity = '1 !important';
-            }
-            
-            if (pageContent) {
-                pageContent.style.display = 'block !important';
-                pageContent.style.visibility = 'visible !important';
-                pageContent.style.opacity = '1 !important';
-            }
-            
-            // 4. MASQUER le loading
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
                 loadingOverlay.style.display = 'none !important';
             }
             
-            // 5. INJECTER CSS de force pour être sûr
-            const forceStyle = document.createElement('style');
-            forceStyle.id = 'force-app-permanent';
-            forceStyle.innerHTML = `
-                .force-hidden, 
-                body.app-active #loginPage {
-                    display: none !important;
-                    visibility: hidden !important;
-                    opacity: 0 !important;
-                    z-index: -9999 !important;
-                    position: absolute !important;
-                    left: -9999px !important;
-                }
-                
-                body.app-active .app-header,
-                body.app-active .app-nav,
-                body.app-active #pageContent {
-                    display: block !important;
-                    visibility: visible !important;
-                    opacity: 1 !important;
-                }
-                
-                body.app-active .app-main {
-                    margin-top: 120px !important;
-                }
-            `;
-            
-            // Remplacer l'ancien style s'il existe
-            const oldStyle = document.getElementById('force-app-permanent');
-            if (oldStyle) {
-                oldStyle.remove();
-            }
-            document.head.appendChild(forceStyle);
-            
-            console.log('[FORCE] ✅ APP DISPLAY PERMANENTLY ACTIVATED');
-            
-            // 6. Charger le dashboard après un court délai
-            setTimeout(() => {
-                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
-                    console.log('[FORCE] Loading dashboard...');
-                    window.pageManager.loadPage('dashboard');
-                } else {
-                    console.log('[FORCE] PageManager not ready, will load dashboard when available');
-                }
-            }, 200);
+            console.log('[FORCE] Standard force applied');
         };
 
         // Fonction pour masquer le loading et afficher l'app
@@ -1209,25 +1332,27 @@
             window.forceShowApp();
         };
 
-        // Vérification précoce SIMPLIFIÉE - Laisser app.js gérer
+        // Vérification précoce BRUTALE - FORCE L'AFFICHAGE IMMÉDIAT
         const earlyAuthCheck = () => {
-            console.log('[EARLY_AUTH] Simplified check - letting app.js handle authentication...');
+            console.log('[EARLY_AUTH] BRUTAL CHECK - FORCING IMMEDIATE DISPLAY...');
             
-            // Juste vérifier s'il y a des données MSAL
+            // Vérifier s'il y a des données MSAL
             try {
                 const msalData = Object.keys(localStorage).filter(key => key.startsWith('msal.'));
                 
                 if (msalData.length > 0) {
-                    console.log('[EARLY_AUTH] MSAL data found, user likely authenticated');
-                    window.APP_STATE.hasTokens = true;
+                    console.log('[EARLY_AUTH] ✅ MSAL data found - FORCING APP DISPLAY NOW!');
                     
-                    // Attendre que app.js gère l'authentification
+                    // FORCER IMMÉDIATEMENT l'affichage
+                    window.APP_STATE.hasTokens = true;
+                    window.APP_STATE.authenticated = true;
+                    window.APP_STATE.forceMode = true;
+                    
+                    // Exécuter IMMÉDIATEMENT
                     setTimeout(() => {
-                        if (!window.APP_STATE.appShown && window.authService && window.authService.isAuthenticated()) {
-                            console.log('[EARLY_AUTH] App.js didn\'t show app, forcing display...');
-                            window.forceShowApp();
-                        }
-                    }, 2000); // Attendre 2 secondes pour app.js
+                        console.log('[EARLY_AUTH] 🚀 EXECUTING BRUTAL FORCE DISPLAY...');
+                        window.brutalForceShowApp();
+                    }, 10);
                     
                     return true;
                 }
@@ -1239,7 +1364,7 @@
             return false;
         };
 
-        // Exécuter la vérification simplifiée
+        // Exécuter la vérification BRUTALE
         earlyAuthCheck();
 
         // Gestionnaire principal DOMContentLoaded SIMPLIFIÉ
@@ -1331,35 +1456,35 @@
             }, 1000);
         });
         
-        // FONCTIONS GLOBALES DE COORDINATION AVEC APP.JS
+        // FONCTIONS GLOBALES DE COORDINATION BRUTALE
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful - app.js handles display');
+            console.log('[AUTH_SUCCESS] Authentication successful - FORCING BRUTAL DISPLAY');
             window.APP_STATE.authenticated = true;
             window.APP_STATE.loginInProgress = false;
-            // Laisser app.js gérer complètement l'affichage
+            
+            // FORCER BRUTALEMENT l'affichage
+            setTimeout(() => {
+                window.brutalForceShowApp();
+            }, 50);
         };
         
         // Hook pour intercepter quand app.js affiche l'application
         window.onAppDisplayed = function() {
-            console.log('[APP_DISPLAYED] App.js has displayed the application');
+            console.log('[APP_DISPLAYED] App.js has displayed - ensuring brutal force');
             window.APP_STATE.appShown = true;
             
-            // Assurer la permanence de l'affichage
-            setTimeout(() => {
-                const loginPage = document.getElementById('loginPage');
-                if (loginPage && loginPage.style.display !== 'none') {
-                    console.log('[APP_DISPLAYED] Ensuring login page stays hidden');
-                    window.forceShowApp();
-                }
-            }, 100);
+            // Assurer avec brutal force
+            if (!window.APP_STATE.forceMode) {
+                setTimeout(() => {
+                    window.brutalForceShowApp();
+                }, 50);
+            }
         };
         
-        // Fonction de fallback si app.js ne gère pas l'affichage
+        // Fonction de fallback BRUTALE
         window.fallbackAppDisplay = function() {
-            console.log('[FALLBACK] App.js didn\'t display app, using fallback...');
-            if (!window.APP_STATE.appShown) {
-                window.forceShowApp();
-            }
+            console.log('[FALLBACK] Using BRUTAL fallback display...');
+            window.brutalForceShowApp();
         };
 
         // Fonction de diagnostic accessible globalement
