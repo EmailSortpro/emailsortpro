@@ -1,4 +1,4 @@
-// TaskManager Pro v9.1 - Interface Épurée et Moderne avec ligne explicative
+// TaskManager Pro v9.1 - Interface Épurée et Moderne avec ligne explicative en première ligne
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -973,7 +973,7 @@ Sujet: ${subject}
 }
 
 // =====================================
-// MODERN TASKS VIEW - INTERFACE ÉPURÉE AVEC LIGNE EXPLICATIVE
+// MODERN TASKS VIEW - INTERFACE ÉPURÉE AVEC LIGNE EXPLICATIVE EN PREMIÈRE LIGNE
 // =====================================
 class TasksView {
     constructor() {
@@ -1028,6 +1028,9 @@ class TasksView {
         
         container.innerHTML = `
             <div class="tasks-page-modern">
+                <!-- Ligne explicative EN PREMIÈRE LIGNE -->
+                ${this.showHelpLine ? this.renderHelpLine() : ''}
+
                 <!-- Barre de contrôles compacte harmonisée -->
                 <div class="controls-bar-compact-harmonized">
                     <!-- Modes de vue harmonisés -->
@@ -1052,7 +1055,7 @@ class TasksView {
                         </button>
                     </div>
                     
-                    <!-- Actions principales harmonisées -->
+                    <!-- Actions principales harmonisées AVEC SÉLECTION RÉPARÉE -->
                     <div class="action-buttons-harmonized">
                         ${selectedCount > 0 ? `
                             <div class="selection-info-harmonized">
@@ -1061,7 +1064,7 @@ class TasksView {
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
-                            <button class="btn-harmonized btn-danger" onclick="window.tasksView.bulkMarkComplete()">
+                            <button class="btn-harmonized btn-success" onclick="window.tasksView.bulkMarkComplete()">
                                 <i class="fas fa-check"></i>
                                 <span>Terminer</span>
                             </button>
@@ -1098,9 +1101,6 @@ class TasksView {
                         </button>
                     </div>
                 </div>
-
-                <!-- Ligne explicative -->
-                ${this.showHelpLine ? this.renderHelpLine() : ''}
 
                 <!-- Filtres de statut avec recherche intégrée -->
                 <div class="status-filters-with-search-harmonized">
@@ -1182,7 +1182,7 @@ class TasksView {
 
         this.addHarmonizedTaskStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Harmonized interface with help line rendered');
+        console.log('[TasksView] Harmonized interface with help line in first position rendered');
     }
 
     renderHelpLine() {
@@ -1659,6 +1659,142 @@ class TasksView {
         this.refreshView();
     }
 
+    toggleTaskSelection(taskId) {
+        if (this.selectedTasks.has(taskId)) {
+            this.selectedTasks.delete(taskId);
+        } else {
+            this.selectedTasks.add(taskId);
+        }
+        
+        // RÉPARATION : recharger complètement la vue pour éviter le décalage
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+    }
+
+    clearSelection() {
+        this.selectedTasks.clear();
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+    }
+
+    selectAllVisible() {
+        const tasks = window.taskManager.filterTasks(this.currentFilters);
+        const visibleTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
+        
+        visibleTasks.forEach(task => {
+            this.selectedTasks.add(task.id);
+        });
+        
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+        this.showToast(`${visibleTasks.length} tâche(s) sélectionnée(s)`, 'info');
+    }
+
+    bulkMarkComplete() {
+        if (this.selectedTasks.size === 0) return;
+        
+        if (confirm(`Marquer ${this.selectedTasks.size} tâche(s) comme terminée(s) ?`)) {
+            this.selectedTasks.forEach(taskId => {
+                window.taskManager.updateTask(taskId, { status: 'completed' });
+            });
+            
+            this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+            this.clearSelection();
+        }
+    }
+
+    bulkDelete() {
+        if (this.selectedTasks.size === 0) return;
+        
+        if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ? Cette action est irréversible.`)) {
+            this.selectedTasks.forEach(taskId => {
+                window.taskManager.deleteTask(taskId);
+            });
+            
+            this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+            this.clearSelection();
+        }
+    }
+
+    bulkActions() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const actions = [
+            'Marquer comme terminé',
+            'Changer la priorité',
+            'Supprimer',
+            'Exporter'
+        ];
+        
+        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
+        
+        if (!action) return;
+        
+        const actionIndex = parseInt(action) - 1;
+        
+        switch (actionIndex) {
+            case 0:
+                this.selectedTasks.forEach(taskId => {
+                    window.taskManager.updateTask(taskId, { status: 'completed' });
+                });
+                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+                this.clearSelection();
+                break;
+                
+            case 1:
+                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
+                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
+                if (priority && priorities[parseInt(priority)]) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
+                    });
+                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 2:
+                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?`)) {
+                    this.selectedTasks.forEach(taskId => {
+                        window.taskManager.deleteTask(taskId);
+                    });
+                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+                    this.clearSelection();
+                }
+                break;
+                
+            case 3:
+                this.exportSelectedTasks();
+                break;
+        }
+    }
+
+    exportSelectedTasks() {
+        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
+        
+        const csvContent = [
+            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
+            ...tasks.map(task => [
+                `"${task.title}"`,
+                `"${task.description || ''}"`,
+                task.priority,
+                task.status,
+                task.dueDate || '',
+                task.client || '',
+                new Date(task.createdAt).toLocaleDateString('fr-FR')
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showToast('Export terminé', 'success');
+    }
+
     showTaskDetails(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task) return;
@@ -1867,7 +2003,7 @@ class TasksView {
         `;
     }
 
-    // MÉTHODES UTILITAIRES CONSERVÉES
+    // Nouvelles méthodes utilitaires
     getPriorityIcon(priority) {
         const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
         return icons[priority] || '📌';
@@ -2139,33 +2275,6 @@ class TasksView {
         this.showToast('Tâche marquée comme terminée', 'success');
     }
 
-    toggleTaskSelection(taskId) {
-        if (this.selectedTasks.has(taskId)) {
-            this.selectedTasks.delete(taskId);
-        } else {
-            this.selectedTasks.add(taskId);
-        }
-        
-        this.updateSelectionUI();
-        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
-    }
-
-    clearSelection() {
-        this.selectedTasks.clear();
-        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
-    }
-
-    updateSelectionUI() {
-        document.querySelectorAll('[data-task-id]').forEach(item => {
-            const taskId = item.dataset.taskId;
-            const isSelected = this.selectedTasks.has(taskId);
-            
-            item.classList.toggle('selected', isSelected);
-            const checkbox = item.querySelector('input[type="checkbox"]');
-            if (checkbox) checkbox.checked = isSelected;
-        });
-    }
-
     showCreateModal() {
         const uniqueId = 'create_task_modal_' + Date.now();
         
@@ -2274,88 +2383,6 @@ class TasksView {
         }
     }
 
-    bulkActions() {
-        if (this.selectedTasks.size === 0) return;
-        
-        const actions = [
-            'Marquer comme terminé',
-            'Changer la priorité',
-            'Supprimer',
-            'Exporter'
-        ];
-        
-        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
-        
-        if (!action) return;
-        
-        const actionIndex = parseInt(action) - 1;
-        
-        switch (actionIndex) {
-            case 0:
-                this.selectedTasks.forEach(taskId => {
-                    window.taskManager.updateTask(taskId, { status: 'completed' });
-                });
-                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
-                this.clearSelection();
-                break;
-                
-            case 1:
-                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
-                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
-                if (priority && priorities[parseInt(priority)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
-                    });
-                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 2:
-                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?`)) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.deleteTask(taskId);
-                    });
-                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 3:
-                this.exportSelectedTasks();
-                break;
-        }
-    }
-
-    exportSelectedTasks() {
-        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
-        
-        const csvContent = [
-            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
-            ...tasks.map(task => [
-                `"${task.title}"`,
-                `"${task.description || ''}"`,
-                task.priority,
-                task.status,
-                task.dueDate || '',
-                task.client || '',
-                new Date(task.createdAt).toLocaleDateString('fr-FR')
-            ].join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        this.showToast('Export terminé', 'success');
-    }
-
     clearSearch() {
         this.currentFilters.search = '';
         const searchInput = document.getElementById('taskSearchInput');
@@ -2363,43 +2390,9 @@ class TasksView {
         this.refreshView();
     }
 
-    // Nouvelles méthodes pour la sélection en masse
-    selectAllVisible() {
-        const tasks = window.taskManager.filterTasks(this.currentFilters);
-        const visibleTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
-        
-        visibleTasks.forEach(task => {
-            this.selectedTasks.add(task.id);
-        });
-        
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
         this.render(document.querySelector('.tasks-page-modern')?.parentElement);
-        this.showToast(`${visibleTasks.length} tâche(s) sélectionnée(s)`, 'info');
-    }
-
-    bulkMarkComplete() {
-        if (this.selectedTasks.size === 0) return;
-        
-        if (confirm(`Marquer ${this.selectedTasks.size} tâche(s) comme terminée(s) ?`)) {
-            this.selectedTasks.forEach(taskId => {
-                window.taskManager.updateTask(taskId, { status: 'completed' });
-            });
-            
-            this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
-            this.clearSelection();
-        }
-    }
-
-    bulkDelete() {
-        if (this.selectedTasks.size === 0) return;
-        
-        if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ? Cette action est irréversible.`)) {
-            this.selectedTasks.forEach(taskId => {
-                window.taskManager.deleteTask(taskId);
-            });
-            
-            this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
-            this.clearSelection();
-        }
     }
 
     refreshView() {
@@ -2412,12 +2405,6 @@ class TasksView {
         document.querySelectorAll('.status-pills-row-harmonized').forEach(container => {
             container.innerHTML = this.buildHarmonizedStatusPills(stats);
         });
-        
-        // Mettre à jour les boutons d'action si des tâches sont sélectionnées
-        const selectedCount = this.selectedTasks.size;
-        if (selectedCount > 0) {
-            this.render(document.querySelector('.tasks-page-modern')?.parentElement);
-        }
     }
 
     refreshTasks() {
@@ -2504,18 +2491,6 @@ class TasksView {
                this.currentFilters.needsReply;
     }
 
-    refreshView() {
-        const container = document.getElementById('tasksContainer');
-        if (container) {
-            container.innerHTML = this.renderTasksList();
-        }
-        
-        const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters-harmonized').forEach(container => {
-            container.innerHTML = this.buildHarmonizedStatusPills(stats);
-        });
-    }
-
     showToast(message, type = 'info') {
         if (window.uiManager && window.uiManager.showToast) {
             window.uiManager.showToast(message, type);
@@ -2554,14 +2529,14 @@ class TasksView {
         return div.innerHTML;
     }
 
-    // STYLES HARMONISÉS ET UNIFORMISÉS AVEC CENTRAGE PARFAIT + LIGNE D'AIDE
+    // STYLES HARMONISÉS ET UNIFORMISÉS AVEC CENTRAGE PARFAIT + LIGNE D'AIDE + SÉLECTION RÉPARÉE
     addHarmonizedTaskStyles() {
         if (document.getElementById('harmonizedTaskStyles')) return;
         
         const styles = document.createElement('style');
         styles.id = 'harmonizedTaskStyles';
         styles.textContent = `
-            /* ===== LIGNE D'AIDE IDENTIQUE AUX EMAILS ===== */
+            /* ===== LIGNE D'AIDE IDENTIQUE AUX EMAILS - PREMIÈRE LIGNE ===== */
             .help-line-tasks {
                 background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
                 border: 1px solid #93c5fd;
@@ -2576,6 +2551,7 @@ class TasksView {
                 transition: all 0.3s ease;
                 position: relative;
                 overflow: hidden;
+                order: -1; /* FORCER EN PREMIÈRE LIGNE */
             }
             
             .help-line-tasks::before {
@@ -2647,7 +2623,7 @@ class TasksView {
                 box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
             }
 
-            /* ===== HARMONISATION ABSOLUE DE TOUS LES BOUTONS AVEC CENTRAGE PARFAIT ===== */
+            /* ===== HARMONISATION ABSOLUE AVEC SÉLECTION RÉPARÉE ===== */
             
             /* Variables CSS pour cohérence parfaite */
             :root {
@@ -2790,21 +2766,21 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* BOUTON DANGER - POUR SUPPRIMER */
-            .btn-harmonized.btn-danger {
-                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            /* BOUTON SUCCESS - POUR TERMINER */
+            .btn-harmonized.btn-success {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
                 color: white;
                 border-color: transparent;
-                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
             }
             
-            .btn-harmonized.btn-danger:hover {
-                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            .btn-harmonized.btn-success:hover {
+                background: linear-gradient(135deg, #059669 0%, #047857 100%);
                 transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+                box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
             }
             
-            /* BOUTON WARNING - POUR ACTIONS IMPORTANTES */
+            /* BOUTON WARNING - POUR SUPPRIMER */
             .btn-harmonized.btn-warning {
                 background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
                 color: white;
@@ -2818,7 +2794,7 @@ class TasksView {
                 box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
             }
             
-            /* BOUTON CLEAR SELECTION - CARRÉ PARFAIT CENTRÉ */
+            /* BOUTON CLEAR SELECTION - CARRÉ PARFAIT CENTRÉ AVEC RÉPARATION */
             .btn-harmonized.btn-clear-selection {
                 background: #f3f4f6;
                 color: #6b7280;
@@ -2832,6 +2808,7 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                flex-shrink: 0; /* EMPÊCHE LE DÉCALAGE */
             }
             
             .btn-harmonized.btn-clear-selection:hover {
@@ -2929,7 +2906,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            /* INFO DE SÉLECTION PARFAITEMENT CENTRÉE */
+            /* INFO DE SÉLECTION PARFAITEMENT CENTRÉE AVEC RÉPARATION */
             .selection-info-harmonized {
                 height: var(--btn-height);
                 padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
@@ -2947,6 +2924,39 @@ class TasksView {
                 justify-content: center;
                 gap: var(--btn-gap);
                 text-align: center;
+                flex-shrink: 0; /* EMPÊCHE LE DÉCALAGE LORS DE LA SÉLECTION */
+                min-width: fit-content; /* LARGEUR FIXE POUR ÉVITER LE SAUT */
+            }
+            
+            /* ACTIONS PRINCIPALES AVEC SÉLECTION RÉPARÉE */
+            .action-buttons-harmonized {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-small);
+                height: var(--btn-height);
+                flex-shrink: 0;
+                flex-wrap: nowrap; /* EMPÊCHE LE RETOUR À LA LIGNE */
+                overflow-x: auto; /* PERMET LE SCROLL HORIZONTAL SI NÉCESSAIRE */
+                scrollbar-width: none; /* CACHE LA SCROLLBAR FIREFOX */
+                -ms-overflow-style: none; /* CACHE LA SCROLLBAR IE */
+            }
+            
+            .action-buttons-harmonized::-webkit-scrollbar {
+                display: none; /* CACHE LA SCROLLBAR WEBKIT */
+            }
+            
+            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur ET être centrés SANS DÉCALAGE */
+            .action-buttons-harmonized > *,
+            .action-buttons-harmonized .btn-harmonized,
+            .action-buttons-harmonized .selection-info-harmonized {
+                height: var(--btn-height);
+                min-height: var(--btn-height);
+                max-height: var(--btn-height);
+                box-sizing: border-box;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0; /* CRUCIAL POUR EMPÊCHER LE DÉCALAGE */
             }
             
             /* BADGE DE COMPTAGE CENTRÉ */
@@ -3222,31 +3232,6 @@ class TasksView {
                 font-weight: 700;
                 transform: translateY(-1px);
             }
-            
-            /* ACTIONS PRINCIPALES - TOUTES À LA MÊME HAUTEUR ET CENTRÉES */
-            .action-buttons-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                height: var(--btn-height);
-                flex-shrink: 0;
-            }
-            
-            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur ET être centrés */
-            .action-buttons-harmonized > *,
-            .action-buttons-harmonized .btn-harmonized,
-            .action-buttons-harmonized .selection-info-harmonized {
-                height: var(--btn-height);
-                min-height: var(--btn-height);
-                max-height: var(--btn-height);
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            /* ===== FILTRES DE STATUT ÉLARGIS SUR TOUTE LA LIGNE - SUPPRIMÉ ===== */
-            /* Cette section est remplacée par .status-pills-row-harmonized */
             
             /* ALIGNEMENT PARFAIT DU CONTENU DANS LES PILLS AVEC CENTRAGE */
             .pill-icon-harmonized {
@@ -4720,7 +4705,7 @@ class TasksView {
                 text-align: left;
             }
             
-            /* ===== RESPONSIVE AVEC LIGNE D'AIDE ADAPTATIFS ===== */
+            /* ===== RESPONSIVE AVEC LIGNE D'AIDE ADAPTATIFS ET SÉLECTION RÉPARÉE ===== */
             @media (max-width: 1200px) {
                 :root {
                     --btn-height: 42px;
@@ -4771,7 +4756,7 @@ class TasksView {
                     min-width: 100px;
                 }
                 
-                /* MAINTENIR l'harmonisation sur tablette */
+                /* MAINTENIR l'harmonisation et la sélection sur tablette */
                 .action-buttons-harmonized > *,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height);
@@ -4780,6 +4765,7 @@ class TasksView {
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    flex-shrink: 0;
                 }
             }
             
@@ -4885,6 +4871,7 @@ class TasksView {
                     min-height: var(--btn-height);
                     display: flex;
                     align-items: center;
+                    gap: var(--gap-small);
                 }
                 
                 .view-mode-harmonized {
@@ -4908,7 +4895,7 @@ class TasksView {
                     grid-template-columns: 1fr;
                 }
                 
-                /* FORCER l'harmonisation sur tablette */
+                /* FORCER l'harmonisation et la sélection sur tablette */
                 .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
@@ -4916,6 +4903,7 @@ class TasksView {
                     display: flex !important;
                     align-items: center !important;
                     justify-content: center !important;
+                    flex-shrink: 0 !important;
                 }
             }
             
@@ -5032,7 +5020,7 @@ class TasksView {
                     justify-content: center;
                 }
                 
-                /* FORCER l'harmonisation sur mobile */
+                /* FORCER l'harmonisation et la sélection sur mobile */
                 .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
@@ -5041,6 +5029,7 @@ class TasksView {
                     align-items: center !important;
                     justify-content: center !important;
                     text-align: center !important;
+                    flex-shrink: 0 !important;
                 }
             }
             
@@ -5166,7 +5155,7 @@ class TasksView {
                     justify-content: center;
                 }
                 
-                /* FORCER l'harmonisation sur petit mobile */
+                /* FORCER l'harmonisation et la sélection sur petit mobile */
                 .action-buttons-harmonized > *,
                 .view-modes-harmonized .view-mode-harmonized {
                     height: var(--btn-height) !important;
@@ -5176,6 +5165,7 @@ class TasksView {
                     align-items: center !important;
                     justify-content: center !important;
                     text-align: center !important;
+                    flex-shrink: 0 !important;
                 }
                 
                 .view-mode-harmonized {
@@ -5238,7 +5228,7 @@ class TasksView {
                     justify-content: center;
                 }
                 
-                /* FORCER l'harmonisation sur très petit écran */
+                /* FORCER l'harmonisation et la sélection sur très petit écran */
                 .action-buttons-harmonized > * {
                     height: var(--btn-height) !important;
                     min-height: var(--btn-height) !important;
@@ -5247,6 +5237,7 @@ class TasksView {
                     align-items: center !important;
                     justify-content: center !important;
                     text-align: center !important;
+                    flex-shrink: 0 !important;
                 }
             }
             
@@ -5313,7 +5304,7 @@ function initializeTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v9.1 loaded - Interface harmonisée avec ligne explicative');
+    console.log('✅ TaskManager v9.1 loaded - Interface harmonisée avec ligne explicative EN PREMIÈRE LIGNE et sélection réparée');
 }
 
 initializeTaskManager();
