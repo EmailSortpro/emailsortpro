@@ -2371,12 +2371,8 @@ class DomainOrganizer {
     }
 }
 
-// Créer l'instance globale
-window.domainOrganizer = new DomainOrganizer();
-console.log('[DomainOrganizer] ✅ Module chargé - Version 5.0 Interface harmonisée');
-
 // ================================================
-// INTÉGRATION AVEC PAGEMANAGER CORRIGÉE
+// INTÉGRATION SÉCURISÉE AVEC PAGEMANAGER
 // ================================================
 
 // Méthode d'affichage intégrée avec PageManager
@@ -2455,34 +2451,31 @@ window.domainOrganizer.updateNavigation = function() {
     console.log('[DomainOrganizer] ✅ Navigation mise à jour');
 };
 
-// Intégration avec PageManager (méthode corrigée)
+// Intégration sécurisée avec PageManager
 window.domainOrganizer.registerWithPageManager = function() {
-    // Vérifier si PageManager existe et a les bonnes méthodes
-    if (window.pageManager) {
+    try {
+        // Vérifier si PageManager existe et a les bonnes méthodes
+        if (!window.pageManager) {
+            console.log('[DomainOrganizer] ⚠️ PageManager non disponible');
+            return false;
+        }
+        
         // Méthode 1: Si registerPageHandler existe
         if (typeof window.pageManager.registerPageHandler === 'function') {
-            try {
-                window.pageManager.registerPageHandler('ranger', () => {
-                    this.showPage();
-                });
-                console.log('[DomainOrganizer] ✅ Enregistré avec PageManager.registerPageHandler');
-                return true;
-            } catch (error) {
-                console.log('[DomainOrganizer] ⚠️ Erreur registerPageHandler:', error.message);
-            }
+            window.pageManager.registerPageHandler('ranger', () => {
+                this.showPage();
+            });
+            console.log('[DomainOrganizer] ✅ Enregistré avec PageManager.registerPageHandler');
+            return true;
         }
         
         // Méthode 2: Ajouter directement à pages si possible
         if (window.pageManager.pages && typeof window.pageManager.pages === 'object') {
-            try {
-                window.pageManager.pages.ranger = () => {
-                    this.showPage();
-                };
-                console.log('[DomainOrganizer] ✅ Enregistré dans PageManager.pages');
-                return true;
-            } catch (error) {
-                console.log('[DomainOrganizer] ⚠️ Erreur pages:', error.message);
-            }
+            window.pageManager.pages.ranger = () => {
+                this.showPage();
+            };
+            console.log('[DomainOrganizer] ✅ Enregistré dans PageManager.pages');
+            return true;
         }
         
         // Méthode 3: Monkey patch loadPage si nécessaire
@@ -2499,22 +2492,28 @@ window.domainOrganizer.registerWithPageManager = function() {
             console.log('[DomainOrganizer] ✅ Monkey patch appliqué à PageManager.loadPage');
             return true;
         }
+        
+        console.log('[DomainOrganizer] ⚠️ PageManager incompatible, utilisation du mode autonome');
+        return false;
+        
+    } catch (error) {
+        console.log('[DomainOrganizer] ⚠️ Erreur lors de l\'enregistrement PageManager:', error.message);
+        return false;
     }
-    
-    console.log('[DomainOrganizer] ⚠️ PageManager non disponible ou incompatible');
-    return false;
 };
 
 // ================================================
-// GESTION AUTONOME DE SAUVEGARDE RENFORCÉE
+// GESTION AUTONOME RENFORCÉE
 // ================================================
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[DomainOrganizer] Initialisation autonome v5.0...');
     
-    // Tenter l'enregistrement avec PageManager après un délai
+    // Attendre et tenter l'enregistrement avec PageManager
     setTimeout(() => {
-        window.domainOrganizer.registerWithPageManager();
+        if (window.pageManager) {
+            window.domainOrganizer.registerWithPageManager();
+        }
     }, 1000);
     
     // Écouter les clics sur le bouton Ranger (méthode robuste)
@@ -2594,25 +2593,22 @@ window.addEventListener('unhandledrejection', function(e) {
     }
 });
 
+// Hook global pour PageManager avec vérification périodique
+const pageManagerChecker = setInterval(() => {
+    if (window.pageManager) {
+        clearInterval(pageManagerChecker);
+        window.domainOrganizer.registerWithPageManager();
+    }
+}, 500);
+
+// Arrêter la vérification après 10 secondes
+setTimeout(() => {
+    clearInterval(pageManagerChecker);
+}, 10000);
+
 // Désactiver à la navigation
 window.addEventListener('beforeunload', () => {
     window.domainOrganizerActive = false;
-});
-
-// Hook global pour PageManager
-window.addEventListener('DOMContentLoaded', function() {
-    // Attendre que PageManager soit chargé
-    const checkPageManager = setInterval(() => {
-        if (window.pageManager) {
-            clearInterval(checkPageManager);
-            window.domainOrganizer.registerWithPageManager();
-        }
-    }, 500);
-    
-    // Arrêter la vérification après 10 secondes
-    setTimeout(() => {
-        clearInterval(checkPageManager);
-    }, 10000);
 });
 
 // Fonction globale de compatibilité
