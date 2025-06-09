@@ -1163,6 +1163,9 @@ class DomainOrganizer {
             return false;
         }
         
+        // Attendre un peu que le DOM soit complètement rendu
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Configurer les event listeners
         this.setupEventListeners();
         
@@ -1238,13 +1241,18 @@ class DomainOrganizer {
             content.style.display = 'none';
         });
 
-        // Afficher l'étape active
-        const activeStep = document.getElementById(`${stepName}Step`);
+        // Afficher l'étape active - corriger le nom de l'ID
+        const stepId = `${stepName}Step`;
+        const activeStep = document.getElementById(stepId);
         if (activeStep) {
             activeStep.style.display = 'block';
             console.log(`[DomainOrganizer] ✅ Step ${stepName} displayed`);
         } else {
-            console.error(`[DomainOrganizer] ❌ Step element not found: ${stepName}Step`);
+            console.error(`[DomainOrganizer] ❌ Step element not found: ${stepId}`);
+            
+            // Debug: lister tous les éléments step-content
+            const allSteps = document.querySelectorAll('.step-content');
+            console.log(`[DomainOrganizer] Available steps:`, Array.from(allSteps).map(s => s.id));
         }
 
         this.currentStep = stepName;
@@ -1642,7 +1650,10 @@ class DomainOrganizer {
      */
     generateActionsPreview(selectedActions) {
         const actionsPreview = document.getElementById('actionsPreview');
-        if (!actionsPreview) return;
+        if (!actionsPreview) {
+            console.warn('[DomainOrganizer] actionsPreview element not found');
+            return;
+        }
         
         actionsPreview.innerHTML = '';
         
@@ -1651,7 +1662,7 @@ class DomainOrganizer {
         
         if (newFolders.length > 0) {
             const li = document.createElement('li');
-            li.innerHTML = `<strong>${newFolders.length} nouveaux dossiers</strong> seront créés : ${newFolders.map(a => a.targetFolder).join(', ')}`;
+            li.innerHTML = `<strong>${newFolders.length} nouveaux dossiers</strong> seront créés`;
             actionsPreview.appendChild(li);
         }
         
@@ -1666,6 +1677,12 @@ class DomainOrganizer {
         if (newFolderEmails > 0) {
             const li = document.createElement('li');
             li.innerHTML = `<strong>${newFolderEmails} emails</strong> seront déplacés vers les nouveaux dossiers`;
+            actionsPreview.appendChild(li);
+        }
+        
+        if (selectedActions.length === 0) {
+            const li = document.createElement('li');
+            li.innerHTML = 'Aucune action sélectionnée';
             actionsPreview.appendChild(li);
         }
     }
@@ -2362,26 +2379,24 @@ window.domainOrganizer.showPage = function() {
     // Injecter notre HTML
     pageContent.innerHTML = this.getPageHTML();
     
-    // Initialiser la page
-    this.initializePage();
-    
-    // Force l'affichage de l'étape de configuration
-    setTimeout(() => {
-        const configStep = document.getElementById('configStep');
-        if (configStep) {
-            configStep.style.display = 'block';
-            console.log('[DomainOrganizer] ✅ Configuration step forced to display');
-        } else {
-            console.error('[DomainOrganizer] ❌ configStep element not found');
-        }
+    // Attendre un peu puis initialiser
+    setTimeout(async () => {
+        await this.initializePage();
         
-        // Debug: afficher tous les éléments step-content
+        // Debug des étapes après initialisation
         const allSteps = document.querySelectorAll('.step-content');
-        console.log('[DomainOrganizer] All step elements found:', allSteps.length);
+        console.log('[DomainOrganizer] Steps after init:', allSteps.length);
         allSteps.forEach((step, index) => {
             console.log(`Step ${index}: id=${step.id}, display=${step.style.display}`);
         });
-    }, 100);
+        
+        // Forcer l'affichage de configStep
+        const configStep = document.getElementById('configStep');
+        if (configStep) {
+            configStep.style.display = 'block';
+            console.log('[DomainOrganizer] ✅ Configuration step forced visible');
+        }
+    }, 200);
     
     // Mettre à jour la navigation active
     document.querySelectorAll('.nav-item').forEach(item => {
