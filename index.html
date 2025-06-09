@@ -1078,6 +1078,12 @@
         window.forceShowApp = function() {
             console.log('[FORCE] Forcing app display...');
             
+            // Ne pas forcer si déjà affiché
+            if (appAlreadyShown || document.body.classList.contains('app-active')) {
+                console.log('[FORCE] App already displayed, skipping force display');
+                return;
+            }
+            
             // Ajouter la classe pour activer l'app
             document.body.classList.add('app-active');
             
@@ -1087,6 +1093,7 @@
                 loginPage.style.display = 'none';
             }
             
+            appAlreadyShown = true;
             console.log('[FORCE] App display activated');
         };
 
@@ -1169,9 +1176,17 @@
             
             // Fonction de vérification d'authentification sécurisée
             const safeAuthCheck = () => {
+                // Vérifications multiples pour éviter les conflits
                 if (authCheckInProgress || appAlreadyShown) {
                     console.log('[INDEX] Auth check already in progress or app shown, skipping...');
                     return false;
+                }
+                
+                // Vérifier si l'app est déjà active (affichée par app.js)
+                if (document.body.classList.contains('app-active')) {
+                    console.log('[INDEX] App already active via app.js, skipping...');
+                    appAlreadyShown = true;
+                    return true;
                 }
                 
                 try {
@@ -1190,11 +1205,22 @@
             
             // Vérification avec délai seulement si pas déjà fait
             setTimeout(() => {
-                if (!safeAuthCheck()) {
-                    // Une seule retry après 1 seconde
-                    setTimeout(safeAuthCheck, 1000);
+                // Vérifier d'abord si app.js a déjà affiché l'app
+                if (document.body.classList.contains('app-active')) {
+                    console.log('[INDEX] App already displayed by app.js, no need for additional check');
+                    appAlreadyShown = true;
+                    return;
                 }
-            }, 300);
+                
+                if (!safeAuthCheck()) {
+                    // Une seule retry après 800ms
+                    setTimeout(() => {
+                        if (!document.body.classList.contains('app-active')) {
+                            safeAuthCheck();
+                        }
+                    }, 800);
+                }
+            }, 200);
             
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
@@ -1280,7 +1306,12 @@
         // Fonction globale pour basculer vers l'app après connexion
         window.onAuthSuccess = function() {
             console.log('[AUTH_SUCCESS] Authentication successful, switching to app...');
-            window.showApp();
+            // Ne pas appeler showApp() si l'app est déjà affichée par app.js
+            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                window.showApp();
+            } else {
+                console.log('[AUTH_SUCCESS] App already active, skipping duplicate display');
+            }
         };
 
         // Fonction de diagnostic accessible globalement
