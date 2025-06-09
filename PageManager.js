@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.2 - Catégories multi-lignes optimisées + bouton sélection
+// PageManager.js - Version 11.3 - Catégories 2 lignes avec icône+nombre
 
 class PageManager {
     constructor() {
@@ -27,7 +27,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v11.2 - Catégories multi-lignes optimisées + bouton sélection');
+        console.log('[PageManager] Initialized v11.3 - Catégories 2 lignes avec icône+nombre');
     }
 
     // =====================================
@@ -105,6 +105,17 @@ class PageManager {
             
             container.innerHTML = `
                 <div class="tasks-page-modern">
+                    <!-- Texte explicatif avec possibilité de fermer - DÉPLACÉ EN PREMIER -->
+                    ${!this.hideExplanation ? `
+                        <div class="explanation-text-harmonized">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                            <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    ` : ''}
+
                     <!-- Barre de contrôles harmonisée avec TasksView -->
                     <div class="controls-bar-harmonized">
                         <!-- Section recherche -->
@@ -180,20 +191,9 @@ class PageManager {
                         </div>
                     </div>
 
-                    <!-- Texte explicatif avec possibilité de fermer -->
-                    ${!this.hideExplanation ? `
-                        <div class="explanation-text-harmonized">
-                            <i class="fas fa-info-circle"></i>
-                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
-                            <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    ` : ''}
-
-                    <!-- Filtres de catégories harmonisés et multi-lignes optimisés -->
-                    <div class="status-filters-harmonized-multiline">
-                        ${this.buildOptimizedCategoryTabs(categoryCounts, totalEmails, categories)}
+                    <!-- Filtres de catégories harmonisés et 2 lignes avec icône+nombre -->
+                    <div class="status-filters-harmonized-twolines">
+                        ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
                     </div>
 
                     <!-- CONTENU DES EMAILS harmonisé -->
@@ -218,9 +218,9 @@ class PageManager {
     }
 
     // =====================================
-    // FILTRES DE CATÉGORIES - 2 LIGNES FORCÉES
+    // FILTRES DE CATÉGORIES - 2 LIGNES AVEC ICÔNE+NOMBRE
     // =====================================
-    buildOptimizedCategoryTabs(categoryCounts, totalEmails, categories) {
+    buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         const tabs = [
             { id: 'all', name: 'Tous', icon: '📧', count: totalEmails }
         ];
@@ -248,17 +248,16 @@ class PageManager {
         }
         
         return tabs.map(tab => {
-            const isLongText = tab.name.length > 12;
             return `
-                <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''} ${isLongText ? 'long-text' : ''}" 
+                <button class="status-pill-harmonized-twolines ${this.currentCategory === tab.id ? 'active' : ''}" 
                         onclick="window.pageManager.filterByCategory('${tab.id}')">
-                    <div class="pill-content-two-lines">
-                        <div class="pill-first-line">
-                            <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                            <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                    <div class="pill-content-twolines">
+                        <div class="pill-first-line-twolines">
+                            <span class="pill-icon-twolines">${tab.icon}</span>
+                            <span class="pill-count-twolines">${tab.count}</span>
                         </div>
-                        <div class="pill-second-line">
-                            <span class="pill-text-harmonized-multiline ${isLongText ? 'multiline' : ''}">${tab.name}</span>
+                        <div class="pill-second-line-twolines">
+                            <span class="pill-text-twolines">${tab.name}</span>
                         </div>
                     </div>
                 </button>
@@ -477,7 +476,7 @@ class PageManager {
         this.currentCategory = categoryId;
         
         // Update tabs
-        document.querySelectorAll('.status-pill-harmonized-multiline').forEach(tab => {
+        document.querySelectorAll('.status-pill-harmonized-twolines').forEach(tab => {
             tab.classList.remove('active');
         });
         event.target.classList.add('active');
@@ -596,7 +595,7 @@ class PageManager {
     }
 
     // =====================================
-    // STYLES HARMONISÉS AVEC TASKSVIEW OPTIMISÉS
+    // STYLES HARMONISÉS AVEC TASKSVIEW - MODIFIÉS POUR 2 LIGNES
     // =====================================
     addHarmonizedEmailStyles() {
         if (document.getElementById('harmonizedEmailStyles')) return;
@@ -604,7 +603,7 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'harmonizedEmailStyles';
         styles.textContent = `
-            /* ===== REPRENDRE LES STYLES DE TASKSVIEW AVEC OPTIMISATIONS ===== */
+            /* ===== REPRENDRE LES STYLES DE TASKSVIEW AVEC MODIFICATIONS POUR 2 LIGNES ===== */
             
             /* Variables CSS identiques à TasksView */
             :root {
@@ -656,6 +655,55 @@ class PageManager {
                 min-height: 100vh;
                 padding: var(--gap-large);
                 font-size: var(--btn-font-size);
+            }
+
+            /* NOUVEAU : Texte explicatif déplacé en premier */
+            .explanation-text-harmonized {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                border-radius: var(--card-border-radius);
+                padding: var(--gap-medium);
+                margin-bottom: var(--gap-medium);
+                display: flex;
+                align-items: center;
+                gap: var(--gap-medium);
+                color: #1e40af;
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 1.5;
+                backdrop-filter: blur(10px);
+                position: relative;
+            }
+
+            .explanation-text-harmonized i {
+                font-size: 16px;
+                color: #3b82f6;
+                flex-shrink: 0;
+            }
+            
+            .explanation-close-btn {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                color: #3b82f6;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+            
+            .explanation-close-btn:hover {
+                background: rgba(59, 130, 246, 0.2);
+                border-color: rgba(59, 130, 246, 0.3);
+                transform: scale(1.1);
             }
             
             /* Barre de contrôles identique */
@@ -948,58 +996,9 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
             }
-
-            /* NOUVEAU : Texte explicatif avec bouton de fermeture */
-            .explanation-text-harmonized {
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
-                display: flex;
-                align-items: center;
-                gap: var(--gap-medium);
-                color: #1e40af;
-                font-size: 14px;
-                font-weight: 500;
-                line-height: 1.5;
-                backdrop-filter: blur(10px);
-                position: relative;
-            }
-
-            .explanation-text-harmonized i {
-                font-size: 16px;
-                color: #3b82f6;
-                flex-shrink: 0;
-            }
             
-            .explanation-close-btn {
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                background: rgba(59, 130, 246, 0.1);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                color: #3b82f6;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                transition: all 0.2s ease;
-                flex-shrink: 0;
-            }
-            
-            .explanation-close-btn:hover {
-                background: rgba(59, 130, 246, 0.2);
-                border-color: rgba(59, 130, 246, 0.3);
-                transform: scale(1.1);
-            }
-            
-            /* NOUVEAU : Structure centrée pour les filtres de catégories */
-            .status-filters-harmonized-multiline {
+            /* NOUVEAU : Filtres de catégories sur 2 lignes avec icône+nombre sur même ligne */
+            .status-filters-harmonized-twolines {
                 display: flex;
                 gap: var(--gap-small);
                 margin-bottom: var(--gap-medium);
@@ -1010,9 +1009,9 @@ class PageManager {
                 min-height: auto;
             }
             
-            .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                 height: auto;
-                min-height: 48px;
+                min-height: 60px;
                 padding: var(--gap-small);
                 font-size: 12px;
                 font-weight: 700;
@@ -1035,13 +1034,7 @@ class PageManager {
                 overflow: hidden;
             }
             
-            /* Optimisation pour texte long */
-            .status-pill-harmonized-multiline.long-text {
-                min-height: 64px;
-                padding: var(--gap-tiny) var(--gap-small);
-            }
-            
-            .pill-content-centered {
+            .pill-content-twolines {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -1052,15 +1045,21 @@ class PageManager {
                 text-align: center;
             }
             
-            .pill-icon-centered {
+            .pill-first-line-twolines {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                gap: var(--gap-tiny);
                 width: 100%;
                 flex-shrink: 0;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 4px 8px;
+                margin-bottom: 4px;
             }
             
-            .pill-text-centered {
+            .pill-second-line-twolines {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1070,39 +1069,29 @@ class PageManager {
                 min-height: 0;
             }
             
-            .pill-count-centered {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-                flex-shrink: 0;
-            }
-            
-            .status-pill-harmonized-multiline:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-            }
-            
-            .status-pill-harmonized-multiline.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
-            }
-            
-            .pill-icon-harmonized-multiline {
-                font-size: 18px;
+            .pill-icon-twolines {
+                font-size: 16px;
                 line-height: 1;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin-bottom: 2px;
             }
             
-            .pill-text-harmonized-multiline {
+            .pill-count-twolines {
+                background: rgba(0, 0, 0, 0.1);
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 800;
+                min-width: 18px;
+                text-align: center;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .pill-text-twolines {
                 font-weight: 700;
                 font-size: 12px;
                 line-height: 1.2;
@@ -1113,39 +1102,32 @@ class PageManager {
                 word-break: break-word;
                 hyphens: auto;
                 max-width: 100%;
-            }
-            
-            /* Texte sur plusieurs lignes pour les longs textes */
-            .pill-text-harmonized-multiline.multiline {
                 white-space: normal;
                 overflow-wrap: break-word;
                 word-wrap: break-word;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-height: 2.4em;
-                line-height: 1.2;
-                font-size: 11px;
             }
             
-            .pill-count-harmonized-multiline {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 8px;
-                font-size: 10px;
-                font-weight: 800;
-                min-width: 18px;
-                text-align: center;
-                line-height: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-top: 2px;
+            .status-pill-harmonized-twolines:hover {
+                border-color: #3b82f6;
+                background: #f0f9ff;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
             }
             
-            .status-pill-harmonized-multiline.active .pill-count-harmonized-multiline {
+            .status-pill-harmonized-twolines.active {
+                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                color: white;
+                border-color: #3b82f6;
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+                transform: translateY(-2px);
+            }
+            
+            .status-pill-harmonized-twolines.active .pill-first-line-twolines {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+            
+            .status-pill-harmonized-twolines.active .pill-count-twolines {
                 background: rgba(255, 255, 255, 0.3);
                 color: white;
             }
@@ -1779,39 +1761,28 @@ class PageManager {
                     --action-btn-size: 34px;
                 }
                 
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                     flex: 0 1 calc(20% - var(--gap-small));
                     min-width: 100px;
                     max-width: 160px;
-                    height: 42px;
+                    min-height: 56px;
                 }
                 
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    height: 42px;
+                .pill-first-line-twolines {
+                    padding: 3px 6px;
                 }
                 
-                .pill-first-line,
-                .pill-second-line {
-                    height: 18px;
-                    line-height: 18px;
+                .pill-icon-twolines {
+                    font-size: 14px;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 10px;
-                }
-                
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 8px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 15px;
-                }
-                
-                .pill-count-harmonized-multiline {
+                .pill-count-twolines {
                     font-size: 9px;
                     padding: 2px 5px;
-                    height: 14px;
+                }
+                
+                .pill-text-twolines {
+                    font-size: 11px;
                 }
             }
             
@@ -1853,62 +1824,37 @@ class PageManager {
                     align-items: center;
                 }
                 
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                     flex: 0 1 calc(25% - var(--gap-small));
                     min-width: 80px;
                     max-width: 140px;
-                    height: 40px;
+                    min-height: 52px;
                 }
                 
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    height: 40px;
+                .pill-icon-twolines {
+                    font-size: 13px;
                 }
                 
-                .pill-first-line,
-                .pill-second-line {
-                    height: 17px;
-                    line-height: 17px;
-                }
-                
-                .pill-text-harmonized-multiline {
-                    font-size: 9px;
-                }
-                
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 8px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 14px;
-                }
-                
-                .pill-count-harmonized-multiline {
+                .pill-count-twolines {
                     font-size: 8px;
                     padding: 2px 4px;
-                    height: 13px;
+                }
+                
+                .pill-text-twolines {
+                    font-size: 10px;
                 }
             }
             
             @media (max-width: 768px) {
-                .status-filters-harmonized-multiline {
+                .status-filters-harmonized-twolines {
                     justify-content: center;
                 }
                 
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                     flex: 0 1 calc(33.333% - var(--gap-small));
                     min-width: 70px;
                     max-width: 120px;
-                    height: 38px;
-                }
-                
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    height: 38px;
-                }
-                
-                .pill-first-line,
-                .pill-second-line {
-                    height: 16px;
-                    line-height: 16px;
+                    min-height: 48px;
                 }
                 
                 .view-mode-harmonized span,
@@ -1916,59 +1862,39 @@ class PageManager {
                     display: none;
                 }
                 
-                .pill-text-harmonized-multiline {
-                    font-size: 8px;
+                .pill-icon-twolines {
+                    font-size: 12px;
                 }
                 
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 7px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 13px;
-                }
-                
-                .pill-count-harmonized-multiline {
+                .pill-count-twolines {
                     font-size: 7px;
                     padding: 1px 4px;
-                    height: 12px;
+                }
+                
+                .pill-text-twolines {
+                    font-size: 9px;
                 }
             }
             
             @media (max-width: 480px) {
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
+                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                     flex: 0 1 calc(50% - var(--gap-tiny));
                     min-width: 60px;
                     max-width: 110px;
-                    height: 36px;
+                    min-height: 44px;
                 }
                 
-                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    height: 36px;
+                .pill-icon-twolines {
+                    font-size: 11px;
                 }
                 
-                .pill-first-line,
-                .pill-second-line {
-                    height: 15px;
-                    line-height: 15px;
-                }
-                
-                .pill-text-harmonized-multiline {
-                    font-size: 7px;
-                }
-                
-                .pill-text-harmonized-multiline.multiline {
-                    font-size: 6px;
-                }
-                
-                .pill-icon-harmonized-multiline {
-                    font-size: 12px;
-                }
-                
-                .pill-count-harmonized-multiline {
+                .pill-count-twolines {
                     font-size: 6px;
                     padding: 1px 3px;
-                    height: 11px;
+                }
+                
+                .pill-text-twolines {
+                    font-size: 8px;
                 }
                 
                 .explanation-text-harmonized {
@@ -2964,6 +2890,22 @@ class PageManager {
         
         document.head.appendChild(styles);
     }
+
+    async analyzeFirstEmails(emails) {
+        // Méthode pour analyser les premiers emails
+        if (!window.aiTaskAnalyzer) return;
+        
+        for (const email of emails) {
+            if (!this.aiAnalysisResults.has(email.id)) {
+                try {
+                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                    this.aiAnalysisResults.set(email.id, analysis);
+                } catch (error) {
+                    console.error('[PageManager] Error analyzing email:', error);
+                }
+            }
+        }
+    }
 }
 
 // Create global instance
@@ -2976,4 +2918,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.2 loaded - Catégories multi-lignes optimisées + bouton sélection');
+console.log('✅ PageManager v11.3 loaded - Catégories 2 lignes avec icône+nombre');
