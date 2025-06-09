@@ -329,22 +329,23 @@
         }
 
         .logo-icon i {
-            font-size: 24px;
+            font-size: 32px;
             color: white;
         }
 
         .app-title {
-            font-size: 2.2rem;
+            font-size: 3rem;
             font-weight: 800;
             text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             margin: 0;
         }
 
         .app-subtitle {
-            font-size: 1rem;
+            font-size: 1.3rem;
             opacity: 0.9;
             line-height: 1.4;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
+            font-weight: 500;
         }
 
         /* Section bouton de connexion */
@@ -356,19 +357,19 @@
         .connect-button {
             background: linear-gradient(135deg, #10b981, #059669);
             color: white;
-            padding: 16px 35px;
+            padding: 20px 45px;
             border: none;
             border-radius: 50px;
-            font-size: 1.1rem;
+            font-size: 1.4rem;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
             display: inline-flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             text-decoration: none;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
 
         .connect-button:hover {
@@ -377,14 +378,19 @@
             background: linear-gradient(135deg, #059669, #047857);
         }
 
+        .connect-button i {
+            font-size: 1.6rem;
+        }
+
         .security-note {
-            font-size: 0.75rem;
+            font-size: 0.9rem;
             opacity: 0.8;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
             color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
         }
 
         /* Étapes + RGPD fusionnées */
@@ -397,9 +403,9 @@
         }
 
         .process-title {
-            font-size: 1rem;
+            font-size: 1.3rem;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             color: rgba(255, 255, 255, 0.9);
         }
 
@@ -487,16 +493,17 @@
         }
 
         .rgpd-title {
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: #10b981;
             margin: 0;
         }
 
         .rgpd-text {
-            font-size: 0.8rem;
+            font-size: 0.95rem;
             line-height: 1.4;
             color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
         }
 
         /* === STYLES POUR L'APPLICATION === */
@@ -794,7 +801,16 @@
             }
 
             .app-title {
-                font-size: 1.8rem;
+                font-size: 2.5rem;
+            }
+
+            .app-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .connect-button {
+                padding: 18px 40px;
+                font-size: 1.2rem;
             }
 
             .logo-title {
@@ -803,26 +819,38 @@
             }
 
             .step-mini {
-                min-width: 80px;
-                max-width: 95px;
+                min-width: 100px;
+                max-width: 120px;
             }
 
             .step-mini:not(:last-child)::after {
-                right: -6px;
-                font-size: 10px;
+                right: -10px;
+                font-size: 14px;
             }
 
             .step-label {
-                font-size: 0.5rem;
+                font-size: 0.7rem;
             }
 
             .step-circle {
-                width: 28px;
-                height: 28px;
+                width: 36px;
+                height: 36px;
             }
 
             .step-circle i {
-                font-size: 11px;
+                font-size: 14px;
+            }
+
+            .process-title {
+                font-size: 1.1rem;
+            }
+
+            .rgpd-title {
+                font-size: 1rem;
+            }
+
+            .rgpd-text {
+                font-size: 0.85rem;
             }
 
             .app-nav {
@@ -854,39 +882,51 @@
             }
 
             .app-title {
-                font-size: 1.6rem;
+                font-size: 2rem;
             }
 
             .app-subtitle {
-                font-size: 0.9rem;
-            }
-
-            .connect-button {
-                padding: 14px 30px;
                 font-size: 1rem;
             }
 
+            .connect-button {
+                padding: 16px 35px;
+                font-size: 1.1rem;
+            }
+
             .step-mini {
-                min-width: 70px;
-                max-width: 85px;
+                min-width: 85px;
+                max-width: 105px;
             }
 
             .step-mini:not(:last-child)::after {
-                right: -5px;
-                font-size: 9px;
+                right: -8px;
+                font-size: 12px;
             }
 
             .step-label {
-                font-size: 0.45rem;
+                font-size: 0.65rem;
             }
 
             .step-circle {
-                width: 26px;
-                height: 26px;
+                width: 32px;
+                height: 32px;
             }
 
             .step-circle i {
-                font-size: 10px;
+                font-size: 13px;
+            }
+
+            .process-title {
+                font-size: 1rem;
+            }
+
+            .rgpd-title {
+                font-size: 0.95rem;
+            }
+
+            .rgpd-text {
+                font-size: 0.8rem;
             }
         }
 
