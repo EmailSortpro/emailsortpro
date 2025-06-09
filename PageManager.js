@@ -235,8 +235,8 @@ class PageManager {
             });
         }
         
-        return tabs.map(tab => {
-            // Optimisation pour les noms à deux mots
+                    return tabs.map(tab => {
+            // Optimisation pour les noms à deux mots - MISE EN LIGNE HORIZONTALE
             const nameWords = tab.name.split(' ');
             const displayName = nameWords.length > 1 ? 
                 `<span class="pill-text-line1">${nameWords[0]}</span><span class="pill-text-line2">${nameWords.slice(1).join(' ')}</span>` :
@@ -1721,7 +1721,8 @@ class PageManager {
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    min-height: 42px;
+                    min-height: 34px;
+                    padding: 5px 9px;
                 }
                 
                 .pill-text-line1, .pill-text-single {
@@ -1733,12 +1734,12 @@ class PageManager {
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 15px;
+                    font-size: 12px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 9px;
-                    padding: 2px 5px;
+                    font-size: 8px;
+                    padding: 2px 4px;
                 }
             }
             
@@ -1781,7 +1782,8 @@ class PageManager {
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    min-height: 40px;
+                    min-height: 32px;
+                    padding: 4px 8px;
                 }
                 
                 .pill-text-line1, .pill-text-single {
@@ -1793,22 +1795,24 @@ class PageManager {
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 14px;
+                    font-size: 11px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 9px;
-                    padding: 2px 5px;
+                    font-size: 8px;
+                    padding: 2px 4px;
                 }
             }
             
             @media (max-width: 768px) {
                 .status-filters-harmonized-multiline {
-                    justify-content: stretch;
+                    justify-content: flex-start;
+                    gap: 3px;
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    min-height: 38px;
+                    min-height: 30px;
+                    padding: 4px 7px;
                 }
                 
                 .view-mode-harmonized span,
@@ -1825,18 +1829,23 @@ class PageManager {
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 13px;
+                    font-size: 10px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 8px;
-                    padding: 2px 4px;
+                    font-size: 7px;
+                    padding: 1px 3px;
                 }
             }
             
             @media (max-width: 480px) {
+                .status-filters-harmonized-multiline {
+                    gap: 2px;
+                }
+                
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    min-height: 36px;
+                    min-height: 28px;
+                    padding: 3px 6px;
                 }
                 
                 .pill-text-line1, .pill-text-single {
@@ -1848,12 +1857,12 @@ class PageManager {
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 12px;
+                    font-size: 9px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 7px;
-                    padding: 2px 4px;
+                    font-size: 6px;
+                    padding: 1px 3px;
                 }
                 
                 .explanation-text-harmonized-top {
