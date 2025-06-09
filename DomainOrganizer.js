@@ -1529,6 +1529,8 @@ class DomainOrganizer {
      * Affiche une étape spécifique
      */
     showStep(stepName) {
+        console.log(`[DomainOrganizer] Showing step: ${stepName}`);
+        
         // Mettre à jour l'indicateur d'étapes
         document.querySelectorAll('.step').forEach(step => {
             step.classList.remove('active', 'completed');
@@ -1548,6 +1550,9 @@ class DomainOrganizer {
         const activeStep = document.getElementById(`${stepName}Step`);
         if (activeStep) {
             activeStep.style.display = 'block';
+            console.log(`[DomainOrganizer] ✅ Step ${stepName} displayed`);
+        } else {
+            console.error(`[DomainOrganizer] ❌ Step element not found: ${stepName}Step`);
         }
 
         this.currentStep = stepName;
@@ -2671,6 +2676,24 @@ window.domainOrganizer.showPage = function() {
     
     // Initialiser la page
     this.initializePage();
+    
+    // Force l'affichage de l'étape de configuration
+    setTimeout(() => {
+        const configStep = document.getElementById('configStep');
+        if (configStep) {
+            configStep.style.display = 'block';
+            console.log('[DomainOrganizer] ✅ Configuration step forced to display');
+        } else {
+            console.error('[DomainOrganizer] ❌ configStep element not found');
+        }
+        
+        // Debug: afficher tous les éléments step-content
+        const allSteps = document.querySelectorAll('.step-content');
+        console.log('[DomainOrganizer] All step elements found:', allSteps.length);
+        allSteps.forEach((step, index) => {
+            console.log(`Step ${index}: id=${step.id}, display=${step.style.display}`);
+        });
+    }, 100);
     
     // Mettre à jour la navigation active
     document.querySelectorAll('.nav-item').forEach(item => {
