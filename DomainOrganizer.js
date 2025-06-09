@@ -65,40 +65,135 @@ class DomainOrganizer {
                     <div class="card">
                         <h2 class="card-title">
                             <i class="fas fa-cog"></i>
-                            Configuration
+                            Configuration du rangement
                         </h2>
                         
                         <div class="info-box info-primary">
                             <i class="fas fa-info-circle"></i>
-                            <div>Regroupement automatique des emails par domaine expéditeur.</div>
+                            <div>
+                                <strong>Qu'est-ce que le rangement par domaine ?</strong><br>
+                                Cette fonctionnalité organise automatiquement vos emails en créant un dossier pour chaque domaine expéditeur. 
+                                Par exemple : tous vos emails d'Amazon iront dans un dossier "amazon.com", ceux de votre banque dans "banque.fr", etc.
+                            </div>
+                        </div>
+
+                        <div class="process-overview">
+                            <h4><i class="fas fa-route"></i> Déroulement du processus</h4>
+                            <div class="process-steps">
+                                <div class="process-step">
+                                    <div class="process-icon">1</div>
+                                    <div class="process-text">
+                                        <strong>Analyse</strong><br>
+                                        Scan de vos emails sur la période choisie
+                                    </div>
+                                </div>
+                                <div class="process-step">
+                                    <div class="process-icon">2</div>
+                                    <div class="process-text">
+                                        <strong>Révision</strong><br>
+                                        Vous validez les dossiers proposés
+                                    </div>
+                                </div>
+                                <div class="process-step">
+                                    <div class="process-icon">3</div>
+                                    <div class="process-text">
+                                        <strong>Confirmation</strong><br>
+                                        Validation finale avant action
+                                    </div>
+                                </div>
+                                <div class="process-step">
+                                    <div class="process-icon">4</div>
+                                    <div class="process-text">
+                                        <strong>Rangement</strong><br>
+                                        Création des dossiers et déplacement
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="safety-notice">
+                            <h4><i class="fas fa-shield-alt"></i> Sécurité et contrôle</h4>
+                            <ul>
+                                <li><strong>Aucune action automatique</strong> - Vous validez chaque étape</li>
+                                <li><strong>Aperçu complet</strong> - Vous voyez exactement ce qui sera fait</li>
+                                <li><strong>Choix des dossiers</strong> - Vous pouvez modifier les noms proposés</li>
+                                <li><strong>Exclusions possibles</strong> - Vous pouvez exclure certains domaines</li>
+                            </ul>
                         </div>
                         
                         <form id="organizeForm">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="startDate">Date début</label>
-                                    <input type="date" id="startDate" name="startDate">
+                            <div class="form-section">
+                                <h4><i class="fas fa-calendar"></i> Période à analyser</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="startDate">Date début</label>
+                                        <input type="date" id="startDate" name="startDate">
+                                        <span class="help-text">Emails à partir de cette date</span>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="endDate">Date fin</label>
+                                        <input type="date" id="endDate" name="endDate">
+                                        <span class="help-text">Emails jusqu'à cette date</span>
+                                    </div>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label for="endDate">Date fin</label>
-                                    <input type="date" id="endDate" name="endDate">
+                            </div>
+
+                            <div class="form-section">
+                                <h4><i class="fas fa-filter"></i> Exclusions (optionnel)</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="excludeDomains">Domaines à ignorer</label>
+                                        <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com">
+                                        <span class="help-text">Ces domaines ne seront pas rangés</span>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="excludeEmails">Emails spécifiques à ignorer</label>
+                                        <input type="text" id="excludeEmails" placeholder="boss@entreprise.com">
+                                        <span class="help-text">Ces adresses ne seront pas rangées</span>
+                                    </div>
                                 </div>
-                                
-                                <div class="form-group">
-                                    <label for="excludeDomains">Exclure domaines</label>
-                                    <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="excludeEmails">Exclure emails</label>
-                                    <input type="text" id="excludeEmails" placeholder="contact@important.com">
+                            </div>
+
+                            <div class="expected-results">
+                                <h4><i class="fas fa-eye"></i> À quoi vous attendre</h4>
+                                <div class="expectation-grid">
+                                    <div class="expectation-item">
+                                        <i class="fas fa-search"></i>
+                                        <div>
+                                            <strong>Analyse rapide</strong><br>
+                                            Quelques secondes pour scanner vos emails
+                                        </div>
+                                    </div>
+                                    <div class="expectation-item">
+                                        <i class="fas fa-list"></i>
+                                        <div>
+                                            <strong>Liste détaillée</strong><br>
+                                            Chaque domaine avec nombre d'emails
+                                        </div>
+                                    </div>
+                                    <div class="expectation-item">
+                                        <i class="fas fa-folder-plus"></i>
+                                        <div>
+                                            <strong>Nouveaux dossiers</strong><br>
+                                            Création automatique si nécessaire
+                                        </div>
+                                    </div>
+                                    <div class="expectation-item">
+                                        <i class="fas fa-arrows-alt"></i>
+                                        <div>
+                                            <strong>Déplacement organisé</strong><br>
+                                            Emails triés par domaine expéditeur
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             
                             <button type="submit" class="btn btn-primary btn-large" id="analyzeBtn">
                                 <i class="fas fa-search"></i>
-                                Commencer l'analyse
+                                Lancer l'analyse
+                                <span class="btn-subtitle">Étape 1 • Aucune modification pour l'instant</span>
                             </button>
                         </form>
                     </div>
@@ -506,6 +601,22 @@ class DomainOrganizer {
                     margin-bottom: 12px;
                 }
 
+                .form-section {
+                    margin-bottom: 20px;
+                }
+
+                .form-section h4 {
+                    margin: 0 0 12px 0;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #374151;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding-bottom: 8px;
+                    border-bottom: 1px solid #e5e7eb;
+                }
+
                 .form-group {
                     display: flex;
                     flex-direction: column;
@@ -516,9 +627,6 @@ class DomainOrganizer {
                     font-size: 12px;
                     font-weight: 600;
                     color: #374151;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
                 }
 
                 .form-group input[type="date"],
@@ -533,6 +641,142 @@ class DomainOrganizer {
                 .form-group input:focus {
                     outline: none;
                     border-color: #3b82f6;
+                }
+
+                .help-text {
+                    font-size: 11px;
+                    color: #6b7280;
+                    margin-top: 2px;
+                }
+
+                /* Vue d'ensemble du processus */
+                .process-overview {
+                    background: #f8fafc;
+                    padding: 16px;
+                    border-radius: 8px;
+                    margin-bottom: 16px;
+                }
+
+                .process-overview h4 {
+                    margin: 0 0 12px 0;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #374151;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .process-steps {
+                    display: grid;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 12px;
+                }
+
+                .process-step {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    text-align: left;
+                }
+
+                .process-icon {
+                    width: 24px;
+                    height: 24px;
+                    background: #3b82f6;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    font-weight: 600;
+                    flex-shrink: 0;
+                }
+
+                .process-text {
+                    font-size: 11px;
+                    line-height: 1.3;
+                }
+
+                .process-text strong {
+                    color: #374151;
+                    display: block;
+                    margin-bottom: 2px;
+                }
+
+                /* Notice de sécurité */
+                .safety-notice {
+                    background: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    padding: 12px;
+                    border-radius: 6px;
+                    margin-bottom: 16px;
+                }
+
+                .safety-notice h4 {
+                    margin: 0 0 8px 0;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #166534;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .safety-notice ul {
+                    margin: 0;
+                    padding-left: 16px;
+                    font-size: 11px;
+                    color: #166534;
+                }
+
+                .safety-notice li {
+                    margin-bottom: 4px;
+                }
+
+                /* Résultats attendus */
+                .expected-results {
+                    background: #eff6ff;
+                    border: 1px solid #bfdbfe;
+                    padding: 12px;
+                    border-radius: 6px;
+                    margin-bottom: 16px;
+                }
+
+                .expected-results h4 {
+                    margin: 0 0 8px 0;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #1d4ed8;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .expectation-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 8px;
+                }
+
+                .expectation-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 8px;
+                    font-size: 11px;
+                }
+
+                .expectation-item i {
+                    color: #3b82f6;
+                    margin-top: 1px;
+                    flex-shrink: 0;
+                }
+
+                .expectation-item strong {
+                    color: #1d4ed8;
+                    display: block;
+                    margin-bottom: 1px;
                 }
 
                 /* Boutons */
@@ -551,8 +795,16 @@ class DomainOrganizer {
                 }
 
                 .btn-large {
-                    padding: 10px 20px;
+                    padding: 12px 20px;
                     font-size: 14px;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .btn-subtitle {
+                    font-size: 11px;
+                    opacity: 0.9;
+                    font-weight: 400;
                 }
 
                 .btn-primary {
@@ -562,6 +814,7 @@ class DomainOrganizer {
 
                 .btn-primary:hover:not(:disabled) {
                     background: #2563eb;
+                    transform: translateY(-1px);
                 }
 
                 .btn-secondary {
@@ -1127,6 +1380,28 @@ class DomainOrganizer {
 
                     .form-grid {
                         grid-template-columns: 1fr;
+                    }
+
+                    .process-steps {
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 8px;
+                    }
+
+                    .expectation-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .process-step {
+                        flex-direction: column;
+                        text-align: center;
+                        gap: 4px;
+                    }
+
+                    .expectation-item {
+                        align-items: center;
+                        flex-direction: column;
+                        text-align: center;
+                        gap: 4px;
                     }
 
                     .stats-row {
