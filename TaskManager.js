@@ -967,7 +967,16 @@ Sujet: ${subject}
 
     saveTasks() {
         try {
-            localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
+            const tasksData = JSON.stringify(this.tasks);
+            
+            if (this.memoryStorage) {
+                // Utiliser le stockage en mémoire
+                this.memoryStorage.set('emailsort_tasks', this.tasks);
+            } else {
+                // Utiliser localStorage
+                localStorage.setItem('emailsort_tasks', tasksData);
+            }
+            
             console.log(`[TaskManager] Saved ${this.tasks.length} tasks`);
             return true;
         } catch (error) {
@@ -977,7 +986,7 @@ Sujet: ${subject}
     }
 
     emitTaskUpdate(action, task) {
-        if (window.dispatchEvent) {
+        if (typeof window !== 'undefined' && window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('taskUpdate', {
                 detail: { action, task }
             }));
@@ -4122,47 +4131,167 @@ class TasksView {
 }
 
 // =====================================
-// GLOBAL INITIALIZATION
+// GLOBAL INITIALIZATION WITH ENHANCED ERROR HANDLING
 // =====================================
 
-function initializeTaskManager() {
+async function initializeTaskManager() {
     console.log('[TaskManager] Initializing global instances v9.2...');
     
-    if (!window.taskManager || !window.taskManager.initialized) {
-        window.taskManager = new TaskManager();
-    }
-    
-    if (!window.tasksView) {
-        window.tasksView = new TasksView();
-    }
-    
-    Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
-        if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
-            window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
+    try {
+        // Créer ou récupérer l'instance TaskManager
+        if (!window.taskManager) {
+            window.taskManager = new TaskManager();
         }
-    });
+        
+        // Attendre que TaskManager soit prêt
+        await window.taskManager.waitForReady();
+        
+        // Créer TasksView
+        if (!window.tasksView) {
+            window.tasksView = new TasksView();
+        }
+        
+        // Lier les méthodes au contexte global
+        Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
+            if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
+                window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
+            }
+        });
 
-    Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
-        if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
-            window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
+        Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
+            if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
+                window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
+            }
+        });
+        
+        console.log('✅ TaskManager v9.2 loaded - Interface avec Bouton Actions Groupées');
+        
+        // Signaler la disponibilité globale
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('taskManagerFullyReady', {
+                detail: { 
+                    taskManager: window.taskManager,
+                    tasksView: window.tasksView 
+                }
+            }));
         }
-    });
-    
-    console.log('✅ TaskManager v9.2 loaded - Interface avec Bouton Actions Groupées');
+        
+        return { taskManager: window.taskManager, tasksView: window.tasksView };
+        
+    } catch (error) {
+        console.error('[TaskManager] Failed to initialize:', error);
+        
+        // Créer des instances de secours
+        if (!window.taskManager) {
+            window.taskManager = {
+                initialized: false,
+                tasks: [],
+                error: error.message,
+                getAllTasks: () => [],
+                getStats: () => ({ total: 0, todo: 0, inProgress: 0, completed: 0, overdue: 0, needsReply: 0 }),
+                filterTasks: () => [],
+                getTask: () => null,
+                createTask: () => null,
+                updateTask: () => null,
+                deleteTask: () => null
+            };
+        }
+        
+        if (!window.tasksView) {
+            window.tasksView = {
+                initialized: false,
+                error: error.message,
+                render: (container) => {
+                    if (container) {
+                        container.innerHTML = `
+                            <div style="padding: 20px; text-align: center; color: #dc2626;">
+                                <h3>Erreur d'initialisation TaskManager</h3>
+                                <p>Impossible de charger le gestionnaire de tâches.</p>
+                                <p>Erreur: ${error.message}</p>
+                                <button onclick="location.reload()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                                    Recharger la page
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            };
+        }
+        
+        throw error;
+    }
 }
 
-initializeTaskManager();
-
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManager();
-});
-
-window.addEventListener('load', () => {
+// Initialisation avec gestion d'erreurs améliorée
+(function setupTaskManager() {
+    console.log('[TaskManager] Setting up initialization...');
+    
+    let initializationAttempts = 0;
+    const maxAttempts = 5;
+    
+    async function attemptInitialization() {
+        initializationAttempts++;
+        
+        try {
+            console.log(`[TaskManager] Initialization attempt ${initializationAttempts}/${maxAttempts}`);
+            return await initializeTaskManager();
+        } catch (error) {
+            console.error(`[TaskManager] Attempt ${initializationAttempts} failed:`, error);
+            
+            if (initializationAttempts < maxAttempts) {
+                const delay = Math.min(1000 * initializationAttempts, 5000);
+                console.log(`[TaskManager] Retrying in ${delay}ms...`);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return attemptInitialization();
+            } else {
+                console.error('[TaskManager] All initialization attempts failed');
+                throw error;
+            }
+        }
+    }
+    
+    // Différentes stratégies d'initialisation selon l'état du DOM
+    if (document.readyState === 'loading') {
+        console.log('[TaskManager] DOM loading, waiting for DOMContentLoaded...');
+        document.addEventListener('DOMContentLoaded', () => {
+            attemptInitialization().catch(error => {
+                console.error('[TaskManager] Critical initialization failure:', error);
+            });
+        });
+    } else if (document.readyState === 'interactive') {
+        console.log('[TaskManager] DOM interactive, initializing...');
+        setTimeout(() => {
+            attemptInitialization().catch(error => {
+                console.error('[TaskManager] Critical initialization failure:', error);
+            });
+        }, 100);
+    } else {
+        console.log('[TaskManager] DOM complete, initializing immediately...');
+        attemptInitialization().catch(error => {
+            console.error('[TaskManager] Critical initialization failure:', error);
+        });
+    }
+    
+    // Fallback pour le cas où window.load se déclenche
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            if (!window.taskManager || !window.taskManager.initialized) {
+                console.log('[TaskManager] Window loaded fallback initialization...');
+                attemptInitialization().catch(error => {
+                    console.error('[TaskManager] Fallback initialization failure:', error);
+                });
+            }
+        }, 1000);
+    });
+    
+    // Timeout final de sécurité
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
-            console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManager();
+            console.warn('[TaskManager] Final timeout reached, forcing basic initialization...');
+            attemptInitialization().catch(error => {
+                console.error('[TaskManager] Final initialization failure:', error);
+            });
         }
-    }, 1000);
-});
+    }, 10000);
+})();
