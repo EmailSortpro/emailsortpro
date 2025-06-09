@@ -1052,9 +1052,6 @@ class PageManager {
                 gap: var(--gap-tiny);
                 width: 100%;
                 flex-shrink: 0;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
                 padding: 4px 8px;
                 margin-bottom: 4px;
             }
