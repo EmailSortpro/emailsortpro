@@ -96,7 +96,7 @@ class PageManager {
         
         // Initialize view mode
         this.currentViewMode = this.currentViewMode || 'grouped-domain';
-        this.currentCategory = this.currentCategory || 'all';
+        this.currentCategory = this.currentCategory || null;
 
         const renderEmailsPage = () => {
             const categoryCounts = this.calculateCategoryCounts(emails);
@@ -273,7 +273,7 @@ class PageManager {
         let filteredEmails = emails;
         
         // Apply filters
-        if (this.currentCategory !== 'all') {
+        if (this.currentCategory && this.currentCategory !== 'all') {
             filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
         }
         
