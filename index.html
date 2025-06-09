@@ -1332,39 +1332,64 @@
             window.forceShowApp();
         };
 
-        // Vérification précoce BRUTALE - FORCE L'AFFICHAGE IMMÉDIAT
+        // Vérification précoce INTELLIGENTE - Vérifier la VRAIE authentification
         const earlyAuthCheck = () => {
-            console.log('[EARLY_AUTH] BRUTAL CHECK - FORCING IMMEDIATE DISPLAY...');
+            console.log('[EARLY_AUTH] Smart check - verifying REAL authentication...');
             
-            // Vérifier s'il y a des données MSAL
+            // Vérifier s'il y a des données MSAL ET un compte valide
             try {
-                const msalData = Object.keys(localStorage).filter(key => key.startsWith('msal.'));
+                const msalAccountKeys = localStorage.getItem('msal.account.keys');
                 
-                if (msalData.length > 0) {
-                    console.log('[EARLY_AUTH] ✅ MSAL data found - FORCING APP DISPLAY NOW!');
+                if (msalAccountKeys) {
+                    const accountKeys = JSON.parse(msalAccountKeys);
+                    let hasValidAccount = false;
                     
-                    // FORCER IMMÉDIATEMENT l'affichage
-                    window.APP_STATE.hasTokens = true;
-                    window.APP_STATE.authenticated = true;
-                    window.APP_STATE.forceMode = true;
+                    // Vérifier qu'il y a un compte VALIDE avec des données complètes
+                    if (accountKeys.length > 0) {
+                        for (const key of accountKeys) {
+                            const accountData = localStorage.getItem(key);
+                            if (accountData) {
+                                try {
+                                    const account = JSON.parse(accountData);
+                                    // Vérifier que le compte a toutes les données nécessaires
+                                    if (account.username && account.name && account.localAccountId && account.homeAccountId) {
+                                        hasValidAccount = true;
+                                        console.log('[EARLY_AUTH] ✅ Valid account found:', account.name);
+                                        break;
+                                    }
+                                } catch (e) {
+                                    console.warn('[EARLY_AUTH] Error parsing account:', e);
+                                }
+                            }
+                        }
+                    }
                     
-                    // Exécuter IMMÉDIATEMENT
-                    setTimeout(() => {
-                        console.log('[EARLY_AUTH] 🚀 EXECUTING BRUTAL FORCE DISPLAY...');
-                        window.brutalForceShowApp();
-                    }, 10);
-                    
-                    return true;
+                    // SEULEMENT si on a un compte VRAIMENT valide
+                    if (hasValidAccount) {
+                        console.log('[EARLY_AUTH] ✅ REAL authentication detected - FORCING APP DISPLAY!');
+                        
+                        window.APP_STATE.hasTokens = true;
+                        window.APP_STATE.authenticated = true;
+                        window.APP_STATE.forceMode = true;
+                        
+                        // Exécuter IMMÉDIATEMENT
+                        setTimeout(() => {
+                            console.log('[EARLY_AUTH] 🚀 EXECUTING BRUTAL FORCE DISPLAY...');
+                            window.brutalForceShowApp();
+                        }, 10);
+                        
+                        return true;
+                    }
                 }
             } catch (error) {
-                console.warn('[EARLY_AUTH] Error checking MSAL data:', error);
+                console.warn('[EARLY_AUTH] Error checking authentication:', error);
             }
             
-            console.log('[EARLY_AUTH] No MSAL data found, showing login');
+            console.log('[EARLY_AUTH] No valid authentication found, showing login page');
             return false;
         };
 
-        // Exécuter la vérification BRUTALE
+        // Exécuter la vérification intelligente
         earlyAuthCheck();
 
         // Gestionnaire principal DOMContentLoaded SIMPLIFIÉ
@@ -1456,20 +1481,97 @@
             }, 1000);
         });
         
-        // FONCTIONS GLOBALES DE COORDINATION BRUTALE
+        // FONCTIONS GLOBALES DE COORDINATION INTELLIGENTE
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful - FORCING BRUTAL DISPLAY');
-            window.APP_STATE.authenticated = true;
-            window.APP_STATE.loginInProgress = false;
+            console.log('[AUTH_SUCCESS] Authentication successful - VERIFYING before brutal force');
             
-            // FORCER BRUTALEMENT l'affichage
-            setTimeout(() => {
-                window.brutalForceShowApp();
-            }, 50);
+            // Vérifier que l'authentification est VRAIE
+            if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                console.log('[AUTH_SUCCESS] Real authentication verified - FORCING BRUTAL DISPLAY');
+                window.APP_STATE.authenticated = true;
+                window.APP_STATE.loginInProgress = false;
+                
+                // FORCER BRUTALEMENT l'affichage
+                setTimeout(() => {
+                    window.brutalForceShowApp();
+                }, 50);
+            } else {
+                console.log('[AUTH_SUCCESS] Authentication not verified, staying on login');
+                window.APP_STATE.authenticated = false;
+                window.APP_STATE.loginInProgress = false;
+            }
         };
         
         // Hook pour intercepter quand app.js affiche l'application
         window.onAppDisplayed = function() {
+            console.log('[APP_DISPLAYED] App.js has displayed - verifying authentication');
+            
+            // Vérifier que l'utilisateur est vraiment authentifié
+            if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                console.log('[APP_DISPLAYED] Real authentication verified - ensuring brutal force');
+                window.APP_STATE.appShown = true;
+                
+                // Assurer avec brutal force
+                if (!window.APP_STATE.forceMode) {
+                    setTimeout(() => {
+                        window.brutalForceShowApp();
+                    }, 50);
+                }
+            } else {
+                console.log('[APP_DISPLAYED] No real authentication, ignoring app display');
+            }
+        };
+        
+        // Fonction de fallback CONDITIONNELLE
+        window.fallbackAppDisplay = function() {
+            console.log('[FALLBACK] Checking if brutal fallback is needed...');
+            
+            // Seulement si vraiment authentifié
+            if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                console.log('[FALLBACK] Using BRUTAL fallback display...');
+                window.brutalForceShowApp();
+            } else {
+                console.log('[FALLBACK] No authentication, showing login page');
+                window.showLoginPage();
+            }
+        };
+        
+        // Fonction pour afficher la page de login
+        window.showLoginPage = function() {
+            console.log('[SHOW_LOGIN] Ensuring login page is visible...');
+            
+            // Réinitialiser l'état
+            window.APP_STATE.authenticated = false;
+            window.APP_STATE.appShown = false;
+            window.APP_STATE.forceMode = false;
+            
+            // Supprimer les CSS de force
+            const brutalCSS = document.getElementById('brutal-force-css');
+            if (brutalCSS) {
+                brutalCSS.remove();
+            }
+            
+            // Afficher la page de login si elle existe
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'flex';
+                loginPage.style.visibility = 'visible';
+                loginPage.style.opacity = '1';
+            }
+            
+            // Masquer l'app
+            document.body.classList.remove('app-active');
+            
+            const appHeader = document.querySelector('.app-header');
+            const appNav = document.querySelector('.app-nav');
+            const pageContent = document.getElementById('pageContent');
+            
+            [appHeader, appNav, pageContent].forEach(element => {
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+        };  window.onAppDisplayed = function() {
             console.log('[APP_DISPLAYED] App.js has displayed - ensuring brutal force');
             window.APP_STATE.appShown = true;
             
