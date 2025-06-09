@@ -2376,7 +2376,7 @@ window.domainOrganizer = new DomainOrganizer();
 console.log('[DomainOrganizer] ✅ Module chargé - Version 5.0 Interface harmonisée');
 
 // ================================================
-// INTÉGRATION AVEC PAGEMANAGER
+// INTÉGRATION AVEC PAGEMANAGER CORRIGÉE
 // ================================================
 
 // Méthode d'affichage intégrée avec PageManager
@@ -2400,6 +2400,9 @@ window.domainOrganizer.showPage = function() {
     
     // Injecter l'interface avec protection anti-écrasement
     this.injectInterface(pageContent);
+    
+    // Mettre à jour la navigation
+    this.updateNavigation();
 };
 
 window.domainOrganizer.injectInterface = function(container) {
@@ -2432,24 +2435,97 @@ window.domainOrganizer.injectInterface = function(container) {
     }, 100);
 };
 
-// Enregistrement avec PageManager si disponible
-if (window.pageManager) {
-    window.pageManager.registerPageHandler('ranger', function() {
-        window.domainOrganizer.showPage();
+window.domainOrganizer.updateNavigation = function() {
+    // Mettre à jour la navigation active
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
     });
-    console.log('[DomainOrganizer] ✅ Enregistré avec PageManager');
-}
+    
+    // Activer le bouton Ranger s'il existe
+    const rangerButton = document.querySelector('[data-page="ranger"]');
+    if (rangerButton) {
+        rangerButton.classList.add('active');
+        rangerButton.parentElement.classList.add('active');
+    }
+    
+    // S'assurer que la navigation est visible
+    const mainNav = document.getElementById('mainNav');
+    if (mainNav) mainNav.style.display = 'flex';
+    
+    console.log('[DomainOrganizer] ✅ Navigation mise à jour');
+};
+
+// Intégration avec PageManager (méthode corrigée)
+window.domainOrganizer.registerWithPageManager = function() {
+    // Vérifier si PageManager existe et a les bonnes méthodes
+    if (window.pageManager) {
+        // Méthode 1: Si registerPageHandler existe
+        if (typeof window.pageManager.registerPageHandler === 'function') {
+            try {
+                window.pageManager.registerPageHandler('ranger', () => {
+                    this.showPage();
+                });
+                console.log('[DomainOrganizer] ✅ Enregistré avec PageManager.registerPageHandler');
+                return true;
+            } catch (error) {
+                console.log('[DomainOrganizer] ⚠️ Erreur registerPageHandler:', error.message);
+            }
+        }
+        
+        // Méthode 2: Ajouter directement à pages si possible
+        if (window.pageManager.pages && typeof window.pageManager.pages === 'object') {
+            try {
+                window.pageManager.pages.ranger = () => {
+                    this.showPage();
+                };
+                console.log('[DomainOrganizer] ✅ Enregistré dans PageManager.pages');
+                return true;
+            } catch (error) {
+                console.log('[DomainOrganizer] ⚠️ Erreur pages:', error.message);
+            }
+        }
+        
+        // Méthode 3: Monkey patch loadPage si nécessaire
+        if (typeof window.pageManager.loadPage === 'function') {
+            const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+            window.pageManager.loadPage = function(pageName) {
+                if (pageName === 'ranger') {
+                    console.log('[DomainOrganizer] Intercepting ranger page load');
+                    window.domainOrganizer.showPage();
+                    return;
+                }
+                return originalLoadPage(pageName);
+            };
+            console.log('[DomainOrganizer] ✅ Monkey patch appliqué à PageManager.loadPage');
+            return true;
+        }
+    }
+    
+    console.log('[DomainOrganizer] ⚠️ PageManager non disponible ou incompatible');
+    return false;
+};
 
 // ================================================
-// GESTION AUTONOME DE SAUVEGARDE
+// GESTION AUTONOME DE SAUVEGARDE RENFORCÉE
 // ================================================
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[DomainOrganizer] Initialisation autonome v5.0...');
     
-    // Écouter les clics sur le bouton Ranger
+    // Tenter l'enregistrement avec PageManager après un délai
+    setTimeout(() => {
+        window.domainOrganizer.registerWithPageManager();
+    }, 1000);
+    
+    // Écouter les clics sur le bouton Ranger (méthode robuste)
     document.addEventListener('click', function(e) {
-        const rangerButton = e.target.closest('[data-page="ranger"]');
+        // Vérifier tous les sélecteurs possibles
+        const rangerButton = e.target.closest('[data-page="ranger"]') || 
+                           e.target.closest('button[onclick*="ranger"]') ||
+                           e.target.closest('a[href*="ranger"]') ||
+                           (e.target.textContent && e.target.textContent.toLowerCase().includes('ranger') && 
+                            (e.target.tagName === 'BUTTON' || e.target.tagName === 'A'));
+        
         if (!rangerButton) return;
         
         e.preventDefault();
@@ -2469,6 +2545,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return false;
     }, true);
     
+    // Intercepter les erreurs de chargement de page
+    window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('Page ranger not found')) {
+            console.log('[DomainOrganizer] Erreur "Page ranger not found" interceptée, chargement manuel...');
+            e.preventDefault();
+            setTimeout(() => {
+                window.domainOrganizer.showPage();
+            }, 100);
+        }
+    }, true);
+    
     // Protection contre l'écrasement de contenu
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
@@ -2476,7 +2563,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const pageContent = document.getElementById('pageContent');
                 if (pageContent && !pageContent.querySelector('.organizer-container')) {
                     console.warn('[DomainOrganizer] Contenu écrasé détecté, restauration...');
-                    window.domainOrganizer.injectInterface(pageContent);
+                    setTimeout(() => {
+                        if (window.domainOrganizerActive) {
+                            window.domainOrganizer.injectInterface(pageContent);
+                        }
+                    }, 100);
                 }
             }
         });
@@ -2492,9 +2583,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Intercepter les erreurs PageManager
+window.addEventListener('unhandledrejection', function(e) {
+    if (e.reason && e.reason.message && e.reason.message.includes('Page ranger not found')) {
+        console.log('[DomainOrganizer] Promise rejection "Page ranger not found" interceptée');
+        e.preventDefault();
+        setTimeout(() => {
+            window.domainOrganizer.showPage();
+        }, 100);
+    }
+});
+
 // Désactiver à la navigation
 window.addEventListener('beforeunload', () => {
     window.domainOrganizerActive = false;
+});
+
+// Hook global pour PageManager
+window.addEventListener('DOMContentLoaded', function() {
+    // Attendre que PageManager soit chargé
+    const checkPageManager = setInterval(() => {
+        if (window.pageManager) {
+            clearInterval(checkPageManager);
+            window.domainOrganizer.registerWithPageManager();
+        }
+    }, 500);
+    
+    // Arrêter la vérification après 10 secondes
+    setTimeout(() => {
+        clearInterval(checkPageManager);
+    }, 10000);
 });
 
 // Fonction globale de compatibilité
