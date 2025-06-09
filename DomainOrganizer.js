@@ -61,7 +61,7 @@ class DomainOrganizer {
                 </div>
 
                 <!-- Étape 1: Configuration -->
-                <div class="step-content" id="configStep">
+                <div class="step-content" id="configStep" style="display: block;">
                     <div class="card">
                         <h2 class="card-title">
                             <i class="fas fa-cog"></i>
