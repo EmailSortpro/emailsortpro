@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.1 - Interface moderne épurée avec boutons catégories multi-lignes
+// PageManager.js - Version 11.2 - Catégories multi-lignes optimisées + bouton sélection
 
 class PageManager {
     constructor() {
@@ -26,7 +26,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v11.1 - Interface moderne avec boutons catégories multi-lignes');
+        console.log('[PageManager] Initialized v11.2 - Catégories multi-lignes optimisées + bouton sélection');
     }
 
     // =====================================
@@ -145,7 +145,7 @@ class PageManager {
                             </button>
                         </div>
                         
-                        <!-- Actions principales harmonisées -->
+                        <!-- Actions principales harmonisées avec bouton sélection -->
                         <div class="action-buttons-harmonized">
                             ${selectedCount > 0 ? `
                                 <div class="selection-info-harmonized">
@@ -160,6 +160,12 @@ class PageManager {
                                     <span class="count-badge-harmonized">${selectedCount}</span>
                                 </button>
                             ` : ''}
+                            
+                            <!-- NOUVEAU : Bouton sélectionner/désélectionner -->
+                            <button class="btn-harmonized btn-selection-toggle" onclick="window.pageManager.toggleAllSelection()">
+                                <i class="fas ${selectedCount > 0 ? 'fa-square' : 'fa-check-square'}"></i>
+                                <span>${selectedCount > 0 ? 'Désélectionner' : 'Sélectionner'}</span>
+                            </button>
                             
                             <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
                                 <i class="fas fa-sync-alt"></i>
@@ -179,9 +185,9 @@ class PageManager {
                         <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
                     </div>
 
-                    <!-- Filtres de catégories harmonisés et multi-lignes -->
+                    <!-- Filtres de catégories harmonisés et multi-lignes optimisés -->
                     <div class="status-filters-harmonized-multiline">
-                        ${this.buildHarmonizedCategoryTabs(categoryCounts, totalEmails, categories)}
+                        ${this.buildOptimizedCategoryTabs(categoryCounts, totalEmails, categories)}
                     </div>
 
                     <!-- CONTENU DES EMAILS harmonisé -->
@@ -206,9 +212,9 @@ class PageManager {
     }
 
     // =====================================
-    // FILTRES DE CATÉGORIES HARMONISÉS
+    // FILTRES DE CATÉGORIES OPTIMISÉS POUR TEXTE LONG
     // =====================================
-    buildHarmonizedCategoryTabs(categoryCounts, totalEmails, categories) {
+    buildOptimizedCategoryTabs(categoryCounts, totalEmails, categories) {
         const tabs = [
             { id: 'all', name: 'Tous', icon: '📧', count: totalEmails }
         ];
@@ -235,16 +241,23 @@ class PageManager {
             });
         }
         
-        return tabs.map(tab => `
-            <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''}" 
-                    onclick="window.pageManager.filterByCategory('${tab.id}')">
-                <div class="pill-content-row">
-                    <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                    <span class="pill-text-harmonized-multiline">${tab.name}</span>
-                    <span class="pill-count-harmonized-multiline">${tab.count}</span>
-                </div>
-            </button>
-        `).join('');
+        return tabs.map(tab => {
+            const isLongText = tab.name.length > 14;
+            return `
+                <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''} ${isLongText ? 'long-text' : ''}" 
+                        onclick="window.pageManager.filterByCategory('${tab.id}')">
+                    <div class="pill-content-optimized">
+                        <div class="pill-icon-row">
+                            <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
+                            <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                        </div>
+                        <div class="pill-text-row">
+                            <span class="pill-text-harmonized-multiline ${isLongText ? 'multiline' : ''}">${tab.name}</span>
+                        </div>
+                    </div>
+                </button>
+            `;
+        }).join('');
     }
 
     // =====================================
@@ -484,6 +497,26 @@ class PageManager {
         this.renderEmails(document.getElementById('pageContent'));
     }
 
+    // NOUVEAU : Fonction pour sélectionner/désélectionner tous les emails visibles
+    toggleAllSelection() {
+        const visibleEmails = this.getVisibleEmails();
+        const selectedCount = this.selectedEmails.size;
+        
+        if (selectedCount > 0) {
+            // Désélectionner tous
+            this.selectedEmails.clear();
+            window.uiManager.showToast('Tous les emails désélectionnés', 'info');
+        } else {
+            // Sélectionner tous les visibles
+            visibleEmails.forEach(email => {
+                this.selectedEmails.add(email.id);
+            });
+            window.uiManager.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
+        }
+        
+        this.renderEmails(document.getElementById('pageContent'));
+    }
+
     selectAllVisible() {
         const emails = this.getVisibleEmails();
         emails.forEach(email => {
@@ -551,7 +584,7 @@ class PageManager {
     }
 
     // =====================================
-    // STYLES HARMONISÉS AVEC TASKSVIEW
+    // STYLES HARMONISÉS AVEC TASKSVIEW OPTIMISÉS
     // =====================================
     addHarmonizedEmailStyles() {
         if (document.getElementById('harmonizedEmailStyles')) return;
@@ -559,7 +592,7 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'harmonizedEmailStyles';
         styles.textContent = `
-            /* ===== REPRENDRE LES STYLES DE TASKSVIEW ===== */
+            /* ===== REPRENDRE LES STYLES DE TASKSVIEW AVEC OPTIMISATIONS ===== */
             
             /* Variables CSS identiques à TasksView */
             :root {
@@ -831,6 +864,20 @@ class PageManager {
                 transform: translateY(-1px);
             }
             
+            /* NOUVEAU : Style pour le bouton sélection/désélection */
+            .btn-harmonized.btn-selection-toggle {
+                background: #f0f9ff;
+                color: #0369a1;
+                border-color: #0ea5e9;
+            }
+            
+            .btn-harmonized.btn-selection-toggle:hover {
+                background: #e0f2fe;
+                color: #0c4a6e;
+                border-color: #0284c7;
+                transform: translateY(-1px);
+            }
+            
             .btn-harmonized.btn-clear-selection {
                 background: #f3f4f6;
                 color: #6b7280;
@@ -913,7 +960,7 @@ class PageManager {
                 flex-shrink: 0;
             }
             
-            /* NOUVEAU : Filtres de statut multi-lignes et ajustés */
+            /* NOUVEAU : Filtres de statut optimisés pour texte long */
             .status-filters-harmonized-multiline {
                 display: flex;
                 gap: var(--gap-small);
@@ -928,7 +975,7 @@ class PageManager {
             .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
                 height: auto;
                 min-height: 48px;
-                padding: var(--gap-small) var(--gap-medium);
+                padding: var(--gap-small);
                 font-size: 12px;
                 font-weight: 700;
                 flex: 0 1 calc(16.666% - var(--gap-small));
@@ -950,12 +997,36 @@ class PageManager {
                 overflow: hidden;
             }
             
-            .pill-content-row {
+            /* Optimisation pour texte long */
+            .status-pill-harmonized-multiline.long-text {
+                min-height: 64px; /* Plus haut pour accueillir 2 lignes */
+                padding: var(--gap-tiny) var(--gap-small);
+            }
+            
+            .pill-content-optimized {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: var(--gap-tiny);
+                width: 100%;
+                height: 100%;
+            }
+            
+            .pill-icon-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                gap: var(--gap-small);
+            }
+            
+            .pill-text-row {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: var(--gap-small);
                 width: 100%;
+                text-align: center;
             }
             
             .status-pill-harmonized-multiline:hover {
@@ -986,14 +1057,27 @@ class PageManager {
                 font-weight: 700;
                 font-size: 13px;
                 line-height: 1.2;
-                flex: 1;
                 text-align: center;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                white-space: nowrap;
+                word-break: break-word;
+                hyphens: auto;
+                max-width: 100%;
+            }
+            
+            /* Texte sur plusieurs lignes pour les longs textes */
+            .pill-text-harmonized-multiline.multiline {
+                white-space: normal;
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                max-height: 2.4em; /* 2 lignes max */
+                line-height: 1.2;
             }
             
             .pill-count-harmonized-multiline {
@@ -1651,6 +1735,10 @@ class PageManager {
                     min-height: 44px;
                 }
                 
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
+                    min-height: 60px;
+                }
+                
                 .pill-text-harmonized-multiline {
                     font-size: 12px;
                 }
@@ -1710,6 +1798,10 @@ class PageManager {
                     min-height: 42px;
                 }
                 
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
+                    min-height: 58px;
+                }
+                
                 .pill-text-harmonized-multiline {
                     font-size: 11px;
                 }
@@ -1734,6 +1826,10 @@ class PageManager {
                     min-width: 70px;
                     max-width: 120px;
                     min-height: 40px;
+                }
+                
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
+                    min-height: 56px;
                 }
                 
                 .view-mode-harmonized span,
@@ -1761,6 +1857,10 @@ class PageManager {
                     min-width: 60px;
                     max-width: 110px;
                     min-height: 38px;
+                }
+                
+                .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
+                    min-height: 54px;
                 }
                 
                 .pill-text-harmonized-multiline {
@@ -2037,27 +2137,6 @@ class PageManager {
         } catch (error) {
             window.uiManager.hideLoading();
             window.uiManager.showToast('Erreur d\'actualisation', 'error');
-        }
-    }
-
-    async analyzeFirstEmails(emails) {
-        for (const email of emails) {
-            if (!this.aiAnalysisResults.has(email.id)) {
-                try {
-                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email, {
-                        useApi: false,
-                        quickMode: true
-                    });
-                    this.aiAnalysisResults.set(email.id, analysis);
-                } catch (error) {
-                    console.error('Auto-analysis error:', error);
-                }
-            }
-        }
-        
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
         }
     }
 
@@ -2802,4 +2881,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.1 loaded - Interface harmonisée avec boutons catégories multi-lignes');
+console.log('✅ PageManager v11.2 loaded - Catégories multi-lignes optimisées + bouton sélection');
