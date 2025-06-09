@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.2 - Texte explicatif en haut et catégories deux lignes optimisées
+// PageManager.js - Version 11.1 - Interface moderne épurée avec boutons catégories multi-lignes
 
 class PageManager {
     constructor() {
@@ -26,7 +26,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v11.2 - Texte explicatif en haut et catégories deux lignes optimisées');
+        console.log('[PageManager] Initialized v11.1 - Interface moderne avec boutons catégories multi-lignes');
     }
 
     // =====================================
@@ -104,12 +104,6 @@ class PageManager {
             
             container.innerHTML = `
                 <div class="tasks-page-modern">
-                    <!-- Texte explicatif en premier -->
-                    <div class="explanation-text-harmonized-top">
-                        <i class="fas fa-info-circle"></i>
-                        <span><strong>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</strong></span>
-                    </div>
-
                     <!-- Barre de contrôles harmonisée avec TasksView -->
                     <div class="controls-bar-harmonized">
                         <!-- Section recherche -->
@@ -179,7 +173,13 @@ class PageManager {
                         </div>
                     </div>
 
-                    <!-- Filtres de catégories harmonisés et optimisés deux lignes -->
+                    <!-- Texte explicatif -->
+                    <div class="explanation-text-harmonized">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                    </div>
+
+                    <!-- Filtres de catégories harmonisés et multi-lignes -->
                     <div class="status-filters-harmonized-multiline">
                         ${this.buildHarmonizedCategoryTabs(categoryCounts, totalEmails, categories)}
                     </div>
@@ -235,26 +235,16 @@ class PageManager {
             });
         }
         
-                    return tabs.map(tab => {
-            // Optimisation pour les noms à deux mots - MISE EN LIGNE HORIZONTALE
-            const nameWords = tab.name.split(' ');
-            const displayName = nameWords.length > 1 ? 
-                `<span class="pill-text-line1">${nameWords[0]}</span><span class="pill-text-line2">${nameWords.slice(1).join(' ')}</span>` :
-                `<span class="pill-text-single">${tab.name}</span>`;
-
-            return `
-                <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''}" 
-                        onclick="window.pageManager.filterByCategory('${tab.id}')">
-                    <div class="pill-content-row-optimized">
-                        <div class="pill-icon-count-row">
-                            <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                            <span class="pill-count-harmonized-multiline">${tab.count}</span>
-                        </div>
-                        <div class="pill-text-harmonized-multiline-optimized">${displayName}</div>
-                    </div>
-                </button>
-            `;
-        }).join('');
+        return tabs.map(tab => `
+            <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''}" 
+                    onclick="window.pageManager.filterByCategory('${tab.id}')">
+                <div class="pill-content-row">
+                    <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
+                    <span class="pill-text-harmonized-multiline">${tab.name}</span>
+                    <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                </div>
+            </button>
+        `).join('');
     }
 
     // =====================================
@@ -622,49 +612,6 @@ class PageManager {
                 padding: var(--gap-large);
                 font-size: var(--btn-font-size);
             }
-
-            /* NOUVEAU : Texte explicatif en haut et mis en avant */
-            .explanation-text-harmonized-top {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                border: none;
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-large);
-                margin-bottom: var(--gap-medium);
-                display: flex;
-                align-items: center;
-                gap: var(--gap-medium);
-                color: white;
-                font-size: 15px;
-                font-weight: 600;
-                line-height: 1.5;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
-                position: relative;
-                overflow: hidden;
-            }
-
-            .explanation-text-harmonized-top::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%);
-                pointer-events: none;
-            }
-
-            .explanation-text-harmonized-top i {
-                font-size: 20px;
-                color: rgba(255, 255, 255, 0.9);
-                flex-shrink: 0;
-                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
-            }
-
-            .explanation-text-harmonized-top span {
-                flex: 1;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            }
             
             /* Barre de contrôles identique */
             .controls-bar-harmonized {
@@ -942,8 +889,31 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
             }
+
+            /* NOUVEAU : Texte explicatif */
+            .explanation-text-harmonized {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                border-radius: var(--card-border-radius);
+                padding: var(--gap-medium);
+                margin-bottom: var(--gap-medium);
+                display: flex;
+                align-items: center;
+                gap: var(--gap-medium);
+                color: #1e40af;
+                font-size: 14px;
+                font-weight: 500;
+                line-height: 1.5;
+                backdrop-filter: blur(10px);
+            }
+
+            .explanation-text-harmonized i {
+                font-size: 16px;
+                color: #3b82f6;
+                flex-shrink: 0;
+            }
             
-            /* NOUVEAU : Filtres de statut multi-lignes optimisés */
+            /* NOUVEAU : Filtres de statut multi-lignes et ajustés */
             .status-filters-harmonized-multiline {
                 display: flex;
                 gap: var(--gap-small);
@@ -957,16 +927,15 @@ class PageManager {
             
             .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
                 height: auto;
-                min-height: 44px;
-                padding: var(--gap-small);
+                min-height: 48px;
+                padding: var(--gap-small) var(--gap-medium);
                 font-size: 12px;
                 font-weight: 700;
-                flex: 0 0 calc(16.666% - var(--gap-small));
-                width: calc(16.666% - var(--gap-small));
+                flex: 0 1 calc(16.666% - var(--gap-small));
                 min-width: 120px;
-                max-width: 160px;
+                max-width: 180px;
                 box-sizing: border-box;
-                border-radius: 10px;
+                border-radius: var(--pill-border-radius);
                 box-shadow: var(--shadow-base);
                 transition: all var(--transition-speed) ease;
                 display: flex;
@@ -981,23 +950,11 @@ class PageManager {
                 overflow: hidden;
             }
             
-            .pill-content-row-optimized {
+            .pill-content-row {
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: var(--gap-small);
-                width: 100%;
-                flex-direction: column;
-                min-height: 100%;
-            }
-            
-            /* NOUVEAU : Icône et count sur la même ligne */
-            .pill-icon-count-row {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 6px;
-                margin-bottom: 4px;
                 width: 100%;
             }
             
@@ -1025,58 +982,25 @@ class PageManager {
                 justify-content: center;
             }
             
-            /* NOUVEAU : Optimisation texte deux lignes */
-            .pill-text-harmonized-multiline-optimized {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
+            .pill-text-harmonized-multiline {
+                font-weight: 700;
+                font-size: 13px;
                 line-height: 1.2;
                 flex: 1;
                 text-align: center;
-                gap: 1px;
-                width: 100%;
-            }
-            
-            .pill-text-line1 {
-                font-weight: 700;
-                font-size: 11px;
-                display: block;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-width: 100%;
-                line-height: 1.2;
-            }
-            
-            .pill-text-line2 {
-                font-weight: 600;
-                font-size: 10px;
-                display: block;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 100%;
-                opacity: 0.8;
-                line-height: 1.2;
-            }
-            
-            .pill-text-single {
-                font-weight: 700;
-                font-size: 11px;
-                display: block;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 100%;
-                line-height: 1.2;
             }
             
             .pill-count-harmonized-multiline {
-                background: rgba(0, 0, 0, 0.15);
-                padding: 3px 6px;
-                border-radius: 6px;
-                font-size: 10px;
+                background: rgba(0, 0, 0, 0.1);
+                padding: 3px 7px;
+                border-radius: 8px;
+                font-size: 11px;
                 font-weight: 800;
                 min-width: 18px;
                 text-align: center;
@@ -1088,7 +1012,7 @@ class PageManager {
             }
             
             .status-pill-harmonized-multiline.active .pill-count-harmonized-multiline {
-                background: rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.25);
             }
             
             /* Container des emails identique */
@@ -1721,27 +1645,23 @@ class PageManager {
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    height: 30px;
-                    min-height: 30px;
-                    max-height: 30px;
-                    padding: 3px 7px;
+                    flex: 0 1 calc(20% - var(--gap-small));
+                    min-width: 100px;
+                    max-width: 160px;
+                    min-height: 44px;
                 }
                 
-                .pill-text-line1, .pill-text-single {
-                    font-size: 10px;
-                }
-                
-                .pill-text-line2 {
-                    font-size: 9px;
+                .pill-text-harmonized-multiline {
+                    font-size: 12px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 10px;
+                    font-size: 15px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 7px;
-                    padding: 1px 2px;
+                    font-size: 10px;
+                    padding: 2px 6px;
                 }
             }
             
@@ -1784,41 +1704,36 @@ class PageManager {
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    height: 28px;
-                    min-height: 28px;
-                    max-height: 28px;
-                    padding: 3px 6px;
+                    flex: 0 1 calc(25% - var(--gap-small));
+                    min-width: 80px;
+                    max-width: 140px;
+                    min-height: 42px;
                 }
                 
-                .pill-text-line1, .pill-text-single {
-                    font-size: 9px;
-                }
-                
-                .pill-text-line2 {
-                    font-size: 8px;
+                .pill-text-harmonized-multiline {
+                    font-size: 11px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 9px;
+                    font-size: 14px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 7px;
-                    padding: 1px 2px;
+                    font-size: 9px;
+                    padding: 2px 5px;
                 }
             }
             
             @media (max-width: 768px) {
                 .status-filters-harmonized-multiline {
-                    justify-content: flex-start;
-                    gap: 3px;
+                    justify-content: center;
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    height: 26px;
-                    min-height: 26px;
-                    max-height: 26px;
-                    padding: 2px 5px;
+                    flex: 0 1 calc(33.333% - var(--gap-small));
+                    min-width: 70px;
+                    max-width: 120px;
+                    min-height: 40px;
                 }
                 
                 .view-mode-harmonized span,
@@ -1826,54 +1741,42 @@ class PageManager {
                     display: none;
                 }
                 
-                .pill-text-line1, .pill-text-single {
-                    font-size: 8px;
-                }
-                
-                .pill-text-line2 {
-                    font-size: 7px;
+                .pill-text-harmonized-multiline {
+                    font-size: 10px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 8px;
+                    font-size: 13px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 6px;
-                    padding: 1px 2px;
+                    font-size: 8px;
+                    padding: 2px 4px;
                 }
             }
             
             @media (max-width: 480px) {
-                .status-filters-harmonized-multiline {
-                    gap: 2px;
-                }
-                
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    height: 24px;
-                    min-height: 24px;
-                    max-height: 24px;
-                    padding: 2px 4px;
+                    flex: 0 1 calc(50% - var(--gap-tiny));
+                    min-width: 60px;
+                    max-width: 110px;
+                    min-height: 38px;
                 }
                 
-                .pill-text-line1, .pill-text-single {
-                    font-size: 7px;
-                }
-                
-                .pill-text-line2 {
-                    font-size: 6px;
+                .pill-text-harmonized-multiline {
+                    font-size: 9px;
                 }
                 
                 .pill-icon-harmonized-multiline {
-                    font-size: 7px;
+                    font-size: 12px;
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 5px;
-                    padding: 1px 2px;
+                    font-size: 8px;
+                    padding: 1px 4px;
                 }
                 
-                .explanation-text-harmonized-top {
+                .explanation-text-harmonized {
                     font-size: 12px;
                     padding: var(--gap-small);
                 }
@@ -2899,4 +2802,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.2 loaded - Texte explicatif en haut et catégories deux lignes optimisées');
+console.log('✅ PageManager v11.1 loaded - Interface harmonisée avec boutons catégories multi-lignes');
