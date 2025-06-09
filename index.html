@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
+    <title>EmailSortProAI - Scanner d'Emails Intelligent avec IA</title>
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
     <meta name="keywords" content="email, outlook, microsoft, gestion, ia, productivité, organisation">
-    <meta name="author" content="EmailSortPro">
+    <meta name="author" content="VH - Vianney Hastings">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://emailsortpro.netlify.app/">
-    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="og:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
-    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="twitter:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
     <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Favicon -->
@@ -30,6 +30,9 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Styles principaux -->
+    <link rel="stylesheet" href="styles.css">
     
     <!-- CONFIGURATION NETLIFY CORRIGÉE -->
     <script>
@@ -42,13 +45,6 @@
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
         console.log('[INDEX] ✅ Netlify Client ID configured for new domain');
-        
-        // Variable globale pour éviter les rechargements multiples
-        window.APP_STATE = {
-            initialized: false,
-            authenticated: false,
-            appShown: false
-        };
         
         // =====================================================
         // DÉTECTION DE L'ENVIRONNEMENT CORRIGÉE
@@ -154,7 +150,7 @@
                         ]
                     },
                     app: {
-                        name: 'EmailSortPro',
+                        name: 'EmailSortProAI',
                         version: '3.0.1',
                         debug: isLocalhost,
                         environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
@@ -261,7 +257,7 @@
     <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
     <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
 
-    <!-- Styles CORRIGÉS pour l'application -->
+    <!-- Styles CORRIGÉS pour l'application (identiques au fichier original) -->
     <style>
         /* Reset et styles de base */
         * {
@@ -571,37 +567,30 @@
             padding: 20px;
         }
 
-        /* Classes pour l'état actif de l'app - RENFORCÉES */
+        /* Classes pour l'état actif de l'app */
         body.app-active {
-            background: #f8fafc !important;
+            background: #f8fafc;
         }
 
         body.app-active #loginPage {
             display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
         }
 
         body.app-active .app-header {
             display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
         }
 
         body.app-active .app-nav {
             display: block !important;
-            visibility: visible !important;
-            opacity: 1 !important;
         }
 
         body.app-active .app-main {
-            margin-top: 120px !important; /* Header + Nav */
+            margin-top: 120px; /* Header + Nav */
         }
 
         body.app-active #pageContent {
             display: block !important;
             opacity: 1 !important;
-            visibility: visible !important;
         }
 
         /* Dashboard par défaut */
@@ -865,7 +854,7 @@
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
-                    <span>EmailSortPro</span>
+                    <span>EmailSortProAI</span>
                     <span class="ai-badge">AI</span>
                 </div>
                 <div id="authStatus" class="auth-status">
@@ -987,7 +976,7 @@
                 <!-- Dashboard par défaut -->
                 <div class="dashboard-container">
                     <div class="dashboard-header">
-                        <h1 class="dashboard-title">Bienvenue dans EmailSortPro</h1>
+                        <h1 class="dashboard-title">Bienvenue dans EmailSortProAI</h1>
                         <p class="dashboard-subtitle">Organisez vos emails intelligemment avec l'IA</p>
                     </div>
                     
@@ -1083,34 +1072,39 @@
     <!-- 8. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
-    <!-- Scripts de gestion des événements CORRIGÉS -->
+    <!-- Scripts de gestion des événements -->
     <script>
-        // ========================================
-        // FONCTION DE CONTRÔLE D'ÉTAT RENFORCÉES
-        // ========================================
-        
-        // Fonction pour forcer l'affichage de l'app de manière définitive
+        // Fonction pour forcer l'affichage de l'app
         window.forceShowApp = function() {
-            console.log('[FORCE] Forcing app display - PERMANENT...');
+            console.log('[FORCE] Forcing app display...');
             
-            if (window.APP_STATE.appShown) {
-                console.log('[FORCE] App already shown, skipping');
+            // Ne pas forcer si déjà affiché
+            if (appAlreadyShown || document.body.classList.contains('app-active')) {
+                console.log('[FORCE] App already displayed, skipping force display');
                 return;
             }
-            
-            // Marquer l'état
-            window.APP_STATE.appShown = true;
-            window.APP_STATE.authenticated = true;
             
             // Ajouter la classe pour activer l'app
             document.body.classList.add('app-active');
             
-            // Masquer définitivement la page de login
+            // Masquer explicitement la page de login
             const loginPage = document.getElementById('loginPage');
             if (loginPage) {
                 loginPage.style.display = 'none';
-                loginPage.style.visibility = 'hidden';
-                loginPage.style.opacity = '0';
+            }
+            
+            appAlreadyShown = true;
+            console.log('[FORCE] App display activated');
+        };
+
+        // Fonction pour masquer le loading et afficher l'app
+        window.showApp = function() {
+            console.log('[SHOW_APP] Switching to app interface...');
+            
+            // Si l'app est déjà affichée, ne rien faire
+            if (appAlreadyShown) {
+                console.log('[SHOW_APP] App already shown, skipping...');
+                return;
             }
             
             // Masquer le loading
@@ -1119,27 +1113,25 @@
                 loadingOverlay.classList.remove('active');
             }
             
-            console.log('[FORCE] App display activated PERMANENTLY');
-        };
-
-        // Fonction pour masquer le loading et afficher l'app
-        window.showApp = function() {
-            console.log('[SHOW_APP] Switching to app interface...');
+            // Activer l'interface app
+            document.body.classList.add('app-active');
             
-            // Si l'app est déjà affichée, ne rien faire
-            if (window.APP_STATE.appShown) {
-                console.log('[SHOW_APP] App already shown, skipping...');
-                return;
+            // Masquer explicitement la page de login
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) {
+                loginPage.style.display = 'none';
             }
             
-            // Appeler la fonction forcée pour éviter tout conflit
-            window.forceShowApp();
+            appAlreadyShown = true;
+            console.log('[SHOW_APP] App interface activated');
         };
 
-        // Vérification précoce IMMÉDIATE de l'authentification RENFORCÉE
+        // Variable pour éviter les vérifications multiples
+        let authCheckInProgress = false;
+        let appAlreadyShown = false;
+
+        // Vérification précoce IMMÉDIATE de l'authentification
         const earlyAuthCheck = () => {
-            console.log('[EARLY_AUTH] Starting early auth check...');
-            
             // Vérifier le localStorage pour des tokens existants
             try {
                 const msalAccount = localStorage.getItem('msal.account.keys');
@@ -1148,13 +1140,17 @@
                 if (msalAccount && msalToken) {
                     console.log('[EARLY_AUTH] Tokens detected in localStorage, user likely authenticated');
                     
-                    // Marquer immédiatement l'état
-                    window.APP_STATE.authenticated = true;
+                    // Cacher immédiatement la page de login
+                    const loginPage = document.getElementById('loginPage');
+                    if (loginPage) {
+                        loginPage.style.display = 'none';
+                        console.log('[EARLY_AUTH] Login page immediately hidden');
+                    }
                     
                     // Activer l'app immédiatement
-                    setTimeout(() => {
-                        window.forceShowApp();
-                    }, 100);
+                    document.body.classList.add('app-active');
+                    appAlreadyShown = true;
+                    console.log('[EARLY_AUTH] App mode activated immediately');
                     
                     return true;
                 }
@@ -1162,32 +1158,79 @@
                 console.warn('[EARLY_AUTH] Error checking localStorage:', error);
             }
             
-            console.log('[EARLY_AUTH] No tokens found, showing login');
             return false;
         };
 
         // Exécuter la vérification précoce TOUT DE SUITE
         earlyAuthCheck();
 
-        // Gestionnaire principal DOMContentLoaded CORRIGÉ
+        // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
             
-            // Si l'app est déjà affichée, ne pas réinitialiser
-            if (window.APP_STATE.appShown) {
-                console.log('[INDEX] App already shown via early auth, skipping additional setup');
+            // Si l'app est déjà affichée depuis la vérification précoce, ne rien faire
+            if (appAlreadyShown) {
+                console.log('[INDEX] App already shown via early auth, skipping additional checks');
                 return;
             }
             
-            // Configuration du bouton de login SANS CONFLIT
+            // Fonction de vérification d'authentification sécurisée
+            const safeAuthCheck = () => {
+                // Vérifications multiples pour éviter les conflits
+                if (authCheckInProgress || appAlreadyShown) {
+                    console.log('[INDEX] Auth check already in progress or app shown, skipping...');
+                    return false;
+                }
+                
+                // Vérifier si l'app est déjà active (affichée par app.js)
+                if (document.body.classList.contains('app-active')) {
+                    console.log('[INDEX] App already active via app.js, skipping...');
+                    appAlreadyShown = true;
+                    return true;
+                }
+                
+                try {
+                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
+                        if (window.authService.isAuthenticated()) {
+                            console.log('[INDEX] User already authenticated, showing app...');
+                            window.showApp();
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('[INDEX] Auth check error:', error);
+                }
+                return false;
+            };
+            
+            // Vérification avec délai seulement si pas déjà fait
+            setTimeout(() => {
+                // Vérifier d'abord si app.js a déjà affiché l'app
+                if (document.body.classList.contains('app-active')) {
+                    console.log('[INDEX] App already displayed by app.js, no need for additional check');
+                    appAlreadyShown = true;
+                    return;
+                }
+                
+                if (!safeAuthCheck()) {
+                    // Une seule retry après 800ms
+                    setTimeout(() => {
+                        if (!document.body.classList.contains('app-active')) {
+                            safeAuthCheck();
+                        }
+                    }, 800);
+                }
+            }, 200);
+            
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
-                // Remplacer l'événement existant pour éviter les conflits
-                const newLoginBtn = loginBtn.cloneNode(true);
-                loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
-                
-                newLoginBtn.addEventListener('click', function() {
-                    console.log('[LOGIN] Login button clicked');
+                loginBtn.addEventListener('click', function() {
+                    if (authCheckInProgress) {
+                        console.log('[INDEX] Auth process already in progress...');
+                        return;
+                    }
+                    
+                    authCheckInProgress = true;
                     
                     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
                     this.disabled = true;
@@ -1197,13 +1240,14 @@
                         loadingOverlay.classList.add('active');
                     }
                     
-                    // Appeler directement la fonction de login de l'app
                     if (window.app && window.app.login) {
                         window.app.login().then(() => {
-                            console.log('[LOGIN] Login successful, forcing app display...');
-                            window.forceShowApp();
+                            console.log('[LOGIN] Login successful, showing app...');
+                            window.showApp();
+                            authCheckInProgress = false;
                         }).catch((error) => {
                             console.error('[LOGIN] Login failed:', error);
+                            authCheckInProgress = false;
                             // Réinitialiser le bouton en cas d'erreur
                             this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                             this.disabled = false;
@@ -1212,7 +1256,7 @@
                             }
                         });
                     } else {
-                        console.warn('[LOGIN] App or login method not available');
+                        authCheckInProgress = false;
                         this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                         this.disabled = false;
                         if (loadingOverlay) {
@@ -1222,14 +1266,17 @@
                 });
             }
             
-            // Vérification de configuration
+            // Vérifier la configuration après le chargement du DOM
             setTimeout(function() {
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
-                    console.log('[INDEX] Configuration validation:', validation);
+                    console.log('[INDEX] Configuration validation for new domain:', validation);
+                    
+                    const debugInfo = window.AppConfig.getDebugInfo();
+                    console.log('[INDEX] Debug info for emailsortpro.netlify.app:', debugInfo);
                     
                     if (!validation.valid) {
-                        console.log('[INDEX] Configuration invalid:', validation.issues);
+                        console.log('[INDEX] Configuration invalid for new domain:', validation.issues);
                         
                         const errorBanner = document.createElement('div');
                         errorBanner.className = 'config-error-banner';
@@ -1256,22 +1303,27 @@
             }, 1000);
         });
         
-        // FONCTION GLOBALE POUR CALLBACK D'AUTHENTIFICATION RÉUSSIE
+        // Fonction globale pour basculer vers l'app après connexion
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful, forcing app display...');
-            window.forceShowApp();
+            console.log('[AUTH_SUCCESS] Authentication successful, switching to app...');
+            // Ne pas appeler showApp() si l'app est déjà affichée par app.js
+            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                window.showApp();
+            } else {
+                console.log('[AUTH_SUCCESS] App already active, skipping duplicate display');
+            }
         };
 
         // Fonction de diagnostic accessible globalement
         window.checkServices = function() {
             console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
-            console.log('APP_STATE:', window.APP_STATE);
             console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
             if (window.AppConfig) {
                 console.log('Environment:', window.AppConfig.app.environment);
                 console.log('Domain:', window.AppConfig.app.domain);
                 console.log('Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
                 console.log('Redirect URI:', window.AppConfig.msal.redirectUri);
+                console.log('Debug info:', window.AppConfig.getDebugInfo());
             }
             console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
             console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
@@ -1282,6 +1334,11 @@
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
             console.log('Current hostname:', window.location.hostname);
             console.log('Expected hostname: emailsortpro.netlify.app');
+            console.log('=== Ordre de chargement ===');
+            console.log('1. TaskManager chargé AVANT PageManager');
+            console.log('2. TasksView créé dans TaskManager');
+            console.log('3. PageManager délègue les tâches à TasksView');
+            console.log('4. Interface unifiée entre emails et tâches');
         };
 
         // Fonction pour créer CategoryManagerUI si manquant
@@ -1308,7 +1365,6 @@
         console.log('[INDEX] 1. TaskManager.js AVANT PageManager.js');
         console.log('[INDEX] 2. Interface unifiée pour emails et tâches');
         console.log('[INDEX] 3. PageManager délègue les tâches à TasksView');
-        console.log('[INDEX] 4. État d\'app géré par APP_STATE global');
     </script>
 </body>
 </html>
