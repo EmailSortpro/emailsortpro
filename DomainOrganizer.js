@@ -145,40 +145,6 @@ class DomainOrganizer {
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="expected-results">
-                                <h4><i class="fas fa-eye"></i> À quoi vous attendre</h4>
-                                <div class="expectation-grid">
-                                    <div class="expectation-item">
-                                        <i class="fas fa-search"></i>
-                                        <div>
-                                            <strong>Analyse rapide</strong><br>
-                                            Quelques secondes pour scanner vos emails
-                                        </div>
-                                    </div>
-                                    <div class="expectation-item">
-                                        <i class="fas fa-list"></i>
-                                        <div>
-                                            <strong>Liste détaillée</strong><br>
-                                            Chaque domaine avec nombre d'emails
-                                        </div>
-                                    </div>
-                                    <div class="expectation-item">
-                                        <i class="fas fa-folder-plus"></i>
-                                        <div>
-                                            <strong>Nouveaux dossiers</strong><br>
-                                            Création automatique si nécessaire
-                                        </div>
-                                    </div>
-                                    <div class="expectation-item">
-                                        <i class="fas fa-arrows-alt"></i>
-                                        <div>
-                                            <strong>Déplacement organisé</strong><br>
-                                            Emails triés par domaine expéditeur
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             
                             <button type="submit" class="btn btn-primary btn-large" id="analyzeBtn">
                                 <i class="fas fa-search"></i>
