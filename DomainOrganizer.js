@@ -39,7 +39,7 @@ class DomainOrganizer {
                     <div class="steps-indicator">
                         <div class="step active" data-step="configure">
                             <div class="step-number">1</div>
-                            <div class="step-label">Configuration</div>
+                            <div class="step-label">Config</div>
                         </div>
                         <div class="step" data-step="analyze">
                             <div class="step-number">2</div>
@@ -51,11 +51,11 @@ class DomainOrganizer {
                         </div>
                         <div class="step" data-step="confirm">
                             <div class="step-number">4</div>
-                            <div class="step-label">Confirmation</div>
+                            <div class="step-label">Confirm</div>
                         </div>
                         <div class="step" data-step="execute">
                             <div class="step-number">5</div>
-                            <div class="step-label">Exécution</div>
+                            <div class="step-label">Action</div>
                         </div>
                     </div>
                 </div>
@@ -72,8 +72,7 @@ class DomainOrganizer {
                             <i class="fas fa-info-circle"></i>
                             <div>
                                 <strong>Comment ça marche ?</strong><br>
-                                Nous allons analyser vos emails et les regrouper automatiquement par domaine expéditeur 
-                                (ex: tous les emails de @amazon.com dans un dossier "amazon.com").
+                                Regroupement automatique des emails par domaine expéditeur (ex: @amazon.com → dossier "amazon.com").
                             </div>
                         </div>
                         
@@ -85,7 +84,6 @@ class DomainOrganizer {
                                         Date de début
                                     </label>
                                     <input type="date" id="startDate" name="startDate">
-                                    <span class="help-text">Emails à partir de cette date</span>
                                 </div>
                                 
                                 <div class="form-group">
@@ -94,42 +92,28 @@ class DomainOrganizer {
                                         Date de fin
                                     </label>
                                     <input type="date" id="endDate" name="endDate">
-                                    <span class="help-text">Emails jusqu'à cette date</span>
                                 </div>
                                 
-                                <div class="form-group full-width">
+                                <div class="form-group">
                                     <label for="excludeDomains">
                                         <i class="fas fa-ban"></i>
-                                        Domaines à exclure (optionnel)
+                                        Exclure domaines
                                     </label>
-                                    <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com, hotmail.com">
-                                    <span class="help-text">Ces domaines ne seront pas rangés (séparer par des virgules)</span>
+                                    <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com">
                                 </div>
                                 
-                                <div class="form-group full-width">
+                                <div class="form-group">
                                     <label for="excludeEmails">
                                         <i class="fas fa-user-slash"></i>
-                                        Emails spécifiques à exclure (optionnel)
+                                        Exclure emails
                                     </label>
-                                    <textarea id="excludeEmails" placeholder="contact@important.com&#10;boss@company.com"></textarea>
-                                    <span class="help-text">Ces adresses email ne seront pas rangées (une par ligne)</span>
+                                    <input type="text" id="excludeEmails" placeholder="contact@important.com">
                                 </div>
-                            </div>
-                            
-                            <div class="expected-outcome">
-                                <h4><i class="fas fa-eye"></i> À quoi s'attendre ?</h4>
-                                <ul>
-                                    <li>Nous allons scanner vos emails dans la période sélectionnée</li>
-                                    <li>Chaque domaine sera analysé (nombre d'emails, exemples)</li>
-                                    <li>Vous pourrez choisir les dossiers de destination</li>
-                                    <li>Aucun email ne sera déplacé sans votre accord final</li>
-                                </ul>
                             </div>
                             
                             <button type="submit" class="btn btn-primary btn-large" id="analyzeBtn">
                                 <i class="fas fa-search"></i>
                                 Commencer l'analyse
-                                <span class="btn-subtitle">Étape 1/5</span>
                             </button>
                         </form>
                     </div>
@@ -196,68 +180,42 @@ class DomainOrganizer {
                         <div class="stats-section">
                             <div class="stats-row">
                                 <div class="stat">
-                                    <div class="stat-icon"><i class="fas fa-envelope"></i></div>
-                                    <div class="stat-details">
-                                        <div class="stat-value" id="statEmails">0</div>
-                                        <div class="stat-label">Emails trouvés</div>
-                                    </div>
+                                    <div class="stat-value" id="statEmails">0</div>
+                                    <div class="stat-label">Emails</div>
                                 </div>
                                 <div class="stat">
-                                    <div class="stat-icon"><i class="fas fa-at"></i></div>
-                                    <div class="stat-details">
-                                        <div class="stat-value" id="statDomains">0</div>
-                                        <div class="stat-label">Domaines uniques</div>
-                                    </div>
+                                    <div class="stat-value" id="statDomains">0</div>
+                                    <div class="stat-label">Domaines</div>
                                 </div>
                                 <div class="stat">
-                                    <div class="stat-icon"><i class="fas fa-folder-plus"></i></div>
-                                    <div class="stat-details">
-                                        <div class="stat-value" id="statNew">0</div>
-                                        <div class="stat-label">Nouveaux dossiers</div>
-                                    </div>
+                                    <div class="stat-value" id="statNew">0</div>
+                                    <div class="stat-label">Nouveaux</div>
                                 </div>
                                 <div class="stat">
-                                    <div class="stat-icon"><i class="fas fa-folder"></i></div>
-                                    <div class="stat-details">
-                                        <div class="stat-value" id="statExisting">0</div>
-                                        <div class="stat-label">Dossiers existants</div>
-                                    </div>
+                                    <div class="stat-value" id="statExisting">0</div>
+                                    <div class="stat-label">Existants</div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="info-box info-success">
-                            <i class="fas fa-check-circle"></i>
-                            <div>
-                                <strong>Révision nécessaire</strong><br>
-                                Vérifiez les suggestions ci-dessous. Vous pouvez modifier les dossiers de destination 
-                                ou désélectionner des domaines avant de continuer.
                             </div>
                         </div>
 
                         <div class="results-section">
                             <div class="results-header">
-                                <div class="results-title">
-                                    <h3>Domaines trouvés</h3>
-                                    <span class="select-controls">
-                                        <label class="checkbox-label">
-                                            <input type="checkbox" id="selectAll" checked>
-                                            Tout sélectionner
-                                        </label>
-                                    </span>
-                                </div>
+                                <h3>Domaines trouvés</h3>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="selectAll" checked>
+                                    Tout sélectionner
+                                </label>
                             </div>
                             
                             <div class="results-table-container">
                                 <table class="results-table">
                                     <thead>
                                         <tr>
-                                            <th style="width: 40px"></th>
+                                            <th style="width: 30px"></th>
                                             <th>Domaine</th>
-                                            <th style="width: 80px">Emails</th>
-                                            <th style="width: 250px">Dossier de destination</th>
-                                            <th style="width: 120px">Action</th>
-                                            <th style="width: 40px">Aperçu</th>
+                                            <th style="width: 60px">Emails</th>
+                                            <th style="width: 180px">Dossier</th>
+                                            <th style="width: 80px">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody id="resultsTableBody">
@@ -270,10 +228,7 @@ class DomainOrganizer {
                         <div class="action-section">
                             <div class="checkbox-group">
                                 <input type="checkbox" id="createFolders" checked>
-                                <label for="createFolders">
-                                    <strong>Créer automatiquement les nouveaux dossiers</strong>
-                                    <span class="checkbox-help">Les dossiers manquants seront créés dans votre boîte mail</span>
-                                </label>
+                                <label for="createFolders">Créer les nouveaux dossiers</label>
                             </div>
                             
                             <div class="action-buttons">
@@ -281,10 +236,9 @@ class DomainOrganizer {
                                     <i class="fas fa-arrow-left"></i>
                                     Retour
                                 </button>
-                                <button class="btn btn-primary btn-large" id="reviewBtn" onclick="window.domainOrganizer.proceedToConfirmation()">
+                                <button class="btn btn-primary" id="reviewBtn" onclick="window.domainOrganizer.proceedToConfirmation()">
                                     <i class="fas fa-arrow-right"></i>
-                                    Continuer vers la confirmation
-                                    <span class="btn-subtitle">Étape 3/5</span>
+                                    Continuer
                                 </button>
                             </div>
                         </div>
@@ -304,21 +258,15 @@ class DomainOrganizer {
                                 <i class="fas fa-exclamation-triangle"></i>
                             </div>
                             <div class="warning-content">
-                                <h3>Attention : Actions irréversibles</h3>
-                                <p>Les actions suivantes vont être effectuées et <strong>ne pourront pas être annulées automatiquement</strong> :</p>
+                                <h3>Actions irréversibles</h3>
+                                <p>Les actions suivantes vont être effectuées :</p>
                                 <ul id="actionsPreview">
                                     <!-- Populated dynamically -->
                                 </ul>
-                                <p class="warning-note">
-                                    <i class="fas fa-info-circle"></i>
-                                    Vous pourrez toujours déplacer manuellement les emails plus tard, 
-                                    mais cette opération automatique ne peut pas être annulée.
-                                </p>
                             </div>
                         </div>
 
                         <div class="confirmation-summary">
-                            <h3>Récapitulatif des actions</h3>
                             <div class="summary-grid">
                                 <div class="summary-item">
                                     <div class="summary-icon"><i class="fas fa-envelope"></i></div>
@@ -329,13 +277,7 @@ class DomainOrganizer {
                                 <div class="summary-item">
                                     <div class="summary-icon"><i class="fas fa-folder-plus"></i></div>
                                     <div class="summary-text">
-                                        <strong id="confirmNewFolders">0</strong> nouveaux dossiers seront créés
-                                    </div>
-                                </div>
-                                <div class="summary-item">
-                                    <div class="summary-icon"><i class="fas fa-clock"></i></div>
-                                    <div class="summary-text">
-                                        Temps estimé : <strong id="estimatedTime">quelques secondes</strong>
+                                        <strong id="confirmNewFolders">0</strong> nouveaux dossiers
                                     </div>
                                 </div>
                             </div>
@@ -346,7 +288,6 @@ class DomainOrganizer {
                                 <input type="checkbox" id="finalConfirmation">
                                 <div class="checkbox-content">
                                     <strong>Je confirme vouloir effectuer ces actions</strong>
-                                    <span>J'ai vérifié les actions et je comprends qu'elles sont irréversibles</span>
                                 </div>
                             </label>
                         </div>
@@ -354,12 +295,11 @@ class DomainOrganizer {
                         <div class="action-buttons">
                             <button class="btn btn-secondary" onclick="window.domainOrganizer.goToReview()">
                                 <i class="fas fa-arrow-left"></i>
-                                Retour aux résultats
+                                Retour
                             </button>
-                            <button class="btn btn-danger btn-large" id="executeBtn" onclick="window.domainOrganizer.executeOrganization()" disabled>
+                            <button class="btn btn-danger" id="executeBtn" onclick="window.domainOrganizer.executeOrganization()" disabled>
                                 <i class="fas fa-play"></i>
                                 Lancer le rangement
-                                <span class="btn-subtitle">Étape 4/5</span>
                             </button>
                         </div>
                     </div>
@@ -389,19 +329,16 @@ class DomainOrganizer {
                             
                             <div class="overall-progress">
                                 <div class="progress-header">
-                                    <span>Progression globale</span>
+                                    <span>Progression</span>
                                     <span id="executionPercent">0%</span>
                                 </div>
                                 <div class="progress">
                                     <div class="progress-bar" id="executionProgressBar" style="width: 0%"></div>
                                 </div>
-                                <div class="progress-details">
-                                    <span id="executionStatus">0 domaines traités sur 0</span>
-                                </div>
                             </div>
 
                             <div class="execution-log">
-                                <h4>Journal des actions</h4>
+                                <h4>Journal</h4>
                                 <div class="log-container" id="executionLog">
                                     <!-- Populated dynamically -->
                                 </div>
@@ -443,29 +380,6 @@ class DomainOrganizer {
                                     <div class="stat-label">Dossiers créés</div>
                                 </div>
                             </div>
-                            <div class="final-stat">
-                                <div class="stat-icon success"><i class="fas fa-clock"></i></div>
-                                <div class="stat-details">
-                                    <div class="stat-value" id="finalTimeElapsed">0s</div>
-                                    <div class="stat-label">Temps écoulé</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="actions-summary">
-                            <h3>Récapitulatif détaillé</h3>
-                            <div class="actions-list" id="finalActionsList">
-                                <!-- Populated dynamically -->
-                            </div>
-                        </div>
-
-                        <div class="next-steps">
-                            <h4><i class="fas fa-lightbulb"></i> Prochaines étapes suggérées</h4>
-                            <ul>
-                                <li>Vérifiez vos nouveaux dossiers dans votre client email</li>
-                                <li>Configurez des règles automatiques pour les nouveaux emails</li>
-                                <li>Répétez cette opération régulièrement pour maintenir l'organisation</li>
-                            </ul>
                         </div>
 
                         <div class="action-buttons">
@@ -495,26 +409,26 @@ class DomainOrganizer {
                 /* En-tête avec étapes */
                 .steps-header {
                     text-align: center;
-                    margin-bottom: 40px;
+                    margin-bottom: 20px;
                 }
 
                 .steps-header h1 {
-                    font-size: 28px;
+                    font-size: 22px;
                     font-weight: 700;
-                    margin-bottom: 24px;
+                    margin-bottom: 16px;
                     color: #111827;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 12px;
+                    gap: 8px;
                 }
 
                 .steps-indicator {
                     display: flex;
                     justify-content: center;
-                    gap: 20px;
+                    gap: 16px;
                     margin: 0 auto;
-                    max-width: 600px;
+                    max-width: 500px;
                 }
 
                 .step {
@@ -534,8 +448,8 @@ class DomainOrganizer {
                 }
 
                 .step-number {
-                    width: 40px;
-                    height: 40px;
+                    width: 32px;
+                    height: 32px;
                     border-radius: 50%;
                     background: #e5e7eb;
                     color: #6b7280;
@@ -543,8 +457,9 @@ class DomainOrganizer {
                     align-items: center;
                     justify-content: center;
                     font-weight: 600;
-                    margin-bottom: 8px;
+                    margin-bottom: 6px;
                     transition: all 0.3s ease;
+                    font-size: 14px;
                 }
 
                 .step.active .step-number {
@@ -558,7 +473,7 @@ class DomainOrganizer {
                 }
 
                 .step-label {
-                    font-size: 12px;
+                    font-size: 11px;
                     font-weight: 500;
                     color: #6b7280;
                 }
@@ -566,29 +481,30 @@ class DomainOrganizer {
                 /* Cards */
                 .card {
                     background: white;
-                    border-radius: 12px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    padding: 32px;
-                    margin-bottom: 24px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    padding: 20px;
+                    margin-bottom: 16px;
                 }
 
                 .card-title {
-                    font-size: 20px;
+                    font-size: 18px;
                     font-weight: 600;
-                    margin-bottom: 24px;
+                    margin-bottom: 16px;
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 8px;
                     color: #111827;
                 }
 
                 /* Info boxes */
                 .info-box {
-                    padding: 16px;
-                    border-radius: 8px;
-                    margin-bottom: 24px;
+                    padding: 12px;
+                    border-radius: 6px;
+                    margin-bottom: 16px;
                     display: flex;
-                    gap: 12px;
+                    gap: 8px;
+                    font-size: 14px;
                 }
 
                 .info-primary {
@@ -597,119 +513,61 @@ class DomainOrganizer {
                     color: #1d4ed8;
                 }
 
-                .info-success {
-                    background: #f0fdf4;
-                    border: 1px solid #bbf7d0;
-                    color: #166534;
-                }
-
                 /* Formulaires */
                 .form-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 20px;
-                    margin-bottom: 24px;
+                    gap: 16px;
+                    margin-bottom: 16px;
                 }
 
                 .form-group {
                     display: flex;
                     flex-direction: column;
-                    gap: 8px;
-                }
-
-                .form-group.full-width {
-                    grid-column: 1 / -1;
+                    gap: 6px;
                 }
 
                 .form-group label {
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: 600;
                     color: #374151;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                 }
 
                 .form-group input[type="date"],
-                .form-group input[type="text"],
-                .form-group textarea {
-                    padding: 12px 16px;
-                    border: 2px solid #e5e7eb;
-                    border-radius: 8px;
+                .form-group input[type="text"] {
+                    padding: 8px 12px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 6px;
                     font-size: 14px;
                     transition: border-color 0.2s ease;
                 }
 
-                .form-group input:focus,
-                .form-group textarea:focus {
+                .form-group input:focus {
                     outline: none;
                     border-color: #3b82f6;
                 }
 
-                .form-group textarea {
-                    resize: vertical;
-                    min-height: 80px;
-                    font-family: inherit;
-                }
-
-                .help-text {
-                    font-size: 12px;
-                    color: #6b7280;
-                }
-
-                /* Résultats attendus */
-                .expected-outcome {
-                    background: #f9fafb;
-                    padding: 20px;
-                    border-radius: 8px;
-                    margin-bottom: 24px;
-                }
-
-                .expected-outcome h4 {
-                    margin: 0 0 12px 0;
-                    color: #374151;
-                    font-size: 16px;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .expected-outcome ul {
-                    margin: 0;
-                    padding-left: 20px;
-                }
-
-                .expected-outcome li {
-                    margin-bottom: 8px;
-                    color: #6b7280;
-                }
-
                 /* Boutons */
                 .btn {
-                    padding: 12px 24px;
+                    padding: 10px 20px;
                     border: none;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     font-size: 14px;
                     font-weight: 600;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     display: inline-flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                     text-decoration: none;
                 }
 
                 .btn-large {
-                    padding: 16px 32px;
-                    font-size: 16px;
-                    flex-direction: column;
-                    gap: 4px;
-                }
-
-                .btn-subtitle {
-                    font-size: 12px;
-                    opacity: 0.8;
-                    font-weight: 400;
+                    padding: 12px 24px;
+                    font-size: 15px;
                 }
 
                 .btn-primary {
@@ -859,100 +717,87 @@ class DomainOrganizer {
 
                 /* Statistiques */
                 .stats-section {
-                    margin-bottom: 32px;
+                    margin-bottom: 20px;
                 }
 
                 .stats-row {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 20px;
-                    padding: 24px;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 16px;
+                    padding: 16px;
                     background: #f8fafc;
-                    border-radius: 12px;
+                    border-radius: 8px;
                 }
 
                 .stat {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                }
-
-                .stat-icon {
-                    width: 48px;
-                    height: 48px;
-                    background: #e0e7ff;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #3730a3;
-                    font-size: 20px;
+                    text-align: center;
                 }
 
                 .stat-value {
-                    font-size: 24px;
+                    font-size: 20px;
                     font-weight: 700;
                     color: #111827;
                 }
 
                 .stat-label {
-                    font-size: 14px;
+                    font-size: 12px;
                     color: #6b7280;
                 }
 
                 /* Tableau de résultats */
                 .results-section {
-                    margin-bottom: 32px;
+                    margin-bottom: 20px;
                 }
 
                 .results-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 16px;
+                    margin-bottom: 12px;
                 }
 
-                .results-title h3 {
+                .results-header h3 {
                     margin: 0;
-                    font-size: 18px;
+                    font-size: 16px;
                     font-weight: 600;
                 }
 
                 .checkbox-label {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                     cursor: pointer;
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: 500;
                 }
 
                 .results-table-container {
-                    max-height: 500px;
+                    max-height: 300px;
                     overflow-y: auto;
-                    border: 2px solid #e5e7eb;
-                    border-radius: 8px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 6px;
                 }
 
                 .results-table {
                     width: 100%;
                     border-collapse: collapse;
-                    font-size: 14px;
+                    font-size: 13px;
                 }
 
                 .results-table th {
                     text-align: left;
-                    padding: 16px;
+                    padding: 12px 8px;
                     border-bottom: 2px solid #e5e7eb;
                     font-weight: 600;
                     color: #374151;
                     background: #f9fafb;
                     position: sticky;
                     top: 0;
+                    font-size: 12px;
                 }
 
                 .results-table td {
-                    padding: 16px;
+                    padding: 10px 8px;
                     border-bottom: 1px solid #f3f4f6;
                     vertical-align: middle;
                 }
@@ -961,15 +806,15 @@ class DomainOrganizer {
                     font-weight: 600;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                 }
 
                 .email-count {
                     background: #dbeafe;
                     color: #1d4ed8;
-                    padding: 4px 12px;
-                    border-radius: 16px;
-                    font-size: 12px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 11px;
                     font-weight: 600;
                     text-align: center;
                     display: inline-block;
@@ -977,18 +822,18 @@ class DomainOrganizer {
 
                 .folder-select {
                     width: 100%;
-                    padding: 8px 12px;
-                    border: 2px solid #e5e7eb;
-                    border-radius: 6px;
-                    font-size: 14px;
+                    padding: 4px 8px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 4px;
+                    font-size: 12px;
                     background: white;
                 }
 
                 .action-badge {
                     display: inline-block;
-                    padding: 4px 12px;
-                    border-radius: 16px;
-                    font-size: 12px;
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 10px;
                     font-weight: 600;
                     text-align: center;
                 }
@@ -1003,160 +848,127 @@ class DomainOrganizer {
                     color: #3730a3;
                 }
 
-                .preview-btn {
-                    background: #f3f4f6;
-                    border: none;
-                    border-radius: 6px;
-                    padding: 6px;
-                    cursor: pointer;
-                    color: #6b7280;
-                }
-
-                .preview-btn:hover {
-                    background: #e5e7eb;
-                }
-
                 /* Sections d'action */
                 .action-section {
-                    border-top: 2px solid #e5e7eb;
-                    padding-top: 24px;
+                    border-top: 1px solid #e5e7eb;
+                    padding-top: 16px;
                 }
 
                 .checkbox-group {
-                    margin-bottom: 24px;
+                    margin-bottom: 16px;
                 }
 
                 .checkbox-group input[type="checkbox"] {
-                    width: 18px;
-                    height: 18px;
+                    width: 16px;
+                    height: 16px;
                     cursor: pointer;
                 }
 
                 .checkbox-group label {
                     display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
+                    align-items: center;
+                    gap: 8px;
                     cursor: pointer;
-                }
-
-                .checkbox-help {
-                    font-size: 12px;
-                    color: #6b7280;
-                    font-weight: normal;
-                    display: block;
-                    margin-top: 4px;
+                    font-size: 14px;
                 }
 
                 .action-buttons {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    gap: 16px;
+                    gap: 12px;
                 }
 
                 /* Avertissements */
                 .warning-box {
                     background: #fef3c7;
-                    border: 2px solid #f59e0b;
-                    border-radius: 12px;
-                    padding: 24px;
-                    margin-bottom: 32px;
+                    border: 1px solid #f59e0b;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 20px;
                     display: flex;
-                    gap: 16px;
+                    gap: 12px;
                 }
 
                 .warning-icon {
                     flex-shrink: 0;
-                    width: 48px;
-                    height: 48px;
+                    width: 32px;
+                    height: 32px;
                     background: #f59e0b;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 20px;
+                    font-size: 16px;
                 }
 
                 .warning-content h3 {
-                    margin: 0 0 12px 0;
+                    margin: 0 0 8px 0;
                     color: #92400e;
-                    font-size: 18px;
+                    font-size: 16px;
                 }
 
                 .warning-content p {
-                    margin: 0 0 16px 0;
+                    margin: 0 0 8px 0;
                     color: #92400e;
+                    font-size: 14px;
                 }
 
                 .warning-content ul {
-                    margin: 0 0 16px 0;
-                    padding-left: 20px;
+                    margin: 0;
+                    padding-left: 16px;
                     color: #92400e;
-                }
-
-                .warning-note {
-                    background: #fbbf24;
-                    padding: 12px;
-                    border-radius: 6px;
-                    color: #78350f !important;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
+                    font-size: 14px;
                 }
 
                 /* Récapitulatif de confirmation */
                 .confirmation-summary {
-                    margin-bottom: 32px;
-                }
-
-                .confirmation-summary h3 {
-                    margin: 0 0 16px 0;
-                    font-size: 18px;
-                    color: #111827;
+                    margin-bottom: 20px;
                 }
 
                 .summary-grid {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                    gap: 16px;
-                    padding: 20px;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 12px;
+                    padding: 16px;
                     background: #f8fafc;
-                    border-radius: 8px;
+                    border-radius: 6px;
                 }
 
                 .summary-item {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 8px;
                 }
 
                 .summary-icon {
-                    width: 40px;
-                    height: 40px;
+                    width: 32px;
+                    height: 32px;
                     background: #3b82f6;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
+                    font-size: 14px;
                 }
 
                 .summary-text {
                     color: #374151;
+                    font-size: 14px;
                 }
 
                 /* Confirmation finale */
                 .final-confirmation {
-                    margin-bottom: 32px;
+                    margin-bottom: 20px;
                 }
 
                 .checkbox-label.large {
-                    padding: 20px;
+                    padding: 16px;
                     background: #f9fafb;
-                    border: 2px solid #e5e7eb;
-                    border-radius: 8px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 6px;
                     transition: border-color 0.2s ease;
                 }
 
@@ -1167,21 +979,13 @@ class DomainOrganizer {
                 .checkbox-content {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 2px;
                 }
 
                 .checkbox-content strong {
-                    font-size: 16px;
-                    color: #111827;
-                }
-
-                .checkbox-content span {
                     font-size: 14px;
-                    color: #6b7280;
-                    font-weight: normal;
-                }
-
-                /* Exécution */
+                    color: #111827;
+                }                    /* Exécution */
                 .execution-progress {
                     text-align: center;
                 }
@@ -1189,23 +993,23 @@ class DomainOrganizer {
                 .current-domain {
                     display: flex;
                     align-items: center;
-                    gap: 16px;
-                    padding: 24px;
+                    gap: 12px;
+                    padding: 16px;
                     background: #f8fafc;
-                    border-radius: 12px;
-                    margin-bottom: 32px;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
                 }
 
                 .domain-icon {
-                    width: 48px;
-                    height: 48px;
+                    width: 40px;
+                    height: 40px;
                     background: #3b82f6;
-                    border-radius: 12px;
+                    border-radius: 8px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 20px;
+                    font-size: 16px;
                 }
 
                 .domain-info {
@@ -1214,25 +1018,18 @@ class DomainOrganizer {
                 }
 
                 .domain-name {
-                    font-size: 18px;
+                    font-size: 16px;
                     font-weight: 600;
                     color: #111827;
                 }
 
                 .domain-action {
-                    font-size: 14px;
+                    font-size: 13px;
                     color: #6b7280;
                 }
 
                 .overall-progress {
-                    margin-bottom: 32px;
-                }
-
-                .progress-details {
-                    text-align: center;
-                    margin-top: 8px;
-                    font-size: 14px;
-                    color: #6b7280;
+                    margin-bottom: 20px;
                 }
 
                 .execution-log {
@@ -1240,26 +1037,26 @@ class DomainOrganizer {
                 }
 
                 .execution-log h4 {
-                    margin: 0 0 16px 0;
-                    font-size: 16px;
+                    margin: 0 0 12px 0;
+                    font-size: 14px;
                     color: #374151;
                 }
 
                 .log-container {
-                    max-height: 300px;
+                    max-height: 200px;
                     overflow-y: auto;
                     background: #f9fafb;
                     border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    padding: 16px;
+                    border-radius: 6px;
+                    padding: 12px;
                 }
 
                 .log-entry {
-                    padding: 8px 0;
-                    font-size: 14px;
+                    padding: 4px 0;
+                    font-size: 13px;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                 }
 
                 .log-entry.success {
@@ -1277,48 +1074,48 @@ class DomainOrganizer {
                 /* Résultats finaux */
                 .success-summary {
                     text-align: center;
-                    margin-bottom: 32px;
+                    margin-bottom: 20px;
                 }
 
                 .success-icon {
-                    width: 80px;
-                    height: 80px;
+                    width: 60px;
+                    height: 60px;
                     background: #10b981;
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 32px;
-                    margin: 0 auto 16px auto;
+                    font-size: 24px;
+                    margin: 0 auto 12px auto;
                 }
 
                 .success-content h3 {
-                    font-size: 24px;
+                    font-size: 20px;
                     color: #111827;
-                    margin: 0 0 8px 0;
+                    margin: 0 0 6px 0;
                 }
 
                 .success-content p {
                     color: #6b7280;
-                    font-size: 16px;
+                    font-size: 14px;
                     margin: 0;
                 }
 
                 .final-stats {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 24px;
-                    margin-bottom: 32px;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 16px;
+                    margin-bottom: 20px;
                 }
 
                 .final-stat {
                     display: flex;
                     align-items: center;
-                    gap: 16px;
-                    padding: 20px;
+                    gap: 12px;
+                    padding: 16px;
                     background: #f0fdf4;
-                    border-radius: 12px;
+                    border-radius: 8px;
                 }
 
                 .stat-icon.success {
@@ -1326,95 +1123,11 @@ class DomainOrganizer {
                     color: white;
                 }
 
-                .actions-summary {
-                    margin-bottom: 32px;
-                }
-
-                .actions-summary h3 {
-                    margin: 0 0 16px 0;
-                    font-size: 18px;
-                    color: #111827;
-                }
-
-                .actions-list {
-                    background: #f9fafb;
-                    border-radius: 8px;
-                    padding: 20px;
-                }
-
-                .action-item {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 12px 0;
-                    border-bottom: 1px solid #e5e7eb;
-                }
-
-                .action-item:last-child {
-                    border-bottom: none;
-                }
-
-                .action-details {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .action-icon {
-                    width: 32px;
-                    height: 32px;
-                    background: #e0e7ff;
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: #3730a3;
-                }
-
-                .action-text {
-                    font-weight: 600;
-                    color: #374151;
-                }
-
-                .action-count {
-                    background: #dbeafe;
-                    color: #1d4ed8;
-                    padding: 4px 8px;
-                    border-radius: 12px;
-                    font-size: 12px;
-                    font-weight: 600;
-                }
-
-                .next-steps {
-                    background: #eff6ff;
-                    padding: 20px;
-                    border-radius: 8px;
-                    margin-bottom: 32px;
-                }
-
-                .next-steps h4 {
-                    margin: 0 0 12px 0;
-                    color: #1d4ed8;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .next-steps ul {
-                    margin: 0;
-                    padding-left: 20px;
-                }
-
-                .next-steps li {
-                    color: #1e40af;
-                    margin-bottom: 8px;
-                }
-
                 /* Responsive */
                 @media (max-width: 768px) {
                     .container {
-                        margin: 20px auto;
-                        padding: 0 16px;
+                        margin: 16px auto;
+                        padding: 0 12px;
                     }
 
                     .steps-indicator {
@@ -1422,9 +1135,9 @@ class DomainOrganizer {
                     }
 
                     .step-number {
-                        width: 32px;
-                        height: 32px;
-                        font-size: 14px;
+                        width: 28px;
+                        height: 28px;
+                        font-size: 12px;
                     }
 
                     .form-grid {
@@ -1433,13 +1146,7 @@ class DomainOrganizer {
 
                     .stats-row {
                         grid-template-columns: repeat(2, 1fr);
-                        gap: 16px;
-                    }
-
-                    .stat {
-                        flex-direction: column;
-                        text-align: center;
-                        gap: 8px;
+                        gap: 12px;
                     }
 
                     .action-buttons {
