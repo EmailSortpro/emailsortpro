@@ -76,40 +76,6 @@ class DomainOrganizer {
                                 Par exemple : tous vos emails d'Amazon iront dans un dossier "amazon.com", ceux de votre banque dans "banque.fr", etc.
                             </div>
                         </div>
-
-                        <div class="process-overview">
-                            <h4><i class="fas fa-route"></i> Déroulement du processus</h4>
-                            <div class="process-steps">
-                                <div class="process-step">
-                                    <div class="process-icon">1</div>
-                                    <div class="process-text">
-                                        <strong>Analyse</strong><br>
-                                        Scan de vos emails sur la période choisie
-                                    </div>
-                                </div>
-                                <div class="process-step">
-                                    <div class="process-icon">2</div>
-                                    <div class="process-text">
-                                        <strong>Révision</strong><br>
-                                        Vous validez les dossiers proposés
-                                    </div>
-                                </div>
-                                <div class="process-step">
-                                    <div class="process-icon">3</div>
-                                    <div class="process-text">
-                                        <strong>Confirmation</strong><br>
-                                        Validation finale avant action
-                                    </div>
-                                </div>
-                                <div class="process-step">
-                                    <div class="process-icon">4</div>
-                                    <div class="process-text">
-                                        <strong>Rangement</strong><br>
-                                        Création des dossiers et déplacement
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                         
                         <form id="organizeForm">
                             <div class="form-section">
@@ -146,11 +112,13 @@ class DomainOrganizer {
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary btn-large" id="analyzeBtn">
-                                <i class="fas fa-search"></i>
-                                Lancer l'analyse
-                                <span class="btn-subtitle">Étape 1 • Aucune modification pour l'instant</span>
-                            </button>
+                            <div style="text-align: center; margin-top: 20px;">
+                                <button type="submit" class="btn btn-primary btn-large" id="analyzeBtn">
+                                    <i class="fas fa-search"></i>
+                                    Lancer l'analyse
+                                    <span class="btn-subtitle">Étape 1 • Aucune modification pour l'instant</span>
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
