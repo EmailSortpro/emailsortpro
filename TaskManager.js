@@ -1,19 +1,4 @@
-const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) {
-            let searchTimeout;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    this.handleSearch(e.target.value);
-                }, 300);
-            });
-        }
-        
-        // Fermer le menu si on clique en dehors
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.bulk-actions-panel-compact') && !e.target.closest('.btn-actions-compact')) {
-                this.bulkActionsVisible = false;
-                const// TaskManager Pro v9.2 - Interface avec Bouton Actions Groupées
+// TaskManager Pro v9.2 - Interface avec Bouton Actions Groupées
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -967,16 +952,7 @@ Sujet: ${subject}
 
     saveTasks() {
         try {
-            const tasksData = JSON.stringify(this.tasks);
-            
-            if (this.memoryStorage) {
-                // Utiliser le stockage en mémoire
-                this.memoryStorage.set('emailsort_tasks', this.tasks);
-            } else {
-                // Utiliser localStorage
-                localStorage.setItem('emailsort_tasks', tasksData);
-            }
-            
+            localStorage.setItem('emailsort_tasks', JSON.stringify(this.tasks));
             console.log(`[TaskManager] Saved ${this.tasks.length} tasks`);
             return true;
         } catch (error) {
@@ -986,7 +962,7 @@ Sujet: ${subject}
     }
 
     emitTaskUpdate(action, task) {
-        if (typeof window !== 'undefined' && window.dispatchEvent) {
+        if (window.dispatchEvent) {
             window.dispatchEvent(new CustomEvent('taskUpdate', {
                 detail: { action, task }
             }));
@@ -1064,40 +1040,40 @@ class TasksView {
                     </div>
                 ` : ''}
 
-                <!-- Barre de recherche séparée -->
-                <div class="search-bar-separate">
-                    <div class="search-box-full">
-                        <i class="fas fa-search search-icon-full"></i>
-                        <input type="text" 
-                               class="search-input-full" 
-                               id="taskSearchInput"
-                               placeholder="Rechercher tâches..." 
-                               value="${this.currentFilters.search}">
-                        ${this.currentFilters.search ? `
-                            <button class="search-clear-full" onclick="window.tasksView.clearSearch()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        ` : ''}
+                <!-- Barre de contrôles avec bouton Actions intégré -->
+                <div class="controls-bar-enhanced">
+                    <!-- Section recherche -->
+                    <div class="search-section-enhanced">
+                        <div class="search-box-enhanced">
+                            <i class="fas fa-search search-icon-enhanced"></i>
+                            <input type="text" 
+                                   class="search-input-enhanced" 
+                                   id="taskSearchInput"
+                                   placeholder="Rechercher tâches..." 
+                                   value="${this.currentFilters.search}">
+                            ${this.currentFilters.search ? `
+                                <button class="search-clear-enhanced" onclick="window.tasksView.clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
-                </div>
-
-                <!-- Barre de contrôles compacte -->
-                <div class="controls-bar-compact">
+                    
                     <!-- Modes de vue harmonisés -->
-                    <div class="view-modes-compact">
-                        <button class="view-mode-compact ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                    <div class="view-modes-enhanced">
+                        <button class="view-mode-enhanced ${this.currentViewMode === 'flat' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('flat')"
                                 title="Liste">
                             <i class="fas fa-list"></i>
                             <span>Liste</span>
                         </button>
-                        <button class="view-mode-compact ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                        <button class="view-mode-enhanced ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('grouped-domain')"
                                 title="Par domaine">
                             <i class="fas fa-globe"></i>
                             <span>Domaine</span>
                         </button>
-                        <button class="view-mode-compact ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                        <button class="view-mode-enhanced ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('grouped-sender')"
                                 title="Par expéditeur">
                             <i class="fas fa-user"></i>
@@ -1106,36 +1082,36 @@ class TasksView {
                     </div>
                     
                     <!-- Section Actions avec bouton centralisé -->
-                    <div class="actions-section-compact">
-                        <!-- Bouton Actions centralisé compact -->
-                        <button class="btn-actions-compact ${selectedCount > 0 ? 'active' : ''}" 
+                    <div class="actions-section-enhanced">
+                        <!-- Bouton Actions centralisé avec compteur -->
+                        <button class="btn-actions-centralized ${selectedCount > 0 ? 'active' : ''}" 
                                 onclick="window.tasksView.toggleBulkActionsPanel()"
                                 ${selectedCount === 0 ? 'disabled' : ''}>
                             <i class="fas fa-bolt"></i>
                             <span>Actions</span>
-                            ${selectedCount > 0 ? `<span class="action-count-badge-compact">${selectedCount}</span>` : ''}
-                            <i class="fas fa-chevron-${this.bulkActionsVisible ? 'up' : 'down'} action-chevron-compact"></i>
+                            ${selectedCount > 0 ? `<span class="action-count-badge">${selectedCount}</span>` : ''}
+                            <i class="fas fa-chevron-${this.bulkActionsVisible ? 'up' : 'down'} action-chevron"></i>
                         </button>
                         
-                        <!-- Boutons de contrôle compacts -->
-                        <button class="btn-compact btn-select-toggle" 
+                        <!-- Boutons de contrôle standards -->
+                        <button class="btn-enhanced btn-select-toggle" 
                                 onclick="window.tasksView.toggleAllSelection()"
                                 title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
                             <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
-                            <span>Sélectionner (${visibleTasks.length})</span>
+                            <span>${allVisible ? 'Désélectionner' : 'Sélectionner'} (${visibleTasks.length})</span>
                         </button>
                         
-                        <button class="btn-compact btn-secondary" onclick="window.tasksView.refreshTasks()">
+                        <button class="btn-enhanced btn-secondary" onclick="window.tasksView.refreshTasks()">
                             <i class="fas fa-sync-alt"></i>
                             <span>Actualiser</span>
                         </button>
                         
-                        <button class="btn-compact btn-primary" onclick="window.tasksView.showCreateModal()">
+                        <button class="btn-enhanced btn-primary" onclick="window.tasksView.showCreateModal()">
                             <i class="fas fa-plus"></i>
                             <span>Nouvelle</span>
                         </button>
                         
-                        <button class="btn-compact filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                        <button class="btn-enhanced filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
                                 onclick="window.tasksView.toggleAdvancedFilters()">
                             <i class="fas fa-filter"></i>
                             <span>Filtres</span>
@@ -1144,56 +1120,62 @@ class TasksView {
                     </div>
                 </div>
 
-                <!-- Panneau d'actions groupées compact -->
-                <div class="bulk-actions-panel-compact ${this.bulkActionsVisible && selectedCount > 0 ? 'show' : ''}" id="bulkActionsPanel">
-                    <div class="bulk-actions-content-compact">
-                        <div class="bulk-actions-header-compact">
-                            <div class="selection-info-compact">
+                <!-- Panneau d'actions groupées optimisé -->
+                <div class="bulk-actions-panel ${this.bulkActionsVisible && selectedCount > 0 ? 'show' : ''}" id="bulkActionsPanel">
+                    <div class="bulk-actions-content">
+                        <div class="bulk-actions-header">
+                            <div class="selection-info">
                                 <i class="fas fa-check-square"></i>
-                                <span class="selection-text-compact">${selectedCount} tâche${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}</span>
-                                <button class="clear-selection-btn-compact" onclick="window.tasksView.clearSelection()">
+                                <span class="selection-text">${selectedCount} tâche${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}</span>
+                                <button class="clear-selection-btn" onclick="window.tasksView.clearSelection()">
                                     <i class="fas fa-times"></i>
                                     <span>Effacer</span>
                                 </button>
                             </div>
                         </div>
                         
-                        <div class="bulk-actions-row">
-                            <!-- Actions principales compactes -->
-                            <button class="bulk-action-btn-compact complete" onclick="window.tasksView.bulkMarkCompleted()">
+                        <div class="bulk-actions-grid">
+                            <!-- Actions principales -->
+                            <button class="bulk-action-btn complete" onclick="window.tasksView.bulkMarkCompleted()">
                                 <i class="fas fa-check-circle"></i>
                                 <span>Marquer terminé</span>
+                                <small>${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</small>
                             </button>
                             
-                            <button class="bulk-action-btn-compact priority" onclick="window.tasksView.bulkChangePriority()">
+                            <button class="bulk-action-btn priority" onclick="window.tasksView.bulkChangePriority()">
                                 <i class="fas fa-flag"></i>
                                 <span>Changer priorité</span>
+                                <small>Modifier toutes</small>
                             </button>
                             
-                            <button class="bulk-action-btn-compact status" onclick="window.tasksView.bulkChangeStatus()">
+                            <button class="bulk-action-btn status" onclick="window.tasksView.bulkChangeStatus()">
                                 <i class="fas fa-tasks"></i>
                                 <span>Changer statut</span>
+                                <small>En cours, terminé...</small>
                             </button>
                             
-                            <button class="bulk-action-btn-compact archive" onclick="window.tasksView.bulkArchive()">
+                            <button class="bulk-action-btn archive" onclick="window.tasksView.bulkArchive()">
                                 <i class="fas fa-archive"></i>
                                 <span>Archiver</span>
+                                <small>Marquer comme archivé</small>
                             </button>
                             
-                            <button class="bulk-action-btn-compact export" onclick="window.tasksView.bulkExport()">
+                            <button class="bulk-action-btn export" onclick="window.tasksView.bulkExport()">
                                 <i class="fas fa-download"></i>
                                 <span>Exporter CSV</span>
+                                <small>Télécharger sélection</small>
                             </button>
                             
-                            <button class="bulk-action-btn-compact delete" onclick="window.tasksView.bulkDelete()">
+                            <button class="bulk-action-btn delete" onclick="window.tasksView.bulkDelete()">
                                 <i class="fas fa-trash"></i>
                                 <span>Supprimer</span>
+                                <small>Action irréversible</small>
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Filtres de statut compacts -->
+                <!-- Filtres de statut harmonisés -->
                 <div class="status-filters-enhanced">
                     ${this.buildEnhancedStatusPills(stats)}
                 </div>
@@ -2654,7 +2636,7 @@ class TasksView {
         this.currentFilters.search = value.trim();
         this.refreshView();
         
-        const clearBtn = document.querySelector('.search-clear-full');
+        const clearBtn = document.querySelector('.search-clear-enhanced');
         if (clearBtn) {
             clearBtn.style.display = this.currentFilters.search ? 'flex' : 'none';
         }
@@ -2773,9 +2755,12 @@ class TasksView {
                 transform: scale(1.1);
             }
             
-            
-            /* Barre de recherche séparée */
-            .search-bar-separate {
+            /* Barre de contrôles améliorée */
+            .controls-bar-enhanced {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: var(--gap-large);
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: var(--border-width) solid rgba(255, 255, 255, 0.2);
@@ -2783,17 +2768,27 @@ class TasksView {
                 padding: var(--gap-medium);
                 margin-bottom: var(--gap-medium);
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
+                box-sizing: border-box;
             }
             
-            .search-box-full {
-                position: relative;
-                width: 100%;
+            /* Section recherche */
+            .search-section-enhanced {
+                flex: 0 0 300px;
                 height: var(--btn-height);
                 display: flex;
                 align-items: center;
             }
             
-            .search-input-full {
+            .search-box-enhanced {
+                position: relative;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+            }
+            
+            .search-input-enhanced {
                 width: 100%;
                 height: var(--btn-height);
                 padding: 0 var(--gap-medium) 0 44px;
@@ -2810,13 +2805,13 @@ class TasksView {
                 vertical-align: middle;
             }
             
-            .search-input-full:focus {
+            .search-input-enhanced:focus {
                 border-color: #3b82f6;
                 background: white;
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
-            .search-icon-full {
+            .search-icon-enhanced {
                 position: absolute;
                 left: var(--gap-medium);
                 top: 50%;
@@ -2830,7 +2825,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .search-clear-full {
+            .search-clear-enhanced {
                 position: absolute;
                 right: var(--gap-small);
                 top: 50%;
@@ -2851,30 +2846,13 @@ class TasksView {
                 outline: none;
             }
             
-            .search-clear-full:hover {
+            .search-clear-enhanced:hover {
                 background: #dc2626;
                 transform: translateY(-50%) scale(1.1);
             }
             
-            /* Barre de contrôles compacte */
-            .controls-bar-compact {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: var(--gap-large);
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-                min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
-                box-sizing: border-box;
-            }
-            
-            /* Modes de vue compacts */
-            .view-modes-compact {
+            /* Modes de vue */
+            .view-modes-enhanced {
                 display: flex;
                 background: #f8fafc;
                 border: var(--border-width) solid #e2e8f0;
@@ -2887,7 +2865,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .view-mode-compact {
+            .view-mode-enhanced {
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2904,18 +2882,18 @@ class TasksView {
                 font-weight: var(--btn-font-weight);
                 white-space: nowrap;
                 box-sizing: border-box;
-                min-width: 100px;
+                min-width: 120px;
                 flex: 1;
                 text-align: center;
             }
             
-            .view-mode-compact:hover {
+            .view-mode-enhanced:hover {
                 background: rgba(255, 255, 255, 0.8);
                 color: #374151;
                 transform: translateY(-1px);
             }
             
-            .view-mode-compact.active {
+            .view-mode-enhanced.active {
                 background: white;
                 color: #1f2937;
                 box-shadow: var(--shadow-base);
@@ -2923,8 +2901,8 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* Section Actions compacte */
-            .actions-section-compact {
+            /* Section Actions avec bouton centralisé */
+            .actions-section-enhanced {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-small);
@@ -2932,30 +2910,30 @@ class TasksView {
                 flex-shrink: 0;
             }
             
-            /* Bouton Actions compact */
-            .btn-actions-compact {
+            /* Bouton Actions centralisé */
+            .btn-actions-centralized {
                 position: relative;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: var(--btn-gap);
-                padding: var(--btn-padding-vertical) 16px;
+                padding: var(--btn-padding-vertical) 20px;
                 height: var(--btn-height);
                 background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
                 color: white;
                 border: none;
                 border-radius: var(--btn-border-radius);
                 font-size: var(--btn-font-size);
-                font-weight: 600;
+                font-weight: 700;
                 cursor: pointer;
                 transition: all 0.3s ease;
-                box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
-                min-width: 120px;
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+                min-width: 140px;
                 box-sizing: border-box;
                 text-align: center;
             }
             
-            .btn-actions-compact:disabled {
+            .btn-actions-centralized:disabled {
                 background: #e5e7eb;
                 color: #9ca3af;
                 cursor: not-allowed;
@@ -2963,31 +2941,36 @@ class TasksView {
                 opacity: 0.6;
             }
             
-            .btn-actions-compact:not(:disabled):hover {
+            .btn-actions-centralized:not(:disabled):hover {
                 background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.35);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
             }
             
-            .btn-actions-compact.active {
+            .btn-actions-centralized.active {
                 background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
-                box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+                box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
                 transform: translateY(-1px);
             }
             
-            .action-count-badge-compact {
+            .btn-actions-centralized.expanded {
+                background: linear-gradient(135deg, #5b21b6 0%, #4c1d95 100%);
+                transform: translateY(-1px);
+            }
+            
+            .action-count-badge {
                 position: absolute;
-                top: -6px;
-                right: -6px;
+                top: -8px;
+                right: -8px;
                 background: #ef4444;
                 color: white;
-                font-size: 9px;
+                font-size: 10px;
                 font-weight: 700;
-                padding: 2px 5px;
-                border-radius: 8px;
-                min-width: 16px;
+                padding: 3px 6px;
+                border-radius: 10px;
+                min-width: 18px;
                 text-align: center;
-                border: 1px solid white;
+                border: 2px solid white;
                 line-height: 1;
                 display: flex;
                 align-items: center;
@@ -2995,14 +2978,14 @@ class TasksView {
                 animation: pulse 2s infinite;
             }
             
-            .action-chevron-compact {
+            .action-chevron {
                 margin-left: var(--gap-tiny);
-                font-size: 9px;
+                font-size: 10px;
                 transition: all 0.3s ease;
             }
             
-            /* Boutons compacts */
-            .btn-compact {
+            /* Boutons standards */
+            .btn-enhanced {
                 background: white;
                 color: #374151;
                 border: var(--border-width) solid #e5e7eb;
@@ -3026,7 +3009,7 @@ class TasksView {
                 justify-content: center;
             }
             
-            .btn-compact:hover {
+            .btn-enhanced:hover {
                 background: #f9fafb;
                 border-color: #6366f1;
                 color: #1f2937;
@@ -3034,48 +3017,48 @@ class TasksView {
                 box-shadow: var(--shadow-hover);
             }
             
-            .btn-compact.btn-primary {
+            .btn-enhanced.btn-primary {
                 background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
                 color: white;
                 border-color: transparent;
                 box-shadow: var(--shadow-primary);
             }
             
-            .btn-compact.btn-primary:hover {
+            .btn-enhanced.btn-primary:hover {
                 background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
             }
             
-            .btn-compact.btn-secondary {
+            .btn-enhanced.btn-secondary {
                 background: #f8fafc;
                 color: #475569;
                 border-color: #e2e8f0;
             }
             
-            .btn-compact.btn-secondary:hover {
+            .btn-enhanced.btn-secondary:hover {
                 background: #f1f5f9;
                 color: #334155;
                 border-color: #cbd5e1;
                 transform: translateY(-1px);
             }
             
-            .btn-compact.btn-select-toggle {
+            .btn-enhanced.btn-select-toggle {
                 background: #f0f9ff;
                 color: #0369a1;
                 border-color: #0ea5e9;
                 position: relative;
             }
             
-            .btn-compact.btn-select-toggle:hover {
+            .btn-enhanced.btn-select-toggle:hover {
                 background: #e0f2fe;
                 color: #0c4a6e;
                 border-color: #0284c7;
                 transform: translateY(-1px);
             }
             
-            /* Panneau d'actions groupées compact */
-            .bulk-actions-panel-compact {
+            /* Panneau d'actions groupées optimisé */
+            .bulk-actions-panel {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -3089,169 +3072,189 @@ class TasksView {
                 transform: translateY(-10px);
             }
             
-            .bulk-actions-panel-compact.show {
-                max-height: 150px;
+            .bulk-actions-panel.show {
+                max-height: 300px;
                 opacity: 1;
-                padding: var(--gap-medium);
+                padding: var(--gap-large);
                 transform: translateY(0);
             }
             
-            .bulk-actions-content-compact {
+            .bulk-actions-content {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-medium);
+                gap: var(--gap-large);
             }
             
-            .bulk-actions-header-compact {
+            .bulk-actions-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding-bottom: var(--gap-small);
+                padding-bottom: var(--gap-medium);
                 border-bottom: 1px solid #e5e7eb;
             }
             
-            .selection-info-compact {
+            .selection-info {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: var(--gap-medium);
                 color: #1f2937;
                 font-weight: 600;
             }
             
-            .selection-info-compact i {
+            .selection-info i {
                 color: #3b82f6;
+                font-size: 18px;
+            }
+            
+            .selection-text {
                 font-size: 16px;
+                font-weight: 700;
             }
             
-            .selection-text-compact {
-                font-size: 14px;
-                font-weight: 600;
-            }
-            
-            .clear-selection-btn-compact {
+            .clear-selection-btn {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-tiny);
-                padding: 4px 8px;
+                padding: 6px 12px;
                 background: #f3f4f6;
                 color: #6b7280;
                 border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 11px;
+                border-radius: 8px;
+                font-size: 12px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
             
-            .clear-selection-btn-compact:hover {
+            .clear-selection-btn:hover {
                 background: #e5e7eb;
                 color: #374151;
                 border-color: #9ca3af;
             }
             
-            /* Ligne d'actions groupées */
-            .bulk-actions-row {
-                display: flex;
-                gap: var(--gap-small);
-                flex-wrap: wrap;
-                justify-content: flex-start;
+            /* Grille d'actions groupées */
+            .bulk-actions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: var(--gap-medium);
             }
             
-            .bulk-action-btn-compact {
+            .bulk-action-btn {
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: var(--gap-tiny);
-                padding: 8px 12px;
+                padding: var(--gap-large);
                 background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: var(--btn-border-radius);
+                border: 2px solid #e5e7eb;
+                border-radius: var(--card-border-radius);
                 cursor: pointer;
                 transition: all 0.3s ease;
                 text-align: center;
-                font-size: 12px;
-                font-weight: 600;
-                color: #374151;
-                min-width: fit-content;
-                height: 36px;
-                box-sizing: border-box;
+                min-height: 100px;
+                position: relative;
+                overflow: hidden;
             }
             
-            .bulk-action-btn-compact:hover {
+            .bulk-action-btn::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+                opacity: 0;
+                transition: all 0.3s ease;
+            }
+            
+            .bulk-action-btn:hover {
                 border-color: #6366f1;
                 background: #f8fafc;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
             }
             
-            .bulk-action-btn-compact i {
-                font-size: 14px;
+            .bulk-action-btn:hover::before {
+                opacity: 1;
+            }
+            
+            .bulk-action-btn i {
+                font-size: 24px;
+                margin-bottom: var(--gap-small);
                 color: #6b7280;
                 transition: all 0.3s ease;
             }
             
-            .bulk-action-btn-compact span {
-                font-weight: 600;
+            .bulk-action-btn span {
+                font-weight: 700;
                 color: #1f2937;
-                font-size: 12px;
+                margin-bottom: var(--gap-tiny);
+                font-size: 14px;
+            }
+            
+            .bulk-action-btn small {
+                color: #6b7280;
+                font-size: 11px;
+                font-weight: 500;
             }
             
             /* Couleurs spécifiques pour chaque action */
-            .bulk-action-btn-compact.complete:hover {
+            .bulk-action-btn.complete:hover {
                 border-color: #16a34a;
-                background: #f0fdf4;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             }
             
-            .bulk-action-btn-compact.complete:hover i {
+            .bulk-action-btn.complete:hover i {
                 color: #16a34a;
             }
             
-            .bulk-action-btn-compact.priority:hover {
+            .bulk-action-btn.priority:hover {
                 border-color: #f59e0b;
-                background: #fffbeb;
+                background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
             }
             
-            .bulk-action-btn-compact.priority:hover i {
+            .bulk-action-btn.priority:hover i {
                 color: #f59e0b;
             }
             
-            .bulk-action-btn-compact.status:hover {
+            .bulk-action-btn.status:hover {
                 border-color: #3b82f6;
-                background: #eff6ff;
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
             }
             
-            .bulk-action-btn-compact.status:hover i {
+            .bulk-action-btn.status:hover i {
                 color: #3b82f6;
             }
             
-            .bulk-action-btn-compact.archive:hover {
+            .bulk-action-btn.archive:hover {
                 border-color: #8b5cf6;
-                background: #f3e8ff;
+                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
             }
             
-            .bulk-action-btn-compact.archive:hover i {
+            .bulk-action-btn.archive:hover i {
                 color: #8b5cf6;
             }
             
-            .bulk-action-btn-compact.export:hover {
+            .bulk-action-btn.export:hover {
                 border-color: #10b981;
-                background: #ecfdf5;
+                background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
             }
             
-            .bulk-action-btn-compact.export:hover i {
+            .bulk-action-btn.export:hover i {
                 color: #10b981;
             }
             
-            .bulk-action-btn-compact.delete:hover {
+            .bulk-action-btn.delete:hover {
                 border-color: #ef4444;
-                background: #fef2f2;
+                background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
             }
             
-            .bulk-action-btn-compact.delete:hover i {
+            .bulk-action-btn.delete:hover i {
                 color: #ef4444;
             }
             
-            /* Filtres de statut compacts */
+            /* Filtres de statut */
             .status-filters-enhanced {
                 display: flex;
                 gap: var(--gap-small);
@@ -3262,15 +3265,15 @@ class TasksView {
             }
             
             .status-pill-enhanced {
-                height: 44px;
-                min-height: 44px;
-                max-height: 44px;
-                padding: var(--btn-padding-vertical) 16px;
-                font-size: 13px;
-                font-weight: 600;
-                min-width: 100px;
+                height: 52px;
+                min-height: 52px;
+                max-height: 52px;
+                padding: var(--btn-padding-vertical) 20px;
+                font-size: 14px;
+                font-weight: 700;
+                min-width: 120px;
                 box-sizing: border-box;
-                border-radius: var(--btn-border-radius);
+                border-radius: 12px;
                 box-shadow: var(--shadow-base);
                 transition: all var(--transition-speed) ease;
                 display: flex;
@@ -3287,20 +3290,20 @@ class TasksView {
             .status-pill-enhanced:hover {
                 border-color: #3b82f6;
                 background: #f0f9ff;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
             }
             
             .status-pill-enhanced.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 color: white;
                 border-color: #3b82f6;
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+                transform: translateY(-2px);
             }
             
             .pill-icon-enhanced {
-                font-size: 14px;
+                font-size: 16px;
                 line-height: 1;
                 flex-shrink: 0;
                 display: flex;
@@ -3309,7 +3312,7 @@ class TasksView {
             }
             
             .pill-text-enhanced {
-                font-weight: 600;
+                font-weight: 700;
                 line-height: 1;
                 flex-shrink: 0;
                 text-align: center;
@@ -3321,11 +3324,11 @@ class TasksView {
             
             .pill-count-enhanced {
                 background: rgba(0, 0, 0, 0.1);
-                padding: 4px 8px;
-                border-radius: 8px;
-                font-size: 11px;
-                font-weight: 700;
-                min-width: 20px;
+                padding: 6px 10px;
+                border-radius: 10px;
+                font-size: 12px;
+                font-weight: 800;
+                min-width: 24px;
                 text-align: center;
                 line-height: 1;
                 flex-shrink: 0;
@@ -4077,27 +4080,37 @@ class TasksView {
             
             /* Responsive design */
             @media (max-width: 1024px) {
-                .controls-bar-compact {
+                .controls-bar-enhanced {
                     flex-direction: column;
                     gap: var(--gap-medium);
                     align-items: stretch;
                     padding: var(--gap-large);
                 }
                 
-                .view-modes-compact {
+                .search-section-enhanced {
+                    flex: none;
+                    width: 100%;
+                    order: 1;
+                    height: var(--btn-height);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                
+                .view-modes-enhanced {
                     width: 100%;
                     justify-content: space-around;
-                    order: 1;
+                    order: 2;
                     height: var(--btn-height);
                     display: flex;
                     align-items: center;
                 }
                 
-                .actions-section-compact {
+                .actions-section-enhanced {
                     width: 100%;
                     justify-content: center;
                     flex-wrap: wrap;
-                    order: 2;
+                    order: 3;
                     height: auto;
                     min-height: var(--btn-height);
                     display: flex;
@@ -4105,22 +4118,22 @@ class TasksView {
                     gap: var(--gap-small);
                 }
                 
-                .bulk-actions-row {
-                    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                .bulk-actions-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
                 }
             }
             
             @media (max-width: 768px) {
-                .view-mode-compact span,
-                .btn-compact span {
+                .view-mode-enhanced span,
+                .btn-enhanced span {
                     display: none;
                 }
                 
-                .actions-section-compact {
+                .actions-section-enhanced {
                     gap: var(--gap-tiny);
                 }
                 
-                .bulk-actions-row {
+                .bulk-actions-grid {
                     grid-template-columns: repeat(2, 1fr);
                 }
             }
@@ -4131,167 +4144,47 @@ class TasksView {
 }
 
 // =====================================
-// GLOBAL INITIALIZATION WITH ENHANCED ERROR HANDLING
+// GLOBAL INITIALIZATION
 // =====================================
 
-async function initializeTaskManager() {
+function initializeTaskManager() {
     console.log('[TaskManager] Initializing global instances v9.2...');
     
-    try {
-        // Créer ou récupérer l'instance TaskManager
-        if (!window.taskManager) {
-            window.taskManager = new TaskManager();
+    if (!window.taskManager || !window.taskManager.initialized) {
+        window.taskManager = new TaskManager();
+    }
+    
+    if (!window.tasksView) {
+        window.tasksView = new TasksView();
+    }
+    
+    Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
+        if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
+            window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
         }
-        
-        // Attendre que TaskManager soit prêt
-        await window.taskManager.waitForReady();
-        
-        // Créer TasksView
-        if (!window.tasksView) {
-            window.tasksView = new TasksView();
-        }
-        
-        // Lier les méthodes au contexte global
-        Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
-            if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
-                window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
-            }
-        });
+    });
 
-        Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
-            if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
-                window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
-            }
-        });
-        
-        console.log('✅ TaskManager v9.2 loaded - Interface avec Bouton Actions Groupées');
-        
-        // Signaler la disponibilité globale
-        if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('taskManagerFullyReady', {
-                detail: { 
-                    taskManager: window.taskManager,
-                    tasksView: window.tasksView 
-                }
-            }));
+    Object.getOwnPropertyNames(TasksView.prototype).forEach(name => {
+        if (name !== 'constructor' && typeof window.tasksView[name] === 'function') {
+            window.tasksView[name] = window.tasksView[name].bind(window.tasksView);
         }
-        
-        return { taskManager: window.taskManager, tasksView: window.tasksView };
-        
-    } catch (error) {
-        console.error('[TaskManager] Failed to initialize:', error);
-        
-        // Créer des instances de secours
-        if (!window.taskManager) {
-            window.taskManager = {
-                initialized: false,
-                tasks: [],
-                error: error.message,
-                getAllTasks: () => [],
-                getStats: () => ({ total: 0, todo: 0, inProgress: 0, completed: 0, overdue: 0, needsReply: 0 }),
-                filterTasks: () => [],
-                getTask: () => null,
-                createTask: () => null,
-                updateTask: () => null,
-                deleteTask: () => null
-            };
-        }
-        
-        if (!window.tasksView) {
-            window.tasksView = {
-                initialized: false,
-                error: error.message,
-                render: (container) => {
-                    if (container) {
-                        container.innerHTML = `
-                            <div style="padding: 20px; text-align: center; color: #dc2626;">
-                                <h3>Erreur d'initialisation TaskManager</h3>
-                                <p>Impossible de charger le gestionnaire de tâches.</p>
-                                <p>Erreur: ${error.message}</p>
-                                <button onclick="location.reload()" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                                    Recharger la page
-                                </button>
-                            </div>
-                        `;
-                    }
-                }
-            };
-        }
-        
-        throw error;
-    }
-}
-
-// Initialisation avec gestion d'erreurs améliorée
-(function setupTaskManager() {
-    console.log('[TaskManager] Setting up initialization...');
-    
-    let initializationAttempts = 0;
-    const maxAttempts = 5;
-    
-    async function attemptInitialization() {
-        initializationAttempts++;
-        
-        try {
-            console.log(`[TaskManager] Initialization attempt ${initializationAttempts}/${maxAttempts}`);
-            return await initializeTaskManager();
-        } catch (error) {
-            console.error(`[TaskManager] Attempt ${initializationAttempts} failed:`, error);
-            
-            if (initializationAttempts < maxAttempts) {
-                const delay = Math.min(1000 * initializationAttempts, 5000);
-                console.log(`[TaskManager] Retrying in ${delay}ms...`);
-                
-                await new Promise(resolve => setTimeout(resolve, delay));
-                return attemptInitialization();
-            } else {
-                console.error('[TaskManager] All initialization attempts failed');
-                throw error;
-            }
-        }
-    }
-    
-    // Différentes stratégies d'initialisation selon l'état du DOM
-    if (document.readyState === 'loading') {
-        console.log('[TaskManager] DOM loading, waiting for DOMContentLoaded...');
-        document.addEventListener('DOMContentLoaded', () => {
-            attemptInitialization().catch(error => {
-                console.error('[TaskManager] Critical initialization failure:', error);
-            });
-        });
-    } else if (document.readyState === 'interactive') {
-        console.log('[TaskManager] DOM interactive, initializing...');
-        setTimeout(() => {
-            attemptInitialization().catch(error => {
-                console.error('[TaskManager] Critical initialization failure:', error);
-            });
-        }, 100);
-    } else {
-        console.log('[TaskManager] DOM complete, initializing immediately...');
-        attemptInitialization().catch(error => {
-            console.error('[TaskManager] Critical initialization failure:', error);
-        });
-    }
-    
-    // Fallback pour le cas où window.load se déclenche
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            if (!window.taskManager || !window.taskManager.initialized) {
-                console.log('[TaskManager] Window loaded fallback initialization...');
-                attemptInitialization().catch(error => {
-                    console.error('[TaskManager] Fallback initialization failure:', error);
-                });
-            }
-        }, 1000);
     });
     
-    // Timeout final de sécurité
+    console.log('✅ TaskManager v9.2 loaded - Interface avec Bouton Actions Groupées');
+}
+
+initializeTaskManager();
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[TaskManager] DOM ready, ensuring initialization...');
+    initializeTaskManager();
+});
+
+window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
-            console.warn('[TaskManager] Final timeout reached, forcing basic initialization...');
-            attemptInitialization().catch(error => {
-                console.error('[TaskManager] Final initialization failure:', error);
-            });
+            console.log('[TaskManager] Fallback initialization...');
+            initializeTaskManager();
         }
-    }, 10000);
-})();
+    }, 1000);
+});
