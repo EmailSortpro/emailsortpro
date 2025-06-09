@@ -1951,10 +1951,11 @@ class DomainOrganizer {
         return emails.map((email, index) => {
             const emailId = email.id || `email-${domain}-${index}`;
             const isSelected = this.isEmailSelected(domain, emailId);
+            const hasCustomFolder = this.hasCustomFolder(domain, emailId);
             
             return `
-                <div class="email-item ${isSelected ? 'selected' : ''}" data-email-id="${emailId}">
-                    <div class="email-checkbox-container">
+                <div class="email-item-modern ${isSelected ? 'selected' : ''}" data-email-id="${emailId}">
+                    <div class="email-checkbox-wrapper">
                         <input type="checkbox" 
                                class="email-checkbox" 
                                data-domain="${domain}" 
@@ -1962,23 +1963,34 @@ class DomainOrganizer {
                                ${isSelected ? 'checked' : ''}
                                onchange="window.domainOrganizer.handleEmailToggle(event)">
                     </div>
-                    <div class="email-content" onclick="window.domainOrganizer.toggleEmailSelection('${domain}', '${emailId}')">
-                        <div class="email-header">
-                            <span class="email-from">${email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Expéditeur inconnu'}</span>
-                            <span class="email-date">${this.formatEmailDate(email.receivedDateTime)}</span>
+                    
+                    <div class="email-content-modern" onclick="window.domainOrganizer.toggleEmailSelection('${domain}', '${emailId}')">
+                        <div class="email-main-info">
+                            <div class="email-from-modern">${this.truncateText(this.getEmailFrom(email), 25)}</div>
+                            <div class="email-subject-modern">${this.truncateText(email.subject || 'Sans sujet', 50)}</div>
+                            <div class="email-preview-modern">${this.truncateText(this.getEmailPreview(email), 60)}</div>
                         </div>
-                        <div class="email-subject">${email.subject || 'Sans sujet'}</div>
-                        <div class="email-preview">${this.getEmailPreview(email)}</div>
+                        
+                        <div class="email-meta-info">
+                            <div class="email-date-modern">${this.formatEmailDate(email.receivedDateTime)}</div>
+                            ${hasCustomFolder ? '<div class="custom-folder-indicator"><i class="fas fa-folder-open"></i></div>' : ''}
+                        </div>
                     </div>
-                    <div class="email-actions">
-                        <select class="email-folder-select" 
+                    
+                    <div class="email-actions-modern">
+                        <select class="email-folder-select-modern" 
                                 data-domain="${domain}" 
                                 data-email-id="${emailId}"
                                 onchange="window.domainOrganizer.handleIndividualEmailFolderChange(event)"
                                 onclick="event.stopPropagation()">
-                            <option value="default">Dossier par défaut</option>
-                            ${this.generateFolderOptionsForEmail(domain)}
+                            ${this.generateFolderOptionsForEmail(domain, emailId)}
                         </select>
+                        
+                        <button class="email-action-btn" 
+                                onclick="event.stopPropagation(); window.domainOrganizer.showEmailDetails('${domain}', '${emailId}')"
+                                title="Détails de l'email">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
                     </div>
                 </div>
             `;
@@ -1986,28 +1998,129 @@ class DomainOrganizer {
     }
 
     /**
-     * Génère les options de dossiers pour un email individuel
+     * Tronque le texte à la longueur spécifiée
      */
-    generateFolderOptionsForEmail(domain) {
+    truncateText(text, maxLength) {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength - 3) + '...';
+    }
+
+    /**
+     * Vérifie si un email a un dossier personnalisé
+     */
+    hasCustomFolder(domain, emailId) {
+        return this.individualEmailFolders && 
+               this.individualEmailFolders.has(`${domain}-${emailId}`);
+    }
+
+    /**
+     * Génère les options de dossiers pour un email individuel avec gestion d'erreur
+     */
+    generateFolderOptionsForEmail(domain, emailId) {
         const existingFolders = Array.from(this.existingFolders.values());
         const domainAction = this.selectedActions.get(domain);
+        const customFolder = this.individualEmailFolders?.get(`${domain}-${emailId}`);
         
         let options = '';
         
         // Option par défaut (dossier du domaine)
         if (domainAction) {
-            options += `<option value="domain-default" selected>📁 ${domainAction.targetFolder}</option>`;
+            const isDefaultSelected = !customFolder;
+            options += `<option value="domain-default" ${isDefaultSelected ? 'selected' : ''}>
+                📁 ${this.truncateText(domainAction.targetFolder, 20)}
+            </option>`;
         }
         
-        // Dossiers existants
+        // Dossier personnalisé sélectionné
+        if (customFolder) {
+            if (customFolder.type === 'custom') {
+                options += `<option value="custom-${customFolder.folderName}" selected>
+                    ➕ ${this.truncateText(customFolder.folderName, 20)}
+                </option>`;
+            } else if (customFolder.type === 'existing') {
+                options += `<option value="${customFolder.folderId}" selected>
+                    📂 ${this.truncateText(customFolder.folderName, 20)}
+                </option>`;
+            }
+        }
+        
+        // Dossiers existants (éviter les doublons)
         existingFolders.forEach(folder => {
-            options += `<option value="${folder.id}">📂 ${folder.displayName}</option>`;
+            const isAlreadySelected = customFolder?.folderId === folder.id || 
+                                    (domainAction?.targetFolder === folder.displayName && !customFolder);
+            if (!isAlreadySelected) {
+                options += `<option value="${folder.id}">📂 ${this.truncateText(folder.displayName, 20)}</option>`;
+            }
         });
         
         // Option pour nouveau dossier
         options += `<option value="custom">➕ Nouveau dossier...</option>`;
         
         return options;
+    }
+
+    /**
+     * Gère le changement de dossier pour un email individuel
+     */
+    handleIndividualEmailFolderChange(event) {
+        const domain = event.target.dataset.domain;
+        const emailId = event.target.dataset.emailId;
+        const selectedValue = event.target.value;
+        
+        if (selectedValue === 'custom') {
+            const newFolderName = prompt('Nom du nouveau dossier:');
+            if (newFolderName) {
+                this.setEmailCustomFolder(domain, emailId, newFolderName);
+            } else {
+                // Remettre la valeur par défaut si annulé
+                event.target.value = 'default';
+            }
+        } else {
+            this.setEmailFolder(domain, emailId, selectedValue);
+        }
+    }
+
+    /**
+     * Définit un dossier personnalisé pour un email
+     */
+    setEmailCustomFolder(domain, emailId, folderName) {
+        if (!this.individualEmailFolders) {
+            this.individualEmailFolders = new Map();
+        }
+        
+        this.individualEmailFolders.set(`${domain}-${emailId}`, {
+            type: 'custom',
+            folderName: folderName
+        });
+        
+        window.uiManager?.showToast(`Email configuré pour aller dans "${folderName}"`, 'success');
+    }
+
+    /**
+     * Définit le dossier pour un email individuel
+     */
+    setEmailFolder(domain, emailId, folderId) {
+        if (!this.individualEmailFolders) {
+            this.individualEmailFolders = new Map();
+        }
+        
+        if (folderId === 'default' || folderId === 'domain-default') {
+            // Supprimer la configuration individuelle
+            this.individualEmailFolders.delete(`${domain}-${emailId}`);
+        } else {
+            // Configurer le dossier spécifique
+            const folder = this.existingFolders.get(folderId) || 
+                          Array.from(this.existingFolders.values()).find(f => f.id === folderId);
+            
+            if (folder) {
+                this.individualEmailFolders.set(`${domain}-${emailId}`, {
+                    type: 'existing',
+                    folderId: folderId,
+                    folderName: folder.displayName
+                });
+            }
+        }
     }
 
     /**
@@ -2408,100 +2521,310 @@ class DomainOrganizer {
                 overflow-y: auto;
             }
             
-            .email-item {
+            /* Design moderne pour les emails sur une ligne */
+            .email-item-modern {
                 display: flex;
-                align-items: flex-start;
+                align-items: center;
                 gap: 12px;
-                padding: 12px;
+                padding: 12px 16px;
                 border: 1px solid #e5e7eb;
-                border-radius: 6px;
-                margin-bottom: 8px;
+                border-radius: 8px;
+                margin-bottom: 6px;
                 transition: all 0.2s ease;
                 cursor: pointer;
+                background: white;
+                min-height: 60px;
             }
             
-            .email-item:hover {
+            .email-item-modern:hover {
                 background: #f9fafb;
                 border-color: #d1d5db;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
             
-            .email-item.selected {
+            .email-item-modern.selected {
                 background: #eff6ff;
                 border-color: #3b82f6;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
             }
             
-            .email-checkbox-container {
+            .email-checkbox-wrapper {
                 display: flex;
-                align-items: flex-start;
-                padding-top: 2px;
+                align-items: center;
+                flex-shrink: 0;
             }
             
             .email-checkbox {
-                width: 16px;
-                height: 16px;
+                width: 18px;
+                height: 18px;
                 cursor: pointer;
+                accent-color: #3b82f6;
             }
             
-            .email-content {
+            .email-content-modern {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+            }
+            
+            .email-main-info {
+                display: flex;
+                align-items: center;
+                gap: 16px;
                 flex: 1;
                 min-width: 0;
             }
             
-            .email-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 4px;
-            }
-            
-            .email-from {
+            .email-from-modern {
                 font-weight: 600;
                 color: #111827;
+                font-size: 14px;
+                min-width: 120px;
+                max-width: 160px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                max-width: 200px;
-            }
-            
-            .email-date {
-                font-size: 12px;
-                color: #6b7280;
                 flex-shrink: 0;
             }
             
-            .email-subject {
+            .email-subject-modern {
                 font-weight: 500;
                 color: #374151;
-                margin-bottom: 4px;
+                font-size: 14px;
+                min-width: 150px;
+                max-width: 250px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+                flex-shrink: 0;
             }
             
-            .email-preview {
-                font-size: 13px;
+            .email-preview-modern {
                 color: #6b7280;
+                font-size: 13px;
                 line-height: 1.3;
                 overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+                min-width: 0;
             }
             
-            .email-actions {
+            .email-meta-info {
                 display: flex;
-                flex-direction: column;
+                align-items: center;
                 gap: 8px;
-                min-width: 150px;
+                flex-shrink: 0;
             }
             
-            .email-folder-select {
-                padding: 4px 8px;
+            .email-date-modern {
+                font-size: 12px;
+                color: #6b7280;
+                white-space: nowrap;
+                min-width: 80px;
+                text-align: right;
+            }
+            
+            .custom-folder-indicator {
+                color: #f59e0b;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                title: "Dossier personnalisé configuré";
+            }
+            
+            .email-actions-modern {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+            
+            .email-folder-select-modern {
+                padding: 6px 10px;
                 border: 1px solid #d1d5db;
-                border-radius: 4px;
+                border-radius: 6px;
                 font-size: 12px;
                 background: white;
                 cursor: pointer;
+                min-width: 140px;
+                max-width: 180px;
+                transition: all 0.2s ease;
+            }
+            
+            .email-folder-select-modern:hover {
+                border-color: #3b82f6;
+            }
+            
+            .email-folder-select-modern:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            }
+            
+            .email-action-btn {
+                width: 32px;
+                height: 32px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                background: white;
+                color: #6b7280;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+                font-size: 12px;
+            }
+            
+            .email-action-btn:hover {
+                background: #f3f4f6;
+                border-color: #9ca3af;
+                color: #374151;
+            }
+            
+            /* Style harmonisé pour les options de rangement */
+            .organization-options {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+                margin-bottom: 16px;
+            }
+
+            .option-group {
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                transition: all 0.2s ease;
+                cursor: pointer;
+                background: white;
+            }
+
+            .option-group:hover {
+                border-color: #3b82f6;
+                background: #f8fafc;
+            }
+
+            .option-group:has(input:checked) {
+                border-color: #3b82f6;
+                background: #eff6ff;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            }
+
+            .option-label {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                cursor: pointer;
+                margin: 0;
+            }
+
+            .option-label input[type="radio"] {
+                margin-top: 2px;
+                flex-shrink: 0;
+                width: 18px;
+                height: 18px;
+                accent-color: #3b82f6;
+                cursor: pointer;
+            }
+
+            .option-content {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .option-content strong {
+                font-size: 15px;
+                color: #111827;
+                font-weight: 600;
+            }
+
+            .option-content span {
+                font-size: 13px;
+                color: #6b7280;
+                line-height: 1.4;
+            }
+            
+            /* Messages d'erreur et succès */
+            .error-message {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                color: #dc2626;
+                padding: 12px 16px;
+                border-radius: 6px;
+                margin: 8px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+            }
+            
+            .success-message {
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                color: #15803d;
+                padding: 12px 16px;
+                border-radius: 6px;
+                margin: 8px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+            }
+            
+            /* Ancien style d'email (supprimé et remplacé) */
+            .email-item {
+                display: none;
+            }
+            
+            .email-checkbox-container,
+            .email-content,
+            .email-actions {
+                display: none;
+            }
+            
+            /* Responsive pour le design moderne */
+            @media (max-width: 768px) {
+                .email-main-info {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 4px;
+                }
+                
+                .email-from-modern,
+                .email-subject-modern {
+                    min-width: unset;
+                    max-width: 100%;
+                }
+                
+                .email-content-modern {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
+                }
+                
+                .email-meta-info {
+                    align-self: flex-end;
+                }
+                
+                .email-actions-modern {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+                
+                .email-folder-select-modern {
+                    flex: 1;
+                    min-width: unset;
+                }
+                
+                .organization-options {
+                    grid-template-columns: 1fr;
+                }
             }
             
             .load-more {
