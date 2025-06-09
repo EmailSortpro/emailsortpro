@@ -256,6 +256,25 @@ class DomainOrganizer {
                             <div class="hierarchy-container" id="hierarchyContainer">
                                 <!-- Structure hiérarchique générée dynamiquement -->
                             </div>
+                            
+                            <!-- Fallback: tableau classique si la hiérarchie ne fonctionne pas -->
+                            <div class="results-table-container" id="fallbackTable" style="display: none;">
+                                <table class="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 30px"></th>
+                                            <th>Domaine</th>
+                                            <th style="width: 50px">Nb</th>
+                                            <th style="width: 140px">Dossier</th>
+                                            <th style="width: 60px">Type</th>
+                                            <th style="width: 80px">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsTableBody">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
                         <!-- Section de confirmation -->
@@ -1697,9 +1716,30 @@ class DomainOrganizer {
      */
     generateHierarchicalView(domains) {
         const container = document.getElementById('hierarchyContainer');
-        if (!container) return;
+        const fallbackTable = document.getElementById('fallbackTable');
+        
+        if (!container) {
+            console.warn('[DomainOrganizer] hierarchyContainer not found, using fallback');
+            this.generateFallbackTable(domains);
+            return;
+        }
         
         container.innerHTML = '';
+        
+        // Vérifier si nous devons utiliser la vue hiérarchique ou le tableau
+        const organizationType = this.organizationType || 'hierarchical';
+        
+        if (organizationType === 'flat' || domains.length > 50) {
+            // Utiliser le tableau pour de nombreux domaines ou organisation plate
+            this.generateFallbackTable(domains);
+            if (fallbackTable) fallbackTable.style.display = 'block';
+            container.style.display = 'none';
+            return;
+        }
+        
+        // Afficher la vue hiérarchique
+        if (fallbackTable) fallbackTable.style.display = 'none';
+        container.style.display = 'block';
         
         // Trier les domaines par nombre d'emails (décroissant)
         const sortedDomains = [...domains].sort((a, b) => b.count - a.count);
@@ -1708,6 +1748,75 @@ class DomainOrganizer {
             const domainElement = this.createDomainElement(domain, index);
             container.appendChild(domainElement);
         });
+    }
+
+    /**
+     * Génère le tableau de fallback
+     */
+    generateFallbackTable(domains) {
+        const tbody = document.getElementById('resultsTableBody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        domains.forEach((domain, index) => {
+            const row = this.createDomainRow(domain, index);
+            tbody.appendChild(row);
+        });
+    }
+
+    /**
+     * Crée une ligne de domaine pour le tableau
+     */
+    createDomainRow(domainData, index) {
+        const row = document.createElement('tr');
+        row.dataset.domain = domainData.domain;
+        
+        const isNewFolder = domainData.action === 'create-new';
+        const existingFolders = Array.from(this.existingFolders.values());
+        
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" class="domain-checkbox" data-domain="${domainData.domain}" checked>
+            </td>
+            <td>
+                <div class="domain-name">
+                    <i class="fas fa-at" style="color: #6b7280; font-size: 12px;"></i>
+                    ${domainData.domain}
+                </div>
+            </td>
+            <td>
+                <span class="email-count">${domainData.count}</span>
+            </td>
+            <td>
+                ${isNewFolder ? 
+                    `<input type="text" class="folder-select" value="${domainData.suggestedFolder}" 
+                            data-domain="${domainData.domain}">` :
+                    this.createFolderSelect(domainData, existingFolders)
+                }
+            </td>
+            <td>
+                <span class="action-badge ${isNewFolder ? 'action-new' : 'action-existing'}">
+                    ${isNewFolder ? 'Nouveau' : 'Existant'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.showEmailPreview('${domainData.domain}')" title="Voir les emails">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        
+        // Event listeners
+        const checkbox = row.querySelector('.domain-checkbox');
+        checkbox.addEventListener('change', (e) => this.handleDomainToggle(e));
+        
+        const folderInput = row.querySelector('.folder-select, input[type="text"]');
+        if (folderInput) {
+            folderInput.addEventListener('change', (e) => this.handleFolderChange(e));
+        }
+        
+        return row;
     }
 
     /**
