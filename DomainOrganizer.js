@@ -34,7 +34,7 @@ class DomainOrganizer {
                 <div class="steps-header">
                     <h1>
                         <i class="fas fa-folder-tree"></i>
-                        Rangement automatique par domaine
+                        Rangement par domaine
                     </h1>
                     <div class="steps-indicator">
                         <div class="step active" data-step="configure">
@@ -65,48 +65,33 @@ class DomainOrganizer {
                     <div class="card">
                         <h2 class="card-title">
                             <i class="fas fa-cog"></i>
-                            Configuration du rangement
+                            Configuration
                         </h2>
                         
                         <div class="info-box info-primary">
                             <i class="fas fa-info-circle"></i>
-                            <div>
-                                <strong>Comment ça marche ?</strong><br>
-                                Regroupement automatique des emails par domaine expéditeur (ex: @amazon.com → dossier "amazon.com").
-                            </div>
+                            <div>Regroupement automatique des emails par domaine expéditeur.</div>
                         </div>
                         
                         <form id="organizeForm">
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label for="startDate">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        Date de début
-                                    </label>
+                                    <label for="startDate">Date début</label>
                                     <input type="date" id="startDate" name="startDate">
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="endDate">
-                                        <i class="fas fa-calendar-check"></i>
-                                        Date de fin
-                                    </label>
+                                    <label for="endDate">Date fin</label>
                                     <input type="date" id="endDate" name="endDate">
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="excludeDomains">
-                                        <i class="fas fa-ban"></i>
-                                        Exclure domaines
-                                    </label>
+                                    <label for="excludeDomains">Exclure domaines</label>
                                     <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com">
                                 </div>
                                 
                                 <div class="form-group">
-                                    <label for="excludeEmails">
-                                        <i class="fas fa-user-slash"></i>
-                                        Exclure emails
-                                    </label>
+                                    <label for="excludeEmails">Exclure emails</label>
                                     <input type="text" id="excludeEmails" placeholder="contact@important.com">
                                 </div>
                             </div>
@@ -130,7 +115,7 @@ class DomainOrganizer {
                         <div class="analysis-progress">
                             <div class="current-action">
                                 <div class="spinner"></div>
-                                <div id="currentActionText">Préparation de l'analyse...</div>
+                                <div id="currentActionText">Préparation...</div>
                             </div>
                             
                             <div class="progress-section">
@@ -146,22 +131,22 @@ class DomainOrganizer {
                             <div class="analysis-steps">
                                 <div class="analysis-step" id="step-folders">
                                     <i class="fas fa-folder pending"></i>
-                                    <span>Chargement des dossiers existants</span>
+                                    <span>Dossiers existants</span>
                                     <div class="step-status pending">En attente</div>
                                 </div>
                                 <div class="analysis-step" id="step-emails">
                                     <i class="fas fa-envelope pending"></i>
-                                    <span>Récupération des emails</span>
+                                    <span>Récupération emails</span>
                                     <div class="step-status pending">En attente</div>
                                 </div>
                                 <div class="analysis-step" id="step-domains">
                                     <i class="fas fa-at pending"></i>
-                                    <span>Analyse des domaines</span>
+                                    <span>Analyse domaines</span>
                                     <div class="step-status pending">En attente</div>
                                 </div>
                                 <div class="analysis-step" id="step-suggestions">
                                     <i class="fas fa-lightbulb pending"></i>
-                                    <span>Génération des suggestions</span>
+                                    <span>Suggestions</span>
                                     <div class="step-status pending">En attente</div>
                                 </div>
                             </div>
@@ -174,7 +159,7 @@ class DomainOrganizer {
                     <div class="card">
                         <h2 class="card-title">
                             <i class="fas fa-chart-bar"></i>
-                            Résultats de l'analyse
+                            Résultats
                         </h2>
 
                         <div class="stats-section">
@@ -213,9 +198,9 @@ class DomainOrganizer {
                                         <tr>
                                             <th style="width: 30px"></th>
                                             <th>Domaine</th>
-                                            <th style="width: 60px">Emails</th>
-                                            <th style="width: 180px">Dossier</th>
-                                            <th style="width: 80px">Action</th>
+                                            <th style="width: 50px">Nb</th>
+                                            <th style="width: 140px">Dossier</th>
+                                            <th style="width: 60px">Type</th>
                                         </tr>
                                     </thead>
                                     <tbody id="resultsTableBody">
@@ -250,7 +235,7 @@ class DomainOrganizer {
                     <div class="card">
                         <h2 class="card-title">
                             <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
-                            Confirmation des actions
+                            Confirmation
                         </h2>
                         
                         <div class="warning-box">
@@ -271,13 +256,13 @@ class DomainOrganizer {
                                 <div class="summary-item">
                                     <div class="summary-icon"><i class="fas fa-envelope"></i></div>
                                     <div class="summary-text">
-                                        <strong id="confirmTotalEmails">0</strong> emails seront déplacés
+                                        <strong id="confirmTotalEmails">0</strong> emails
                                     </div>
                                 </div>
                                 <div class="summary-item">
                                     <div class="summary-icon"><i class="fas fa-folder-plus"></i></div>
                                     <div class="summary-text">
-                                        <strong id="confirmNewFolders">0</strong> nouveaux dossiers
+                                        <strong id="confirmNewFolders">0</strong> dossiers
                                     </div>
                                 </div>
                             </div>
@@ -287,7 +272,7 @@ class DomainOrganizer {
                             <label class="checkbox-label large">
                                 <input type="checkbox" id="finalConfirmation">
                                 <div class="checkbox-content">
-                                    <strong>Je confirme vouloir effectuer ces actions</strong>
+                                    <strong>Je confirme ces actions</strong>
                                 </div>
                             </label>
                         </div>
@@ -299,7 +284,7 @@ class DomainOrganizer {
                             </button>
                             <button class="btn btn-danger" id="executeBtn" onclick="window.domainOrganizer.executeOrganization()" disabled>
                                 <i class="fas fa-play"></i>
-                                Lancer le rangement
+                                Lancer
                             </button>
                         </div>
                     </div>
@@ -352,7 +337,7 @@ class DomainOrganizer {
                     <div class="card">
                         <h2 class="card-title">
                             <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                            Rangement terminé !
+                            Terminé !
                         </h2>
                         
                         <div class="success-summary">
@@ -360,8 +345,8 @@ class DomainOrganizer {
                                 <i class="fas fa-check-circle"></i>
                             </div>
                             <div class="success-content">
-                                <h3>Félicitations !</h3>
-                                <p>Votre boîte mail a été organisée avec succès.</p>
+                                <h3>Succès !</h3>
+                                <p>Votre boîte mail a été organisée.</p>
                             </div>
                         </div>
 
@@ -385,11 +370,11 @@ class DomainOrganizer {
                         <div class="action-buttons">
                             <button class="btn btn-secondary" onclick="window.domainOrganizer.resetForm()">
                                 <i class="fas fa-redo"></i>
-                                Nouveau rangement
+                                Nouveau
                             </button>
                             <button class="btn btn-primary" onclick="window.location.reload()">
                                 <i class="fas fa-home"></i>
-                                Retour à l'accueil
+                                Accueil
                             </button>
                         </div>
                     </div>
@@ -409,13 +394,13 @@ class DomainOrganizer {
                 /* En-tête avec étapes */
                 .steps-header {
                     text-align: center;
-                    margin-bottom: 20px;
+                    margin-bottom: 12px;
                 }
 
                 .steps-header h1 {
-                    font-size: 22px;
+                    font-size: 20px;
                     font-weight: 700;
-                    margin-bottom: 16px;
+                    margin-bottom: 12px;
                     color: #111827;
                     display: flex;
                     align-items: center;
@@ -426,9 +411,9 @@ class DomainOrganizer {
                 .steps-indicator {
                     display: flex;
                     justify-content: center;
-                    gap: 16px;
+                    gap: 14px;
                     margin: 0 auto;
-                    max-width: 500px;
+                    max-width: 450px;
                 }
 
                 .step {
@@ -448,8 +433,8 @@ class DomainOrganizer {
                 }
 
                 .step-number {
-                    width: 32px;
-                    height: 32px;
+                    width: 28px;
+                    height: 28px;
                     border-radius: 50%;
                     background: #e5e7eb;
                     color: #6b7280;
@@ -457,9 +442,9 @@ class DomainOrganizer {
                     align-items: center;
                     justify-content: center;
                     font-weight: 600;
-                    margin-bottom: 6px;
+                    margin-bottom: 4px;
                     transition: all 0.3s ease;
-                    font-size: 14px;
+                    font-size: 12px;
                 }
 
                 .step.active .step-number {
@@ -473,7 +458,7 @@ class DomainOrganizer {
                 }
 
                 .step-label {
-                    font-size: 11px;
+                    font-size: 10px;
                     font-weight: 500;
                     color: #6b7280;
                 }
@@ -483,28 +468,28 @@ class DomainOrganizer {
                     background: white;
                     border-radius: 8px;
                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                    padding: 20px;
-                    margin-bottom: 16px;
+                    padding: 16px;
+                    margin-bottom: 12px;
                 }
 
                 .card-title {
-                    font-size: 18px;
+                    font-size: 16px;
                     font-weight: 600;
-                    margin-bottom: 16px;
+                    margin-bottom: 12px;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                     color: #111827;
                 }
 
                 /* Info boxes */
                 .info-box {
-                    padding: 12px;
+                    padding: 10px;
                     border-radius: 6px;
-                    margin-bottom: 16px;
+                    margin-bottom: 12px;
                     display: flex;
-                    gap: 8px;
-                    font-size: 14px;
+                    gap: 6px;
+                    font-size: 13px;
                 }
 
                 .info-primary {
@@ -517,31 +502,31 @@ class DomainOrganizer {
                 .form-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 16px;
-                    margin-bottom: 16px;
+                    gap: 12px;
+                    margin-bottom: 12px;
                 }
 
                 .form-group {
                     display: flex;
                     flex-direction: column;
-                    gap: 6px;
+                    gap: 4px;
                 }
 
                 .form-group label {
-                    font-size: 13px;
+                    font-size: 12px;
                     font-weight: 600;
                     color: #374151;
                     display: flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 4px;
                 }
 
                 .form-group input[type="date"],
                 .form-group input[type="text"] {
-                    padding: 8px 12px;
+                    padding: 6px 10px;
                     border: 1px solid #e5e7eb;
-                    border-radius: 6px;
-                    font-size: 14px;
+                    border-radius: 4px;
+                    font-size: 13px;
                     transition: border-color 0.2s ease;
                 }
 
@@ -552,10 +537,10 @@ class DomainOrganizer {
 
                 /* Boutons */
                 .btn {
-                    padding: 10px 20px;
+                    padding: 8px 16px;
                     border: none;
                     border-radius: 6px;
-                    font-size: 14px;
+                    font-size: 13px;
                     font-weight: 600;
                     cursor: pointer;
                     transition: all 0.2s ease;
@@ -566,8 +551,8 @@ class DomainOrganizer {
                 }
 
                 .btn-large {
-                    padding: 12px 24px;
-                    font-size: 15px;
+                    padding: 10px 20px;
+                    font-size: 14px;
                 }
 
                 .btn-primary {
