@@ -278,80 +278,99 @@ class DomainOrganizer {
                     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
                 }
 
-                /* Reset et base */
-                * { box-sizing: border-box; margin: 0; padding: 0; }
+                /* Reset et base - avec force pour éviter les conflits */
+                .organizer-container * { 
+                    box-sizing: border-box !important; 
+                    margin: 0; 
+                    padding: 0; 
+                }
                 
                 .organizer-container {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 24px;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    color: var(--gray-900);
-                    line-height: 1.6;
+                    max-width: 1200px !important;
+                    margin: 0 auto !important;
+                    padding: 24px !important;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                    color: var(--gray-900) !important;
+                    line-height: 1.6 !important;
+                    background: white !important;
+                    min-height: 100vh !important;
+                    position: relative !important;
+                    z-index: 1 !important;
                 }
 
                 /* En-tête */
                 .organizer-header {
-                    margin-bottom: 32px;
-                    text-align: center;
+                    margin-bottom: 32px !important;
+                    text-align: center !important;
+                    background: white !important;
+                    padding: 20px 0 !important;
                 }
 
                 .organizer-header h1 {
-                    font-size: 28px;
-                    font-weight: 700;
-                    margin-bottom: 16px;
-                    color: var(--gray-900);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 12px;
+                    font-size: 28px !important;
+                    font-weight: 700 !important;
+                    margin-bottom: 16px !important;
+                    color: var(--gray-900) !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    gap: 12px !important;
                 }
 
                 .step-progress {
-                    display: flex;
-                    justify-content: center;
-                    gap: 24px;
-                    margin: 0 auto;
-                    max-width: 600px;
+                    display: flex !important;
+                    justify-content: center !important;
+                    gap: 24px !important;
+                    margin: 0 auto !important;
+                    max-width: 600px !important;
+                    background: var(--gray-50) !important;
+                    padding: 12px 20px !important;
+                    border-radius: var(--border-radius) !important;
                 }
 
                 .step {
-                    padding: 12px 24px;
-                    border-radius: var(--border-radius);
-                    font-weight: 600;
-                    transition: all 0.3s ease;
-                    background: var(--gray-100);
-                    color: var(--gray-500);
-                    position: relative;
+                    padding: 12px 24px !important;
+                    border-radius: var(--border-radius) !important;
+                    font-weight: 600 !important;
+                    transition: all 0.3s ease !important;
+                    background: var(--gray-100) !important;
+                    color: var(--gray-500) !important;
+                    position: relative !important;
+                    border: 2px solid transparent !important;
                 }
 
                 .step.active {
-                    background: var(--primary-color);
-                    color: white;
+                    background: var(--primary-color) !important;
+                    color: white !important;
+                    box-shadow: var(--shadow) !important;
                 }
 
                 .step.completed {
-                    background: var(--success-color);
-                    color: white;
+                    background: var(--success-color) !important;
+                    color: white !important;
                 }
 
                 /* Cards */
                 .config-card, .analysis-card, .results-card, .execution-card {
-                    background: white;
-                    border-radius: var(--border-radius);
-                    box-shadow: var(--shadow);
-                    padding: 32px;
-                    margin-bottom: 24px;
+                    background: white !important;
+                    border-radius: var(--border-radius) !important;
+                    box-shadow: var(--shadow) !important;
+                    padding: 32px !important;
+                    margin-bottom: 24px !important;
+                    border: 1px solid var(--gray-200) !important;
                 }
 
                 /* Contenu des étapes */
                 .step-content {
-                    display: none;
+                    display: none !important;
+                    opacity: 0 !important;
+                    transition: opacity 0.3s ease !important;
                 }
 
                 .step-content.active {
-                    display: block;
-                    animation: fadeIn 0.3s ease;
+                    display: block !important;
+                    opacity: 1 !important;
+                    animation: fadeIn 0.3s ease !important;
                 }
 
                 @keyframes fadeIn {
@@ -361,42 +380,43 @@ class DomainOrganizer {
 
                 /* Formulaire de configuration */
                 .config-form h2 {
-                    font-size: 24px;
-                    margin-bottom: 24px;
-                    color: var(--gray-800);
+                    font-size: 24px !important;
+                    margin-bottom: 24px !important;
+                    color: var(--gray-800) !important;
                 }
 
                 .form-row {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 24px;
-                    margin-bottom: 24px;
+                    display: grid !important;
+                    grid-template-columns: 1fr 1fr !important;
+                    gap: 24px !important;
+                    margin-bottom: 24px !important;
                 }
 
                 .form-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    gap: 8px !important;
                 }
 
                 .form-group label {
-                    font-weight: 600;
-                    color: var(--gray-700);
-                    font-size: 14px;
+                    font-weight: 600 !important;
+                    color: var(--gray-700) !important;
+                    font-size: 14px !important;
                 }
 
                 .form-group input {
-                    padding: 12px 16px;
-                    border: 2px solid var(--gray-200);
-                    border-radius: var(--border-radius);
-                    font-size: 16px;
-                    transition: border-color 0.2s ease;
+                    padding: 12px 16px !important;
+                    border: 2px solid var(--gray-200) !important;
+                    border-radius: var(--border-radius) !important;
+                    font-size: 16px !important;
+                    transition: border-color 0.2s ease !important;
+                    background: white !important;
                 }
 
                 .form-group input:focus {
-                    outline: none;
-                    border-color: var(--primary-color);
-                    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+                    outline: none !important;
+                    border-color: var(--primary-color) !important;
+                    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1) !important;
                 }
 
                 /* Boutons */
@@ -2356,12 +2376,78 @@ window.domainOrganizer = new DomainOrganizer();
 console.log('[DomainOrganizer] ✅ Module chargé - Version 5.0 Interface harmonisée');
 
 // ================================================
-// GESTION AUTONOME
+// INTÉGRATION AVEC PAGEMANAGER
+// ================================================
+
+// Méthode d'affichage intégrée avec PageManager
+window.domainOrganizer.showPage = function() {
+    console.log('[DomainOrganizer] Affichage de la page v5.0...');
+    
+    if (!window.authService?.isAuthenticated()) {
+        window.uiManager?.showToast('Veuillez vous connecter pour utiliser cette fonctionnalité', 'warning');
+        return;
+    }
+    
+    // Empêcher les conflits avec PageManager
+    window.domainOrganizerActive = true;
+    
+    // Obtenir le container principal
+    const pageContent = document.getElementById('pageContent');
+    if (!pageContent) {
+        console.error('[DomainOrganizer] Element pageContent non trouvé');
+        return;
+    }
+    
+    // Injecter l'interface avec protection anti-écrasement
+    this.injectInterface(pageContent);
+};
+
+window.domainOrganizer.injectInterface = function(container) {
+    // Réinitialiser l'état
+    this.isProcessing = false;
+    this.currentStep = 'configure';
+    this.currentAnalysis = null;
+    this.selectedActions.clear();
+    this.emailSelections.clear();
+    this.validationErrors.clear();
+    this.folderCreationQueue.clear();
+    
+    // Injecter le HTML avec style intégré
+    container.innerHTML = this.getPageHTML();
+    
+    // Forcer l'affichage et empêcher l'écrasement
+    container.style.display = 'block';
+    container.style.visibility = 'visible';
+    container.style.opacity = '1';
+    
+    // Initialiser immédiatement
+    setTimeout(async () => {
+        if (window.domainOrganizerActive && document.getElementById('configStep')) {
+            await this.initializePage();
+            console.log('[DomainOrganizer] ✅ Interface injectée et initialisée v5.0');
+        } else {
+            console.warn('[DomainOrganizer] Interface écrasée, re-injection...');
+            this.injectInterface(container);
+        }
+    }, 100);
+};
+
+// Enregistrement avec PageManager si disponible
+if (window.pageManager) {
+    window.pageManager.registerPageHandler('ranger', function() {
+        window.domainOrganizer.showPage();
+    });
+    console.log('[DomainOrganizer] ✅ Enregistré avec PageManager');
+}
+
+// ================================================
+// GESTION AUTONOME DE SAUVEGARDE
 // ================================================
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[DomainOrganizer] Initialisation autonome v5.0...');
     
+    // Écouter les clics sur le bouton Ranger
     document.addEventListener('click', function(e) {
         const rangerButton = e.target.closest('[data-page="ranger"]');
         if (!rangerButton) return;
@@ -2372,71 +2458,46 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('[DomainOrganizer] Bouton Ranger cliqué - v5.0');
         
-        if (!window.authService?.isAuthenticated()) {
-            window.uiManager?.showToast('Veuillez vous connecter pour utiliser cette fonctionnalité', 'warning');
-            return;
-        }
+        // Activer immédiatement pour éviter l'écrasement
+        window.domainOrganizerActive = true;
         
-        window.domainOrganizer.showPage();
+        // Délai court pour éviter les conflits
+        setTimeout(() => {
+            window.domainOrganizer.showPage();
+        }, 50);
+        
         return false;
     }, true);
+    
+    // Protection contre l'écrasement de contenu
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (window.domainOrganizerActive && mutation.type === 'childList') {
+                const pageContent = document.getElementById('pageContent');
+                if (pageContent && !pageContent.querySelector('.organizer-container')) {
+                    console.warn('[DomainOrganizer] Contenu écrasé détecté, restauration...');
+                    window.domainOrganizer.injectInterface(pageContent);
+                }
+            }
+        });
+    });
+    
+    // Observer les changements de contenu
+    const pageContent = document.getElementById('pageContent');
+    if (pageContent) {
+        observer.observe(pageContent, {
+            childList: true,
+            subtree: false
+        });
+    }
 });
 
-window.domainOrganizer.showPage = function() {
-    console.log('[DomainOrganizer] Affichage de la page v5.0...');
-    
-    const loginPage = document.getElementById('loginPage');
-    if (loginPage) loginPage.style.display = 'none';
-    
-    const pageContent = document.getElementById('pageContent');
-    if (!pageContent) {
-        console.error('[DomainOrganizer] Element pageContent non trouvé');
-        return;
-    }
-    
-    pageContent.style.display = 'block';
-    window.domainOrganizerActive = true;
-    
-    pageContent.innerHTML = this.getPageHTML();
-    
-    setTimeout(async () => {
-        if (!window.domainOrganizerActive || !document.getElementById('configStep')) {
-            console.warn('[DomainOrganizer] Content was overwritten, re-injecting...');
-            pageContent.innerHTML = this.getPageHTML();
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        this.isProcessing = false;
-        this.currentStep = 'configure';
-        this.currentAnalysis = null;
-        this.selectedActions.clear();
-        this.emailSelections.clear();
-        this.validationErrors.clear();
-        this.folderCreationQueue.clear();
-        
-        await this.initializePage();
-        console.log('[DomainOrganizer] ✅ Initialization complete v5.0');
-    }, 300);
-    
-    // Mettre à jour la navigation
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
-    });
-    const rangerButton = document.querySelector('[data-page="ranger"]');
-    if (rangerButton) {
-        rangerButton.classList.add('active');
-    }
-    
-    const mainNav = document.getElementById('mainNav');
-    if (mainNav) mainNav.style.display = 'flex';
-    
-    console.log('[DomainOrganizer] ✅ Page v5.0 affichée avec succès');
-};
-
+// Désactiver à la navigation
 window.addEventListener('beforeunload', () => {
     window.domainOrganizerActive = false;
 });
 
+// Fonction globale de compatibilité
 window.showDomainOrganizer = function() {
     window.domainOrganizer.showPage();
 };
