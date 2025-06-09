@@ -1,4 +1,4 @@
-// TaskManager Pro v9.1 - Interface Épurée et Moderne avec ligne explicative
+// TaskManager Pro v9.2 - Onglet Information en Premier avec Catégories Corrigées
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v9.1 - Interface avec aide...');
+            console.log('[TaskManager] Initializing v9.2 - Information tab first...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -973,7 +973,7 @@ Sujet: ${subject}
 }
 
 // =====================================
-// MODERN TASKS VIEW - INTERFACE ÉPURÉE AVEC LIGNE EXPLICATIVE
+// MODERN TASKS VIEW - ONGLET INFORMATION EN PREMIER
 // =====================================
 class TasksView {
     constructor() {
@@ -989,10 +989,10 @@ class TasksView {
         };
         
         this.selectedTasks = new Set();
-        this.currentViewMode = 'flat';
+        this.currentViewMode = 'information'; // CHANGÉ: démarrer sur l'onglet information
         this.showCompleted = false;
         this.showAdvancedFilters = true;
-        this.showHelpLine = true; // Nouvelle propriété pour la ligne d'aide
+        this.showHelpLine = true;
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
@@ -1030,8 +1030,14 @@ class TasksView {
             <div class="tasks-page-modern">
                 <!-- Barre de contrôles compacte harmonisée -->
                 <div class="controls-bar-compact-harmonized">
-                    <!-- Modes de vue harmonisés -->
+                    <!-- Modes de vue harmonisés - ORDRE MODIFIÉ -->
                     <div class="view-modes-harmonized">
+                        <button class="view-mode-harmonized ${this.currentViewMode === 'information' ? 'active' : ''}" 
+                                onclick="window.tasksView.changeViewMode('information')"
+                                title="Informations">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Informations</span>
+                        </button>
                         <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('flat')"
                                 title="Liste">
@@ -1102,87 +1108,346 @@ class TasksView {
                 <!-- Ligne explicative -->
                 ${this.showHelpLine ? this.renderHelpLine() : ''}
 
-                <!-- Filtres de statut avec recherche intégrée -->
-                <div class="status-filters-with-search-harmonized">
-                    <!-- Section recherche intégrée -->
-                    <div class="search-section-inline-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
-                            <input type="text" 
-                                   class="search-input-harmonized" 
-                                   id="taskSearchInput"
-                                   placeholder="Rechercher tâches..." 
-                                   value="${this.currentFilters.search}">
-                            ${this.currentFilters.search ? `
-                                <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <!-- Pills de statut -->
-                    <div class="status-pills-row-harmonized">
-                        ${this.buildHarmonizedStatusPills(stats)}
-                    </div>
-                </div>
-                
-                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
-                    <div class="advanced-filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-flag"></i> Priorité
-                            </label>
-                            <select class="filter-select" id="priorityFilter" 
-                                    onchange="window.tasksView.updateFilter('priority', this.value)">
-                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
-                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-building"></i> Client
-                            </label>
-                            <select class="filter-select" id="clientFilter" 
-                                    onchange="window.tasksView.updateFilter('client', this.value)">
-                                ${this.buildClientFilterOptions()}
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-sort"></i> Trier par
-                            </label>
-                            <select class="filter-select" id="sortByFilter" 
-                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
-                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-actions">
-                            <button class="btn-harmonized btn-secondary" onclick="window.tasksView.resetAllFilters()">
-                                <i class="fas fa-undo"></i> Réinitialiser
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tasks-container-harmonized" id="tasksContainer">
-                    ${this.renderTasksList()}
-                </div>
+                <!-- Affichage conditionnel selon le mode -->
+                ${this.currentViewMode === 'information' ? 
+                    this.renderInformationView(stats) : 
+                    this.renderListViews()
+                }
             </div>
         `;
 
         this.addHarmonizedTaskStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Harmonized interface with help line rendered');
+        console.log('[TasksView] Harmonized interface with information tab first rendered');
+    }
+
+    renderInformationView(stats) {
+        const tasks = window.taskManager.getAllTasks();
+        const recentTasks = tasks.slice(0, 5);
+        const urgentTasks = tasks.filter(task => task.priority === 'urgent' || task.priority === 'high').slice(0, 3);
+        const overdueCount = stats.overdue;
+        const needsReplyCount = stats.needsReply;
+
+        // Calcul des catégories avec icônes
+        const categoriesStats = this.getCategoriesStats(tasks);
+
+        return `
+            <div class="information-view-container">
+                <!-- Cartes de statistiques principales -->
+                <div class="stats-cards-grid">
+                    <div class="stat-card primary">
+                        <div class="stat-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">${stats.total}</div>
+                            <div class="stat-label">Total des tâches</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card todo">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">${stats.todo}</div>
+                            <div class="stat-label">À faire</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card progress">
+                        <div class="stat-icon">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">${stats.inProgress}</div>
+                            <div class="stat-label">En cours</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card completed">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number">${stats.completed}</div>
+                            <div class="stat-label">Terminées</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alertes et notifications -->
+                <div class="alerts-section">
+                    ${overdueCount > 0 ? `
+                        <div class="alert alert-danger">
+                            <div class="alert-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="alert-content">
+                                <div class="alert-title">Tâches en retard</div>
+                                <div class="alert-text">${overdueCount} tâche${overdueCount > 1 ? 's' : ''} en retard nécessite${overdueCount > 1 ? 'nt' : ''} votre attention</div>
+                            </div>
+                            <button class="alert-action" onclick="window.tasksView.showOverdueTasks()">
+                                Voir
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    ${needsReplyCount > 0 ? `
+                        <div class="alert alert-warning">
+                            <div class="alert-icon">
+                                <i class="fas fa-reply"></i>
+                            </div>
+                            <div class="alert-content">
+                                <div class="alert-title">Emails à traiter</div>
+                                <div class="alert-text">${needsReplyCount} email${needsReplyCount > 1 ? 's' : ''} en attente de réponse</div>
+                            </div>
+                            <button class="alert-action" onclick="window.tasksView.showNeedsReplyTasks()">
+                                Répondre
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Section des catégories -->
+                <div class="categories-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-tags"></i>
+                        Répartition par catégories
+                    </h3>
+                    <div class="categories-grid">
+                        ${categoriesStats.map(cat => `
+                            <div class="category-card" onclick="window.tasksView.filterByCategory('${cat.id}')">
+                                <div class="category-icon">
+                                    <i class="${cat.icon}"></i>
+                                </div>
+                                <div class="category-info">
+                                    <div class="category-name">${cat.name}</div>
+                                    <div class="category-count">${cat.count} tâche${cat.count > 1 ? 's' : ''}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Tâches récentes -->
+                <div class="recent-tasks-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-history"></i>
+                        Tâches récentes
+                    </h3>
+                    <div class="recent-tasks-list">
+                        ${recentTasks.map(task => `
+                            <div class="recent-task-item" onclick="window.tasksView.showTaskDetails('${task.id}')">
+                                <div class="task-priority-dot priority-${task.priority}"></div>
+                                <div class="task-info">
+                                    <div class="task-title">${this.escapeHtml(task.title)}</div>
+                                    <div class="task-meta">
+                                        <span class="task-category">${this.getCategoryDisplay(task.category)}</span>
+                                        <span class="task-date">${this.formatRelativeDate(new Date(task.createdAt))}</span>
+                                    </div>
+                                </div>
+                                <div class="task-status status-${task.status}">
+                                    ${this.getStatusIcon(task.status)}
+                                </div>
+                            </div>
+                        `).join('')}
+                        
+                        ${recentTasks.length === 0 ? `
+                            <div class="empty-recent">
+                                <i class="fas fa-inbox"></i>
+                                <p>Aucune tâche récente</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Tâches prioritaires -->
+                ${urgentTasks.length > 0 ? `
+                    <div class="urgent-tasks-section">
+                        <h3 class="section-title urgent">
+                            <i class="fas fa-fire"></i>
+                            Tâches urgentes
+                        </h3>
+                        <div class="urgent-tasks-list">
+                            ${urgentTasks.map(task => `
+                                <div class="urgent-task-item" onclick="window.tasksView.showTaskDetails('${task.id}')">
+                                    <div class="urgent-priority-badge">
+                                        ${this.getPriorityIcon(task.priority)}
+                                    </div>
+                                    <div class="urgent-task-info">
+                                        <div class="urgent-task-title">${this.escapeHtml(task.title)}</div>
+                                        <div class="urgent-task-due">
+                                            ${task.dueDate ? `Échéance: ${this.formatDate(task.dueDate)}` : 'Pas d\'échéance'}
+                                        </div>
+                                    </div>
+                                    <button class="urgent-action-btn" onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    renderListViews() {
+        return `
+            <!-- Filtres de statut avec recherche intégrée -->
+            <div class="status-filters-with-search-harmonized">
+                <!-- Section recherche intégrée -->
+                <div class="search-section-inline-harmonized">
+                    <div class="search-box-harmonized">
+                        <i class="fas fa-search search-icon-harmonized"></i>
+                        <input type="text" 
+                               class="search-input-harmonized" 
+                               id="taskSearchInput"
+                               placeholder="Rechercher tâches..." 
+                               value="${this.currentFilters.search}">
+                        ${this.currentFilters.search ? `
+                            <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Pills de statut -->
+                <div class="status-pills-row-harmonized">
+                    ${this.buildHarmonizedStatusPills(window.taskManager.getStats())}
+                </div>
+            </div>
+            
+            <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                <div class="advanced-filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-flag"></i> Priorité
+                        </label>
+                        <select class="filter-select" id="priorityFilter" 
+                                onchange="window.tasksView.updateFilter('priority', this.value)">
+                            <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-building"></i> Client
+                        </label>
+                        <select class="filter-select" id="clientFilter" 
+                                onchange="window.tasksView.updateFilter('client', this.value)">
+                            ${this.buildClientFilterOptions()}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-sort"></i> Trier par
+                        </label>
+                        <select class="filter-select" id="sortByFilter" 
+                                onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                            <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button class="btn-harmonized btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tasks-container-harmonized" id="tasksContainer">
+                ${this.renderTasksList()}
+            </div>
+        `;
+    }
+
+    getCategoriesStats(tasks) {
+        const categories = [
+            { id: 'email', name: 'Emails', icon: 'fas fa-envelope', count: 0 },
+            { id: 'meeting', name: 'Réunions', icon: 'fas fa-calendar-alt', count: 0 },
+            { id: 'call', name: 'Appels', icon: 'fas fa-phone', count: 0 },
+            { id: 'document', name: 'Documents', icon: 'fas fa-file-alt', count: 0 },
+            { id: 'project', name: 'Projets', icon: 'fas fa-project-diagram', count: 0 },
+            { id: 'other', name: 'Autres', icon: 'fas fa-tasks', count: 0 }
+        ];
+
+        // Compter les tâches par catégorie
+        tasks.forEach(task => {
+            const category = categories.find(cat => cat.id === task.category);
+            if (category) {
+                category.count++;
+            } else {
+                // Si catégorie inconnue, l'ajouter à "Autres"
+                const otherCategory = categories.find(cat => cat.id === 'other');
+                if (otherCategory) {
+                    otherCategory.count++;
+                }
+            }
+        });
+
+        // Retourner seulement les catégories qui ont des tâches
+        return categories.filter(cat => cat.count > 0);
+    }
+
+    getCategoryDisplay(categoryId) {
+        const categoryMap = {
+            'email': '📧 Email',
+            'meeting': '🗓️ Réunion',
+            'call': '📞 Appel',
+            'document': '📄 Document',
+            'project': '🎯 Projet',
+            'other': '✓ Autre'
+        };
+        return categoryMap[categoryId] || '✓ Tâche';
+    }
+
+    filterByCategory(categoryId) {
+        this.currentFilters.category = categoryId;
+        this.changeViewMode('flat');
+    }
+
+    showOverdueTasks() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            tag: 'all',
+            search: '',
+            sortBy: 'dueDate',
+            dateRange: 'all',
+            overdue: true,
+            needsReply: false
+        };
+        this.changeViewMode('flat');
+    }
+
+    showNeedsReplyTasks() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            tag: 'all',
+            search: '',
+            sortBy: 'created',
+            dateRange: 'all',
+            overdue: false,
+            needsReply: true
+        };
+        this.changeViewMode('flat');
     }
 
     renderHelpLine() {
@@ -1191,7 +1456,7 @@ class TasksView {
                 <div class="help-content-tasks">
                     <i class="fas fa-info-circle help-icon-tasks"></i>
                     <div class="help-text-tasks">
-                        <span class="help-main-text-tasks">Gérez vos tâches en sélectionnant celles qui vous intéressent, puis utilisez les boutons d'action pour les traiter, répondre aux emails ou les organiser. Vous pouvez également filtrer par statut ci-dessous.</span>
+                        <span class="help-main-text-tasks">Consultez vos statistiques dans l'onglet Informations, puis gérez vos tâches dans les autres vues. Sélectionnez des tâches pour utiliser les actions groupées.</span>
                     </div>
                 </div>
                 <button class="help-close-tasks" onclick="window.tasksView.hideHelpLine()" title="Masquer cette aide">
@@ -1401,6 +1666,16 @@ class TasksView {
         return date.toLocaleDateString('fr-FR');
     }
 
+    formatDate(dateString) {
+        if (!dateString) return 'Pas de date';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fr-FR', { 
+            day: 'numeric', 
+            month: 'short',
+            year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+        });
+    }
+
     renderEmptyState() {
         return `
             <div class="empty-state-harmonized">
@@ -1553,6 +1828,16 @@ class TasksView {
         return colors[priority] || colors.medium;
     }
 
+    getPriorityIcon(priority) {
+        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
+        return icons[priority] || '📌';
+    }
+
+    getStatusIcon(status) {
+        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
+        return icons[status] || '⏳';
+    }
+
     formatDueDateSimple(dateString) {
         if (!dateString) {
             return { html: '<span class="no-deadline-harmonized">Pas d\'échéance</span>', text: '' };
@@ -1627,6 +1912,11 @@ class TasksView {
         this.currentViewMode = mode;
         this.refreshView();
         console.log('[TasksView] View mode changed to:', mode);
+    }
+
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        this.refreshView();
     }
 
     quickFilter(filterId) {
@@ -1868,19 +2158,9 @@ class TasksView {
     }
 
     // MÉTHODES UTILITAIRES CONSERVÉES
-    getPriorityIcon(priority) {
-        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
-        return icons[priority] || '📌';
-    }
-
     getPriorityLabel(priority) {
         const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
         return labels[priority] || 'Normale';
-    }
-
-    getStatusIcon(status) {
-        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
-        return icons[status] || '⏳';
     }
 
     getStatusLabel(status) {
@@ -2137,6 +2417,7 @@ class TasksView {
     markComplete(taskId) {
         window.taskManager.updateTask(taskId, { status: 'completed' });
         this.showToast('Tâche marquée comme terminée', 'success');
+        this.refreshView();
     }
 
     toggleTaskSelection(taskId) {
@@ -2403,15 +2684,24 @@ class TasksView {
     }
 
     refreshView() {
-        const container = document.getElementById('tasksContainer');
+        const container = document.getElementById('tasksContainer') || document.querySelector('.tasks-page-modern');
         if (container) {
-            container.innerHTML = this.renderTasksList();
+            // Si on est en mode information, recharger complètement
+            if (this.currentViewMode === 'information') {
+                this.render(container.parentElement || container);
+            } else {
+                // Sinon, ne recharger que le contenu des tâches
+                const tasksContainer = document.getElementById('tasksContainer');
+                if (tasksContainer) {
+                    tasksContainer.innerHTML = this.renderTasksList();
+                }
+                
+                const stats = window.taskManager.getStats();
+                document.querySelectorAll('.status-pills-row-harmonized').forEach(container => {
+                    container.innerHTML = this.buildHarmonizedStatusPills(stats);
+                });
+            }
         }
-        
-        const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-pills-row-harmonized').forEach(container => {
-            container.innerHTML = this.buildHarmonizedStatusPills(stats);
-        });
         
         // Mettre à jour les boutons d'action si des tâches sont sélectionnées
         const selectedCount = this.selectedTasks.size;
@@ -2421,61 +2711,6 @@ class TasksView {
     }
 
     refreshTasks() {
-        this.refreshView();
-        this.showToast('Tâches actualisées', 'success');
-    }
-
-    buildClientFilterOptions() {
-        const tasks = window.taskManager.getAllTasks();
-        const clients = new Set();
-        
-        tasks.forEach(task => {
-            if (task.client) {
-                clients.add(task.client);
-            }
-        });
-        
-        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
-        
-        Array.from(clients).sort().forEach(client => {
-            const count = tasks.filter(t => t.client === client).length;
-            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
-        });
-        
-        return options;
-    }
-
-    updateFilter(filterType, value) {
-        this.currentFilters[filterType] = value;
-        this.refreshView();
-        console.log('[TasksView] Filter updated:', filterType, '=', value);
-    }
-
-    resetAllFilters() {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            category: 'all',
-            client: 'all',
-            tag: 'all',
-            search: '',
-            sortBy: 'created',
-            dateRange: 'all',
-            overdue: false,
-            needsReply: false
-        };
-        
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        
-        document.querySelectorAll('.filter-select').forEach(select => {
-            if (select.querySelector('option[value="all"]')) {
-                select.value = 'all';
-            } else if (select.id === 'sortByFilter') {
-                select.value = 'created';
-            }
-        });
-        
         this.refreshView();
         this.showToast('Filtres réinitialisés', 'info');
     }
@@ -2502,18 +2737,6 @@ class TasksView {
                this.currentFilters.search !== '' ||
                this.currentFilters.overdue ||
                this.currentFilters.needsReply;
-    }
-
-    refreshView() {
-        const container = document.getElementById('tasksContainer');
-        if (container) {
-            container.innerHTML = this.renderTasksList();
-        }
-        
-        const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters-harmonized').forEach(container => {
-            container.innerHTML = this.buildHarmonizedStatusPills(stats);
-        });
     }
 
     showToast(message, type = 'info') {
@@ -2554,7 +2777,7 @@ class TasksView {
         return div.innerHTML;
     }
 
-    // STYLES HARMONISÉS ET UNIFORMISÉS AVEC CENTRAGE PARFAIT + LIGNE D'AIDE
+    // STYLES HARMONISÉS ET UNIFORMISÉS AVEC CENTRAGE PARFAIT + ONGLET INFORMATION
     addHarmonizedTaskStyles() {
         if (document.getElementById('harmonizedTaskStyles')) return;
         
@@ -2645,6 +2868,559 @@ class TasksView {
                 border-color: #93c5fd;
                 transform: scale(1.1);
                 box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+            }
+
+            /* ===== STYLES POUR L'ONGLET INFORMATION ===== */
+            .information-view-container {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+            }
+
+            /* Cartes de statistiques */
+            .stats-cards-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+
+            .stat-card {
+                background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+                backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 16px;
+                padding: 24px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .stat-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                transition: all 0.3s ease;
+            }
+
+            .stat-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            }
+
+            .stat-card.primary::before {
+                background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            }
+
+            .stat-card.todo::before {
+                background: linear-gradient(90deg, #f59e0b, #d97706);
+            }
+
+            .stat-card.progress::before {
+                background: linear-gradient(90deg, #3b82f6, #2563eb);
+            }
+
+            .stat-card.completed::before {
+                background: linear-gradient(90deg, #10b981, #059669);
+            }
+
+            .stat-icon {
+                width: 56px;
+                height: 56px;
+                border-radius: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                color: white;
+                flex-shrink: 0;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .stat-card.primary .stat-icon {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            }
+
+            .stat-card.todo .stat-icon {
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            }
+
+            .stat-card.progress .stat-icon {
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            }
+
+            .stat-card.completed .stat-icon {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            }
+
+            .stat-content {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .stat-number {
+                font-size: 32px;
+                font-weight: 800;
+                color: #1f2937;
+                line-height: 1;
+                margin-bottom: 4px;
+                background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .stat-label {
+                font-size: 14px;
+                font-weight: 600;
+                color: #6b7280;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            /* Section des alertes */
+            .alerts-section {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+
+            .alert {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border: 1px solid;
+                border-radius: 12px;
+                padding: 16px 20px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .alert::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 4px;
+                transition: all 0.3s ease;
+            }
+
+            .alert:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            }
+
+            .alert-danger {
+                border-color: #fecaca;
+                background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            }
+
+            .alert-danger::before {
+                background: linear-gradient(180deg, #ef4444, #dc2626);
+            }
+
+            .alert-warning {
+                border-color: #fde68a;
+                background: linear-gradient(135deg, #fefbf2 0%, #fef3c7 100%);
+            }
+
+            .alert-warning::before {
+                background: linear-gradient(180deg, #f59e0b, #d97706);
+            }
+
+            .alert-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                color: white;
+                flex-shrink: 0;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .alert-danger .alert-icon {
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            }
+
+            .alert-warning .alert-icon {
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            }
+
+            .alert-content {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .alert-title {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 4px;
+            }
+
+            .alert-text {
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 500;
+            }
+
+            .alert-action {
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 8px 16px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+
+            .alert-action:hover {
+                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            }
+
+            /* Section des catégories */
+            .categories-section {
+                margin-bottom: 20px;
+            }
+
+            .section-title {
+                font-size: 20px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #e5e7eb;
+            }
+
+            .section-title.urgent {
+                color: #dc2626;
+                border-bottom-color: #fecaca;
+            }
+
+            .section-title i {
+                font-size: 18px;
+                color: #6366f1;
+            }
+
+            .section-title.urgent i {
+                color: #ef4444;
+            }
+
+            .categories-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+            }
+
+            .category-card {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .category-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, #6366f1, transparent);
+                opacity: 0;
+                transition: all 0.3s ease;
+            }
+
+            .category-card:hover {
+                background: white;
+                border-color: #6366f1;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15);
+            }
+
+            .category-card:hover::before {
+                opacity: 1;
+            }
+
+            .category-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                color: #6366f1;
+                flex-shrink: 0;
+                border: 1px solid #e2e8f0;
+                transition: all 0.3s ease;
+            }
+
+            .category-card:hover .category-icon {
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                color: white;
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            }
+
+            .category-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .category-name {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 2px;
+            }
+
+            .category-count {
+                font-size: 12px;
+                color: #6b7280;
+                font-weight: 500;
+            }
+
+            /* Tâches récentes */
+            .recent-tasks-section, .urgent-tasks-section {
+                margin-bottom: 20px;
+            }
+
+            .recent-tasks-list, .urgent-tasks-list {
+                background: rgba(255, 255, 255, 0.9);
+                backdrop-filter: blur(10px);
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            }
+
+            .recent-task-item, .urgent-task-item {
+                padding: 16px 20px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #f3f4f6;
+                position: relative;
+            }
+
+            .recent-task-item:last-child, .urgent-task-item:last-child {
+                border-bottom: none;
+            }
+
+            .recent-task-item:hover, .urgent-task-item:hover {
+                background: #f8fafc;
+                border-left: 3px solid #6366f1;
+                transform: translateX(2px);
+            }
+
+            .task-priority-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+                flex-shrink: 0;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .task-priority-dot.priority-urgent {
+                background: #ef4444;
+                box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+            }
+
+            .task-priority-dot.priority-high {
+                background: #f97316;
+                box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+            }
+
+            .task-priority-dot.priority-medium {
+                background: #3b82f6;
+                box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+            }
+
+            .task-priority-dot.priority-low {
+                background: #10b981;
+                box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+            }
+
+            .task-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .task-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .task-meta {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 12px;
+                color: #6b7280;
+            }
+
+            .task-category {
+                padding: 2px 6px;
+                background: #f3f4f6;
+                border-radius: 4px;
+                font-weight: 500;
+                font-size: 10px;
+            }
+
+            .task-date {
+                font-weight: 500;
+            }
+
+            .task-status {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                flex-shrink: 0;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .task-status.status-todo {
+                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+                color: #d97706;
+            }
+
+            .task-status.status-in-progress {
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                color: #2563eb;
+            }
+
+            .task-status.status-completed {
+                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+                color: #16a34a;
+            }
+
+            /* Tâches urgentes */
+            .urgent-task-item {
+                background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+                border-left: 4px solid #ef4444;
+            }
+
+            .urgent-priority-badge {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                flex-shrink: 0;
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+                animation: pulse 2s infinite;
+            }
+
+            .urgent-task-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .urgent-task-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .urgent-task-due {
+                font-size: 12px;
+                color: #dc2626;
+                font-weight: 600;
+            }
+
+            .urgent-action-btn {
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                font-size: 14px;
+            }
+
+            .urgent-action-btn:hover {
+                background: linear-gradient(135deg, #059669 0%, #047857 100%);
+                transform: scale(1.1);
+                box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+            }
+
+            .empty-recent {
+                padding: 40px 20px;
+                text-align: center;
+                color: #9ca3af;
+            }
+
+            .empty-recent i {
+                font-size: 32px;
+                margin-bottom: 12px;
+                display: block;
+            }
+
+            .empty-recent p {
+                margin: 0;
+                font-size: 14px;
+                font-weight: 500;
             }
 
             /* ===== HARMONISATION ABSOLUE DE TOUS LES BOUTONS AVEC CENTRAGE PARFAIT ===== */
@@ -3244,9 +4020,6 @@ class TasksView {
                 align-items: center;
                 justify-content: center;
             }
-            
-            /* ===== FILTRES DE STATUT ÉLARGIS SUR TOUTE LA LIGNE - SUPPRIMÉ ===== */
-            /* Cette section est remplacée par .status-pills-row-harmonized */
             
             /* ALIGNEMENT PARFAIT DU CONTENU DANS LES PILLS AVEC CENTRAGE */
             .pill-icon-harmonized {
@@ -4781,6 +5554,16 @@ class TasksView {
                     align-items: center;
                     justify-content: center;
                 }
+                
+                .stats-cards-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 16px;
+                }
+                
+                .categories-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    gap: 12px;
+                }
             }
             
             @media (max-width: 1024px) {
@@ -4917,6 +5700,21 @@ class TasksView {
                     align-items: center !important;
                     justify-content: center !important;
                 }
+                
+                .stats-cards-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                    gap: 12px;
+                }
+                
+                .categories-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                    gap: 10px;
+                }
+                
+                .information-view-container {
+                    padding: 16px;
+                    gap: 20px;
+                }
             }
             
             @media (max-width: 768px) {
@@ -5041,6 +5839,47 @@ class TasksView {
                     align-items: center !important;
                     justify-content: center !important;
                     text-align: center !important;
+                }
+                
+                .stats-cards-grid {
+                    grid-template-columns: 1fr 1fr;
+                    gap: 10px;
+                }
+                
+                .categories-grid {
+                    grid-template-columns: 1fr;
+                    gap: 8px;
+                }
+                
+                .information-view-container {
+                    padding: 12px;
+                    gap: 16px;
+                }
+                
+                .stat-card {
+                    padding: 16px;
+                    gap: 12px;
+                }
+                
+                .stat-icon {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 18px;
+                }
+                
+                .stat-number {
+                    font-size: 24px;
+                }
+                
+                .alert {
+                    padding: 12px 16px;
+                    gap: 12px;
+                }
+                
+                .alert-icon {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 14px;
                 }
             }
             
@@ -5181,6 +6020,35 @@ class TasksView {
                 .view-mode-harmonized {
                     height: calc(var(--btn-height) - var(--gap-small)) !important;
                 }
+                
+                .stats-cards-grid {
+                    grid-template-columns: 1fr;
+                    gap: 8px;
+                }
+                
+                .information-view-container {
+                    padding: 8px;
+                    gap: 12px;
+                }
+                
+                .stat-card {
+                    padding: 12px;
+                    gap: 10px;
+                }
+                
+                .stat-icon {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 14px;
+                }
+                
+                .stat-number {
+                    font-size: 20px;
+                }
+                
+                .stat-label {
+                    font-size: 12px;
+                }
             }
             
             @media (max-width: 360px) {
@@ -5280,6 +6148,18 @@ class TasksView {
             .help-line-tasks {
                 animation: fadeInUp 0.4s ease-out;
             }
+            
+            .stat-card {
+                animation: fadeInUp 0.3s ease-out;
+            }
+            
+            .category-card {
+                animation: fadeInUp 0.3s ease-out;
+            }
+            
+            .recent-task-item, .urgent-task-item {
+                animation: fadeInUp 0.3s ease-out;
+            }
         `;
         
         document.head.appendChild(styles);
@@ -5291,7 +6171,7 @@ class TasksView {
 // =====================================
 
 function initializeTaskManager() {
-    console.log('[TaskManager] Initializing global instances v9.1...');
+    console.log('[TaskManager] Initializing global instances v9.2...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -5313,7 +6193,7 @@ function initializeTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v9.1 loaded - Interface harmonisée avec ligne explicative');
+    console.log('✅ TaskManager v9.2 loaded - Information tab first, fixed categories');
 }
 
 initializeTaskManager();
@@ -5330,4 +6210,59 @@ window.addEventListener('load', () => {
             initializeTaskManager();
         }
     }, 1000);
-});
+});Toast('Tâches actualisées', 'success');
+    }
+
+    buildClientFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(task => {
+            if (task.client) {
+                clients.add(task.client);
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        Array.from(clients).sort().forEach(client => {
+            const count = tasks.filter(t => t.client === client).length;
+            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    updateFilter(filterType, value) {
+        this.currentFilters[filterType] = value;
+        this.refreshView();
+        console.log('[TasksView] Filter updated:', filterType, '=', value);
+    }
+
+    resetAllFilters() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            tag: 'all',
+            search: '',
+            sortBy: 'created',
+            dateRange: 'all',
+            overdue: false,
+            needsReply: false
+        };
+        
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.querySelector('option[value="all"]')) {
+                select.value = 'all';
+            } else if (select.id === 'sortByFilter') {
+                select.value = 'created';
+            }
+        });
+        
+        this.refreshView();
+        this.show
