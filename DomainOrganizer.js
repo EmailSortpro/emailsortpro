@@ -1894,6 +1894,20 @@ class DomainOrganizer {
                 </div>
             </div>
             
+            <!-- Barre de recherche rapide -->
+            <div class="quick-search-section">
+                <div class="quick-search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" 
+                           class="quick-search-input" 
+                           placeholder="Recherche rapide dans ce domaine..."
+                           onkeypress="if(event.key==='Enter') window.domainOrganizer.quickSearchInDomain('${domainData.domain}', this.value)">
+                    <button class="btn btn-sm btn-primary" onclick="window.domainOrganizer.quickSearchInDomain('${domainData.domain}', this.previousElementSibling.value)">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+            
             <div class="email-management">
                 <div class="emails-header">
                     <h5>
@@ -2039,6 +2053,45 @@ class DomainOrganizer {
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- Barre de recherche -->
+                    <div class="search-section">
+                        <div class="search-container">
+                            <div class="search-input-container">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" 
+                                       class="search-input" 
+                                       placeholder="Rechercher par expéditeur, sujet ou contenu..."
+                                       id="emailSearch-${domain}"
+                                       oninput="window.domainOrganizer.searchEmails('${domain}', this.value)">
+                                <button class="search-clear" 
+                                        onclick="window.domainOrganizer.clearEmailSearch('${domain}')"
+                                        style="display: none;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="search-filters">
+                                <select class="search-filter" id="searchFilter-${domain}" onchange="window.domainOrganizer.applySearchFilter('${domain}')">
+                                    <option value="all">Tous les champs</option>
+                                    <option value="from">Expéditeur</option>
+                                    <option value="subject">Sujet</option>
+                                    <option value="content">Contenu</option>
+                                </select>
+                                <select class="search-sort" id="searchSort-${domain}" onchange="window.domainOrganizer.applySortOrder('${domain}')">
+                                    <option value="date-desc">Plus récent d'abord</option>
+                                    <option value="date-asc">Plus ancien d'abord</option>
+                                    <option value="from-asc">Expéditeur A-Z</option>
+                                    <option value="from-desc">Expéditeur Z-A</option>
+                                    <option value="subject-asc">Sujet A-Z</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="search-results-info" id="searchInfo-${domain}">
+                            <span class="results-count">${allEmails.length} emails au total</span>
+                            <span class="search-status"></span>
+                        </div>
+                    </div>
+                    
                     <div class="modal-body">
                         <div class="emails-stats">
                             <span><strong>${allEmails.length}</strong> emails au total</span>
@@ -2048,18 +2101,35 @@ class DomainOrganizer {
                             </span>
                         </div>
                         
+                        <!-- Message quand aucun résultat -->
+                        <div class="no-results" id="noResults-${domain}" style="display: none;">
+                            <div class="no-results-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <h4>Aucun email trouvé</h4>
+                            <p>Essayez de modifier vos critères de recherche</p>
+                            <button class="btn btn-secondary" onclick="window.domainOrganizer.clearEmailSearch('${domain}')">
+                                <i class="fas fa-times"></i> Effacer la recherche
+                            </button>
+                        </div>
+                        
                         <div class="all-emails-list" id="allEmailsList-${domain}">
                             ${this.renderEmailList(domain, allEmails)}
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" onclick="this.closest('#allEmailsModal').remove()">
-                            Fermer
-                        </button>
-                        <button class="btn btn-primary" onclick="window.domainOrganizer.applyEmailSelections('${domain}')">
-                            <i class="fas fa-check"></i>
-                            Appliquer les sélections
-                        </button>
+                        <div class="footer-info">
+                            <span id="visibleCount-${domain}">${allEmails.length} emails affichés</span>
+                        </div>
+                        <div class="footer-actions">
+                            <button class="btn btn-secondary" onclick="this.closest('#allEmailsModal').remove()">
+                                Fermer
+                            </button>
+                            <button class="btn btn-primary" onclick="window.domainOrganizer.applyEmailSelections('${domain}')">
+                                <i class="fas fa-check"></i>
+                                Appliquer les sélections
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2069,6 +2139,237 @@ class DomainOrganizer {
         this.addExtendedModalStyles();
         
         document.body.appendChild(modal);
+        
+        // Initialiser les données de recherche
+        this.initializeSearchData(domain, allEmails);
+        
+        // Focus sur la barre de recherche
+        setTimeout(() => {
+            const searchInput = document.getElementById(`emailSearch-${domain}`);
+            if (searchInput) searchInput.focus();
+        }, 100);
+    }
+
+    /**
+     * Initialise les données de recherche pour un domaine
+     */
+    initializeSearchData(domain, allEmails) {
+        if (!this.searchData) {
+            this.searchData = new Map();
+        }
+        
+        this.searchData.set(domain, {
+            originalEmails: [...allEmails],
+            filteredEmails: [...allEmails],
+            currentQuery: '',
+            currentFilter: 'all',
+            currentSort: 'date-desc'
+        });
+    }
+
+    /**
+     * Recherche dans les emails
+     */
+    searchEmails(domain, query) {
+        const searchData = this.searchData.get(domain);
+        if (!searchData) return;
+        
+        searchData.currentQuery = query.toLowerCase().trim();
+        
+        // Afficher/cacher le bouton clear
+        const clearButton = document.querySelector(`#emailSearch-${domain} + .search-clear`);
+        if (clearButton) {
+            clearButton.style.display = query ? 'flex' : 'none';
+        }
+        
+        this.applySearchAndFilter(domain);
+    }
+
+    /**
+     * Applique le filtre de recherche
+     */
+    applySearchFilter(domain) {
+        const searchData = this.searchData.get(domain);
+        const filterSelect = document.getElementById(`searchFilter-${domain}`);
+        if (!searchData || !filterSelect) return;
+        
+        searchData.currentFilter = filterSelect.value;
+        this.applySearchAndFilter(domain);
+    }
+
+    /**
+     * Applique l'ordre de tri
+     */
+    applySortOrder(domain) {
+        const searchData = this.searchData.get(domain);
+        const sortSelect = document.getElementById(`searchSort-${domain}`);
+        if (!searchData || !sortSelect) return;
+        
+        searchData.currentSort = sortSelect.value;
+        this.applySearchAndFilter(domain);
+    }
+
+    /**
+     * Applique la recherche, le filtre et le tri
+     */
+    applySearchAndFilter(domain) {
+        const searchData = this.searchData.get(domain);
+        if (!searchData) return;
+        
+        let filteredEmails = [...searchData.originalEmails];
+        
+        // Appliquer la recherche
+        if (searchData.currentQuery) {
+            filteredEmails = filteredEmails.filter(email => {
+                const query = searchData.currentQuery;
+                
+                switch (searchData.currentFilter) {
+                    case 'from':
+                        return this.getEmailFrom(email).toLowerCase().includes(query);
+                    case 'subject':
+                        return (email.subject || '').toLowerCase().includes(query);
+                    case 'content':
+                        return this.getEmailPreview(email).toLowerCase().includes(query);
+                    case 'all':
+                    default:
+                        return this.getEmailFrom(email).toLowerCase().includes(query) ||
+                               (email.subject || '').toLowerCase().includes(query) ||
+                               this.getEmailPreview(email).toLowerCase().includes(query);
+                }
+            });
+        }
+        
+        // Appliquer le tri
+        filteredEmails = this.sortEmails(filteredEmails, searchData.currentSort);
+        
+        // Mettre à jour les données
+        searchData.filteredEmails = filteredEmails;
+        
+        // Mettre à jour l'affichage
+        this.updateEmailDisplay(domain, filteredEmails);
+        this.updateSearchInfo(domain, filteredEmails.length, searchData.originalEmails.length, searchData.currentQuery);
+    }
+
+    /**
+     * Trie les emails selon l'ordre spécifié
+     */
+    sortEmails(emails, sortOrder) {
+        return [...emails].sort((a, b) => {
+            switch (sortOrder) {
+                case 'date-asc':
+                    return new Date(a.receivedDateTime || 0) - new Date(b.receivedDateTime || 0);
+                case 'date-desc':
+                    return new Date(b.receivedDateTime || 0) - new Date(a.receivedDateTime || 0);
+                case 'from-asc':
+                    return this.getEmailFrom(a).localeCompare(this.getEmailFrom(b));
+                case 'from-desc':
+                    return this.getEmailFrom(b).localeCompare(this.getEmailFrom(a));
+                case 'subject-asc':
+                    return (a.subject || '').localeCompare(b.subject || '');
+                case 'subject-desc':
+                    return (b.subject || '').localeCompare(a.subject || '');
+                default:
+                    return 0;
+            }
+        });
+    }
+
+    /**
+     * Obtient l'expéditeur d'un email
+     */
+    getEmailFrom(email) {
+        return email.from?.emailAddress?.name || 
+               email.from?.emailAddress?.address || 
+               'Expéditeur inconnu';
+    }
+
+    /**
+     * Met à jour l'affichage des emails
+     */
+    updateEmailDisplay(domain, emails) {
+        const container = document.getElementById(`allEmailsList-${domain}`);
+        const noResults = document.getElementById(`noResults-${domain}`);
+        
+        if (!container) return;
+        
+        if (emails.length === 0) {
+            container.style.display = 'none';
+            if (noResults) noResults.style.display = 'block';
+        } else {
+            container.style.display = 'block';
+            if (noResults) noResults.style.display = 'none';
+            container.innerHTML = this.renderEmailList(domain, emails);
+        }
+        
+        // Mettre à jour le compteur visible
+        const visibleCount = document.getElementById(`visibleCount-${domain}`);
+        if (visibleCount) {
+            visibleCount.textContent = `${emails.length} emails affichés`;
+        }
+    }
+
+    /**
+     * Met à jour les informations de recherche
+     */
+    updateSearchInfo(domain, visibleCount, totalCount, query) {
+        const searchInfo = document.getElementById(`searchInfo-${domain}`);
+        if (!searchInfo) return;
+        
+        const resultsCount = searchInfo.querySelector('.results-count');
+        const searchStatus = searchInfo.querySelector('.search-status');
+        
+        if (resultsCount) {
+            resultsCount.textContent = `${visibleCount} sur ${totalCount} emails`;
+        }
+        
+        if (searchStatus) {
+            if (query) {
+                searchStatus.textContent = `Recherche: "${query}"`;
+                searchStatus.style.display = 'inline';
+            } else {
+                searchStatus.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Efface la recherche
+     */
+    clearEmailSearch(domain) {
+        const searchInput = document.getElementById(`emailSearch-${domain}`);
+        const clearButton = document.querySelector(`#emailSearch-${domain} + .search-clear`);
+        
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.focus();
+        }
+        
+        if (clearButton) {
+            clearButton.style.display = 'none';
+        }
+        
+        // Réinitialiser la recherche
+        const searchData = this.searchData.get(domain);
+        if (searchData) {
+            searchData.currentQuery = '';
+            this.applySearchAndFilter(domain);
+        }
+    }
+
+    /**
+     * Recherche rapide dans un domaine (depuis l'interface principale)
+     */
+    quickSearchInDomain(domain, query) {
+        // Ouvrir la modale avec la recherche pré-remplie
+        this.showAllEmails(domain);
+        
+        setTimeout(() => {
+            const searchInput = document.getElementById(`emailSearch-${domain}`);
+            if (searchInput) {
+                searchInput.value = query;
+                this.searchEmails(domain, query);
+            }
+        }, 200);
     }
 
     /**
