@@ -1209,113 +1209,42 @@
             window.forceShowApp();
         };
 
-        // Vérification précoce RENFORCÉE de l'authentification
+        // Vérification précoce SIMPLIFIÉE - Laisser app.js gérer
         const earlyAuthCheck = () => {
-            console.log('[EARLY_AUTH] Starting enhanced early auth check...');
+            console.log('[EARLY_AUTH] Simplified check - letting app.js handle authentication...');
             
-            // Vérifier TOUS les indicateurs d'authentification possible
+            // Juste vérifier s'il y a des données MSAL
             try {
-                // Méthode 1: Vérifier les clés MSAL dans localStorage
-                const msalAccountKeys = localStorage.getItem('msal.account.keys');
-                const msalTokenKeys = localStorage.getItem('msal.token.keys');
+                const msalData = Object.keys(localStorage).filter(key => key.startsWith('msal.'));
                 
-                // Méthode 2: Vérifier les données d'account directement
-                const accountKeys = msalAccountKeys ? JSON.parse(msalAccountKeys) : [];
-                let hasValidAccount = false;
-                
-                if (accountKeys.length > 0) {
-                    accountKeys.forEach(key => {
-                        const accountData = localStorage.getItem(key);
-                        if (accountData) {
-                            try {
-                                const account = JSON.parse(accountData);
-                                if (account.username && account.name) {
-                                    hasValidAccount = true;
-                                    console.log('[EARLY_AUTH] Valid account found:', account.name);
-                                }
-                            } catch (e) {
-                                console.warn('[EARLY_AUTH] Error parsing account:', e);
-                            }
-                        }
-                    });
-                }
-                
-                // Méthode 3: Vérifier les tokens d'accès
-                const tokenKeys = msalTokenKeys ? JSON.parse(msalTokenKeys) : [];
-                let hasValidToken = false;
-                
-                if (tokenKeys.length > 0) {
-                    tokenKeys.forEach(key => {
-                        const tokenData = localStorage.getItem(key);
-                        if (tokenData) {
-                            try {
-                                const token = JSON.parse(tokenData);
-                                if (token.secret) {
-                                    hasValidToken = true;
-                                    console.log('[EARLY_AUTH] Valid token found');
-                                }
-                            } catch (e) {
-                                console.warn('[EARLY_AUTH] Error parsing token:', e);
-                            }
-                        }
-                    });
-                }
-                
-                // Si authentification détectée, forcer l'affichage immédiat
-                if (hasValidAccount && hasValidToken) {
-                    console.log('[EARLY_AUTH] ✅ User authenticated - FORCING immediate app display');
-                    
-                    // Marquer l'état immédiatement
-                    window.APP_STATE.authenticated = true;
+                if (msalData.length > 0) {
+                    console.log('[EARLY_AUTH] MSAL data found, user likely authenticated');
                     window.APP_STATE.hasTokens = true;
                     
-                    // Forcer l'affichage IMMÉDIATEMENT
+                    // Attendre que app.js gère l'authentification
                     setTimeout(() => {
-                        console.log('[EARLY_AUTH] Executing immediate app display...');
-                        window.forceShowApp();
-                    }, 50);
+                        if (!window.APP_STATE.appShown && window.authService && window.authService.isAuthenticated()) {
+                            console.log('[EARLY_AUTH] App.js didn\'t show app, forcing display...');
+                            window.forceShowApp();
+                        }
+                    }, 2000); // Attendre 2 secondes pour app.js
                     
                     return true;
                 }
-                
-                console.log('[EARLY_AUTH] Auth check results:', {
-                    hasValidAccount,
-                    hasValidToken,
-                    accountKeysCount: accountKeys.length,
-                    tokenKeysCount: tokenKeys.length
-                });
-                
             } catch (error) {
-                console.warn('[EARLY_AUTH] Error in enhanced check:', error);
+                console.warn('[EARLY_AUTH] Error checking MSAL data:', error);
             }
             
-            console.log('[EARLY_AUTH] No valid authentication found, login required');
+            console.log('[EARLY_AUTH] No MSAL data found, showing login');
             return false;
         };
 
-        // Exécuter la vérification renforcée IMMÉDIATEMENT
+        // Exécuter la vérification simplifiée
         earlyAuthCheck();
 
-        // Gestionnaire principal DOMContentLoaded RENFORCÉ
+        // Gestionnaire principal DOMContentLoaded SIMPLIFIÉ
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
-            
-            // VÉRIFICATION IMMÉDIATE si l'utilisateur est déjà authentifié
-            setTimeout(() => {
-                // Si l'état indique une authentification mais l'app n'est pas affichée
-                if (window.APP_STATE.authenticated && !window.APP_STATE.appShown) {
-                    console.log('[INDEX] User authenticated but app not shown - FORCING display');
-                    window.forceShowApp();
-                }
-                
-                // Double vérification après le chargement de tous les scripts
-                setTimeout(() => {
-                    if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
-                        console.log('[INDEX] AuthService confirms authentication - FORCING display');
-                        window.forceShowApp();
-                    }
-                }, 500);
-            }, 100);
             
             // Configuration du bouton de login SIMPLE
             const loginBtn = document.getElementById('loginBtn');
@@ -1338,15 +1267,11 @@
                         loadingOverlay.classList.add('active');
                     }
                     
-                    // Attendre que app.js soit prêt
+                    // Attendre que app.js soit prêt et déléguer complètement
                     const waitForApp = (attempts = 0) => {
                         if (window.app && window.app.login) {
-                            window.app.login().then(() => {
-                                console.log('[LOGIN] Login successful via app.js - FORCING display');
-                                setTimeout(() => {
-                                    window.forceShowApp();
-                                }, 200);
-                            }).catch((error) => {
+                            console.log('[LOGIN] Delegating to app.js login...');
+                            window.app.login().catch((error) => {
                                 console.error('[LOGIN] Login failed:', error);
                                 window.APP_STATE.loginInProgress = false;
                                 this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
@@ -1406,24 +1331,35 @@
             }, 1000);
         });
         
-        // FONCTION GLOBALE POUR CALLBACK D'AUTHENTIFICATION RÉUSSIE
+        // FONCTIONS GLOBALES DE COORDINATION AVEC APP.JS
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful via app.js - FORCING APP');
-            
-            // Marquer l'état
+            console.log('[AUTH_SUCCESS] Authentication successful - app.js handles display');
             window.APP_STATE.authenticated = true;
             window.APP_STATE.loginInProgress = false;
+            // Laisser app.js gérer complètement l'affichage
+        };
+        
+        // Hook pour intercepter quand app.js affiche l'application
+        window.onAppDisplayed = function() {
+            console.log('[APP_DISPLAYED] App.js has displayed the application');
+            window.APP_STATE.appShown = true;
             
-            // FORCER l'affichage même si app.js l'a déjà fait
+            // Assurer la permanence de l'affichage
             setTimeout(() => {
-                window.forceShowApp();
+                const loginPage = document.getElementById('loginPage');
+                if (loginPage && loginPage.style.display !== 'none') {
+                    console.log('[APP_DISPLAYED] Ensuring login page stays hidden');
+                    window.forceShowApp();
+                }
             }, 100);
         };
         
-        // Intercepter showAppWithTransition depuis app.js
-        window.interceptAppDisplay = function() {
-            console.log('[INTERCEPT] App.js is showing app - ensuring permanent display');
-            window.forceShowApp();
+        // Fonction de fallback si app.js ne gère pas l'affichage
+        window.fallbackAppDisplay = function() {
+            console.log('[FALLBACK] App.js didn\'t display app, using fallback...');
+            if (!window.APP_STATE.appShown) {
+                window.forceShowApp();
+            }
         };
 
         // Fonction de diagnostic accessible globalement
