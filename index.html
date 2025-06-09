@@ -574,8 +574,6 @@
 
         body.app-active #loginPage {
             display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
         }
 
         body.app-active .app-header {
@@ -591,18 +589,6 @@
         }
 
         body.app-active #pageContent {
-            display: block !important;
-            opacity: 1 !important;
-        }
-
-        /* Force l'affichage de l'app même sans la classe app-active si nécessaire */
-        .force-app-display #loginPage {
-            display: none !important;
-        }
-
-        .force-app-display .app-header,
-        .force-app-display .app-nav,
-        .force-app-display #pageContent {
             display: block !important;
             opacity: 1 !important;
         }
@@ -1114,81 +1100,64 @@
                 loadingOverlay.classList.remove('active');
             }
             
-            // Activer l'interface app IMMÉDIATEMENT
+            // Activer l'interface app
             document.body.classList.add('app-active');
             
             // Masquer explicitement la page de login
             const loginPage = document.getElementById('loginPage');
             if (loginPage) {
-                loginPage.style.display = 'none !important';
-            }
-            
-            // S'assurer que l'app est visible
-            const appHeader = document.querySelector('.app-header');
-            const appNav = document.querySelector('.app-nav');
-            const pageContent = document.getElementById('pageContent');
-            
-            if (appHeader) appHeader.style.display = 'block';
-            if (appNav) appNav.style.display = 'block';
-            if (pageContent) {
-                pageContent.style.display = 'block';
-                pageContent.style.opacity = '1';
+                loginPage.style.display = 'none';
             }
             
             console.log('[SHOW_APP] App interface activated');
         };
 
-        // Vérification précoce de l'authentification
-        (function() {
-            // Attendre que les services critiques soient chargés
-            const waitForAuth = () => {
-                if (window.authService && typeof window.authService.isAuthenticated === 'function') {
-                    if (window.authService.isAuthenticated()) {
-                        console.log('[EARLY_AUTH] User already authenticated, switching to app...');
-                        window.showApp();
-                        return true;
-                    }
-                }
-                return false;
-            };
-            
-            // Vérification immédiate
-            if (!waitForAuth()) {
-                // Retry après un court délai
-                setTimeout(waitForAuth, 50);
-            }
-        })();
+        // Variable pour éviter les vérifications multiples
+        let authCheckInProgress = false;
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
             
-            // Vérifier si l'utilisateur est déjà connecté IMMÉDIATEMENT
-            const checkAuthAndShowApp = () => {
-                if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
-                    console.log('[INDEX] User already authenticated, showing app immediately...');
-                    window.showApp();
-                    return true;
+            // Fonction de vérification d'authentification sécurisée
+            const safeAuthCheck = () => {
+                if (authCheckInProgress) {
+                    console.log('[INDEX] Auth check already in progress, skipping...');
+                    return false;
+                }
+                
+                try {
+                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
+                        if (window.authService.isAuthenticated()) {
+                            console.log('[INDEX] User already authenticated, showing app...');
+                            window.showApp();
+                            return true;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('[INDEX] Auth check error:', error);
                 }
                 return false;
             };
             
-            // Vérification immédiate
-            if (!checkAuthAndShowApp()) {
-                // Vérification après 100ms si pas encore connecté
-                setTimeout(() => {
-                    if (!checkAuthAndShowApp()) {
-                        // Vérification après 500ms
-                        setTimeout(() => {
-                            checkAuthAndShowApp();
-                        }, 400);
-                    }
-                }, 100);
-            }
+            // Vérification avec délai pour éviter les conflits MSAL
+            setTimeout(() => {
+                if (!safeAuthCheck()) {
+                    // Une seule retry après 1 seconde
+                    setTimeout(safeAuthCheck, 1000);
+                }
+            }, 500);
             
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
+                    if (authCheckInProgress) {
+                        console.log('[INDEX] Auth process already in progress...');
+                        return;
+                    }
+                    
+                    authCheckInProgress = true;
+                    
                     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
                     this.disabled = true;
                     
@@ -1201,8 +1170,10 @@
                         window.app.login().then(() => {
                             console.log('[LOGIN] Login successful, showing app...');
                             window.showApp();
+                            authCheckInProgress = false;
                         }).catch((error) => {
                             console.error('[LOGIN] Login failed:', error);
+                            authCheckInProgress = false;
                             // Réinitialiser le bouton en cas d'erreur
                             this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                             this.disabled = false;
@@ -1210,6 +1181,13 @@
                                 loadingOverlay.classList.remove('active');
                             }
                         });
+                    } else {
+                        authCheckInProgress = false;
+                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+                        this.disabled = false;
+                        if (loadingOverlay) {
+                            loadingOverlay.classList.remove('active');
+                        }
                     }
                 });
             }
