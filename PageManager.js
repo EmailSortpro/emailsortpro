@@ -1721,10 +1721,6 @@ class PageManager {
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    flex: 0 0 calc(16.666% - var(--gap-small));
-                    width: calc(16.666% - var(--gap-small));
-                    min-width: 110px;
-                    max-width: 150px;
                     min-height: 42px;
                 }
                 
@@ -1785,10 +1781,6 @@ class PageManager {
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    flex: 0 0 calc(25% - var(--gap-small));
-                    width: calc(25% - var(--gap-small));
-                    min-width: 90px;
-                    max-width: 130px;
                     min-height: 40px;
                 }
                 
@@ -1812,14 +1804,10 @@ class PageManager {
             
             @media (max-width: 768px) {
                 .status-filters-harmonized-multiline {
-                    justify-content: center;
+                    justify-content: stretch;
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    flex: 0 0 calc(33.333% - var(--gap-small));
-                    width: calc(33.333% - var(--gap-small));
-                    min-width: 80px;
-                    max-width: 110px;
                     min-height: 38px;
                 }
                 
@@ -1848,10 +1836,6 @@ class PageManager {
             
             @media (max-width: 480px) {
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline {
-                    flex: 0 0 calc(50% - var(--gap-small));
-                    width: calc(50% - var(--gap-small));
-                    min-width: 70px;
-                    max-width: 100px;
                     min-height: 36px;
                 }
                 
