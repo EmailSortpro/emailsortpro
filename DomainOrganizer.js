@@ -2395,17 +2395,31 @@ class DomainOrganizer {
                         console.log(`[DomainOrganizer] Fallback to existing folder for ${domain}`);
                         targetFolderId = action.existingFolderId;
                     } else {
-                        // Dernier recours : utiliser la boîte de réception
-                        console.log(`[DomainOrganizer] Using inbox as fallback for ${domain}`);
-                        const folders = await window.mailService.getFolders();
-                        const inboxFolder = folders.find(f => 
-                            f.displayName.toLowerCase() === 'inbox' || 
-                            f.displayName.toLowerCase() === 'boîte de réception'
-                        );
-                        if (inboxFolder) {
-                            targetFolderId = inboxFolder.id;
-                        } else {
-                            throw new Error(`Could not find fallback folder for ${domain}`);
+                        // Dernier recours : trouver n'importe quel dossier utilisable
+                        console.log(`[DomainOrganizer] Searching for any usable folder for ${domain}`);
+                        try {
+                            const folders = await window.mailService.getFolders();
+                            console.log(`[DomainOrganizer] Available folders:`, folders.map(f => f.displayName));
+                            
+                            // Chercher dans l'ordre de préférence
+                            let fallbackFolder = 
+                                folders.find(f => f.displayName.toLowerCase() === 'inbox') ||
+                                folders.find(f => f.displayName.toLowerCase() === 'boîte de réception') ||
+                                folders.find(f => f.displayName.toLowerCase().includes('inbox')) ||
+                                folders.find(f => f.displayName.toLowerCase().includes('reçu')) ||
+                                folders.find(f => f.displayName.toLowerCase().includes('entrant')) ||
+                                folders.find(f => f.displayName.toLowerCase() === 'courrier entrant') ||
+                                folders.find(f => f.wellKnownName === 'inbox') ||
+                                folders[0]; // En dernier recours, utiliser le premier dossier
+                            
+                            if (fallbackFolder) {
+                                console.log(`[DomainOrganizer] Using fallback folder "${fallbackFolder.displayName}" for ${domain}`);
+                                targetFolderId = fallbackFolder.id;
+                            } else {
+                                throw new Error(`No usable folder found for ${domain}`);
+                            }
+                        } catch (folderError) {
+                            throw new Error(`Could not find any folder for ${domain}: ${folderError.message}`);
                         }
                     }
                 }
@@ -2415,10 +2429,12 @@ class DomainOrganizer {
                 throw new Error(`No target folder specified for ${domain}`);
             }
             
-            // Vérifier que le dossier cible existe
+            // Vérifier que le dossier cible existe avant de continuer
             if (!targetFolderId) {
-                throw new Error(`No valid target folder ID for ${domain}`);
+                throw new Error(`No valid target folder ID found for ${domain}`);
             }
+            
+            console.log(`[DomainOrganizer] Moving ${emails.length} emails for ${domain} to folder ${targetFolderId}`);
             
             const batches = this.createBatches(emails, this.maxEmailsPerBatch);
             for (const batch of batches) {
@@ -2427,9 +2443,11 @@ class DomainOrganizer {
             }
             
             result.success = true;
+            console.log(`[DomainOrganizer] ✅ Successfully processed ${domain}: ${result.emailsMoved} emails moved`);
+            
         } catch (error) {
             result.error = error.message;
-            console.error(`[DomainOrganizer] Error processing domain ${domain}:`, error);
+            console.error(`[DomainOrganizer] ❌ Error processing domain ${domain}:`, error);
         }
         
         return result;
@@ -2480,6 +2498,7 @@ class DomainOrganizer {
                 
                 // Recharger la liste des dossiers
                 const updatedFolders = await window.mailService.getFolders();
+                console.log(`[DomainOrganizer] Available folders after 409:`, updatedFolders.map(f => f.displayName));
                 
                 // Chercher avec différentes variantes
                 let existingFolder = updatedFolders.find(f => 
@@ -2490,7 +2509,8 @@ class DomainOrganizer {
                     // Chercher avec des variantes de noms
                     existingFolder = updatedFolders.find(f => 
                         f.displayName.includes(folderName) || 
-                        folderName.includes(f.displayName)
+                        folderName.includes(f.displayName) ||
+                        f.displayName.toLowerCase().includes(folderName.toLowerCase())
                     );
                 }
                 
@@ -2499,15 +2519,12 @@ class DomainOrganizer {
                     return existingFolder;
                 }
                 
-                // Si vraiment pas trouvé, utiliser le dossier inbox par défaut
-                console.warn(`[DomainOrganizer] ⚠️ Could not find folder "${folderName}", using inbox as fallback`);
-                const inboxFolder = updatedFolders.find(f => 
-                    f.displayName.toLowerCase() === 'inbox' || 
-                    f.displayName.toLowerCase() === 'boîte de réception'
-                );
-                
-                if (inboxFolder) {
-                    return inboxFolder;
+                // Si vraiment pas trouvé, utiliser un dossier de fallback
+                console.warn(`[DomainOrganizer] ⚠️ Could not find folder "${folderName}" after conflict, finding fallback...`);
+                const fallbackFolder = this.findFallbackFolder(updatedFolders);
+                if (fallbackFolder) {
+                    console.log(`[DomainOrganizer] Using fallback folder: "${fallbackFolder.displayName}"`);
+                    return fallbackFolder;
                 }
             }
             
@@ -2515,8 +2532,61 @@ class DomainOrganizer {
             
         } catch (error) {
             console.error(`[DomainOrganizer] Error creating folder "${folderName}":`, error);
+            
+            // En cas d'échec total, essayer de trouver un fallback
+            try {
+                const folders = await window.mailService.getFolders();
+                const fallbackFolder = this.findFallbackFolder(folders);
+                if (fallbackFolder) {
+                    console.log(`[DomainOrganizer] Using fallback folder after error: "${fallbackFolder.displayName}"`);
+                    return fallbackFolder;
+                }
+            } catch (fallbackError) {
+                console.error('[DomainOrganizer] Could not even find fallback folder:', fallbackError);
+            }
+            
             throw error;
         }
+    }
+
+    /**
+     * Trouve un dossier de fallback utilisable
+     */
+    findFallbackFolder(folders) {
+        console.log(`[DomainOrganizer] Searching fallback in ${folders.length} folders:`, folders.map(f => f.displayName));
+        
+        // Ordre de préférence pour les dossiers de fallback
+        const fallbackOptions = [
+            // Noms en anglais
+            f => f.displayName.toLowerCase() === 'inbox',
+            f => f.wellKnownName === 'inbox',
+            f => f.displayName.toLowerCase().includes('inbox'),
+            
+            // Noms en français
+            f => f.displayName.toLowerCase() === 'boîte de réception',
+            f => f.displayName.toLowerCase().includes('réception'),
+            f => f.displayName.toLowerCase().includes('reçu'),
+            f => f.displayName.toLowerCase().includes('entrant'),
+            f => f.displayName.toLowerCase() === 'courrier entrant',
+            
+            // Autres langues possibles
+            f => f.displayName.toLowerCase().includes('received'),
+            f => f.displayName.toLowerCase().includes('mail'),
+            
+            // En dernier recours, le premier dossier disponible
+            f => true
+        ];
+        
+        for (const option of fallbackOptions) {
+            const folder = folders.find(option);
+            if (folder) {
+                console.log(`[DomainOrganizer] Found fallback: "${folder.displayName}"`);
+                return folder;
+            }
+        }
+        
+        console.error('[DomainOrganizer] No fallback folder found at all!');
+        return null;
     }
 
     async moveEmailBatch(emails, targetFolderId) {
