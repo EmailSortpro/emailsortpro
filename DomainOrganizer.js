@@ -1,5 +1,5 @@
-// DomainOrganizer.js - Version 4.0.0 - Interface hiérarchique avec contrôle granulaire
-// Permet de voir les domaines regroupés et de les déplier pour contrôler l'organisation
+// DomainOrganizer.js - Version 5.0.0 - Interface harmonisée avec contrôle granulaire
+// Vue sobre avec affichage systématique des emails et gestion d'erreurs renforcée
 
 class DomainOrganizer {
     constructor() {
@@ -16,129 +16,68 @@ class DomainOrganizer {
         this.currentAnalysis = null;
         this.selectedActions = new Map();
         this.currentStep = 'configure';
-        this.expandedDomains = new Set(); // Domaines dépliés
-        this.folderStructure = new Map(); // Structure de dossiers proposée
+        this.emailSelections = new Map(); // Selection granulaire des emails
+        this.validationErrors = new Map(); // Erreurs de validation
+        this.folderCreationQueue = new Map(); // Queue pour création de dossiers
         
-        console.log('[DomainOrganizer] ✅ Module initialized v4.0');
+        console.log('[DomainOrganizer] ✅ Module initialized v5.0 - Interface harmonisée');
     }
 
     // ================================================
     // MÉTHODES D'INTERFACE - GESTION DE LA PAGE
     // ================================================
     
-    /**
-     * Génère le HTML de la page
-     */
     getPageHTML() {
         return `
-            <div class="container" style="max-width: 1000px; margin: 40px auto; padding: 0 20px;">
-                <!-- En-tête avec étapes -->
-                <div class="steps-header">
+            <div class="organizer-container">
+                <!-- En-tête simplifié -->
+                <div class="organizer-header">
                     <h1>
                         <i class="fas fa-folder-tree"></i>
-                        Rangement par domaine
+                        Organisation par domaine
                     </h1>
-                    <div class="steps-indicator">
-                        <div class="step active" data-step="configure">
-                            <div class="step-number">1</div>
-                            <div class="step-label">Config</div>
-                        </div>
-                        <div class="step" data-step="analyze">
-                            <div class="step-number">2</div>
-                            <div class="step-label">Analyse</div>
-                        </div>
-                        <div class="step" data-step="review">
-                            <div class="step-number">3</div>
-                            <div class="step-label">Organisation</div>
-                        </div>
-                        <div class="step" data-step="execute">
-                            <div class="step-number">4</div>
-                            <div class="step-label">Action</div>
-                        </div>
+                    <div class="step-progress">
+                        <div class="step active" data-step="configure">Configuration</div>
+                        <div class="step" data-step="analyze">Analyse</div>
+                        <div class="step" data-step="review">Validation</div>
+                        <div class="step" data-step="execute">Exécution</div>
                     </div>
                 </div>
 
                 <!-- Étape 1: Configuration -->
-                <div class="step-content" id="configStep" style="display: block;">
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fas fa-cog"></i>
-                            Configuration du rangement
-                        </h2>
+                <div class="step-content active" id="configStep">
+                    <div class="config-card">
+                        <h2>Configuration du rangement</h2>
                         
-                        <div class="info-box info-primary">
-                            <i class="fas fa-info-circle"></i>
-                            <div>
-                                <strong>Rangement hiérarchique par domaine</strong><br>
-                                Cette fonctionnalité organise vos emails en créant une structure hiérarchique. 
-                                Vous pourrez contrôler précisément où chaque domaine et sous-domaine sera rangé.
-                            </div>
-                        </div>
-                        
-                        <form id="organizeForm">
-                            <div class="form-section">
-                                <h4><i class="fas fa-calendar"></i> Période à analyser</h4>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="startDate">Date début</label>
-                                        <input type="date" id="startDate" name="startDate">
-                                        <span class="help-text">Emails à partir de cette date</span>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="endDate">Date fin</label>
-                                        <input type="date" id="endDate" name="endDate">
-                                        <span class="help-text">Emails jusqu'à cette date</span>
-                                    </div>
+                        <form id="organizeForm" class="config-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="startDate">Date début</label>
+                                    <input type="date" id="startDate" name="startDate">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="endDate">Date fin</label>
+                                    <input type="date" id="endDate" name="endDate">
                                 </div>
                             </div>
 
-                            <div class="form-section">
-                                <h4><i class="fas fa-sitemap"></i> Options d'organisation</h4>
-                                <div class="organization-options">
-                                    <div class="option-group">
-                                        <label class="option-label">
-                                            <input type="radio" name="organizationType" value="hierarchical" checked>
-                                            <div class="option-content">
-                                                <strong>Organisation hiérarchique</strong>
-                                                <span>Créer des dossiers par domaine avec contrôle de l'architecture</span>
-                                            </div>
-                                        </label>
-                                    </div>
-                                    <div class="option-group">
-                                        <label class="option-label">
-                                            <input type="radio" name="organizationType" value="flat">
-                                            <div class="option-content">
-                                                <strong>Organisation plate</strong>
-                                                <span>Un dossier par domaine, tous au même niveau</span>
-                                            </div>
-                                        </label>
-                                    </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="excludeDomains">Domaines à ignorer (optionnel)</label>
+                                    <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com">
                                 </div>
-                            </div>
-
-                            <div class="form-section">
-                                <h4><i class="fas fa-filter"></i> Exclusions (optionnel)</h4>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="excludeDomains">Domaines à ignorer</label>
-                                        <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com">
-                                        <span class="help-text">Ces domaines ne seront pas rangés</span>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="excludeEmails">Emails spécifiques à ignorer</label>
-                                        <input type="text" id="excludeEmails" placeholder="boss@entreprise.com">
-                                        <span class="help-text">Ces adresses ne seront pas rangées</span>
-                                    </div>
+                                
+                                <div class="form-group">
+                                    <label for="excludeEmails">Emails spécifiques à ignorer (optionnel)</label>
+                                    <input type="text" id="excludeEmails" placeholder="boss@company.com">
                                 </div>
                             </div>
                             
-                            <div style="text-align: center; margin-top: 20px;">
-                                <button type="submit" class="btn btn-primary btn-large" id="analyzeBtn">
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary" id="analyzeBtn">
                                     <i class="fas fa-search"></i>
                                     Analyser les emails
-                                    <span class="btn-subtitle">Étape 1 • Aucune modification pour l'instant</span>
                                 </button>
                             </div>
                         </form>
@@ -146,181 +85,93 @@ class DomainOrganizer {
                 </div>
 
                 <!-- Étape 2: Analyse en cours -->
-                <div class="step-content" id="analyzeStep" style="display: none;">
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fas fa-chart-line"></i>
-                            Analyse en cours...
-                        </h2>
+                <div class="step-content" id="analyzeStep">
+                    <div class="analysis-card">
+                        <h2>Analyse en cours...</h2>
                         
-                        <div class="analysis-progress">
-                            <div class="current-action">
-                                <div class="spinner"></div>
-                                <div id="currentActionText">Préparation...</div>
+                        <div class="progress-section">
+                            <div class="progress-info">
+                                <span id="progressLabel">Initialisation</span>
+                                <span id="progressPercent">0%</span>
                             </div>
-                            
-                            <div class="progress-section">
-                                <div class="progress-header">
-                                    <span id="progressLabel">Initialisation</span>
-                                    <span id="progressPercent">0%</span>
-                                </div>
-                                <div class="progress">
-                                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
-                                </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
                             </div>
-                            
-                            <div class="analysis-steps">
-                                <div class="analysis-step" id="step-folders">
-                                    <i class="fas fa-folder pending"></i>
-                                    <span>Dossiers existants</span>
-                                    <div class="step-status pending">En attente</div>
-                                </div>
-                                <div class="analysis-step" id="step-emails">
-                                    <i class="fas fa-envelope pending"></i>
-                                    <span>Récupération emails</span>
-                                    <div class="step-status pending">En attente</div>
-                                </div>
-                                <div class="analysis-step" id="step-domains">
-                                    <i class="fas fa-at pending"></i>
-                                    <span>Analyse domaines</span>
-                                    <div class="step-status pending">En attente</div>
-                                </div>
-                                <div class="analysis-step" id="step-structure">
-                                    <i class="fas fa-sitemap pending"></i>
-                                    <span>Structure proposée</span>
-                                    <div class="step-status pending">En attente</div>
-                                </div>
-                            </div>
+                            <div class="progress-message" id="progressMessage">Préparation...</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Étape 3: Organisation hiérarchique -->
-                <div class="step-content" id="reviewStep" style="display: none;">
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fas fa-sitemap"></i>
-                            Organisation proposée
-                        </h2>
-
-                        <div class="stats-section">
-                            <div class="stats-row">
+                <!-- Étape 3: Validation et contrôle -->
+                <div class="step-content" id="reviewStep">
+                    <div class="review-container">
+                        <div class="review-header">
+                            <h2>Validation de l'organisation</h2>
+                            <div class="review-stats">
                                 <div class="stat">
-                                    <div class="stat-value" id="statEmails">0</div>
-                                    <div class="stat-label">Emails</div>
+                                    <span class="stat-value" id="statEmails">0</span>
+                                    <span class="stat-label">Emails</span>
                                 </div>
                                 <div class="stat">
-                                    <div class="stat-value" id="statDomains">0</div>
-                                    <div class="stat-label">Domaines</div>
+                                    <span class="stat-value" id="statDomains">0</span>
+                                    <span class="stat-label">Domaines</span>
                                 </div>
                                 <div class="stat">
-                                    <div class="stat-value" id="statFolders">0</div>
-                                    <div class="stat-label">Dossiers</div>
+                                    <span class="stat-value" id="statFolders">0</span>
+                                    <span class="stat-label">Dossiers</span>
                                 </div>
                                 <div class="stat">
-                                    <div class="stat-value" id="statNew">0</div>
-                                    <div class="stat-label">Nouveaux</div>
+                                    <span class="stat-value" id="statNew">0</span>
+                                    <span class="stat-label">Nouveaux</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="controls-section">
-                            <div class="controls-header">
-                                <h3>Structure de dossiers</h3>
-                                <div class="controls-actions">
-                                    <button class="btn btn-secondary btn-sm" onclick="window.domainOrganizer.expandAll()">
-                                        <i class="fas fa-expand-arrows-alt"></i>
-                                        Tout déplier
-                                    </button>
-                                    <button class="btn btn-secondary btn-sm" onclick="window.domainOrganizer.collapseAll()">
-                                        <i class="fas fa-compress-arrows-alt"></i>
-                                        Tout replier
-                                    </button>
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="selectAll" checked>
-                                        Tout sélectionner
-                                    </label>
-                                </div>
+                        <!-- Contrôles globaux -->
+                        <div class="global-controls">
+                            <div class="control-group">
+                                <button class="btn-secondary" onclick="window.domainOrganizer.selectAllDomains()">
+                                    <i class="fas fa-check-square"></i> Tout sélectionner
+                                </button>
+                                <button class="btn-secondary" onclick="window.domainOrganizer.deselectAllDomains()">
+                                    <i class="fas fa-square"></i> Tout désélectionner
+                                </button>
                             </div>
                             
-                            <div class="info-box info-tip">
-                                <i class="fas fa-lightbulb"></i>
-                                <div>
-                                    <strong>Conseil :</strong> Cliquez sur les domaines pour les déplier et voir les détails. 
-                                    Vous pouvez modifier le dossier de destination, créer des sous-dossiers ou désactiver certains domaines.
-                                </div>
+                            <!-- Validation globale -->
+                            <div class="validation-panel" id="validationPanel">
+                                <!-- Erreurs de validation affichées ici -->
                             </div>
                         </div>
 
-                        <div class="hierarchy-section">
-                            <div class="hierarchy-container" id="hierarchyContainer">
-                                <!-- Structure hiérarchique générée dynamiquement -->
-                            </div>
-                            
-                            <!-- Fallback: tableau classique si la hiérarchie ne fonctionne pas -->
-                            <div class="results-table-container" id="fallbackTable" style="display: none;">
-                                <table class="results-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 30px"></th>
-                                            <th>Domaine</th>
-                                            <th style="width: 50px">Nb</th>
-                                            <th style="width: 140px">Dossier</th>
-                                            <th style="width: 60px">Type</th>
-                                            <th style="width: 80px">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="resultsTableBody">
-                                        <!-- Populated dynamically -->
-                                    </tbody>
-                                </table>
-                            </div>
+                        <!-- Liste des domaines -->
+                        <div class="domains-list" id="domainsList">
+                            <!-- Contenu généré dynamiquement -->
                         </div>
 
-                        <!-- Section de confirmation -->
-                        <div class="confirmation-section">
-                            <div class="warning-box">
-                                <div class="warning-icon">
-                                    <i class="fas fa-info-circle"></i>
-                                </div>
-                                <div class="warning-content">
-                                    <h3>Résumé des actions</h3>
-                                    <div class="summary-preview">
-                                        <div class="summary-item">
-                                            <span><strong id="confirmTotalEmails">0</strong> emails seront déplacés</span>
-                                        </div>
-                                        <div class="summary-item">
-                                            <span><strong id="confirmNewFolders">0</strong> nouveaux dossiers seront créés</span>
-                                        </div>
+                        <!-- Actions finales -->
+                        <div class="final-actions">
+                            <div class="summary-box">
+                                <h3>Résumé des actions</h3>
+                                <div class="summary-content">
+                                    <div class="summary-item">
+                                        <strong id="summaryEmails">0</strong> emails seront déplacés
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="action-section">
-                            <div class="options-row">
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="createFolders" checked>
-                                    <label for="createFolders">Créer les nouveaux dossiers</label>
-                                </div>
-                                
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="finalConfirmation">
-                                    <label for="finalConfirmation">
-                                        <strong>Je confirme cette organisation</strong>
-                                    </label>
+                                    <div class="summary-item">
+                                        <strong id="summaryFolders">0</strong> dossiers seront créés
+                                    </div>
+                                    <div class="summary-item">
+                                        <strong id="summaryDomains">0</strong> domaines traités
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="action-buttons">
-                                <button class="btn btn-secondary" onclick="window.domainOrganizer.goBack()">
-                                    <i class="fas fa-arrow-left"></i>
-                                    Retour
+                                <button class="btn-secondary" onclick="window.domainOrganizer.goBack()">
+                                    <i class="fas fa-arrow-left"></i> Retour
                                 </button>
-                                <button class="btn btn-danger" id="executeBtn" onclick="window.domainOrganizer.executeOrganization()" disabled>
-                                    <i class="fas fa-play"></i>
-                                    Lancer le rangement
-                                    <span class="btn-subtitle">Action irréversible</span>
+                                <button class="btn-primary" id="executeBtn" onclick="window.domainOrganizer.executeOrganization()" disabled>
+                                    <i class="fas fa-play"></i> Lancer l'organisation
                                 </button>
                             </div>
                         </div>
@@ -328,41 +179,37 @@ class DomainOrganizer {
                 </div>
 
                 <!-- Étape 4: Exécution -->
-                <div class="step-content" id="executeStep" style="display: none;">
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fas fa-cogs"></i>
-                            Rangement en cours...
-                        </h2>
+                <div class="step-content" id="executeStep">
+                    <div class="execution-card">
+                        <h2>Organisation en cours...</h2>
                         
                         <div class="execution-progress">
-                            <div class="current-domain">
-                                <div class="domain-icon">
-                                    <i class="fas fa-at"></i>
+                            <div class="current-operation">
+                                <div class="operation-icon">
+                                    <i class="fas fa-cogs fa-spin"></i>
                                 </div>
-                                <div class="domain-info">
-                                    <div class="domain-name" id="currentDomainName">Initialisation...</div>
-                                    <div class="domain-action" id="currentDomainAction">Préparation</div>
+                                <div class="operation-details">
+                                    <div class="operation-title" id="operationTitle">Initialisation...</div>
+                                    <div class="operation-subtitle" id="operationSubtitle">Préparation</div>
                                 </div>
-                                <div class="domain-status">
-                                    <div class="spinner small"></div>
-                                </div>
+                                <div class="operation-status" id="operationStatus">En cours</div>
                             </div>
                             
-                            <div class="overall-progress">
-                                <div class="progress-header">
-                                    <span>Progression</span>
+                            <div class="progress-section">
+                                <div class="progress-info">
+                                    <span>Progression globale</span>
                                     <span id="executionPercent">0%</span>
                                 </div>
-                                <div class="progress">
-                                    <div class="progress-bar" id="executionProgressBar" style="width: 0%"></div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="executionProgressFill"></div>
                                 </div>
                             </div>
 
+                            <!-- Journal détaillé -->
                             <div class="execution-log">
-                                <h4>Journal</h4>
+                                <h3>Journal d'exécution</h3>
                                 <div class="log-container" id="executionLog">
-                                    <!-- Populated dynamically -->
+                                    <!-- Logs générés dynamiquement -->
                                 </div>
                             </div>
                         </div>
@@ -370,48 +217,37 @@ class DomainOrganizer {
                 </div>
 
                 <!-- Résultats finaux -->
-                <div class="step-content" id="resultsStep" style="display: none;">
-                    <div class="card">
-                        <h2 class="card-title">
-                            <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                            Organisation terminée !
-                        </h2>
-                        
-                        <div class="success-summary">
+                <div class="step-content" id="resultsStep">
+                    <div class="results-card">
+                        <div class="results-header">
                             <div class="success-icon">
                                 <i class="fas fa-check-circle"></i>
                             </div>
-                            <div class="success-content">
-                                <h3>Succès !</h3>
-                                <p>Votre boîte mail a été organisée selon vos préférences.</p>
+                            <h2>Organisation terminée</h2>
+                            <p>Votre boîte mail a été organisée selon vos préférences.</p>
+                        </div>
+                        
+                        <div class="results-summary">
+                            <div class="result-stat">
+                                <div class="result-value" id="finalEmailsMoved">0</div>
+                                <div class="result-label">Emails déplacés</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-value" id="finalFoldersCreated">0</div>
+                                <div class="result-label">Dossiers créés</div>
+                            </div>
+                            <div class="result-stat">
+                                <div class="result-value" id="finalErrors">0</div>
+                                <div class="result-label">Erreurs</div>
                             </div>
                         </div>
 
-                        <div class="final-stats">
-                            <div class="final-stat">
-                                <div class="stat-icon success"><i class="fas fa-envelope"></i></div>
-                                <div class="stat-details">
-                                    <div class="stat-value" id="finalEmailsMoved">0</div>
-                                    <div class="stat-label">Emails déplacés</div>
-                                </div>
-                            </div>
-                            <div class="final-stat">
-                                <div class="stat-icon success"><i class="fas fa-folder-plus"></i></div>
-                                <div class="stat-details">
-                                    <div class="stat-value" id="finalFoldersCreated">0</div>
-                                    <div class="stat-label">Dossiers créés</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="action-buttons">
-                            <button class="btn btn-secondary" onclick="window.domainOrganizer.resetForm()">
-                                <i class="fas fa-redo"></i>
-                                Nouveau
+                        <div class="results-actions">
+                            <button class="btn-secondary" onclick="window.domainOrganizer.resetForm()">
+                                <i class="fas fa-redo"></i> Nouveau rangement
                             </button>
-                            <button class="btn btn-primary" onclick="window.location.reload()">
-                                <i class="fas fa-home"></i>
-                                Accueil
+                            <button class="btn-primary" onclick="window.location.reload()">
+                                <i class="fas fa-home"></i> Accueil
                             </button>
                         </div>
                     </div>
@@ -419,591 +255,406 @@ class DomainOrganizer {
             </div>
 
             <style>
-                /* Styles généraux */
-                * { box-sizing: border-box; }
+                /* Variables CSS pour cohérence */
+                :root {
+                    --primary-color: #3b82f6;
+                    --primary-dark: #2563eb;
+                    --secondary-color: #64748b;
+                    --success-color: #10b981;
+                    --warning-color: #f59e0b;
+                    --danger-color: #ef4444;
+                    --gray-50: #f8fafc;
+                    --gray-100: #f1f5f9;
+                    --gray-200: #e2e8f0;
+                    --gray-300: #cbd5e1;
+                    --gray-500: #64748b;
+                    --gray-600: #475569;
+                    --gray-700: #334155;
+                    --gray-800: #1e293b;
+                    --gray-900: #0f172a;
+                    --border-radius: 8px;
+                    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+                    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+                    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+                }
+
+                /* Reset et base */
+                * { box-sizing: border-box; margin: 0; padding: 0; }
                 
-                .container {
+                .organizer-container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 24px;
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    color: #1f2937;
+                    color: var(--gray-900);
                     line-height: 1.6;
                 }
 
-                /* En-tête avec étapes */
-                .steps-header {
+                /* En-tête */
+                .organizer-header {
+                    margin-bottom: 32px;
                     text-align: center;
-                    margin-bottom: 12px;
                 }
 
-                .steps-header h1 {
-                    font-size: 20px;
+                .organizer-header h1 {
+                    font-size: 28px;
                     font-weight: 700;
-                    margin-bottom: 12px;
-                    color: #111827;
+                    margin-bottom: 16px;
+                    color: var(--gray-900);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    gap: 8px;
+                    gap: 12px;
                 }
 
-                .steps-indicator {
+                .step-progress {
                     display: flex;
                     justify-content: center;
-                    gap: 14px;
+                    gap: 24px;
                     margin: 0 auto;
-                    max-width: 450px;
+                    max-width: 600px;
                 }
 
                 .step {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    opacity: 0.4;
-                    transition: opacity 0.3s ease;
+                    padding: 12px 24px;
+                    border-radius: var(--border-radius);
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                    background: var(--gray-100);
+                    color: var(--gray-500);
+                    position: relative;
                 }
 
                 .step.active {
-                    opacity: 1;
+                    background: var(--primary-color);
+                    color: white;
                 }
 
                 .step.completed {
-                    opacity: 0.8;
-                }
-
-                .step-number {
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50%;
-                    background: #e5e7eb;
-                    color: #6b7280;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-weight: 600;
-                    margin-bottom: 4px;
-                    transition: all 0.3s ease;
-                    font-size: 12px;
-                }
-
-                .step.active .step-number {
-                    background: #3b82f6;
+                    background: var(--success-color);
                     color: white;
-                }
-
-                .step.completed .step-number {
-                    background: #10b981;
-                    color: white;
-                }
-
-                .step-label {
-                    font-size: 10px;
-                    font-weight: 500;
-                    color: #6b7280;
                 }
 
                 /* Cards */
-                .card {
+                .config-card, .analysis-card, .results-card, .execution-card {
                     background: white;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                    padding: 16px;
-                    margin-bottom: 12px;
+                    border-radius: var(--border-radius);
+                    box-shadow: var(--shadow);
+                    padding: 32px;
+                    margin-bottom: 24px;
                 }
 
-                .card-title {
-                    font-size: 16px;
-                    font-weight: 600;
-                    margin-bottom: 12px;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    color: #111827;
+                /* Contenu des étapes */
+                .step-content {
+                    display: none;
                 }
 
-                /* Info boxes */
-                .info-box {
-                    padding: 10px;
-                    border-radius: 6px;
-                    margin-bottom: 12px;
-                    display: flex;
-                    gap: 6px;
-                    font-size: 13px;
+                .step-content.active {
+                    display: block;
+                    animation: fadeIn 0.3s ease;
                 }
 
-                .info-primary {
-                    background: #eff6ff;
-                    border: 1px solid #bfdbfe;
-                    color: #1d4ed8;
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
 
-                .info-tip {
-                    background: #f0fdf4;
-                    border: 1px solid #bbf7d0;
-                    color: #15803d;
+                /* Formulaire de configuration */
+                .config-form h2 {
+                    font-size: 24px;
+                    margin-bottom: 24px;
+                    color: var(--gray-800);
                 }
 
-                /* Options d'organisation */
-                .organization-options {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 12px;
-                    margin-bottom: 12px;
-                }
-
-                .option-group {
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
-                    padding: 16px;
-                    transition: border-color 0.2s ease;
-                }
-
-                .option-group:hover {
-                    border-color: #3b82f6;
-                }
-
-                .option-label {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
-                    cursor: pointer;
-                    margin: 0;
-                }
-
-                .option-label input[type="radio"] {
-                    margin-top: 2px;
-                    flex-shrink: 0;
-                }
-
-                .option-content {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                }
-
-                .option-content strong {
-                    font-size: 14px;
-                    color: #111827;
-                }
-
-                .option-content span {
-                    font-size: 12px;
-                    color: #6b7280;
-                }
-
-                /* Formulaires */
-                .form-grid {
+                .form-row {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 12px;
-                    margin-bottom: 12px;
-                }
-
-                .form-section {
-                    margin-bottom: 20px;
-                }
-
-                .form-section h4 {
-                    margin: 0 0 12px 0;
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: #374151;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    padding-bottom: 8px;
-                    border-bottom: 1px solid #e5e7eb;
+                    gap: 24px;
+                    margin-bottom: 24px;
                 }
 
                 .form-group {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 8px;
                 }
 
                 .form-group label {
-                    font-size: 12px;
                     font-weight: 600;
-                    color: #374151;
+                    color: var(--gray-700);
+                    font-size: 14px;
                 }
 
-                .form-group input[type="date"],
-                .form-group input[type="text"] {
-                    padding: 6px 10px;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 4px;
-                    font-size: 13px;
+                .form-group input {
+                    padding: 12px 16px;
+                    border: 2px solid var(--gray-200);
+                    border-radius: var(--border-radius);
+                    font-size: 16px;
                     transition: border-color 0.2s ease;
                 }
 
                 .form-group input:focus {
                     outline: none;
-                    border-color: #3b82f6;
-                }
-
-                .help-text {
-                    font-size: 11px;
-                    color: #6b7280;
-                    margin-top: 2px;
+                    border-color: var(--primary-color);
+                    box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
                 }
 
                 /* Boutons */
-                .btn {
-                    padding: 8px 16px;
+                .btn-primary, .btn-secondary {
+                    padding: 12px 24px;
                     border: none;
-                    border-radius: 6px;
-                    font-size: 13px;
+                    border-radius: var(--border-radius);
                     font-weight: 600;
+                    font-size: 16px;
                     cursor: pointer;
                     transition: all 0.2s ease;
                     display: inline-flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 8px;
                     text-decoration: none;
                 }
 
-                .btn-sm {
-                    padding: 6px 12px;
-                    font-size: 12px;
-                }
-
-                .btn-large {
-                    padding: 12px 20px;
-                    font-size: 14px;
-                    flex-direction: column;
-                    gap: 4px;
-                }
-
-                .btn-subtitle {
-                    font-size: 11px;
-                    opacity: 0.9;
-                    font-weight: 400;
-                }
-
                 .btn-primary {
-                    background: #3b82f6;
+                    background: var(--primary-color);
                     color: white;
                 }
 
                 .btn-primary:hover:not(:disabled) {
-                    background: #2563eb;
+                    background: var(--primary-dark);
                     transform: translateY(-1px);
+                    box-shadow: var(--shadow-lg);
+                }
+
+                .btn-primary:disabled {
+                    background: var(--gray-300);
+                    cursor: not-allowed;
+                    transform: none;
+                    box-shadow: none;
                 }
 
                 .btn-secondary {
-                    background: #f3f4f6;
-                    color: #374151;
+                    background: var(--gray-100);
+                    color: var(--gray-700);
+                    border: 2px solid var(--gray-200);
                 }
 
                 .btn-secondary:hover {
-                    background: #e5e7eb;
+                    background: var(--gray-200);
+                    border-color: var(--gray-300);
                 }
 
-                .btn-danger {
-                    background: #dc2626;
-                    color: white;
-                }
-
-                .btn-danger:hover:not(:disabled) {
-                    background: #b91c1c;
-                }
-
-                .btn:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-
-                /* Progression d'analyse */
-                .analysis-progress {
+                .form-actions {
                     text-align: center;
+                    margin-top: 32px;
                 }
 
-                .current-action {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 16px;
-                    margin-bottom: 32px;
-                }
-
-                .spinner {
-                    width: 40px;
-                    height: 40px;
-                    border: 4px solid #e5e7eb;
-                    border-top: 4px solid #3b82f6;
-                    border-radius: 50%;
-                    animation: spin 1s linear infinite;
-                }
-
-                .spinner.small {
-                    width: 20px;
-                    height: 20px;
-                    border-width: 2px;
-                }
-
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
-                }
-
+                /* Progression */
                 .progress-section {
-                    margin-bottom: 32px;
+                    margin: 24px 0;
                 }
 
-                .progress-header {
+                .progress-info {
                     display: flex;
                     justify-content: space-between;
                     margin-bottom: 8px;
                     font-weight: 600;
-                }
-
-                .progress {
-                    height: 8px;
-                    background: #e5e7eb;
-                    border-radius: 4px;
-                    overflow: hidden;
+                    color: var(--gray-700);
                 }
 
                 .progress-bar {
+                    height: 12px;
+                    background: var(--gray-200);
+                    border-radius: 6px;
+                    overflow: hidden;
+                }
+
+                .progress-fill {
                     height: 100%;
-                    background: #3b82f6;
+                    background: var(--primary-color);
                     transition: width 0.3s ease;
+                    border-radius: 6px;
                 }
 
-                .analysis-steps {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                    text-align: left;
-                }
-
-                .analysis-step {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                    padding: 12px;
-                    background: #f9fafb;
-                    border-radius: 8px;
-                }
-
-                .analysis-step i {
-                    width: 20px;
+                .progress-message {
+                    margin-top: 12px;
                     text-align: center;
+                    color: var(--gray-600);
+                    font-style: italic;
                 }
 
-                .analysis-step i.pending {
-                    color: #6b7280;
+                /* Validation et révision */
+                .review-container {
+                    background: white;
+                    border-radius: var(--border-radius);
+                    box-shadow: var(--shadow);
+                    overflow: hidden;
                 }
 
-                .analysis-step i.active {
-                    color: #3b82f6;
+                .review-header {
+                    padding: 32px;
+                    border-bottom: 1px solid var(--gray-200);
                 }
 
-                .analysis-step i.completed {
-                    color: #10b981;
+                .review-header h2 {
+                    font-size: 24px;
+                    margin-bottom: 24px;
+                    color: var(--gray-800);
                 }
 
-                .step-status {
-                    margin-left: auto;
-                    font-size: 12px;
-                    font-weight: 600;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                }
-
-                .step-status.pending {
-                    background: #f3f4f6;
-                    color: #6b7280;
-                }
-
-                .step-status.active {
-                    background: #dbeafe;
-                    color: #3b82f6;
-                }
-
-                .step-status.completed {
-                    background: #d1fae5;
-                    color: #10b981;
-                }
-
-                /* Statistiques */
-                .stats-section {
-                    margin-bottom: 20px;
-                }
-
-                .stats-row {
+                .review-stats {
                     display: grid;
                     grid-template-columns: repeat(4, 1fr);
-                    gap: 16px;
-                    padding: 16px;
-                    background: #f8fafc;
-                    border-radius: 8px;
+                    gap: 24px;
                 }
 
                 .stat {
                     text-align: center;
+                    padding: 20px;
+                    background: var(--gray-50);
+                    border-radius: var(--border-radius);
                 }
 
                 .stat-value {
-                    font-size: 20px;
+                    font-size: 32px;
                     font-weight: 700;
-                    color: #111827;
+                    color: var(--primary-color);
+                    display: block;
                 }
 
                 .stat-label {
-                    font-size: 12px;
-                    color: #6b7280;
-                }
-
-                /* Section de contrôles */
-                .controls-section {
-                    margin-bottom: 20px;
-                }
-
-                .controls-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 12px;
-                    flex-wrap: wrap;
-                    gap: 12px;
-                }
-
-                .controls-header h3 {
-                    margin: 0;
-                    font-size: 16px;
-                    font-weight: 600;
-                }
-
-                .controls-actions {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    flex-wrap: wrap;
-                }
-
-                .checkbox-label {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    cursor: pointer;
-                    font-size: 13px;
+                    font-size: 14px;
+                    color: var(--gray-600);
                     font-weight: 500;
                 }
 
-                /* Structure hiérarchique */
-                .hierarchy-section {
-                    margin-bottom: 20px;
+                /* Contrôles globaux */
+                .global-controls {
+                    padding: 24px 32px;
+                    border-bottom: 1px solid var(--gray-200);
+                    background: var(--gray-50);
                 }
 
-                .hierarchy-container {
-                    border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    max-height: 500px;
+                .control-group {
+                    display: flex;
+                    gap: 16px;
+                    margin-bottom: 16px;
+                }
+
+                .validation-panel {
+                    margin-top: 16px;
+                }
+
+                .validation-error {
+                    background: #fef2f2;
+                    border: 1px solid #fecaca;
+                    color: #dc2626;
+                    padding: 12px 16px;
+                    border-radius: var(--border-radius);
+                    margin-bottom: 8px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 14px;
+                }
+
+                /* Liste des domaines */
+                .domains-list {
+                    max-height: 600px;
                     overflow-y: auto;
-                    background: white;
                 }
 
-                .domain-group {
-                    border-bottom: 1px solid #f3f4f6;
+                .domain-item {
+                    border-bottom: 1px solid var(--gray-200);
+                    transition: background-color 0.2s ease;
                 }
 
-                .domain-group:last-child {
-                    border-bottom: none;
+                .domain-item:hover {
+                    background: var(--gray-50);
                 }
 
                 .domain-header {
+                    padding: 24px 32px;
                     display: flex;
                     align-items: center;
-                    padding: 12px 16px;
+                    justify-content: space-between;
                     cursor: pointer;
-                    transition: background-color 0.2s ease;
-                    position: relative;
-                }
-
-                .domain-header:hover {
-                    background: #f9fafb;
-                }
-
-                .domain-header.expanded {
-                    background: #f0f9ff;
-                    border-bottom: 1px solid #e0f2fe;
-                }
-
-                .domain-toggle {
-                    width: 20px;
-                    height: 20px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin-right: 8px;
-                    color: #6b7280;
-                    transition: transform 0.2s ease;
-                }
-
-                .domain-toggle.expanded {
-                    transform: rotate(90deg);
                 }
 
                 .domain-info {
-                    flex: 1;
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 16px;
+                    flex: 1;
                 }
 
-                .domain-name {
-                    font-weight: 600;
-                    color: #111827;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
+                .domain-checkbox {
+                    width: 20px;
+                    height: 20px;
+                    cursor: pointer;
+                    accent-color: var(--primary-color);
                 }
 
                 .domain-icon {
-                    width: 16px;
-                    height: 16px;
-                    background: #3b82f6;
-                    border-radius: 3px;
+                    width: 40px;
+                    height: 40px;
+                    background: var(--primary-color);
+                    border-radius: var(--border-radius);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 10px;
+                    font-size: 18px;
                 }
 
-                .email-count {
-                    background: #dbeafe;
-                    color: #1d4ed8;
-                    padding: 2px 8px;
-                    border-radius: 12px;
-                    font-size: 11px;
-                    font-weight: 600;
+                .domain-details {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .domain-name {
+                    font-weight: 700;
+                    font-size: 18px;
+                    color: var(--gray-900);
+                }
+
+                .domain-count {
+                    color: var(--gray-600);
+                    font-size: 14px;
                 }
 
                 .domain-actions {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 16px;
                 }
 
-                .folder-preview {
-                    font-size: 12px;
-                    color: #6b7280;
-                    padding: 4px 8px;
-                    background: #f3f4f6;
-                    border-radius: 4px;
-                    max-width: 200px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
+                .folder-config {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                    min-width: 200px;
+                }
+
+                .folder-select, .folder-input {
+                    padding: 8px 12px;
+                    border: 2px solid var(--gray-200);
+                    border-radius: var(--border-radius);
+                    font-size: 14px;
+                    transition: border-color 0.2s ease;
+                }
+
+                .folder-select:focus, .folder-input:focus {
+                    outline: none;
+                    border-color: var(--primary-color);
                 }
 
                 .action-badge {
-                    display: inline-block;
-                    padding: 2px 8px;
-                    border-radius: 12px;
-                    font-size: 10px;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
                     font-weight: 600;
-                    text-align: center;
+                    text-transform: uppercase;
                 }
 
                 .action-new {
@@ -1012,488 +663,421 @@ class DomainOrganizer {
                 }
 
                 .action-existing {
-                    background: #e0e7ff;
-                    color: #3730a3;
+                    background: #dbeafe;
+                    color: #1e40af;
                 }
 
-                .domain-checkbox {
-                    margin-left: 8px;
-                    width: 16px;
-                    height: 16px;
-                    cursor: pointer;
-                }
-
-                /* Détails du domaine */
-                .domain-details {
-                    padding: 0 16px 16px 44px;
-                    background: #fafbfb;
-                    border-top: 1px solid #e0f2fe;
+                /* Section des emails */
+                .emails-section {
+                    padding: 0 32px 24px 32px;
+                    background: var(--gray-50);
                     display: none;
                 }
 
-                .domain-details.expanded {
+                .emails-section.expanded {
                     display: block;
+                    animation: slideDown 0.3s ease;
                 }
 
-                .details-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 16px;
-                    margin-bottom: 16px;
+                @keyframes slideDown {
+                    from { max-height: 0; opacity: 0; }
+                    to { max-height: 500px; opacity: 1; }
                 }
 
-                .detail-group {
+                .emails-header {
                     display: flex;
-                    flex-direction: column;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 16px;
+                    padding: 16px 0;
+                    border-bottom: 1px solid var(--gray-200);
+                }
+
+                .emails-title {
+                    font-weight: 600;
+                    color: var(--gray-800);
+                    display: flex;
+                    align-items: center;
                     gap: 8px;
                 }
 
-                .detail-label {
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: #374151;
+                .emails-controls {
+                    display: flex;
+                    gap: 12px;
+                }
+
+                .email-item {
+                    background: white;
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--border-radius);
+                    padding: 16px;
+                    margin-bottom: 8px;
                     display: flex;
                     align-items: center;
-                    gap: 4px;
+                    gap: 16px;
+                    transition: all 0.2s ease;
                 }
 
-                .folder-input {
-                    padding: 8px 12px;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    transition: border-color 0.2s ease;
-                    background: white;
+                .email-item:hover {
+                    box-shadow: var(--shadow);
+                    transform: translateY(-1px);
                 }
 
-                .folder-input:focus {
-                    outline: none;
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                .email-item.selected {
+                    border-color: var(--primary-color);
+                    background: #eff6ff;
                 }
 
-                .folder-select {
-                    padding: 8px 12px;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    background: white;
+                .email-checkbox {
+                    width: 18px;
+                    height: 18px;
                     cursor: pointer;
+                    accent-color: var(--primary-color);
                 }
 
-                .email-samples {
-                    margin-top: 12px;
+                .email-content {
+                    flex: 1;
+                    min-width: 0;
                 }
 
-                .email-samples h5 {
-                    margin: 0 0 8px 0;
-                    font-size: 12px;
+                .email-from {
                     font-weight: 600;
-                    color: #374151;
+                    color: var(--gray-900);
+                    font-size: 14px;
+                    margin-bottom: 4px;
                 }
 
-                .sample-list {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
-                }
-
-                .sample-item {
-                    background: white;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 4px;
-                    padding: 8px;
-                    font-size: 11px;
-                }
-
-                .sample-from {
-                    font-weight: 600;
-                    color: #374151;
-                    margin-bottom: 2px;
-                }
-
-                .sample-subject {
-                    color: #6b7280;
+                .email-subject {
+                    color: var(--gray-700);
+                    font-size: 14px;
+                    margin-bottom: 4px;
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
                 }
 
-                /* Sections d'action */
-                .action-section {
-                    border-top: 1px solid #e5e7eb;
-                    padding-top: 16px;
+                .email-preview {
+                    color: var(--gray-500);
+                    font-size: 12px;
+                    line-height: 1.4;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                 }
 
-                .options-row {
+                .email-meta {
                     display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 16px;
-                    gap: 16px;
-                }
-
-                .checkbox-group {
-                    display: flex;
-                    align-items: center;
+                    flex-direction: column;
+                    align-items: flex-end;
                     gap: 8px;
                 }
 
-                .checkbox-group input[type="checkbox"] {
-                    width: 16px;
-                    height: 16px;
-                    cursor: pointer;
+                .email-date {
+                    font-size: 12px;
+                    color: var(--gray-500);
+                    white-space: nowrap;
                 }
 
-                .checkbox-group label {
-                    cursor: pointer;
-                    font-size: 14px;
+                .email-folder-select {
+                    padding: 6px 10px;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 4px;
+                    font-size: 12px;
+                    min-width: 120px;
+                }
+
+                /* Actions finales */
+                .final-actions {
+                    padding: 32px;
+                    border-top: 1px solid var(--gray-200);
+                    background: white;
+                }
+
+                .summary-box {
+                    background: var(--gray-50);
+                    border: 1px solid var(--gray-200);
+                    border-radius: var(--border-radius);
+                    padding: 24px;
+                    margin-bottom: 24px;
+                }
+
+                .summary-box h3 {
+                    margin-bottom: 16px;
+                    color: var(--gray-800);
+                }
+
+                .summary-content {
+                    display: flex;
+                    gap: 32px;
+                }
+
+                .summary-item {
+                    font-size: 16px;
+                    color: var(--gray-700);
+                }
+
+                .summary-item strong {
+                    color: var(--primary-color);
+                    font-weight: 700;
                 }
 
                 .action-buttons {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    gap: 12px;
-                }
-
-                /* Section de confirmation */
-                .confirmation-section {
-                    margin: 16px 0;
-                }
-
-                .summary-preview {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                    margin-top: 8px;
-                }
-
-                .summary-preview .summary-item {
-                    font-size: 13px;
-                    color: #92400e;
-                }
-
-                /* Avertissements */
-                .warning-box {
-                    background: #fef3c7;
-                    border: 1px solid #f59e0b;
-                    border-radius: 8px;
-                    padding: 16px;
-                    margin-bottom: 20px;
-                    display: flex;
-                    gap: 12px;
-                }
-
-                .warning-icon {
-                    flex-shrink: 0;
-                    width: 32px;
-                    height: 32px;
-                    background: #3b82f6;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 16px;
-                }
-
-                .warning-content h3 {
-                    margin: 0 0 8px 0;
-                    color: #92400e;
-                    font-size: 16px;
                 }
 
                 /* Exécution */
-                .execution-progress {
-                    text-align: center;
-                }
-
-                .current-domain {
+                .current-operation {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 16px;
-                    background: #f8fafc;
-                    border-radius: 8px;
-                    margin-bottom: 20px;
+                    gap: 16px;
+                    padding: 24px;
+                    background: var(--gray-50);
+                    border-radius: var(--border-radius);
+                    margin-bottom: 24px;
                 }
 
-                .domain-icon {
-                    width: 40px;
-                    height: 40px;
-                    background: #3b82f6;
-                    border-radius: 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-size: 16px;
-                }
-
-                .domain-info {
-                    flex: 1;
-                    text-align: left;
-                }
-
-                .domain-name {
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: #111827;
-                }
-
-                .domain-action {
-                    font-size: 13px;
-                    color: #6b7280;
-                }
-
-                .overall-progress {
-                    margin-bottom: 20px;
-                }
-
-                .execution-log {
-                    text-align: left;
-                }
-
-                .execution-log h4 {
-                    margin: 0 0 12px 0;
-                    font-size: 14px;
-                    color: #374151;
-                }
-
-                .log-container {
-                    max-height: 200px;
-                    overflow-y: auto;
-                    background: #f9fafb;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 6px;
-                    padding: 12px;
-                }
-
-                .log-entry {
-                    padding: 4px 0;
-                    font-size: 13px;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                }
-
-                .log-entry.success {
-                    color: #10b981;
-                }
-
-                .log-entry.error {
-                    color: #dc2626;
-                }
-
-                .log-entry.info {
-                    color: #6b7280;
-                }
-
-                /* Résultats finaux */
-                .success-summary {
-                    text-align: center;
-                    margin-bottom: 20px;
-                }
-
-                .success-icon {
-                    width: 60px;
-                    height: 60px;
-                    background: #10b981;
+                .operation-icon {
+                    width: 48px;
+                    height: 48px;
+                    background: var(--primary-color);
                     border-radius: 50%;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 24px;
-                    margin: 0 auto 12px auto;
-                }
-
-                .success-content h3 {
                     font-size: 20px;
-                    color: #111827;
-                    margin: 0 0 6px 0;
                 }
 
-                .success-content p {
-                    color: #6b7280;
+                .operation-details {
+                    flex: 1;
+                }
+
+                .operation-title {
+                    font-weight: 700;
+                    font-size: 18px;
+                    color: var(--gray-900);
+                }
+
+                .operation-subtitle {
+                    color: var(--gray-600);
                     font-size: 14px;
-                    margin: 0;
                 }
 
-                .final-stats {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 16px;
-                    margin-bottom: 20px;
+                .operation-status {
+                    padding: 8px 16px;
+                    background: var(--primary-color);
+                    color: white;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    font-weight: 600;
                 }
 
-                .final-stat {
+                /* Journal d'exécution */
+                .execution-log {
+                    margin-top: 32px;
+                }
+
+                .execution-log h3 {
+                    margin-bottom: 16px;
+                    color: var(--gray-800);
+                }
+
+                .log-container {
+                    max-height: 300px;
+                    overflow-y: auto;
+                    background: var(--gray-900);
+                    color: white;
+                    border-radius: var(--border-radius);
+                    padding: 16px;
+                    font-family: 'Courier New', monospace;
+                    font-size: 13px;
+                    line-height: 1.4;
+                }
+
+                .log-entry {
+                    margin-bottom: 4px;
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 16px;
-                    background: #f0fdf4;
-                    border-radius: 8px;
+                    gap: 8px;
                 }
 
-                .stat-icon.success {
-                    background: #10b981;
+                .log-entry.success {
+                    color: #4ade80;
+                }
+
+                .log-entry.error {
+                    color: #f87171;
+                }
+
+                .log-entry.warning {
+                    color: #fbbf24;
+                }
+
+                .log-entry.info {
+                    color: #60a5fa;
+                }
+
+                /* Résultats */
+                .results-header {
+                    text-align: center;
+                    margin-bottom: 32px;
+                }
+
+                .success-icon {
+                    width: 80px;
+                    height: 80px;
+                    background: var(--success-color);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
                     color: white;
+                    font-size: 36px;
+                    margin: 0 auto 16px auto;
+                }
+
+                .results-header h2 {
+                    font-size: 28px;
+                    color: var(--gray-900);
+                    margin-bottom: 8px;
+                }
+
+                .results-summary {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 24px;
+                    margin-bottom: 32px;
+                }
+
+                .result-stat {
+                    text-align: center;
+                    padding: 24px;
+                    background: var(--gray-50);
+                    border-radius: var(--border-radius);
+                }
+
+                .result-value {
+                    font-size: 32px;
+                    font-weight: 700;
+                    color: var(--success-color);
+                }
+
+                .result-label {
+                    font-size: 14px;
+                    color: var(--gray-600);
+                    margin-top: 4px;
+                }
+
+                .results-actions {
+                    display: flex;
+                    justify-content: center;
+                    gap: 16px;
                 }
 
                 /* Responsive */
                 @media (max-width: 768px) {
-                    .container {
-                        margin: 16px auto;
-                        padding: 0 12px;
+                    .organizer-container {
+                        padding: 16px;
                     }
 
-                    .form-grid {
+                    .form-row {
                         grid-template-columns: 1fr;
                     }
 
-                    .stats-row {
+                    .review-stats {
                         grid-template-columns: repeat(2, 1fr);
-                        gap: 12px;
                     }
 
-                    .controls-header {
+                    .control-group {
                         flex-direction: column;
-                        align-items: stretch;
+                        gap: 8px;
                     }
 
-                    .controls-actions {
+                    .domain-header {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 16px;
+                    }
+
+                    .domain-actions {
+                        width: 100%;
                         justify-content: space-between;
                     }
 
-                    .details-grid {
-                        grid-template-columns: 1fr;
+                    .summary-content {
+                        flex-direction: column;
+                        gap: 16px;
                     }
 
                     .action-buttons {
                         flex-direction: column;
-                        align-items: stretch;
+                        gap: 16px;
                     }
 
-                    .final-stats {
+                    .results-summary {
                         grid-template-columns: 1fr;
                     }
 
-                    .domain-details {
-                        padding: 0 12px 12px 32px;
+                    .step-progress {
+                        flex-direction: column;
+                        gap: 8px;
                     }
                 }
 
-                /* Animations */
-                .domain-group {
-                    transition: all 0.2s ease;
+                /* Utilitaires */
+                .hidden {
+                    display: none !important;
                 }
 
-                .domain-details {
-                    transition: all 0.3s ease;
+                .loading {
+                    pointer-events: none;
+                    opacity: 0.6;
                 }
 
-                .folder-input, .folder-select {
-                    transition: all 0.2s ease;
+                .error-state {
+                    border-color: var(--danger-color) !important;
+                    background: #fef2f2 !important;
                 }
 
-                .domain-header {
-                    transition: all 0.2s ease;
+                .success-state {
+                    border-color: var(--success-color) !important;
+                    background: #f0fdf4 !important;
                 }
             </style>
         `;
     }
 
-    /**
-     * Initialise la page et les event listeners
-     */
+    // ================================================
+    // INITIALISATION ET CONFIGURATION
+    // ================================================
+    
     async initializePage() {
-        console.log('[DomainOrganizer] Initializing page v4.0...');
+        console.log('[DomainOrganizer] Initializing harmonized interface v5.0...');
         
-        // Vérifier l'authentification
         if (!window.authService?.isAuthenticated()) {
             window.uiManager?.showToast('Veuillez vous connecter pour utiliser cette fonctionnalité', 'warning');
             return false;
         }
         
-        // Attendre un peu que le DOM soit complètement rendu
         await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Configurer les event listeners
         this.setupEventListeners();
-        
-        // Définir les dates par défaut
         this.setDefaultDates();
-        
-        // Forcer l'affichage de l'étape de configuration
-        this.forceShowConfigStep();
+        this.showStep('configure');
         
         return true;
     }
 
-    /**
-     * Force l'affichage de l'étape de configuration
-     */
-    forceShowConfigStep() {
-        console.log('[DomainOrganizer] Forcing display of config step...');
-        
-        // Cacher toutes les étapes
-        document.querySelectorAll('.step-content').forEach(content => {
-            content.style.display = 'none';
-        });
-        
-        // Afficher configStep spécifiquement
-        const configStep = document.getElementById('configStep');
-        if (configStep) {
-            configStep.style.display = 'block';
-            this.currentStep = 'configure';
-            
-            // Mettre à jour l'indicateur d'étapes
-            document.querySelectorAll('.step').forEach(step => {
-                step.classList.remove('active', 'completed');
-                if (step.dataset.step === 'configure') {
-                    step.classList.add('active');
-                }
-            });
-            
-            console.log('[DomainOrganizer] ✅ Configuration step is now visible');
-        } else {
-            console.error('[DomainOrganizer] ❌ configStep element not found in DOM');
-        }
-    }
-
-    /**
-     * Configure les event listeners
-     */
     setupEventListeners() {
         // Formulaire principal
         const form = document.getElementById('organizeForm');
         if (form) {
             form.addEventListener('submit', (e) => this.handleFormSubmit(e));
         }
-        
-        // Select all checkbox
-        const selectAll = document.getElementById('selectAll');
-        if (selectAll) {
-            selectAll.addEventListener('change', (e) => this.handleSelectAll(e));
-        }
-
-        // Confirmation finale
-        const finalConfirmation = document.getElementById('finalConfirmation');
-        if (finalConfirmation) {
-            finalConfirmation.addEventListener('change', (e) => {
-                const executeBtn = document.getElementById('executeBtn');
-                if (executeBtn) {
-                    executeBtn.disabled = !e.target.checked;
-                }
-            });
-        }
     }
 
-    /**
-     * Définit les dates par défaut
-     */
     setDefaultDates() {
         const today = new Date();
         const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -1505,9 +1089,6 @@ class DomainOrganizer {
         if (endDateInput) endDateInput.valueAsDate = today;
     }
 
-    /**
-     * Affiche une étape spécifique
-     */
     showStep(stepName) {
         console.log(`[DomainOrganizer] Showing step: ${stepName}`);
         
@@ -1523,25 +1104,19 @@ class DomainOrganizer {
 
         // Cacher toutes les étapes
         document.querySelectorAll('.step-content').forEach(content => {
-            content.style.display = 'none';
+            content.classList.remove('active');
         });
 
         // Afficher l'étape active
         const stepId = `${stepName}Step`;
         const activeStep = document.getElementById(stepId);
         if (activeStep) {
-            activeStep.style.display = 'block';
-            console.log(`[DomainOrganizer] ✅ Step ${stepName} displayed`);
-        } else {
-            console.error(`[DomainOrganizer] ❌ Step element not found: ${stepId}`);
+            activeStep.classList.add('active');
         }
 
         this.currentStep = stepName;
     }
 
-    /**
-     * Vérifie si une étape est complétée
-     */
     isStepCompleted(stepName, currentStep) {
         const steps = ['configure', 'analyze', 'review', 'execute'];
         const stepIndex = steps.indexOf(stepName);
@@ -1549,31 +1124,27 @@ class DomainOrganizer {
         return stepIndex < currentIndex;
     }
 
-    /**
-     * Gère la soumission du formulaire
-     */
+    // ================================================
+    // GESTION DU FORMULAIRE ET ANALYSE
+    // ================================================
+    
     async handleFormSubmit(event) {
         event.preventDefault();
         
         if (this.isProcessing) return;
         
-        // Récupérer les données du formulaire
         const formData = this.getFormData();
         if (!formData.startDate && !formData.endDate) {
-            window.uiManager?.showToast('Veuillez sélectionner au moins une date', 'warning');
+            this.showError('Veuillez sélectionner au moins une date');
             return;
         }
         
         await this.startAnalysis(formData);
     }
 
-    /**
-     * Récupère les données du formulaire
-     */
     getFormData() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        const organizationType = document.querySelector('input[name="organizationType"]:checked')?.value || 'hierarchical';
         const excludeDomains = document.getElementById('excludeDomains').value
             .split(',')
             .map(d => d.trim())
@@ -1583,26 +1154,20 @@ class DomainOrganizer {
             .map(e => e.trim())
             .filter(e => e);
         
-        return { startDate, endDate, organizationType, excludeDomains, excludeEmails };
+        return { startDate, endDate, excludeDomains, excludeEmails };
     }
 
-    /**
-     * Lance l'analyse
-     */
     async startAnalysis(formData) {
         try {
             this.isProcessing = true;
             this.showStep('analyze');
             
-            // Configurer le module
             this.configure({
                 excludeDomains: formData.excludeDomains,
                 excludeEmails: formData.excludeEmails,
-                organizationType: formData.organizationType,
                 onProgress: (progress) => this.updateAnalysisProgress(progress)
             });
             
-            // Lancer l'analyse
             const results = await this.analyzeEmails({
                 startDate: formData.startDate,
                 endDate: formData.endDate,
@@ -1610,1598 +1175,235 @@ class DomainOrganizer {
             });
             
             this.currentAnalysis = results;
-            this.showHierarchicalResults(results);
+            this.showValidationInterface(results);
             
         } catch (error) {
             console.error('[DomainOrganizer] Analysis error:', error);
-            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
-            this.resetForm();
+            this.showError(`Erreur: ${error.message}`);
+            this.showStep('configure');
         } finally {
             this.isProcessing = false;
         }
     }
 
-    /**
-     * Met à jour la progression de l'analyse
-     */
     updateAnalysisProgress(progress) {
-        // Mettre à jour la barre de progression
-        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
         const progressPercent = document.getElementById('progressPercent');
         const progressLabel = document.getElementById('progressLabel');
-        const currentActionText = document.getElementById('currentActionText');
+        const progressMessage = document.getElementById('progressMessage');
         
-        if (progressBar) progressBar.style.width = `${progress.percent}%`;
+        if (progressFill) progressFill.style.width = `${progress.percent}%`;
         if (progressPercent) progressPercent.textContent = `${progress.percent}%`;
         if (progressLabel) progressLabel.textContent = progress.stage || 'Analyse';
-        if (currentActionText) currentActionText.textContent = progress.message || 'Analyse en cours...';
-        
-        // Mettre à jour les étapes
-        this.updateAnalysisSteps(progress.stage);
+        if (progressMessage) progressMessage.textContent = progress.message || 'Analyse en cours...';
     }
 
-    /**
-     * Met à jour les étapes d'analyse
-     */
-    updateAnalysisSteps(currentStage) {
-        const stageMapping = {
-            'Chargement des dossiers': 'step-folders',
-            'Récupération des emails': 'step-emails', 
-            'Analyse des domaines': 'step-domains',
-            'Structure proposée': 'step-structure'
-        };
-        
-        const currentStepId = stageMapping[currentStage];
-        
-        Object.entries(stageMapping).forEach(([stage, stepId]) => {
-            const stepElement = document.getElementById(stepId);
-            if (!stepElement) return;
-            
-            const icon = stepElement.querySelector('i');
-            const status = stepElement.querySelector('.step-status');
-            
-            if (stage === currentStage) {
-                icon.className = 'fas fa-spinner fa-spin active';
-                status.textContent = 'En cours';
-                status.className = 'step-status active';
-            } else if (this.isStageCompleted(stage, currentStage)) {
-                icon.className = 'fas fa-check completed';
-                status.textContent = 'Terminé';
-                status.className = 'step-status completed';
-            }
-        });
-    }
-
-    /**
-     * Vérifie si une étape est terminée
-     */
-    isStageCompleted(stage, currentStage) {
-        const stages = [
-            'Chargement des dossiers',
-            'Récupération des emails',
-            'Analyse des domaines',
-            'Structure proposée'
-        ];
-        
-        const stageIndex = stages.indexOf(stage);
-        const currentIndex = stages.indexOf(currentStage);
-        return stageIndex < currentIndex;
-    }
-
-    /**
-     * Affiche les résultats hiérarchiques
-     */
-    showHierarchicalResults(results) {
+    // ================================================
+    // INTERFACE DE VALIDATION HARMONISÉE
+    // ================================================
+    
+    showValidationInterface(results) {
         // Mettre à jour les statistiques
         document.getElementById('statEmails').textContent = results.totalEmails.toLocaleString();
         document.getElementById('statDomains').textContent = results.totalDomains;
-        document.getElementById('statFolders').textContent = results.totalFolders || results.totalDomains;
+        document.getElementById('statFolders').textContent = results.totalDomains;
         document.getElementById('statNew').textContent = results.domainsToCreate;
         
-        // Générer la structure hiérarchique
-        this.generateHierarchicalView(results.domains);
+        // Générer la liste des domaines avec emails visibles
+        this.generateDomainsListWithEmails(results.domains);
         
-        // Préparer les actions
+        // Préparer les actions et valider
         this.prepareActions();
-        
-        // Mettre à jour le résumé
-        this.updateActionSummary();
+        this.validateConfiguration();
+        this.updateSummary();
         
         // Passer à l'étape de révision
         this.showStep('review');
     }
 
-    /**
-     * Génère la vue hiérarchique
-     */
-    generateHierarchicalView(domains) {
-        const container = document.getElementById('hierarchyContainer');
-        const fallbackTable = document.getElementById('fallbackTable');
-        
-        if (!container) {
-            console.warn('[DomainOrganizer] hierarchyContainer not found, using fallback');
-            this.generateFallbackTable(domains);
-            return;
-        }
+    generateDomainsListWithEmails(domains) {
+        const container = document.getElementById('domainsList');
+        if (!container) return;
         
         container.innerHTML = '';
-        
-        // Vérifier si nous devons utiliser la vue hiérarchique ou le tableau
-        const organizationType = this.organizationType || 'hierarchical';
-        
-        if (organizationType === 'flat' || domains.length > 50) {
-            // Utiliser le tableau pour de nombreux domaines ou organisation plate
-            this.generateFallbackTable(domains);
-            if (fallbackTable) fallbackTable.style.display = 'block';
-            container.style.display = 'none';
-            return;
-        }
-        
-        // Afficher la vue hiérarchique
-        if (fallbackTable) fallbackTable.style.display = 'none';
-        container.style.display = 'block';
         
         // Trier les domaines par nombre d'emails (décroissant)
         const sortedDomains = [...domains].sort((a, b) => b.count - a.count);
         
         sortedDomains.forEach((domain, index) => {
-            const domainElement = this.createDomainElement(domain, index);
+            const domainElement = this.createDomainElementWithEmails(domain, index);
             container.appendChild(domainElement);
         });
     }
 
-    /**
-     * Génère le tableau de fallback
-     */
-    generateFallbackTable(domains) {
-        const tbody = document.getElementById('resultsTableBody');
-        if (!tbody) return;
-        
-        tbody.innerHTML = '';
-        
-        domains.forEach((domain, index) => {
-            const row = this.createDomainRow(domain, index);
-            tbody.appendChild(row);
-        });
-    }
-
-    /**
-     * Crée une ligne de domaine pour le tableau
-     */
-    createDomainRow(domainData, index) {
-        const row = document.createElement('tr');
-        row.dataset.domain = domainData.domain;
-        
+    createDomainElementWithEmails(domainData, index) {
+        const allEmails = this.emailsByDomain.get(domainData.domain) || [];
         const isNewFolder = domainData.action === 'create-new';
         const existingFolders = Array.from(this.existingFolders.values());
         
-        row.innerHTML = `
-            <td>
-                <input type="checkbox" class="domain-checkbox" data-domain="${domainData.domain}" checked>
-            </td>
-            <td>
-                <div class="domain-name">
-                    <i class="fas fa-at" style="color: #6b7280; font-size: 12px;"></i>
-                    ${domainData.domain}
-                </div>
-            </td>
-            <td>
-                <span class="email-count">${domainData.count}</span>
-            </td>
-            <td>
-                ${isNewFolder ? 
-                    `<input type="text" class="folder-select" value="${domainData.suggestedFolder}" 
-                            data-domain="${domainData.domain}">` :
-                    this.createFolderSelect(domainData, existingFolders)
-                }
-            </td>
-            <td>
-                <span class="action-badge ${isNewFolder ? 'action-new' : 'action-existing'}">
-                    ${isNewFolder ? 'Nouveau' : 'Existant'}
-                </span>
-            </td>
-            <td>
-                <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.showEmailPreview('${domainData.domain}')" title="Voir les emails">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </td>
-        `;
+        const domainElement = document.createElement('div');
+        domainElement.className = 'domain-item';
+        domainElement.dataset.domain = domainData.domain;
         
-        // Event listeners
-        const checkbox = row.querySelector('.domain-checkbox');
-        checkbox.addEventListener('change', (e) => this.handleDomainToggle(e));
-        
-        const folderInput = row.querySelector('.folder-select, input[type="text"]');
-        if (folderInput) {
-            folderInput.addEventListener('change', (e) => this.handleFolderChange(e));
-        }
-        
-        return row;
-    }
-
-    /**
-     * Crée un élément de domaine
-     */
-    createDomainElement(domainData, index) {
-        const domainGroup = document.createElement('div');
-        domainGroup.className = 'domain-group';
-        domainGroup.dataset.domain = domainData.domain;
-        
-        const isExpanded = this.expandedDomains.has(domainData.domain);
-        const isNewFolder = domainData.action === 'create-new';
-        
-        domainGroup.innerHTML = `
-            <div class="domain-header ${isExpanded ? 'expanded' : ''}" onclick="window.domainOrganizer.toggleDomain('${domainData.domain}')">
-                <div class="domain-toggle ${isExpanded ? 'expanded' : ''}">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
+        domainElement.innerHTML = `
+            <div class="domain-header" onclick="window.domainOrganizer.toggleDomainEmails('${domainData.domain}')">
                 <div class="domain-info">
-                    <div class="domain-name">
-                        <div class="domain-icon">
-                            <i class="fas fa-at"></i>
-                        </div>
-                        ${domainData.domain}
+                    <input type="checkbox" 
+                           class="domain-checkbox" 
+                           data-domain="${domainData.domain}" 
+                           onclick="event.stopPropagation(); window.domainOrganizer.handleDomainToggle(event)" 
+                           checked>
+                    
+                    <div class="domain-icon">
+                        <i class="fas fa-at"></i>
                     </div>
-                    <span class="email-count">${domainData.count}</span>
+                    
+                    <div class="domain-details">
+                        <div class="domain-name">${domainData.domain}</div>
+                        <div class="domain-count">${domainData.count} emails</div>
+                    </div>
                 </div>
+                
                 <div class="domain-actions">
-                    <div class="folder-preview">${domainData.suggestedFolder}</div>
+                    <div class="folder-config">
+                        ${isNewFolder ? 
+                            `<input type="text" 
+                                    class="folder-input" 
+                                    value="${domainData.suggestedFolder}" 
+                                    data-domain="${domainData.domain}" 
+                                    onclick="event.stopPropagation()"
+                                    onchange="window.domainOrganizer.handleFolderChange(event)"
+                                    placeholder="Nom du dossier">` :
+                            this.createFolderSelect(domainData, existingFolders)
+                        }
+                        <div class="folder-type">
+                            <select class="folder-select" 
+                                    data-domain="${domainData.domain}" 
+                                    onclick="event.stopPropagation()"
+                                    onchange="window.domainOrganizer.handleActionTypeChange(event)">
+                                <option value="create-new" ${isNewFolder ? 'selected' : ''}>Créer nouveau dossier</option>
+                                <option value="move-existing" ${!isNewFolder ? 'selected' : ''}>Utiliser dossier existant</option>
+                            </select>
+                        </div>
+                    </div>
+                    
                     <span class="action-badge ${isNewFolder ? 'action-new' : 'action-existing'}">
                         ${isNewFolder ? 'Nouveau' : 'Existant'}
                     </span>
-                    <input type="checkbox" class="domain-checkbox" data-domain="${domainData.domain}" 
-                           onclick="event.stopPropagation(); window.domainOrganizer.handleDomainToggle(event)" checked>
-                </div>
-            </div>
-            <div class="domain-details ${isExpanded ? 'expanded' : ''}" id="details-${domainData.domain}">
-                ${this.generateDomainDetails(domainData)}
-            </div>
-        `;
-        
-        return domainGroup;
-    }
-
-    /**
-     * Génère les détails d'un domaine
-     */
-    generateDomainDetails(domainData) {
-        const existingFolders = Array.from(this.existingFolders.values());
-        const isNewFolder = domainData.action === 'create-new';
-        const allEmails = this.emailsByDomain.get(domainData.domain) || [];
-        
-        return `
-            <div class="details-grid">
-                <div class="detail-group">
-                    <label class="detail-label">
-                        <i class="fas fa-folder"></i>
-                        Dossier de destination
-                    </label>
-                    ${isNewFolder ? 
-                        `<input type="text" class="folder-input" value="${domainData.suggestedFolder}" 
-                                data-domain="${domainData.domain}" onchange="window.domainOrganizer.handleFolderChange(event)">` :
-                        this.createFolderSelect(domainData, existingFolders)
-                    }
-                </div>
-                <div class="detail-group">
-                    <label class="detail-label">
-                        <i class="fas fa-info-circle"></i>
-                        Type d'action
-                    </label>
-                    <select class="folder-select" data-domain="${domainData.domain}" onchange="window.domainOrganizer.handleActionTypeChange(event)">
-                        <option value="create-new" ${isNewFolder ? 'selected' : ''}>Créer nouveau dossier</option>
-                        <option value="move-existing" ${!isNewFolder ? 'selected' : ''}>Utiliser dossier existant</option>
-                    </select>
+                    
+                    <div class="expand-icon">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
                 </div>
             </div>
             
-            <!-- Barre de recherche rapide -->
-            <div class="quick-search-section">
-                <div class="quick-search-container">
-                    <i class="fas fa-search"></i>
-                    <input type="text" 
-                           class="quick-search-input" 
-                           placeholder="Recherche rapide dans ce domaine..."
-                           onkeypress="if(event.key==='Enter') window.domainOrganizer.quickSearchInDomain('${domainData.domain}', this.value)">
-                    <button class="btn btn-sm btn-primary" onclick="window.domainOrganizer.quickSearchInDomain('${domainData.domain}', this.previousElementSibling.value)">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="email-management">
+            <div class="emails-section" id="emails-${domainData.domain}">
                 <div class="emails-header">
-                    <h5>
-                        <i class="fas fa-envelope"></i> 
-                        Emails (${allEmails.length} au total)
-                    </h5>
-                    <div class="email-controls">
-                        <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.selectAllEmailsInDomain('${domainData.domain}')">
+                    <div class="emails-title">
+                        <i class="fas fa-envelope"></i>
+                        Emails à déplacer (${allEmails.length})
+                    </div>
+                    <div class="emails-controls">
+                        <button class="btn-secondary" onclick="window.domainOrganizer.selectAllEmailsInDomain('${domainData.domain}')">
                             <i class="fas fa-check-square"></i> Tout sélectionner
                         </button>
-                        <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.deselectAllEmailsInDomain('${domainData.domain}')">
+                        <button class="btn-secondary" onclick="window.domainOrganizer.deselectAllEmailsInDomain('${domainData.domain}')">
                             <i class="fas fa-square"></i> Tout désélectionner
-                        </button>
-                        <button class="btn btn-sm btn-primary" onclick="window.domainOrganizer.showAllEmails('${domainData.domain}')">
-                            <i class="fas fa-list"></i> Voir tous (${allEmails.length})
                         </button>
                     </div>
                 </div>
                 
-                <div class="email-samples">
-                    <div class="sample-list" id="emails-${domainData.domain}">
-                        ${this.renderEmailList(domainData.domain, allEmails.slice(0, 5))}
-                    </div>
-                    ${allEmails.length > 5 ? `
-                        <div class="load-more">
-                            <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.loadMoreEmails('${domainData.domain}')">
-                                <i class="fas fa-chevron-down"></i>
-                                Voir plus (${allEmails.length - 5} emails restants)
-                            </button>
-                        </div>
-                    ` : ''}
+                <div class="emails-list">
+                    ${this.renderEmailsForDomain(domainData.domain, allEmails)}
                 </div>
             </div>
         `;
+        
+        return domainElement;
     }
 
-    /**
-     * Rend la liste des emails
-     */
-    renderEmailList(domain, emails) {
+    renderEmailsForDomain(domain, emails) {
+        // Initialiser les sélections d'emails pour ce domaine
+        if (!this.emailSelections.has(domain)) {
+            this.emailSelections.set(domain, new Set());
+            // Par défaut, tous les emails sont sélectionnés
+            emails.forEach((email, index) => {
+                const emailId = email.id || `email-${domain}-${index}`;
+                this.emailSelections.get(domain).add(emailId);
+            });
+        }
+        
+        const existingFolders = Array.from(this.existingFolders.values());
+        const domainAction = this.selectedActions.get(domain);
+        
         return emails.map((email, index) => {
             const emailId = email.id || `email-${domain}-${index}`;
-            const isSelected = this.isEmailSelected(domain, emailId);
-            const hasCustomFolder = this.hasCustomFolder(domain, emailId);
+            const isSelected = this.emailSelections.get(domain).has(emailId);
             
             return `
-                <div class="email-item-modern ${isSelected ? 'selected' : ''}" data-email-id="${emailId}">
-                    <div class="email-checkbox-wrapper">
-                        <input type="checkbox" 
-                               class="email-checkbox" 
-                               data-domain="${domain}" 
-                               data-email-id="${emailId}"
-                               ${isSelected ? 'checked' : ''}
-                               onchange="window.domainOrganizer.handleEmailToggle(event)">
+                <div class="email-item ${isSelected ? 'selected' : ''}" data-email-id="${emailId}">
+                    <input type="checkbox" 
+                           class="email-checkbox" 
+                           data-domain="${domain}" 
+                           data-email-id="${emailId}"
+                           ${isSelected ? 'checked' : ''}
+                           onchange="window.domainOrganizer.handleEmailToggle(event)">
+                    
+                    <div class="email-content" onclick="window.domainOrganizer.toggleEmailSelection('${domain}', '${emailId}')">
+                        <div class="email-from">${this.getEmailFrom(email)}</div>
+                        <div class="email-subject">${email.subject || 'Sans sujet'}</div>
+                        <div class="email-preview">${this.getEmailPreview(email)}</div>
                     </div>
                     
-                    <div class="email-content-modern" onclick="window.domainOrganizer.toggleEmailSelection('${domain}', '${emailId}')">
-                        <div class="email-main-info">
-                            <div class="email-from-modern">${this.truncateText(this.getEmailFrom(email), 25)}</div>
-                            <div class="email-subject-modern">${this.truncateText(email.subject || 'Sans sujet', 50)}</div>
-                            <div class="email-preview-modern">${this.truncateText(this.getEmailPreview(email), 60)}</div>
-                        </div>
-                        
-                        <div class="email-meta-info">
-                            <div class="email-date-modern">${this.formatEmailDate(email.receivedDateTime)}</div>
-                            ${hasCustomFolder ? '<div class="custom-folder-indicator"><i class="fas fa-folder-open"></i></div>' : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="email-actions-modern">
-                        <select class="email-folder-select-modern" 
+                    <div class="email-meta">
+                        <div class="email-date">${this.formatEmailDate(email.receivedDateTime)}</div>
+                        <select class="email-folder-select" 
                                 data-domain="${domain}" 
                                 data-email-id="${emailId}"
-                                onchange="window.domainOrganizer.handleIndividualEmailFolderChange(event)"
-                                onclick="event.stopPropagation()">
-                            ${this.generateFolderOptionsForEmail(domain, emailId)}
+                                onchange="window.domainOrganizer.handleIndividualEmailFolderChange(event)">
+                            <option value="domain-default" selected>📁 Dossier du domaine</option>
+                            ${existingFolders.map(folder => 
+                                `<option value="${folder.id}">📂 ${folder.displayName}</option>`
+                            ).join('')}
+                            <option value="custom">➕ Nouveau dossier...</option>
                         </select>
-                        
-                        <button class="email-action-btn" 
-                                onclick="event.stopPropagation(); window.domainOrganizer.showEmailDetails('${domain}', '${emailId}')"
-                                title="Détails de l'email">
-                            <i class="fas fa-info-circle"></i>
-                        </button>
                     </div>
                 </div>
             `;
         }).join('');
     }
 
-    /**
-     * Tronque le texte à la longueur spécifiée
-     */
-    truncateText(text, maxLength) {
-        if (!text) return '';
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength - 3) + '...';
-    }
-
-    /**
-     * Vérifie si un email a un dossier personnalisé
-     */
-    hasCustomFolder(domain, emailId) {
-        return this.individualEmailFolders && 
-               this.individualEmailFolders.has(`${domain}-${emailId}`);
-    }
-
-    /**
-     * Génère les options de dossiers pour un email individuel avec gestion d'erreur
-     */
-    generateFolderOptionsForEmail(domain, emailId) {
-        const existingFolders = Array.from(this.existingFolders.values());
-        const domainAction = this.selectedActions.get(domain);
-        const customFolder = this.individualEmailFolders?.get(`${domain}-${emailId}`);
+    // ================================================
+    // GESTION DES INTERACTIONS
+    // ================================================
+    
+    toggleDomainEmails(domain) {
+        const emailsSection = document.getElementById(`emails-${domain}`);
+        const expandIcon = document.querySelector(`[data-domain="${domain}"] .expand-icon i`);
         
-        let options = '';
+        if (!emailsSection || !expandIcon) return;
         
-        // Option par défaut (dossier du domaine)
-        if (domainAction) {
-            const isDefaultSelected = !customFolder;
-            options += `<option value="domain-default" ${isDefaultSelected ? 'selected' : ''}>
-                📁 ${this.truncateText(domainAction.targetFolder, 20)}
-            </option>`;
+        if (emailsSection.classList.contains('expanded')) {
+            emailsSection.classList.remove('expanded');
+            expandIcon.className = 'fas fa-chevron-down';
+        } else {
+            emailsSection.classList.add('expanded');
+            expandIcon.className = 'fas fa-chevron-up';
         }
-        
-        // Dossier personnalisé sélectionné
-        if (customFolder) {
-            if (customFolder.type === 'custom') {
-                options += `<option value="custom-${customFolder.folderName}" selected>
-                    ➕ ${this.truncateText(customFolder.folderName, 20)}
-                </option>`;
-            } else if (customFolder.type === 'existing') {
-                options += `<option value="${customFolder.folderId}" selected>
-                    📂 ${this.truncateText(customFolder.folderName, 20)}
-                </option>`;
-            }
-        }
-        
-        // Dossiers existants (éviter les doublons)
-        existingFolders.forEach(folder => {
-            const isAlreadySelected = customFolder?.folderId === folder.id || 
-                                    (domainAction?.targetFolder === folder.displayName && !customFolder);
-            if (!isAlreadySelected) {
-                options += `<option value="${folder.id}">📂 ${this.truncateText(folder.displayName, 20)}</option>`;
-            }
-        });
-        
-        // Option pour nouveau dossier
-        options += `<option value="custom">➕ Nouveau dossier...</option>`;
-        
-        return options;
     }
 
-    /**
-     * Gère le changement de dossier pour un email individuel
-     */
-    handleIndividualEmailFolderChange(event) {
+    handleDomainToggle(event) {
         const domain = event.target.dataset.domain;
-        const emailId = event.target.dataset.emailId;
-        const selectedValue = event.target.value;
-        
-        if (selectedValue === 'custom') {
-            const newFolderName = prompt('Nom du nouveau dossier:');
-            if (newFolderName) {
-                this.setEmailCustomFolder(domain, emailId, newFolderName);
-            } else {
-                // Remettre la valeur par défaut si annulé
-                event.target.value = 'default';
-            }
-        } else {
-            this.setEmailFolder(domain, emailId, selectedValue);
-        }
-    }
-
-    /**
-     * Définit un dossier personnalisé pour un email
-     */
-    setEmailCustomFolder(domain, emailId, folderName) {
-        if (!this.individualEmailFolders) {
-            this.individualEmailFolders = new Map();
-        }
-        
-        this.individualEmailFolders.set(`${domain}-${emailId}`, {
-            type: 'custom',
-            folderName: folderName
-        });
-        
-        window.uiManager?.showToast(`Email configuré pour aller dans "${folderName}"`, 'success');
-    }
-
-    /**
-     * Définit le dossier pour un email individuel
-     */
-    setEmailFolder(domain, emailId, folderId) {
-        if (!this.individualEmailFolders) {
-            this.individualEmailFolders = new Map();
-        }
-        
-        if (folderId === 'default' || folderId === 'domain-default') {
-            // Supprimer la configuration individuelle
-            this.individualEmailFolders.delete(`${domain}-${emailId}`);
-        } else {
-            // Configurer le dossier spécifique
-            const folder = this.existingFolders.get(folderId) || 
-                          Array.from(this.existingFolders.values()).find(f => f.id === folderId);
-            
-            if (folder) {
-                this.individualEmailFolders.set(`${domain}-${emailId}`, {
-                    type: 'existing',
-                    folderId: folderId,
-                    folderName: folder.displayName
-                });
-            }
-        }
-    }
-
-    /**
-     * Affiche tous les emails d'un domaine dans une modale
-     */
-    showAllEmails(domain) {
-        const allEmails = this.emailsByDomain.get(domain) || [];
-        const domainData = this.domainAnalysis.get(domain);
-        
-        // Créer une modale pour tous les emails
-        this.createAllEmailsModal(domain, domainData, allEmails);
-    }
-
-    /**
-     * Crée une modale pour afficher tous les emails
-     */
-    createAllEmailsModal(domain, domainData, allEmails) {
-        // Supprimer toute modale existante
-        const existingModal = document.getElementById('allEmailsModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-        
-        const modal = document.createElement('div');
-        modal.id = 'allEmailsModal';
-        modal.innerHTML = `
-            <div class="modal-overlay" onclick="this.parentElement.remove()">
-                <div class="modal-content large-modal" onclick="event.stopPropagation()">
-                    <div class="modal-header">
-                        <h3>
-                            <i class="fas fa-at"></i>
-                            Tous les emails de ${domain}
-                        </h3>
-                        <div class="modal-controls">
-                            <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.selectAllEmailsInModal('${domain}')">
-                                <i class="fas fa-check-square"></i> Tout sélectionner
-                            </button>
-                            <button class="btn btn-sm btn-secondary" onclick="window.domainOrganizer.deselectAllEmailsInModal('${domain}')">
-                                <i class="fas fa-square"></i> Tout désélectionner
-                            </button>
-                            <button class="modal-close" onclick="this.closest('#allEmailsModal').remove()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Barre de recherche -->
-                    <div class="search-section">
-                        <div class="search-container">
-                            <div class="search-input-container">
-                                <i class="fas fa-search search-icon"></i>
-                                <input type="text" 
-                                       class="search-input" 
-                                       placeholder="Rechercher par expéditeur, sujet ou contenu..."
-                                       id="emailSearch-${domain}"
-                                       oninput="window.domainOrganizer.searchEmails('${domain}', this.value)">
-                                <button class="search-clear" 
-                                        onclick="window.domainOrganizer.clearEmailSearch('${domain}')"
-                                        style="display: none;">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <div class="search-filters">
-                                <select class="search-filter" id="searchFilter-${domain}" onchange="window.domainOrganizer.applySearchFilter('${domain}')">
-                                    <option value="all">Tous les champs</option>
-                                    <option value="from">Expéditeur</option>
-                                    <option value="subject">Sujet</option>
-                                    <option value="content">Contenu</option>
-                                </select>
-                                <select class="search-sort" id="searchSort-${domain}" onchange="window.domainOrganizer.applySortOrder('${domain}')">
-                                    <option value="date-desc">Plus récent d'abord</option>
-                                    <option value="date-asc">Plus ancien d'abord</option>
-                                    <option value="from-asc">Expéditeur A-Z</option>
-                                    <option value="from-desc">Expéditeur Z-A</option>
-                                    <option value="subject-asc">Sujet A-Z</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="search-results-info" id="searchInfo-${domain}">
-                            <span class="results-count">${allEmails.length} emails au total</span>
-                            <span class="search-status"></span>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-body">
-                        <div class="emails-stats">
-                            <span><strong>${allEmails.length}</strong> emails au total</span>
-                            <span>Dossier proposé: <strong>${domainData.suggestedFolder}</strong></span>
-                            <span id="selectedCount-${domain}">
-                                <strong>${this.getSelectedEmailsCount(domain)}</strong> sélectionnés
-                            </span>
-                        </div>
-                        
-                        <!-- Message quand aucun résultat -->
-                        <div class="no-results" id="noResults-${domain}" style="display: none;">
-                            <div class="no-results-icon">
-                                <i class="fas fa-search"></i>
-                            </div>
-                            <h4>Aucun email trouvé</h4>
-                            <p>Essayez de modifier vos critères de recherche</p>
-                            <button class="btn btn-secondary" onclick="window.domainOrganizer.clearEmailSearch('${domain}')">
-                                <i class="fas fa-times"></i> Effacer la recherche
-                            </button>
-                        </div>
-                        
-                        <div class="all-emails-list" id="allEmailsList-${domain}">
-                            ${this.renderEmailList(domain, allEmails)}
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <div class="footer-info">
-                            <span id="visibleCount-${domain}">${allEmails.length} emails affichés</span>
-                        </div>
-                        <div class="footer-actions">
-                            <button class="btn btn-secondary" onclick="this.closest('#allEmailsModal').remove()">
-                                Fermer
-                            </button>
-                            <button class="btn btn-primary" onclick="window.domainOrganizer.applyEmailSelections('${domain}')">
-                                <i class="fas fa-check"></i>
-                                Appliquer les sélections
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Ajouter les styles étendus
-        this.addExtendedModalStyles();
-        
-        document.body.appendChild(modal);
-        
-        // Initialiser les données de recherche
-        this.initializeSearchData(domain, allEmails);
-        
-        // Focus sur la barre de recherche
-        setTimeout(() => {
-            const searchInput = document.getElementById(`emailSearch-${domain}`);
-            if (searchInput) searchInput.focus();
-        }, 100);
-    }
-
-    /**
-     * Initialise les données de recherche pour un domaine
-     */
-    initializeSearchData(domain, allEmails) {
-        if (!this.searchData) {
-            this.searchData = new Map();
-        }
-        
-        this.searchData.set(domain, {
-            originalEmails: [...allEmails],
-            filteredEmails: [...allEmails],
-            currentQuery: '',
-            currentFilter: 'all',
-            currentSort: 'date-desc'
-        });
-    }
-
-    /**
-     * Recherche dans les emails
-     */
-    searchEmails(domain, query) {
-        const searchData = this.searchData.get(domain);
-        if (!searchData) return;
-        
-        searchData.currentQuery = query.toLowerCase().trim();
-        
-        // Afficher/cacher le bouton clear
-        const clearButton = document.querySelector(`#emailSearch-${domain} + .search-clear`);
-        if (clearButton) {
-            clearButton.style.display = query ? 'flex' : 'none';
-        }
-        
-        this.applySearchAndFilter(domain);
-    }
-
-    /**
-     * Applique le filtre de recherche
-     */
-    applySearchFilter(domain) {
-        const searchData = this.searchData.get(domain);
-        const filterSelect = document.getElementById(`searchFilter-${domain}`);
-        if (!searchData || !filterSelect) return;
-        
-        searchData.currentFilter = filterSelect.value;
-        this.applySearchAndFilter(domain);
-    }
-
-    /**
-     * Applique l'ordre de tri
-     */
-    applySortOrder(domain) {
-        const searchData = this.searchData.get(domain);
-        const sortSelect = document.getElementById(`searchSort-${domain}`);
-        if (!searchData || !sortSelect) return;
-        
-        searchData.currentSort = sortSelect.value;
-        this.applySearchAndFilter(domain);
-    }
-
-    /**
-     * Applique la recherche, le filtre et le tri
-     */
-    applySearchAndFilter(domain) {
-        const searchData = this.searchData.get(domain);
-        if (!searchData) return;
-        
-        let filteredEmails = [...searchData.originalEmails];
-        
-        // Appliquer la recherche
-        if (searchData.currentQuery) {
-            filteredEmails = filteredEmails.filter(email => {
-                const query = searchData.currentQuery;
-                
-                switch (searchData.currentFilter) {
-                    case 'from':
-                        return this.getEmailFrom(email).toLowerCase().includes(query);
-                    case 'subject':
-                        return (email.subject || '').toLowerCase().includes(query);
-                    case 'content':
-                        return this.getEmailPreview(email).toLowerCase().includes(query);
-                    case 'all':
-                    default:
-                        return this.getEmailFrom(email).toLowerCase().includes(query) ||
-                               (email.subject || '').toLowerCase().includes(query) ||
-                               this.getEmailPreview(email).toLowerCase().includes(query);
-                }
-            });
-        }
-        
-        // Appliquer le tri
-        filteredEmails = this.sortEmails(filteredEmails, searchData.currentSort);
-        
-        // Mettre à jour les données
-        searchData.filteredEmails = filteredEmails;
-        
-        // Mettre à jour l'affichage
-        this.updateEmailDisplay(domain, filteredEmails);
-        this.updateSearchInfo(domain, filteredEmails.length, searchData.originalEmails.length, searchData.currentQuery);
-    }
-
-    /**
-     * Trie les emails selon l'ordre spécifié
-     */
-    sortEmails(emails, sortOrder) {
-        return [...emails].sort((a, b) => {
-            switch (sortOrder) {
-                case 'date-asc':
-                    return new Date(a.receivedDateTime || 0) - new Date(b.receivedDateTime || 0);
-                case 'date-desc':
-                    return new Date(b.receivedDateTime || 0) - new Date(a.receivedDateTime || 0);
-                case 'from-asc':
-                    return this.getEmailFrom(a).localeCompare(this.getEmailFrom(b));
-                case 'from-desc':
-                    return this.getEmailFrom(b).localeCompare(this.getEmailFrom(a));
-                case 'subject-asc':
-                    return (a.subject || '').localeCompare(b.subject || '');
-                case 'subject-desc':
-                    return (b.subject || '').localeCompare(a.subject || '');
-                default:
-                    return 0;
-            }
-        });
-    }
-
-    /**
-     * Obtient l'expéditeur d'un email
-     */
-    getEmailFrom(email) {
-        return email.from?.emailAddress?.name || 
-               email.from?.emailAddress?.address || 
-               'Expéditeur inconnu';
-    }
-
-    /**
-     * Met à jour l'affichage des emails
-     */
-    updateEmailDisplay(domain, emails) {
-        const container = document.getElementById(`allEmailsList-${domain}`);
-        const noResults = document.getElementById(`noResults-${domain}`);
-        
-        if (!container) return;
-        
-        if (emails.length === 0) {
-            container.style.display = 'none';
-            if (noResults) noResults.style.display = 'block';
-        } else {
-            container.style.display = 'block';
-            if (noResults) noResults.style.display = 'none';
-            container.innerHTML = this.renderEmailList(domain, emails);
-        }
-        
-        // Mettre à jour le compteur visible
-        const visibleCount = document.getElementById(`visibleCount-${domain}`);
-        if (visibleCount) {
-            visibleCount.textContent = `${emails.length} emails affichés`;
-        }
-    }
-
-    /**
-     * Met à jour les informations de recherche
-     */
-    updateSearchInfo(domain, visibleCount, totalCount, query) {
-        const searchInfo = document.getElementById(`searchInfo-${domain}`);
-        if (!searchInfo) return;
-        
-        const resultsCount = searchInfo.querySelector('.results-count');
-        const searchStatus = searchInfo.querySelector('.search-status');
-        
-        if (resultsCount) {
-            resultsCount.textContent = `${visibleCount} sur ${totalCount} emails`;
-        }
-        
-        if (searchStatus) {
-            if (query) {
-                searchStatus.textContent = `Recherche: "${query}"`;
-                searchStatus.style.display = 'inline';
-            } else {
-                searchStatus.style.display = 'none';
-            }
-        }
-    }
-
-    /**
-     * Efface la recherche
-     */
-    clearEmailSearch(domain) {
-        const searchInput = document.getElementById(`emailSearch-${domain}`);
-        const clearButton = document.querySelector(`#emailSearch-${domain} + .search-clear`);
-        
-        if (searchInput) {
-            searchInput.value = '';
-            searchInput.focus();
-        }
-        
-        if (clearButton) {
-            clearButton.style.display = 'none';
-        }
-        
-        // Réinitialiser la recherche
-        const searchData = this.searchData.get(domain);
-        if (searchData) {
-            searchData.currentQuery = '';
-            this.applySearchAndFilter(domain);
-        }
-    }
-
-    /**
-     * Recherche rapide dans un domaine (depuis l'interface principale)
-     */
-    quickSearchInDomain(domain, query) {
-        // Ouvrir la modale avec la recherche pré-remplie
-        this.showAllEmails(domain);
-        
-        setTimeout(() => {
-            const searchInput = document.getElementById(`emailSearch-${domain}`);
-            if (searchInput) {
-                searchInput.value = query;
-                this.searchEmails(domain, query);
-            }
-        }, 200);
-    }
-
-    /**
-     * Ajoute les styles étendus pour les modales
-     */
-    addExtendedModalStyles() {
-        if (document.getElementById('extendedModalStyles')) return;
-        
-        const style = document.createElement('style');
-        style.id = 'extendedModalStyles';
-        style.textContent = `
-            .large-modal {
-                max-width: 90vw;
-                max-height: 90vh;
-                width: 1000px;
-            }
-            
-            .modal-controls {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .emails-stats {
-                display: flex;
-                gap: 20px;
-                margin-bottom: 20px;
-                padding: 12px;
-                background: #f8fafc;
-                border-radius: 6px;
-                font-size: 14px;
-            }
-            
-            .all-emails-list {
-                max-height: 60vh;
-                overflow-y: auto;
-            }
-            
-            /* Design moderne pour les emails sur une ligne */
-            .email-item-modern {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 16px;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                margin-bottom: 6px;
-                transition: all 0.2s ease;
-                cursor: pointer;
-                background: white;
-                min-height: 60px;
-            }
-            
-            .email-item-modern:hover {
-                background: #f9fafb;
-                border-color: #d1d5db;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            }
-            
-            .email-item-modern.selected {
-                background: #eff6ff;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-            }
-            
-            .email-checkbox-wrapper {
-                display: flex;
-                align-items: center;
-                flex-shrink: 0;
-            }
-            
-            .email-checkbox {
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-                accent-color: #3b82f6;
-            }
-            
-            .email-content-modern {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 16px;
-            }
-            
-            .email-main-info {
-                display: flex;
-                align-items: center;
-                gap: 16px;
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .email-from-modern {
-                font-weight: 600;
-                color: #111827;
-                font-size: 14px;
-                min-width: 120px;
-                max-width: 160px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            
-            .email-subject-modern {
-                font-weight: 500;
-                color: #374151;
-                font-size: 14px;
-                min-width: 150px;
-                max-width: 250px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-            
-            .email-preview-modern {
-                color: #6b7280;
-                font-size: 13px;
-                line-height: 1.3;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                flex: 1;
-                min-width: 0;
-            }
-            
-            .email-meta-info {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                flex-shrink: 0;
-            }
-            
-            .email-date-modern {
-                font-size: 12px;
-                color: #6b7280;
-                white-space: nowrap;
-                min-width: 80px;
-                text-align: right;
-            }
-            
-            .custom-folder-indicator {
-                color: #f59e0b;
-                font-size: 14px;
-                display: flex;
-                align-items: center;
-                title: "Dossier personnalisé configuré";
-            }
-            
-            .email-actions-modern {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                flex-shrink: 0;
-            }
-            
-            .email-folder-select-modern {
-                padding: 6px 10px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 12px;
-                background: white;
-                cursor: pointer;
-                min-width: 140px;
-                max-width: 180px;
-                transition: all 0.2s ease;
-            }
-            
-            .email-folder-select-modern:hover {
-                border-color: #3b82f6;
-            }
-            
-            .email-folder-select-modern:focus {
-                outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-            }
-            
-            .email-action-btn {
-                width: 32px;
-                height: 32px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                background: white;
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                font-size: 12px;
-            }
-            
-            .email-action-btn:hover {
-                background: #f3f4f6;
-                border-color: #9ca3af;
-                color: #374151;
-            }
-            
-            /* Style harmonisé pour les options de rangement */
-            .organization-options {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-                margin-bottom: 16px;
-            }
-
-            .option-group {
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
-                transition: all 0.2s ease;
-                cursor: pointer;
-                background: white;
-            }
-
-            .option-group:hover {
-                border-color: #3b82f6;
-                background: #f8fafc;
-            }
-
-            .option-group:has(input:checked) {
-                border-color: #3b82f6;
-                background: #eff6ff;
-                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-            }
-
-            .option-label {
-                display: flex;
-                align-items: flex-start;
-                gap: 12px;
-                cursor: pointer;
-                margin: 0;
-            }
-
-            .option-label input[type="radio"] {
-                margin-top: 2px;
-                flex-shrink: 0;
-                width: 18px;
-                height: 18px;
-                accent-color: #3b82f6;
-                cursor: pointer;
-            }
-
-            .option-content {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .option-content strong {
-                font-size: 15px;
-                color: #111827;
-                font-weight: 600;
-            }
-
-            .option-content span {
-                font-size: 13px;
-                color: #6b7280;
-                line-height: 1.4;
-            }
-            
-            /* Messages d'erreur et succès */
-            .error-message {
-                background: #fef2f2;
-                border: 1px solid #fecaca;
-                color: #dc2626;
-                padding: 12px 16px;
-                border-radius: 6px;
-                margin: 8px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 13px;
-            }
-            
-            .success-message {
-                background: #f0fdf4;
-                border: 1px solid #bbf7d0;
-                color: #15803d;
-                padding: 12px 16px;
-                border-radius: 6px;
-                margin: 8px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 13px;
-            }
-            
-            /* Ancien style d'email (supprimé et remplacé) */
-            .email-item {
-                display: none;
-            }
-            
-            .email-checkbox-container,
-            .email-content,
-            .email-actions {
-                display: none;
-            }
-            
-            /* Responsive pour le design moderne */
-            @media (max-width: 768px) {
-                .email-main-info {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 4px;
-                }
-                
-                .email-from-modern,
-                .email-subject-modern {
-                    min-width: unset;
-                    max-width: 100%;
-                }
-                
-                .email-content-modern {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 8px;
-                }
-                
-                .email-meta-info {
-                    align-self: flex-end;
-                }
-                
-                .email-actions-modern {
-                    width: 100%;
-                    justify-content: space-between;
-                }
-                
-                .email-folder-select-modern {
-                    flex: 1;
-                    min-width: unset;
-                }
-                
-                .organization-options {
-                    grid-template-columns: 1fr;
-                }
-            }
-            
-            .load-more {
-                text-align: center;
-                margin-top: 12px;
-                padding-top: 12px;
-                border-top: 1px solid #e5e7eb;
-            }
-            
-            .email-management {
-                margin-top: 16px;
-            }
-            
-            .emails-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-                flex-wrap: wrap;
-                gap: 12px;
-            }
-            
-            .emails-header h5 {
-                margin: 0;
-                font-size: 14px;
-                color: #374151;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            
-            .email-controls {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    /**
-     * Formate la date d'un email
-     */
-    formatEmailDate(dateString) {
-        if (!dateString) return '';
-        
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays === 1) return 'Hier';
-        if (diffDays < 7) return `Il y a ${diffDays} jours`;
-        if (diffDays < 30) return `Il y a ${Math.ceil(diffDays / 7)} semaines`;
-        
-        return date.toLocaleDateString('fr-FR', {
-            day: 'numeric',
-            month: 'short',
-            year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-        });
-    }
-
-    /**
-     * Obtient un aperçu du contenu de l'email
-     */
-    getEmailPreview(email) {
-        if (email.bodyPreview) {
-            return email.bodyPreview.substring(0, 150) + '...';
-        }
-        return 'Aucun aperçu disponible';
-    }
-
-    /**
-     * Vérifie si un email est sélectionné
-     */
-    isEmailSelected(domain, emailId) {
-        if (!this.selectedEmails) {
-            this.selectedEmails = new Map();
-        }
-        
-        if (!this.selectedEmails.has(domain)) {
-            this.selectedEmails.set(domain, new Set());
-        }
-        
-        return this.selectedEmails.get(domain).has(emailId);
-    }
-
-    /**
-     * Gère la sélection d'un email individuel
-     */
-    handleEmailToggle(event) {
-        const domain = event.target.dataset.domain;
-        const emailId = event.target.dataset.emailId;
         const isChecked = event.target.checked;
         
-        this.toggleEmailSelection(domain, emailId, isChecked);
-    }
-
-    /**
-     * Toggle la sélection d'un email
-     */
-    toggleEmailSelection(domain, emailId, forceState = null) {
-        if (!this.selectedEmails) {
-            this.selectedEmails = new Map();
-        }
-        
-        if (!this.selectedEmails.has(domain)) {
-            this.selectedEmails.set(domain, new Set());
-        }
-        
-        const domainEmails = this.selectedEmails.get(domain);
-        const shouldSelect = forceState !== null ? forceState : !domainEmails.has(emailId);
-        
-        if (shouldSelect) {
-            domainEmails.add(emailId);
-        } else {
-            domainEmails.delete(emailId);
-        }
-        
-        // Mettre à jour l'interface
-        this.updateEmailSelectionUI(domain, emailId, shouldSelect);
-        this.updateEmailSelectionCount(domain);
-    }
-
-    /**
-     * Met à jour l'interface de sélection d'un email
-     */
-    updateEmailSelectionUI(domain, emailId, isSelected) {
-        // Mettre à jour la checkbox
-        const checkbox = document.querySelector(`input[data-email-id="${emailId}"]`);
-        if (checkbox) {
-            checkbox.checked = isSelected;
-        }
-        
-        // Mettre à jour l'apparence de l'item
-        const emailItem = document.querySelector(`[data-email-id="${emailId}"]`);
-        if (emailItem) {
-            if (isSelected) {
-                emailItem.classList.add('selected');
-            } else {
-                emailItem.classList.remove('selected');
-            }
-        }
-    }
-
-    /**
-     * Met à jour le compteur d'emails sélectionnés
-     */
-    updateEmailSelectionCount(domain) {
-        const count = this.getSelectedEmailsCount(domain);
-        const counter = document.getElementById(`selectedCount-${domain}`);
-        if (counter) {
-            counter.innerHTML = `<strong>${count}</strong> sélectionnés`;
-        }
-    }
-
-    /**
-     * Obtient le nombre d'emails sélectionnés pour un domaine
-     */
-    getSelectedEmailsCount(domain) {
-        if (!this.selectedEmails || !this.selectedEmails.has(domain)) {
-            return 0;
-        }
-        return this.selectedEmails.get(domain).size;
-    }
-
-    /**
-     * Sélectionne tous les emails d'un domaine
-     */
-    selectAllEmailsInDomain(domain) {
-        const allEmails = this.emailsByDomain.get(domain) || [];
-        allEmails.forEach(email => {
-            const emailId = email.id || `email-${domain}-${allEmails.indexOf(email)}`;
-            this.toggleEmailSelection(domain, emailId, true);
-        });
-    }
-
-    /**
-     * Désélectionne tous les emails d'un domaine
-     */
-    deselectAllEmailsInDomain(domain) {
-        if (this.selectedEmails && this.selectedEmails.has(domain)) {
-            const emailIds = Array.from(this.selectedEmails.get(domain));
-            emailIds.forEach(emailId => {
-                this.toggleEmailSelection(domain, emailId, false);
-            });
-        }
-    }
-
-    /**
-     * Sélectionne tous les emails dans la modale
-     */
-    selectAllEmailsInModal(domain) {
-        this.selectAllEmailsInDomain(domain);
-    }
-
-    /**
-     * Désélectionne tous les emails dans la modale
-     */
-    deselectAllEmailsInModal(domain) {
-        this.deselectAllEmailsInDomain(domain);
-    }
-
-    /**
-     * Applique les sélections d'emails
-     */
-    applyEmailSelections(domain) {
-        const selectedCount = this.getSelectedEmailsCount(domain);
-        const totalCount = (this.emailsByDomain.get(domain) || []).length;
-        
-        // Mettre à jour l'action du domaine
         if (this.selectedActions.has(domain)) {
-            const action = this.selectedActions.get(domain);
-            action.selectedEmailsCount = selectedCount;
-            action.emailCount = selectedCount; // Utiliser seulement les emails sélectionnés
+            this.selectedActions.get(domain).selected = isChecked;
         }
         
-        // Fermer la modale
-        document.getElementById('allEmailsModal')?.remove();
-        
-        // Mettre à jour le résumé
-        this.updateActionSummary();
-        
-        // Afficher un message de confirmation
-        window.uiManager?.showToast(
-            `${selectedCount} emails sélectionnés sur ${totalCount} pour ${domain}`, 
-            'success'
-        );
+        this.updateSummary();
+        this.validateConfiguration();
     }
 
-    /**
-     * Gère le changement de dossier pour un email individuel
-     */
-    handleIndividualEmailFolderChange(event) {
-        const domain = event.target.dataset.domain;
-        const emailId = event.target.dataset.emailId;
-        const selectedValue = event.target.value;
-        
-        if (selectedValue === 'custom') {
-            const newFolderName = prompt('Nom du nouveau dossier:');
-            if (newFolderName) {
-                this.setEmailCustomFolder(domain, emailId, newFolderName);
-            } else {
-                // Remettre la valeur par défaut si annulé
-                event.target.value = 'default';
-            }
-        } else {
-            this.setEmailFolder(domain, emailId, selectedValue);
-        }
-    }
-
-    /**
-     * Définit un dossier personnalisé pour un email
-     */
-    setEmailCustomFolder(domain, emailId, folderName) {
-        if (!this.individualEmailFolders) {
-            this.individualEmailFolders = new Map();
-        }
-        
-        this.individualEmailFolders.set(`${domain}-${emailId}`, {
-            type: 'custom',
-            folderName: folderName
-        });
-        
-        window.uiManager?.showToast(`Email configuré pour aller dans "${folderName}"`, 'success');
-    }
-
-    /**
-     * Définit le dossier pour un email individuel
-     */
-    setEmailFolder(domain, emailId, folderId) {
-        if (!this.individualEmailFolders) {
-            this.individualEmailFolders = new Map();
-        }
-        
-        if (folderId === 'default' || folderId === 'domain-default') {
-            // Supprimer la configuration individuelle
-            this.individualEmailFolders.delete(`${domain}-${emailId}`);
-        } else {
-            // Configurer le dossier spécifique
-            const folder = this.existingFolders.get(folderId) || 
-                          Array.from(this.existingFolders.values()).find(f => f.id === folderId);
-            
-            if (folder) {
-                this.individualEmailFolders.set(`${domain}-${emailId}`, {
-                    type: 'existing',
-                    folderId: folderId,
-                    folderName: folder.displayName
-                });
-            }
-        }
-    }
-
-    /**
-     * Charge plus d'emails pour un domaine
-     */
-    loadMoreEmails(domain) {
-        const allEmails = this.emailsByDomain.get(domain) || [];
-        const container = document.getElementById(`emails-${domain}`);
-        if (!container) return;
-        
-        // Remplacer tout le contenu par tous les emails
-        container.innerHTML = this.renderEmailList(domain, allEmails);
-        
-        // Supprimer le bouton "Voir plus"
-        const loadMoreButton = container.parentElement.querySelector('.load-more');
-        if (loadMoreButton) {
-            loadMoreButton.remove();
-        }
-    }
-
-    /**
-     * Crée un select de dossiers pour les dossiers existants
-     */
-    createFolderSelect(domainData, existingFolders) {
-        const options = existingFolders.map(folder => 
-            `<option value="${folder.id}" ${folder.displayName === domainData.suggestedFolder ? 'selected' : ''}>
-                ${folder.displayName}
-            </option>`
-        ).join('');
-        
-        return `<select class="folder-select" data-domain="${domainData.domain}" onchange="window.domainOrganizer.handleFolderChange(event)">${options}</select>`;
-    }
-
-    /**
-     * Toggle l'expansion d'un domaine
-     */
-    toggleDomain(domain) {
-        const domainGroup = document.querySelector(`[data-domain="${domain}"]`);
-        const domainHeader = domainGroup.querySelector('.domain-header');
-        const domainToggle = domainGroup.querySelector('.domain-toggle');
-        const domainDetails = domainGroup.querySelector('.domain-details');
-        
-        const isExpanded = this.expandedDomains.has(domain);
-        
-        if (isExpanded) {
-            // Replier
-            this.expandedDomains.delete(domain);
-            domainHeader.classList.remove('expanded');
-            domainToggle.classList.remove('expanded');
-            domainDetails.classList.remove('expanded');
-            domainDetails.style.display = 'none';
-        } else {
-            // Déplier
-            this.expandedDomains.add(domain);
-            domainHeader.classList.add('expanded');
-            domainToggle.classList.add('expanded');
-            domainDetails.classList.add('expanded');
-            domainDetails.style.display = 'block';
-        }
-    }
-
-    /**
-     * Déplier tous les domaines
-     */
-    expandAll() {
-        const domains = Array.from(this.domainAnalysis.keys());
-        domains.forEach(domain => {
-            if (!this.expandedDomains.has(domain)) {
-                this.toggleDomain(domain);
-            }
-        });
-    }
-
-    /**
-     * Replier tous les domaines
-     */
-    collapseAll() {
-        const domains = Array.from(this.expandedDomains);
-        domains.forEach(domain => {
-            this.toggleDomain(domain);
-        });
-    }
-
-    /**
-     * Gère le changement de type d'action
-     */
     handleActionTypeChange(event) {
         const domain = event.target.dataset.domain;
         const actionType = event.target.value;
@@ -3212,45 +1414,11 @@ class DomainOrganizer {
         action.action = actionType;
         
         // Mettre à jour l'interface
-        this.updateDomainDetailsInterface(domain, actionType);
-        this.updateActionSummary();
+        this.updateDomainInterface(domain, actionType);
+        this.updateSummary();
+        this.validateConfiguration();
     }
 
-    /**
-     * Met à jour l'interface des détails du domaine
-     */
-    updateDomainDetailsInterface(domain, actionType) {
-        const detailsContainer = document.getElementById(`details-${domain}`);
-        if (!detailsContainer) return;
-        
-        const domainData = this.domainAnalysis.get(domain);
-        if (!domainData) return;
-        
-        // Mettre à jour le contenu
-        detailsContainer.innerHTML = this.generateDomainDetails({
-            ...domainData,
-            action: actionType
-        });
-        
-        // Mettre à jour le badge dans l'en-tête
-        const domainGroup = document.querySelector(`[data-domain="${domain}"]`);
-        const badge = domainGroup.querySelector('.action-badge');
-        if (badge) {
-            const isNew = actionType === 'create-new';
-            badge.className = `action-badge ${isNew ? 'action-new' : 'action-existing'}`;
-            badge.textContent = isNew ? 'Nouveau' : 'Existant';
-        }
-        
-        // Mettre à jour l'aperçu du dossier
-        const preview = domainGroup.querySelector('.folder-preview');
-        if (preview && actionType === 'create-new') {
-            preview.textContent = domainData.suggestedFolder;
-        }
-    }
-
-    /**
-     * Gère le changement de dossier
-     */
     handleFolderChange(event) {
         const domain = event.target.dataset.domain;
         const value = event.target.value;
@@ -3260,91 +1428,185 @@ class DomainOrganizer {
         const action = this.selectedActions.get(domain);
         
         if (event.target.tagName === 'INPUT') {
-            // Nouveau nom de dossier
             action.targetFolder = value;
             action.action = 'create-new';
         } else {
-            // Dossier existant sélectionné
             const selectedOption = event.target.options[event.target.selectedIndex];
             action.targetFolder = selectedOption.text;
             action.existingFolderId = value;
             action.action = 'move-existing';
         }
         
-        // Mettre à jour l'aperçu dans l'en-tête
-        const domainGroup = document.querySelector(`[data-domain="${domain}"]`);
-        const preview = domainGroup.querySelector('.folder-preview');
-        if (preview) {
-            preview.textContent = action.targetFolder;
-        }
-        
-        this.updateActionSummary();
+        this.updateSummary();
+        this.validateConfiguration();
     }
 
-    /**
-     * Gère le toggle d'un domaine
-     */
-    handleDomainToggle(event) {
+    handleEmailToggle(event) {
         const domain = event.target.dataset.domain;
+        const emailId = event.target.dataset.emailId;
         const isChecked = event.target.checked;
         
-        if (this.selectedActions.has(domain)) {
-            this.selectedActions.get(domain).selected = isChecked;
-        }
-        
-        this.updateActionSummary();
+        this.toggleEmailSelection(domain, emailId, isChecked);
+        this.updateSummary();
     }
 
-    /**
-     * Gère le select all
-     */
-    handleSelectAll(event) {
-        const isChecked = event.target.checked;
+    toggleEmailSelection(domain, emailId, forceState = null) {
+        if (!this.emailSelections.has(domain)) {
+            this.emailSelections.set(domain, new Set());
+        }
+        
+        const domainEmails = this.emailSelections.get(domain);
+        const shouldSelect = forceState !== null ? forceState : !domainEmails.has(emailId);
+        
+        if (shouldSelect) {
+            domainEmails.add(emailId);
+        } else {
+            domainEmails.delete(emailId);
+        }
+        
+        // Mettre à jour l'interface
+        const emailItem = document.querySelector(`[data-email-id="${emailId}"]`);
+        const checkbox = document.querySelector(`input[data-email-id="${emailId}"]`);
+        
+        if (emailItem) {
+            emailItem.classList.toggle('selected', shouldSelect);
+        }
+        if (checkbox) {
+            checkbox.checked = shouldSelect;
+        }
+    }
+
+    selectAllEmailsInDomain(domain) {
+        const allEmails = this.emailsByDomain.get(domain) || [];
+        allEmails.forEach((email, index) => {
+            const emailId = email.id || `email-${domain}-${index}`;
+            this.toggleEmailSelection(domain, emailId, true);
+        });
+        this.updateSummary();
+    }
+
+    deselectAllEmailsInDomain(domain) {
+        if (this.emailSelections.has(domain)) {
+            this.emailSelections.get(domain).clear();
+        }
+        
+        // Mettre à jour l'interface
+        document.querySelectorAll(`input[data-domain="${domain}"]`).forEach(checkbox => {
+            if (checkbox.dataset.emailId) {
+                checkbox.checked = false;
+                const emailItem = document.querySelector(`[data-email-id="${checkbox.dataset.emailId}"]`);
+                if (emailItem) emailItem.classList.remove('selected');
+            }
+        });
+        
+        this.updateSummary();
+    }
+
+    selectAllDomains() {
         document.querySelectorAll('.domain-checkbox').forEach(checkbox => {
-            checkbox.checked = isChecked;
+            checkbox.checked = true;
             this.handleDomainToggle({ target: checkbox });
         });
     }
 
-    /**
-     * Met à jour le résumé des actions
-     */
-    updateActionSummary() {
-        const selectedActions = Array.from(this.selectedActions.values())
-            .filter(action => action.selected);
-        
-        const totalEmails = selectedActions.reduce((sum, action) => sum + action.emailCount, 0);
-        const newFolders = selectedActions.filter(action => action.action === 'create-new').length;
-        
-        // Mettre à jour les éléments de confirmation
-        const confirmTotalEmails = document.getElementById('confirmTotalEmails');
-        const confirmNewFolders = document.getElementById('confirmNewFolders');
-        
-        if (confirmTotalEmails) confirmTotalEmails.textContent = totalEmails.toLocaleString();
-        if (confirmNewFolders) confirmNewFolders.textContent = newFolders;
-    }
-
-    /**
-     * Prépare les actions
-     */
-    prepareActions() {
-        this.selectedActions.clear();
-        const actions = this.getPreparedActions();
-        actions.forEach((action, domain) => {
-            this.selectedActions.set(domain, action);
+    deselectAllDomains() {
+        document.querySelectorAll('.domain-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+            this.handleDomainToggle({ target: checkbox });
         });
     }
 
-    /**
-     * Navigation - Retour
-     */
-    goBack() {
-        this.forceShowConfigStep();
+    // ================================================
+    // VALIDATION ET CONTRÔLE
+    // ================================================
+    
+    validateConfiguration() {
+        this.validationErrors.clear();
+        const validationPanel = document.getElementById('validationPanel');
+        
+        if (!validationPanel) return;
+        
+        // Valider les actions sélectionnées
+        this.selectedActions.forEach((action, domain) => {
+            if (!action.selected) return;
+            
+            // Vérifier le nom du dossier
+            if (action.action === 'create-new') {
+                if (!action.targetFolder || action.targetFolder.trim() === '') {
+                    this.validationErrors.set(domain, 'Le nom du dossier ne peut pas être vide');
+                } else if (action.targetFolder.length > 255) {
+                    this.validationErrors.set(domain, 'Le nom du dossier est trop long (max 255 caractères)');
+                } else if (/[<>:"/\\|?*]/.test(action.targetFolder)) {
+                    this.validationErrors.set(domain, 'Le nom du dossier contient des caractères invalides');
+                }
+            }
+            
+            // Vérifier qu'au moins un email est sélectionné
+            const selectedEmails = this.emailSelections.get(domain)?.size || 0;
+            if (selectedEmails === 0) {
+                this.validationErrors.set(domain, 'Aucun email sélectionné pour ce domaine');
+            }
+        });
+        
+        // Afficher les erreurs
+        this.displayValidationErrors(validationPanel);
+        
+        // Activer/désactiver le bouton d'exécution
+        const executeBtn = document.getElementById('executeBtn');
+        if (executeBtn) {
+            executeBtn.disabled = this.validationErrors.size > 0 || this.getSelectedDomainsCount() === 0;
+        }
     }
 
-    /**
-     * Exécute l'organisation
-     */
+    displayValidationErrors(container) {
+        container.innerHTML = '';
+        
+        if (this.validationErrors.size === 0) return;
+        
+        this.validationErrors.forEach((error, domain) => {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'validation-error';
+            errorElement.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>${domain}:</strong> ${error}
+            `;
+            container.appendChild(errorElement);
+        });
+    }
+
+    updateSummary() {
+        const selectedActions = Array.from(this.selectedActions.values()).filter(action => action.selected);
+        
+        let totalEmails = 0;
+        let newFolders = 0;
+        
+        selectedActions.forEach(action => {
+            const selectedEmails = this.emailSelections.get(action.domain)?.size || 0;
+            totalEmails += selectedEmails;
+            
+            if (action.action === 'create-new') {
+                newFolders++;
+            }
+        });
+        
+        // Mettre à jour l'interface
+        const summaryEmails = document.getElementById('summaryEmails');
+        const summaryFolders = document.getElementById('summaryFolders');
+        const summaryDomains = document.getElementById('summaryDomains');
+        
+        if (summaryEmails) summaryEmails.textContent = totalEmails.toLocaleString();
+        if (summaryFolders) summaryFolders.textContent = newFolders;
+        if (summaryDomains) summaryDomains.textContent = selectedActions.length;
+    }
+
+    getSelectedDomainsCount() {
+        return Array.from(this.selectedActions.values()).filter(action => action.selected).length;
+    }
+
+    // ================================================
+    // EXÉCUTION AVEC GESTION D'ERREURS RENFORCÉE
+    // ================================================
+    
     async executeOrganization() {
         if (this.isProcessing) return;
         
@@ -3355,126 +1617,225 @@ class DomainOrganizer {
             const actionsToApply = new Map();
             this.selectedActions.forEach((action, domain) => {
                 if (action.selected) {
-                    actionsToApply.set(domain, action);
+                    const selectedEmails = this.emailSelections.get(domain) || new Set();
+                    if (selectedEmails.size > 0) {
+                        actionsToApply.set(domain, {
+                            ...action,
+                            selectedEmailIds: Array.from(selectedEmails)
+                        });
+                    }
                 }
             });
             
             if (actionsToApply.size === 0) {
-                window.uiManager?.showToast('Aucune action sélectionnée', 'warning');
+                this.showError('Aucune action sélectionnée');
                 this.showStep('review');
                 return;
             }
             
-            const createFolders = document.getElementById('createFolders')?.checked ?? true;
-            this.configure({ createFolders });
-            
-            const startTime = Date.now();
-            const results = await this.executeOrganizationWithProgress(actionsToApply);
-            const endTime = Date.now();
-            
-            results.timeElapsed = Math.round((endTime - startTime) / 1000);
+            const results = await this.executeWithDetailedProgress(actionsToApply);
             this.showFinalResults(results);
             
         } catch (error) {
             console.error('[DomainOrganizer] Execute error:', error);
-            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+            this.showError(`Erreur: ${error.message}`);
             this.showStep('review');
         } finally {
             this.isProcessing = false;
         }
     }
 
-    /**
-     * Exécute l'organisation avec progression détaillée
-     */
-    async executeOrganizationWithProgress(domainActions) {
+    async executeWithDetailedProgress(domainActions) {
         const results = {
             success: 0,
             failed: 0,
             foldersCreated: 0,
             emailsMoved: 0,
             errors: [],
-            actions: []
+            details: []
         };
         
         const totalDomains = domainActions.size;
         let processedDomains = 0;
         
-        // Initialiser le log
         this.initializeExecutionLog();
         
         for (const [domain, action] of domainActions) {
             try {
-                // Mettre à jour l'interface
                 this.updateExecutionProgress(domain, action, processedDomains, totalDomains);
+                this.addLogEntry(`🔄 Traitement de ${domain}...`, 'info');
                 
-                this.addLogEntry(`Traitement de ${domain}...`, 'info');
-                
-                const result = await this.processDomain(domain, action);
+                const result = await this.processDomainWithValidation(domain, action);
                 
                 if (result.success) {
                     results.success++;
                     results.emailsMoved += result.emailsMoved;
                     if (result.folderCreated) {
                         results.foldersCreated++;
-                        this.addLogEntry(`✓ Dossier "${action.targetFolder}" créé`, 'success');
+                        this.addLogEntry(`✅ Dossier "${action.targetFolder}" créé`, 'success');
                     }
-                    this.addLogEntry(`✓ ${result.emailsMoved} emails déplacés vers "${action.targetFolder}"`, 'success');
-                    
-                    results.actions.push({
-                        domain: domain,
-                        action: action.action,
-                        targetFolder: action.targetFolder,
-                        emailCount: result.emailsMoved,
-                        folderCreated: result.folderCreated,
-                        success: true
-                    });
+                    this.addLogEntry(`✅ ${result.emailsMoved} emails déplacés vers "${action.targetFolder}"`, 'success');
                 } else {
                     results.failed++;
                     results.errors.push({ domain, error: result.error });
-                    this.addLogEntry(`✗ Erreur pour ${domain}: ${result.error}`, 'error');
-                    
-                    results.actions.push({
-                        domain: domain,
-                        action: action.action,
-                        targetFolder: action.targetFolder,
-                        emailCount: 0,
-                        folderCreated: false,
-                        success: false,
-                        error: result.error
-                    });
+                    this.addLogEntry(`❌ Erreur pour ${domain}: ${result.error}`, 'error');
                 }
+                
+                results.details.push(result);
                 
             } catch (error) {
                 results.failed++;
                 results.errors.push({ domain, error: error.message });
-                this.addLogEntry(`✗ Erreur pour ${domain}: ${error.message}`, 'error');
-                
-                results.actions.push({
-                    domain: domain,
-                    action: action.action,
-                    targetFolder: action.targetFolder,
-                    emailCount: 0,
-                    folderCreated: false,
-                    success: false,
-                    error: error.message
-                });
+                this.addLogEntry(`❌ Erreur critique pour ${domain}: ${error.message}`, 'error');
             }
             
             processedDomains++;
-            
-            // Petit délai pour que l'utilisateur puisse suivre
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
         
-        this.addLogEntry('Rangement terminé !', 'success');
-        
+        this.addLogEntry('🎉 Organisation terminée !', 'success');
         return results;
     }
 
-    /**
-     * Initialise le log d'exécution
-     */
+    async processDomainWithValidation(domain, action) {
+        const allEmails = this.emailsByDomain.get(domain) || [];
+        const selectedEmailIds = new Set(action.selectedEmailIds);
+        const emailsToMove = allEmails.filter((email, index) => {
+            const emailId = email.id || `email-${domain}-${index}`;
+            return selectedEmailIds.has(emailId);
+        });
+        
+        const result = {
+            domain,
+            success: false,
+            emailsMoved: 0,
+            folderCreated: false,
+            error: null,
+            targetFolder: action.targetFolder
+        };
+        
+        if (emailsToMove.length === 0) {
+            result.success = true;
+            return result;
+        }
+        
+        try {
+            let targetFolderId;
+            
+            // Créer le dossier si nécessaire
+            if (action.action === 'create-new') {
+                try {
+                    const newFolder = await this.createFolderWithRetry(action.targetFolder);
+                    targetFolderId = newFolder.id;
+                    result.folderCreated = true;
+                } catch (error) {
+                    throw new Error(`Impossible de créer le dossier: ${error.message}`);
+                }
+            } else if (action.existingFolderId) {
+                targetFolderId = action.existingFolderId;
+            } else {
+                throw new Error('Aucun dossier de destination spécifié');
+            }
+            
+            // Déplacer les emails par lots
+            const batches = this.createBatches(emailsToMove, 20);
+            for (const batch of batches) {
+                const batchResult = await this.moveEmailBatchWithRetry(batch, targetFolderId);
+                result.emailsMoved += batchResult.successful;
+                
+                if (batchResult.failed > 0) {
+                    this.addLogEntry(`⚠️ ${batchResult.failed} emails non déplacés dans ce lot`, 'warning');
+                }
+            }
+            
+            result.success = true;
+            
+        } catch (error) {
+            result.error = error.message;
+            console.error(`[DomainOrganizer] Error processing domain ${domain}:`, error);
+        }
+        
+        return result;
+    }
+
+    async createFolderWithRetry(folderName, maxRetries = 3) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                return await this.createFolder(folderName);
+            } catch (error) {
+                if (attempt === maxRetries) {
+                    throw error;
+                }
+                this.addLogEntry(`⚠️ Tentative ${attempt} échouée pour créer "${folderName}", retry...`, 'warning');
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+        }
+    }
+
+    async moveEmailBatchWithRetry(emails, targetFolderId, maxRetries = 2) {
+        const result = { successful: 0, failed: 0, errors: [] };
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const batchResult = await this.moveEmailBatch(emails, targetFolderId);
+                
+                // Analyser les résultats du batch
+                if (batchResult.responses) {
+                    batchResult.responses.forEach((response, index) => {
+                        if (response.status >= 200 && response.status < 300) {
+                            result.successful++;
+                        } else {
+                            result.failed++;
+                            result.errors.push(`Email ${index}: ${response.status}`);
+                        }
+                    });
+                } else {
+                    result.successful = emails.length;
+                }
+                
+                break; // Succès, sortir de la boucle de retry
+                
+            } catch (error) {
+                if (attempt === maxRetries) {
+                    result.failed = emails.length;
+                    result.errors.push(error.message);
+                } else {
+                    this.addLogEntry(`⚠️ Tentative ${attempt} échouée pour déplacer les emails, retry...`, 'warning');
+                    await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+                }
+            }
+        }
+        
+        return result;
+    }
+
+    // ================================================
+    // MÉTHODES D'AFFICHAGE ET UI
+    // ================================================
+    
+    updateExecutionProgress(currentDomain, currentAction, processed, total) {
+        const operationTitle = document.getElementById('operationTitle');
+        const operationSubtitle = document.getElementById('operationSubtitle');
+        const operationStatus = document.getElementById('operationStatus');
+        
+        if (operationTitle) operationTitle.textContent = `Domaine: ${currentDomain}`;
+        if (operationSubtitle) {
+            const actionText = currentAction.action === 'create-new' 
+                ? `Création du dossier "${currentAction.targetFolder}"`
+                : `Déplacement vers "${currentAction.targetFolder}"`;
+            operationSubtitle.textContent = actionText;
+        }
+        if (operationStatus) operationStatus.textContent = `${processed + 1}/${total}`;
+        
+        // Progression globale
+        const percent = Math.round(((processed + 1) / total) * 100);
+        const progressFill = document.getElementById('executionProgressFill');
+        const progressPercent = document.getElementById('executionPercent');
+        
+        if (progressFill) progressFill.style.width = `${percent}%`;
+        if (progressPercent) progressPercent.textContent = `${percent}%`;
+    }
+
     initializeExecutionLog() {
         const logContainer = document.getElementById('executionLog');
         if (logContainer) {
@@ -3482,9 +1843,6 @@ class DomainOrganizer {
         }
     }
 
-    /**
-     * Ajoute une entrée au log
-     */
     addLogEntry(message, type = 'info') {
         const logContainer = document.getElementById('executionLog');
         if (!logContainer) return;
@@ -3492,9 +1850,14 @@ class DomainOrganizer {
         const entry = document.createElement('div');
         entry.className = `log-entry ${type}`;
         
-        const time = new Date().toLocaleTimeString();
+        const timestamp = new Date().toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
         entry.innerHTML = `
-            <span style="opacity: 0.7;">[${time}]</span>
+            <span style="opacity: 0.7;">[${timestamp}]</span>
             <span>${message}</span>
         `;
         
@@ -3502,48 +1865,136 @@ class DomainOrganizer {
         logContainer.scrollTop = logContainer.scrollHeight;
     }
 
-    /**
-     * Met à jour la progression d'exécution
-     */
-    updateExecutionProgress(currentDomain, currentAction, processed, total) {
-        // Mettre à jour le domaine actuel
-        const domainName = document.getElementById('currentDomainName');
-        const domainAction = document.getElementById('currentDomainAction');
-        
-        if (domainName) domainName.textContent = currentDomain;
-        if (domainAction) {
-            const actionText = currentAction.action === 'create-new' 
-                ? `Création du dossier "${currentAction.targetFolder}"`
-                : `Déplacement vers "${currentAction.targetFolder}"`;
-            domainAction.textContent = actionText;
-        }
-        
-        // Mettre à jour la progression globale
-        const percent = Math.round((processed / total) * 100);
-        const progressBar = document.getElementById('executionProgressBar');
-        const progressPercent = document.getElementById('executionPercent');
-        
-        if (progressBar) progressBar.style.width = `${percent}%`;
-        if (progressPercent) progressPercent.textContent = `${percent}%`;
-    }
-
-    /**
-     * Affiche les résultats finaux
-     */
     showFinalResults(results) {
         // Mettre à jour les statistiques finales
         document.getElementById('finalEmailsMoved').textContent = results.emailsMoved.toLocaleString();
         document.getElementById('finalFoldersCreated').textContent = results.foldersCreated;
+        document.getElementById('finalErrors').textContent = results.failed;
+        
+        // Changer la couleur du compteur d'erreurs si nécessaire
+        const errorsElement = document.getElementById('finalErrors');
+        if (errorsElement && results.failed > 0) {
+            errorsElement.style.color = 'var(--danger-color)';
+        }
         
         this.showStep('results');
     }
 
-    /**
-     * Réinitialise le formulaire
-     */
+    showError(message) {
+        window.uiManager?.showToast(message, 'error');
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    
+    createFolderSelect(domainData, existingFolders) {
+        const options = existingFolders.map(folder => 
+            `<option value="${folder.id}" ${folder.displayName === domainData.suggestedFolder ? 'selected' : ''}>
+                ${folder.displayName}
+            </option>`
+        ).join('');
+        
+        return `<select class="folder-select" data-domain="${domainData.domain}" onclick="event.stopPropagation()" onchange="window.domainOrganizer.handleFolderChange(event)">${options}</select>`;
+    }
+
+    updateDomainInterface(domain, actionType) {
+        const domainElement = document.querySelector(`[data-domain="${domain}"]`);
+        if (!domainElement) return;
+        
+        const folderConfig = domainElement.querySelector('.folder-config');
+        const badge = domainElement.querySelector('.action-badge');
+        
+        if (badge) {
+            const isNew = actionType === 'create-new';
+            badge.className = `action-badge ${isNew ? 'action-new' : 'action-existing'}`;
+            badge.textContent = isNew ? 'Nouveau' : 'Existant';
+        }
+        
+        // Regénérer la configuration de dossier si nécessaire
+        if (folderConfig && this.selectedActions.has(domain)) {
+            const action = this.selectedActions.get(domain);
+            // L'interface se met à jour automatiquement via les event listeners
+        }
+    }
+
+    getEmailFrom(email) {
+        return email.from?.emailAddress?.name || 
+               email.from?.emailAddress?.address || 
+               'Expéditeur inconnu';
+    }
+
+    getEmailPreview(email) {
+        if (email.bodyPreview) {
+            return email.bodyPreview.substring(0, 100);
+        }
+        return 'Aucun aperçu disponible';
+    }
+
+    formatEmailDate(dateString) {
+        if (!dateString) return '';
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) return 'Hier';
+        if (diffDays < 7) return `${diffDays}j`;
+        if (diffDays < 30) return `${Math.ceil(diffDays / 7)}sem`;
+        
+        return date.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short'
+        });
+    }
+
+    handleIndividualEmailFolderChange(event) {
+        const domain = event.target.dataset.domain;
+        const emailId = event.target.dataset.emailId;
+        const selectedValue = event.target.value;
+        
+        if (selectedValue === 'custom') {
+            const newFolderName = prompt('Nom du nouveau dossier:');
+            if (newFolderName && newFolderName.trim()) {
+                // Ajouter à la queue de création de dossiers
+                if (!this.folderCreationQueue.has(newFolderName)) {
+                    this.folderCreationQueue.set(newFolderName, new Set());
+                }
+                this.folderCreationQueue.get(newFolderName).add(`${domain}-${emailId}`);
+                
+                // Mettre à jour l'interface
+                const option = document.createElement('option');
+                option.value = `custom-${newFolderName}`;
+                option.selected = true;
+                option.textContent = `➕ ${newFolderName}`;
+                
+                event.target.insertBefore(option, event.target.lastElementChild);
+                
+                this.showSuccess(`Email configuré pour le dossier "${newFolderName}"`);
+            } else {
+                event.target.value = 'domain-default';
+            }
+        }
+        
+        this.validateConfiguration();
+    }
+
+    showSuccess(message) {
+        window.uiManager?.showToast(message, 'success');
+    }
+
+    // ================================================
+    // NAVIGATION ET CONTRÔLES
+    // ================================================
+    
+    goBack() {
+        this.showStep('configure');
+    }
+
     resetForm() {
         // Revenir à l'étape de configuration
-        this.forceShowConfigStep();
+        this.showStep('configure');
         
         // Réinitialiser le formulaire
         document.getElementById('organizeForm')?.reset();
@@ -3554,41 +2005,36 @@ class DomainOrganizer {
         // Réinitialiser les données
         this.currentAnalysis = null;
         this.selectedActions.clear();
-        this.expandedDomains.clear();
-        this.folderStructure.clear();
+        this.emailSelections.clear();
+        this.validationErrors.clear();
+        this.folderCreationQueue.clear();
         this.isProcessing = false;
         
-        console.log('[DomainOrganizer] ✅ Form reset to initial state');
+        console.log('[DomainOrganizer] ✅ Form reset to initial state v5.0');
     }
 
     // ================================================
-    // CONFIGURATION ET INITIALISATION
+    // MÉTHODES HÉRITÉES ET COMPATIBILITÉ
     // ================================================
     
     configure(options = {}) {
         const {
             excludeDomains = [],
             excludeEmails = [],
-            organizationType = 'hierarchical',
             onProgress = null,
             createFolders = true,
-            maxEmailsPerBatch = 50
+            maxEmailsPerBatch = 20
         } = options;
 
         this.excludedDomains = new Set(excludeDomains.map(d => d.toLowerCase()));
         this.excludedEmails = new Set(excludeEmails.map(e => e.toLowerCase()));
-        this.organizationType = organizationType;
         this.progressCallback = onProgress;
         this.createFolders = createFolders;
         this.maxEmailsPerBatch = maxEmailsPerBatch;
     }
 
-    // ================================================
-    // ANALYSE DES EMAILS
-    // ================================================
-    
     async analyzeEmails(filters = {}) {
-        console.log('[DomainOrganizer] Starting analysis...');
+        console.log('[DomainOrganizer] Starting analysis v5.0...');
         
         try {
             this.isProcessing = true;
@@ -3759,122 +2205,6 @@ class DomainOrganizer {
         return null;
     }
 
-    // ================================================
-    // EXÉCUTION DES ACTIONS
-    // ================================================
-    
-    async processDomain(domain, action) {
-        const emails = this.emailsByDomain.get(domain) || [];
-        const result = { success: false, emailsMoved: 0, folderCreated: false, error: null };
-        
-        if (emails.length === 0) {
-            result.success = true;
-            return result;
-        }
-        
-        try {
-            let targetFolderId;
-            
-            if (action.action === 'create-new' && this.createFolders) {
-                try {
-                    const newFolder = await this.createFolder(action.targetFolder);
-                    targetFolderId = newFolder.id;
-                    result.folderCreated = true;
-                } catch (error) {
-                    console.error(`[DomainOrganizer] Failed to create folder for ${domain}:`, error);
-                    if (action.existingFolderId) {
-                        targetFolderId = action.existingFolderId;
-                    } else {
-                        throw new Error(`Could not create or find folder for ${domain}`);
-                    }
-                }
-            } else if (action.existingFolderId) {
-                targetFolderId = action.existingFolderId;
-            } else {
-                throw new Error(`No target folder specified for ${domain}`);
-            }
-            
-            const batches = this.createBatches(emails, this.maxEmailsPerBatch);
-            for (const batch of batches) {
-                await this.moveEmailBatch(batch, targetFolderId);
-                result.emailsMoved += batch.length;
-            }
-            
-            result.success = true;
-            
-        } catch (error) {
-            result.error = error.message;
-            console.error(`[DomainOrganizer] Error processing domain ${domain}:`, error);
-        }
-        
-        return result;
-    }
-
-    async createFolder(folderName) {
-        const accessToken = await window.authService.getAccessToken();
-        
-        try {
-            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ displayName: folderName })
-            });
-            
-            if (response.ok) {
-                return await response.json();
-            }
-            
-            if (response.status === 409) {
-                // Dossier existe déjà, le chercher
-                const folders = await window.mailService.getFolders();
-                const existingFolder = folders.find(f => 
-                    f.displayName.toLowerCase() === folderName.toLowerCase()
-                );
-                if (existingFolder) {
-                    return existingFolder;
-                }
-            }
-            
-            throw new Error(`Failed to create folder: ${response.status} ${response.statusText}`);
-            
-        } catch (error) {
-            console.error(`[DomainOrganizer] Error creating folder "${folderName}":`, error);
-            throw error;
-        }
-    }
-
-    async moveEmailBatch(emails, targetFolderId) {
-        const accessToken = await window.authService.getAccessToken();
-        
-        const batchRequests = emails.map((email, index) => ({
-            id: index.toString(),
-            method: 'POST',
-            url: `/me/messages/${email.id}/move`,
-            body: { destinationId: targetFolderId },
-            headers: { 'Content-Type': 'application/json' }
-        }));
-        
-        const response = await fetch('https://graph.microsoft.com/v1.0/$batch', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ requests: batchRequests })
-        });
-        
-        if (!response.ok) throw new Error(`Batch move failed: ${response.statusText}`);
-        
-        return await response.json();
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
-    
     extractDomain(email) {
         try {
             if (!email.from?.emailAddress?.address) return null;
@@ -3905,8 +2235,9 @@ class DomainOrganizer {
     resetAnalysis() {
         this.domainAnalysis.clear();
         this.emailsByDomain.clear();
-        this.expandedDomains.clear();
-        this.folderStructure.clear();
+        this.emailSelections.clear();
+        this.validationErrors.clear();
+        this.folderCreationQueue.clear();
     }
 
     finalizeAnalysis() {
@@ -3939,12 +2270,12 @@ class DomainOrganizer {
         return results;
     }
 
-    getPreparedActions() {
-        const actions = new Map();
+    prepareActions() {
+        this.selectedActions.clear();
         
         this.domainAnalysis.forEach((analysis, domain) => {
             if (analysis.count > 0) {
-                actions.set(domain, {
+                this.selectedActions.set(domain, {
                     domain: domain,
                     action: analysis.action,
                     targetFolder: analysis.suggestedFolder,
@@ -3954,24 +2285,83 @@ class DomainOrganizer {
                 });
             }
         });
+    }
+
+    async createFolder(folderName) {
+        const accessToken = await window.authService.getAccessToken();
         
-        return actions;
+        try {
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ displayName: folderName })
+            });
+            
+            if (response.ok) {
+                return await response.json();
+            }
+            
+            if (response.status === 409) {
+                // Dossier existe déjà, le chercher
+                const folders = await window.mailService.getFolders();
+                const existingFolder = folders.find(f => 
+                    f.displayName.toLowerCase() === folderName.toLowerCase()
+                );
+                if (existingFolder) {
+                    return existingFolder;
+                }
+            }
+            
+            throw new Error(`Échec de création: ${response.status} ${response.statusText}`);
+            
+        } catch (error) {
+            console.error(`[DomainOrganizer] Error creating folder "${folderName}":`, error);
+            throw error;
+        }
+    }
+
+    async moveEmailBatch(emails, targetFolderId) {
+        const accessToken = await window.authService.getAccessToken();
+        
+        const batchRequests = emails.map((email, index) => ({
+            id: index.toString(),
+            method: 'POST',
+            url: `/me/messages/${email.id}/move`,
+            body: { destinationId: targetFolderId },
+            headers: { 'Content-Type': 'application/json' }
+        }));
+        
+        const response = await fetch('https://graph.microsoft.com/v1.0/$batch', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ requests: batchRequests })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Échec du déplacement par lot: ${response.statusText}`);
+        }
+        
+        return await response.json();
     }
 }
 
 // Créer l'instance globale
 window.domainOrganizer = new DomainOrganizer();
-console.log('[DomainOrganizer] ✅ Module chargé - Version 4.0 hiérarchique');
+console.log('[DomainOrganizer] ✅ Module chargé - Version 5.0 Interface harmonisée');
 
 // ================================================
-// GESTION AUTONOME - Sans PageManager
+// GESTION AUTONOME
 // ================================================
 
-// Attendre que le DOM soit chargé
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('[DomainOrganizer] Initialisation autonome v4.0...');
+    console.log('[DomainOrganizer] Initialisation autonome v5.0...');
     
-    // Écouter directement les clics sur le bouton "Ranger"
     document.addEventListener('click', function(e) {
         const rangerButton = e.target.closest('[data-page="ranger"]');
         if (!rangerButton) return;
@@ -3980,7 +2370,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.stopPropagation();
         e.stopImmediatePropagation();
         
-        console.log('[DomainOrganizer] Bouton Ranger cliqué - v4.0');
+        console.log('[DomainOrganizer] Bouton Ranger cliqué - v5.0');
         
         if (!window.authService?.isAuthenticated()) {
             window.uiManager?.showToast('Veuillez vous connecter pour utiliser cette fonctionnalité', 'warning');
@@ -3992,9 +2382,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }, true);
 });
 
-// Méthode pour afficher la page directement
 window.domainOrganizer.showPage = function() {
-    console.log('[DomainOrganizer] Affichage de la page v4.0...');
+    console.log('[DomainOrganizer] Affichage de la page v5.0...');
     
     const loginPage = document.getElementById('loginPage');
     if (loginPage) loginPage.style.display = 'none';
@@ -4021,10 +2410,12 @@ window.domainOrganizer.showPage = function() {
         this.currentStep = 'configure';
         this.currentAnalysis = null;
         this.selectedActions.clear();
-        this.expandedDomains.clear();
+        this.emailSelections.clear();
+        this.validationErrors.clear();
+        this.folderCreationQueue.clear();
         
         await this.initializePage();
-        console.log('[DomainOrganizer] ✅ Initialization complete v4.0');
+        console.log('[DomainOrganizer] ✅ Initialization complete v5.0');
     }, 300);
     
     // Mettre à jour la navigation
@@ -4039,7 +2430,7 @@ window.domainOrganizer.showPage = function() {
     const mainNav = document.getElementById('mainNav');
     if (mainNav) mainNav.style.display = 'flex';
     
-    console.log('[DomainOrganizer] ✅ Page v4.0 affichée avec succès');
+    console.log('[DomainOrganizer] ✅ Page v5.0 affichée avec succès');
 };
 
 window.addEventListener('beforeunload', () => {
