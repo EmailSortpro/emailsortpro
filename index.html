@@ -1091,37 +1091,108 @@
         // FONCTION DE CONTRÔLE D'ÉTAT RENFORCÉES
         // ========================================
         
-        // Fonction pour forcer l'affichage de l'app de manière définitive
+        // Fonction pour forcer l'affichage de l'app de manière DÉFINITIVE
         window.forceShowApp = function() {
-            console.log('[FORCE] Forcing app display - PERMANENT...');
+            console.log('[FORCE] 🚀 FORCING IMMEDIATE APP DISPLAY...');
             
             if (window.APP_STATE.appShown) {
-                console.log('[FORCE] App already shown, skipping');
-                return;
+                console.log('[FORCE] App already shown, but ensuring it stays shown');
             }
             
-            // Marquer l'état
+            // Marquer l'état DÉFINITIVEMENT
             window.APP_STATE.appShown = true;
             window.APP_STATE.authenticated = true;
             
-            // Ajouter la classe pour activer l'app
+            // 1. FORCER la classe CSS immédiatement
             document.body.classList.add('app-active');
             
-            // Masquer définitivement la page de login
+            // 2. MASQUER définitivement la page de login
             const loginPage = document.getElementById('loginPage');
             if (loginPage) {
-                loginPage.style.display = 'none';
-                loginPage.style.visibility = 'hidden';
-                loginPage.style.opacity = '0';
+                loginPage.style.display = 'none !important';
+                loginPage.style.visibility = 'hidden !important';
+                loginPage.style.opacity = '0 !important';
+                loginPage.style.zIndex = '-9999 !important';
+                loginPage.style.position = 'absolute !important';
+                loginPage.style.left = '-9999px !important';
+                loginPage.classList.add('force-hidden');
             }
             
-            // Masquer le loading
+            // 3. AFFICHER définitivement les éléments de l'app
+            const appHeader = document.querySelector('.app-header');
+            const appNav = document.querySelector('.app-nav');
+            const pageContent = document.getElementById('pageContent');
+            
+            if (appHeader) {
+                appHeader.style.display = 'block !important';
+                appHeader.style.visibility = 'visible !important';
+                appHeader.style.opacity = '1 !important';
+            }
+            
+            if (appNav) {
+                appNav.style.display = 'block !important';
+                appNav.style.visibility = 'visible !important';
+                appNav.style.opacity = '1 !important';
+            }
+            
+            if (pageContent) {
+                pageContent.style.display = 'block !important';
+                pageContent.style.visibility = 'visible !important';
+                pageContent.style.opacity = '1 !important';
+            }
+            
+            // 4. MASQUER le loading
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
+                loadingOverlay.style.display = 'none !important';
             }
             
-            console.log('[FORCE] App display activated PERMANENTLY');
+            // 5. INJECTER CSS de force pour être sûr
+            const forceStyle = document.createElement('style');
+            forceStyle.id = 'force-app-permanent';
+            forceStyle.innerHTML = `
+                .force-hidden, 
+                body.app-active #loginPage {
+                    display: none !important;
+                    visibility: hidden !important;
+                    opacity: 0 !important;
+                    z-index: -9999 !important;
+                    position: absolute !important;
+                    left: -9999px !important;
+                }
+                
+                body.app-active .app-header,
+                body.app-active .app-nav,
+                body.app-active #pageContent {
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                }
+                
+                body.app-active .app-main {
+                    margin-top: 120px !important;
+                }
+            `;
+            
+            // Remplacer l'ancien style s'il existe
+            const oldStyle = document.getElementById('force-app-permanent');
+            if (oldStyle) {
+                oldStyle.remove();
+            }
+            document.head.appendChild(forceStyle);
+            
+            console.log('[FORCE] ✅ APP DISPLAY PERMANENTLY ACTIVATED');
+            
+            // 6. Charger le dashboard après un court délai
+            setTimeout(() => {
+                if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
+                    console.log('[FORCE] Loading dashboard...');
+                    window.pageManager.loadPage('dashboard');
+                } else {
+                    console.log('[FORCE] PageManager not ready, will load dashboard when available');
+                }
+            }, 200);
         };
 
         // Fonction pour masquer le loading et afficher l'app
@@ -1138,38 +1209,113 @@
             window.forceShowApp();
         };
 
-        // Vérification précoce INTELLIGENTE de l'authentification
+        // Vérification précoce RENFORCÉE de l'authentification
         const earlyAuthCheck = () => {
-            console.log('[EARLY_AUTH] Starting early auth check...');
+            console.log('[EARLY_AUTH] Starting enhanced early auth check...');
             
-            // Vérifier le localStorage pour des tokens existants
+            // Vérifier TOUS les indicateurs d'authentification possible
             try {
-                const msalAccount = localStorage.getItem('msal.account.keys');
-                const msalToken = localStorage.getItem('msal.token.keys');
+                // Méthode 1: Vérifier les clés MSAL dans localStorage
+                const msalAccountKeys = localStorage.getItem('msal.account.keys');
+                const msalTokenKeys = localStorage.getItem('msal.token.keys');
                 
-                if (msalAccount && msalToken) {
-                    console.log('[EARLY_AUTH] Tokens detected, waiting for app.js to handle authentication...');
+                // Méthode 2: Vérifier les données d'account directement
+                const accountKeys = msalAccountKeys ? JSON.parse(msalAccountKeys) : [];
+                let hasValidAccount = false;
+                
+                if (accountKeys.length > 0) {
+                    accountKeys.forEach(key => {
+                        const accountData = localStorage.getItem(key);
+                        if (accountData) {
+                            try {
+                                const account = JSON.parse(accountData);
+                                if (account.username && account.name) {
+                                    hasValidAccount = true;
+                                    console.log('[EARLY_AUTH] Valid account found:', account.name);
+                                }
+                            } catch (e) {
+                                console.warn('[EARLY_AUTH] Error parsing account:', e);
+                            }
+                        }
+                    });
+                }
+                
+                // Méthode 3: Vérifier les tokens d'accès
+                const tokenKeys = msalTokenKeys ? JSON.parse(msalTokenKeys) : [];
+                let hasValidToken = false;
+                
+                if (tokenKeys.length > 0) {
+                    tokenKeys.forEach(key => {
+                        const tokenData = localStorage.getItem(key);
+                        if (tokenData) {
+                            try {
+                                const token = JSON.parse(tokenData);
+                                if (token.secret) {
+                                    hasValidToken = true;
+                                    console.log('[EARLY_AUTH] Valid token found');
+                                }
+                            } catch (e) {
+                                console.warn('[EARLY_AUTH] Error parsing token:', e);
+                            }
+                        }
+                    });
+                }
+                
+                // Si authentification détectée, forcer l'affichage immédiat
+                if (hasValidAccount && hasValidToken) {
+                    console.log('[EARLY_AUTH] ✅ User authenticated - FORCING immediate app display');
                     
-                    // NE PAS forcer l'affichage immédiatement
-                    // Laisser app.js gérer le processus normal
+                    // Marquer l'état immédiatement
+                    window.APP_STATE.authenticated = true;
                     window.APP_STATE.hasTokens = true;
+                    
+                    // Forcer l'affichage IMMÉDIATEMENT
+                    setTimeout(() => {
+                        console.log('[EARLY_AUTH] Executing immediate app display...');
+                        window.forceShowApp();
+                    }, 50);
                     
                     return true;
                 }
+                
+                console.log('[EARLY_AUTH] Auth check results:', {
+                    hasValidAccount,
+                    hasValidToken,
+                    accountKeysCount: accountKeys.length,
+                    tokenKeysCount: tokenKeys.length
+                });
+                
             } catch (error) {
-                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
+                console.warn('[EARLY_AUTH] Error in enhanced check:', error);
             }
             
-            console.log('[EARLY_AUTH] No tokens found, login will be required');
+            console.log('[EARLY_AUTH] No valid authentication found, login required');
             return false;
         };
 
-        // Exécuter la vérification précoce sans forcer l'affichage
+        // Exécuter la vérification renforcée IMMÉDIATEMENT
         earlyAuthCheck();
 
-        // Gestionnaire principal DOMContentLoaded SIMPLIFIÉ
+        // Gestionnaire principal DOMContentLoaded RENFORCÉ
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
+            
+            // VÉRIFICATION IMMÉDIATE si l'utilisateur est déjà authentifié
+            setTimeout(() => {
+                // Si l'état indique une authentification mais l'app n'est pas affichée
+                if (window.APP_STATE.authenticated && !window.APP_STATE.appShown) {
+                    console.log('[INDEX] User authenticated but app not shown - FORCING display');
+                    window.forceShowApp();
+                }
+                
+                // Double vérification après le chargement de tous les scripts
+                setTimeout(() => {
+                    if (window.authService && window.authService.isAuthenticated && window.authService.isAuthenticated()) {
+                        console.log('[INDEX] AuthService confirms authentication - FORCING display');
+                        window.forceShowApp();
+                    }
+                }, 500);
+            }, 100);
             
             // Configuration du bouton de login SIMPLE
             const loginBtn = document.getElementById('loginBtn');
@@ -1195,7 +1341,12 @@
                     // Attendre que app.js soit prêt
                     const waitForApp = (attempts = 0) => {
                         if (window.app && window.app.login) {
-                            window.app.login().catch((error) => {
+                            window.app.login().then(() => {
+                                console.log('[LOGIN] Login successful via app.js - FORCING display');
+                                setTimeout(() => {
+                                    window.forceShowApp();
+                                }, 200);
+                            }).catch((error) => {
                                 console.error('[LOGIN] Login failed:', error);
                                 window.APP_STATE.loginInProgress = false;
                                 this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
@@ -1257,14 +1408,22 @@
         
         // FONCTION GLOBALE POUR CALLBACK D'AUTHENTIFICATION RÉUSSIE
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful via app.js');
+            console.log('[AUTH_SUCCESS] Authentication successful via app.js - FORCING APP');
             
             // Marquer l'état
             window.APP_STATE.authenticated = true;
             window.APP_STATE.loginInProgress = false;
             
-            // Laisser app.js gérer l'affichage naturellement
-            // window.forceShowApp(); // RETIRÉ pour éviter les conflits
+            // FORCER l'affichage même si app.js l'a déjà fait
+            setTimeout(() => {
+                window.forceShowApp();
+            }, 100);
+        };
+        
+        // Intercepter showAppWithTransition depuis app.js
+        window.interceptAppDisplay = function() {
+            console.log('[INTERCEPT] App.js is showing app - ensuring permanent display');
+            window.forceShowApp();
         };
 
         // Fonction de diagnostic accessible globalement
