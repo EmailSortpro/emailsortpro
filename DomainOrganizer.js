@@ -110,16 +110,6 @@ class DomainOrganizer {
                                 </div>
                             </div>
                         </div>
-
-                        <div class="safety-notice">
-                            <h4><i class="fas fa-shield-alt"></i> Sécurité et contrôle</h4>
-                            <ul>
-                                <li><strong>Aucune action automatique</strong> - Vous validez chaque étape</li>
-                                <li><strong>Aperçu complet</strong> - Vous voyez exactement ce qui sera fait</li>
-                                <li><strong>Choix des dossiers</strong> - Vous pouvez modifier les noms proposés</li>
-                                <li><strong>Exclusions possibles</strong> - Vous pouvez exclure certains domaines</li>
-                            </ul>
-                        </div>
                         
                         <form id="organizeForm">
                             <div class="form-section">
