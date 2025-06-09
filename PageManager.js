@@ -218,7 +218,7 @@ class PageManager {
     }
 
     // =====================================
-    // FILTRES DE CATÉGORIES OPTIMISÉS AVEC ICÔNES CENTRÉES
+    // FILTRES DE CATÉGORIES OPTIMISÉS AVEC ICÔNES ET COMPTEURS ALIGNÉS
     // =====================================
     buildOptimizedCategoryTabs(categoryCounts, totalEmails, categories) {
         const tabs = [
@@ -252,15 +252,13 @@ class PageManager {
             return `
                 <button class="status-pill-harmonized-multiline ${this.currentCategory === tab.id ? 'active' : ''} ${isLongText ? 'long-text' : ''}" 
                         onclick="window.pageManager.filterByCategory('${tab.id}')">
-                    <div class="pill-content-centered">
-                        <div class="pill-icon-centered">
+                    <div class="pill-content-compact">
+                        <div class="pill-header-row">
                             <span class="pill-icon-harmonized-multiline">${tab.icon}</span>
-                        </div>
-                        <div class="pill-text-centered">
-                            <span class="pill-text-harmonized-multiline ${isLongText ? 'multiline' : ''}">${tab.name}</span>
-                        </div>
-                        <div class="pill-count-centered">
                             <span class="pill-count-harmonized-multiline">${tab.count}</span>
+                        </div>
+                        <div class="pill-text-compact">
+                            <span class="pill-text-harmonized-multiline ${isLongText ? 'multiline' : ''}">${tab.name}</span>
                         </div>
                     </div>
                 </button>
@@ -1772,7 +1770,7 @@ class PageManager {
                 text-align: center;
             }
             
-            /* RESPONSIVE */
+            /* RESPONSIVE - Ajustements pour la structure compacte */
             @media (max-width: 1200px) {
                 :root {
                     --btn-height: 42px;
@@ -1784,15 +1782,15 @@ class PageManager {
                     flex: 0 1 calc(20% - var(--gap-small));
                     min-width: 100px;
                     max-width: 160px;
-                    min-height: 44px;
+                    min-height: 38px;
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    min-height: 60px;
+                    min-height: 46px;
                 }
                 
                 .pill-text-harmonized-multiline {
-                    font-size: 12px;
+                    font-size: 11px;
                 }
                 
                 .pill-icon-harmonized-multiline {
@@ -1800,8 +1798,8 @@ class PageManager {
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 10px;
-                    padding: 2px 6px;
+                    font-size: 9px;
+                    padding: 2px 5px;
                 }
             }
             
@@ -1847,15 +1845,15 @@ class PageManager {
                     flex: 0 1 calc(25% - var(--gap-small));
                     min-width: 80px;
                     max-width: 140px;
-                    min-height: 42px;
+                    min-height: 36px;
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    min-height: 58px;
+                    min-height: 44px;
                 }
                 
                 .pill-text-harmonized-multiline {
-                    font-size: 11px;
+                    font-size: 10px;
                 }
                 
                 .pill-icon-harmonized-multiline {
@@ -1863,8 +1861,8 @@ class PageManager {
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 9px;
-                    padding: 2px 5px;
+                    font-size: 8px;
+                    padding: 2px 4px;
                 }
             }
             
@@ -1877,11 +1875,11 @@ class PageManager {
                     flex: 0 1 calc(33.333% - var(--gap-small));
                     min-width: 70px;
                     max-width: 120px;
-                    min-height: 40px;
+                    min-height: 34px;
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    min-height: 56px;
+                    min-height: 42px;
                 }
                 
                 .view-mode-harmonized span,
@@ -1890,7 +1888,7 @@ class PageManager {
                 }
                 
                 .pill-text-harmonized-multiline {
-                    font-size: 10px;
+                    font-size: 9px;
                 }
                 
                 .pill-icon-harmonized-multiline {
@@ -1899,7 +1897,7 @@ class PageManager {
                 
                 .pill-count-harmonized-multiline {
                     font-size: 8px;
-                    padding: 2px 4px;
+                    padding: 1px 4px;
                 }
             }
             
@@ -1908,15 +1906,15 @@ class PageManager {
                     flex: 0 1 calc(50% - var(--gap-tiny));
                     min-width: 60px;
                     max-width: 110px;
-                    min-height: 38px;
+                    min-height: 32px;
                 }
                 
                 .status-filters-harmonized-multiline .status-pill-harmonized-multiline.long-text {
-                    min-height: 54px;
+                    min-height: 40px;
                 }
                 
                 .pill-text-harmonized-multiline {
-                    font-size: 9px;
+                    font-size: 8px;
                 }
                 
                 .pill-icon-harmonized-multiline {
@@ -1924,8 +1922,8 @@ class PageManager {
                 }
                 
                 .pill-count-harmonized-multiline {
-                    font-size: 8px;
-                    padding: 1px 4px;
+                    font-size: 7px;
+                    padding: 1px 3px;
                 }
                 
                 .explanation-text-harmonized {
