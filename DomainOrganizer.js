@@ -1182,6 +1182,8 @@ class DomainOrganizer {
      * Force l'affichage de l'étape de configuration
      */
     forceShowConfigStep() {
+        console.log('[DomainOrganizer] Forcing display of config step...');
+        
         // Cacher toutes les étapes
         document.querySelectorAll('.step-content').forEach(content => {
             content.style.display = 'none';
@@ -1208,6 +1210,13 @@ class DomainOrganizer {
             // Debug: lister tous les éléments step-content
             const allSteps = document.querySelectorAll('.step-content');
             console.log('[DomainOrganizer] Available step elements:', Array.from(allSteps).map(s => s.id));
+            
+            // Essayer de forcer l'affichage du premier élément avec un ID valide
+            const firstValidStep = Array.from(allSteps).find(step => step.id === 'configStep');
+            if (firstValidStep) {
+                firstValidStep.style.display = 'block';
+                console.log('[DomainOrganizer] ✅ Forced display of first valid step');
+            }
         }
     }
 
@@ -1613,7 +1622,7 @@ class DomainOrganizer {
      * Navigation - Retour
      */
     goBack() {
-        this.showStep('configure');
+        this.forceShowConfigStep();
     }
 
     /**
@@ -1967,13 +1976,21 @@ class DomainOrganizer {
      * Réinitialise le formulaire
      */
     resetForm() {
-        this.showStep('configure');
+        // Revenir à l'étape de configuration
+        this.forceShowConfigStep();
+        
+        // Réinitialiser le formulaire
         document.getElementById('organizeForm')?.reset();
         
+        // Remettre les dates par défaut
         this.setDefaultDates();
+        
+        // Réinitialiser les données
         this.currentAnalysis = null;
         this.selectedActions.clear();
         this.isProcessing = false;
+        
+        console.log('[DomainOrganizer] ✅ Form reset to initial state');
     }
 
     // ================================================
@@ -2445,11 +2462,23 @@ window.domainOrganizer.showPage = function() {
     // Afficher le conteneur
     pageContent.style.display = 'block';
     
+    // Marquer comme actif pour éviter les interférences
+    window.domainOrganizerActive = true;
+    
     // Injecter notre HTML
     pageContent.innerHTML = this.getPageHTML();
     
+    console.log('[DomainOrganizer] HTML injected, waiting for DOM to be ready...');
+    
     // Attendre que le HTML soit injecté puis initialiser
     setTimeout(async () => {
+        // Vérifier que notre contenu est toujours là
+        if (!window.domainOrganizerActive || !document.getElementById('configStep')) {
+            console.warn('[DomainOrganizer] Content was overwritten, re-injecting...');
+            pageContent.innerHTML = this.getPageHTML();
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
         // Réinitialiser l'état
         this.isProcessing = false;
         this.currentStep = 'configure';
@@ -2460,7 +2489,7 @@ window.domainOrganizer.showPage = function() {
         await this.initializePage();
         
         console.log('[DomainOrganizer] ✅ Initialization complete');
-    }, 300); // Augmenté le délai pour s'assurer que le DOM est prêt
+    }, 300);
     
     // Mettre à jour la navigation active
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -2477,6 +2506,11 @@ window.domainOrganizer.showPage = function() {
     
     console.log('[DomainOrganizer] ✅ Page affichée avec succès');
 };
+
+// Marquer comme inactif quand on quitte
+window.addEventListener('beforeunload', () => {
+    window.domainOrganizerActive = false;
+});
 
 // Exposer une méthode globale pour l'appel direct
 window.showDomainOrganizer = function() {
