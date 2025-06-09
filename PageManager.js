@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.3 - Catégories 2 lignes avec icône+nombre
+// PageManager.js - Version 11.4 - Bouton Sélection Réparé avec Actions Intégrées
 
 class PageManager {
     constructor() {
@@ -27,7 +27,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] Initialized v11.3 - Catégories 2 lignes avec icône+nombre');
+        console.log('[PageManager] Initialized v11.4 - Bouton Sélection Réparé avec Actions');
     }
 
     // =====================================
@@ -88,7 +88,7 @@ class PageManager {
     }
 
     // =====================================
-    // EMAILS PAGE - INTERFACE HARMONISÉE AVEC TASKSVIEW
+    // EMAILS PAGE - INTERFACE HARMONISÉE AVEC SÉLECTION RÉPARÉE
     // =====================================
     async renderEmails(container) {
         const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
@@ -102,6 +102,8 @@ class PageManager {
             const categoryCounts = this.calculateCategoryCounts(emails);
             const totalEmails = emails.length;
             const selectedCount = this.selectedEmails.size;
+            const visibleEmails = this.getVisibleEmails();
+            const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
             
             container.innerHTML = `
                 <div class="tasks-page-modern">
@@ -109,14 +111,14 @@ class PageManager {
                     ${!this.hideExplanation ? `
                         <div class="explanation-text-harmonized">
                             <i class="fas fa-info-circle"></i>
-                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez le bouton "Créer tâches" pour transformer les emails sélectionnés en tâches automatiquement. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
                             <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
                     ` : ''}
 
-                    <!-- Barre de contrôles harmonisée avec TasksView -->
+                    <!-- Barre de contrôles harmonisée avec sélection intégrée -->
                     <div class="controls-bar-harmonized">
                         <!-- Section recherche -->
                         <div class="search-section-harmonized">
@@ -157,8 +159,18 @@ class PageManager {
                             </button>
                         </div>
                         
-                        <!-- Actions principales harmonisées avec bouton sélection -->
+                        <!-- Actions principales avec sélection intégrée -->
                         <div class="action-buttons-harmonized">
+                            <!-- Bouton Sélectionner tout / Désélectionner -->
+                            <button class="btn-harmonized btn-selection-toggle" 
+                                    onclick="window.pageManager.toggleAllSelection()"
+                                    title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
+                                <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
+                                <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
+                                ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
+                            </button>
+                            
+                            <!-- Informations de sélection et actions -->
                             ${selectedCount > 0 ? `
                                 <div class="selection-info-harmonized">
                                     <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
@@ -166,27 +178,45 @@ class PageManager {
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </div>
+                                
+                                <!-- Actions groupées -->
                                 <button class="btn-harmonized btn-primary" onclick="window.pageManager.createTasksFromSelection()">
                                     <i class="fas fa-tasks"></i>
                                     <span>Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</span>
                                     <span class="count-badge-harmonized">${selectedCount}</span>
                                 </button>
+                                
+                                <div class="dropdown-action-harmonized">
+                                    <button class="btn-harmonized btn-secondary dropdown-toggle" onclick="window.pageManager.toggleBulkActions(event)">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                        <span>Actions</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
+                                            <i class="fas fa-eye"></i>
+                                            <span>Marquer comme lu</span>
+                                        </button>
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkArchive()">
+                                            <i class="fas fa-archive"></i>
+                                            <span>Archiver</span>
+                                        </button>
+                                        <button class="dropdown-item-harmonized danger" onclick="window.pageManager.bulkDelete()">
+                                            <i class="fas fa-trash"></i>
+                                            <span>Supprimer</span>
+                                        </button>
+                                        <div class="dropdown-divider"></div>
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkExport()">
+                                            <i class="fas fa-download"></i>
+                                            <span>Exporter</span>
+                                        </button>
+                                    </div>
+                                </div>
                             ` : ''}
-                            
-                            <!-- NOUVEAU : Bouton sélectionner/désélectionner -->
-                            <button class="btn-harmonized btn-selection-toggle" onclick="window.pageManager.toggleAllSelection()">
-                                <i class="fas ${selectedCount > 0 ? 'fa-square' : 'fa-check-square'}"></i>
-                                <span>${selectedCount > 0 ? 'Désélectionner' : 'Sélectionner'}</span>
-                            </button>
                             
                             <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
                                 <i class="fas fa-sync-alt"></i>
                                 <span>Actualiser</span>
-                            </button>
-                            
-                            <button class="btn-harmonized btn-primary" onclick="window.pageManager.createTasksFromAllVisible()">
-                                <i class="fas fa-plus"></i>
-                                <span>Créer tâches</span>
                             </button>
                         </div>
                     </div>
@@ -215,6 +245,166 @@ class PageManager {
                 this.analyzeFirstEmails(emails.slice(0, 5));
             }, 1000);
         }
+    }
+
+    // =====================================
+    // MÉTHODES DE SÉLECTION RÉPARÉES
+    // =====================================
+    
+    toggleAllSelection() {
+        const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+        
+        if (allSelected) {
+            // Désélectionner tous les emails visibles
+            visibleEmails.forEach(email => {
+                this.selectedEmails.delete(email.id);
+            });
+            window.uiManager.showToast('Emails désélectionnés', 'info');
+        } else {
+            // Sélectionner tous les emails visibles
+            visibleEmails.forEach(email => {
+                this.selectedEmails.add(email.id);
+            });
+            window.uiManager.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
+        }
+        
+        this.refreshEmailsView();
+    }
+
+    toggleEmailSelection(emailId) {
+        if (this.selectedEmails.has(emailId)) {
+            this.selectedEmails.delete(emailId);
+        } else {
+            this.selectedEmails.add(emailId);
+        }
+        this.refreshEmailsView();
+    }
+
+    clearSelection() {
+        this.selectedEmails.clear();
+        this.refreshEmailsView();
+        window.uiManager.showToast('Sélection effacée', 'info');
+    }
+
+    refreshEmailsView() {
+        // Re-render seulement le contenu nécessaire pour éviter les conflits
+        const emailsContainer = document.querySelector('.tasks-container-harmonized');
+        if (emailsContainer) {
+            emailsContainer.innerHTML = this.renderEmailsList();
+        }
+        
+        // Mettre à jour la barre de contrôles
+        this.updateControlsBar();
+    }
+
+    updateControlsBar() {
+        const container = document.getElementById('pageContent');
+        if (container) {
+            // Sauvegarder l'état de recherche
+            const searchInput = document.getElementById('emailSearchInput');
+            const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
+            
+            // Re-render complètement
+            this.renderEmails(container);
+            
+            // Restaurer la recherche
+            setTimeout(() => {
+                const newSearchInput = document.getElementById('emailSearchInput');
+                if (newSearchInput && currentSearchValue) {
+                    newSearchInput.value = currentSearchValue;
+                }
+            }, 100);
+        }
+    }
+
+    // =====================================
+    // ACTIONS GROUPÉES
+    // =====================================
+    
+    toggleBulkActions(event) {
+        event.stopPropagation();
+        const menu = document.getElementById('bulkActionsMenu');
+        if (menu) {
+            menu.classList.toggle('show');
+        }
+        
+        // Fermer le menu si on clique ailleurs
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropdown-action-harmonized')) {
+                menu?.classList.remove('show');
+            }
+        }, { once: true });
+    }
+
+    async bulkMarkAsRead() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        window.uiManager.showToast(`${selectedEmails.length} emails marqués comme lus`, 'success');
+        // Ici vous pouvez implémenter la logique réelle
+        this.clearSelection();
+    }
+
+    async bulkArchive() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (confirm(`Archiver ${selectedEmails.length} email(s) ?`)) {
+            window.uiManager.showToast(`${selectedEmails.length} emails archivés`, 'success');
+            // Ici vous pouvez implémenter la logique réelle
+            this.clearSelection();
+        }
+    }
+
+    async bulkDelete() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (confirm(`Supprimer définitivement ${selectedEmails.length} email(s) ?\n\nCette action est irréversible.`)) {
+            // Simulation de suppression
+            selectedEmails.forEach(emailId => {
+                const emails = this.getTemporaryEmails();
+                const index = emails.findIndex(email => email.id === emailId);
+                if (index !== -1) {
+                    emails.splice(index, 1);
+                }
+            });
+            
+            window.uiManager.showToast(`${selectedEmails.length} emails supprimés`, 'success');
+            this.clearSelection();
+            this.refreshEmailsView();
+        }
+    }
+
+    async bulkExport() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        const emails = selectedEmails.map(id => this.getEmailById(id)).filter(Boolean);
+        
+        const csvContent = [
+            ['De', 'Sujet', 'Date', 'Contenu'].join(','),
+            ...emails.map(email => [
+                `"${email.from?.emailAddress?.name || email.from?.emailAddress?.address || ''}"`,
+                `"${email.subject || ''}"`,
+                email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleDateString('fr-FR') : '',
+                `"${(email.bodyPreview || '').substring(0, 100)}"`
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        window.uiManager.showToast('Export terminé', 'success');
+        this.clearSelection();
     }
 
     // =====================================
@@ -458,84 +648,19 @@ class PageManager {
 
     changeViewMode(mode) {
         this.currentViewMode = mode;
-        
-        // Update buttons
-        document.querySelectorAll('.view-mode-harmonized').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        event.target.closest('.view-mode-harmonized').classList.add('active');
-        
-        // Re-render
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
-        }
+        this.refreshEmailsView();
     }
 
     filterByCategory(categoryId) {
         this.currentCategory = categoryId;
-        
-        // Update tabs
-        document.querySelectorAll('.status-pill-harmonized-twolines').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        event.target.classList.add('active');
-        
-        // Re-render
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
-        }
-    }
-
-    toggleEmailSelection(emailId) {
-        if (this.selectedEmails.has(emailId)) {
-            this.selectedEmails.delete(emailId);
-        } else {
-            this.selectedEmails.add(emailId);
-        }
-        this.renderEmails(document.getElementById('pageContent'));
-    }
-
-    clearSelection() {
-        this.selectedEmails.clear();
-        this.renderEmails(document.getElementById('pageContent'));
+        this.refreshEmailsView();
     }
 
     // NOUVEAU : Fonction pour masquer le message d'explication
     hideExplanationMessage() {
         this.hideExplanation = true;
         localStorage.setItem('hideEmailExplanation', 'true');
-        this.renderEmails(document.getElementById('pageContent'));
-    }
-    // NOUVEAU : Fonction pour sélectionner/désélectionner tous les emails visibles
-    toggleAllSelection() {
-        const visibleEmails = this.getVisibleEmails();
-        const selectedCount = this.selectedEmails.size;
-        
-        if (selectedCount > 0) {
-            // Désélectionner tous
-            this.selectedEmails.clear();
-            window.uiManager.showToast('Tous les emails désélectionnés', 'info');
-        } else {
-            // Sélectionner tous les visibles
-            visibleEmails.forEach(email => {
-                this.selectedEmails.add(email.id);
-            });
-            window.uiManager.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
-        }
-        
-        this.renderEmails(document.getElementById('pageContent'));
-    }
-
-    selectAllVisible() {
-        const emails = this.getVisibleEmails();
-        emails.forEach(email => {
-            this.selectedEmails.add(email.id);
-        });
-        
-        this.renderEmails(document.getElementById('pageContent'));
-        window.uiManager.showToast(`${emails.length} emails sélectionnés`, 'success');
+        this.refreshEmailsView();
     }
 
     toggleGroup(groupKey) {
@@ -576,11 +701,7 @@ class PageManager {
 
     handleSearch(term) {
         this.searchTerm = term.trim();
-        
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
-        }
+        this.refreshEmailsView();
     }
 
     clearSearch() {
@@ -588,14 +709,11 @@ class PageManager {
         const searchInput = document.getElementById('emailSearchInput');
         if (searchInput) searchInput.value = '';
         
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
-        }
+        this.refreshEmailsView();
     }
 
     // =====================================
-    // STYLES HARMONISÉS AVEC TASKSVIEW - MODIFIÉS POUR 2 LIGNES
+    // STYLES HARMONISÉS AVEC DROPDOWN ET SÉLECTION INTÉGRÉE
     // =====================================
     addHarmonizedEmailStyles() {
         if (document.getElementById('harmonizedEmailStyles')) return;
@@ -603,7 +721,7 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'harmonizedEmailStyles';
         styles.textContent = `
-            /* ===== REPRENDRE LES STYLES DE TASKSVIEW AVEC MODIFICATIONS POUR 2 LIGNES ===== */
+            /* Reprendre les styles existants du TaskManager et ajouter les nouveaux */
             
             /* Variables CSS identiques à TasksView */
             :root {
@@ -646,8 +764,6 @@ class PageManager {
                 --shadow-primary: 0 4px 12px rgba(99, 102, 241, 0.25);
             }
             
-            /* EMAILS PAGE - REPRENDRE EXACTEMENT LE STYLE DE TASKSVIEW */
-            
             /* Page principale */
             .tasks-page-modern {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -657,7 +773,7 @@ class PageManager {
                 font-size: var(--btn-font-size);
             }
 
-            /* NOUVEAU : Texte explicatif déplacé en premier */
+            /* Texte explicatif */
             .explanation-text-harmonized {
                 background: rgba(59, 130, 246, 0.1);
                 border: 1px solid rgba(59, 130, 246, 0.2);
@@ -706,7 +822,7 @@ class PageManager {
                 transform: scale(1.1);
             }
             
-            /* Barre de contrôles identique */
+            /* Barre de contrôles */
             .controls-bar-harmonized {
                 display: flex;
                 align-items: center;
@@ -723,7 +839,7 @@ class PageManager {
                 box-sizing: border-box;
             }
             
-            /* Section recherche identique */
+            /* Section recherche */
             .search-section-harmonized {
                 flex: 0 0 300px;
                 height: var(--btn-height);
@@ -802,7 +918,7 @@ class PageManager {
                 transform: translateY(-50%) scale(1.1);
             }
             
-            /* Modes de vue identiques */
+            /* Modes de vue */
             .view-modes-harmonized {
                 display: flex;
                 background: #f8fafc;
@@ -852,7 +968,7 @@ class PageManager {
                 transform: translateY(-1px);
             }
             
-            /* Actions principales identiques */
+            /* Actions principales */
             .action-buttons-harmonized {
                 display: flex;
                 align-items: center;
@@ -924,11 +1040,12 @@ class PageManager {
                 transform: translateY(-1px);
             }
             
-            /* NOUVEAU : Style pour le bouton sélection/désélection */
+            /* NOUVEAU : Bouton sélection/désélection amélioré */
             .btn-harmonized.btn-selection-toggle {
                 background: #f0f9ff;
                 color: #0369a1;
                 border-color: #0ea5e9;
+                position: relative;
             }
             
             .btn-harmonized.btn-selection-toggle:hover {
@@ -936,6 +1053,22 @@ class PageManager {
                 color: #0c4a6e;
                 border-color: #0284c7;
                 transform: translateY(-1px);
+            }
+            
+            .count-badge-small {
+                background: #0ea5e9;
+                color: white;
+                font-size: 10px;
+                font-weight: 700;
+                padding: 2px 5px;
+                border-radius: 6px;
+                margin-left: 4px;
+                min-width: 16px;
+                text-align: center;
+                line-height: 1;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .btn-harmonized.btn-clear-selection {
@@ -997,7 +1130,76 @@ class PageManager {
                 justify-content: center;
             }
             
-            /* NOUVEAU : Filtres de catégories sur 2 lignes avec icône+nombre sur même ligne */
+            /* NOUVEAU : Dropdown pour actions groupées */
+            .dropdown-action-harmonized {
+                position: relative;
+                display: inline-block;
+            }
+            
+            .dropdown-toggle {
+                position: relative;
+            }
+            
+            .dropdown-menu-harmonized {
+                position: absolute;
+                top: calc(100% + 8px);
+                right: 0;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: var(--btn-border-radius);
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+                min-width: 200px;
+                z-index: 1000;
+                padding: 8px 0;
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-10px);
+                transition: all 0.2s ease;
+            }
+            
+            .dropdown-menu-harmonized.show {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
+            
+            .dropdown-item-harmonized {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-small);
+                padding: 10px 16px;
+                background: none;
+                border: none;
+                width: 100%;
+                text-align: left;
+                color: #374151;
+                font-size: var(--btn-font-size);
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .dropdown-item-harmonized:hover {
+                background: #f8fafc;
+                color: #1f2937;
+            }
+            
+            .dropdown-item-harmonized.danger {
+                color: #dc2626;
+            }
+            
+            .dropdown-item-harmonized.danger:hover {
+                background: #fef2f2;
+                color: #b91c1c;
+            }
+            
+            .dropdown-divider {
+                height: 1px;
+                background: #e5e7eb;
+                margin: 8px 0;
+            }
+            
+            /* Filtres de catégories 2 lignes */
             .status-filters-harmonized-twolines {
                 display: flex;
                 gap: var(--gap-small);
@@ -1129,12 +1331,12 @@ class PageManager {
                 color: white;
             }
             
-            /* Container des emails identique */
+            /* Container des emails */
             .tasks-container-harmonized {
                 background: transparent;
             }
             
-            /* Emails comme des tâches */
+            /* Liste d'emails */
             .tasks-harmonized-list {
                 display: flex;
                 flex-direction: column;
@@ -1444,7 +1646,7 @@ class PageManager {
                 color: #7c3aed;
             }
             
-            /* Vue groupée identique */
+            /* Vue groupée */
             .tasks-grouped-harmonized {
                 display: flex;
                 flex-direction: column;
@@ -1698,7 +1900,7 @@ class PageManager {
                 border-left: 3px solid #22c55e;
             }
             
-            /* État vide harmonisé */
+            /* État vide */
             .empty-state-harmonized {
                 text-align: center;
                 padding: 60px 30px;
@@ -1750,7 +1952,7 @@ class PageManager {
                 text-align: center;
             }
             
-            /* RESPONSIVE - Structure forcée 2 lignes */
+            /* RESPONSIVE */
             @media (max-width: 1200px) {
                 :root {
                     --btn-height: 42px;
@@ -1819,6 +2021,12 @@ class PageManager {
                     min-height: var(--btn-height);
                     display: flex;
                     align-items: center;
+                    gap: var(--gap-small);
+                }
+                
+                .dropdown-menu-harmonized {
+                    right: auto;
+                    left: 0;
                 }
                 
                 .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
@@ -1859,6 +2067,14 @@ class PageManager {
                     display: none;
                 }
                 
+                .action-buttons-harmonized {
+                    gap: var(--gap-tiny);
+                }
+                
+                .dropdown-menu-harmonized {
+                    min-width: 150px;
+                }
+                
                 .pill-icon-twolines {
                     font-size: 12px;
                 }
@@ -1879,6 +2095,26 @@ class PageManager {
                     min-width: 60px;
                     max-width: 110px;
                     min-height: 44px;
+                }
+                
+                .action-buttons-harmonized {
+                    flex-direction: column;
+                    gap: var(--gap-tiny);
+                    align-items: stretch;
+                }
+                
+                .action-buttons-harmonized > * {
+                    width: 100%;
+                    justify-content: center;
+                }
+                
+                .dropdown-menu-harmonized {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 90vw;
+                    max-width: 300px;
                 }
                 
                 .pill-icon-twolines {
@@ -2018,6 +2254,21 @@ class PageManager {
                preview.includes(search);
     }
 
+    getVisibleEmails() {
+        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
+        let filteredEmails = emails;
+        
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+        }
+        
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        return filteredEmails;
+    }
+
     // =====================================
     // TASK CREATION METHODS
     // =====================================
@@ -2078,21 +2329,6 @@ class PageManager {
         
         emailsToProcess.forEach(email => this.selectedEmails.add(email.id));
         await this.createTasksFromSelection();
-    }
-
-    getVisibleEmails() {
-        const emails = window.emailScanner?.getAllEmails() || this.getTemporaryEmails() || [];
-        let filteredEmails = emails;
-        
-        if (this.currentCategory !== 'all') {
-            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
-        }
-        
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        return filteredEmails;
     }
 
     getEmailById(emailId) {
@@ -2360,10 +2596,7 @@ class PageManager {
             window.taskManager.saveTasks();
             window.uiManager.showToast('Tâche créée avec succès', 'success');
             
-            const emailsContainer = document.querySelector('.tasks-container-harmonized');
-            if (emailsContainer) {
-                emailsContainer.innerHTML = this.renderEmailsList();
-            }
+            this.refreshEmailsView();
             
         } catch (error) {
             console.error('Error creating task:', error);
@@ -2915,4 +3148,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.3 loaded - Catégories 2 lignes avec icône+nombre');
+console.log('✅ PageManager v11.4 loaded - Bouton Sélection Réparé avec Actions Intégrées');
