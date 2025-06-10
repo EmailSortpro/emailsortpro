@@ -1,25 +1,35 @@
-// app.js - Version ultra-simplifiée ANTI CHARGEMENT MULTIPLE
+// app.js - Version ULTRA-PROTÉGÉE contre le chargement multiple
 
-// PROTECTION GLOBALE CONTRE LES INSTANCES MULTIPLES
-if (window.App && window.app) {
-    // Si App existe déjà, ne rien faire
-    console.log('App already exists, skipping reload');
-} else {
+// PROTECTION ABSOLUE - EMPÊCHER TOUTE CRÉATION MULTIPLE
+if (window.APP_ALREADY_LOADED) {
+    // STOPPER IMMÉDIATEMENT si déjà chargé
+    return;
+}
+window.APP_ALREADY_LOADED = true;
+
+// Protection singleton TOTALE
+if (window.App || window.app) {
+    // App existe déjà, ARRÊT TOTAL
+    return;
+}
 
 class App {
     constructor() {
-        // Protection singleton
+        // Protection singleton ABSOLUE
         if (window.app) return window.app;
+        if (App.instance) return App.instance;
+        App.instance = this;
         
         this.user = null;
         this.isAuthenticated = false;
         this.isInitializing = false;
         this.initialized = false;
+        this.listenersSetup = false;
     }
 
     async init() {
-        // Protection contre initialisation multiple
-        if (this.isInitializing || this.initialized) return;
+        // Protection TOTALE contre initialisation multiple
+        if (this.isInitializing || this.initialized) return Promise.resolve();
         this.isInitializing = true;
         
         try {
@@ -39,14 +49,14 @@ class App {
     }
 
     async initializeCriticalModules() {
-        // Attente simplifiée
+        // Attente ULTRA-SIMPLE
         await this.waitForModule('taskManager');
         await this.waitForModule('pageManager');
     }
 
     async waitForModule(moduleName) {
         let attempts = 0;
-        while (!window[moduleName] && attempts < 30) {
+        while (!window[moduleName] && attempts < 20) {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
@@ -91,25 +101,41 @@ class App {
     }
 
     setupEventListeners() {
-        // Protection contre les listeners multiples
+        // Protection ABSOLUE contre listeners multiples
         if (this.listenersSetup) return;
         this.listenersSetup = true;
         
+        // Login button UNIQUE
         const loginBtn = document.getElementById('loginBtn');
-        if (loginBtn && !loginBtn.hasAttribute('data-listener-added')) {
-            loginBtn.setAttribute('data-listener-added', 'true');
-            loginBtn.addEventListener('click', () => this.login());
+        if (loginBtn && !loginBtn.hasAttribute('data-app-listener')) {
+            loginBtn.setAttribute('data-app-listener', 'true');
+            loginBtn.addEventListener('click', () => this.login(), { once: false });
         }
 
-        // Navigation simple SANS duplication
-        document.querySelectorAll('.nav-item:not([data-listener-added])').forEach(item => {
-            item.setAttribute('data-listener-added', 'true');
-            item.addEventListener('click', (e) => {
+        // Navigation ULTRA-PROTÉGÉE - REMPLACER complètement les éléments
+        document.querySelectorAll('.nav-item:not([data-app-listener])').forEach((item, index) => {
+            // Cloner l'élément pour supprimer TOUS les listeners existants
+            const newItem = item.cloneNode(true);
+            item.parentNode.replaceChild(newItem, item);
+            
+            // Marquer et ajouter UN SEUL listener
+            newItem.setAttribute('data-app-listener', 'true');
+            newItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                
                 const page = e.currentTarget.dataset.page;
                 if (page && window.pageManager) {
+                    // Mettre à jour IMMÉDIATEMENT la navigation
+                    document.querySelectorAll('.nav-item').forEach(navItem => {
+                        navItem.classList.remove('active');
+                    });
+                    e.currentTarget.classList.add('active');
+                    
+                    // Charger la page
                     window.pageManager.loadPage(page);
                 }
-            });
+            }, { once: false, passive: false });
         });
     }
 
@@ -168,7 +194,7 @@ class App {
     showAppWithTransition() {
         this.hideModernLoading();
         
-        // Transition ultra-simple
+        // Transition IMMÉDIATE sans effets
         document.body.classList.remove('login-mode');
         document.body.classList.add('app-active');
         
@@ -195,25 +221,25 @@ class App {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // Forcer dashboard sans scroll
+        // Dashboard sans scroll
         document.body.style.overflow = 'hidden';
         document.body.style.overflowY = 'hidden';
         
         if (window.pageManager) {
             setTimeout(() => {
                 window.pageManager.loadPage('dashboard');
-            }, 100);
+            }, 50);
         }
         
         this.forceAppDisplay();
     }
 
     forceAppDisplay() {
-        // Style unique pour éviter la duplication
-        if (document.getElementById('app-force-style')) return;
+        // Style UNIQUE pour éviter duplication
+        if (document.getElementById('app-ultra-force-style')) return;
         
         const style = document.createElement('style');
-        style.id = 'app-force-style';
+        style.id = 'app-ultra-force-style';
         style.textContent = `
             body.app-active #loginPage { display: none !important; }
             body.app-active .app-header { display: block !important; opacity: 1 !important; }
@@ -271,46 +297,52 @@ class App {
     }
 }
 
-// Fonctions globales ULTRA-SIMPLES
-window.emergencyReset = function() {
-    const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
-    Object.keys(localStorage).forEach(key => {
-        if (!keysToKeep.includes(key)) {
-            try { localStorage.removeItem(key); } catch (e) {}
-        }
-    });
-    window.location.reload();
-};
+// Fonctions globales ULTRA-PROTÉGÉES
+if (!window.emergencyReset) {
+    window.emergencyReset = function() {
+        const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
+        Object.keys(localStorage).forEach(key => {
+            if (!keysToKeep.includes(key)) {
+                try { localStorage.removeItem(key); } catch (e) {}
+            }
+        });
+        window.location.reload();
+    };
+}
 
-window.forceShowApp = function() {
-    if (window.app && window.app.showAppWithTransition) {
-        window.app.showAppWithTransition();
-    } else {
-        document.body.classList.add('app-active');
-        document.body.classList.remove('login-mode');
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) loginPage.style.display = 'none';
-    }
-};
+if (!window.forceShowApp) {
+    window.forceShowApp = function() {
+        if (window.app && window.app.showAppWithTransition) {
+            window.app.showAppWithTransition();
+        } else {
+            document.body.classList.add('app-active');
+            document.body.classList.remove('login-mode');
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) loginPage.style.display = 'none';
+        }
+    };
+}
 
 // Vérification services ULTRA-SIMPLE
 function checkServicesReady() {
     return window.authService && window.AppConfig;
 }
 
-// INITIALISATION UNIQUE ET PROTÉGÉE
-let appInstanceCreated = false;
+// INITIALISATION ULTRA-PROTÉGÉE
+let APP_INSTANCE_CREATED = false;
+let DOM_PROCESSED = false;
 
-function createAppInstance() {
-    if (appInstanceCreated || window.app) return;
-    appInstanceCreated = true;
+function createUniqueAppInstance() {
+    if (APP_INSTANCE_CREATED || window.app || DOM_PROCESSED) return;
+    APP_INSTANCE_CREATED = true;
+    DOM_PROCESSED = true;
     
     document.body.classList.add('login-mode');
     window.app = new App();
     
     const waitForServices = (attempts = 0) => {
-        if (checkServicesReady() || attempts >= 30) {
-            setTimeout(() => window.app.init(), 100);
+        if (checkServicesReady() || attempts >= 20) {
+            setTimeout(() => window.app.init(), 50);
         } else {
             setTimeout(() => waitForServices(attempts + 1), 100);
         }
@@ -319,22 +351,20 @@ function createAppInstance() {
     waitForServices();
 }
 
-// DOM Ready PROTECTION
+// DOM Ready ULTRA-PROTÉGÉ
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', createAppInstance, { once: true });
+    document.addEventListener('DOMContentLoaded', createUniqueAppInstance, { once: true });
 } else {
-    createAppInstance();
+    createUniqueAppInstance();
 }
 
-// Fallback UNIQUE
-let fallbackExecuted = false;
+// Fallback ULTRA-PROTÉGÉ
+let FALLBACK_EXECUTED = false;
 window.addEventListener('load', () => {
     setTimeout(() => {
-        if (!window.app && !fallbackExecuted) {
-            fallbackExecuted = true;
-            createAppInstance();
+        if (!window.app && !FALLBACK_EXECUTED && !APP_INSTANCE_CREATED) {
+            FALLBACK_EXECUTED = true;
+            createUniqueAppInstance();
         }
-    }, 2000);
+    }, 1000);
 }, { once: true });
-
-} // Fin de la protection contre instance multiple
