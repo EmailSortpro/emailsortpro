@@ -1,4 +1,4 @@
-// app.js - Application avec gestion intelligente du scroll et navigation dashboard corrigée
+// app.js - Application avec gestion intelligente du scroll et navigation dashboard via module
 
 class App {
     constructor() {
@@ -78,10 +78,13 @@ class App {
         // 3. Vérifier TasksView
         await this.ensureTasksViewReady();
         
-        // 4. Bind methods
+        // 4. Vérifier DashboardModule
+        await this.ensureDashboardModuleReady();
+        
+        // 5. Bind methods
         this.bindModuleMethods();
         
-        // 5. Initialiser la gestion du scroll
+        // 6. Initialiser la gestion du scroll
         this.initializeScrollManager();
         
         console.log('[App] Critical modules initialized');
@@ -95,7 +98,7 @@ class App {
         
         // Fonction pour vérifier si le scroll est nécessaire - ÉVITER LES BOUCLES
         let scrollCheckInProgress = false;
-        window.checkScrollNeeded = () => {
+        this.checkScrollNeeded = () => {
             if (scrollCheckInProgress) return;
             scrollCheckInProgress = true;
             
@@ -171,7 +174,7 @@ class App {
             // Autres pages: vérifier après un délai
             setTimeout(() => {
                 if (this.currentPage === pageName) { // S'assurer qu'on est toujours sur la même page
-                    window.checkScrollNeeded();
+                    this.checkScrollNeeded();
                 }
             }, 300);
         };
@@ -189,7 +192,7 @@ class App {
                     clearTimeout(scrollCheckTimeout);
                     scrollCheckTimeout = setTimeout(() => {
                         if (this.currentPage !== 'dashboard') {
-                            window.checkScrollNeeded();
+                            this.checkScrollNeeded();
                         }
                     }, 200);
                 }
@@ -213,7 +216,7 @@ class App {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 if (this.currentPage !== 'dashboard') {
-                    window.checkScrollNeeded();
+                    this.checkScrollNeeded();
                 }
             }, 250);
         });
@@ -304,6 +307,31 @@ class App {
         return true;
     }
 
+    async ensureDashboardModuleReady() {
+        console.log('[App] Ensuring DashboardModule is ready...');
+        
+        if (window.dashboardModule) {
+            console.log('[App] ✅ DashboardModule already ready');
+            return true;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (!window.dashboardModule && attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (!window.dashboardModule) {
+            console.error('[App] DashboardModule not ready after 3 seconds');
+            return false;
+        }
+        
+        console.log('[App] ✅ DashboardModule ready');
+        return true;
+    }
+
     bindModuleMethods() {
         // Bind TaskManager methods
         if (window.taskManager) {
@@ -344,6 +372,20 @@ class App {
                 console.log('[App] ✅ TasksView methods bound');
             } catch (error) {
                 console.warn('[App] Error binding TasksView methods:', error);
+            }
+        }
+
+        // Bind DashboardModule methods
+        if (window.dashboardModule) {
+            try {
+                Object.getOwnPropertyNames(Object.getPrototypeOf(window.dashboardModule)).forEach(name => {
+                    if (name !== 'constructor' && typeof window.dashboardModule[name] === 'function') {
+                        window.dashboardModule[name] = window.dashboardModule[name].bind(window.dashboardModule);
+                    }
+                });
+                console.log('[App] ✅ DashboardModule methods bound');
+            } catch (error) {
+                console.warn('[App] Error binding DashboardModule methods:', error);
             }
         }
     }
@@ -491,7 +533,7 @@ class App {
             newLoginBtn.addEventListener('click', () => this.login());
         }
 
-        // NAVIGATION CORRIGÉE - NE PAS INTERFÉRER AVEC INDEX.HTML
+        // NAVIGATION CORRIGÉE - UTILISER LE DASHBOARD MODULE
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
@@ -507,10 +549,8 @@ class App {
                         window.setPageMode(page);
                     }
                     
-                    // Laisser index.html gérer le dashboard, app.js gère les autres
-                    if (page !== 'dashboard') {
-                        window.pageManager.loadPage(page);
-                    }
+                    // Utiliser PageManager pour toutes les pages, y compris dashboard
+                    window.pageManager.loadPage(page);
                 }
             });
         });
@@ -748,7 +788,7 @@ class App {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // INITIALISATION DASHBOARD CORRIGÉE - LAISSER INDEX.HTML GÉRER
+        // INITIALISATION DASHBOARD VIA MODULE
         this.currentPage = 'dashboard';
         if (window.setPageMode) {
             window.setPageMode('dashboard');
@@ -759,13 +799,26 @@ class App {
         document.body.style.overflowY = 'hidden';
         console.log('[App] Dashboard scroll forcé à hidden');
         
-        // LAISSER INDEX.HTML CHARGER LE DASHBOARD - NE PAS INTERFÉRER
-        console.log('[App] Dashboard loading delegated to index.html');
+        // CHARGER LE DASHBOARD VIA LE MODULE
+        if (window.dashboardModule) {
+            console.log('[App] Loading dashboard via dashboardModule...');
+            setTimeout(() => {
+                window.dashboardModule.render();
+                console.log('[App] Dashboard loaded via module');
+            }, 100);
+        } else {
+            console.warn('[App] Dashboard module not available, will retry...');
+            setTimeout(() => {
+                if (window.dashboardModule) {
+                    window.dashboardModule.render();
+                }
+            }, 500);
+        }
         
         // Forcer l'affichage avec CSS
         this.forceAppDisplay();
         
-        console.log('[App] ✅ Application fully displayed with scroll management');
+        console.log('[App] ✅ Application fully displayed with dashboard module');
     }
 
     forceAppDisplay() {
@@ -920,6 +973,10 @@ window.forceShowApp = function() {
         if (window.setPageMode) {
             window.setPageMode('dashboard');
         }
+        
+        if (window.dashboardModule) {
+            window.dashboardModule.render();
+        }
     }
 };
 
@@ -928,7 +985,7 @@ window.forceShowApp = function() {
 // =====================================
 function checkServicesReady() {
     const requiredServices = ['authService', 'uiManager'];
-    const optionalServices = ['mailService', 'emailScanner', 'categoryManager'];
+    const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule'];
     
     const missingRequired = requiredServices.filter(service => !window[service]);
     const missingOptional = optionalServices.filter(service => !window[service]);
@@ -1006,4 +1063,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded - DASHBOARD NAVIGATION FIXED');
+console.log('✅ App loaded - DASHBOARD VIA MODULE dashboard.js');
