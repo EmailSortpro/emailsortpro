@@ -34,85 +34,38 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY CORRIGÉE -->
     <script>
         // =====================================================
-        // CONFIGURATION NETLIFY POUR emailsortpro.netlify.app
+        // CONFIGURATION NETLIFY SILENCIEUSE
         // =====================================================
-        console.log('[INDEX] 🚀 Loading Netlify configuration for emailsortpro.netlify.app...');
         
-        // Client ID par défaut fonctionnel pour le nouveau domaine
+        // Client ID par défaut
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
         
-        console.log('[INDEX] ✅ Netlify Client ID configured for new domain');
-        
-        // =====================================================
-        // DÉTECTION DE L'ENVIRONNEMENT CORRIGÉE
-        // =====================================================
+        // Détection d'environnement silencieuse
         (function() {
-            // Détection de l'environnement mis à jour
             const hostname = window.location.hostname;
-            const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlifyapp.com');
-            const isGitHubPages = hostname.includes('github.io');
+            const isNetlify = hostname.includes('netlify.app');
             const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
             
-            console.log('[INDEX] Environment detection for new domain:', {
-                hostname,
-                isNetlify,
-                isGitHubPages,
-                isLocalhost,
-                origin: window.location.origin
-            });
-            
-            // Fonction pour obtenir le Client ID
             function getClientIdForEnvironment() {
-                // Priorité 1: Client ID configuré directement pour Netlify
                 if (isNetlify && window.NETLIFY_CLIENT_ID) {
-                    console.log('[INDEX] ✅ Using configured Netlify client ID for new domain');
                     return window.NETLIFY_CLIENT_ID;
                 }
                 
-                // Priorité 2: localStorage (configuration sauvegardée)
                 try {
                     const savedClientId = localStorage.getItem('emailsortpro_client_id');
-                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
-                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
+                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI') {
                         return savedClientId;
                     }
-                } catch (e) {
-                    console.warn('[INDEX] Cannot access localStorage:', e);
-                }
+                } catch (e) {}
                 
-                // Priorité 3: Client ID par défaut pour le développement
-                if (isLocalhost) {
-                    console.log('[INDEX] Using localhost development client ID');
-                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-                }
-                
-                // Priorité 4: Redirection vers setup pour GitHub Pages
-                if (isGitHubPages) {
-                    console.log('[INDEX] GitHub Pages - configuration requise');
-                    return 'CONFIGURATION_REQUIRED';
-                }
-                
-                console.log('[INDEX] ✅ Netlify with default client ID for new domain');
                 return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
             }
             
-            // Fonction pour créer la configuration corrigée
             function createConfig(clientId) {
-                // Base path toujours vide pour Netlify
-                const basePath = '';
-                
-                // URIs corrigées pour le nouveau domaine
                 const redirectUri = 'https://emailsortpro.netlify.app/auth-callback.html';
                 const postLogoutRedirectUri = 'https://emailsortpro.netlify.app/';
-                
-                console.log('[INDEX] Creating config with corrected URIs:', {
-                    redirectUri,
-                    postLogoutRedirectUri,
-                    clientId: clientId.substring(0, 8) + '...'
-                });
                 
                 window.AppConfig = {
                     msal: {
@@ -122,17 +75,13 @@
                         postLogoutRedirectUri: postLogoutRedirectUri,
                         cache: {
                             cacheLocation: 'localStorage',
-                            storeAuthStateInCookie: true // Important pour Netlify
+                            storeAuthStateInCookie: true
                         },
                         system: {
                             loggerOptions: {
-                                loggerCallback: (level, message, containsPii) => {
-                                    if (window.debugMode || isLocalhost) {
-                                        console.log(`[MSAL ${level}] ${message}`);
-                                    }
-                                },
+                                loggerCallback: () => {}, // Logs silencieux
                                 piiLoggingEnabled: false,
-                                logLevel: isLocalhost ? 'Verbose' : 'Warning'
+                                logLevel: 'Error'
                             },
                             allowNativeBroker: false
                         }
@@ -152,8 +101,8 @@
                     app: {
                         name: 'EmailSortProAI',
                         version: '3.0.1',
-                        debug: isLocalhost,
-                        environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
+                        debug: false, // Toujours false
+                        environment: isNetlify ? 'netlify' : isLocalhost ? 'localhost' : 'other',
                         domain: 'emailsortpro.netlify.app'
                     },
                     email: {
@@ -163,94 +112,38 @@
                         maxEmails: 10000
                     },
                     errors: {
-                        'unauthorized_client': 'Configuration Azure incorrecte. Vérifiez votre Client ID.',
-                        'invalid_client': 'Application non autorisée. Contactez l\'administrateur.',
-                        'consent_required': 'Autorisation requise. Veuillez accepter les permissions.',
+                        'unauthorized_client': 'Configuration Azure incorrecte.',
+                        'invalid_client': 'Application non autorisée.',
+                        'consent_required': 'Autorisation requise.',
                         'interaction_required': 'Reconnexion requise.',
                         'login_required': 'Connexion requise.',
-                        'network_error': 'Erreur réseau. Vérifiez votre connexion.',
-                        'token_expired': 'Session expirée. Reconnexion nécessaire.',
-                        'invalid_request': 'URI de redirection invalide. Configuration Azure requise.'
+                        'network_error': 'Erreur réseau.',
+                        'token_expired': 'Session expirée.',
+                        'invalid_request': 'URI de redirection invalide.'
                     },
                     validate() {
                         const issues = [];
-                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
-                            issues.push('Client ID non configuré pour emailsortpro.netlify.app');
+                        if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI') {
+                            issues.push('Client ID non configuré');
                         }
-                        
-                        // Vérifier que les URIs correspondent au nouveau domaine
-                        if (!this.msal.redirectUri.includes('emailsortpro.netlify.app')) {
-                            issues.push('URI de redirection ne correspond pas au nouveau domaine');
-                        }
-                        
                         return { 
                             valid: issues.length === 0, 
                             issues: issues 
                         };
                     },
-                    forceValidate() {
-                        return this.validate();
-                    },
                     getDebugInfo() {
                         return {
                             hostname: window.location.hostname,
-                            origin: window.location.origin,
                             environment: this.app.environment,
-                            domain: this.app.domain,
                             configValid: this.validate().valid,
-                            clientId: this.msal.clientId.substring(0, 8) + '...',
-                            redirectUri: this.msal.redirectUri,
-                            postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
-                            isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
-                            timestamp: new Date().toISOString()
+                            clientId: this.msal.clientId.substring(0, 8) + '...'
                         };
                     }
                 };
-                
-                console.log('[INDEX] ✅ Configuration créée pour le nouveau domaine:', {
-                    environment: window.AppConfig.app.environment,
-                    domain: window.AppConfig.app.domain,
-                    clientId: clientId.substring(0, 8) + '...',
-                    redirectUri: window.AppConfig.msal.redirectUri,
-                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app'
-                });
             }
             
-            // Créer la configuration
             const clientId = getClientIdForEnvironment();
             createConfig(clientId);
-            
-            // Vérification spéciale pour le nouveau domaine
-            if (window.location.hostname !== 'emailsortpro.netlify.app' && !isLocalhost) {
-                console.warn('[INDEX] ⚠️ Not on correct domain! Current:', window.location.hostname);
-                console.warn('[INDEX] Expected: emailsortpro.netlify.app');
-                
-                // Rediriger vers le bon domaine si nécessaire
-                if (window.location.hostname.includes('netlify') && !window.location.hostname.includes('emailsortpro.netlify.app')) {
-                    console.log('[INDEX] Redirecting to correct Netlify domain...');
-                    window.location.href = 'https://emailsortpro.netlify.app/';
-                    return;
-                }
-            }
-            
-            // Vérification et redirection si nécessaire
-            if (clientId === 'CONFIGURATION_REQUIRED') {
-                console.log('[INDEX] ⚠️ Configuration requise pour le nouveau domaine');
-                
-                if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
-                    console.log('[INDEX] Redirection vers setup pour GitHub Pages');
-                    setTimeout(() => {
-                        window.location.href = '/emailsortpro/setup.html';
-                    }, 1000);
-                } else if (isNetlify && window.location.pathname !== '/setup.html') {
-                    console.log('[INDEX] Redirection vers setup pour Netlify');
-                    setTimeout(() => {
-                        window.location.href = '/setup.html';
-                    }, 1000);
-                }
-            } else {
-                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app');
-            }
         })();
     </script>
     
@@ -1470,36 +1363,75 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- SCRIPTS - ORDRE CRITIQUE POUR UNIFICATION -->
+    <!-- SCRIPTS - ORDRE SIMPLIFIÉ SANS LOGS -->
     <!-- ========================================= -->
     
-    <!-- 1. Services Core -->
+    <!-- Services Core - chargement silencieux -->
+    <script>
+        // Rediriger tous les console.log vers une fonction vide
+        const originalConsoleLog = console.log;
+        const originalConsoleWarn = console.warn;
+        const originalConsoleError = console.error;
+        
+        // Filtrer les logs indésirables
+        console.log = function(...args) {
+            const message = args.join(' ');
+            // Bloquer tous les logs des modules qui créent du bruit
+            if (message.includes('[AuthService]') || 
+                message.includes('[MailService]') ||
+                message.includes('[UIManager]') ||
+                message.includes('[CategoryManager]') ||
+                message.includes('[TaskManager]') ||
+                message.includes('[EmailScanner]') ||
+                message.includes('[AITaskAnalyzer]') ||
+                message.includes('[PageManager]') ||
+                message.includes('[StartScan]') ||
+                message.includes('[DomainOrganizer]') ||
+                message.includes('[Onboarding]') ||
+                message.includes('✅') ||
+                message.includes('🚀') ||
+                message.includes('🔧') ||
+                message.includes('Loading') ||
+                message.includes('loaded') ||
+                message.includes('initialized') ||
+                message.includes('ready')) {
+                return; // Bloquer ces logs
+            }
+            // Autoriser seulement les logs critiques
+            originalConsoleLog.apply(console, args);
+        };
+        
+        console.warn = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('CategoryManagerUI.js sera créé automatiquement')) {
+                return; // Bloquer ce warning spécifique
+            }
+            originalConsoleWarn.apply(console, args);
+        };
+    </script>
+    
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
-    <script src="UIManager.js" onerror="console.log('UIManager.js manquant')"></script>
-
-    <!-- 2. CategoryManager -->
-    <script src="CategoryManager.js" onerror="console.log('CategoryManager.js manquant')"></script>
+    <script src="UIManager.js"></script>
+    <script src="CategoryManager.js"></script>
+    <script src="TaskManager.js"></script>
+    <script src="EmailScanner.js"></script>
+    <script src="AITaskAnalyzer.js"></script>
+    <script src="PageManager.js"></script>
+    <script src="startscan.js"></script>
+    <script src="DomainOrganizer.js"></script>
+    <script src="CategoriesPage.js"></script>
+    <script src="Onboarding.js"></script>
     
-    <!-- 3. TaskManager AVANT PageManager -->
-    <script src="TaskManager.js" onerror="console.log('TaskManager.js manquant')"></script>
-    
-    <!-- 4. Autres Managers -->
-    <script src="EmailScanner.js" onerror="console.log('EmailScanner.js manquant')"></script>
-    <script src="AITaskAnalyzer.js" onerror="console.log('AITaskAnalyzer.js manquant')"></script>
-    
-    <!-- 5. Page Manager APRÈS TaskManager -->
-    <script src="PageManager.js" onerror="console.log('PageManager.js manquant')"></script>
-    
-    <!-- 6. Modules de pages -->
-    <script src="startscan.js" onerror="console.log('startscan.js manquant')"></script>
-    <script src="DomainOrganizer.js" onerror="console.log('DomainOrganizer.js manquant')"></script>
-    <script src="CategoriesPage.js" onerror="console.log('CategoriesPage.js manquant')"></script>
-    
-    <!-- 7. Modules Optionnels -->
-    <script src="Onboarding.js" onerror="console.log('Onboarding.js manquant')"></script>
-    
-    <!-- 8. Application Principal EN DERNIER -->
+    <!-- Application Principal avec gestion silencieuse -->
+    <script>
+        // Restaurer console après chargement des modules
+        setTimeout(() => {
+            console.log = originalConsoleLog;
+            console.warn = originalConsoleWarn;
+            console.error = originalConsoleError;
+        }, 5000);
+    </script>
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
