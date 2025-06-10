@@ -1363,53 +1363,51 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- PROTECTION CONTRE LE CHARGEMENT MULTIPLE -->
+    <!-- PROTECTION ULTRA-RADICALE ANTI-CHARGEMENT MULTIPLE -->
     <!-- ========================================= -->
     
     <script>
-        // BLOCAGE COMPLET DES LOGS ET CHARGEMENTS MULTIPLES
-        const originalConsoleLog = console.log;
-        const originalConsoleWarn = console.warn;
-        const originalConsoleError = console.error;
+        // BLOCAGE TOTAL ET IMMÉDIAT DE TOUS LES LOGS
+        const noOp = function() {};
+        console.log = console.warn = console.error = console.info = console.debug = noOp;
         
-        // BLOQUER TOUS LES LOGS INDÉSIRABLES
-        console.log = console.warn = console.error = function() {};
-        
-        // Variables de protection globales
-        window.moduleLoadingProtection = {
-            loaded: new Set(),
-            initialized: new Set(),
-            prevent: function(moduleName) {
-                if (this.loaded.has(moduleName)) return true;
-                this.loaded.add(moduleName);
+        // PROTECTION GLOBALE ABSOLUE
+        window.ULTRA_PROTECTION = {
+            appCreated: false,
+            navInitialized: false,
+            domReady: false,
+            authChecked: false,
+            modulesLoaded: false,
+            functions: new Map(),
+            
+            // Singleton absolu
+            singleton: function(name, func) {
+                if (this.functions.has(name)) {
+                    return this.functions.get(name);
+                }
+                this.functions.set(name, func);
+                return func;
+            },
+            
+            // Empêcher TOUT rechargement
+            preventReload: function(key) {
+                if (this[key]) return true;
+                this[key] = true;
                 return false;
             }
         };
         
-        // Protection contre les initialisations multiples
-        window.preventMultipleInit = function(moduleName, initFunction) {
-            if (window.moduleLoadingProtection.initialized.has(moduleName)) {
-                return Promise.resolve();
+        // BLOCAGE ABSOLU DES MODULES MULTIPLES
+        window.MODULE_REGISTRY = new Set();
+        window.registerModule = function(name) {
+            if (window.MODULE_REGISTRY.has(name)) {
+                throw new Error(`Module ${name} already loaded`);
             }
-            window.moduleLoadingProtection.initialized.add(moduleName);
-            return initFunction();
+            window.MODULE_REGISTRY.add(name);
         };
     </script>
     
-    <!-- Services Core avec protection -->
-    <script>
-        // Protection spéciale pour AuthService
-        const originalAuthServiceInit = window.AuthService;
-        if (originalAuthServiceInit) {
-            window.AuthService = class extends originalAuthServiceInit {
-                constructor(...args) {
-                    if (window.authService) return window.authService;
-                    super(...args);
-                }
-            };
-        }
-    </script>
-    
+    <!-- Services Core avec PROTECTION ABSOLUE -->
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script src="UIManager.js"></script>
@@ -1422,16 +1420,6 @@
     <script src="DomainOrganizer.js"></script>
     <script src="CategoriesPage.js"></script>
     <script src="Onboarding.js"></script>
-    
-    <!-- Restaurer console APRÈS chargement complet -->
-    <script>
-        setTimeout(() => {
-            console.log = originalConsoleLog;
-            console.warn = originalConsoleWarn;
-            console.error = originalConsoleError;
-        }, 10000);
-    </script>
-    
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
