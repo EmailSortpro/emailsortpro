@@ -183,9 +183,9 @@ body.login-mode {
     overflow: hidden !important;
 }
 
-/* Navigation: suppression complète du scroll */
+/* Navigation: permettre le scroll horizontal mais le masquer visuellement */
 .app-nav {
-    overflow-x: hidden !important;
+    overflow-x: auto !important; /* Permettre le scroll horizontal pour accéder à tous les éléments */
     overflow-y: hidden !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
@@ -197,12 +197,13 @@ body.login-mode {
     height: 0 !important;
 }
 
-/* Container de navigation */
+/* Container de navigation - permettre le scroll horizontal */
 #mainNav {
-    overflow-x: hidden !important;
+    overflow-x: auto !important; /* Permettre le scroll pour accéder à tous les items */
     overflow-y: hidden !important;
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
+    white-space: nowrap; /* Empêcher le retour à la ligne */
 }
 
 #mainNav::-webkit-scrollbar {
@@ -414,7 +415,11 @@ body.login-mode {
     margin: 0 auto;
     padding: var(--spacing-md) var(--spacing-lg);
     gap: var(--spacing-md);
-    overflow-x: auto;
+    /* Permettre le scroll horizontal invisible */
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
 
 .nav-item {
@@ -429,9 +434,10 @@ body.login-mode {
     display: flex;
     align-items: center;
     gap: var(--spacing-md);
-    white-space: nowrap;
+    white-space: nowrap; /* Empêcher le retour à la ligne */
     border-radius: var(--radius-lg);
     min-height: 80px;
+    flex-shrink: 0; /* Empêcher la compression des éléments */
 }
 
 .nav-item i { 
