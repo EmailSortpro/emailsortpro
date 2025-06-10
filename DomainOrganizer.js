@@ -172,14 +172,6 @@ class DomainOrganizer {
                 <!-- Étape 3: Révision -->
                 <div class="step-content" id="step3" style="display: none;">
                     <div class="content-card">
-                        <div class="card-header">
-                            <div class="card-icon">✏️</div>
-                            <div class="card-title">
-                                <h2>Étape 3: Révision et ajustements</h2>
-                                <p>Vérifiez et personnalisez l'organisation proposée</p>
-                            </div>
-                        </div>
-
                         <div class="alert success">
                             <i class="fas fa-check-circle"></i>
                             <div class="alert-content">
@@ -408,21 +400,23 @@ class DomainOrganizer {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
                     color: var(--gray-900);
                     line-height: 1.4;
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    padding: 8px;
+                    width: 100%;
+                    max-width: none;
+                    margin: 0;
+                    padding: 16px;
                     overflow-y: auto !important;
                     max-height: 100vh;
                 }
 
-                /* Header ultra-compact */
+                /* Header unique et moderne */
                 .organizer-header {
                     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-                    border-radius: 8px;
-                    padding: 10px 16px;
-                    margin-bottom: 8px;
+                    border-radius: 12px;
+                    padding: 20px 30px;
+                    margin-bottom: 20px;
                     color: white;
-                    box-shadow: 0 4px 12px -3px rgba(59, 130, 246, 0.3);
+                    box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.3);
+                    position: relative;
                 }
 
                 .header-content {
@@ -430,55 +424,60 @@ class DomainOrganizer {
                     justify-content: space-between;
                     align-items: center;
                     flex-wrap: wrap;
-                    gap: 8px;
+                    gap: 20px;
                 }
 
                 .header-left {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 16px;
                 }
 
                 .main-icon {
-                    width: 28px;
-                    height: 28px;
+                    width: 48px;
+                    height: 48px;
                     background: rgba(255, 255, 255, 0.25);
-                    border-radius: 6px;
+                    border-radius: 12px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 14px;
+                    font-size: 20px;
                     backdrop-filter: blur(10px);
                 }
 
                 .header-info h1 {
                     margin: 0;
-                    font-size: 16px;
+                    font-size: 28px;
                     font-weight: 700;
                     color: white;
                 }
 
                 .header-subtitle {
-                    margin: 0;
+                    margin: 4px 0 0 0;
                     opacity: 0.9;
-                    font-size: 11px;
+                    font-size: 16px;
                     color: white;
                 }
 
-                /* Indicateur d'étapes ultra-compact */
+                /* Indicateur d'étapes repositionné et corrigé */
                 .steps-indicator {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
+                    gap: 12px;
+                    background: rgba(255, 255, 255, 0.15);
+                    padding: 12px 20px;
+                    border-radius: 25px;
+                    backdrop-filter: blur(20px);
                 }
 
                 .step {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 2px;
+                    gap: 6px;
                     opacity: 0.6;
                     transition: all 0.3s ease;
+                    min-width: 60px;
                 }
 
                 .step.active {
@@ -490,40 +489,44 @@ class DomainOrganizer {
                 }
 
                 .step-number {
-                    width: 20px;
-                    height: 20px;
+                    width: 32px;
+                    height: 32px;
                     border-radius: 50%;
                     background: rgba(255, 255, 255, 0.25);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-weight: 600;
-                    font-size: 10px;
+                    font-weight: 700;
+                    font-size: 14px;
                     transition: all 0.3s ease;
                     color: white;
+                    border: 2px solid transparent;
                 }
 
                 .step.active .step-number {
                     background: white;
                     color: var(--primary);
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    border-color: white;
                 }
 
                 .step.completed .step-number {
                     background: var(--success);
                     color: white;
+                    border-color: var(--success);
                 }
 
                 .step-label {
-                    font-size: 8px;
-                    font-weight: 500;
+                    font-size: 12px;
+                    font-weight: 600;
                     white-space: nowrap;
                     color: white;
+                    text-align: center;
                 }
 
                 .step-separator {
-                    width: 12px;
-                    height: 1px;
+                    width: 30px;
+                    height: 2px;
                     background: rgba(255, 255, 255, 0.4);
                     border-radius: 1px;
                 }
@@ -546,276 +549,279 @@ class DomainOrganizer {
 
                 .content-card {
                     background: white;
-                    border-radius: 8px;
-                    box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.1);
+                    border-radius: 12px;
+                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                     border: 1px solid var(--gray-200);
                     overflow: hidden;
-                    margin-bottom: 8px;
+                    margin-bottom: 20px;
                 }
 
                 .card-header {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
-                    padding: 10px 12px;
+                    gap: 16px;
+                    padding: 24px 30px;
                     border-bottom: 1px solid var(--gray-200);
                     background: var(--gray-50);
                 }
 
                 .card-icon {
-                    width: 24px;
-                    height: 24px;
+                    width: 48px;
+                    height: 48px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 6px;
+                    border-radius: 12px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 12px;
+                    font-size: 20px;
                     color: white;
                 }
 
                 .card-title h2 {
                     margin: 0;
-                    font-size: 14px;
+                    font-size: 24px;
                     font-weight: 700;
                     color: var(--gray-900);
                 }
 
                 .card-title p {
-                    margin: 0;
+                    margin: 4px 0 0 0;
                     color: var(--gray-600);
-                    font-size: 10px;
+                    font-size: 16px;
                 }
 
-                /* Alertes ultra-compactes */
+                /* Alertes bien lisibles */
                 .alert {
                     display: flex;
-                    gap: 6px;
-                    padding: 8px 10px;
-                    border-radius: 6px;
-                    margin: 8px 12px;
-                    font-size: 10px;
+                    gap: 16px;
+                    padding: 20px 24px;
+                    border-radius: 12px;
+                    margin: 20px 30px;
+                    font-size: 15px;
+                    line-height: 1.5;
                 }
 
                 .alert i {
                     color: inherit;
-                    font-size: 12px;
+                    font-size: 18px;
                     flex-shrink: 0;
-                    margin-top: 1px;
+                    margin-top: 2px;
                 }
 
                 .alert-content strong {
                     display: block;
-                    margin-bottom: 1px;
-                    font-weight: 600;
+                    margin-bottom: 8px;
+                    font-weight: 700;
+                    font-size: 16px;
                 }
 
                 .alert-content p {
                     margin: 0;
-                    line-height: 1.3;
+                    line-height: 1.6;
                 }
 
-                /* Formulaire ultra-compact */
+                /* Formulaire lisible */
                 .config-form {
-                    padding: 12px;
+                    padding: 30px;
                 }
 
                 .form-section {
-                    margin-bottom: 12px;
+                    margin-bottom: 24px;
                 }
 
                 .form-section h3 {
-                    margin: 0 0 6px 0;
-                    font-size: 12px;
-                    font-weight: 600;
+                    margin: 0 0 16px 0;
+                    font-size: 18px;
+                    font-weight: 700;
                     color: var(--gray-800);
                     display: flex;
                     align-items: center;
-                    gap: 4px;
+                    gap: 10px;
                 }
 
                 .form-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 8px;
+                    gap: 24px;
                 }
 
                 .form-group {
                     display: flex;
                     flex-direction: column;
-                    gap: 2px;
+                    gap: 8px;
                 }
 
                 .form-group label {
-                    font-size: 10px;
-                    font-weight: 500;
+                    font-size: 15px;
+                    font-weight: 600;
                     color: var(--gray-700);
                 }
 
                 .form-input {
-                    padding: 6px 8px;
-                    border: 1px solid var(--gray-300);
-                    border-radius: 4px;
-                    font-size: 10px;
+                    padding: 12px 16px;
+                    border: 2px solid var(--gray-300);
+                    border-radius: 8px;
+                    font-size: 15px;
                     transition: all 0.2s ease;
                     background: white;
                 }
 
                 .form-group small {
-                    font-size: 8px;
+                    font-size: 13px;
                     color: var(--gray-500);
                 }
 
                 .form-actions {
                     display: flex;
                     justify-content: center;
-                    margin-top: 12px;
+                    margin-top: 32px;
                 }
 
-                /* Progression ultra-compacte */
+                /* Progression bien visible */
                 .analysis-progress,
                 .organization-progress {
-                    padding: 12px;
+                    padding: 30px;
                 }
 
                 .progress-info {
-                    margin-bottom: 8px;
+                    margin-bottom: 24px;
                 }
 
                 .progress-stats {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 6px;
-                    margin-bottom: 8px;
+                    gap: 20px;
+                    margin-bottom: 24px;
                 }
 
                 .stat {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
-                    padding: 6px;
+                    gap: 16px;
+                    padding: 20px;
                     background: var(--gray-50);
-                    border-radius: 6px;
+                    border-radius: 12px;
                     border: 1px solid var(--gray-200);
                 }
 
                 .stat-icon {
-                    width: 20px;
-                    height: 20px;
+                    width: 48px;
+                    height: 48px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 4px;
+                    border-radius: 12px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 10px;
+                    font-size: 20px;
                     color: white;
                 }
 
                 .stat-number {
-                    font-size: 12px;
+                    font-size: 24px;
                     font-weight: 700;
                     color: var(--gray-900);
-                    margin-bottom: 0;
+                    margin-bottom: 4px;
                 }
 
                 .stat-label {
-                    font-size: 8px;
+                    font-size: 13px;
                     color: var(--gray-600);
                     text-transform: uppercase;
-                    letter-spacing: 0.2px;
+                    letter-spacing: 0.5px;
                 }
 
-                /* Cartes de résumé ultra-compactes */
+                /* Cartes de résumé bien lisibles */
                 .summary-cards {
                     display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 6px;
-                    margin: 8px 12px;
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 20px;
+                    margin: 24px 30px;
                 }
 
                 .summary-card {
                     display: flex;
                     align-items: center;
-                    gap: 6px;
-                    padding: 8px;
+                    gap: 16px;
+                    padding: 24px;
                     background: white;
-                    border: 1px solid var(--gray-200);
-                    border-radius: 6px;
+                    border: 2px solid var(--gray-200);
+                    border-radius: 12px;
                     transition: all 0.2s ease;
                 }
 
                 .summary-icon {
-                    width: 24px;
-                    height: 24px;
+                    width: 56px;
+                    height: 56px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 6px;
+                    border-radius: 12px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 10px;
+                    font-size: 24px;
                     color: white;
                 }
 
                 .summary-number {
-                    font-size: 14px;
+                    font-size: 28px;
                     font-weight: 700;
                     color: var(--gray-900);
-                    margin-bottom: 0;
+                    margin-bottom: 4px;
                 }
 
                 .summary-label {
-                    font-size: 8px;
+                    font-size: 14px;
                     color: var(--gray-600);
                     text-transform: uppercase;
-                    letter-spacing: 0.2px;
+                    letter-spacing: 0.5px;
+                    font-weight: 600;
                 }
 
-                /* Contrôles ultra-compacts */
+                /* Contrôles bien espacés */
                 .quick-controls {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 8px 12px;
+                    padding: 20px 30px;
                     border-top: 1px solid var(--gray-200);
                     border-bottom: 1px solid var(--gray-200);
                     background: var(--gray-50);
                     flex-wrap: wrap;
-                    gap: 6px;
+                    gap: 16px;
                 }
 
                 .control-group {
                     display: flex;
-                    gap: 4px;
+                    gap: 12px;
                     flex-wrap: wrap;
                 }
 
                 .search-container {
                     position: relative;
-                    width: 140px;
+                    width: 300px;
                 }
 
                 .search-input {
                     width: 100%;
-                    padding: 4px 8px 4px 20px;
-                    border: 1px solid var(--gray-300);
-                    border-radius: 4px;
-                    font-size: 10px;
+                    padding: 12px 16px 12px 44px;
+                    border: 2px solid var(--gray-300);
+                    border-radius: 8px;
+                    font-size: 15px;
                     background: white;
                     transition: all 0.2s ease;
                 }
 
                 .search-icon {
                     position: absolute;
-                    left: 6px;
+                    left: 16px;
                     top: 50%;
                     transform: translateY(-50%);
                     color: var(--gray-400);
-                    font-size: 10px;
+                    font-size: 16px;
                 }
 
-                /* Liste des domaines ultra-condensée */
+                /* Liste des domaines avec bon espacement */
                 .domains-list {
-                    max-height: 200px;
+                    max-height: 400px;
                     overflow-y: auto;
                 }
 
@@ -827,29 +833,29 @@ class DomainOrganizer {
                 .domain-header {
                     display: flex;
                     align-items: center;
-                    padding: 6px 12px;
+                    padding: 20px 30px;
                     cursor: pointer;
-                    gap: 6px;
+                    gap: 20px;
                 }
 
                 .domain-checkbox {
-                    width: 12px;
-                    height: 12px;
+                    width: 20px;
+                    height: 20px;
                     cursor: pointer;
                     accent-color: var(--primary);
                 }
 
                 .domain-avatar {
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 4px;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 8px;
-                    font-weight: 600;
+                    font-size: 18px;
+                    font-weight: 700;
                     text-transform: uppercase;
                 }
 
@@ -859,54 +865,56 @@ class DomainOrganizer {
                 }
 
                 .domain-name {
-                    font-size: 11px;
-                    font-weight: 600;
+                    font-size: 18px;
+                    font-weight: 700;
                     color: var(--gray-900);
-                    margin-bottom: 1px;
+                    margin-bottom: 6px;
                 }
 
                 .domain-meta {
                     display: flex;
-                    gap: 8px;
-                    font-size: 8px;
+                    gap: 20px;
+                    font-size: 14px;
                     color: var(--gray-600);
+                    font-weight: 500;
                 }
 
                 .domain-controls {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
+                    gap: 16px;
                 }
 
                 .folder-select {
-                    padding: 2px 4px;
-                    border: 1px solid var(--gray-300);
-                    border-radius: 3px;
-                    font-size: 8px;
+                    padding: 10px 16px;
+                    border: 2px solid var(--gray-300);
+                    border-radius: 8px;
+                    font-size: 14px;
                     background: white;
-                    min-width: 60px;
+                    min-width: 180px;
+                    font-weight: 500;
                 }
 
                 .badge {
-                    padding: 1px 4px;
-                    border-radius: 8px;
-                    font-size: 7px;
-                    font-weight: 600;
+                    padding: 6px 14px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 700;
                     text-transform: uppercase;
-                    letter-spacing: 0.2px;
+                    letter-spacing: 0.5px;
                 }
 
                 .expand-icon {
                     color: var(--gray-400);
-                    font-size: 8px;
+                    font-size: 16px;
                     transition: transform 0.3s ease;
                 }
 
-                /* Emails ultra-condensés */
+                /* Emails bien lisibles */
                 .emails-list {
                     display: none;
                     background: white;
-                    border-top: 1px solid #dbeafe;
+                    border-top: 2px solid #dbeafe;
                 }
 
                 .domain-item.expanded .emails-list {
@@ -916,17 +924,17 @@ class DomainOrganizer {
                 .email-item {
                     display: flex;
                     align-items: center;
-                    padding: 3px 12px 3px 28px;
-                    gap: 4px;
+                    padding: 16px 30px 16px 68px;
+                    gap: 16px;
                     border-bottom: 1px solid var(--gray-100);
-                    font-size: 9px;
+                    font-size: 14px;
                     transition: all 0.2s ease;
-                    min-height: 24px;
+                    min-height: 60px;
                 }
 
                 .email-checkbox {
-                    width: 10px;
-                    height: 10px;
+                    width: 18px;
+                    height: 18px;
                     cursor: pointer;
                     accent-color: var(--primary);
                 }
@@ -937,44 +945,46 @@ class DomainOrganizer {
                 }
 
                 .email-subject {
-                    font-weight: 500;
+                    font-weight: 600;
                     color: var(--gray-900);
-                    margin-bottom: 0;
+                    margin-bottom: 4px;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
-                    font-size: 9px;
+                    font-size: 15px;
                 }
 
                 .email-meta {
                     color: var(--gray-600);
-                    font-size: 7px;
+                    font-size: 13px;
+                    font-weight: 500;
                 }
 
                 .email-folder-select {
-                    padding: 1px 3px;
-                    border: 1px solid var(--gray-300);
-                    border-radius: 2px;
-                    font-size: 7px;
+                    padding: 8px 12px;
+                    border: 2px solid var(--gray-300);
+                    border-radius: 6px;
+                    font-size: 13px;
                     background: white;
-                    min-width: 50px;
+                    min-width: 140px;
+                    font-weight: 500;
                 }
 
-                /* Actions ultra-compactes */
+                /* Actions bien visibles */
                 .revision-actions {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 8px 12px;
+                    padding: 24px 30px;
                     border-top: 1px solid var(--gray-200);
                     background: var(--gray-50);
                     flex-wrap: wrap;
-                    gap: 6px;
+                    gap: 20px;
                 }
 
                 .action-right {
                     display: flex;
-                    gap: 4px;
+                    gap: 16px;
                     align-items: center;
                 }
 
