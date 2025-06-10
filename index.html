@@ -238,8 +238,6 @@
             }
         })();
     </script>
-    
-    <!-- Configuration inline utilisée - config.js supprimé -->
 
     <!-- Styles intégrés pour l'application sobre -->
     <style>
@@ -1234,100 +1232,7 @@
 
             <!-- Contenu Dynamique des Pages -->
             <div id="pageContent">
-                <!-- Dashboard sobre intégré -->
-                <div class="dashboard-container">
-                    <!-- Header du dashboard -->
-                    <div class="dashboard-header">
-                        <!-- Guide rapide -->
-                        <div class="quick-guide">
-                            <p class="guide-intro">Commencez par <strong>Scanner</strong> vos emails pour découvrir la puissance de l'IA :</p>
-                            <div class="guide-steps">
-                                <span class="guide-step">1) Sélectionnez la période</span>
-                                <span class="guide-step">2) L'IA analyse automatiquement</span>
-                                <span class="guide-step">3) Récupérez vos emails triés</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Actions principales -->
-                    <div class="dashboard-actions">
-                        <div class="action-card scan-card" onclick="startDashboardAction('scan')">
-                            <div class="action-icon">
-                                <i class="fas fa-search"></i>
-                            </div>
-                            <h3 class="action-title">Scanner</h3>
-                            <p class="action-description">
-                                Commencez ici ! L'IA analyse vos emails
-                                <small>
-                                    1) Choisissez la période<br>
-                                    2) Analyse automatique<br>
-                                    3) Emails classés par catégories
-                                </small>
-                            </p>
-                        </div>
-
-                        <div class="action-card organize-card" onclick="startDashboardAction('organize')">
-                            <div class="action-icon">
-                                <i class="fas fa-layer-group"></i>
-                            </div>
-                            <h3 class="action-title">Organiser</h3>
-                            <p class="action-description">
-                                Triez par expéditeur et domaines
-                                <small>
-                                    1) Analyse des expéditeurs<br>
-                                    2) Groupement automatique<br>
-                                    3) Création de dossiers
-                                </small>
-                            </p>
-                        </div>
-
-                        <div class="action-card tasks-card" onclick="startDashboardAction('tasks')">
-                            <div class="action-icon">
-                                <i class="fas fa-tasks"></i>
-                            </div>
-                            <h3 class="action-title">Tâches</h3>
-                            <p class="action-description">
-                                Consultez vos tâches générées
-                                <small>
-                                    1) Tâches détectées<br>
-                                    2) Priorités assignées<br>
-                                    3) Suivi et validation
-                                </small>
-                            </p>
-                        </div>
-
-                        <div class="action-card settings-card" onclick="startDashboardAction('settings')">
-                            <div class="action-icon">
-                                <i class="fas fa-sliders-h"></i>
-                            </div>
-                            <h3 class="action-title">Paramètres</h3>
-                            <p class="action-description">
-                                Personnalisez l'IA à vos besoins
-                                <small>
-                                    1) Catégories custom<br>
-                                    2) Règles de tri<br>
-                                    3) Préférences d'analyse
-                                </small>
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Stats simples -->
-                    <div class="dashboard-stats">
-                        <div class="stat">
-                            <div class="stat-number" id="emailsCount">0</div>
-                            <div class="stat-label">Emails analysés</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="tasksCount">0</div>
-                            <div class="stat-label">Tâches créées</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-number" id="timesSaved">0h</div>
-                            <div class="stat-label">Temps économisé</div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Le dashboard sera généré par dashboard.js -->
             </div>
         </main>
 
@@ -1360,22 +1265,50 @@
     <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
     <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
     
-    <!-- 5. Page Manager APRÈS TaskManager -->
+    <!-- 5. DASHBOARD MODULE - NOUVEAU -->
+    <script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
+    
+    <!-- 6. Page Manager APRÈS Dashboard et TaskManager -->
     <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
-    <!-- 6. Modules de pages -->
+    <!-- 7. Modules de pages -->
     <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
     <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
     <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
     
-    <!-- 7. Modules Optionnels -->
+    <!-- 8. Modules Optionnels -->
     <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
     
-    <!-- 8. Application Principal EN DERNIER -->
+    <!-- 9. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
     <script>
+        // Variable pour éviter les vérifications multiples
+        let authCheckInProgress = false;
+        let appAlreadyShown = false;
+
+        // Vérification précoce IMMÉDIATE de l'authentification
+        const earlyAuthCheck = () => {
+            try {
+                const msalAccount = localStorage.getItem('msal.account.keys');
+                const msalToken = localStorage.getItem('msal.token.keys');
+                
+                if (msalAccount && msalToken) {
+                    console.log('[EARLY_AUTH] App mode activated immediately');
+                    
+                    return true;
+                }
+            } catch (error) {
+                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
+            }
+            
+            return false;
+        };
+
+        // Exécuter la vérification précoce TOUT DE SUITE
+        earlyAuthCheck();
+
         // Fonction pour forcer l'affichage de l'app
         window.forceShowApp = function() {
             console.log('[FORCE] Forcing app display...');
@@ -1419,53 +1352,31 @@
                 loginPage.style.display = 'none';
             }
             
+            // UTILISER LE NOUVEAU MODULE DASHBOARD
             window.setPageMode('dashboard');
+            
+            // Charger le dashboard via le module
+            if (window.dashboardModule) {
+                console.log('[SHOW_APP] Loading dashboard via dashboardModule...');
+                window.dashboardModule.render();
+            } else {
+                console.warn('[SHOW_APP] Dashboard module not ready, will retry...');
+                setTimeout(() => {
+                    if (window.dashboardModule) {
+                        window.dashboardModule.render();
+                    }
+                }, 500);
+            }
             
             setTimeout(() => {
                 window.checkScrollNeeded();
             }, 1000);
             
             appAlreadyShown = true;
-            console.log('[SHOW_APP] App interface activated');
+            console.log('[SHOW_APP] App interface activated with dashboard module');
         };
 
-        // Variable pour éviter les vérifications multiples
-        let authCheckInProgress = false;
-        let appAlreadyShown = false;
-
-        // Vérification précoce IMMÉDIATE de l'authentification
-        const earlyAuthCheck = () => {
-            try {
-                const msalAccount = localStorage.getItem('msal.account.keys');
-                const msalToken = localStorage.getItem('msal.token.keys');
-                
-                if (msalAccount && msalToken) {
-                    console.log('[EARLY_AUTH] Tokens detected in localStorage, user likely authenticated');
-                    
-                    const loginPage = document.getElementById('loginPage');
-                    if (loginPage) {
-                        loginPage.style.display = 'none';
-                        console.log('[EARLY_AUTH] Login page immediately hidden');
-                    }
-                    
-                    document.body.classList.add('app-active');
-                    document.body.classList.remove('login-mode');
-                    appAlreadyShown = true;
-                    console.log('[EARLY_AUTH] App mode activated immediately');
-                    
-                    return true;
-                }
-            } catch (error) {
-                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
-            }
-            
-            return false;
-        };
-
-        // Exécuter la vérification précoce TOUT DE SUITE
-        earlyAuthCheck();
-
-        // Fonction pour forcer la vérification du scroll - OPTIMISÉE
+        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE
         window.checkScrollNeeded = function() {
             // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
@@ -1519,41 +1430,6 @@
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
         });
-
-        // Fonction pour les actions du dashboard
-        function startDashboardAction(action) {
-            console.log(`Dashboard Action: ${action}`);
-            
-            // Ajouter un effet visuel de clic
-            event.target.closest('.action-card').style.transform = 'scale(0.98)';
-            setTimeout(() => {
-                event.target.closest('.action-card').style.transform = '';
-            }, 100);
-
-            // Rediriger vers l'action appropriée via PageManager
-            switch(action) {
-                case 'scan':
-                    if (window.pageManager) {
-                        window.pageManager.loadPage('scanner');
-                    }
-                    break;
-                case 'organize':
-                    if (window.pageManager) {
-                        window.pageManager.loadPage('ranger');
-                    }
-                    break;
-                case 'tasks':
-                    if (window.pageManager) {
-                        window.pageManager.loadPage('tasks');
-                    }
-                    break;
-                case 'settings':
-                    if (window.pageManager) {
-                        window.pageManager.loadPage('settings');
-                    }
-                    break;
-            }
-        }
 
         // Gestion des modes d'affichage pour les pages - SCROLL OPTIMISÉ
         window.setPageMode = function(pageName) {
@@ -1627,7 +1503,7 @@
                     window.setPageMode(pageName);
                     
                     if (pageName === 'dashboard') {
-                        console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using new design');
+                        console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using dashboard module');
                         
                         // Mettre à jour la navigation pour marquer dashboard comme actif
                         const navItems = document.querySelectorAll('.nav-item');
@@ -1638,26 +1514,22 @@
                             }
                         });
                         
-                        // Afficher le contenu du dashboard (déjà dans l'index.html)
-                        const pageContent = document.getElementById('pageContent');
-                        if (pageContent) {
-                            // S'assurer que le dashboard est visible
-                            const dashboardContainer = pageContent.querySelector('.dashboard-container');
-                            if (dashboardContainer) {
-                                dashboardContainer.style.display = 'block';
+                        // UTILISER LE MODULE DASHBOARD
+                        if (window.dashboardModule) {
+                            const pageContent = document.getElementById('pageContent');
+                            if (pageContent) {
+                                pageContent.style.display = 'block';
+                                pageContent.style.opacity = '1';
                             }
-                            pageContent.style.display = 'block';
-                            pageContent.style.opacity = '1';
+                            
+                            // Render dashboard via module
+                            window.dashboardModule.render();
+                            
+                            console.log('[DASHBOARD_INTERCEPT] Dashboard rendu via dashboardModule');
+                        } else {
+                            console.error('[DASHBOARD_INTERCEPT] Dashboard module not available!');
+                            return originalLoadPage(pageName, ...args);
                         }
-                        
-                        // Masquer tout autre contenu dynamique qui pourrait être affiché
-                        const dynamicContent = pageContent.querySelectorAll('.page-minimal, .emails-page, .scanner-container');
-                        dynamicContent.forEach(content => {
-                            if (content) content.style.display = 'none';
-                        });
-                        
-                        // Animer les stats du dashboard
-                        animateDashboardStats();
                         
                         // Vérifier le scroll après affichage du dashboard - DÉLÉGUÉ À APP.JS
                         setTimeout(() => {
@@ -1668,16 +1540,13 @@
                             }
                         }, 300);
                         
-                        console.log('[DASHBOARD_INTERCEPT] Dashboard sobre affiché et restauré');
+                        console.log('[DASHBOARD_INTERCEPT] Dashboard module affiché et restauré');
                         return Promise.resolve();
                     } else {
                         // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
                         const pageContent = document.getElementById('pageContent');
-                        if (pageContent) {
-                            const dashboardContainer = pageContent.querySelector('.dashboard-container');
-                            if (dashboardContainer) {
-                                dashboardContainer.style.display = 'none';
-                            }
+                        if (pageContent && window.dashboardModule) {
+                            window.dashboardModule.hide();
                         }
                         
                         return originalLoadPage(pageName, ...args);
@@ -1694,24 +1563,9 @@
         // Lancer l'interception du dashboard
         setTimeout(window.interceptDashboardLoad, 1000);
 
-        // Animation simple des statistiques du dashboard
-        function animateDashboardStats() {
-            setTimeout(() => {
-                const emailsCount = document.getElementById('emailsCount');
-                const tasksCount = document.getElementById('tasksCount');
-                const timesSaved = document.getElementById('timesSaved');
-                
-                if (emailsCount) emailsCount.textContent = '847';
-                if (tasksCount) tasksCount.textContent = '18';
-                if (timesSaved) timesSaved.textContent = '5h';
-            }, 800);
-        }
-
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
-            
-            animateDashboardStats();
             
             if (appAlreadyShown) {
                 console.log('[INDEX] App already shown via early auth, skipping additional checks');
@@ -1816,30 +1670,17 @@
                     if (window.pageManager && window.pageManager.loadPage) {
                         window.pageManager.loadPage('dashboard');
                     } else {
-                        // Fallback: afficher directement le dashboard
+                        // Fallback: utiliser le module dashboard directement
                         const navItems = document.querySelectorAll('.nav-item');
                         navItems.forEach(item => item.classList.remove('active'));
                         this.classList.add('active');
                         
-                        const pageContent = document.getElementById('pageContent');
-                        if (pageContent) {
-                            // Masquer tout contenu dynamique
-                            const dynamicContent = pageContent.querySelectorAll('.page-minimal, .emails-page, .scanner-container');
-                            dynamicContent.forEach(content => {
-                                if (content) content.style.display = 'none';
-                            });
-                            
-                            // Afficher le dashboard
-                            const dashboardContainer = pageContent.querySelector('.dashboard-container');
-                            if (dashboardContainer) {
-                                dashboardContainer.style.display = 'block';
-                            }
-                            pageContent.style.display = 'block';
-                            pageContent.style.opacity = '1';
+                        if (window.dashboardModule) {
+                            console.log('[DASHBOARD_CLICK] Using dashboard module directly');
+                            window.dashboardModule.render();
                         }
                         
                         window.setPageMode('dashboard');
-                        animateDashboardStats();
                     }
                 });
             }
@@ -1909,6 +1750,7 @@
             console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
             console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
             console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
+            console.log('dashboardModule:', window.dashboardModule ? 'OK' : 'MANQUANT');
             console.log('Current hostname:', window.location.hostname);
             console.log('Expected hostname: emailsortpro.netlify.app');
         };
@@ -1922,13 +1764,24 @@
         console.log('[INDEX] ✅ État actif discret avec fond bleu clair');
         console.log('[INDEX] ✅ Transitions minimales et épurées');
         console.log('[INDEX] ✅ Interface professionnelle et lisible');
-        console.log('[INDEX] ✅ Dashboard sobre et fonctionnel');
+        console.log('[INDEX] ✅ Dashboard géré par module dashboard.js');
         console.log('[INDEX] 🔧 OPTIMISATIONS APPLIQUÉES:');
-        console.log('[INDEX] ✅ Suppression config.js et CategoryManagerUI.js');
+        console.log('[INDEX] ✅ Module dashboard.js pour réutilisabilité');
         console.log('[INDEX] ✅ Scroll manager optimisé contre les boucles');
         console.log('[INDEX] ✅ Gestion resize events avec debouncing');
         console.log('[INDEX] ✅ Performance améliorée et logs épurés');
         console.log('[INDEX] ✅ Délégation scroll manager à app.js quand actif');
     </script>
 </body>
-</html>
+</html> Tokens detected in localStorage, user likely authenticated');
+                    
+                    const loginPage = document.getElementById('loginPage');
+                    if (loginPage) {
+                        loginPage.style.display = 'none';
+                        console.log('[EARLY_AUTH] Login page immediately hidden');
+                    }
+                    
+                    document.body.classList.add('app-active');
+                    document.body.classList.remove('login-mode');
+                    appAlreadyShown = true;
+                    console.log('[EARLY_AUTH]
