@@ -1437,11 +1437,10 @@
             console.log('[SHOW_APP] App interface activated with dashboard module');
         };
 
-        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE
+        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
         window.checkScrollNeeded = function() {
             // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
-                console.log('[INDEX_SCROLL_CHECK] App active - delegating to app.js');
                 return;
             }
             
@@ -1454,23 +1453,14 @@
                 const contentHeight = document.documentElement.scrollHeight;
                 const viewportHeight = window.innerHeight;
                 
-                console.log('[INDEX_FORCE_SCROLL_CHECK]', {
-                    contentHeight,
-                    viewportHeight,
-                    bodyScrollHeight: body.scrollHeight,
-                    needsScroll: contentHeight > viewportHeight
-                });
-                
                 if (contentHeight <= viewportHeight) {
                     body.classList.add('page-short-content');
                     body.style.overflow = 'hidden';
                     body.style.overflowY = 'hidden';
-                    console.log('[INDEX_FORCE_SCROLL_CHECK] Scroll forcé à hidden');
                 } else {
                     body.classList.remove('page-short-content');
                     body.style.overflow = '';
                     body.style.overflowY = '';
-                    console.log('[INDEX_FORCE_SCROLL_CHECK] Scroll restauré');
                 }
                 
                 window.scrollCheckInProgress = false;
@@ -1492,11 +1482,10 @@
             resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
         });
 
-        // Gestion des modes d'affichage pour les pages - SCROLL OPTIMISÉ
+        // Gestion des modes d'affichage pour les pages - SILENCIEUX
         window.setPageMode = function(pageName) {
             // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
-                console.log('[PAGE_MODE] App active - delegating to app.js scroll manager');
                 return;
             }
             
@@ -1512,13 +1501,11 @@
                 appMain.classList.add('dashboard-mode');
                 pageContent.classList.remove('non-dashboard');
                 body.classList.add('page-dashboard');
-                console.log('[PAGE_MODE] Dashboard mode activated - normal spacing');
             } else {
                 appMain.classList.remove('dashboard-mode');
                 appMain.classList.add('page-mode');
                 pageContent.classList.add('non-dashboard');
                 body.classList.add(`page-${pageName}`);
-                console.log('[PAGE_MODE] Page mode activated - reduced spacing for:', pageName);
             }
             
             // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
@@ -1529,22 +1516,12 @@
                     const viewportHeight = window.innerHeight;
                     const bodyHeight = document.body.scrollHeight;
                     
-                    console.log('[INDEX_SCROLL_MANAGER]', {
-                        page: pageName,
-                        contentHeight,
-                        bodyHeight,
-                        viewportHeight,
-                        needsScroll: bodyHeight > viewportHeight
-                    });
-                    
                     if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
                         body.classList.add('page-short-content');
-                        console.log('[INDEX_SCROLL_MANAGER] Short content detected - scroll hidden');
                         body.style.overflow = 'hidden';
                         body.style.overflowY = 'hidden';
                     } else {
                         body.classList.remove('page-short-content');
-                        console.log('[INDEX_SCROLL_MANAGER] Long content detected - scroll enabled');
                         body.style.overflow = '';
                         body.style.overflowY = '';
                     }
@@ -1558,14 +1535,10 @@
                 const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
                 
                 window.pageManager.loadPage = function(pageName, ...args) {
-                    console.log(`[DASHBOARD_INTERCEPT] LoadPage called for: ${pageName}`);
-                    
                     // Appliquer le mode d'affichage approprié pour TOUTES les pages
                     window.setPageMode(pageName);
                     
                     if (pageName === 'dashboard') {
-                        console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using dashboard module');
-                        
                         // Mettre à jour la navigation pour marquer dashboard comme actif
                         const navItems = document.querySelectorAll('.nav-item');
                         navItems.forEach(item => {
@@ -1585,14 +1558,11 @@
                             
                             // Render dashboard via module
                             window.dashboardModule.render();
-                            
-                            console.log('[DASHBOARD_INTERCEPT] Dashboard rendu via dashboardModule');
                         } else {
-                            console.error('[DASHBOARD_INTERCEPT] Dashboard module not available!');
                             return originalLoadPage(pageName, ...args);
                         }
                         
-                        // Vérifier le scroll après affichage du dashboard - DÉLÉGUÉ À APP.JS
+                        // Vérifier le scroll après affichage du dashboard
                         setTimeout(() => {
                             if (window.app && window.app.checkScrollNeeded) {
                                 window.app.checkScrollNeeded();
@@ -1601,7 +1571,6 @@
                             }
                         }, 300);
                         
-                        console.log('[DASHBOARD_INTERCEPT] Dashboard module affiché et restauré');
                         return Promise.resolve();
                     } else {
                         // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
@@ -1613,10 +1582,7 @@
                         return originalLoadPage(pageName, ...args);
                     }
                 };
-                
-                console.log('[DASHBOARD_INTERCEPT] PageManager dashboard interception configured');
             } else {
-                console.warn('[DASHBOARD_INTERCEPT] PageManager not ready, will retry...');
                 setTimeout(window.interceptDashboardLoad, 500);
             }
         };
@@ -1626,22 +1592,17 @@
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
-            
             if (appAlreadyShown) {
-                console.log('[INDEX] App already shown via early auth, skipping additional checks');
                 return;
             }
             
             // Fonction de vérification d'authentification sécurisée
             const safeAuthCheck = () => {
                 if (authCheckInProgress || appAlreadyShown) {
-                    console.log('[INDEX] Auth check already in progress or app shown, skipping...');
                     return false;
                 }
                 
                 if (document.body.classList.contains('app-active')) {
-                    console.log('[INDEX] App already active via app.js, skipping...');
                     appAlreadyShown = true;
                     return true;
                 }
@@ -1649,13 +1610,12 @@
                 try {
                     if (window.authService && typeof window.authService.isAuthenticated === 'function') {
                         if (window.authService.isAuthenticated()) {
-                            console.log('[INDEX] User already authenticated, showing app...');
                             window.showApp();
                             return true;
                         }
                     }
                 } catch (error) {
-                    console.warn('[INDEX] Auth check error:', error);
+                    // Silencieux
                 }
                 return false;
             };
@@ -1663,7 +1623,6 @@
             // Vérification avec délai
             setTimeout(() => {
                 if (document.body.classList.contains('app-active')) {
-                    console.log('[INDEX] App already displayed by app.js, no need for additional check');
                     appAlreadyShown = true;
                     return;
                 }
@@ -1681,7 +1640,6 @@
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
                     if (authCheckInProgress) {
-                        console.log('[INDEX] Auth process already in progress...');
                         return;
                     }
                     
@@ -1697,11 +1655,9 @@
                     
                     if (window.app && window.app.login) {
                         window.app.login().then(() => {
-                            console.log('[LOGIN] Login successful, showing app...');
                             window.showApp();
                             authCheckInProgress = false;
                         }).catch((error) => {
-                            console.error('[LOGIN] Login failed:', error);
                             authCheckInProgress = false;
                             this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                             this.disabled = false;
@@ -1724,7 +1680,6 @@
             const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
             if (dashboardBtn) {
                 dashboardBtn.addEventListener('click', function(e) {
-                    console.log('[DASHBOARD_CLICK] Direct dashboard click detected');
                     e.preventDefault();
                     
                     // Forcer le retour au dashboard
@@ -1737,7 +1692,6 @@
                         this.classList.add('active');
                         
                         if (window.dashboardModule) {
-                            console.log('[DASHBOARD_CLICK] Using dashboard module directly');
                             window.dashboardModule.render();
                         }
                         
@@ -1750,14 +1704,8 @@
             setTimeout(function() {
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
-                    console.log('[INDEX] Configuration validation for new domain:', validation);
-                    
-                    const debugInfo = window.AppConfig.getDebugInfo();
-                    console.log('[INDEX] Debug info for emailsortpro.netlify.app:', debugInfo);
                     
                     if (!validation.valid) {
-                        console.log('[INDEX] Configuration invalid for new domain:', validation.issues);
-                        
                         const errorBanner = document.createElement('div');
                         errorBanner.className = 'config-error-banner';
                         errorBanner.innerHTML = `
@@ -1774,22 +1722,15 @@
                             </div>
                         `;
                         document.body.appendChild(errorBanner);
-                    } else {
-                        console.log('[INDEX] ✅ Configuration valid for emailsortpro.netlify.app');
                     }
-                } else {
-                    console.warn('[INDEX] AppConfig not available');
                 }
             }, 1000);
         });
         
         // Fonction globale pour basculer vers l'app après connexion
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful, switching to app...');
             if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
                 window.showApp();
-            } else {
-                console.log('[AUTH_SUCCESS] App already active, skipping duplicate display');
             }
         };
 
@@ -1811,50 +1752,26 @@
                         <div class="user-avatar">${initials}</div>
                     </div>
                 `;
-                
-                console.log('[USER_DISPLAY] User info updated in header:', { userName, userEmail });
             }
         };
 
-        // Fonction de diagnostic accessible globalement
+        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
         window.checkServices = function() {
-            console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
-            console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
-            if (window.AppConfig) {
-                console.log('Environment:', window.AppConfig.app.environment);
-                console.log('Domain:', window.AppConfig.app.domain);
-                console.log('Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
-                console.log('Redirect URI:', window.AppConfig.msal.redirectUri);
-                console.log('Debug info:', window.AppConfig.getDebugInfo());
-            }
-            console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
-            console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
-            console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
-            console.log('taskManager:', window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT');
-            console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
-            console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
-            console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
-            console.log('dashboardModule:', window.dashboardModule ? 'OK' : 'MANQUANT');
-            console.log('Current hostname:', window.location.hostname);
-            console.log('Expected hostname: emailsortpro.netlify.app');
+            return {
+                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
+                authService: window.authService ? 'OK' : 'MANQUANT',
+                mailService: window.mailService ? 'OK' : 'MANQUANT',
+                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
+                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
+                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
+                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
+                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                hostname: window.location.hostname,
+                expectedHostname: 'emailsortpro.netlify.app'
+            };
         };
 
-        console.log('[INDEX] ✅ Configuration loaded for emailsortpro.netlify.app');
-        console.log('[INDEX] Current hostname:', window.location.hostname);
-        console.log('[INDEX] Expected hostname: emailsortpro.netlify.app');
-        console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
-        console.log('[INDEX] 🎯 DESIGN SOBRE APPLIQUÉ:');
-        console.log('[INDEX] ✅ Navigation sobre sans effets spéciaux');
-        console.log('[INDEX] ✅ État actif discret avec fond bleu clair');
-        console.log('[INDEX] ✅ Transitions minimales et épurées');
-        console.log('[INDEX] ✅ Interface professionnelle et lisible');
-        console.log('[INDEX] ✅ Dashboard géré par module dashboard.js');
-        console.log('[INDEX] 🔧 OPTIMISATIONS APPLIQUÉES:');
-        console.log('[INDEX] ✅ Module dashboard.js pour réutilisabilité');
-        console.log('[INDEX] ✅ Scroll manager optimisé contre les boucles');
-        console.log('[INDEX] ✅ Gestion resize events avec debouncing');
-        console.log('[INDEX] ✅ Performance améliorée et logs épurés');
-        console.log('[INDEX] ✅ Délégation scroll manager à app.js quand actif');
     </script>
 </body>
 </html> Tokens detected in localStorage, user likely authenticated');
