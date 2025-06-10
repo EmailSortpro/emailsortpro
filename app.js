@@ -1,14 +1,25 @@
-// app.js - Version simplifiée sans effets de chargement
+// app.js - Version ultra-simplifiée ANTI CHARGEMENT MULTIPLE
+
+// PROTECTION GLOBALE CONTRE LES INSTANCES MULTIPLES
+if (window.App && window.app) {
+    // Si App existe déjà, ne rien faire
+    console.log('App already exists, skipping reload');
+} else {
 
 class App {
     constructor() {
+        // Protection singleton
+        if (window.app) return window.app;
+        
         this.user = null;
         this.isAuthenticated = false;
         this.isInitializing = false;
+        this.initialized = false;
     }
 
     async init() {
-        if (this.isInitializing) return;
+        // Protection contre initialisation multiple
+        if (this.isInitializing || this.initialized) return;
         this.isInitializing = true;
         
         try {
@@ -18,6 +29,7 @@ class App {
             await this.initializeCriticalModules();
             await this.checkAuthenticationStatus();
             
+            this.initialized = true;
         } catch (error) {
             this.handleInitializationError(error);
         } finally {
@@ -27,37 +39,18 @@ class App {
     }
 
     async initializeCriticalModules() {
-        // Attendre les modules essentiels
+        // Attente simplifiée
         await this.waitForModule('taskManager');
         await this.waitForModule('pageManager');
-        
-        // Gestion simple du scroll
-        this.initializeScrollManager();
     }
 
     async waitForModule(moduleName) {
         let attempts = 0;
-        while (!window[moduleName] && attempts < 50) {
+        while (!window[moduleName] && attempts < 30) {
             await new Promise(resolve => setTimeout(resolve, 100));
             attempts++;
         }
         return !!window[moduleName];
-    }
-
-    initializeScrollManager() {
-        // Gestion simple du scroll sans logs excessifs
-        window.setPageMode = (pageName) => {
-            document.body.className = document.body.className.replace(/page-\w+/g, '');
-            if (pageName) {
-                document.body.classList.add(`page-${pageName}`);
-                
-                // Dashboard: pas de scroll
-                if (pageName === 'dashboard') {
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.overflowY = 'hidden';
-                }
-            }
-        };
     }
 
     checkPrerequisites() {
@@ -98,30 +91,26 @@ class App {
     }
 
     setupEventListeners() {
+        // Protection contre les listeners multiples
+        if (this.listenersSetup) return;
+        this.listenersSetup = true;
+        
         const loginBtn = document.getElementById('loginBtn');
-        if (loginBtn) {
-            const newLoginBtn = loginBtn.cloneNode(true);
-            loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
-            newLoginBtn.addEventListener('click', () => this.login());
+        if (loginBtn && !loginBtn.hasAttribute('data-listener-added')) {
+            loginBtn.setAttribute('data-listener-added', 'true');
+            loginBtn.addEventListener('click', () => this.login());
         }
 
-        // Navigation simple
-        document.querySelectorAll('.nav-item').forEach(item => {
-            const newItem = item.cloneNode(true);
-            item.parentNode.replaceChild(newItem, item);
-            
-            newItem.addEventListener('click', (e) => {
+        // Navigation simple SANS duplication
+        document.querySelectorAll('.nav-item:not([data-listener-added])').forEach(item => {
+            item.setAttribute('data-listener-added', 'true');
+            item.addEventListener('click', (e) => {
                 const page = e.currentTarget.dataset.page;
                 if (page && window.pageManager) {
-                    if (window.setPageMode) window.setPageMode(page);
                     window.pageManager.loadPage(page);
                 }
             });
         });
-
-        // Gestion d'erreurs simplifiée
-        window.addEventListener('error', () => {});
-        window.addEventListener('unhandledrejection', () => {});
     }
 
     async login() {
@@ -179,7 +168,7 @@ class App {
     showAppWithTransition() {
         this.hideModernLoading();
         
-        // Transition simple sans effets
+        // Transition ultra-simple
         document.body.classList.remove('login-mode');
         document.body.classList.add('app-active');
         
@@ -206,9 +195,7 @@ class App {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        if (window.setPageMode) window.setPageMode('dashboard');
-        
-        // Forcer pas de scroll pour dashboard
+        // Forcer dashboard sans scroll
         document.body.style.overflow = 'hidden';
         document.body.style.overflowY = 'hidden';
         
@@ -222,7 +209,11 @@ class App {
     }
 
     forceAppDisplay() {
+        // Style unique pour éviter la duplication
+        if (document.getElementById('app-force-style')) return;
+        
         const style = document.createElement('style');
+        style.id = 'app-force-style';
         style.textContent = `
             body.app-active #loginPage { display: none !important; }
             body.app-active .app-header { display: block !important; opacity: 1 !important; }
@@ -280,7 +271,7 @@ class App {
     }
 }
 
-// Fonctions globales simples
+// Fonctions globales ULTRA-SIMPLES
 window.emergencyReset = function() {
     const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
     Object.keys(localStorage).forEach(key => {
@@ -302,18 +293,23 @@ window.forceShowApp = function() {
     }
 };
 
-// Vérification des services simplifiée
+// Vérification services ULTRA-SIMPLE
 function checkServicesReady() {
     return window.authService && window.AppConfig;
 }
 
-// Initialisation simple
-document.addEventListener('DOMContentLoaded', () => {
+// INITIALISATION UNIQUE ET PROTÉGÉE
+let appInstanceCreated = false;
+
+function createAppInstance() {
+    if (appInstanceCreated || window.app) return;
+    appInstanceCreated = true;
+    
     document.body.classList.add('login-mode');
     window.app = new App();
     
     const waitForServices = (attempts = 0) => {
-        if (checkServicesReady() || attempts >= 50) {
+        if (checkServicesReady() || attempts >= 30) {
             setTimeout(() => window.app.init(), 100);
         } else {
             setTimeout(() => waitForServices(attempts + 1), 100);
@@ -321,14 +317,24 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     waitForServices();
-});
+}
 
-// Fallback simple
+// DOM Ready PROTECTION
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', createAppInstance, { once: true });
+} else {
+    createAppInstance();
+}
+
+// Fallback UNIQUE
+let fallbackExecuted = false;
 window.addEventListener('load', () => {
     setTimeout(() => {
-        if (!window.app) {
-            window.app = new App();
-            window.app.init();
+        if (!window.app && !fallbackExecuted) {
+            fallbackExecuted = true;
+            createAppInstance();
         }
-    }, 3000);
-});
+    }, 2000);
+}, { once: true });
+
+} // Fin de la protection contre instance multiple
