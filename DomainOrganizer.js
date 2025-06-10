@@ -65,7 +65,7 @@ class DomainOrganizer {
                         <div class="card-header">
                             <div class="card-icon">⚙️</div>
                             <div class="card-title">
-                                <h2>Étape 1: Configuration du scan</h2>
+                                <h2>Configuration du scan</h2>
                                 <p>Définissez les paramètres de votre rangement automatique</p>
                             </div>
                         </div>
@@ -121,7 +121,7 @@ class DomainOrganizer {
                         <div class="card-header">
                             <div class="card-icon animated">🔍</div>
                             <div class="card-title">
-                                <h2>Étape 2: Analyse en cours</h2>
+                                <h2>Analyse en cours</h2>
                                 <p id="analysisDescription">Connexion à votre boîte mail...</p>
                             </div>
                         </div>
@@ -172,6 +172,14 @@ class DomainOrganizer {
                 <!-- Étape 3: Révision -->
                 <div class="step-content" id="step3" style="display: none;">
                     <div class="content-card">
+                        <div class="card-header">
+                            <div class="card-icon">✏️</div>
+                            <div class="card-title">
+                                <h2>Révision et ajustements</h2>
+                                <p>Vérifiez et personnalisez l'organisation proposée</p>
+                            </div>
+                        </div>
+
                         <div class="alert success">
                             <i class="fas fa-check-circle"></i>
                             <div class="alert-content">
@@ -263,7 +271,7 @@ class DomainOrganizer {
                         <div class="card-header">
                             <div class="card-icon animated">⚙️</div>
                             <div class="card-title">
-                                <h2>Étape 4: Organisation en cours</h2>
+                                <h2>Organisation en cours</h2>
                                 <p id="organizationDescription">Création des dossiers...</p>
                             </div>
                         </div>
@@ -730,10 +738,10 @@ class DomainOrganizer {
                     letter-spacing: 0.5px;
                 }
 
-                /* Cartes de résumé bien lisibles */
+                /* Cartes de résumé avec 3 colonnes */
                 .summary-cards {
                     display: grid;
-                    grid-template-columns: repeat(4, 1fr);
+                    grid-template-columns: repeat(3, 1fr);
                     gap: 20px;
                     margin: 24px 30px;
                 }
