@@ -1,20 +1,4 @@
-.action-card {
-                min-height: 160px; /* Hauteur réduite sur mobile */
-                padding: 20px 15px;
-            }
-
-            .action-title {
-                font-size: 18px; /* Ajusté pour mobile */
-            }
-
-            .action-description {
-                font-size: 14px; /* Ajusté pour mobile */
-            }
-
-            .action-description small {
-                font-size: 12px;
-                padding: 6px 8px;
-            }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -612,14 +596,33 @@
             display: block !important;
         }
 
+        /* CORRECTION: Espacement différent pour dashboard vs autres pages */
         body.app-active .app-main {
+            margin-top: 120px; /* Header + Nav pour toutes les pages par défaut */
+            padding-top: 10px;
+        }
+
+        /* Dashboard garde son espacement normal */
+        body.app-active .app-main.dashboard-mode {
             margin-top: 120px; /* Header + Nav */
-            padding-top: 10px; /* Espace minimal */
+            padding-top: 10px;
+        }
+
+        /* Autres pages: espacement réduit */
+        body.app-active .app-main.page-mode {
+            margin-top: 120px; /* Header + Nav */
+            padding-top: 0 !important; /* Suppression de l'espace au-dessus */
         }
 
         body.app-active #pageContent {
             display: block !important;
             opacity: 1 !important;
+        }
+
+        /* NOUVEAU: Classe spéciale pour les pages non-dashboard */
+        body.app-active #pageContent.non-dashboard {
+            padding-top: 0 !important; /* Suppression complète du padding top */
+            margin-top: 0 !important;
         }
 
         /* === NOUVEAU DASHBOARD MINIMALISTE === */
@@ -912,10 +915,6 @@
                 flex-shrink: 0;
             }
 
-            .step-content {
-                flex: 1;
-            }
-
             .app-nav {
                 height: auto;
                 padding: 10px;
@@ -930,9 +929,19 @@
                 margin-top: 140px; /* Header + Nav responsive */
                 padding-top: 15px; /* Espace réduit pour mobile */
             }
+
+            /* Mobile: différentier dashboard des autres pages */
+            body.app-active .app-main.page-mode {
+                margin-top: 140px;
+                padding-top: 0 !important; /* Suppression complète sur mobile aussi */
+            }
             
             #pageContent {
                 padding: 10px;
+            }
+
+            #pageContent.non-dashboard {
+                padding-top: 0 !important;
             }
 
             /* Dashboard responsive */
@@ -954,7 +963,21 @@
             }
 
             .action-card {
-                padding: 30px 25px;
+                min-height: 160px; /* Hauteur réduite sur mobile */
+                padding: 20px 15px;
+            }
+
+            .action-title {
+                font-size: 18px; /* Ajusté pour mobile */
+            }
+
+            .action-description {
+                font-size: 14px; /* Ajusté pour mobile */
+            }
+
+            .action-description small {
+                font-size: 12px;
+                padding: 6px 8px;
             }
 
             .dashboard-stats {
@@ -1415,6 +1438,26 @@
             }
         }
 
+        // NOUVELLE FONCTION: Gestion des modes d'affichage pour les pages
+        window.setPageMode = function(pageName) {
+            const appMain = document.querySelector('.app-main');
+            const pageContent = document.getElementById('pageContent');
+            
+            if (pageName === 'dashboard') {
+                // Mode dashboard: espacement normal
+                appMain.classList.remove('page-mode');
+                appMain.classList.add('dashboard-mode');
+                pageContent.classList.remove('non-dashboard');
+                console.log('[PAGE_MODE] Dashboard mode activated - normal spacing');
+            } else {
+                // Mode page: espacement réduit
+                appMain.classList.remove('dashboard-mode');
+                appMain.classList.add('page-mode');
+                pageContent.classList.add('non-dashboard');
+                console.log('[PAGE_MODE] Page mode activated - reduced spacing for:', pageName);
+            }
+        };
+
         // INTERCEPT PAGEMANAGER DASHBOARD LOADING
         // Intercepter la méthode loadPage du PageManager pour le dashboard
         window.interceptDashboardLoad = function() {
@@ -1423,6 +1466,9 @@
                 
                 window.pageManager.loadPage = function(pageName, ...args) {
                     console.log(`[DASHBOARD_INTERCEPT] LoadPage called for: ${pageName}`);
+                    
+                    // Appliquer le mode d'affichage approprié
+                    window.setPageMode(pageName);
                     
                     if (pageName === 'dashboard') {
                         console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using new minimaliste design');
@@ -1684,6 +1730,9 @@
         console.log('[INDEX] 1. Design minimaliste et intuitif');
         console.log('[INDEX] 2. Explications étape par étape');
         console.log('[INDEX] 3. Navigation vers les bonnes pages');
+        console.log('[INDEX] 🚀 ESPACEMENT CORRIGÉ:');
+        console.log('[INDEX] ✅ Dashboard: espacement normal conservé');
+        console.log('[INDEX] ✅ Autres pages: espacement supprimé au-dessus du contenu');
     </script>
 </body>
 </html>
