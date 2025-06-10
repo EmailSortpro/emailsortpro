@@ -1357,7 +1357,6 @@
                 
                 if (msalAccount && msalToken) {
                     console.log('[EARLY_AUTH] App mode activated immediately');
-                    
                     return true;
                 }
             } catch (error) {
@@ -1771,18 +1770,6 @@
                 expectedHostname: 'emailsortpro.netlify.app'
             };
         };
-
     </script>
 </body>
-</html> Tokens detected in localStorage, user likely authenticated');
-                    
-                    const loginPage = document.getElementById('loginPage');
-                    if (loginPage) {
-                        loginPage.style.display = 'none';
-                        console.log('[EARLY_AUTH] Login page immediately hidden');
-                    }
-                    
-                    document.body.classList.add('app-active');
-                    document.body.classList.remove('login-mode');
-                    appAlreadyShown = true;
-                    console.log('[EARLY_AUTH]
+</html>
