@@ -503,21 +503,82 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            color: white;
+            color: white !important;
             font-size: 14px;
+        }
+
+        .user-info .user-name {
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+        }
+
+        .user-info .user-email {
+            color: white !important;
+            font-size: 12px !important;
+            opacity: 0.9 !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+        }
+
+        .user-info .user-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            color: white !important;
         }
 
         .user-avatar {
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            color: white;
+            background: rgba(255,255,255,0.2) !important;
+            color: white !important;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 500;
             font-size: 13px;
+        }
+
+        /* Forcer le texte blanc pour tous les éléments dans auth-status */
+        .auth-status * {
+            color: white !important;
+        }
+
+        .auth-status .text-muted {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        /* Forcer spécifiquement pour le header */
+        .app-header .auth-status,
+        .app-header .auth-status *,
+        .app-header .user-info,
+        .app-header .user-info *,
+        .app-header .user-name,
+        .app-header .user-email,
+        .app-header .user-details,
+        .app-header .user-details * {
+            color: white !important;
+        }
+
+        /* Styles spécifiques pour les données utilisateur */
+        .header-content .user-name {
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+        }
+
+        .header-content .user-email {
+            color: white !important;
+            font-size: 12px !important;
+            opacity: 0.9 !important;
+        }
+
+        .header-content .user-info div {
+            color: white !important;
         }
 
         /* Navigation sobre */
@@ -1729,6 +1790,29 @@
                 window.showApp();
             } else {
                 console.log('[AUTH_SUCCESS] App already active, skipping duplicate display');
+            }
+        };
+
+        // Fonction pour mettre à jour l'affichage utilisateur dans le header
+        window.updateUserDisplay = function(user) {
+            const authStatus = document.getElementById('authStatus');
+            if (authStatus && user) {
+                // Utiliser le nom et email spécifiés ou ceux du profil
+                const userName = user.displayName || 'Vianney Hastings';
+                const userEmail = user.mail || user.userPrincipalName || 'vianney.hastings@hotmail.fr';
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+                
+                authStatus.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-details">
+                            <div class="user-name">${userName}</div>
+                            <div class="user-email">${userEmail}</div>
+                        </div>
+                        <div class="user-avatar">${initials}</div>
+                    </div>
+                `;
+                
+                console.log('[USER_DISPLAY] User info updated in header:', { userName, userEmail });
             }
         };
 
