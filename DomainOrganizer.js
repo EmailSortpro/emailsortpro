@@ -151,7 +151,7 @@ class ModernDomainOrganizer {
             </div>
 
             <!-- Modal de personnalisation du dossier -->
-            <div id="folderModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div id="folderModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
                 <div style="background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
                     <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1f2937;">Personnaliser le dossier</h3>
                     <div style="margin-bottom: 16px;">
@@ -170,7 +170,7 @@ class ModernDomainOrganizer {
             </div>
 
             <!-- Modal de déplacement d'emails -->
-            <div id="moveModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div id="moveModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
                 <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto;">
                     <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1f2937;">Déplacer les emails sélectionnés</h3>
                     <div style="margin-bottom: 16px;">
@@ -215,6 +215,37 @@ class ModernDomainOrganizer {
                 
                 #folderModal.show, #moveModal.show {
                     display: flex !important;
+                }
+                
+                /* Assurer que les éléments sont cliquables */
+                button, select, input[type="date"], input[type="number"], input[type="checkbox"] {
+                    pointer-events: auto;
+                    z-index: 1;
+                }
+                
+                /* Modal overlay clickable */
+                #folderModal, #moveModal {
+                    pointer-events: auto;
+                }
+                
+                #folderModal > div, #moveModal > div {
+                    pointer-events: auto;
+                }
+                
+                /* Navigation cliquable */
+                .nav-item {
+                    pointer-events: auto;
+                    cursor: pointer;
+                }
+                
+                /* Boutons toujours cliquables */
+                .domain-item button,
+                .email-item button,
+                #advancedAnalyzeBtn,
+                #advancedOrganizeBtn,
+                #moveSelectedBtn {
+                    pointer-events: auto;
+                    z-index: 2;
                 }
             </style>
         `;
@@ -648,14 +679,19 @@ class ModernDomainOrganizer {
         if (modal && domainInput && folderInput) {
             domainInput.value = domain;
             folderInput.value = this.customFolderNames.get(domain) || `📧 ${domain}`;
+            modal.style.display = 'flex';
             modal.classList.add('show');
             folderInput.focus();
+            folderInput.select();
         }
     }
 
     closeFolderModal() {
         const modal = document.getElementById('folderModal');
-        if (modal) modal.classList.remove('show');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        }
     }
 
     saveFolderName() {
@@ -666,18 +702,22 @@ class ModernDomainOrganizer {
             const domain = domainInput.value;
             const folderName = folderInput.value.trim();
             
-            if (folderName) {
+            if (folderName && folderName.length > 0) {
                 this.customFolderNames.set(domain, folderName);
                 this.displayAdvancedResults();
                 this.showStatusMessage(`✅ Nom du dossier mis à jour pour ${domain}`, 'success');
+                this.closeFolderModal();
+            } else {
+                this.showStatusMessage('⚠️ Veuillez entrer un nom de dossier valide', 'error');
             }
         }
-        
-        this.closeFolderModal();
     }
 
     async openMoveModal() {
-        if (this.selectedEmails.size === 0) return;
+        if (this.selectedEmails.size === 0) {
+            this.showStatusMessage('⚠️ Aucun email sélectionné', 'error');
+            return;
+        }
         
         const modal = document.getElementById('moveModal');
         const destinationSelect = document.getElementById('modalDestination');
@@ -687,6 +727,8 @@ class ModernDomainOrganizer {
         
         // Charger les dossiers disponibles
         try {
+            this.showStatusMessage('🔄 Chargement des dossiers...', 'info');
+            
             const folders = await window.mailService.getFolders();
             destinationSelect.innerHTML = '<option value="">Choisir un dossier...</option>';
             
@@ -707,27 +749,32 @@ class ModernDomainOrganizer {
                 
                 return `
                     <div style="padding: 8px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-size: 12px; font-weight: 600; color: #1f2937;">${email.subject || 'Sans objet'}</div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 12px; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${email.subject || 'Sans objet'}</div>
                             <div style="font-size: 10px; color: #6b7280;">De: ${domain}</div>
                         </div>
-                        <button onclick="modernDomainOrganizer.removeFromSelection('${emailId}')" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                        <button onclick="modernDomainOrganizer.removeFromSelection('${emailId}')" style="background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 9px; cursor: pointer; margin-left: 8px; flex-shrink: 0;">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                 `;
             }).join('');
             
+            modal.style.display = 'flex';
             modal.classList.add('show');
             
         } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur chargement dossiers:', error);
             this.showStatusMessage('❌ Erreur lors du chargement des dossiers', 'error');
         }
     }
 
     closeMoveModal() {
         const modal = document.getElementById('moveModal');
-        if (modal) modal.classList.remove('show');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+        }
     }
 
     removeFromSelection(emailId) {
