@@ -1,4 +1,4 @@
-// PageManager.js - Version 11.4 - Bouton Sélection Réparé avec Actions Intégrées
+// PageManager.js - Version 11.5 - Dashboard Supprimé pour Index.html
 
 class PageManager {
     constructor() {
@@ -13,28 +13,47 @@ class PageManager {
         this.lastScanData = null;
         this.hideExplanation = localStorage.getItem('hideEmailExplanation') === 'true';
         
-        // Page renderers
+        // Page renderers - DASHBOARD SUPPRIMÉ
         this.pages = {
-            dashboard: (container) => this.renderDashboard(container),
+            // dashboard: supprimé - géré par index.html
             scanner: (container) => this.renderScanner(container),
             emails: (container) => this.renderEmails(container),
             tasks: (container) => this.renderTasks(container),
             categories: (container) => this.renderCategories(container),
-            settings: (container) => this.renderSettings(container)
+            settings: (container) => this.renderSettings(container),
+            ranger: (container) => this.renderRanger(container)
         };
         
         this.init();
     }
 
     init() {
-        console.log('[PageManager] Initialized v11.4 - Bouton Sélection Réparé avec Actions');
+        console.log('[PageManager] Initialized v11.5 - Dashboard supprimé pour Index.html');
     }
 
     // =====================================
-    // PAGE LOADING
+    // PAGE LOADING - DASHBOARD IGNORÉ
     // =====================================
     async loadPage(pageName) {
         console.log(`[PageManager] Loading page: ${pageName}`);
+
+        // IGNORER complètement le dashboard - laissé à index.html
+        if (pageName === 'dashboard') {
+            console.log('[PageManager] Dashboard ignored - handled by index.html');
+            
+            // Juste mettre à jour la navigation
+            this.updateNavigation(pageName);
+            
+            // S'assurer que le contenu du dashboard de l'index est visible
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                // Ne pas vider le contenu, le dashboard est déjà dans l'index
+                pageContent.style.display = 'block';
+                pageContent.style.opacity = '1';
+            }
+            
+            return; // Sortir immédiatement
+        }
 
         const pageContent = document.getElementById('pageContent');
         if (!pageContent) {
@@ -2690,125 +2709,9 @@ class PageManager {
     }
 
     // =====================================
-    // OTHER PAGES (Dashboard, Scanner, Tasks, Categories, Settings)
+    // OTHER PAGES (Scanner, Tasks, Categories, Settings, Ranger)
     // =====================================
-    async renderDashboard(container) {
-        const scanData = this.lastScanData;
-        const taskStats = window.taskManager?.getStats() || {
-            total: 0,
-            byStatus: { todo: 0, 'in-progress': 0, completed: 0 },
-            overdue: 0
-        };
-        
-        const aiConfigured = window.aiTaskAnalyzer?.isConfigured() || false;
-        
-        container.innerHTML = `
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Tableau de bord</h1>
-                <div class="dashboard-actions">
-                    <button class="btn primary" onclick="window.pageManager.loadPage('scanner')">
-                        <i class="fas fa-search"></i> Nouveau scan
-                    </button>
-                </div>
-            </div>
-
-            ${!aiConfigured ? `
-                <div class="ai-banner">
-                    <div class="ai-banner-icon"><i class="fas fa-magic"></i></div>
-                    <div class="ai-banner-content">
-                        <h3>Activez l'IA pour des suggestions intelligentes</h3>
-                        <p>Configurez Claude AI pour analyser vos emails automatiquement</p>
-                    </div>
-                    <button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
-                        Configurer
-                    </button>
-                </div>
-            ` : ''}
-
-            <div class="dashboard-stats">
-                ${this.createDashboardCard({
-                    icon: 'fas fa-tasks',
-                    label: 'Tâches totales',
-                    value: taskStats.total,
-                    color: '#3b82f6'
-                })}
-                ${this.createDashboardCard({
-                    icon: 'fas fa-clock',
-                    label: 'À faire',
-                    value: taskStats.byStatus.todo,
-                    color: '#06b6d4'
-                })}
-                ${this.createDashboardCard({
-                    icon: 'fas fa-check-circle',
-                    label: 'Terminées',
-                    value: taskStats.byStatus.completed,
-                    color: '#10b981'
-                })}
-                ${this.createDashboardCard({
-                    icon: 'fas fa-exclamation-circle',
-                    label: 'En retard',
-                    value: taskStats.overdue,
-                    color: '#ef4444'
-                })}
-            </div>
-
-            ${scanData ? this.renderScanStats(scanData) : this.renderWelcome()}
-        `;
-
-        this.addDashboardStyles();
-    }
-
-    createDashboardCard({ icon, label, value, color }) {
-        return `
-            <div class="dashboard-card" style="--card-color: ${color}">
-                <div class="card-icon">
-                    <i class="${icon}"></i>
-                </div>
-                <div class="card-content">
-                    <div class="card-value">${value}</div>
-                    <div class="card-label">${label}</div>
-                </div>
-            </div>
-        `;
-    }
-
-    renderWelcome() {
-        return `
-            <div class="welcome-card">
-                <div class="welcome-content">
-                    <div class="welcome-icon">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </div>
-                    <h2 class="welcome-title">Bienvenue!</h2>
-                    <p class="welcome-text">
-                        Commencez par scanner vos emails pour les organiser automatiquement.
-                    </p>
-                    <button class="btn primary large" onclick="window.pageManager.loadPage('scanner')">
-                        <i class="fas fa-search"></i> Démarrer le scan
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    renderScanStats(scanData) {
-        return `
-            <div class="scan-stats-card">
-                <h3>Résultats du dernier scan</h3>
-                <div class="scan-stats">
-                    <div class="stat">
-                        <span class="stat-number">${scanData.total}</span>
-                        <span class="stat-label">emails analysés</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-number">${scanData.categorized}</span>
-                        <span class="stat-label">catégorisés</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
+    
     async renderScanner(container) {
         console.log('[PageManager] Rendering scanner page...');
         
@@ -2897,228 +2800,23 @@ class PageManager {
         }
     }
 
-    addDashboardStyles() {
-        if (document.getElementById('dashboardStyles')) return;
-        
-        const styles = document.createElement('style');
-        styles.id = 'dashboardStyles';
-        styles.textContent = `
-            .dashboard-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 32px;
-            }
-            
-            .dashboard-title {
-                font-size: 32px;
-                font-weight: 800;
-                color: #111827;
-                margin: 0;
-            }
-            
-            .dashboard-actions {
-                display: flex;
-                gap: 12px;
-            }
-            
-            .dashboard-stats {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-                margin-bottom: 32px;
-            }
-            
-            .dashboard-card {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                padding: 24px;
-                display: flex;
-                align-items: center;
-                gap: 20px;
-                transition: all 0.3s ease;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            }
-            
-            .dashboard-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
-            
-            .card-icon {
-                width: 60px;
-                height: 60px;
-                background: var(--card-color);
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-            }
-            
-            .card-content {
-                flex: 1;
-            }
-            
-            .card-value {
-                font-size: 32px;
-                font-weight: 800;
-                color: #1f2937;
-                line-height: 1;
-                margin-bottom: 4px;
-            }
-            
-            .card-label {
-                font-size: 14px;
-                color: #6b7280;
-                font-weight: 600;
-            }
-            
-            .welcome-card {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                padding: 48px;
-                text-align: center;
-            }
-            
-            .welcome-content {
-                max-width: 400px;
-                margin: 0 auto;
-            }
-            
-            .welcome-icon {
-                font-size: 64px;
-                color: #3b82f6;
-                margin-bottom: 24px;
-            }
-            
-            .welcome-title {
-                font-size: 28px;
-                font-weight: 700;
-                color: #1f2937;
-                margin: 0 0 16px 0;
-            }
-            
-            .welcome-text {
-                font-size: 16px;
-                color: #6b7280;
-                line-height: 1.6;
-                margin: 0 0 32px 0;
-            }
-            
-            .ai-banner {
-                background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                border: 1px solid #0ea5e9;
-                border-radius: 16px;
-                padding: 24px;
-                display: flex;
-                align-items: center;
-                gap: 20px;
-                margin-bottom: 32px;
-            }
-            
-            .ai-banner-icon {
-                width: 48px;
-                height: 48px;
-                background: #0ea5e9;
-                color: white;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-            }
-            
-            .ai-banner-content {
-                flex: 1;
-            }
-            
-            .ai-banner-content h3 {
-                margin: 0 0 4px 0;
-                font-size: 18px;
-                font-weight: 700;
-                color: #0c4a6e;
-            }
-            
-            .ai-banner-content p {
-                margin: 0;
-                color: #075985;
-                font-size: 14px;
-            }
-            
-            .scan-stats-card {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 16px;
-                padding: 24px;
-            }
-            
-            .scan-stats-card h3 {
-                margin: 0 0 20px 0;
-                font-size: 20px;
-                font-weight: 700;
-                color: #1f2937;
-            }
-            
-            .scan-stats {
-                display: flex;
-                gap: 32px;
-            }
-            
-            .stat {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .stat-number {
-                font-size: 24px;
-                font-weight: 800;
-                color: #3b82f6;
-            }
-            
-            .stat-label {
-                font-size: 14px;
-                color: #6b7280;
-                font-weight: 600;
-            }
-            
-            .btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 12px 20px;
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                font-size: 14px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                text-decoration: none;
-            }
-            
-            .btn.primary {
-                background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-                color: white;
-                box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3);
-            }
-            
-            .btn.primary:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 5px 16px rgba(59, 130, 246, 0.4);
-            }
-            
-            .btn.large {
-                padding: 16px 32px;
-                font-size: 16px;
-            }
-        `;
-        
-        document.head.appendChild(styles);
+    async renderRanger(container) {
+        if (window.domainOrganizer && window.domainOrganizer.showPage) {
+            window.domainOrganizer.showPage(container);
+        } else {
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Ranger par domaine</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-folder-tree"></i>
+                    </div>
+                    <h3 class="empty-title">Module de rangement</h3>
+                    <p class="empty-text">Module de rangement en cours de chargement...</p>
+                </div>
+            `;
+        }
     }
 
     async analyzeFirstEmails(emails) {
@@ -3148,4 +2846,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v11.4 loaded - Bouton Sélection Réparé avec Actions Intégrées');
+console.log('✅ PageManager v11.5 loaded - Dashboard supprimé pour index.html');
