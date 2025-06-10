@@ -414,7 +414,7 @@ body.login-mode {
     max-width: 1400px;
     margin: 0 auto;
     padding: var(--spacing-md) var(--spacing-lg);
-    gap: 8px; /* Gap réduit pour boutons unifiés */
+    gap: 12px; /* Espacement entre boutons */
     /* Permettre le scroll horizontal invisible */
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -423,78 +423,84 @@ body.login-mode {
 }
 
 .nav-item {
-    /* Bouton unifié avec bordure visible */
-    background: var(--bg-secondary);
-    border: 2px solid var(--border);
-    padding: 14px 18px;
+    /* Boutons clairement délimités avec bordure forte */
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    
+    /* Dimensions uniformes */
+    padding: 12px 16px;
     font-size: 14px;
     font-weight: 600;
     color: var(--text-secondary);
+    
+    /* Apparence */
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     white-space: nowrap;
-    border-radius: 12px; /* Boutons bien délimités */
+    border-radius: 10px; /* Coins arrondis mais pas trop */
     
     /* Dimensions fixes pour uniformité */
-    min-width: 120px;
-    height: 48px; /* Hauteur fixe pour tous */
+    min-width: 110px;
+    height: 44px; /* Hauteur fixe pour tous */
     
     flex-shrink: 0;
     position: relative;
-    overflow: hidden;
     
-    /* Assurer l'alignement vertical parfait */
+    /* Assurer la délimitation claire */
     box-sizing: border-box;
 }
 
-/* Conteneur d'icône unifié */
+/* Icônes Font Awesome restaurées avec taille uniforme */
 .nav-item i { 
-    /* Dimensions fixes pour toutes les icônes */
-    width: 20px !important;
-    height: 20px !important;
+    /* Taille uniforme pour toutes les icônes */
     font-size: 16px !important;
+    width: 18px;
+    height: 18px;
     
-    /* Centrage parfait */
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    /* Centrage */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     
-    /* Style uniforme */
+    /* Style */
     font-weight: 900 !important;
-    line-height: 1 !important;
+    line-height: 1;
+    color: inherit;
     
-    /* Supprimer tout style hérité */
-    margin: 0 !important;
-    padding: 0 !important;
-    
-    /* Assurer la visibilité */
-    color: inherit !important;
+    /* Espacement */
+    margin: 0;
+    padding: 0;
 }
 
-/* Supprimer les pseudo-éléments précédents qui causaient des problèmes */
-.nav-item i::before,
-.nav-item i::after {
-    display: none !important;
+/* S'assurer que les vraies icônes Font Awesome s'affichent */
+.nav-item .fas,
+.nav-item .far,
+.nav-item .fab {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+    font-weight: 900 !important;
 }
 
-/* État de survol unifié */
+/* État de survol avec délimitation renforcée */
 .nav-item:hover {
-    color: var(--primary);
-    background: linear-gradient(135deg, rgba(91, 33, 182, 0.1) 0%, rgba(124, 58, 237, 0.05) 100%);
+    background: #f8fafc;
     border-color: var(--primary);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(91, 33, 182, 0.15);
+    color: var(--primary);
+    box-shadow: 
+        0 4px 12px rgba(91, 33, 182, 0.15),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
-/* État actif moderne et unifié */
+/* État actif avec délimitation très claire */
 .nav-item.active {
-    color: white;
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    border-color: var(--primary);
+    border-color: var(--primary-dark);
+    color: white;
     box-shadow: 
         0 6px 20px rgba(91, 33, 182, 0.3),
         0 2px 8px rgba(91, 33, 182, 0.2),
@@ -502,14 +508,15 @@ body.login-mode {
     transform: translateY(-1px);
 }
 
-/* Icône active avec effet lumineux uniforme */
+/* Icône active avec effet lumineux */
 .nav-item.active i {
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
 }
 
 /* Survol de l'élément actif */
 .nav-item.active:hover { 
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+    border-color: var(--primary-dark);
     box-shadow: 
         0 8px 25px rgba(91, 33, 182, 0.4),
         0 3px 12px rgba(91, 33, 182, 0.3),
@@ -517,14 +524,16 @@ body.login-mode {
     transform: translateY(-2px);
 }
 
-/* Focus uniforme */
+/* Focus avec délimitation claire */
 .nav-item:focus {
-    outline: 3px solid rgba(91, 33, 182, 0.3);
+    outline: 3px solid rgba(91, 33, 182, 0.5);
     outline-offset: 2px;
-    box-shadow: 0 0 0 6px rgba(91, 33, 182, 0.1);
+    box-shadow: 
+        0 0 0 6px rgba(91, 33, 182, 0.1),
+        0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Effet de brillance au survol */
+/* Effet de brillance subtil au survol */
 .nav-item::before {
     content: '';
     position: absolute;
@@ -532,9 +541,10 @@ body.login-mode {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s;
     pointer-events: none;
+    border-radius: 8px;
 }
 
 .nav-item:hover::before {
@@ -543,39 +553,47 @@ body.login-mode {
 
 /* Désactiver l'effet de brillance pour l'élément actif */
 .nav-item.active::before {
-    display: none;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
-/* Responsive - tailles ajustées */
+/* Responsive - maintenir les délimitations claires */
 @media (max-width: 768px) {
-    .nav-item {
-        min-width: 100px;
-        height: 44px;
-        padding: 12px 16px;
-        font-size: 13px;
+    .app-nav {
         gap: 8px;
+        padding: 12px 16px;
+    }
+    
+    .nav-item {
+        min-width: 95px;
+        height: 40px;
+        padding: 10px 12px;
+        font-size: 13px;
+        gap: 6px;
+        /* Garder les bordures fortes sur mobile */
+        border-width: 2px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     
     .nav-item i {
-        width: 18px !important;
-        height: 18px !important;
         font-size: 14px !important;
+        width: 16px;
+        height: 16px;
     }
 }
 
 @media (max-width: 480px) {
     .nav-item {
-        min-width: 90px;
-        height: 40px;
-        padding: 10px 14px;
+        min-width: 85px;
+        height: 38px;
+        padding: 8px 10px;
         font-size: 12px;
-        gap: 6px;
+        gap: 5px;
     }
     
     .nav-item i {
-        width: 16px !important;
-        height: 16px !important;
         font-size: 12px !important;
+        width: 14px;
+        height: 14px;
     }
 }
 
