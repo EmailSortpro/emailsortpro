@@ -1,4 +1,4 @@
-// app.js - Application CORRIGÉE avec coordination index.html
+// app.js - Application avec gestion intelligente du scroll
 
 class App {
     constructor() {
@@ -9,7 +9,7 @@ class App {
         this.isInitializing = false;
         this.initializationPromise = null;
         
-        console.log('[App] Constructor - Application starting with index coordination...');
+        console.log('[App] Constructor - Application starting...');
     }
 
     async init() {
@@ -80,19 +80,119 @@ class App {
         // 4. Bind methods
         this.bindModuleMethods();
         
+        // 5. Initialiser la gestion du scroll
+        this.initializeScrollManager();
+        
         console.log('[App] Critical modules initialized');
+    }
+
+    // =====================================
+    // GESTION INTELLIGENTE DU SCROLL
+    // =====================================
+    initializeScrollManager() {
+        console.log('[App] Initializing scroll manager...');
+        
+        // Fonction pour vérifier si le scroll est nécessaire
+        window.checkScrollNeeded = () => {
+            const body = document.body;
+            const contentHeight = document.documentElement.scrollHeight;
+            const viewportHeight = window.innerHeight;
+            
+            console.log('[SCROLL_MANAGER]', {
+                contentHeight,
+                viewportHeight,
+                bodyScrollHeight: body.scrollHeight,
+                needsScroll: contentHeight > viewportHeight
+            });
+            
+            if (contentHeight <= viewportHeight) {
+                body.classList.add('page-short-content');
+                body.style.overflow = 'hidden';
+                body.style.overflowY = 'hidden';
+                console.log('[SCROLL_MANAGER] Scroll forcé à hidden');
+            } else {
+                body.classList.remove('page-short-content');
+                body.style.overflow = '';
+                body.style.overflowY = '';
+                console.log('[SCROLL_MANAGER] Scroll restauré');
+            }
+        };
+
+        // Fonction pour définir le mode de page
+        window.setPageMode = (pageName) => {
+            const body = document.body;
+            
+            // Nettoyer les anciennes classes de page
+            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
+            
+            // Ajouter la nouvelle classe de page
+            if (pageName) {
+                body.classList.add(`page-${pageName}`);
+                console.log(`[PAGE_MODE] Mode ${pageName} activé`);
+            }
+            
+            // Vérifier le scroll après un délai
+            setTimeout(() => {
+                const contentHeight = document.documentElement.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                
+                console.log('[PAGE_MODE] Scroll check for', pageName, {
+                    contentHeight,
+                    viewportHeight,
+                    needsScroll: contentHeight > viewportHeight
+                });
+                
+                if (contentHeight <= viewportHeight) {
+                    body.classList.add('page-short-content');
+                    body.style.overflow = 'hidden';
+                    body.style.overflowY = 'hidden';
+                    console.log('[PAGE_MODE] Short content - scroll hidden');
+                } else {
+                    body.classList.remove('page-short-content');
+                    body.style.overflow = '';
+                    body.style.overflowY = '';
+                    console.log('[PAGE_MODE] Long content - scroll enabled');
+                }
+            }, 300);
+        };
+
+        // Vérifier à chaque redimensionnement de fenêtre
+        window.addEventListener('resize', () => {
+            clearTimeout(window.scrollCheckTimeout);
+            window.scrollCheckTimeout = setTimeout(window.checkScrollNeeded, 250);
+        });
+
+        // Observer les changements de contenu
+        if (window.MutationObserver) {
+            const contentObserver = new MutationObserver(() => {
+                clearTimeout(window.scrollCheckTimeout);
+                window.scrollCheckTimeout = setTimeout(window.checkScrollNeeded, 100);
+            });
+
+            contentObserver.observe(document.body, {
+                childList: true,
+                subtree: true,
+                attributes: false
+            });
+
+            console.log('[SCROLL_MANAGER] Content observer initialized');
+        }
+
+        console.log('[App] ✅ Scroll manager initialized');
     }
 
     async ensureTaskManagerReady() {
         console.log('[App] Ensuring TaskManager is ready...');
         
+        // Vérifier si TaskManager existe déjà
         if (window.taskManager && window.taskManager.initialized) {
             console.log('[App] ✅ TaskManager already ready');
             return true;
         }
         
+        // Attendre que TaskManager soit initialisé (il est chargé avant app.js)
         let attempts = 0;
-        const maxAttempts = 50;
+        const maxAttempts = 50; // 5 secondes max
         
         while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -104,6 +204,7 @@ class App {
             return false;
         }
         
+        // Vérifier que les méthodes essentielles existent
         const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
         for (const method of essentialMethods) {
             if (typeof window.taskManager[method] !== 'function') {
@@ -124,6 +225,7 @@ class App {
             return true;
         }
         
+        // Attendre que PageManager soit chargé
         let attempts = 0;
         const maxAttempts = 30;
         
@@ -149,6 +251,7 @@ class App {
             return true;
         }
         
+        // TasksView est créé dans TaskManager.js, attendre
         let attempts = 0;
         const maxAttempts = 30;
         
@@ -240,8 +343,6 @@ class App {
     }
 
     async checkAuthenticationStatus() {
-        console.log('[App] Checking authentication status...');
-        
         if (window.authService.isAuthenticated()) {
             const account = window.authService.getAccount();
             if (account) {
@@ -250,22 +351,7 @@ class App {
                     this.user = await window.authService.getUserInfo();
                     this.isAuthenticated = true;
                     console.log('[App] User authenticated:', this.user.displayName || this.user.mail);
-                    
-                    // COORDINATION AVEC INDEX.HTML
-                    if (window.APP_STATE) {
-                        window.APP_STATE.authenticated = true;
-                    }
-                    
-                    // Notifier index.html que l'authentification est réussie
-                    if (typeof window.onAuthSuccess === 'function') {
-                        window.onAuthSuccess();
-                    }
-                    
-                    // Afficher l'app APRÈS avoir notifié index.html
-                    setTimeout(() => {
-                        this.showAppWithTransition();
-                    }, 100);
-                    
+                    this.showAppWithTransition();
                 } catch (userInfoError) {
                     console.error('[App] Error getting user info:', userInfoError);
                     if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
@@ -362,8 +448,15 @@ class App {
     setupEventListeners() {
         console.log('[App] Setting up event listeners...');
         
-        // Ne pas configurer le bouton de login - index.html s'en charge
-        
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            const newLoginBtn = loginBtn.cloneNode(true);
+            loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+            
+            newLoginBtn.addEventListener('click', () => this.login());
+        }
+
+        // Intercepter les changements de navigation pour la gestion du scroll
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
@@ -371,6 +464,10 @@ class App {
             newItem.addEventListener('click', (e) => {
                 const page = e.currentTarget.dataset.page;
                 if (page && window.pageManager) {
+                    // Définir le mode de page avant de charger
+                    if (window.setPageMode) {
+                        window.setPageMode(page);
+                    }
                     window.pageManager.loadPage(page);
                 }
             });
@@ -403,6 +500,7 @@ class App {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection:', event.reason);
             
+            // Vérifier s'il s'agit d'une erreur de TaskManager
             if (event.reason && event.reason.message && 
                 event.reason.message.includes('Cannot read properties of undefined')) {
                 
@@ -428,6 +526,12 @@ class App {
         console.log('[App] Login attempted...');
         
         try {
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion en cours...';
+            }
+            
             this.showModernLoading('Connexion à Outlook...');
             
             if (!window.authService.isInitialized) {
@@ -436,8 +540,6 @@ class App {
             }
             
             await window.authService.login();
-            
-            // L'authentification réussie sera gérée par checkAuthenticationStatus via les callbacks MSAL
             
         } catch (error) {
             console.error('[App] Login error:', error);
@@ -476,9 +578,10 @@ class App {
                 window.uiManager.showToast(errorMessage, 'error', 8000);
             }
             
-            // Notifier index.html de l'échec
-            if (window.APP_STATE) {
-                window.APP_STATE.loginInProgress = false;
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
             }
         }
     }
@@ -533,12 +636,6 @@ class App {
             }
         });
         
-        // Réinitialiser l'état index.html
-        if (window.APP_STATE) {
-            window.APP_STATE.authenticated = false;
-            window.APP_STATE.appShown = false;
-        }
-        
         setTimeout(() => {
             window.location.reload();
         }, 1000);
@@ -547,14 +644,15 @@ class App {
     showLogin() {
         console.log('[App] Showing login page');
         
-        // Laisser index.html gérer l'affichage de la page de login
-        if (window.APP_STATE) {
-            window.APP_STATE.authenticated = false;
-            window.APP_STATE.appShown = false;
-        }
-        
-        // S'assurer que l'app n'est pas en mode actif
+        // Activer le mode login pour masquer le scroll
+        document.body.classList.add('login-mode');
         document.body.classList.remove('app-active');
+        
+        // S'assurer que la page de login est visible
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.style.display = 'flex';
+        }
         
         this.hideModernLoading();
         
@@ -564,18 +662,12 @@ class App {
     }
 
     showAppWithTransition() {
-        console.log('[App] Showing application with transition - COORDINATED');
-        
-        // Vérifier si index.html a déjà affiché l'app
-        if (window.APP_STATE && window.APP_STATE.appShown) {
-            console.log('[App] Index.html already displayed app, ensuring consistency');
-            this.ensureAppDisplay();
-            return;
-        }
+        console.log('[App] Showing application with transition');
         
         this.hideModernLoading();
         
-        // Activer le mode app
+        // Retirer le mode login et activer le mode app
+        document.body.classList.remove('login-mode');
         document.body.classList.add('app-active');
         console.log('[App] App mode activated');
         
@@ -616,14 +708,9 @@ class App {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // Marquer l'état
-        if (window.APP_STATE) {
-            window.APP_STATE.appShown = true;
-        }
-        
-        // Notifier index.html que l'app est affichée
-        if (typeof window.onAppDisplayed === 'function') {
-            window.onAppDisplayed();
+        // Définir le mode dashboard et charger
+        if (window.setPageMode) {
+            window.setPageMode('dashboard');
         }
         
         // Charger le dashboard
@@ -631,6 +718,13 @@ class App {
             setTimeout(() => {
                 window.pageManager.loadPage('dashboard');
                 console.log('[App] Dashboard loading requested');
+                
+                // Vérifier le scroll après chargement du dashboard
+                setTimeout(() => {
+                    if (window.checkScrollNeeded) {
+                        window.checkScrollNeeded();
+                    }
+                }, 500);
             }, 100);
         } else {
             console.warn('[App] PageManager not available');
@@ -639,26 +733,7 @@ class App {
         // Forcer l'affichage avec CSS
         this.forceAppDisplay();
         
-        console.log('[App] ✅ Application fully displayed with coordination');
-    }
-
-    ensureAppDisplay() {
-        console.log('[App] Ensuring app display consistency...');
-        
-        // S'assurer que l'app est bien affichée
-        document.body.classList.add('app-active');
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) {
-            loginPage.style.display = 'none';
-        }
-        
-        // Charger le dashboard si pas encore fait
-        if (window.pageManager) {
-            setTimeout(() => {
-                window.pageManager.loadPage('dashboard');
-            }, 100);
-        }
+        console.log('[App] ✅ Application fully displayed with scroll management');
     }
 
     forceAppDisplay() {
@@ -713,7 +788,7 @@ class App {
         const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
-            document.body.style.overflow = 'auto';
+            // Ne pas forcer overflow auto ici, laisser la gestion du scroll aux classes CSS
         }
     }
 
@@ -779,7 +854,7 @@ class App {
 }
 
 // =====================================
-// FONCTIONS GLOBALES COORDONNÉES
+// FONCTIONS GLOBALES D'URGENCE
 // =====================================
 
 // Fonction globale pour le reset d'urgence
@@ -799,30 +874,24 @@ window.emergencyReset = function() {
         }
     });
     
-    // Réinitialiser l'état index.html
-    if (window.APP_STATE) {
-        window.APP_STATE.authenticated = false;
-        window.APP_STATE.appShown = false;
-    }
-    
     window.location.reload();
 };
 
-// Fonction pour forcer l'affichage - COORDONNÉE avec index.html
+// Fonction pour forcer l'affichage
 window.forceShowApp = function() {
-    console.log('[Global] Force show app triggered - checking coordination');
-    
+    console.log('[Global] Force show app triggered');
     if (window.app && typeof window.app.showAppWithTransition === 'function') {
-        console.log('[Global] Using app.js showAppWithTransition');
         window.app.showAppWithTransition();
-    } else if (typeof window.forceShowApp === 'function' && window.forceShowApp !== arguments.callee) {
-        console.log('[Global] Using index.html forceShowApp');
-        window.forceShowApp();
     } else {
-        console.log('[Global] Fallback app display');
         document.body.classList.add('app-active');
+        document.body.classList.remove('login-mode');
         const loginPage = document.getElementById('loginPage');
         if (loginPage) loginPage.style.display = 'none';
+        
+        // Appliquer la gestion du scroll
+        if (window.setPageMode) {
+            window.setPageMode('dashboard');
+        }
     }
 };
 
@@ -854,12 +923,15 @@ function checkServicesReady() {
 }
 
 // =====================================
-// INITIALISATION PRINCIPALE COORDONNÉE
+// INITIALISATION PRINCIPALE
 // =====================================
 
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating app instance with coordination...');
+    console.log('[App] DOM loaded, creating app instance...');
+    
+    // Initialiser le mode login dès le chargement
+    document.body.classList.add('login-mode');
     
     window.app = new App();
     
@@ -889,22 +961,24 @@ document.addEventListener('DOMContentLoaded', () => {
     waitForServices();
 });
 
-// Fallback coordonné avec index.html
+// Fallback si l'initialisation échoue
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.app) {
             console.error('[App] App instance not created, creating fallback...');
+            document.body.classList.add('login-mode');
             window.app = new App();
             window.app.init();
         } else if (!window.app.isAuthenticated && !window.app.isInitializing) {
             console.log('[App] Fallback initialization check...');
             
-            // Utiliser le fallback de index.html si disponible
-            if (typeof window.fallbackAppDisplay === 'function') {
-                window.fallbackAppDisplay();
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage && loginPage.style.display === 'none') {
+                loginPage.style.display = 'flex';
+                document.body.classList.add('login-mode');
             }
         }
     }, 5000);
 });
 
-console.log('✅ App loaded - COORDINATED VERSION with index.html');
+console.log('✅ App loaded - VERSION WITH INTELLIGENT SCROLL MANAGEMENT');
