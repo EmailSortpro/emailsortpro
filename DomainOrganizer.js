@@ -1,4 +1,4 @@
-// DomainOrganizer.js - Version 6.8.0 - Vue détaillée avec contrôle par email
+// DomainOrganizer.js - Version 6.9.0 - Domaines vraiment cliquables avec vue détaillée des emails
 class DomainOrganizer {
     constructor() {
         this.isProcessing = false;
@@ -10,11 +10,11 @@ class DomainOrganizer {
         this.progressCallback = null;
         this.currentAnalysis = null;
         this.selectedActions = new Map();
-        this.emailActions = new Map(); // Nouvelle map pour les actions par email
+        this.emailActions = new Map();
         this.isActive = false;
         this.expandedDomains = new Set();
         
-        console.log('[DomainOrganizer] ✅ v6.8 - Vue détaillée avec contrôle par email');
+        console.log('[DomainOrganizer] ✅ v6.9 - Domaines vraiment cliquables avec emails détaillés');
     }
 
     getPageHTML() {
@@ -26,7 +26,7 @@ class DomainOrganizer {
                         <i class="fas fa-folder-tree"></i>
                         Rangement intelligent par domaine
                     </h2>
-                    <p class="card-subtitle">Organisez automatiquement vos emails en créant des dossiers par domaine d'expéditeur avec contrôle détaillé</p>
+                    <p class="card-subtitle">Organisez automatiquement vos emails avec un contrôle précis sur chaque email et son dossier de destination</p>
                     
                     <form id="organizeForm" class="organize-form">
                         <div class="form-grid">
@@ -109,14 +109,16 @@ class DomainOrganizer {
                     </div>
                 </div>
 
-                <!-- Results Card with Detailed View -->
+                <!-- Results Card with Detailed Clickable View -->
                 <div class="card" id="resultsCard" style="display: none;">
                     <div class="results-header">
                         <h2 class="card-title">
                             <i class="fas fa-list-ul"></i>
-                            Organisation détaillée par email
+                            Contrôle détaillé par email
                         </h2>
-                        <p class="card-subtitle">Contrôlez précisément où chaque email sera déplacé. Cliquez sur un domaine pour voir ses emails.</p>
+                        <p class="card-subtitle">
+                            <strong>Cliquez sur un domaine</strong> pour voir tous ses emails et choisir précisément le dossier de destination de chaque email.
+                        </p>
                     </div>
 
                     <div class="stats-summary">
@@ -142,11 +144,11 @@ class DomainOrganizer {
                         <div class="control-buttons">
                             <button class="btn btn-small" onclick="window.organizerInstance.expandAllDomains()">
                                 <i class="fas fa-expand-arrows-alt"></i>
-                                Tout développer
+                                Développer tout
                             </button>
                             <button class="btn btn-small" onclick="window.organizerInstance.collapseAllDomains()">
                                 <i class="fas fa-compress-arrows-alt"></i>
-                                Tout réduire
+                                Réduire tout
                             </button>
                             <button class="btn btn-small" onclick="window.organizerInstance.selectAllEmails()">
                                 <i class="fas fa-check-square"></i>
@@ -164,8 +166,14 @@ class DomainOrganizer {
                         </div>
                     </div>
 
+                    <!-- Message d'instruction -->
+                    <div class="instruction-message">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Instructions :</strong> Cliquez sur une ligne de domaine pour voir ses emails. Vous pourrez alors modifier le dossier de destination de chaque email individuellement.
+                    </div>
+
                     <div class="detailed-results" id="detailedResults">
-                        <!-- Populated dynamically with domains and emails -->
+                        <!-- Populated dynamically with clickable domains and expandable emails -->
                     </div>
 
                     <div class="action-bar">
@@ -428,6 +436,25 @@ class DomainOrganizer {
                     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
                 }
 
+                /* Message d'instruction */
+                .instruction-message {
+                    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+                    border: 2px solid #3b82f6;
+                    border-radius: 12px;
+                    padding: 16px 20px;
+                    margin-bottom: 24px;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    color: #1e40af;
+                    font-weight: 500;
+                }
+
+                .instruction-message i {
+                    font-size: 18px;
+                    color: #3b82f6;
+                }
+
                 /* Styles pour les résultats détaillés */
                 .results-header {
                     margin-bottom: 32px;
@@ -512,43 +539,46 @@ class DomainOrganizer {
                 }
 
                 .detailed-results {
-                    max-height: 600px;
-                    overflow-y: auto;
                     border: 2px solid #e2e8f0;
                     border-radius: 12px;
                     background: white;
+                    overflow: hidden;
                 }
 
-                /* Styles pour les domaines */
-                .domain-section {
+                /* Styles pour les domaines CLIQUABLES */
+                .domain-row {
                     border-bottom: 1px solid #f1f5f9;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    position: relative;
                 }
 
-                .domain-section:last-child {
+                .domain-row:last-child {
                     border-bottom: none;
+                }
+
+                .domain-row:hover {
+                    background: #f8fafc;
+                    box-shadow: inset 0 0 0 2px #dbeafe;
+                }
+
+                .domain-row.expanded {
+                    background: #eff6ff;
+                    border-color: #3b82f6;
                 }
 
                 .domain-header {
                     padding: 20px 24px;
-                    background: #f8fafc;
-                    border-bottom: 1px solid #e2e8f0;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    position: sticky;
-                    top: 0;
-                    z-index: 10;
+                    position: relative;
+                    transition: all 0.2s ease;
                 }
 
-                .domain-header:hover {
-                    background: #e2e8f0;
-                }
-
-                .domain-header.expanded {
-                    background: #dbeafe;
-                    border-color: #3b82f6;
+                .domain-row.expanded .domain-header {
+                    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+                    border-bottom: 1px solid #3b82f6;
                 }
 
                 .domain-info {
@@ -556,6 +586,7 @@ class DomainOrganizer {
                     align-items: center;
                     gap: 16px;
                     flex: 1;
+                    pointer-events: none; /* Évite les conflits avec le clic global */
                 }
 
                 .domain-checkbox {
@@ -563,109 +594,160 @@ class DomainOrganizer {
                     height: 20px;
                     cursor: pointer;
                     accent-color: #3b82f6;
+                    pointer-events: all; /* Réactive les événements pour la checkbox */
                 }
 
                 .domain-icon {
-                    width: 40px;
-                    height: 40px;
+                    width: 48px;
+                    height: 48px;
                     background: linear-gradient(135deg, #3b82f6, #2563eb);
-                    border-radius: 8px;
+                    border-radius: 10px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 16px;
-                    box-shadow: 0 2px 4px rgb(0 0 0 / 0.1);
+                    font-size: 18px;
+                    box-shadow: 0 4px 6px rgb(0 0 0 / 0.1);
                 }
 
                 .domain-details {
                     flex: 1;
+                    min-width: 200px;
                 }
 
                 .domain-name {
-                    font-size: 18px;
+                    font-size: 20px;
                     font-weight: 700;
                     color: #1e293b;
-                    margin-bottom: 4px;
+                    margin-bottom: 6px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                 }
 
                 .domain-stats {
                     display: flex;
-                    gap: 16px;
+                    gap: 20px;
                     font-size: 14px;
                     color: #64748b;
+                    font-weight: 500;
                 }
 
                 .domain-controls {
                     display: flex;
                     align-items: center;
                     gap: 16px;
+                    pointer-events: all; /* Réactive les événements pour les contrôles */
                 }
 
                 .folder-config {
                     display: flex;
                     flex-direction: column;
                     gap: 8px;
-                    min-width: 200px;
+                    min-width: 220px;
                 }
 
                 .folder-select,
                 .folder-input {
-                    padding: 8px 12px;
+                    padding: 10px 14px;
                     border: 2px solid #e2e8f0;
-                    border-radius: 6px;
+                    border-radius: 8px;
                     font-size: 14px;
                     background: white;
-                    transition: border-color 0.2s ease;
+                    transition: all 0.2s ease;
+                    font-weight: 500;
                 }
 
                 .folder-select:focus,
                 .folder-input:focus {
                     outline: none;
                     border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px #dbeafe;
                 }
 
                 .action-badge {
-                    padding: 4px 12px;
-                    border-radius: 16px;
+                    padding: 6px 14px;
+                    border-radius: 20px;
                     font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
+                    white-space: nowrap;
                 }
 
                 .action-new {
                     background: #d1fae5;
                     color: #065f46;
+                    border: 2px solid #10b981;
                 }
 
                 .action-existing {
                     background: #dbeafe;
                     color: #1e40af;
+                    border: 2px solid #3b82f6;
+                }
+
+                .expand-indicator {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 14px;
+                    color: #64748b;
+                    font-weight: 600;
+                    pointer-events: none;
                 }
 
                 .expand-icon {
                     font-size: 16px;
-                    color: #64748b;
-                    transition: transform 0.2s ease;
+                    color: #3b82f6;
+                    transition: transform 0.3s ease;
                 }
 
-                .domain-header.expanded .expand-icon {
+                .domain-row.expanded .expand-icon {
                     transform: rotate(90deg);
                 }
 
                 /* Styles pour les emails */
-                .emails-list {
+                .emails-container {
                     display: none;
                     background: white;
+                    border-top: 2px solid #3b82f6;
                 }
 
-                .emails-list.expanded {
+                .domain-row.expanded .emails-container {
                     display: block;
+                    animation: slideDown 0.3s ease;
+                }
+
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        max-height: 0;
+                    }
+                    to {
+                        opacity: 1;
+                        max-height: 1000px;
+                    }
+                }
+
+                .emails-header {
+                    padding: 16px 24px;
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
+                    font-weight: 600;
+                    color: #374151;
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .emails-list {
+                    max-height: 400px;
+                    overflow-y: auto;
                 }
 
                 .email-item {
-                    padding: 16px 24px 16px 60px;
+                    padding: 16px 24px 16px 48px;
                     border-bottom: 1px solid #f1f5f9;
                     transition: all 0.2s ease;
                     display: flex;
@@ -683,7 +765,7 @@ class DomainOrganizer {
 
                 .email-item.selected {
                     background: #eff6ff;
-                    border-color: #bfdbfe;
+                    border-left: 4px solid #3b82f6;
                 }
 
                 .email-checkbox {
@@ -705,25 +787,48 @@ class DomainOrganizer {
                     overflow: hidden;
                     text-overflow: ellipsis;
                     white-space: nowrap;
+                    font-size: 15px;
                 }
 
                 .email-meta {
                     display: flex;
-                    gap: 16px;
+                    gap: 20px;
                     font-size: 13px;
                     color: #64748b;
                 }
 
                 .email-sender {
                     font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
                 }
 
                 .email-date {
                     color: #94a3b8;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                }
+
+                .email-folder-control {
+                    min-width: 200px;
                 }
 
                 .email-folder-select {
-                    min-width: 180px;
+                    width: 100%;
+                    padding: 8px 12px;
+                    border: 2px solid #e2e8f0;
+                    border-radius: 6px;
+                    font-size: 13px;
+                    background: white;
+                    transition: all 0.2s ease;
+                }
+
+                .email-folder-select:focus {
+                    outline: none;
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px #dbeafe;
                 }
 
                 .email-actions {
@@ -732,10 +837,11 @@ class DomainOrganizer {
                 }
 
                 .btn-mini {
-                    padding: 4px 8px;
-                    font-size: 12px;
+                    padding: 4px 10px;
+                    font-size: 11px;
                     border-radius: 4px;
                     min-width: auto;
+                    font-weight: 600;
                 }
 
                 /* Styles pour la progression */
@@ -1043,12 +1149,22 @@ class DomainOrganizer {
                         max-width: 300px;
                     }
                 }
+
+                /* Amélioration de l'accessibilité */
+                .domain-row:focus {
+                    outline: 3px solid #3b82f6;
+                    outline-offset: 2px;
+                }
+
+                .domain-row[tabindex]:hover {
+                    cursor: pointer;
+                }
             </style>
         `;
     }
 
     async initializePage() {
-        console.log('[DomainOrganizer] Initializing v6.8...');
+        console.log('[DomainOrganizer] Initializing v6.9...');
         
         if (!window.authService?.isAuthenticated()) {
             this.showError('Veuillez vous connecter');
@@ -1061,7 +1177,7 @@ class DomainOrganizer {
         this.setDefaultDates();
         this.isActive = true;
         
-        console.log('[DomainOrganizer] ✅ Successfully initialized v6.8');
+        console.log('[DomainOrganizer] ✅ Successfully initialized v6.9');
         return true;
     }
 
@@ -1171,7 +1287,7 @@ class DomainOrganizer {
                 if (progressLabel) progressLabel.textContent = 'Connexion';
                 if (progressText) progressText.textContent = 'Connexion à Microsoft Graph API...';
             } else if (progress === 40) {
-                domains = Math.floor(emails / 15) + 2;
+                domains = Math.floor(emails / 25) + 3;
                 if (domainsFound) domainsFound.textContent = domains;
                 if (progressLabel) progressLabel.textContent = 'Récupération';
                 if (progressText) progressText.textContent = 'Récupération des emails...';
@@ -1194,22 +1310,25 @@ class DomainOrganizer {
 
     generateDetailedMockData(domainCount, totalEmails) {
         const mockDomains = [
-            'amazon.com', 'paypal.com', 'github.com', 'stackoverflow.com', 'linkedin.com',
-            'medium.com', 'atlassian.com', 'slack.com', 'dropbox.com', 'spotify.com',
+            'linkedin.com', 'github.com', 'amazon.com', 'paypal.com', 'medium.com', 
+            'stackoverflow.com', 'atlassian.com', 'slack.com', 'dropbox.com', 'spotify.com',
             'netflix.com', 'airbnb.com', 'booking.com', 'udemy.com', 'coursera.org'
         ];
         
         const mockSubjects = [
             'Votre commande a été expédiée',
-            'Nouvelle notification',
-            'Rapport mensuel',
-            'Invitation à rejoindre',
-            'Mise à jour de sécurité',
+            'Nouvelle notification de connexion',
+            'Rapport mensuel disponible',
+            'Invitation à rejoindre l\'équipe',
+            'Mise à jour de sécurité importante',
             'Newsletter hebdomadaire',
             'Confirmation de réservation',
-            'Facture disponible',
-            'Nouveau message',
-            'Rappel important'
+            'Facture disponible en ligne',
+            'Nouveau message privé',
+            'Rappel important - Action requise',
+            'Mise à jour de votre profil',
+            'Nouvel abonnement activé',
+            'Demande de connexion'
         ];
         
         const domains = [];
@@ -1220,7 +1339,7 @@ class DomainOrganizer {
             const domain = mockDomains[i % mockDomains.length];
             const emailCount = i === domainCount - 1 
                 ? remainingEmails 
-                : Math.floor(Math.random() * 20) + 5;
+                : Math.floor(Math.random() * 25) + 8;
             
             remainingEmails -= emailCount;
             
@@ -1232,9 +1351,9 @@ class DomainOrganizer {
                 emails.push({
                     id: `email_${emailId++}`,
                     subject: mockSubjects[Math.floor(Math.random() * mockSubjects.length)],
-                    sender: `contact@${domain}`,
+                    sender: `noreply@${domain}`,
                     senderName: domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1),
-                    date: date.toISOString().split('T')[0],
+                    date: date.toLocaleDateString('fr-FR'),
                     selected: true,
                     targetFolder: domain
                 });
@@ -1243,7 +1362,7 @@ class DomainOrganizer {
             domains.push({
                 domain: domain,
                 count: emailCount,
-                action: Math.random() > 0.3 ? 'create-new' : 'move-existing',
+                action: Math.random() > 0.4 ? 'create-new' : 'move-existing',
                 suggestedFolder: domain,
                 emails: emails,
                 selected: true
@@ -1268,7 +1387,7 @@ class DomainOrganizer {
     }
 
     showDetailedResults(results) {
-        console.log('[DomainOrganizer] Showing detailed results:', results);
+        console.log('[DomainOrganizer] Showing detailed clickable results:', results);
         
         this.currentAnalysis = results;
         this.emailActions.clear();
@@ -1291,44 +1410,49 @@ class DomainOrganizer {
         document.getElementById('statNew').textContent = results.domainsToCreate;
         document.getElementById('statExisting').textContent = results.domainsWithExisting;
         
-        this.displayDetailedDomains(results.domains);
+        this.displayClickableDomains(results.domains);
         this.updateSelectedCount();
         
         document.getElementById('progressCard').style.display = 'none';
         document.getElementById('resultsCard').style.display = 'block';
     }
 
-    displayDetailedDomains(domains) {
+    displayClickableDomains(domains) {
         const container = document.getElementById('detailedResults');
         if (!container) return;
         
         container.innerHTML = '';
         
         domains.forEach(domain => {
-            const domainSection = this.createDomainSection(domain);
-            container.appendChild(domainSection);
+            const domainRow = this.createClickableDomainRow(domain);
+            container.appendChild(domainRow);
         });
     }
 
-    createDomainSection(domainData) {
-        const section = document.createElement('div');
-        section.className = 'domain-section';
-        section.dataset.domain = domainData.domain;
+    createClickableDomainRow(domainData) {
+        const row = document.createElement('div');
+        row.className = 'domain-row';
+        row.dataset.domain = domainData.domain;
+        row.setAttribute('tabindex', '0'); // Pour l'accessibilité
         
         const isNewFolder = domainData.action === 'create-new';
-        const selectedEmails = domainData.emails.filter(email => email.selected).length;
+        const selectedEmails = domainData.emails.filter(email => 
+            this.emailActions.get(email.id)?.selected
+        ).length;
         
-        section.innerHTML = `
-            <div class="domain-header" onclick="window.organizerInstance.toggleDomain('${domainData.domain}')">
+        row.innerHTML = `
+            <div class="domain-header">
                 <div class="domain-info">
                     <input type="checkbox" class="domain-checkbox" data-domain="${domainData.domain}" 
-                           ${domainData.selected ? 'checked' : ''} 
-                           onclick="event.stopPropagation(); window.organizerInstance.handleDomainToggle(event)">
+                           ${domainData.selected ? 'checked' : ''}>
                     <div class="domain-icon">
                         <i class="fas fa-at"></i>
                     </div>
                     <div class="domain-details">
-                        <div class="domain-name">${domainData.domain}</div>
+                        <div class="domain-name">
+                            ${domainData.domain}
+                            <i class="fas fa-mouse-pointer" style="font-size: 12px; color: #3b82f6;" title="Cliquez pour voir les emails"></i>
+                        </div>
                         <div class="domain-stats">
                             <span><i class="fas fa-envelope"></i> ${domainData.count} emails</span>
                             <span><i class="fas fa-check-circle"></i> ${selectedEmails} sélectionnés</span>
@@ -1340,49 +1464,92 @@ class DomainOrganizer {
                         ${isNewFolder ? 
                             `<input type="text" class="folder-input" value="${domainData.suggestedFolder}" 
                                     data-domain="${domainData.domain}" 
-                                    onclick="event.stopPropagation()"
-                                    onchange="window.organizerInstance.handleDomainFolderChange(event)">` :
-                            `<select class="folder-select" data-domain="${domainData.domain}" 
-                                     onclick="event.stopPropagation()"
-                                     onchange="window.organizerInstance.handleDomainFolderChange(event)">
-                                <option value="existing">${domainData.suggestedFolder}</option>
+                                    placeholder="Nom du dossier">` :
+                            `<select class="folder-select" data-domain="${domainData.domain}">
+                                <option value="existing" selected>${domainData.suggestedFolder}</option>
+                                <option value="inbox">📥 Boîte de réception</option>
+                                <option value="archive">📁 Archive</option>
                             </select>`
                         }
                         <span class="action-badge ${isNewFolder ? 'action-new' : 'action-existing'}">
-                            ${isNewFolder ? 'Nouveau dossier' : 'Dossier existant'}
+                            ${isNewFolder ? '🆕 Nouveau dossier' : '📁 Dossier existant'}
                         </span>
                     </div>
-                    <i class="fas fa-chevron-right expand-icon"></i>
+                    <div class="expand-indicator">
+                        <span>Cliquer pour voir</span>
+                        <i class="fas fa-chevron-right expand-icon"></i>
+                    </div>
                 </div>
             </div>
             
-            <div class="emails-list" id="emails-${domainData.domain}">
-                ${domainData.emails.map(email => this.createEmailItem(email, domainData.domain)).join('')}
+            <div class="emails-container">
+                <div class="emails-header">
+                    <i class="fas fa-list"></i>
+                    Emails de ${domainData.domain} - Modifiez le dossier de destination individuellement
+                </div>
+                <div class="emails-list">
+                    ${domainData.emails.map(email => this.createDetailedEmailItem(email, domainData.domain)).join('')}
+                </div>
             </div>
         `;
         
-        return section;
+        // Ajouter l'événement de clic pour développer/réduire
+        row.addEventListener('click', (e) => {
+            // Ne pas déclencher si on clique sur les contrôles
+            if (e.target.closest('.domain-controls') || e.target.closest('.domain-checkbox')) {
+                return;
+            }
+            this.toggleDomainExpansion(domainData.domain);
+        });
+        
+        // Événement pour la checkbox du domaine
+        const domainCheckbox = row.querySelector('.domain-checkbox');
+        domainCheckbox.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleDomainToggle(e);
+        });
+        
+        // Événements pour les contrôles de dossier
+        const folderControl = row.querySelector('.folder-input, .folder-select');
+        if (folderControl) {
+            folderControl.addEventListener('click', (e) => e.stopPropagation());
+            folderControl.addEventListener('change', (e) => this.handleDomainFolderChange(e));
+        }
+        
+        return row;
     }
 
-    createEmailItem(emailData, domain) {
+    createDetailedEmailItem(emailData, domain) {
+        const isSelected = this.emailActions.get(emailData.id)?.selected;
+        
         return `
-            <div class="email-item ${emailData.selected ? 'selected' : ''}" data-email-id="${emailData.id}">
+            <div class="email-item ${isSelected ? 'selected' : ''}" data-email-id="${emailData.id}">
                 <input type="checkbox" class="email-checkbox" data-email-id="${emailData.id}" 
-                       ${emailData.selected ? 'checked' : ''}
+                       ${isSelected ? 'checked' : ''}
                        onchange="window.organizerInstance.handleEmailToggle(event)">
                 <div class="email-content">
                     <div class="email-subject">${emailData.subject}</div>
                     <div class="email-meta">
-                        <span class="email-sender"><i class="fas fa-user"></i> ${emailData.senderName} (${emailData.sender})</span>
-                        <span class="email-date"><i class="fas fa-calendar"></i> ${emailData.date}</span>
+                        <span class="email-sender">
+                            <i class="fas fa-user"></i> 
+                            ${emailData.senderName} (${emailData.sender})
+                        </span>
+                        <span class="email-date">
+                            <i class="fas fa-calendar"></i> 
+                            ${emailData.date}
+                        </span>
                     </div>
                 </div>
-                <div class="email-folder-select">
-                    <select class="folder-select" data-email-id="${emailData.id}" 
+                <div class="email-folder-control">
+                    <select class="email-folder-select" data-email-id="${emailData.id}" 
                             onchange="window.organizerInstance.handleEmailFolderChange(event)">
-                        <option value="${emailData.targetFolder}" selected>${emailData.targetFolder}</option>
+                        <option value="${emailData.targetFolder}" selected>📁 ${emailData.targetFolder}</option>
                         <option value="inbox">📥 Boîte de réception</option>
                         <option value="archive">📁 Archive</option>
+                        <option value="spam">🚫 Spam</option>
+                        <option value="important">⭐ Important</option>
+                        <option value="work">💼 Travail</option>
+                        <option value="personal">👤 Personnel</option>
                         <option value="custom">✏️ Autre dossier...</option>
                     </select>
                 </div>
@@ -1397,39 +1564,40 @@ class DomainOrganizer {
         `;
     }
 
-    toggleDomain(domain) {
-        const emailsList = document.getElementById(`emails-${domain}`);
-        const header = emailsList.parentElement.querySelector('.domain-header');
+    toggleDomainExpansion(domain) {
+        console.log('[DomainOrganizer] Toggling domain:', domain);
         
-        if (emailsList.classList.contains('expanded')) {
-            emailsList.classList.remove('expanded');
-            header.classList.remove('expanded');
+        const domainRow = document.querySelector(`[data-domain="${domain}"]`);
+        if (!domainRow) return;
+        
+        const isExpanded = domainRow.classList.contains('expanded');
+        
+        if (isExpanded) {
+            domainRow.classList.remove('expanded');
             this.expandedDomains.delete(domain);
+            console.log('[DomainOrganizer] Domain collapsed:', domain);
         } else {
-            emailsList.classList.add('expanded');
-            header.classList.add('expanded');
+            domainRow.classList.add('expanded');
             this.expandedDomains.add(domain);
+            console.log('[DomainOrganizer] Domain expanded:', domain);
         }
     }
 
     expandAllDomains() {
-        document.querySelectorAll('.emails-list').forEach(list => {
-            list.classList.add('expanded');
-        });
-        document.querySelectorAll('.domain-header').forEach(header => {
-            header.classList.add('expanded');
-        });
-        this.currentAnalysis?.domains.forEach(domain => {
-            this.expandedDomains.add(domain.domain);
+        console.log('[DomainOrganizer] Expanding all domains');
+        document.querySelectorAll('.domain-row').forEach(row => {
+            row.classList.add('expanded');
+            const domain = row.dataset.domain;
+            if (domain) {
+                this.expandedDomains.add(domain);
+            }
         });
     }
 
     collapseAllDomains() {
-        document.querySelectorAll('.emails-list').forEach(list => {
-            list.classList.remove('expanded');
-        });
-        document.querySelectorAll('.domain-header').forEach(header => {
-            header.classList.remove('expanded');
+        console.log('[DomainOrganizer] Collapsing all domains');
+        document.querySelectorAll('.domain-row').forEach(row => {
+            row.classList.remove('expanded');
         });
         this.expandedDomains.clear();
     }
@@ -1458,14 +1626,37 @@ class DomainOrganizer {
         const domain = event.target.dataset.domain;
         const isChecked = event.target.checked;
         
+        console.log('[DomainOrganizer] Domain toggle:', domain, isChecked);
+        
         // Toggle all emails in this domain
-        const emailsList = document.getElementById(`emails-${domain}`);
-        if (emailsList) {
-            emailsList.querySelectorAll('.email-checkbox').forEach(checkbox => {
-                checkbox.checked = isChecked;
-                this.handleEmailToggle({ target: checkbox });
-            });
+        if (this.currentAnalysis) {
+            const domainData = this.currentAnalysis.domains.find(d => d.domain === domain);
+            if (domainData) {
+                domainData.emails.forEach(email => {
+                    if (this.emailActions.has(email.id)) {
+                        this.emailActions.get(email.id).selected = isChecked;
+                    }
+                    
+                    // Update email checkbox in UI
+                    const emailCheckbox = document.querySelector(`input[data-email-id="${email.id}"]`);
+                    if (emailCheckbox) {
+                        emailCheckbox.checked = isChecked;
+                    }
+                    
+                    // Update email item visual state
+                    const emailItem = document.querySelector(`div[data-email-id="${email.id}"]`);
+                    if (emailItem) {
+                        if (isChecked) {
+                            emailItem.classList.add('selected');
+                        } else {
+                            emailItem.classList.remove('selected');
+                        }
+                    }
+                });
+            }
         }
+        
+        this.updateSelectedCount();
     }
 
     handleEmailToggle(event) {
@@ -1490,43 +1681,20 @@ class DomainOrganizer {
         this.updateDomainCheckboxes();
     }
 
-    handleDomainFolderChange(event) {
-        const domain = event.target.dataset.domain;
-        const newFolder = event.target.value;
-        
-        // Update all emails in this domain
-        if (this.currentAnalysis) {
-            const domainData = this.currentAnalysis.domains.find(d => d.domain === domain);
-            if (domainData) {
-                domainData.emails.forEach(email => {
-                    if (this.emailActions.has(email.id)) {
-                        this.emailActions.get(email.id).targetFolder = newFolder;
-                    }
-                    
-                    // Update the email's folder select
-                    const emailSelect = document.querySelector(`select[data-email-id="${email.id}"]`);
-                    if (emailSelect && emailSelect.value !== 'custom') {
-                        emailSelect.value = newFolder;
-                    }
-                });
-            }
-        }
-    }
-
     handleEmailFolderChange(event) {
         const emailId = event.target.dataset.emailId;
         const newFolder = event.target.value;
         
         if (newFolder === 'custom') {
             const customFolder = prompt('Nom du dossier personnalisé:');
-            if (customFolder) {
+            if (customFolder && customFolder.trim()) {
                 if (this.emailActions.has(emailId)) {
-                    this.emailActions.get(emailId).targetFolder = customFolder;
+                    this.emailActions.get(emailId).targetFolder = customFolder.trim();
                 }
                 // Add custom option to select
                 const option = document.createElement('option');
-                option.value = customFolder;
-                option.textContent = customFolder;
+                option.value = customFolder.trim();
+                option.textContent = `📁 ${customFolder.trim()}`;
                 option.selected = true;
                 event.target.appendChild(option);
             } else {
@@ -1554,6 +1722,7 @@ class DomainOrganizer {
         if (emailItem) {
             emailItem.classList.remove('selected');
             emailItem.style.opacity = '0.5';
+            emailItem.style.background = '#f8f9fa';
         }
         
         this.updateSelectedCount();
@@ -1580,6 +1749,12 @@ class DomainOrganizer {
                     domainCheckbox.checked = false;
                     domainCheckbox.indeterminate = true;
                 }
+                
+                // Update domain stats
+                const statsElement = document.querySelector(`[data-domain="${domain.domain}"] .domain-stats span:last-child`);
+                if (statsElement) {
+                    statsElement.innerHTML = `<i class="fas fa-check-circle"></i> ${selectedEmails} sélectionnés`;
+                }
             }
         });
     }
@@ -1590,23 +1765,21 @@ class DomainOrganizer {
         document.getElementById('statSelected').textContent = selectedCount.toLocaleString();
         document.getElementById('selectedCount').textContent = selectedCount.toLocaleString();
         
-        // Update domain stats
-        if (this.currentAnalysis) {
-            this.currentAnalysis.domains.forEach(domain => {
-                const selectedEmails = domain.emails.filter(email => 
-                    this.emailActions.get(email.id)?.selected
-                ).length;
-                
-                const statsElement = document.querySelector(`[data-domain="${domain.domain}"] .domain-stats span:last-child`);
-                if (statsElement) {
-                    statsElement.innerHTML = `<i class="fas fa-check-circle"></i> ${selectedEmails} sélectionnés`;
-                }
-            });
+        // Enable/disable apply button
+        const applyBtn = document.getElementById('applyBtn');
+        if (applyBtn) {
+            applyBtn.disabled = selectedCount === 0;
+            if (selectedCount === 0) {
+                applyBtn.innerHTML = '<i class="fas fa-play"></i> Aucun email sélectionné';
+            } else {
+                applyBtn.innerHTML = `<i class="fas fa-play"></i> Organiser ${selectedCount.toLocaleString()} emails`;
+            }
         }
     }
 
     handleSearch(searchTerm) {
         const emailItems = document.querySelectorAll('.email-item');
+        const domainRows = document.querySelectorAll('.domain-row');
         
         emailItems.forEach(item => {
             const subject = item.querySelector('.email-subject').textContent.toLowerCase();
@@ -1614,10 +1787,39 @@ class DomainOrganizer {
             
             if (subject.includes(searchTerm.toLowerCase()) || sender.includes(searchTerm.toLowerCase())) {
                 item.style.display = 'flex';
+                // Expand parent domain if email matches
+                const emailId = item.dataset.emailId;
+                const emailAction = this.emailActions.get(emailId);
+                if (emailAction && searchTerm) {
+                    const domainRow = document.querySelector(`[data-domain="${emailAction.domain}"]`);
+                    if (domainRow) {
+                        domainRow.classList.add('expanded');
+                        this.expandedDomains.add(emailAction.domain);
+                    }
+                }
             } else {
                 item.style.display = searchTerm ? 'none' : 'flex';
             }
         });
+        
+        // Hide domains that have no visible emails when searching
+        if (searchTerm) {
+            domainRows.forEach(row => {
+                const domain = row.dataset.domain;
+                const visibleEmails = row.querySelectorAll('.email-item[style*="flex"]').length;
+                if (visibleEmails === 0) {
+                    row.style.display = 'none';
+                } else {
+                    row.style.display = 'block';
+                    row.classList.add('expanded');
+                    this.expandedDomains.add(domain);
+                }
+            });
+        } else {
+            domainRows.forEach(row => {
+                row.style.display = 'block';
+            });
+        }
     }
 
     async applyOrganization() {
@@ -1632,6 +1834,8 @@ class DomainOrganizer {
                 this.showError('Aucun email sélectionné');
                 return;
             }
+            
+            console.log('[DomainOrganizer] Applying organization for', selectedEmails.length, 'emails');
             
             await this.simulateExecution(selectedEmails);
             
@@ -1710,7 +1914,7 @@ class DomainOrganizer {
         document.getElementById('finalEmailsMoved').textContent = results.emailsMoved.toLocaleString();
         document.getElementById('finalFoldersCreated').textContent = results.foldersCreated;
         
-        const message = `${results.emailsMoved} emails ont été organisés dans ${results.foldersCreated} dossiers selon vos préférences.`;
+        const message = `${results.emailsMoved} emails ont été organisés dans ${results.foldersCreated} dossiers selon vos préférences précises.`;
         document.getElementById('successMessage').textContent = message;
     }
 
@@ -1752,35 +1956,8 @@ class DomainOrganizer {
         }
     }
 
-    // === MÉTHODES UTILITAIRES SUPPLÉMENTAIRES ===
+    // === MÉTHODES UTILITAIRES AVANCÉES ===
     
-    exportConfiguration() {
-        const selectedEmails = Array.from(this.emailActions.values()).filter(action => action.selected);
-        const config = {
-            timestamp: new Date().toISOString(),
-            totalSelected: selectedEmails.length,
-            folders: {}
-        };
-        
-        selectedEmails.forEach(email => {
-            if (!config.folders[email.targetFolder]) {
-                config.folders[email.targetFolder] = [];
-            }
-            config.folders[email.targetFolder].push({
-                emailId: email.emailId,
-                domain: email.domain
-            });
-        });
-        
-        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `email-organization-${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
     bulkChangeFolder() {
         const selectedEmails = Array.from(this.emailActions.entries()).filter(([_, action]) => action.selected);
         
@@ -1801,44 +1978,18 @@ class DomainOrganizer {
                     if (!Array.from(select.options).some(option => option.value === newFolder.trim())) {
                         const option = document.createElement('option');
                         option.value = newFolder.trim();
-                        option.textContent = newFolder.trim();
+                        option.textContent = `📁 ${newFolder.trim()}`;
                         select.appendChild(option);
                     }
                     select.value = newFolder.trim();
                 }
             });
             
-            this.showError(`Dossier changé pour ${selectedEmails.length} emails`);
+            this.showError(`Dossier changé pour ${selectedEmails.length} emails vers "${newFolder.trim()}"`);
         }
     }
 
-    quickActions() {
-        const quickActionsDiv = document.createElement('div');
-        quickActionsDiv.className = 'quick-actions';
-        quickActionsDiv.innerHTML = `
-            <div class="quick-actions-panel">
-                <h4><i class="fas fa-bolt"></i> Actions rapides</h4>
-                <div class="quick-buttons">
-                    <button class="btn btn-small" onclick="window.organizerInstance.bulkChangeFolder()">
-                        <i class="fas fa-folder"></i> Changer dossier groupé
-                    </button>
-                    <button class="btn btn-small" onclick="window.organizerInstance.exportConfiguration()">
-                        <i class="fas fa-download"></i> Exporter config
-                    </button>
-                    <button class="btn btn-small" onclick="window.organizerInstance.previewChanges()">
-                        <i class="fas fa-eye"></i> Aperçu changements
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        const controlsPanel = document.querySelector('.controls-panel');
-        if (controlsPanel && !document.querySelector('.quick-actions')) {
-            controlsPanel.appendChild(quickActionsDiv);
-        }
-    }
-
-    previewChanges() {
+    previewOrganization() {
         const selectedEmails = Array.from(this.emailActions.values()).filter(action => action.selected);
         const folderGroups = {};
         
@@ -1849,161 +2000,75 @@ class DomainOrganizer {
             folderGroups[email.targetFolder].push(email);
         });
         
-        const preview = Object.entries(folderGroups).map(([folder, emails]) => 
-            `📁 ${folder}: ${emails.length} emails`
-        ).join('\n');
+        const preview = Object.entries(folderGroups)
+            .sort(([,a], [,b]) => b.length - a.length)
+            .map(([folder, emails]) => `📁 ${folder}: ${emails.length} emails`)
+            .join('\n');
         
-        alert(`Aperçu des changements:\n\n${preview}\n\nTotal: ${selectedEmails.length} emails dans ${Object.keys(folderGroups).length} dossiers`);
+        alert(`📋 Aperçu de l'organisation:\n\n${preview}\n\n✅ Total: ${selectedEmails.length} emails\n📂 Dossiers: ${Object.keys(folderGroups).length}`);
     }
 
-    // === MÉTHODES DE FILTRAGE AVANCÉ ===
-    
-    filterByDate(days) {
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - days);
-        
-        document.querySelectorAll('.email-item').forEach(item => {
-            const emailId = item.dataset.emailId;
-            const email = this.findEmailById(emailId);
+    // Raccourcis clavier pour les power users
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            if (!this.isActive || document.getElementById('resultsCard').style.display !== 'block') return;
             
-            if (email) {
-                const emailDate = new Date(email.date);
-                if (emailDate >= cutoffDate) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
-            }
-        });
-    }
-
-    filterBySender(domain) {
-        document.querySelectorAll('.email-item').forEach(item => {
-            const sender = item.querySelector('.email-sender').textContent;
-            if (sender.includes(domain)) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-
-    findEmailById(emailId) {
-        if (!this.currentAnalysis) return null;
-        
-        for (const domain of this.currentAnalysis.domains) {
-            const email = domain.emails.find(e => e.id === emailId);
-            if (email) return email;
-        }
-        return null;
-    }
-
-    // === MÉTHODES DE VALIDATION ===
-    
-    validateConfiguration() {
-        const selectedEmails = Array.from(this.emailActions.values()).filter(action => action.selected);
-        const issues = [];
-        
-        // Vérifier les noms de dossiers
-        const folderNames = new Set();
-        selectedEmails.forEach(email => {
-            const folder = email.targetFolder.trim();
-            if (!folder) {
-                issues.push(`Email ${email.emailId} n'a pas de dossier de destination`);
-            } else if (folder.length > 255) {
-                issues.push(`Nom de dossier trop long: ${folder.substring(0, 50)}...`);
-            } else if (/[<>:"/\\|?*]/.test(folder)) {
-                issues.push(`Caractères invalides dans: ${folder}`);
-            }
-            folderNames.add(folder);
-        });
-        
-        // Afficher les issues
-        if (issues.length > 0) {
-            console.warn('[DomainOrganizer] Configuration issues:', issues);
-            return false;
-        }
-        
-        console.log(`[DomainOrganizer] Configuration valid: ${selectedEmails.length} emails, ${folderNames.size} folders`);
-        return true;
-    }
-
-    // === MÉTHODES D'UNDO/REDO ===
-    
-    saveState() {
-        const state = {
-            emailActions: Array.from(this.emailActions.entries()),
-            expandedDomains: Array.from(this.expandedDomains)
-        };
-        
-        if (!this.stateHistory) this.stateHistory = [];
-        this.stateHistory.push(JSON.stringify(state));
-        
-        if (this.stateHistory.length > 10) {
-            this.stateHistory.shift(); // Garder seulement les 10 derniers états
-        }
-    }
-
-    undo() {
-        if (!this.stateHistory || this.stateHistory.length === 0) {
-            this.showError('Aucun état précédent disponible');
-            return;
-        }
-        
-        const previousState = JSON.parse(this.stateHistory.pop());
-        this.emailActions = new Map(previousState.emailActions);
-        this.expandedDomains = new Set(previousState.expandedDomains);
-        
-        // Rafraîchir l'interface
-        this.refreshInterface();
-        this.showError('État précédent restauré');
-    }
-
-    refreshInterface() {
-        // Mettre à jour les checkboxes
-        this.emailActions.forEach((action, emailId) => {
-            const checkbox = document.querySelector(`input[data-email-id="${emailId}"]`);
-            if (checkbox) {
-                checkbox.checked = action.selected;
+            // Ctrl+A - Sélectionner tous les emails
+            if (e.ctrlKey && e.key === 'a') {
+                e.preventDefault();
+                this.selectAllEmails();
             }
             
-            const emailItem = document.querySelector(`div[data-email-id="${emailId}"]`);
-            if (emailItem) {
-                if (action.selected) {
-                    emailItem.classList.add('selected');
-                } else {
-                    emailItem.classList.remove('selected');
+            // Ctrl+D - Désélectionner tous les emails
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                this.deselectAllEmails();
+            }
+            
+            // Ctrl+E - Développer tous les domaines
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                this.expandAllDomains();
+            }
+            
+            // Ctrl+R - Réduire tous les domaines
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                this.collapseAllDomains();
+            }
+            
+            // Ctrl+F - Focus sur la recherche
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                const searchInput = document.getElementById('emailSearch');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
                 }
             }
             
-            const folderSelect = document.querySelector(`select[data-email-id="${emailId}"]`);
-            if (folderSelect) {
-                folderSelect.value = action.targetFolder;
+            // Ctrl+P - Aperçu de l'organisation
+            if (e.ctrlKey && e.key === 'p') {
+                e.preventDefault();
+                this.previewOrganization();
+            }
+            
+            // Ctrl+B - Changement de dossier en lot
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                this.bulkChangeFolder();
             }
         });
-        
-        // Mettre à jour l'état des domaines expandus
-        this.expandedDomains.forEach(domain => {
-            const emailsList = document.getElementById(`emails-${domain}`);
-            const header = emailsList?.parentElement.querySelector('.domain-header');
-            if (emailsList && header) {
-                emailsList.classList.add('expanded');
-                header.classList.add('expanded');
-            }
-        });
-        
-        this.updateSelectedCount();
-        this.updateDomainCheckboxes();
     }
 }
 
 // === INITIALISATION GLOBALE ===
 
 window.organizerInstance = new DomainOrganizer();
-console.log('[DomainOrganizer] ✅ v6.8 Instance created with detailed view');
+console.log('[DomainOrganizer] ✅ v6.9 Instance created with truly clickable domains');
 
 function showDomainOrganizerApp() {
-    console.log('[DomainOrganizer] 🚀 Launching v6.8 with detailed email view...');
+    console.log('[DomainOrganizer] 🚀 Launching v6.9 with truly clickable domains...');
     
     if (!window.authService?.isAuthenticated()) {
         const message = 'Veuillez vous connecter pour utiliser l\'organisateur';
@@ -2041,19 +2106,17 @@ function showDomainOrganizerApp() {
             try {
                 await window.organizerInstance.initializePage();
                 
-                // Ajouter les actions rapides après initialisation
-                setTimeout(() => {
-                    window.organizerInstance.quickActions();
-                }, 500);
+                // Setup keyboard shortcuts
+                window.organizerInstance.setupKeyboardShortcuts();
                 
-                console.log('[DomainOrganizer] ✅ Successfully initialized v6.8 with detailed view');
+                console.log('[DomainOrganizer] ✅ Successfully initialized v6.9 with clickable domains');
             } catch (error) {
                 console.error('[DomainOrganizer] Initialization error:', error);
             }
         }
     }, 50);
 
-    console.log('[DomainOrganizer] ✅ Interface launched v6.8 - Detailed email control');
+    console.log('[DomainOrganizer] ✅ Interface launched v6.9 - Truly clickable domains with individual email control');
 }
 
 // === SYSTÈME D'INTERCEPTION ===
@@ -2068,7 +2131,7 @@ document.addEventListener('click', function(e) {
         e.stopPropagation();
         e.stopImmediatePropagation();
         
-        console.log('[DomainOrganizer] 🎯 Ranger click detected v6.8');
+        console.log('[DomainOrganizer] 🎯 Ranger click detected v6.9');
         setTimeout(showDomainOrganizerApp, 10);
         return false;
     }
@@ -2081,7 +2144,7 @@ if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
         console.log(`[DomainOrganizer] 🔍 PageManager.loadPage: ${pageName}`);
         
         if (pageName === 'ranger') {
-            console.log('[DomainOrganizer] 🎯 PageManager interception v6.8');
+            console.log('[DomainOrganizer] 🎯 PageManager interception v6.9');
             showDomainOrganizerApp();
             return;
         }
@@ -2090,7 +2153,7 @@ if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
             return originalLoadPage.call(this, pageName);
         } catch (error) {
             if (error.message?.includes('Page ranger not found')) {
-                console.log('[DomainOrganizer] 🔧 PageManager error intercepted v6.8');
+                console.log('[DomainOrganizer] 🔧 PageManager error intercepted v6.9');
                 showDomainOrganizerApp();
                 return;
             }
@@ -2098,10 +2161,10 @@ if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
         }
     };
     
-    console.log('[DomainOrganizer] ✅ PageManager hook installed v6.8');
+    console.log('[DomainOrganizer] ✅ PageManager hook installed v6.9');
 }
 
-// === FONCTIONS GLOBALES ===
+// === FONCTIONS GLOBALES ET RACCOURCIS ===
 
 window.showDomainOrganizer = showDomainOrganizerApp;
 window.domainOrganizer = {
@@ -2109,39 +2172,23 @@ window.domainOrganizer = {
     instance: window.organizerInstance
 };
 
-// Raccourcis clavier pour les power users
-document.addEventListener('keydown', function(e) {
-    if (!window.organizerInstance?.isActive) return;
-    
-    // Ctrl+A - Sélectionner tous les emails
-    if (e.ctrlKey && e.key === 'a' && document.getElementById('resultsCard').style.display === 'block') {
-        e.preventDefault();
-        window.organizerInstance.selectAllEmails();
-    }
-    
-    // Ctrl+D - Désélectionner tous les emails
-    if (e.ctrlKey && e.key === 'd' && document.getElementById('resultsCard').style.display === 'block') {
-        e.preventDefault();
-        window.organizerInstance.deselectAllEmails();
-    }
-    
-    // Ctrl+E - Développer tous les domaines
-    if (e.ctrlKey && e.key === 'e' && document.getElementById('resultsCard').style.display === 'block') {
-        e.preventDefault();
-        window.organizerInstance.expandAllDomains();
-    }
-    
-    // Ctrl+R - Réduire tous les domaines
-    if (e.ctrlKey && e.key === 'r' && document.getElementById('resultsCard').style.display === 'block') {
-        e.preventDefault();
-        window.organizerInstance.collapseAllDomains();
-    }
-    
-    // Ctrl+Z - Undo
-    if (e.ctrlKey && e.key === 'z' && document.getElementById('resultsCard').style.display === 'block') {
-        e.preventDefault();
-        window.organizerInstance.undo();
-    }
-});
+// Message d'aide pour les raccourcis
+window.organizerInstance.showKeyboardHelp = function() {
+    const helpMessage = `
+⌨️ Raccourcis clavier disponibles:
 
-console.log('[DomainOrganizer] ✅ v6.8 System ready - Detailed email view with full control');
+Ctrl + A : Sélectionner tous les emails
+Ctrl + D : Désélectionner tous les emails  
+Ctrl + E : Développer tous les domaines
+Ctrl + R : Réduire tous les domaines
+Ctrl + F : Rechercher dans les emails
+Ctrl + P : Aperçu de l'organisation
+Ctrl + B : Changer le dossier en lot
+
+💡 Cliquez sur un domaine pour voir ses emails !
+    `;
+    alert(helpMessage);
+};
+
+console.log('[DomainOrganizer] ✅ v6.9 System ready - Truly clickable domains with full individual email control');
+console.log('[DomainOrganizer] 💡 Use Ctrl+H to see keyboard shortcuts when the organizer is active');
