@@ -1,4 +1,20 @@
-<!DOCTYPE html>
+.action-card {
+                min-height: 160px; /* Hauteur réduite sur mobile */
+                padding: 20px 15px;
+            }
+
+            .action-title {
+                font-size: 18px; /* Ajusté pour mobile */
+            }
+
+            .action-description {
+                font-size: 14px; /* Ajusté pour mobile */
+            }
+
+            .action-description small {
+                font-size: 12px;
+                padding: 6px 8px;
+            }<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -660,60 +676,72 @@
         /* Actions principales */
         .dashboard-actions {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* Forcer 4 colonnes */
-            gap: 15px; /* Gap très réduit */
-            margin-bottom: 25px; /* Marge très réduite */
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px; /* Gap légèrement augmenté */
+            margin-bottom: 30px;
         }
 
         .action-card {
             background: white;
-            border-radius: 16px; /* Plus petit */
-            padding: 20px 15px; /* Padding très réduit */
+            border-radius: 16px;
+            padding: 25px 20px; /* Padding augmenté pour plus d'espace */
             text-align: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Ombre plus marquée */
             border: 2px solid transparent;
             cursor: pointer;
             transition: all 0.3s ease;
+            min-height: 180px; /* Hauteur minimale pour cohérence */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .action-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            transform: translateY(-5px); /* Effet hover plus marqué */
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
             border-color: var(--color);
         }
 
         .action-icon {
-            width: 50px; /* Plus petit */
-            height: 50px; /* Plus petit */
-            border-radius: 12px;
+            width: 60px; /* Taille intermédiaire */
+            height: 60px;
+            border-radius: 15px;
             background: var(--color);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px; /* Plus petit */
-            margin: 0 auto 15px; /* Marge réduite */
+            font-size: 28px;
+            margin: 0 auto 20px; /* Marge augmentée */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* Ombre pour relief */
         }
 
         .action-title {
-            font-size: 18px; /* Plus petit */
-            font-weight: 600;
+            font-size: 20px; /* Plus lisible */
+            font-weight: 700; /* Plus gras */
             color: #1e293b;
-            margin-bottom: 10px; /* Marge réduite */
+            margin-bottom: 12px;
+            line-height: 1.2;
         }
 
         .action-description {
-            font-size: 14px; /* Plus petit */
-            color: #64748b;
-            line-height: 1.4; /* Plus serré */
+            font-size: 15px; /* Plus lisible */
+            color: #4b5563; /* Couleur plus contrastée */
+            line-height: 1.5; /* Interlignage plus aéré */
+            font-weight: 500; /* Légèrement plus gras */
         }
 
         .action-description small {
             display: block;
-            margin-top: 8px; /* Marge réduite */
-            font-size: 12px; /* Plus petit */
-            color: #94a3b8;
-            font-style: italic;
+            margin-top: 12px;
+            font-size: 13px; /* Plus lisible */
+            color: #6b7280; /* Couleur plus contrastée */
+            font-style: normal; /* Pas d'italique */
+            font-weight: 400;
+            background: #f8fafc; /* Fond léger pour distinction */
+            padding: 8px 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--color); /* Bordure colorée */
         }
 
         /* Couleurs par carte */
@@ -1139,7 +1167,7 @@
                             </div>
                             <h3 class="action-title">Scanner</h3>
                             <p class="action-description">
-                                Commencez ici ! L'IA analyse vos emails :<br>
+                                Commencez ici ! L'IA analyse vos emails
                                 <small>1) Choisissez la période → 2) Analyse automatique → 3) Emails classés par catégories</small>
                             </p>
                         </div>
@@ -1150,7 +1178,7 @@
                             </div>
                             <h3 class="action-title">Organiser</h3>
                             <p class="action-description">
-                                Triez par expéditeur et domaines :<br>
+                                Triez par expéditeur et domaines
                                 <small>1) Analyse des expéditeurs → 2) Groupement automatique → 3) Création de dossiers</small>
                             </p>
                         </div>
@@ -1161,7 +1189,7 @@
                             </div>
                             <h3 class="action-title">Tâches</h3>
                             <p class="action-description">
-                                Consultez vos tâches générées :<br>
+                                Consultez vos tâches générées
                                 <small>1) Tâches détectées → 2) Priorités assignées → 3) Suivi et validation</small>
                             </p>
                         </div>
@@ -1172,7 +1200,7 @@
                             </div>
                             <h3 class="action-title">Paramètres</h3>
                             <p class="action-description">
-                                Personnalisez l'IA à vos besoins :<br>
+                                Personnalisez l'IA à vos besoins
                                 <small>1) Catégories custom → 2) Règles de tri → 3) Préférences d'analyse</small>
                             </p>
                         </div>
