@@ -407,20 +407,22 @@ class DomainOrganizer {
                     
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
                     color: var(--gray-900);
-                    line-height: 1.6;
+                    line-height: 1.4;
                     max-width: 1200px;
                     margin: 0 auto;
-                    padding: 20px;
+                    padding: 8px;
+                    overflow-y: auto !important;
+                    max-height: 100vh;
                 }
 
-                /* Header compact moderne */
+                /* Header ultra-compact */
                 .organizer-header {
                     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-                    border-radius: 12px;
-                    padding: 16px 24px;
-                    margin-bottom: 16px;
+                    border-radius: 8px;
+                    padding: 10px 16px;
+                    margin-bottom: 8px;
                     color: white;
-                    box-shadow: 0 6px 20px -5px rgba(59, 130, 246, 0.3);
+                    box-shadow: 0 4px 12px -3px rgba(59, 130, 246, 0.3);
                 }
 
                 .header-content {
@@ -428,53 +430,53 @@ class DomainOrganizer {
                     justify-content: space-between;
                     align-items: center;
                     flex-wrap: wrap;
-                    gap: 16px;
+                    gap: 8px;
                 }
 
                 .header-left {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 8px;
                 }
 
                 .main-icon {
-                    width: 40px;
-                    height: 40px;
+                    width: 28px;
+                    height: 28px;
                     background: rgba(255, 255, 255, 0.25);
-                    border-radius: 10px;
+                    border-radius: 6px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 18px;
+                    font-size: 14px;
                     backdrop-filter: blur(10px);
                 }
 
                 .header-info h1 {
                     margin: 0;
-                    font-size: 18px;
+                    font-size: 16px;
                     font-weight: 700;
                     color: white;
                 }
 
                 .header-subtitle {
-                    margin: 2px 0 0 0;
+                    margin: 0;
                     opacity: 0.9;
-                    font-size: 13px;
+                    font-size: 11px;
                     color: white;
                 }
 
-                /* Indicateur d'étapes compact */
+                /* Indicateur d'étapes ultra-compact */
                 .steps-indicator {
                     display: flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 4px;
                 }
 
                 .step {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 4px;
+                    gap: 2px;
                     opacity: 0.6;
                     transition: all 0.3s ease;
                 }
@@ -488,15 +490,15 @@ class DomainOrganizer {
                 }
 
                 .step-number {
-                    width: 26px;
-                    height: 26px;
+                    width: 20px;
+                    height: 20px;
                     border-radius: 50%;
                     background: rgba(255, 255, 255, 0.25);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-weight: 600;
-                    font-size: 12px;
+                    font-size: 10px;
                     transition: all 0.3s ease;
                     color: white;
                 }
@@ -504,7 +506,7 @@ class DomainOrganizer {
                 .step.active .step-number {
                     background: white;
                     color: var(--primary);
-                    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 }
 
                 .step.completed .step-number {
@@ -513,15 +515,15 @@ class DomainOrganizer {
                 }
 
                 .step-label {
-                    font-size: 10px;
+                    font-size: 8px;
                     font-weight: 500;
                     white-space: nowrap;
                     color: white;
                 }
 
                 .step-separator {
-                    width: 20px;
-                    height: 2px;
+                    width: 12px;
+                    height: 1px;
                     background: rgba(255, 255, 255, 0.4);
                     border-radius: 1px;
                 }
@@ -544,310 +546,276 @@ class DomainOrganizer {
 
                 .content-card {
                     background: white;
-                    border-radius: 12px;
-                    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                    box-shadow: 0 1px 3px -1px rgba(0, 0, 0, 0.1);
                     border: 1px solid var(--gray-200);
                     overflow: hidden;
+                    margin-bottom: 8px;
                 }
 
                 .card-header {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 16px 20px;
+                    gap: 8px;
+                    padding: 10px 12px;
                     border-bottom: 1px solid var(--gray-200);
                     background: var(--gray-50);
                 }
 
                 .card-icon {
-                    width: 36px;
-                    height: 36px;
+                    width: 24px;
+                    height: 24px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 8px;
+                    border-radius: 6px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 16px;
+                    font-size: 12px;
                     color: white;
-                }
-
-                .card-icon.animated {
-                    animation: pulse 2s infinite;
                 }
 
                 .card-title h2 {
                     margin: 0;
-                    font-size: 16px;
+                    font-size: 14px;
                     font-weight: 700;
                     color: var(--gray-900);
                 }
 
                 .card-title p {
-                    margin: 2px 0 0 0;
+                    margin: 0;
                     color: var(--gray-600);
-                    font-size: 12px;
+                    font-size: 10px;
                 }
 
-                /* Alertes compactes */
+                /* Alertes ultra-compactes */
                 .alert {
                     display: flex;
-                    gap: 10px;
-                    padding: 12px 16px;
-                    border-radius: 8px;
-                    margin: 12px 20px;
-                    font-size: 12px;
-                }
-
-                .alert.info {
-                    background: var(--info-light);
-                    border: 1px solid var(--info);
-                    color: #0c4a6e;
-                }
-
-                .alert.success {
-                    background: #d1fae5;
-                    border: 1px solid var(--success);
-                    color: #065f46;
-                }
-
-                .alert.warning {
-                    background: var(--warning-light);
-                    border: 1px solid var(--warning);
-                    color: #92400e;
+                    gap: 6px;
+                    padding: 8px 10px;
+                    border-radius: 6px;
+                    margin: 8px 12px;
+                    font-size: 10px;
                 }
 
                 .alert i {
                     color: inherit;
-                    font-size: 14px;
+                    font-size: 12px;
                     flex-shrink: 0;
                     margin-top: 1px;
                 }
 
-                .alert-content {
-                    flex: 1;
-                }
-
                 .alert-content strong {
                     display: block;
-                    margin-bottom: 2px;
+                    margin-bottom: 1px;
                     font-weight: 600;
                 }
 
                 .alert-content p {
                     margin: 0;
-                    line-height: 1.4;
+                    line-height: 1.3;
                 }
 
-                .alert-content ul {
-                    margin: 4px 0 0 0;
-                    padding-left: 12px;
-                }
-
-                .alert-content li {
-                    margin-bottom: 2px;
-                }
-
-                /* Formulaire compact */
+                /* Formulaire ultra-compact */
                 .config-form {
-                    padding: 20px;
+                    padding: 12px;
                 }
 
                 .form-section {
-                    margin-bottom: 20px;
+                    margin-bottom: 12px;
                 }
 
                 .form-section h3 {
-                    margin: 0 0 12px 0;
-                    font-size: 14px;
+                    margin: 0 0 6px 0;
+                    font-size: 12px;
                     font-weight: 600;
                     color: var(--gray-800);
                     display: flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 4px;
                 }
 
                 .form-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 16px;
+                    gap: 8px;
                 }
 
                 .form-group {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 2px;
                 }
 
                 .form-group label {
-                    font-size: 12px;
+                    font-size: 10px;
                     font-weight: 500;
                     color: var(--gray-700);
                 }
 
                 .form-input {
-                    padding: 8px 12px;
-                    border: 2px solid var(--gray-300);
-                    border-radius: 6px;
-                    font-size: 12px;
+                    padding: 6px 8px;
+                    border: 1px solid var(--gray-300);
+                    border-radius: 4px;
+                    font-size: 10px;
                     transition: all 0.2s ease;
                     background: white;
                 }
 
                 .form-group small {
-                    font-size: 10px;
+                    font-size: 8px;
                     color: var(--gray-500);
                 }
 
                 .form-actions {
                     display: flex;
                     justify-content: center;
-                    margin-top: 20px;
+                    margin-top: 12px;
                 }
 
-                /* Progression compacte */
+                /* Progression ultra-compacte */
                 .analysis-progress,
                 .organization-progress {
-                    padding: 20px;
+                    padding: 12px;
                 }
 
                 .progress-info {
-                    margin-bottom: 16px;
+                    margin-bottom: 8px;
                 }
 
                 .progress-stats {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 12px;
-                    margin-bottom: 16px;
+                    gap: 6px;
+                    margin-bottom: 8px;
                 }
 
                 .stat {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
-                    padding: 10px;
+                    gap: 4px;
+                    padding: 6px;
                     background: var(--gray-50);
-                    border-radius: 8px;
+                    border-radius: 6px;
                     border: 1px solid var(--gray-200);
                 }
 
                 .stat-icon {
-                    width: 28px;
-                    height: 28px;
+                    width: 20px;
+                    height: 20px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 6px;
+                    border-radius: 4px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 12px;
+                    font-size: 10px;
                     color: white;
                 }
 
                 .stat-number {
-                    font-size: 16px;
+                    font-size: 12px;
                     font-weight: 700;
                     color: var(--gray-900);
-                    margin-bottom: 1px;
+                    margin-bottom: 0;
                 }
 
                 .stat-label {
-                    font-size: 10px;
+                    font-size: 8px;
                     color: var(--gray-600);
                     text-transform: uppercase;
-                    letter-spacing: 0.3px;
+                    letter-spacing: 0.2px;
                 }
 
-                /* Cartes de résumé compactes */
+                /* Cartes de résumé ultra-compactes */
                 .summary-cards {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 12px;
-                    margin: 16px 20px;
+                    gap: 6px;
+                    margin: 8px 12px;
                 }
 
                 .summary-card {
                     display: flex;
                     align-items: center;
-                    gap: 10px;
-                    padding: 12px;
+                    gap: 6px;
+                    padding: 8px;
                     background: white;
-                    border: 2px solid var(--gray-200);
-                    border-radius: 8px;
+                    border: 1px solid var(--gray-200);
+                    border-radius: 6px;
                     transition: all 0.2s ease;
                 }
 
                 .summary-icon {
-                    width: 32px;
-                    height: 32px;
+                    width: 24px;
+                    height: 24px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 8px;
+                    border-radius: 6px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 14px;
+                    font-size: 10px;
                     color: white;
                 }
 
                 .summary-number {
-                    font-size: 18px;
+                    font-size: 14px;
                     font-weight: 700;
                     color: var(--gray-900);
-                    margin-bottom: 1px;
+                    margin-bottom: 0;
                 }
 
                 .summary-label {
-                    font-size: 10px;
+                    font-size: 8px;
                     color: var(--gray-600);
                     text-transform: uppercase;
-                    letter-spacing: 0.3px;
+                    letter-spacing: 0.2px;
                 }
 
-                /* Contrôles compacts */
+                /* Contrôles ultra-compacts */
                 .quick-controls {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 12px 20px;
+                    padding: 8px 12px;
                     border-top: 1px solid var(--gray-200);
                     border-bottom: 1px solid var(--gray-200);
                     background: var(--gray-50);
                     flex-wrap: wrap;
-                    gap: 12px;
+                    gap: 6px;
                 }
 
                 .control-group {
                     display: flex;
-                    gap: 6px;
+                    gap: 4px;
                     flex-wrap: wrap;
                 }
 
                 .search-container {
                     position: relative;
-                    width: 200px;
+                    width: 140px;
                 }
 
                 .search-input {
                     width: 100%;
-                    padding: 6px 12px 6px 28px;
-                    border: 2px solid var(--gray-300);
-                    border-radius: 6px;
-                    font-size: 12px;
+                    padding: 4px 8px 4px 20px;
+                    border: 1px solid var(--gray-300);
+                    border-radius: 4px;
+                    font-size: 10px;
                     background: white;
                     transition: all 0.2s ease;
                 }
 
                 .search-icon {
                     position: absolute;
-                    left: 8px;
+                    left: 6px;
                     top: 50%;
                     transform: translateY(-50%);
                     color: var(--gray-400);
-                    font-size: 12px;
+                    font-size: 10px;
                 }
 
-                /* Liste des domaines ultra-compacte */
+                /* Liste des domaines ultra-condensée */
                 .domains-list {
-                    max-height: 300px;
+                    max-height: 200px;
                     overflow-y: auto;
                 }
 
@@ -859,28 +827,28 @@ class DomainOrganizer {
                 .domain-header {
                     display: flex;
                     align-items: center;
-                    padding: 10px 20px;
+                    padding: 6px 12px;
                     cursor: pointer;
-                    gap: 12px;
+                    gap: 6px;
                 }
 
                 .domain-checkbox {
-                    width: 16px;
-                    height: 16px;
+                    width: 12px;
+                    height: 12px;
                     cursor: pointer;
                     accent-color: var(--primary);
                 }
 
                 .domain-avatar {
-                    width: 32px;
-                    height: 32px;
-                    border-radius: 8px;
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 4px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 12px;
+                    font-size: 8px;
                     font-weight: 600;
                     text-transform: uppercase;
                 }
@@ -891,54 +859,54 @@ class DomainOrganizer {
                 }
 
                 .domain-name {
-                    font-size: 14px;
+                    font-size: 11px;
                     font-weight: 600;
                     color: var(--gray-900);
-                    margin-bottom: 2px;
+                    margin-bottom: 1px;
                 }
 
                 .domain-meta {
                     display: flex;
-                    gap: 12px;
-                    font-size: 11px;
+                    gap: 8px;
+                    font-size: 8px;
                     color: var(--gray-600);
                 }
 
                 .domain-controls {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 4px;
                 }
 
                 .folder-select {
-                    padding: 4px 8px;
-                    border: 2px solid var(--gray-300);
-                    border-radius: 4px;
-                    font-size: 11px;
+                    padding: 2px 4px;
+                    border: 1px solid var(--gray-300);
+                    border-radius: 3px;
+                    font-size: 8px;
                     background: white;
-                    min-width: 100px;
+                    min-width: 60px;
                 }
 
                 .badge {
-                    padding: 2px 6px;
-                    border-radius: 12px;
-                    font-size: 9px;
+                    padding: 1px 4px;
+                    border-radius: 8px;
+                    font-size: 7px;
                     font-weight: 600;
                     text-transform: uppercase;
-                    letter-spacing: 0.3px;
+                    letter-spacing: 0.2px;
                 }
 
                 .expand-icon {
                     color: var(--gray-400);
-                    font-size: 12px;
+                    font-size: 8px;
                     transition: transform 0.3s ease;
                 }
 
-                /* Emails ultra-compacts */
+                /* Emails ultra-condensés */
                 .emails-list {
                     display: none;
                     background: white;
-                    border-top: 2px solid #dbeafe;
+                    border-top: 1px solid #dbeafe;
                 }
 
                 .domain-item.expanded .emails-list {
@@ -948,16 +916,17 @@ class DomainOrganizer {
                 .email-item {
                     display: flex;
                     align-items: center;
-                    padding: 6px 20px 6px 44px;
-                    gap: 8px;
+                    padding: 3px 12px 3px 28px;
+                    gap: 4px;
                     border-bottom: 1px solid var(--gray-100);
-                    font-size: 11px;
+                    font-size: 9px;
                     transition: all 0.2s ease;
+                    min-height: 24px;
                 }
 
                 .email-checkbox {
-                    width: 14px;
-                    height: 14px;
+                    width: 10px;
+                    height: 10px;
                     cursor: pointer;
                     accent-color: var(--primary);
                 }
@@ -970,41 +939,42 @@ class DomainOrganizer {
                 .email-subject {
                     font-weight: 500;
                     color: var(--gray-900);
-                    margin-bottom: 1px;
+                    margin-bottom: 0;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
+                    font-size: 9px;
                 }
 
                 .email-meta {
                     color: var(--gray-600);
-                    font-size: 10px;
+                    font-size: 7px;
                 }
 
                 .email-folder-select {
-                    padding: 2px 6px;
+                    padding: 1px 3px;
                     border: 1px solid var(--gray-300);
-                    border-radius: 3px;
-                    font-size: 9px;
+                    border-radius: 2px;
+                    font-size: 7px;
                     background: white;
-                    min-width: 80px;
+                    min-width: 50px;
                 }
 
-                /* Actions compactes */
+                /* Actions ultra-compactes */
                 .revision-actions {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 16px 20px;
+                    padding: 8px 12px;
                     border-top: 1px solid var(--gray-200);
                     background: var(--gray-50);
                     flex-wrap: wrap;
-                    gap: 12px;
+                    gap: 6px;
                 }
 
                 .action-right {
                     display: flex;
-                    gap: 8px;
+                    gap: 4px;
                     align-items: center;
                 }
 
@@ -1272,6 +1242,15 @@ class DomainOrganizer {
             return false;
         }
 
+        // Force le scroll sur la page
+        document.body.style.overflow = 'auto';
+        document.body.style.overflowY = 'auto';
+        document.documentElement.style.overflow = 'auto';
+        document.documentElement.style.overflowY = 'auto';
+        
+        // Retirer les classes qui bloquent le scroll
+        document.body.classList.remove('page-short-content');
+        
         await new Promise(resolve => setTimeout(resolve, 100));
         
         this.setupEventListeners();
