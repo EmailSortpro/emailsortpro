@@ -22,7 +22,125 @@ class DomainOrganizer {
             processedEmails: 0,
             domainsFound: new Set(),
             startTime: null
-        };
+        }
+
+    // Nouvelle méthode pour récupérer TOUS les emails avec pagination
+    async getAllEmailsFromFolder(folderName, formData) {
+        console.log(`[DomainOrganizer] 📧 Récupération de TOUS les emails du dossier: ${folderName}`);
+        
+        let allEmails = [];
+        let hasMore = true;
+        let skipToken = null;
+        let pageCount = 0;
+        const maxPages = 50; // Limite de sécurité
+        
+        const progressBar = document.getElementById('progressBar');
+        const emailsAnalyzed = document.getElementById('emailsAnalyzed');
+        const currentDomain = document.getElementById('currentDomain');
+        
+        while (hasMore && pageCount < maxPages) {
+            try {
+                pageCount++;
+                
+                if (currentDomain) {
+                    currentDomain.textContent = `${folderName}: page ${pageCount} (${allEmails.length} emails)`;
+                }
+                
+                // Utiliser l'API Graph directement pour contourner la limite
+                const token = await window.authService.getAccessToken();
+                const baseUrl = 'https://graph.microsoft.com/v1.0/me/mailFolders';
+                
+                // Construire le filtre de date
+                let filter = '';
+                if (formData.startDate || formData.endDate) {
+                    const filters = [];
+                    if (formData.startDate) {
+                        const startDate = new Date(formData.startDate).toISOString();
+                        filters.push(`receivedDateTime ge ${startDate}`);
+                    }
+                    if (formData.endDate) {
+                        const endDate = new Date(formData.endDate + 'T23:59:59.999Z').toISOString();
+                        filters.push(`receivedDateTime le ${endDate}`);
+                    }
+                    filter = filters.join(' and ');
+                }
+                
+                // Construire l'URL de la requête
+                let url = `${baseUrl}/${folderName}/messages?$top=999&$orderby=receivedDateTime desc&$select=id,subject,bodyPreview,body,from,toRecipients,ccRecipients,receivedDateTime,sentDateTime,isRead,importance,hasAttachments,flag,categories,parentFolderId,webLink`;
+                
+                if (filter) {
+                    url += `&$filter=${encodeURIComponent(filter)}`;
+                }
+                
+                if (skipToken) {
+                    url += `&$skiptoken=${encodeURIComponent(skipToken)}`;
+                }
+                
+                console.log(`[DomainOrganizer] 🔍 Page ${pageCount}: ${url.substring(0, 150)}...`);
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const emails = data.value || [];
+                
+                allEmails = allEmails.concat(emails);
+                
+                // Vérifier s'il y a plus de pages
+                hasMore = !!data['@odata.nextLink'];
+                if (hasMore && data['@odata.nextLink']) {
+                    // Extraire le skipToken de l'URL nextLink
+                    const nextUrl = new URL(data['@odata.nextLink']);
+                    skipToken = nextUrl.searchParams.get('$skiptoken');
+                }
+                
+                console.log(`[DomainOrganizer] ✅ Page ${pageCount}: ${emails.length} emails (Total: ${allEmails.length})`);
+                
+                // Mise à jour de l'interface
+                if (emailsAnalyzed) emailsAnalyzed.textContent = allEmails.length;
+                if (progressBar) {
+                    const progress = Math.min(10 + (pageCount * 2), 30); // 10-30%
+                    progressBar.style.width = `${progress}%`;
+                }
+                
+                // Pause pour éviter de surcharger l'API
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+            } catch (error) {
+                console.error(`[DomainOrganizer] Erreur page ${pageCount}:`, error);
+                
+                // Si c'est la première page, essayer avec MailService en fallback
+                if (pageCount === 1) {
+                    console.warn('[DomainOrganizer] Fallback vers MailService...');
+                    try {
+                        const fallbackEmails = await window.mailService.getEmailsFromFolder(folderName, {
+                            startDate: formData.startDate,
+                            endDate: formData.endDate
+                        });
+                        return fallbackEmails;
+                    } catch (fallbackError) {
+                        console.error('[DomainOrganizer] Fallback failed:', fallbackError);
+                    }
+                }
+                
+                break;
+            }
+        }
+        
+        if (pageCount >= maxPages) {
+            console.warn(`[DomainOrganizer] ⚠️ Limite de ${maxPages} pages atteinte pour ${folderName}`);
+        }
+        
+        console.log(`[DomainOrganizer] 🎯 Total récupéré de ${folderName}: ${allEmails.length} emails en ${pageCount} pages`);
+        return allEmails;;
         
         console.log('[DomainOrganizer] ✅ v8.3 - Scan Réel Intégré');
     }
@@ -960,10 +1078,7 @@ class DomainOrganizer {
                 for (const folder of folders) {
                     try {
                         if (currentDomain) currentDomain.textContent = `Analyse du dossier: ${folder}`;
-                        const folderEmails = await window.mailService.getEmailsFromFolder(folder, {
-                            startDate: formData.startDate,
-                            endDate: formData.endDate
-                        });
+                        const folderEmails = await this.getAllEmailsFromFolder(folder, formData);
                         emails = emails.concat(folderEmails);
                         
                         // Mise à jour progressive
@@ -978,10 +1093,7 @@ class DomainOrganizer {
             } else {
                 // Récupérer d'un seul dossier
                 if (currentDomain) currentDomain.textContent = `Analyse du dossier: ${formData.sourceFolder}`;
-                emails = await window.mailService.getEmailsFromFolder(formData.sourceFolder, {
-                    startDate: formData.startDate,
-                    endDate: formData.endDate
-                });
+                emails = await this.getAllEmailsFromFolder(formData.sourceFolder, formData);
             }
 
             this.scanProgress.totalEmails = emails.length;
@@ -1823,4 +1935,4 @@ window.domainOrganizer = {
     instance: window.organizerInstance
 };
 
-console.log('[DomainOrganizer] ✅ v8.3 Real Scan System ready - UNLIMITED EMAILS');
+console.log('[DomainOrganizer] ✅ v8.3 Real Scan System ready - UNLIMITED EMAILS WITH PAGINATION');
