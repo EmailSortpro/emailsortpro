@@ -1,4 +1,4 @@
-/* styles.css - Design moderne optimisé avec gestion intelligente du scroll */
+/* styles.css - Design moderne optimisé avec navigation corrigée */
 
 /* =====================================
    VARIABLES CSS
@@ -20,7 +20,7 @@
     --ai-dark: #7C3AED;
     --ai-accent: #C084FC;
     
-    /* Couleurs de fond et texte - Contraste amélioré */
+    /* Couleurs de fond et texte */
     --bg-primary: #FFFFFF;
     --bg-secondary: #F9FAFB;
     --bg-tertiary: #F3F4F6;
@@ -30,7 +30,7 @@
     --border: #E5E7EB;
     --border-light: #F3F4F6;
     
-    /* Variables PageManager v3.0 */
+    /* Variables PageManager */
     --pm-bg: #ffffff;
     --pm-bg-secondary: #f8fafc;
     --pm-bg-tertiary: #f1f5f9;
@@ -89,7 +89,7 @@
 }
 
 /* =====================================
-   RESET ET BASE AVEC GESTION DU SCROLL
+   RESET ET BASE
    ===================================== */
 *,
 *::before,
@@ -107,140 +107,52 @@ body {
     background: linear-gradient(135deg, var(--bg-secondary) 0%, #E0E7FF 100%);
     height: 100vh;
     overflow-x: hidden;
-    overflow-y: auto; /* Par défaut: scroll si nécessaire */
+    overflow-y: auto;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* =====================================
-   GESTION INTELLIGENTE DU SCROLL SELON LES PAGES
-   ===================================== */
-
-/* Par défaut: masquer le scroll pour toutes les pages */
-body {
-    overflow-y: hidden !important;
-    overflow-x: hidden !important;
-}
-
-/* Suppression complète de TOUTES les scrollbars */
-body::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-html::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-body {
-    -ms-overflow-style: none !important;  /* IE et Edge */
-    scrollbar-width: none !important;  /* Firefox */
-}
-
-html {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
-}
-
-/* Pages spécifiques qui ont BESOIN de scroll - activé dynamiquement */
-body.page-scanner.needs-scroll {
-    overflow-y: auto !important;
-}
-
-body.page-emails.needs-scroll {
-    overflow-y: auto !important;
-}
-
-body.page-tasks.needs-scroll {
-    overflow-y: auto !important;
-}
-
-body.page-ranger.needs-scroll {
-    overflow-y: auto !important;
-}
-
-body.page-settings.needs-scroll {
-    overflow-y: auto !important;
-}
-
-/* Dashboard: TOUJOURS sans scroll */
+/* Gestion du scroll selon les pages */
 body.page-dashboard {
-    overflow-y: hidden !important;
-    overflow-x: hidden !important;
+    overflow-y: auto;
 }
 
-/* Force masquer même si détecté comme ayant besoin de scroll */
-body.page-dashboard.needs-scroll {
-    overflow-y: hidden !important;
-    overflow-x: hidden !important;
+body.page-scanner {
+    overflow-y: auto;
 }
 
-/* Login: toujours sans scroll */
+body.page-emails {
+    overflow-y: auto;
+}
+
+body.page-tasks {
+    overflow-y: auto;
+}
+
+body.page-ranger {
+    overflow-y: auto;
+}
+
+body.page-settings {
+    overflow-y: auto;
+}
+
+body.page-short-content {
+    overflow-y: hidden !important;
+}
+
 body.login-mode {
     overflow: hidden !important;
 }
 
-/* Navigation: permettre le scroll horizontal mais le masquer visuellement */
-.app-nav {
-    overflow-x: auto !important; /* Permettre le scroll horizontal pour accéder à tous les éléments */
-    overflow-y: hidden !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-}
-
-.app-nav::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-/* Container de navigation - permettre le scroll horizontal */
-#mainNav {
-    overflow-x: auto !important; /* Permettre le scroll pour accéder à tous les items */
-    overflow-y: hidden !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-    white-space: nowrap; /* Empêcher le retour à la ligne */
-}
-
-#mainNav::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-}
-
-/* Dashboard container: pas de scroll */
-.dashboard-container {
-    overflow: hidden !important;
-}
-
-/* Action cards: pas de scroll */
-.dashboard-actions {
-    overflow: hidden !important;
-}
-
-/* Header: pas de scroll */
-.app-header {
-    overflow: hidden !important;
-}
-
-.header-content {
-    overflow: hidden !important;
-}
-
-/* Masquer toutes les scrollbars potentielles */
-*::-webkit-scrollbar {
-    width: 0 !important;
-    height: 0 !important;
+/* Masquer les scrollbars sur certaines pages courtes */
+body.page-short-content::-webkit-scrollbar {
     display: none !important;
 }
 
-* {
-    scrollbar-width: none !important;
+body.page-short-content {
     -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
 }
 
 /* =====================================
@@ -334,24 +246,31 @@ body.login-mode {
 }
 
 /* =====================================
-   HEADER ET NAVIGATION
+   HEADER ET NAVIGATION CORRIGÉS
    ===================================== */
+
+/* Header Application */
 .app-header {
     background: var(--bg-primary);
     border-bottom: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
+    left: 0;
+    right: 0;
+    height: 60px;
+    z-index: 1000;
+    display: none;
 }
 
 .header-content {
     max-width: 1400px;
     margin: 0 auto;
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: 0 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    height: 100%;
 }
 
 .logo {
@@ -406,103 +325,112 @@ body.login-mode {
     font-size: var(--text-lg);
 }
 
-/* Navigation avec design ultra-moderne BOUTONS ÉNORMES */
+/* NAVIGATION COMPLÈTEMENT CORRIGÉE */
 .app-nav {
     background: var(--bg-primary);
     border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: center; /* Centrer le contenu */
-    align-items: center;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 24px 32px; /* Padding encore plus généreux */
-    /* Permettre le scroll horizontal invisible */
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-}
-
-/* Container de navigation centré avec surlignage restauré */
-#mainNav {
-    display: flex;
-    justify-content: center; /* Centrer les boutons */
-    align-items: center;
-    gap: 24px; /* Gap ÉNORME entre boutons */
-    /* Permettre le scroll horizontal invisible */
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
+    position: fixed;
+    top: 60px;
+    left: 0;
+    right: 0;
+    height: 70px;
+    z-index: 999;
+    display: none;
     
-    /* Centrage parfait */
-    flex-wrap: nowrap;
-    white-space: nowrap;
+    /* Centrage et scroll horizontal invisible */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 }
 
-/* Masquer les scrollbars du container aussi */
-#mainNav::-webkit-scrollbar {
+.app-nav::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
 }
 
+/* Container de navigation */
+#mainNav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    height: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    
+    /* Scroll horizontal invisible */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    white-space: nowrap;
+}
+
+#mainNav::-webkit-scrollbar {
+    display: none !important;
+}
+
+/* BOUTONS DE NAVIGATION PARFAITEMENT VISIBLES */
 .nav-item {
-    /* Boutons clairement délimités avec bordure forte */
+    /* Style de base */
     background: #ffffff;
     border: 2px solid #e2e8f0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     
-    /* Dimensions uniformes */
-    padding: 12px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-secondary);
+    /* Dimensions garanties */
+    min-width: 130px;
+    max-width: 180px;
+    height: 50px;
+    padding: 10px 16px;
+    
+    /* Layout interne */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     
     /* Apparence */
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
     cursor: pointer;
+    border-radius: 25px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     white-space: nowrap;
-    border-radius: 10px; /* Coins arrondis mais pas trop */
-    
-    /* Dimensions fixes pour uniformité */
-    min-width: 110px;
-    height: 44px; /* Hauteur fixe pour tous */
-    
     flex-shrink: 0;
     position: relative;
-    
-    /* Assurer la délimitation claire */
-    box-sizing: border-box;
+    text-decoration: none;
 }
 
-/* Icônes Font Awesome restaurées avec taille uniforme */
-.nav-item i { 
-    /* Taille uniforme pour toutes les icônes */
-    font-size: 16px !important;
-    width: 18px;
-    height: 18px;
-    
-    /* Centrage */
+/* Icônes uniformisées */
+.nav-item i {
+    font-size: 18px !important;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    
-    /* Style */
     font-weight: 900 !important;
-    line-height: 1;
     color: inherit;
-    
-    /* Espacement */
-    margin: 0;
-    padding: 0;
+    flex-shrink: 0;
 }
 
-/* S'assurer que les vraies icônes Font Awesome s'affichent */
+/* Texte des boutons */
+.nav-item span {
+    font-size: 14px;
+    font-weight: 600;
+    color: inherit;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100px;
+}
+
+/* Font Awesome garanti */
 .nav-item .fas,
 .nav-item .far,
 .nav-item .fab {
@@ -510,55 +438,58 @@ body.login-mode {
     font-weight: 900 !important;
 }
 
-/* État de survol avec délimitation renforcée */
+/* État de survol */
 .nav-item:hover {
     background: #f8fafc;
     border-color: var(--primary);
     color: var(--primary);
     box-shadow: 
-        0 4px 12px rgba(91, 33, 182, 0.15),
-        0 2px 4px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
+        0 4px 15px rgba(91, 33, 182, 0.2),
+        0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px) scale(1.02);
 }
 
-/* État actif avec délimitation très claire */
+/* ÉTAT ACTIF AVEC CERCLE ARRONDI TRÈS VISIBLE */
 .nav-item.active {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    border-color: var(--primary-dark);
-    color: white;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    color: white !important;
     box-shadow: 
-        0 6px 20px rgba(91, 33, 182, 0.3),
-        0 2px 8px rgba(91, 33, 182, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    transform: translateY(-1px);
+        0 0 0 2px var(--primary-dark),
+        0 8px 25px rgba(91, 33, 182, 0.4),
+        0 4px 15px rgba(91, 33, 182, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px) scale(1.05);
 }
 
-/* Icône active avec effet lumineux */
-.nav-item.active i {
-    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+/* Icône et texte actifs */
+.nav-item.active i,
+.nav-item.active span {
+    color: white !important;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+    font-weight: 700;
 }
 
 /* Survol de l'élément actif */
-.nav-item.active:hover { 
+.nav-item.active:hover {
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-    border-color: var(--primary-dark);
     box-shadow: 
-        0 8px 25px rgba(91, 33, 182, 0.4),
-        0 3px 12px rgba(91, 33, 182, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.25);
-    transform: translateY(-2px);
+        0 0 0 3px var(--primary-dark),
+        0 10px 30px rgba(91, 33, 182, 0.5),
+        0 5px 20px rgba(91, 33, 182, 0.4);
+    transform: translateY(-4px) scale(1.08);
 }
 
-/* Focus avec délimitation claire */
+/* Focus accessibilité */
 .nav-item:focus {
-    outline: 3px solid rgba(91, 33, 182, 0.5);
-    outline-offset: 2px;
+    outline: 3px solid rgba(91, 33, 182, 0.6);
+    outline-offset: 3px;
     box-shadow: 
-        0 0 0 6px rgba(91, 33, 182, 0.1),
-        0 2px 4px rgba(0, 0, 0, 0.1);
+        0 0 0 8px rgba(91, 33, 182, 0.15),
+        0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Effet de brillance subtil au survol */
+/* Effet de brillance */
 .nav-item::before {
     content: '';
     position: absolute;
@@ -569,123 +500,245 @@ body.login-mode {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
     transition: left 0.6s;
     pointer-events: none;
-    border-radius: 8px;
+    border-radius: 25px;
 }
 
 .nav-item:hover::before {
     left: 100%;
 }
 
-/* Désactiver l'effet de brillance pour l'élément actif */
 .nav-item.active::before {
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-}
-
-/* Responsive - maintenir le centrage sur tous les écrans */
-@media (max-width: 768px) {
-    .app-nav {
-        justify-content: center; /* Maintenir le centrage */
-        padding: 18px 24px;
-    }
-    
-    #mainNav {
-        justify-content: center; /* Centrer sur mobile aussi */
-        gap: 16px;
-    }
-    
-    .nav-item {
-        min-width: 160px; /* Encore très grand sur mobile */
-        height: 64px; /* Garde une bonne hauteur */
-        padding: 20px 24px;
-        font-size: 16px;
-        gap: 12px;
-        border-radius: 20px; /* Garde l'arrondi moderne */
-        /* Garder les ombres modernes sur mobile */
-        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-    }
-    
-    .nav-item i {
-        font-size: 22px !important; /* Grandes icônes sur mobile */
-        width: 28px;
-        height: 28px;
-    }
-    
-    .nav-item span {
-        font-size: 16px;
-        letter-spacing: 0.3px;
-    }
-}
-
-@media (max-width: 480px) {
-    .app-nav {
-        justify-content: flex-start; /* Sur très petit écran, permettre le scroll */
-        padding: 16px 20px;
-    }
-    
-    #mainNav {
-        justify-content: flex-start; /* Permettre le scroll horizontal sur très petit écran */
-        gap: 12px;
-    }
-    
-    .nav-item {
-        min-width: 140px; /* Minimum viable mais encore confortable */
-        height: 58px;
-        padding: 18px 20px;
-        font-size: 15px;
-        gap: 10px;
-        border-radius: 18px; /* Garde l'aspect moderne */
-    }
-    
-    .nav-item i {
-        font-size: 20px !important;
-        width: 26px;
-        height: 26px;
-    }
-    
-    .nav-item span {
-        font-size: 15px;
-        letter-spacing: 0.2px;
-    }
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
 }
 
 /* =====================================
-   CONTENU PRINCIPAL AVEC GESTION DU SCROLL
+   CONTENU PRINCIPAL - ESPACEMENT SUPPRIMÉ
    ===================================== */
 
 .app-main {
-    flex: 1;
-    max-width: 1400px;
+    /* Espacement minimal - juste pour header + nav */
+    margin-top: 0;
+    padding: 0;
+    min-height: 100vh;
     width: 100%;
-    margin: 0 auto;
-    padding: var(--spacing-lg);
-    /* Pas de gestion directe du scroll ici, laissé au body */
-    overflow-y: visible;
 }
 
-#pageContent {
-    /* Pas de hauteur fixe pour éviter les scrolls inutiles */
-    min-height: auto;
+/* Classes pour l'état actif de l'app */
+body.app-active {
+    background: #f8fafc;
+}
+
+body.app-active #loginPage {
+    display: none !important;
+}
+
+body.app-active .app-header {
+    display: block !important;
+}
+
+body.app-active .app-nav {
+    display: block !important;
+}
+
+/* SUPPRESSION COMPLÈTE DE L'ESPACEMENT */
+body.app-active .app-main {
+    margin-top: 130px !important; /* Juste header + nav */
+    padding-top: 0 !important;
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+}
+
+body.app-active #pageContent {
+    display: block !important;
+    opacity: 1 !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
     width: 100%;
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* =====================================
-   PAGEMANAGER V3.0 STYLES MINIMALISTES
+   DASHBOARD MINIMALISTE
    ===================================== */
 
-/* Container principal minimaliste */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px 20px 20px; /* Suppression du padding-top */
+}
+
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.quick-guide {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border-left: 3px solid #667eea;
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.guide-intro {
+    font-size: 16px;
+    color: #1e293b;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.guide-steps {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.guide-step {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    color: #0369a1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    flex: 1;
+    text-align: center;
+    min-width: 120px;
+    border: 1px solid #bae6fd;
+}
+
+.dashboard-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.action-card {
+    background: white;
+    border-radius: 16px;
+    padding: 25px 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-color: var(--color);
+}
+
+.action-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    background: var(--color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.action-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 12px;
+    line-height: 1.2;
+}
+
+.action-description {
+    font-size: 15px;
+    color: #4b5563;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.action-description small {
+    display: block;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 400;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-left: 3px solid var(--color);
+}
+
+/* Couleurs par carte */
+.scan-card {
+    --color: #3b82f6;
+}
+
+.organize-card {
+    --color: #10b981;
+}
+
+.tasks-card {
+    --color: #f59e0b;
+}
+
+.settings-card {
+    --color: #8b5cf6;
+}
+
+.dashboard-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    text-align: center;
+}
+
+.stat {
+    min-width: 120px;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 6px;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* =====================================
+   PAGEMANAGER STYLES
+   ===================================== */
+
 .page-minimal {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 32px;
+    padding: 0 32px 32px 32px; /* Suppression du padding-top */
     animation: fadeIn 0.3s ease;
 }
 
-/* Header de page */
 .page-header-minimal {
     margin-bottom: 40px;
+    margin-top: 0; /* Suppression de la marge top */
 }
 
 .page-title {
@@ -701,7 +754,6 @@ body.login-mode {
     margin: 0;
 }
 
-/* Cartes de statistiques */
 .stats-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -737,7 +789,6 @@ body.login-mode {
     letter-spacing: 0.05em;
 }
 
-/* Grille d'actions */
 .action-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -745,63 +796,11 @@ body.login-mode {
     margin-bottom: 40px;
 }
 
-.action-card {
-    background: var(--pm-bg);
-    border: 2px solid var(--pm-border);
-    border-radius: var(--pm-radius);
-    padding: 40px;
-    text-align: center;
-    cursor: pointer;
-    transition: var(--pm-transition);
-    position: relative;
-    overflow: hidden;
-}
-
-.action-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--pm-shadow-lg);
-}
-
-.action-card:focus {
-    outline: 3px solid var(--pm-primary);
-    outline-offset: 2px;
-}
-
-.action-card.primary {
-    background: linear-gradient(135deg, var(--pm-primary) 0%, var(--pm-primary-dark) 100%);
-    color: white;
-    border-color: var(--pm-primary);
-}
-
-.action-card.secondary {
-    background: var(--pm-bg-secondary);
-}
-
-.action-card .icon {
-    font-size: 4rem;
-    margin-bottom: 20px;
-    display: block;
-}
-
-.action-title {
-    font-size: var(--text-xl);
-    font-weight: 600;
-    margin-bottom: 12px;
-    display: block;
-}
-
-.action-desc {
-    font-size: var(--text-base);
-    opacity: 0.8;
-}
-
-/* Scanner minimaliste */
 .scanner-container {
     max-width: 700px;
     margin: 0 auto;
     text-align: center;
-    /* Pas de hauteur fixe */
-    padding: var(--spacing-lg);
+    padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg); /* Suppression du padding-top */
 }
 
 .scanner-header {
@@ -906,25 +905,21 @@ body.login-mode {
     animation: spin 1s linear infinite;
 }
 
-/* Page emails avec gestion du scroll */
+/* Emails page */
 .emails-page {
     background: var(--pm-bg-secondary);
     border-radius: var(--pm-radius);
     padding: 0;
-    margin: -32px;
-    /* Pas de hauteur fixe */
+    margin: 0; /* Suppression de la marge négative */
 }
 
 .emails-list {
     background: var(--pm-bg);
-    /* Hauteur adaptable au contenu */
     min-height: 400px;
-    /* Pas de max-height fixe - laissé au body */
     overflow-y: visible;
     overflow-x: hidden;
 }
 
-/* Scrollbar personnalisée pour la liste des emails */
 .emails-list::-webkit-scrollbar {
     width: 12px;
 }
@@ -944,7 +939,6 @@ body.login-mode {
     background: #94a3b8;
 }
 
-/* Firefox */
 .emails-list {
     scrollbar-width: auto;
     scrollbar-color: #cbd5e1 #f1f5f9;
@@ -977,7 +971,6 @@ body.login-mode {
     line-height: 1.6;
 }
 
-/* Loading overlay */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -1039,12 +1032,34 @@ body.login-mode {
     }
 }
 
+@keyframes slideInNav {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.nav-item {
+    animation: slideInNav 0.3s ease;
+}
+
+.nav-item:nth-child(1) { animation-delay: 0.1s; }
+.nav-item:nth-child(2) { animation-delay: 0.2s; }
+.nav-item:nth-child(3) { animation-delay: 0.3s; }
+.nav-item:nth-child(4) { animation-delay: 0.4s; }
+.nav-item:nth-child(5) { animation-delay: 0.5s; }
+.nav-item:nth-child(6) { animation-delay: 0.6s; }
+
 /* =====================================
-   RESPONSIVE AMÉLIORÉ
+   RESPONSIVE
    ===================================== */
 @media (max-width: 1200px) {
     .page-minimal {
-        padding: 24px;
+        padding: 0 24px 24px 24px;
     }
     
     .stats-cards {
@@ -1062,26 +1077,94 @@ body.login-mode {
     }
     
     .app-nav {
-        padding: var(--spacing-sm) var(--spacing-md);
-        flex-wrap: wrap;
+        height: 80px;
+        padding: 0 10px;
+    }
+    
+    #mainNav {
+        gap: 10px;
+        justify-content: flex-start;
+        padding: 0 10px;
     }
     
     .nav-item {
-        padding: 18px;
-        font-size: var(--text-lg);
-        min-height: 70px;
+        min-width: 110px;
+        max-width: 150px;
+        height: 45px;
+        padding: 8px 12px;
+        font-size: 13px;
+        gap: 8px;
+        border-radius: 22px;
     }
     
-    .nav-item i { 
-        font-size: 1.5rem;
+    .nav-item i {
+        font-size: 16px !important;
+        width: 18px;
+        height: 18px;
     }
     
-    .app-main { 
-        padding: var(--spacing-md); 
+    .nav-item span {
+        font-size: 13px;
+        max-width: 80px;
+    }
+    
+    body.app-active .app-main {
+        margin-top: 140px !important;
+    }
+    
+    body.app-active #pageContent {
+        padding-left: 15px;
+        padding-right: 15px;
+        padding-bottom: 15px;
+    }
+    
+    .dashboard-container {
+        padding: 0 15px 15px 15px;
     }
     
     .page-minimal {
-        padding: 20px;
+        padding: 0 20px 20px 20px;
+    }
+    
+    .scanner-container {
+        padding: 0 var(--spacing-md) var(--spacing-md) var(--spacing-md);
+    }
+    
+    .dashboard-actions {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .action-card {
+        min-height: 160px;
+        padding: 20px 15px;
+    }
+    
+    .action-title {
+        font-size: 18px;
+    }
+    
+    .action-description {
+        font-size: 14px;
+    }
+    
+    .action-description small {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+    
+    .dashboard-stats {
+        flex-direction: column;
+        gap: 30px;
+    }
+    
+    .guide-steps {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .guide-step {
+        min-width: auto;
     }
     
     .stats-cards {
@@ -1121,6 +1204,54 @@ body.login-mode {
         font-size: 22px;
     }
     
+    .app-nav {
+        height: 75px;
+    }
+    
+    #mainNav {
+        gap: 8px;
+        padding: 0 8px;
+    }
+    
+    .nav-item {
+        min-width: 90px;
+        max-width: 120px;
+        height: 42px;
+        padding: 6px 10px;
+        font-size: 12px;
+        gap: 6px;
+        border-radius: 20px;
+    }
+    
+    .nav-item i {
+        font-size: 14px !important;
+        width: 16px;
+        height: 16px;
+    }
+    
+    .nav-item span {
+        font-size: 12px;
+        max-width: 60px;
+    }
+    
+    body.app-active .app-main {
+        margin-top: 135px !important;
+    }
+    
+    body.app-active #pageContent {
+        padding-left: 10px;
+        padding-right: 10px;
+        padding-bottom: 10px;
+    }
+    
+    .dashboard-container {
+        padding: 0 10px 10px 10px;
+    }
+    
+    .page-minimal {
+        padding: 0 15px 15px 15px;
+    }
+    
     .page-title {
         font-size: var(--text-2xl);
     }
@@ -1142,7 +1273,9 @@ body.login-mode {
     }
 }
 
-/* Utilitaires */
+/* =====================================
+   UTILITAIRES
+   ===================================== */
 .text-center {
     text-align: center;
 }
@@ -1162,7 +1295,7 @@ body.login-mode {
 .gap-3 { gap: 32px; }
 .gap-4 { gap: 40px; }
 
-/* Améliorations d'accessibilité */
+/* Accessibilité */
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
