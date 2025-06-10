@@ -480,16 +480,16 @@
             display: none; /* Caché par défaut */
         }
 
-        /* FORCER LA SUPPRESSION DU LOGO DANS LE HEADER */
+        /* RESTAURER L'AFFICHAGE DU HEADER ET LOGO */
         .app-header .logo,
         .header-content .logo,
         .logo {
-            display: none !important;
+            display: flex !important; /* Restaurer le logo */
         }
 
-        /* Masquer complètement tout le contenu du header */
+        /* Restaurer le contenu du header */
         .app-header .header-content {
-            display: none !important;
+            display: flex !important;
         }
 
         .header-content {
@@ -589,7 +589,7 @@
         }
 
         body.app-active .app-header {
-            display: none !important; /* Forcer la suppression complète */
+            display: block !important; /* Restaurer l'affichage du header */
         }
 
         body.app-active .app-nav {
@@ -597,7 +597,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 60px; /* Seulement la nav */
+            margin-top: 120px; /* Header + Nav */
             padding-top: 40px; /* Espace supplémentaire sous la nav */
         }
 
@@ -899,7 +899,7 @@
             }
             
             body.app-active .app-main {
-                margin-top: 80px; /* Nav seulement */
+                margin-top: 140px; /* Header + Nav responsive */
                 padding-top: 30px; /* Espace responsive */
             }
             
