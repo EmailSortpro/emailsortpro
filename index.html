@@ -1604,11 +1604,13 @@
                 window.pageManager.loadPage = function(pageName, ...args) {
                     console.log(`[DASHBOARD_INTERCEPT] LoadPage called for: ${pageName}`);
                     
+                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
                     window.setPageMode(pageName);
                     
                     if (pageName === 'dashboard') {
                         console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using new design');
                         
+                        // Mettre à jour la navigation pour marquer dashboard comme actif
                         const navItems = document.querySelectorAll('.nav-item');
                         navItems.forEach(item => {
                             item.classList.remove('active');
@@ -1617,21 +1619,44 @@
                             }
                         });
                         
+                        // Afficher le contenu du dashboard (déjà dans l'index.html)
                         const pageContent = document.getElementById('pageContent');
                         if (pageContent) {
+                            // S'assurer que le dashboard est visible
+                            const dashboardContainer = pageContent.querySelector('.dashboard-container');
+                            if (dashboardContainer) {
+                                dashboardContainer.style.display = 'block';
+                            }
                             pageContent.style.display = 'block';
                             pageContent.style.opacity = '1';
                         }
                         
+                        // Masquer tout autre contenu dynamique qui pourrait être affiché
+                        const dynamicContent = pageContent.querySelectorAll('.page-minimal, .emails-page, .scanner-container');
+                        dynamicContent.forEach(content => {
+                            if (content) content.style.display = 'none';
+                        });
+                        
+                        // Animer les stats du dashboard
                         animateDashboardStats();
                         
+                        // Vérifier le scroll après affichage du dashboard
                         setTimeout(() => {
                             window.checkScrollNeeded();
-                        }, 500);
+                        }, 300);
                         
-                        console.log('[DASHBOARD_INTERCEPT] Dashboard sobre affiché');
+                        console.log('[DASHBOARD_INTERCEPT] Dashboard sobre affiché et restauré');
                         return Promise.resolve();
                     } else {
+                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
+                        const pageContent = document.getElementById('pageContent');
+                        if (pageContent) {
+                            const dashboardContainer = pageContent.querySelector('.dashboard-container');
+                            if (dashboardContainer) {
+                                dashboardContainer.style.display = 'none';
+                            }
+                        }
+                        
                         return originalLoadPage(pageName, ...args);
                     }
                 };
@@ -1753,6 +1778,45 @@
                         if (loadingOverlay) {
                             loadingOverlay.classList.remove('active');
                         }
+                    }
+                });
+            }
+            
+            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
+            const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
+            if (dashboardBtn) {
+                dashboardBtn.addEventListener('click', function(e) {
+                    console.log('[DASHBOARD_CLICK] Direct dashboard click detected');
+                    e.preventDefault();
+                    
+                    // Forcer le retour au dashboard
+                    if (window.pageManager && window.pageManager.loadPage) {
+                        window.pageManager.loadPage('dashboard');
+                    } else {
+                        // Fallback: afficher directement le dashboard
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => item.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        const pageContent = document.getElementById('pageContent');
+                        if (pageContent) {
+                            // Masquer tout contenu dynamique
+                            const dynamicContent = pageContent.querySelectorAll('.page-minimal, .emails-page, .scanner-container');
+                            dynamicContent.forEach(content => {
+                                if (content) content.style.display = 'none';
+                            });
+                            
+                            // Afficher le dashboard
+                            const dashboardContainer = pageContent.querySelector('.dashboard-container');
+                            if (dashboardContainer) {
+                                dashboardContainer.style.display = 'block';
+                            }
+                            pageContent.style.display = 'block';
+                            pageContent.style.opacity = '1';
+                        }
+                        
+                        window.setPageMode('dashboard');
+                        animateDashboardStats();
                     }
                 });
             }
