@@ -74,25 +74,14 @@ class DomainOrganizer {
                                     </div>
                                 </div>
 
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label>Dossier source</label>
-                                        <select id="sourceFolder" class="input">
-                                            <option value="inbox">Boîte de réception</option>
-                                            <option value="sent">Éléments envoyés</option>
-                                            <option value="archive">Archive</option>
-                                            <option value="all">Tous les dossiers</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Limite d'emails</label>
-                                        <select id="emailLimit" class="input">
-                                            <option value="100">100 emails</option>
-                                            <option value="500" selected>500 emails</option>
-                                            <option value="1000">1000 emails</option>
-                                            <option value="2000">2000 emails</option>
-                                        </select>
-                                    </div>
+                                <div class="form-group">
+                                    <label>Dossier source</label>
+                                    <select id="sourceFolder" class="input">
+                                        <option value="inbox">Boîte de réception</option>
+                                        <option value="sent">Éléments envoyés</option>
+                                        <option value="archive">Archive</option>
+                                        <option value="all">Tous les dossiers</option>
+                                    </select>
                                 </div>
 
                                 <div class="form-group">
@@ -962,19 +951,16 @@ class DomainOrganizer {
             // Étape 2: Récupération des emails
             if (analysisDescription) analysisDescription.textContent = 'Récupération des emails...';
             
-            const emailLimit = parseInt(formData.emailLimit) || 500;
             let emails = [];
 
             if (formData.sourceFolder === 'all') {
                 // Récupérer de plusieurs dossiers
                 const folders = ['inbox', 'sent', 'archive'];
-                const limitPerFolder = Math.floor(emailLimit / folders.length);
                 
                 for (const folder of folders) {
                     try {
                         if (currentDomain) currentDomain.textContent = `Analyse du dossier: ${folder}`;
                         const folderEmails = await window.mailService.getEmailsFromFolder(folder, {
-                            top: limitPerFolder,
                             startDate: formData.startDate,
                             endDate: formData.endDate
                         });
@@ -993,7 +979,6 @@ class DomainOrganizer {
                 // Récupérer d'un seul dossier
                 if (currentDomain) currentDomain.textContent = `Analyse du dossier: ${formData.sourceFolder}`;
                 emails = await window.mailService.getEmailsFromFolder(formData.sourceFolder, {
-                    top: emailLimit,
                     startDate: formData.startDate,
                     endDate: formData.endDate
                 });
@@ -1266,7 +1251,6 @@ class DomainOrganizer {
         const startDate = document.getElementById('startDate')?.value || '';
         const endDate = document.getElementById('endDate')?.value || '';
         const sourceFolder = document.getElementById('sourceFolder')?.value || 'inbox';
-        const emailLimit = document.getElementById('emailLimit')?.value || '500';
         const excludeDomains = document.getElementById('excludeDomains')?.value
             .split(',').map(d => d.trim()).filter(d => d) || [];
         
@@ -1274,7 +1258,6 @@ class DomainOrganizer {
             startDate, 
             endDate, 
             sourceFolder,
-            emailLimit,
             excludeDomains, 
             excludeEmails: [] 
         };
@@ -1840,4 +1823,4 @@ window.domainOrganizer = {
     instance: window.organizerInstance
 };
 
-console.log('[DomainOrganizer] ✅ v8.3 Real Scan System ready');
+console.log('[DomainOrganizer] ✅ v8.3 Real Scan System ready - UNLIMITED EMAILS');
