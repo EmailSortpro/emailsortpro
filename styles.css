@@ -423,7 +423,7 @@ body.login-mode {
     -ms-overflow-style: none !important;
 }
 
-/* Container de navigation centré */
+/* Container de navigation centré avec surlignage restauré */
 #mainNav {
     display: flex;
     justify-content: center; /* Centrer les boutons */
@@ -438,6 +438,13 @@ body.login-mode {
     /* Centrage parfait */
     flex-wrap: nowrap;
     white-space: nowrap;
+}
+
+/* Masquer les scrollbars du container aussi */
+#mainNav::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .nav-item {
