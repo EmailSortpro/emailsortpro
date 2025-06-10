@@ -328,13 +328,21 @@ class ModernDomainOrganizer {
     }
 
     async performAnalysisWithDateRange(startDate, endDate) {
-        // Étape 1: Récupération avec filtre de dates
-        this.updateProgress(20, 'Récupération des emails de la période...');
-        const emails = await this.getEmailsFromInboxWithDateRange(startDate, endDate);
+        // Étape 1: Récupération avec filtre de dates - INBOX + SPAM
+        this.updateProgress(10, 'Récupération des emails de la période...');
+        
+        const inboxEmails = await this.getEmailsFromFolderWithDateRange('inbox', startDate, endDate);
+        this.updateProgress(30, 'Récupération des indésirables...');
+        
+        const spamEmails = await this.getEmailsFromFolderWithDateRange('junkemail', startDate, endDate);
+        
+        // Combiner tous les emails
+        const allEmails = [...inboxEmails, ...spamEmails];
+        console.log('[ModernDomainOrganizer] 📧 Total emails récupérés:', allEmails.length, '(Inbox:', inboxEmails.length, '+ Spam:', spamEmails.length, ')');
         
         // Étape 2: Analyse
         this.updateProgress(60, 'Analyse des domaines...');
-        this.analyzeEmailDomains(emails);
+        this.analyzeEmailDomains(allEmails);
         
         // Étape 3: Finalisation
         this.updateProgress(90, 'Tri des résultats...');
@@ -343,16 +351,16 @@ class ModernDomainOrganizer {
         this.updateProgress(100, 'Terminé !');
     }
 
-    async getEmailsFromInboxWithDateRange(startDate, endDate) {
+    async getEmailsFromFolderWithDateRange(folderId, startDate, endDate) {
         try {
             // Construire le filtre de dates pour l'API Microsoft Graph
             const startISO = new Date(startDate + 'T00:00:00.000Z').toISOString();
             const endISO = new Date(endDate + 'T23:59:59.999Z').toISOString();
             
-            console.log('[ModernDomainOrganizer] 📅 Période:', startISO, '→', endISO);
+            console.log('[ModernDomainOrganizer] 📅 Dossier:', folderId, 'Période:', startISO, '→', endISO);
             
-            // PAS DE LIMITATION - Récupérer TOUS les emails de la période
-            const emails = await this.getAllEmailsInDateRange('inbox', startISO, endISO);
+            // Récupérer TOUS les emails de la période sans limitation
+            const emails = await this.getAllEmailsInDateRangeFromFolder(folderId, startISO, endISO);
             
             const uniqueEmails = emails.filter(email => {
                 if (this.processedEmailIds.has(email.id)) return false;
@@ -360,22 +368,23 @@ class ModernDomainOrganizer {
                 return true;
             });
             
-            this.updateStats({ totalEmails: uniqueEmails.length });
-            console.log('[ModernDomainOrganizer] ✅', uniqueEmails.length, 'emails uniques dans la période');
+            console.log('[ModernDomainOrganizer] ✅', uniqueEmails.length, 'emails uniques de', folderId);
             
             return uniqueEmails;
             
         } catch (error) {
-            throw new Error('Impossible de récupérer les emails: ' + error.message);
+            console.error('[ModernDomainOrganizer] Erreur dossier', folderId, ':', error);
+            return []; // Retourner un tableau vide en cas d'erreur
         }
     }
 
-    async getAllEmailsInDateRange(folderId, startDate, endDate) {
-        console.log('[ModernDomainOrganizer] 🔄 Récupération complète sans limitation...');
+    async getAllEmailsInDateRangeFromFolder(folderId, startDate, endDate) {
+        console.log('[ModernDomainOrganizer] 🔄 Récupération complète de', folderId, 'sans limitation...');
         
         let allEmails = [];
         let nextLink = null;
         let pageCount = 0;
+        const maxPages = 100; // Limite de sécurité augmentée
         
         do {
             try {
@@ -396,32 +405,56 @@ class ModernDomainOrganizer {
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    if (response.status === 504) {
+                        console.warn('[ModernDomainOrganizer] ⏱️ Timeout 504 - continuer avec les emails récupérés');
+                        break;
+                    } else if (response.status === 429) {
+                        console.warn('[ModernDomainOrganizer] ⏱️ Rate limit - pause 5 secondes');
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        continue;
+                    } else {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
                 }
                 
                 const data = await response.json();
-                allEmails = allEmails.concat(data.value || []);
+                const pageEmails = data.value || [];
+                allEmails = allEmails.concat(pageEmails);
                 nextLink = data['@odata.nextLink'];
                 pageCount++;
                 
                 // Mise à jour du progrès
-                this.updateProgress(20 + (pageCount * 5), `Récupération... ${allEmails.length} emails trouvés`);
+                if (folderId === 'inbox') {
+                    this.updateProgress(10 + (pageCount * 2), `Récupération inbox... ${allEmails.length} emails`);
+                } else {
+                    this.updateProgress(30 + (pageCount * 2), `Récupération ${folderId}... ${allEmails.length} emails`);
+                }
                 
-                console.log('[ModernDomainOrganizer] 📄 Page', pageCount, ':', data.value?.length || 0, 'emails (Total:', allEmails.length, ')');
+                console.log('[ModernDomainOrganizer] 📄 Page', pageCount, 'de', folderId, ':', pageEmails.length, 'emails (Total:', allEmails.length, ')');
                 
-                // Petite pause pour éviter la limitation de l'API
+                // Pause plus longue entre les requêtes pour éviter les timeouts
                 if (nextLink) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 300));
                 }
                 
             } catch (error) {
-                console.error('[ModernDomainOrganizer] Erreur page', pageCount + 1, ':', error);
-                break;
+                console.error('[ModernDomainOrganizer] Erreur page', pageCount + 1, 'de', folderId, ':', error);
+                if (error.message.includes('504') || error.message.includes('timeout')) {
+                    console.log('[ModernDomainOrganizer] ⏹️ Arrêt à cause du timeout - continuer avec', allEmails.length, 'emails');
+                    break;
+                }
+                // Pour d'autres erreurs, continuer si on a déjà des emails
+                if (allEmails.length > 0) {
+                    console.log('[ModernDomainOrganizer] ⏹️ Continuer avec', allEmails.length, 'emails récupérés');
+                    break;
+                } else {
+                    throw error;
+                }
             }
             
-        } while (nextLink && pageCount < 50); // Limite de sécurité à 50 pages (50k emails max)
+        } while (nextLink && pageCount < maxPages);
         
-        console.log('[ModernDomainOrganizer] ✅ Récupération terminée:', allEmails.length, 'emails sur', pageCount, 'pages');
+        console.log('[ModernDomainOrganizer] ✅ Récupération', folderId, 'terminée:', allEmails.length, 'emails sur', pageCount, 'pages');
         return allEmails;
     }
 
@@ -451,12 +484,16 @@ class ModernDomainOrganizer {
             }
         });
         
+        // Mise à jour finale des stats
         this.updateStats({
             totalEmails: emails.length,
             domainsFound: this.domainAnalysis.size
         });
         
-        console.log('[ModernDomainOrganizer] ✅', this.domainAnalysis.size, 'domaines trouvés');
+        // Mettre à jour l'interface de sélection après avoir ajouté tous les emails
+        this.updateSelectionUI();
+        
+        console.log('[ModernDomainOrganizer] ✅', this.domainAnalysis.size, 'domaines trouvés,', this.selectedEmails.size, 'emails sélectionnés par défaut');
     }
 
     addEmailToDomain(domain, email) {
@@ -475,6 +512,9 @@ class ModernDomainOrganizer {
         const domainData = this.domainAnalysis.get(domain);
         domainData.emails.push(email);
         domainData.count++;
+        
+        // Sélectionner automatiquement tous les emails par défaut
+        this.selectedEmails.set(email.id, { emailId: email.id, domain });
         
         // Mettre à jour les dates
         const emailDate = email.receivedDateTime || email.sentDateTime;
@@ -510,6 +550,9 @@ class ModernDomainOrganizer {
         const lastDate = new Date(domainData.lastSeen).toLocaleDateString('fr-FR');
         const customName = this.customFolderNames.get(domainData.domain) || `📧 ${domainData.domain}`;
         
+        // Vérifier si c'est un nouveau dossier (pas encore créé)
+        const isNewFolder = !domainData.folderCreated && !this.createdFolders.has(domainData.domain);
+        
         return `
             <div class="domain-item">
                 <!-- En-tête du domaine avec contrôles avancés -->
@@ -532,8 +575,9 @@ class ModernDomainOrganizer {
                     
                     <!-- Contrôles avancés -->
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <!-- Nom du dossier personnalisé -->
-                        <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                        <!-- Nom du dossier personnalisé avec indicateur nouveau -->
+                        <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e5e7eb; position: relative;">
+                            ${isNewFolder ? '<span style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; font-size: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700;">N</span>' : ''}
                             <i class="fas fa-folder" style="color: #6b7280; font-size: 12px;"></i>
                             <span style="font-size: 11px; color: #374151; font-weight: 500; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${customName}</span>
                             <button onclick="event.stopPropagation(); modernDomainOrganizer.editFolderName('${domainData.domain}')" style="background: none; border: none; color: #6b7280; cursor: pointer; padding: 2px;">
@@ -544,7 +588,7 @@ class ModernDomainOrganizer {
                         <!-- Statut -->
                         ${domainData.folderCreated ? 
                             '<span style="background: #dcfce7; color: #059669; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;"><i class="fas fa-check"></i> Organisé</span>' :
-                            '<span style="background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;"><i class="fas fa-clock"></i> En attente</span>'
+                            `<span style="background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;"><i class="fas fa-${isNewFolder ? 'plus' : 'clock'}"></i> ${isNewFolder ? 'Nouveau' : 'En attente'}</span>`
                         }
                         
                         <!-- Actions -->
@@ -590,12 +634,14 @@ class ModernDomainOrganizer {
         const isRead = email.isRead;
         const hasAttachments = email.hasAttachments;
         const importance = email.importance;
+        
+        // Par défaut, tous les emails sont sélectionnés
         const isSelected = this.selectedEmails.has(email.id);
         
         return `
-            <div class="email-item ${isSelected ? 'selected' : ''}" style="padding: 12px 20px; display: flex; align-items: center; gap: 12px;">
+            <div class="email-item ${isSelected ? 'selected' : ''}" style="padding: 12px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer;" onclick="modernDomainOrganizer.toggleEmailByClick('${email.id}', '${domain}')">
                 <!-- Checkbox de sélection -->
-                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="modernDomainOrganizer.toggleEmailSelection('${email.id}', '${domain}', this.checked)" style="cursor: pointer;">
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="event.stopPropagation(); modernDomainOrganizer.toggleEmailSelection('${email.id}', '${domain}', this.checked)" style="cursor: pointer;">
                 
                 <!-- Métadonnées -->
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 130px;">
@@ -617,10 +663,10 @@ class ModernDomainOrganizer {
                 
                 <!-- Actions individuelles -->
                 <div style="display: flex; gap: 4px;">
-                    <button onclick="modernDomainOrganizer.openEmail('${email.webLink}')" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                    <button onclick="event.stopPropagation(); modernDomainOrganizer.openEmail('${email.webLink}')" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
                         <i class="fas fa-external-link-alt"></i> Voir
                     </button>
-                    <button onclick="modernDomainOrganizer.moveIndividualEmail('${email.id}', '${domain}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                    <button onclick="event.stopPropagation(); modernDomainOrganizer.moveIndividualEmail('${email.id}', '${domain}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
                         <i class="fas fa-arrow-right"></i> Déplacer
                     </button>
                 </div>
@@ -637,6 +683,17 @@ class ModernDomainOrganizer {
         }
         
         this.updateSelectionUI();
+    }
+
+    toggleEmailByClick(emailId, domain) {
+        const isCurrentlySelected = this.selectedEmails.has(emailId);
+        this.toggleEmailSelection(emailId, domain, !isCurrentlySelected);
+        
+        // Mettre à jour la checkbox correspondante
+        const checkbox = document.querySelector(`input[onchange*="${emailId}"]`);
+        if (checkbox) {
+            checkbox.checked = !isCurrentlySelected;
+        }
     }
 
     selectAllEmails(domain) {
@@ -1031,13 +1088,28 @@ class ModernDomainOrganizer {
                 return;
             }
             
+            // Vérifier d'abord si le dossier existe déjà
+            const existingFolder = await this.checkIfFolderExists(folderName);
+            if (existingFolder) {
+                console.log('[ModernDomainOrganizer] 📁 Dossier existant trouvé:', folderName);
+                domainData.folderId = existingFolder.id;
+                domainData.folderCreated = true;
+                this.createdFolders.set(domainData.domain, existingFolder.id);
+                return;
+            }
+            
+            // Créer le dossier avec gestion d'erreur 409
+            const token = await window.authService.getAccessToken();
+            
             const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${await window.authService.getAccessToken()}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ displayName: folderName })
+                body: JSON.stringify({ 
+                    displayName: folderName 
+                })
             });
             
             if (response.ok) {
@@ -1045,13 +1117,66 @@ class ModernDomainOrganizer {
                 domainData.folderId = folder.id;
                 domainData.folderCreated = true;
                 this.createdFolders.set(domainData.domain, folder.id);
+                console.log('[ModernDomainOrganizer] ✅ Dossier créé:', folderName);
+                
+            } else if (response.status === 409) {
+                // Conflit - le dossier existe déjà, essayer de le retrouver
+                console.log('[ModernDomainOrganizer] ⚠️ Conflit 409 - dossier existe déjà, recherche...');
+                const existingFolder = await this.findFolderByName(folderName);
+                if (existingFolder) {
+                    domainData.folderId = existingFolder.id;
+                    domainData.folderCreated = true;
+                    this.createdFolders.set(domainData.domain, existingFolder.id);
+                    console.log('[ModernDomainOrganizer] ✅ Dossier existant trouvé après 409:', folderName);
+                } else {
+                    throw new Error(`Dossier en conflit mais introuvable: ${folderName}`);
+                }
+                
             } else {
-                throw new Error(`HTTP ${response.status}`);
+                const errorText = await response.text();
+                console.error('[ModernDomainOrganizer] Erreur création dossier:', response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
         } catch (error) {
-            throw new Error(`Impossible de créer le dossier pour ${domainData.domain}`);
+            console.error('[ModernDomainOrganizer] Erreur création dossier pour', domainData.domain, ':', error);
+            throw new Error(`Impossible de créer le dossier pour ${domainData.domain}: ${error.message}`);
         }
+    }
+
+    async checkIfFolderExists(folderName) {
+        try {
+            const token = await window.authService.getAccessToken();
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const folder = data.value.find(f => f.displayName === folderName);
+                return folder || null;
+            }
+        } catch (error) {
+            console.warn('[ModernDomainOrganizer] Erreur vérification dossier:', error);
+        }
+        return null;
+    }
+
+    async findFolderByName(folderName) {
+        try {
+            const token = await window.authService.getAccessToken();
+            const response = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders?$filter=displayName eq '${encodeURIComponent(folderName)}'`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data.value.length > 0 ? data.value[0] : null;
+            }
+        } catch (error) {
+            console.warn('[ModernDomainOrganizer] Erreur recherche dossier:', error);
+        }
+        return null;
     }
 
     async moveEmailsToFolder(domainData) {
