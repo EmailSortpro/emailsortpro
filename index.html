@@ -270,7 +270,43 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #f8fafc;
             overflow-x: hidden;
+            overflow-y: auto; /* Par défaut: scroll si nécessaire */
             transition: all 0.3s ease;
+        }
+
+        /* Gestion intelligente du scroll selon les pages */
+        body.page-dashboard {
+            overflow-y: auto; /* Dashboard: scroll si nécessaire */
+        }
+
+        body.page-scanner {
+            overflow-y: auto; /* Scanner: peut avoir beaucoup de contenu */
+        }
+
+        body.page-emails {
+            overflow-y: auto; /* Emails: listes longues */
+        }
+
+        body.page-tasks {
+            overflow-y: auto; /* Tâches: listes potentiellement longues */
+        }
+
+        body.page-ranger {
+            overflow-y: auto; /* Ranger: interface complexe */
+        }
+
+        body.page-settings {
+            overflow-y: auto; /* Paramètres: formulaires longs */
+        }
+
+        /* Pages courtes: masquer le scroll si pas nécessaire */
+        body.page-short-content {
+            overflow-y: hidden;
+        }
+
+        /* Pendant le login: pas de scroll */
+        body.login-mode {
+            overflow: hidden;
         }
 
         /* === STYLES POUR LA PAGE DE LOGIN NOUVEAU DESIGN === */
@@ -568,6 +604,8 @@
             margin-top: 0; /* Pas de marge par défaut */
             min-height: 100vh;
             padding: 0;
+            /* Gestion du scroll par page */
+            overflow-y: visible; /* Laisser le body gérer le scroll */
         }
 
         #pageContent {
@@ -577,6 +615,8 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            /* Pas de hauteur fixe pour éviter les scrolls inutiles */
+            min-height: auto;
         }
 
         /* Classes pour l'état actif de l'app */
@@ -1346,6 +1386,9 @@
                 return;
             }
             
+            // Retirer le mode login
+            document.body.classList.remove('login-mode');
+            
             // Masquer le loading
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (loadingOverlay) {
@@ -1360,6 +1403,9 @@
             if (loginPage) {
                 loginPage.style.display = 'none';
             }
+            
+            // Initialiser en mode dashboard
+            window.setPageMode('dashboard');
             
             appAlreadyShown = true;
             console.log('[SHOW_APP] App interface activated');
@@ -1388,6 +1434,7 @@
                     
                     // Activer l'app immédiatement
                     document.body.classList.add('app-active');
+                    document.body.classList.remove('login-mode');
                     appAlreadyShown = true;
                     console.log('[EARLY_AUTH] App mode activated immediately');
                     
@@ -1402,6 +1449,9 @@
 
         // Exécuter la vérification précoce TOUT DE SUITE
         earlyAuthCheck();
+
+        // Ajouter une classe pour le mode login initial
+        document.body.classList.add('login-mode');
 
         // Fonction pour les actions du dashboard
         function startDashboardAction(action) {
@@ -1438,24 +1488,54 @@
             }
         }
 
-        // NOUVELLE FONCTION: Gestion des modes d'affichage pour les pages
+        /* NOUVELLE FONCTION: Gestion des modes d'affichage pour les pages */
         window.setPageMode = function(pageName) {
             const appMain = document.querySelector('.app-main');
             const pageContent = document.getElementById('pageContent');
+            const body = document.body;
+            
+            // Nettoyer les anciennes classes de page
+            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
             
             if (pageName === 'dashboard') {
                 // Mode dashboard: espacement normal
                 appMain.classList.remove('page-mode');
                 appMain.classList.add('dashboard-mode');
                 pageContent.classList.remove('non-dashboard');
+                body.classList.add('page-dashboard');
                 console.log('[PAGE_MODE] Dashboard mode activated - normal spacing');
             } else {
                 // Mode page: espacement réduit
                 appMain.classList.remove('dashboard-mode');
                 appMain.classList.add('page-mode');
                 pageContent.classList.add('non-dashboard');
+                body.classList.add(`page-${pageName}`);
                 console.log('[PAGE_MODE] Page mode activated - reduced spacing for:', pageName);
             }
+            
+            // Gestion intelligente du scroll selon la page
+            setTimeout(() => {
+                const contentHeight = pageContent.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                const headerNavHeight = 120; // Header + Nav
+                
+                console.log('[SCROLL_MANAGER]', {
+                    page: pageName,
+                    contentHeight,
+                    viewportHeight,
+                    availableHeight: viewportHeight - headerNavHeight,
+                    needsScroll: contentHeight > (viewportHeight - headerNavHeight)
+                });
+                
+                // Si le contenu est court et tient dans la viewport, on peut masquer le scroll
+                if (contentHeight <= (viewportHeight - headerNavHeight - 50)) { // 50px de marge
+                    body.classList.add('page-short-content');
+                    console.log('[SCROLL_MANAGER] Short content detected - scroll hidden');
+                } else {
+                    body.classList.remove('page-short-content');
+                    console.log('[SCROLL_MANAGER] Long content detected - scroll enabled');
+                }
+            }, 500); // Délai pour laisser le contenu se charger
         };
 
         // INTERCEPT PAGEMANAGER DASHBOARD LOADING
@@ -1733,6 +1813,11 @@
         console.log('[INDEX] 🚀 ESPACEMENT CORRIGÉ:');
         console.log('[INDEX] ✅ Dashboard: espacement normal conservé');
         console.log('[INDEX] ✅ Autres pages: espacement supprimé au-dessus du contenu');
+        console.log('[INDEX] 🎯 SCROLL INTELLIGENT:');
+        console.log('[INDEX] ✅ Login: scroll masqué');
+        console.log('[INDEX] ✅ Pages courtes: scroll automatiquement masqué');
+        console.log('[INDEX] ✅ Pages longues: scroll visible selon le contenu');
+        console.log('[INDEX] ✅ Détection automatique de la hauteur du contenu');
     </script>
 </body>
 </html>
