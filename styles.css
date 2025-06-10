@@ -116,63 +116,71 @@ body {
    GESTION INTELLIGENTE DU SCROLL SELON LES PAGES
    ===================================== */
 
-/* Pages spécifiques - scroll selon le contenu */
+/* Par défaut: masquer le scroll pour toutes les pages */
+body {
+    overflow-y: hidden !important;
+}
+
+/* Pages spécifiques qui ont BESOIN de scroll */
+body.page-scanner.needs-scroll {
+    overflow-y: auto !important;
+}
+
+body.page-emails.needs-scroll {
+    overflow-y: auto !important;
+}
+
+body.page-tasks.needs-scroll {
+    overflow-y: auto !important;
+}
+
+body.page-ranger.needs-scroll {
+    overflow-y: auto !important;
+}
+
+body.page-settings.needs-scroll {
+    overflow-y: auto !important;
+}
+
+/* Dashboard: TOUJOURS sans scroll par défaut */
 body.page-dashboard {
-    overflow-y: auto;
-}
-
-body.page-scanner {
-    overflow-y: auto; /* Scanner: peut avoir beaucoup de contenu */
-}
-
-body.page-emails {
-    overflow-y: auto; /* Emails: listes longues */
-}
-
-body.page-tasks {
-    overflow-y: auto; /* Tâches: listes potentiellement longues */
-}
-
-body.page-ranger {
-    overflow-y: auto; /* Ranger: interface complexe */
-}
-
-body.page-settings {
-    overflow-y: auto; /* Paramètres: formulaires longs */
-}
-
-/* Pages courtes: masquer le scroll complètement */
-body.page-short-content {
     overflow-y: hidden !important;
 }
 
-/* Dashboard spécifique: masquer si court */
-body.page-dashboard.page-short-content {
+/* Force masquer même si détecté comme ayant besoin de scroll */
+body.page-dashboard.needs-scroll {
     overflow-y: hidden !important;
 }
 
-/* Pendant le login: pas de scroll */
+/* Login: toujours sans scroll */
 body.login-mode {
     overflow: hidden !important;
 }
 
-/* Forcer la suppression de la scrollbar sur les pages courtes */
-body.page-short-content::-webkit-scrollbar {
+/* Suppression complète de la scrollbar dans tous les cas */
+body::-webkit-scrollbar {
     display: none !important;
+    width: 0 !important;
 }
 
-body.page-short-content {
+body {
     -ms-overflow-style: none !important;  /* IE et Edge */
     scrollbar-width: none !important;  /* Firefox */
 }
 
-body.login-mode::-webkit-scrollbar {
-    display: none !important;
+/* Navigation: pas de scroll horizontal */
+.app-nav {
+    overflow-x: hidden !important;
 }
 
-body.login-mode {
-    -ms-overflow-style: none !important;
-    scrollbar-width: none !important;
+/* Dashboard container: pas de scroll */
+.dashboard-container {
+    overflow: hidden !important;
+}
+
+/* Action cards: pas de scroll */
+.dashboard-actions {
+    overflow: hidden !important;
 }
 
 /* =====================================
