@@ -114,16 +114,21 @@ class App {
                 body.classList.remove('needs-scroll');
                 body.style.overflow = 'hidden';
                 body.style.overflowY = 'hidden';
+                body.style.overflowX = 'hidden';
                 console.log('[SCROLL_MANAGER] Dashboard - scroll forcé à hidden');
                 return;
             }
             
-            // Autres pages: scroll seulement si vraiment nécessaire
-            if (contentHeight > viewportHeight + 50) { // Marge de 50px
+            // Autres pages: scroll seulement si vraiment nécessaire avec seuil plus élevé
+            const threshold = 100; // Seuil augmenté pour éviter les scrolls inutiles
+            if (contentHeight > viewportHeight + threshold) {
                 body.classList.add('needs-scroll');
                 console.log('[SCROLL_MANAGER] Long content detected - scroll enabled for', currentPage);
             } else {
                 body.classList.remove('needs-scroll');
+                body.style.overflow = 'hidden';
+                body.style.overflowY = 'hidden';
+                body.style.overflowX = 'hidden';
                 console.log('[SCROLL_MANAGER] Short content detected - scroll hidden for', currentPage);
             }
         };
@@ -145,37 +150,60 @@ class App {
             if (pageName === 'dashboard') {
                 body.style.overflow = 'hidden';
                 body.style.overflowY = 'hidden';
+                body.style.overflowX = 'hidden';
                 console.log('[PAGE_MODE] Dashboard - scroll immédiatement masqué');
                 return;
             }
             
-            // Autres pages: vérifier après un délai
+            // Autres pages: vérifier après un délai plus long pour s'assurer que le contenu est chargé
             setTimeout(() => {
                 window.checkScrollNeeded();
-            }, 300);
+            }, 500); // Délai augmenté pour laisser le temps au contenu de se charger
         };
 
-        // Vérifier à chaque redimensionnement de fenêtre
-        window.addEventListener('resize', () => {
-            clearTimeout(window.scrollCheckTimeout);
-            window.scrollCheckTimeout = setTimeout(window.checkScrollNeeded, 250);
-        });
-
-        // Observer les changements de contenu
+        // Observer plus intelligent pour détecter les changements de contenu réels
         if (window.MutationObserver) {
-            const contentObserver = new MutationObserver(() => {
-                clearTimeout(window.scrollCheckTimeout);
-                window.scrollCheckTimeout = setTimeout(window.checkScrollNeeded, 100);
+            let scrollCheckTimeout;
+            const contentObserver = new MutationObserver((mutations) => {
+                // Vérifier si les mutations affectent réellement la taille du contenu
+                const hasContentChanges = mutations.some(mutation => 
+                    mutation.type === 'childList' || 
+                    (mutation.type === 'attributes' && ['style', 'class'].includes(mutation.attributeName))
+                );
+                
+                if (hasContentChanges) {
+                    clearTimeout(scrollCheckTimeout);
+                    scrollCheckTimeout = setTimeout(() => {
+                        const currentPage = [...document.body.classList].find(cls => cls.startsWith('page-'))?.replace('page-', '');
+                        if (currentPage !== 'dashboard') { // Ne pas check pour le dashboard
+                            window.checkScrollNeeded();
+                        }
+                    }, 200);
+                }
             });
 
             contentObserver.observe(document.body, {
                 childList: true,
                 subtree: true,
-                attributes: false
+                attributes: true,
+                attributeFilter: ['style', 'class']
             });
 
-            console.log('[SCROLL_MANAGER] Content observer initialized');
+            console.log('[SCROLL_MANAGER] Enhanced content observer initialized');
         }
+
+        // Vérifier à chaque redimensionnement de fenêtre
+        window.addEventListener('resize', () => {
+            clearTimeout(window.scrollCheckTimeout);
+            window.scrollCheckTimeout = setTimeout(() => {
+                const currentPage = [...document.body.classList].find(cls => cls.startsWith('page-'))?.replace('page-', '');
+                if (currentPage !== 'dashboard') { // Ne pas check pour le dashboard
+                    window.checkScrollNeeded();
+                }
+            }, 250);
+        });
+
+        // Observer les changements de contenu intelligent déjà inclus ci-dessus
 
         console.log('[App] ✅ Scroll manager initialized');
     }
