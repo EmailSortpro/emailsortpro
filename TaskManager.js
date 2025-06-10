@@ -1123,17 +1123,6 @@ class TasksView {
                 <!-- Panneau d'actions groupées harmonisé -->
                 <div class="bulk-actions-panel ${this.bulkActionsVisible && selectedCount > 0 ? 'show' : ''}" id="bulkActionsPanel">
                     <div class="bulk-actions-content">
-                        <div class="bulk-actions-header">
-                            <div class="selection-info">
-                                <i class="fas fa-check-square"></i>
-                                <span class="selection-text">${selectedCount} tâche${selectedCount > 1 ? 's' : ''} sélectionnée${selectedCount > 1 ? 's' : ''}</span>
-                                <button class="clear-selection-btn" onclick="window.tasksView.clearSelection()">
-                                    <i class="fas fa-times"></i>
-                                    <span>Effacer</span>
-                                </button>
-                            </div>
-                        </div>
-                        
                         <div class="bulk-actions-grid">
                             <button class="bulk-action-btn complete" onclick="window.tasksView.bulkMarkCompleted()">
                                 <i class="fas fa-check-circle"></i>
@@ -2964,7 +2953,7 @@ class TasksView {
                 border-color: #0284c7;
             }
 
-            /* Panneau d'actions groupées */
+            /* Panneau d'actions groupées simplifié */
             .bulk-actions-panel {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
@@ -2980,92 +2969,47 @@ class TasksView {
             }
             
             .bulk-actions-panel.show {
-                max-height: 300px;
+                max-height: 100px;
                 opacity: 1;
-                padding: var(--gap-lg);
+                padding: var(--gap-md);
                 transform: translateY(0);
             }
             
             .bulk-actions-content {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-lg);
-            }
-            
-            .bulk-actions-header {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding-bottom: var(--gap-md);
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .selection-info {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-md);
-                color: #1f2937;
-                font-weight: 600;
-            }
-            
-            .selection-info i {
-                color: #3b82f6;
-                font-size: 18px;
-            }
-            
-            .selection-text {
-                font-size: 16px;
-                font-weight: 700;
-            }
-            
-            .clear-selection-btn {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-xs);
-                padding: 6px 12px;
-                background: #f3f4f6;
-                color: #6b7280;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-                font-size: 12px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: var(--transition);
-            }
-            
-            .clear-selection-btn:hover {
-                background: #e5e7eb;
-                color: #374151;
-                border-color: #9ca3af;
+                gap: 0;
             }
 
-            /* Grille d'actions groupées harmonisées */
+            /* Grille d'actions groupées harmonisées - taille réduite */
             .bulk-actions-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                display: flex;
+                flex-wrap: wrap;
                 gap: var(--gap-sm);
+                justify-content: flex-start;
+                align-items: center;
             }
             
             .bulk-action-btn {
                 display: flex;
                 align-items: center;
-                justify-content: flex-start;
+                justify-content: center;
                 padding: var(--btn-padding);
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: var(--btn-border-radius);
                 cursor: pointer;
                 transition: var(--transition);
-                text-align: left;
                 height: var(--btn-height);
                 min-height: var(--btn-height);
                 max-height: var(--btn-height);
-                position: relative;
-                overflow: hidden;
                 gap: var(--btn-gap);
                 box-shadow: var(--shadow-sm);
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
+                white-space: nowrap;
+                min-width: fit-content;
+                flex-shrink: 0;
             }
             
             .bulk-action-btn:hover {
@@ -3080,22 +3024,13 @@ class TasksView {
                 color: #6b7280;
                 transition: var(--transition);
                 flex-shrink: 0;
-                width: 16px;
-                text-align: center;
             }
             
             .bulk-action-btn span {
                 font-weight: var(--btn-font-weight);
                 color: #1f2937;
                 font-size: var(--btn-font-size);
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                flex: 1;
-            }
-            
-            .bulk-action-btn small {
-                display: none;
+                margin-left: var(--btn-gap);
             }
 
             /* Couleurs spécifiques pour chaque action harmonisées */
@@ -3819,7 +3754,7 @@ class TasksView {
                 }
                 
                 .bulk-actions-grid {
-                    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                    justify-content: center;
                     gap: var(--gap-xs);
                 }
             }
@@ -3835,12 +3770,14 @@ class TasksView {
                 }
                 
                 .bulk-actions-grid {
-                    grid-template-columns: repeat(2, 1fr);
+                    flex-direction: column;
+                    align-items: stretch;
                     gap: var(--gap-xs);
                 }
                 
-                .bulk-action-btn span {
-                    font-size: 12px;
+                .bulk-action-btn {
+                    width: 100%;
+                    justify-content: center;
                 }
             }
         `;
