@@ -579,89 +579,52 @@
             display: none !important;
         }
 
-        /* NAVIGATION SOBRE ET ÉLÉGANTE */
-        .app-nav {
-            position: fixed;
-            top: 60px;
-            left: 0;
-            right: 0;
-            height: 70px;
-            background: white;
-            border-bottom: 1px solid #e5e7eb;
-            z-index: 999;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            display: none;
-        }
-
-        .app-nav::-webkit-scrollbar {
-            display: none !important;
-        }
-
-        #mainNav {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-            padding: 0 20px;
-            height: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            white-space: nowrap;
-        }
-
-        #mainNav::-webkit-scrollbar {
-            display: none !important;
-        }
-
-        /* BOUTONS SOBRES ET ÉLÉGANTS */
+        /* BOUTONS DE NAVIGATION PARFAITEMENT VISIBLES */
         .nav-item {
-            background: transparent;
-            border: 1px solid transparent;
-            min-width: 120px;
-            max-width: 160px;
-            height: 44px;
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            min-width: 130px;
+            max-width: 180px;
+            height: 50px;
             padding: 10px 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             font-size: 14px;
-            font-weight: 500;
-            color: #6b7280;
+            font-weight: 600;
+            color: #374151;
             cursor: pointer;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            border-radius: 25px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
             flex-shrink: 0;
+            position: relative;
             text-decoration: none;
         }
 
         .nav-item i {
-            font-size: 16px !important;
-            width: 18px;
-            height: 18px;
+            font-size: 18px !important;
+            width: 20px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 900 !important;
             color: inherit;
             flex-shrink: 0;
         }
 
         .nav-item span {
             font-size: 14px;
-            font-weight: inherit;
+            font-weight: 600;
             color: inherit;
             flex-shrink: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            max-width: 100px;
         }
 
         .nav-item .fas,
@@ -672,31 +635,71 @@
         }
 
         .nav-item:hover {
-            background: #f3f4f6;
-            color: #374151;
+            background: #f8fafc;
+            border-color: #5B21B6;
+            color: #5B21B6;
+            box-shadow: 
+                0 4px 15px rgba(91, 33, 182, 0.2),
+                0 2px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px) scale(1.02);
         }
 
-        /* ÉTAT ACTIF SOBRE */
+        /* ÉTAT ACTIF AVEC CERCLE ARRONDI TRÈS VISIBLE */
         .nav-item.active {
-            background: #5B21B6;
-            border: 1px solid #5B21B6;
+            background: linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%);
+            border: 3px solid rgba(255, 255, 255, 0.4);
             color: white !important;
+            box-shadow: 
+                0 0 0 2px #4C1D95,
+                0 8px 25px rgba(91, 33, 182, 0.4),
+                0 4px 15px rgba(91, 33, 182, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateY(-3px) scale(1.05);
         }
 
         .nav-item.active i,
         .nav-item.active span {
             color: white !important;
-            font-weight: 600;
+            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+            font-weight: 700;
         }
 
         .nav-item.active:hover {
-            background: #4C1D95;
-            border-color: #4C1D95;
+            background: linear-gradient(135deg, #4C1D95 0%, #5B21B6 100%);
+            box-shadow: 
+                0 0 0 3px #4C1D95,
+                0 10px 30px rgba(91, 33, 182, 0.5),
+                0 5px 20px rgba(91, 33, 182, 0.4);
+            transform: translateY(-4px) scale(1.08);
         }
 
         .nav-item:focus {
-            outline: 2px solid #5B21B6;
-            outline-offset: 2px;
+            outline: 3px solid rgba(91, 33, 182, 0.6);
+            outline-offset: 3px;
+            box-shadow: 
+                0 0 0 8px rgba(91, 33, 182, 0.15),
+                0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+            pointer-events: none;
+            border-radius: 25px;
+        }
+
+        .nav-item:hover::before {
+            left: 100%;
+        }
+
+        .nav-item.active::before {
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         }
 
         /* Contenu principal */
@@ -1732,7 +1735,8 @@
             }, 300); // Délai réduit pour une réaction plus rapide
         };
 
-        // INTERCEPT PAGEMANAGER DASHBOARD LOADING ET GESTION DE LA NAVIGATION
+        // INTERCEPT PAGEMANAGER DASHBOARD LOADING
+        // Intercepter la méthode loadPage du PageManager pour le dashboard
         window.interceptDashboardLoad = function() {
             if (window.pageManager && window.pageManager.loadPage) {
                 const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
@@ -1743,115 +1747,24 @@
                     // Appliquer le mode d'affichage approprié
                     window.setPageMode(pageName);
                     
-                    // Mettre à jour la navigation POUR TOUTES LES PAGES
-                    const navItems = document.querySelectorAll('.nav-item');
-                    navItems.forEach(item => {
-                        item.classList.remove('active');
-                        if (item.dataset.page === pageName) {
-                            item.classList.add('active');
-                        }
-                    });
-                    
                     if (pageName === 'dashboard') {
                         console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using new minimaliste design');
+                        
+                        // Ne pas charger l'ancien dashboard, le nouveau est déjà dans l'index.html
+                        // Juste s'assurer que la navigation est mise à jour
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => {
+                            item.classList.remove('active');
+                            if (item.dataset.page === 'dashboard') {
+                                item.classList.add('active');
+                            }
+                        });
                         
                         // Vider le contenu dynamique pour montrer le dashboard statique de l'index
                         const pageContent = document.getElementById('pageContent');
                         if (pageContent) {
-                            // Restaurer le contenu dashboard original
-                            pageContent.innerHTML = `
-                                <div class="dashboard-container">
-                                    <div class="dashboard-header">
-                                        <div class="quick-guide">
-                                            <p class="guide-intro">Commencez par <strong>Scanner</strong> vos emails pour découvrir la puissance de l'IA :</p>
-                                            <div class="guide-steps">
-                                                <span class="guide-step">1) Sélectionnez la période</span>
-                                                <span class="guide-step">2) L'IA analyse automatiquement</span>
-                                                <span class="guide-step">3) Récupérez vos emails triés</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="dashboard-actions">
-                                        <div class="action-card scan-card" onclick="startDashboardAction('scan')">
-                                            <div class="action-icon">
-                                                <i class="fas fa-search"></i>
-                                            </div>
-                                            <h3 class="action-title">Scanner</h3>
-                                            <p class="action-description">
-                                                Commencez ici ! L'IA analyse vos emails
-                                                <small>
-                                                    1) Choisissez la période<br>
-                                                    2) Analyse automatique<br>
-                                                    3) Emails classés par catégories
-                                                </small>
-                                            </p>
-                                        </div>
-
-                                        <div class="action-card organize-card" onclick="startDashboardAction('organize')">
-                                            <div class="action-icon">
-                                                <i class="fas fa-layer-group"></i>
-                                            </div>
-                                            <h3 class="action-title">Organiser</h3>
-                                            <p class="action-description">
-                                                Triez par expéditeur et domaines
-                                                <small>
-                                                    1) Analyse des expéditeurs<br>
-                                                    2) Groupement automatique<br>
-                                                    3) Création de dossiers
-                                                </small>
-                                            </p>
-                                        </div>
-
-                                        <div class="action-card tasks-card" onclick="startDashboardAction('tasks')">
-                                            <div class="action-icon">
-                                                <i class="fas fa-tasks"></i>
-                                            </div>
-                                            <h3 class="action-title">Tâches</h3>
-                                            <p class="action-description">
-                                                Consultez vos tâches générées
-                                                <small>
-                                                    1) Tâches détectées<br>
-                                                    2) Priorités assignées<br>
-                                                    3) Suivi et validation
-                                                </small>
-                                            </p>
-                                        </div>
-
-                                        <div class="action-card settings-card" onclick="startDashboardAction('settings')">
-                                            <div class="action-icon">
-                                                <i class="fas fa-sliders-h"></i>
-                                            </div>
-                                            <h3 class="action-title">Paramètres</h3>
-                                            <p class="action-description">
-                                                Personnalisez l'IA à vos besoins
-                                                <small>
-                                                    1) Catégories custom<br>
-                                                    2) Règles de tri<br>
-                                                    3) Préférences d'analyse
-                                                </small>
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div class="dashboard-stats">
-                                        <div class="stat">
-                                            <div class="stat-number" id="emailsCount">1,247</div>
-                                            <div class="stat-label">Emails analysés</div>
-                                        </div>
-                                        <div class="stat">
-                                            <div class="stat-number" id="tasksCount">23</div>
-                                            <div class="stat-label">Tâches créées</div>
-                                        </div>
-                                        <div class="stat">
-                                            <div class="stat-number" id="timesSaved">8h</div>
-                                            <div class="stat-label">Temps économisé</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                            
-                            // S'assurer qu'il est visible
+                            // Le dashboard minimaliste est déjà dans pageContent depuis l'index.html
+                            // On s'assure juste qu'il est visible
                             pageContent.style.display = 'block';
                             pageContent.style.opacity = '1';
                         }
@@ -1879,32 +1792,6 @@
             }
         };
 
-        // Ajouter la gestion des clics sur la navigation
-        document.addEventListener('DOMContentLoaded', function() {
-            // ... code existant ...
-            
-            // Gestion des clics sur les éléments de navigation
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const pageName = this.dataset.page;
-                    
-                    console.log(`[NAV_CLICK] Navigation clicked: ${pageName}`);
-                    
-                    // Utiliser PageManager pour charger la page
-                    if (window.pageManager && window.pageManager.loadPage) {
-                        window.pageManager.loadPage(pageName);
-                    } else {
-                        console.warn('[NAV_CLICK] PageManager not available');
-                        // Fallback : mettre à jour au moins la navigation visuelle
-                        navItems.forEach(navItem => navItem.classList.remove('active'));
-                        this.classList.add('active');
-                    }
-                });
-            });
-        });
-
         // Lancer l'interception du dashboard
         setTimeout(window.interceptDashboardLoad, 1000);
 
@@ -1927,27 +1814,6 @@
             
             // Animer les stats du dashboard
             animateDashboardStats();
-            
-            // Gestion des clics sur les éléments de navigation
-            const navItems = document.querySelectorAll('.nav-item');
-            navItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const pageName = this.dataset.page;
-                    
-                    console.log(`[NAV_CLICK] Navigation clicked: ${pageName}`);
-                    
-                    // Utiliser PageManager pour charger la page
-                    if (window.pageManager && window.pageManager.loadPage) {
-                        window.pageManager.loadPage(pageName);
-                    } else {
-                        console.warn('[NAV_CLICK] PageManager not available');
-                        // Fallback : mettre à jour au moins la navigation visuelle
-                        navItems.forEach(navItem => navItem.classList.remove('active'));
-                        this.classList.add('active');
-                    }
-                });
-            });
             
             // Si l'app est déjà affichée depuis la vérification précoce, ne rien faire
             if (appAlreadyShown) {
