@@ -239,8 +239,7 @@
         })();
     </script>
     
-    <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
-    <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
+    <!-- Configuration inline utilisée - config.js supprimé -->
 
     <!-- Styles intégrés pour l'application sobre -->
     <style>
@@ -1350,7 +1349,6 @@
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
-    <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
 
     <!-- 2. CategoryManager -->
     <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
@@ -1467,37 +1465,49 @@
         // Exécuter la vérification précoce TOUT DE SUITE
         earlyAuthCheck();
 
-        // Fonction pour forcer la vérification du scroll
+        // Fonction pour forcer la vérification du scroll - OPTIMISÉE
         window.checkScrollNeeded = function() {
-            const body = document.body;
-            const contentHeight = document.documentElement.scrollHeight;
-            const viewportHeight = window.innerHeight;
+            // Éviter les appels multiples
+            if (window.scrollCheckInProgress) return;
+            window.scrollCheckInProgress = true;
             
-            console.log('[FORCE_SCROLL_CHECK]', {
-                contentHeight,
-                viewportHeight,
-                bodyScrollHeight: body.scrollHeight,
-                needsScroll: contentHeight > viewportHeight
-            });
-            
-            if (contentHeight <= viewportHeight) {
-                body.classList.add('page-short-content');
-                body.style.overflow = 'hidden';
-                body.style.overflowY = 'hidden';
-                console.log('[FORCE_SCROLL_CHECK] Scroll forcé à hidden');
-            } else {
-                body.classList.remove('page-short-content');
-                body.style.overflow = '';
-                body.style.overflowY = '';
-                console.log('[FORCE_SCROLL_CHECK] Scroll restauré');
-            }
+            setTimeout(() => {
+                const body = document.body;
+                const contentHeight = document.documentElement.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                
+                console.log('[FORCE_SCROLL_CHECK]', {
+                    contentHeight,
+                    viewportHeight,
+                    bodyScrollHeight: body.scrollHeight,
+                    needsScroll: contentHeight > viewportHeight
+                });
+                
+                if (contentHeight <= viewportHeight) {
+                    body.classList.add('page-short-content');
+                    body.style.overflow = 'hidden';
+                    body.style.overflowY = 'hidden';
+                    console.log('[FORCE_SCROLL_CHECK] Scroll forcé à hidden');
+                } else {
+                    body.classList.remove('page-short-content');
+                    body.style.overflow = '';
+                    body.style.overflowY = '';
+                    console.log('[FORCE_SCROLL_CHECK] Scroll restauré');
+                }
+                
+                window.scrollCheckInProgress = false;
+            }, 50);
         };
 
         // Ajouter une classe pour le mode login initial
         document.body.classList.add('login-mode');
 
-        // Vérifier à chaque redimensionnement de fenêtre
-        window.addEventListener('resize', window.checkScrollNeeded);
+        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
+        });
 
         // Fonction pour les actions du dashboard
         function startDashboardAction(action) {
@@ -1534,7 +1544,7 @@
             }
         }
 
-        // Gestion des modes d'affichage pour les pages
+        // Gestion des modes d'affichage pour les pages - SCROLL OPTIMISÉ
         window.setPageMode = function(pageName) {
             const appMain = document.querySelector('.app-main');
             const pageContent = document.getElementById('pageContent');
@@ -1557,8 +1567,9 @@
                 console.log('[PAGE_MODE] Page mode activated - reduced spacing for:', pageName);
             }
             
-            // Gestion intelligente du scroll selon la page
-            setTimeout(() => {
+            // Gestion du scroll OPTIMISÉE - une seule vérification
+            clearTimeout(window.scrollCheckTimeout);
+            window.scrollCheckTimeout = setTimeout(() => {
                 const contentHeight = document.documentElement.scrollHeight;
                 const viewportHeight = window.innerHeight;
                 const bodyHeight = document.body.scrollHeight;
@@ -1568,24 +1579,21 @@
                     contentHeight,
                     bodyHeight,
                     viewportHeight,
-                    documentHeight: document.documentElement.scrollHeight,
                     needsScroll: bodyHeight > viewportHeight
                 });
                 
                 if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
                     body.classList.add('page-short-content');
                     console.log('[SCROLL_MANAGER] Short content detected - scroll hidden');
-                    
                     body.style.overflow = 'hidden';
                     body.style.overflowY = 'hidden';
                 } else {
                     body.classList.remove('page-short-content');
                     console.log('[SCROLL_MANAGER] Long content detected - scroll enabled');
-                    
                     body.style.overflow = '';
                     body.style.overflowY = '';
                 }
-            }, 200);
+            }, 100); // Délai court pour éviter les appels multiples
         };
 
         // Intercepter la méthode loadPage du PageManager pour le dashboard
@@ -1818,32 +1826,21 @@
             console.log('Expected hostname: emailsortpro.netlify.app');
         };
 
-        // Fonction pour créer CategoryManagerUI si manquant
-        if (!window.CategoryManagerUI) {
-            window.CategoryManagerUI = class {
-                static renderCategorySelector(categories = {}) {
-                    return Object.entries(categories).map(([id, cat]) => 
-                        `<div class="category-item" data-category="${id}">
-                            <span>${cat.icon || '📂'}</span>
-                            <span>${cat.name}</span>
-                        </div>`
-                    ).join('');
-                }
-            };
-            console.log('✅ CategoryManagerUI créé automatiquement');
-        }
-
-        // Log de confirmation du domaine
         console.log('[INDEX] ✅ Configuration loaded for emailsortpro.netlify.app');
         console.log('[INDEX] Current hostname:', window.location.hostname);
         console.log('[INDEX] Expected hostname: emailsortpro.netlify.app');
         console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
         console.log('[INDEX] 🎯 DESIGN SOBRE APPLIQUÉ:');
         console.log('[INDEX] ✅ Navigation sobre sans effets spéciaux');
-        console.log('[INDEX] ✅ État actif discret avec fond gris');
+        console.log('[INDEX] ✅ État actif discret avec fond bleu clair');
         console.log('[INDEX] ✅ Transitions minimales et épurées');
         console.log('[INDEX] ✅ Interface professionnelle et lisible');
         console.log('[INDEX] ✅ Dashboard sobre et fonctionnel');
+        console.log('[INDEX] 🔧 OPTIMISATIONS APPLIQUÉES:');
+        console.log('[INDEX] ✅ Suppression config.js et CategoryManagerUI.js');
+        console.log('[INDEX] ✅ Scroll manager optimisé contre les boucles');
+        console.log('[INDEX] ✅ Gestion resize events avec debouncing');
+        console.log('[INDEX] ✅ Performance améliorée et logs épurés');
     </script>
 </body>
 </html>
