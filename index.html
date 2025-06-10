@@ -1389,6 +1389,58 @@
             }
         }
 
+        // INTERCEPT PAGEMANAGER DASHBOARD LOADING
+        // Intercepter la méthode loadPage du PageManager pour le dashboard
+        window.interceptDashboardLoad = function() {
+            if (window.pageManager && window.pageManager.loadPage) {
+                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+                
+                window.pageManager.loadPage = function(pageName, ...args) {
+                    console.log(`[DASHBOARD_INTERCEPT] LoadPage called for: ${pageName}`);
+                    
+                    if (pageName === 'dashboard') {
+                        console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using new minimaliste design');
+                        
+                        // Ne pas charger l'ancien dashboard, le nouveau est déjà dans l'index.html
+                        // Juste s'assurer que la navigation est mise à jour
+                        const navItems = document.querySelectorAll('.nav-item');
+                        navItems.forEach(item => {
+                            item.classList.remove('active');
+                            if (item.dataset.page === 'dashboard') {
+                                item.classList.add('active');
+                            }
+                        });
+                        
+                        // Vider le contenu dynamique pour montrer le dashboard statique de l'index
+                        const pageContent = document.getElementById('pageContent');
+                        if (pageContent) {
+                            // Le dashboard minimaliste est déjà dans pageContent depuis l'index.html
+                            // On s'assure juste qu'il est visible
+                            pageContent.style.display = 'block';
+                            pageContent.style.opacity = '1';
+                        }
+                        
+                        // Animer les stats du dashboard
+                        animateDashboardStats();
+                        
+                        console.log('[DASHBOARD_INTERCEPT] Dashboard minimaliste affiché');
+                        return Promise.resolve(); // Retourner une promesse résolue
+                    } else {
+                        // Pour toutes les autres pages, utiliser la méthode originale
+                        return originalLoadPage(pageName, ...args);
+                    }
+                };
+                
+                console.log('[DASHBOARD_INTERCEPT] PageManager dashboard interception configured');
+            } else {
+                console.warn('[DASHBOARD_INTERCEPT] PageManager not ready, will retry...');
+                setTimeout(window.interceptDashboardLoad, 500);
+            }
+        };
+
+        // Lancer l'interception du dashboard
+        setTimeout(window.interceptDashboardLoad, 1000);
+
         // Animation des statistiques du dashboard
         function animateDashboardStats() {
             setTimeout(() => {
