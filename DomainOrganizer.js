@@ -1774,24 +1774,22 @@ class DomainOrganizer {
             'lci.fr': 'LCI'
         };
 
-        // Si on a une correspondance dans la map, l'utiliser
         if (domainMap[domain]) {
             return domainMap[domain];
         }
 
-        // NOUVEAU : Utiliser le domaine complet comme nom de dossier
-        // Nettoyer le domaine pour qu'il soit compatible avec les dossiers Outlook
-        let folderName = domain;
+        // Extraire le nom principal du domaine avec nettoyage amélioré
+        const parts = domain.split('.');
+        let mainPart = parts[0];
         
-        // Remplacer les caractères problématiques par des tirets
-        folderName = folderName.replace(/[<>:"/\\|?*]/g, '-');
-        
-        // Limiter la longueur si nécessaire (max 255 caractères pour Outlook)
-        if (folderName.length > 50) {
-            folderName = folderName.substring(0, 50);
+        // Gérer les cas spéciaux comme "no-reply", "noreply", etc.
+        if (mainPart.includes('noreply') || mainPart.includes('no-reply')) {
+            mainPart = parts[1] || parts[0];
         }
         
-        return folderName;
+        // Nettoyer et capitaliser
+        mainPart = mainPart.replace(/[^a-zA-Z0-9]/g, '');
+        return mainPart.charAt(0).toUpperCase() + mainPart.slice(1);
     }
 
     buildEnhancedAnalysisResults() {
