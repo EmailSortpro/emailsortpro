@@ -1363,51 +1363,51 @@
     </div>
 
     <!-- ========================================= -->
-    <!-- SCRIPTS - ORDRE SIMPLIFIÉ SANS LOGS -->
+    <!-- PROTECTION CONTRE LE CHARGEMENT MULTIPLE -->
     <!-- ========================================= -->
     
-    <!-- Services Core - chargement silencieux -->
     <script>
-        // Rediriger tous les console.log vers une fonction vide
+        // BLOCAGE COMPLET DES LOGS ET CHARGEMENTS MULTIPLES
         const originalConsoleLog = console.log;
         const originalConsoleWarn = console.warn;
         const originalConsoleError = console.error;
         
-        // Filtrer les logs indésirables
-        console.log = function(...args) {
-            const message = args.join(' ');
-            // Bloquer tous les logs des modules qui créent du bruit
-            if (message.includes('[AuthService]') || 
-                message.includes('[MailService]') ||
-                message.includes('[UIManager]') ||
-                message.includes('[CategoryManager]') ||
-                message.includes('[TaskManager]') ||
-                message.includes('[EmailScanner]') ||
-                message.includes('[AITaskAnalyzer]') ||
-                message.includes('[PageManager]') ||
-                message.includes('[StartScan]') ||
-                message.includes('[DomainOrganizer]') ||
-                message.includes('[Onboarding]') ||
-                message.includes('✅') ||
-                message.includes('🚀') ||
-                message.includes('🔧') ||
-                message.includes('Loading') ||
-                message.includes('loaded') ||
-                message.includes('initialized') ||
-                message.includes('ready')) {
-                return; // Bloquer ces logs
+        // BLOQUER TOUS LES LOGS INDÉSIRABLES
+        console.log = console.warn = console.error = function() {};
+        
+        // Variables de protection globales
+        window.moduleLoadingProtection = {
+            loaded: new Set(),
+            initialized: new Set(),
+            prevent: function(moduleName) {
+                if (this.loaded.has(moduleName)) return true;
+                this.loaded.add(moduleName);
+                return false;
             }
-            // Autoriser seulement les logs critiques
-            originalConsoleLog.apply(console, args);
         };
         
-        console.warn = function(...args) {
-            const message = args.join(' ');
-            if (message.includes('CategoryManagerUI.js sera créé automatiquement')) {
-                return; // Bloquer ce warning spécifique
+        // Protection contre les initialisations multiples
+        window.preventMultipleInit = function(moduleName, initFunction) {
+            if (window.moduleLoadingProtection.initialized.has(moduleName)) {
+                return Promise.resolve();
             }
-            originalConsoleWarn.apply(console, args);
+            window.moduleLoadingProtection.initialized.add(moduleName);
+            return initFunction();
         };
+    </script>
+    
+    <!-- Services Core avec protection -->
+    <script>
+        // Protection spéciale pour AuthService
+        const originalAuthServiceInit = window.AuthService;
+        if (originalAuthServiceInit) {
+            window.AuthService = class extends originalAuthServiceInit {
+                constructor(...args) {
+                    if (window.authService) return window.authService;
+                    super(...args);
+                }
+            };
+        }
     </script>
     
     <script src="AuthService.js"></script>
@@ -1423,15 +1423,15 @@
     <script src="CategoriesPage.js"></script>
     <script src="Onboarding.js"></script>
     
-    <!-- Application Principal avec gestion silencieuse -->
+    <!-- Restaurer console APRÈS chargement complet -->
     <script>
-        // Restaurer console après chargement des modules
         setTimeout(() => {
             console.log = originalConsoleLog;
             console.warn = originalConsoleWarn;
             console.error = originalConsoleError;
-        }, 5000);
+        }, 10000);
     </script>
+    
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
