@@ -598,7 +598,7 @@
 
         body.app-active .app-main {
             margin-top: 120px; /* Header + Nav */
-            padding-top: 20px; /* Espace réduit et ergonomique */
+            padding-top: 10px; /* Espace minimal */
         }
 
         body.app-active #pageContent {
@@ -608,32 +608,32 @@
 
         /* === NOUVEAU DASHBOARD MINIMALISTE === */
         .dashboard-container {
-            max-width: 900px;
+            max-width: 1200px; /* Plus large */
             margin: 0 auto;
-            padding: 30px 20px; /* Padding réduit */
+            padding: 15px 20px; /* Padding très réduit */
         }
 
         /* Header du dashboard */
         .dashboard-header {
             text-align: center;
-            margin-bottom: 80px;
+            margin-bottom: 20px; /* Marge très réduite */
         }
 
         /* Guide rapide */
         .quick-guide {
             background: white;
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            border-left: 4px solid #667eea;
-            max-width: 600px;
+            border-radius: 12px; /* Plus petit */
+            padding: 20px; /* Padding réduit */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 3px solid #667eea; /* Plus fin */
+            max-width: 700px; /* Plus large */
             margin: 0 auto;
         }
 
         .guide-intro {
-            font-size: 18px;
+            font-size: 16px; /* Plus petit */
             color: #1e293b;
-            margin-bottom: 25px;
+            margin-bottom: 15px; /* Marge réduite */
             text-align: center;
         }
 
@@ -647,30 +647,30 @@
         .guide-step {
             background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
             color: #0369a1;
-            padding: 15px 20px;
-            border-radius: 12px;
-            font-size: 14px;
+            padding: 8px 12px; /* Padding très réduit */
+            border-radius: 8px; /* Plus petit */
+            font-size: 13px; /* Plus petit */
             font-weight: 500;
             flex: 1;
             text-align: center;
-            min-width: 150px;
+            min-width: 120px; /* Plus compact */
             border: 1px solid #bae6fd;
         }
 
         /* Actions principales */
         .dashboard-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 40px;
-            margin-bottom: 80px;
+            grid-template-columns: repeat(4, 1fr); /* Forcer 4 colonnes */
+            gap: 15px; /* Gap très réduit */
+            margin-bottom: 25px; /* Marge très réduite */
         }
 
         .action-card {
             background: white;
-            border-radius: 24px;
-            padding: 50px 35px;
+            border-radius: 16px; /* Plus petit */
+            padding: 20px 15px; /* Padding très réduit */
             text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border: 2px solid transparent;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -683,35 +683,35 @@
         }
 
         .action-icon {
-            width: 70px;
-            height: 70px;
-            border-radius: 18px;
+            width: 50px; /* Plus petit */
+            height: 50px; /* Plus petit */
+            border-radius: 12px;
             background: var(--color);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            margin: 0 auto 30px;
+            font-size: 24px; /* Plus petit */
+            margin: 0 auto 15px; /* Marge réduite */
         }
 
         .action-title {
-            font-size: 22px;
+            font-size: 18px; /* Plus petit */
             font-weight: 600;
             color: #1e293b;
-            margin-bottom: 18px;
+            margin-bottom: 10px; /* Marge réduite */
         }
 
         .action-description {
-            font-size: 16px;
+            font-size: 14px; /* Plus petit */
             color: #64748b;
-            line-height: 1.5;
+            line-height: 1.4; /* Plus serré */
         }
 
         .action-description small {
             display: block;
-            margin-top: 15px;
-            font-size: 13px;
+            margin-top: 8px; /* Marge réduite */
+            font-size: 12px; /* Plus petit */
             color: #94a3b8;
             font-style: italic;
         }
@@ -737,7 +737,7 @@
         .dashboard-stats {
             display: flex;
             justify-content: center;
-            gap: 80px;
+            gap: 40px; /* Gap réduit */
             text-align: center;
         }
 
@@ -746,14 +746,14 @@
         }
 
         .stat-number {
-            font-size: 36px;
+            font-size: 28px; /* Plus petit */
             font-weight: 700;
             color: #667eea;
-            margin-bottom: 12px;
+            margin-bottom: 6px; /* Marge réduite */
         }
 
         .stat-label {
-            font-size: 14px;
+            font-size: 13px; /* Plus petit */
             color: #64748b;
             font-weight: 500;
         }
@@ -900,7 +900,7 @@
             
             body.app-active .app-main {
                 margin-top: 140px; /* Header + Nav responsive */
-                padding-top: 30px; /* Espace responsive */
+                padding-top: 15px; /* Espace réduit pour mobile */
             }
             
             #pageContent {
@@ -909,7 +909,7 @@
 
             /* Dashboard responsive */
             .dashboard-container {
-                padding: 20px 15px;
+                padding: 20px 15px; /* Padding mobile réduit */
             }
 
             .dashboard-title {
