@@ -299,14 +299,29 @@
             overflow-y: auto; /* Paramètres: formulaires longs */
         }
 
-        /* Pages courtes: masquer le scroll si pas nécessaire */
+        /* Pages courtes: masquer le scroll complètement */
         body.page-short-content {
-            overflow-y: hidden;
+            overflow-y: hidden !important;
+        }
+
+        /* Dashboard spécifique: masquer si court */
+        body.page-dashboard.page-short-content {
+            overflow-y: hidden !important;
         }
 
         /* Pendant le login: pas de scroll */
         body.login-mode {
-            overflow: hidden;
+            overflow: hidden !important;
+        }
+
+        /* Forcer la suppression de la scrollbar sur les pages courtes */
+        body.page-short-content::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        body.page-short-content {
+            -ms-overflow-style: none !important;  /* IE et Edge */
+            scrollbar-width: none !important;  /* Firefox */
         }
 
         /* === STYLES POUR LA PAGE DE LOGIN NOUVEAU DESIGN === */
@@ -1407,6 +1422,11 @@
             // Initialiser en mode dashboard
             window.setPageMode('dashboard');
             
+            // Forcer la vérification du scroll après initialisation
+            setTimeout(() => {
+                window.checkScrollNeeded();
+            }, 1000);
+            
             appAlreadyShown = true;
             console.log('[SHOW_APP] App interface activated');
         };
@@ -1450,8 +1470,37 @@
         // Exécuter la vérification précoce TOUT DE SUITE
         earlyAuthCheck();
 
+        // Ajouter une fonction pour forcer la vérification du scroll
+        window.checkScrollNeeded = function() {
+            const body = document.body;
+            const contentHeight = document.documentElement.scrollHeight;
+            const viewportHeight = window.innerHeight;
+            
+            console.log('[FORCE_SCROLL_CHECK]', {
+                contentHeight,
+                viewportHeight,
+                bodyScrollHeight: body.scrollHeight,
+                needsScroll: contentHeight > viewportHeight
+            });
+            
+            if (contentHeight <= viewportHeight) {
+                body.classList.add('page-short-content');
+                body.style.overflow = 'hidden';
+                body.style.overflowY = 'hidden';
+                console.log('[FORCE_SCROLL_CHECK] Scroll forcé à hidden');
+            } else {
+                body.classList.remove('page-short-content');
+                body.style.overflow = '';
+                body.style.overflowY = '';
+                console.log('[FORCE_SCROLL_CHECK] Scroll restauré');
+            }
+        };
+
         // Ajouter une classe pour le mode login initial
         document.body.classList.add('login-mode');
+
+        // Vérifier à chaque redimensionnement de fenêtre
+        window.addEventListener('resize', window.checkScrollNeeded);
 
         // Fonction pour les actions du dashboard
         function startDashboardAction(action) {
@@ -1515,27 +1564,36 @@
             
             // Gestion intelligente du scroll selon la page
             setTimeout(() => {
-                const contentHeight = pageContent.scrollHeight;
+                const contentHeight = document.documentElement.scrollHeight;
                 const viewportHeight = window.innerHeight;
-                const headerNavHeight = 120; // Header + Nav
+                const bodyHeight = document.body.scrollHeight;
                 
                 console.log('[SCROLL_MANAGER]', {
                     page: pageName,
                     contentHeight,
+                    bodyHeight,
                     viewportHeight,
-                    availableHeight: viewportHeight - headerNavHeight,
-                    needsScroll: contentHeight > (viewportHeight - headerNavHeight)
+                    documentHeight: document.documentElement.scrollHeight,
+                    needsScroll: bodyHeight > viewportHeight
                 });
                 
-                // Si le contenu est court et tient dans la viewport, on peut masquer le scroll
-                if (contentHeight <= (viewportHeight - headerNavHeight - 50)) { // 50px de marge
+                // Vérification plus précise: si le contenu total est plus petit que la viewport
+                if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
                     body.classList.add('page-short-content');
                     console.log('[SCROLL_MANAGER] Short content detected - scroll hidden');
+                    
+                    // Force la suppression du scroll
+                    body.style.overflow = 'hidden';
+                    body.style.overflowY = 'hidden';
                 } else {
                     body.classList.remove('page-short-content');
                     console.log('[SCROLL_MANAGER] Long content detected - scroll enabled');
+                    
+                    // Restaure le scroll normal
+                    body.style.overflow = '';
+                    body.style.overflowY = '';
                 }
-            }, 500); // Délai pour laisser le contenu se charger
+            }, 300); // Délai réduit pour une réaction plus rapide
         };
 
         // INTERCEPT PAGEMANAGER DASHBOARD LOADING
@@ -1574,6 +1632,11 @@
                         
                         // Animer les stats du dashboard
                         animateDashboardStats();
+                        
+                        // Vérifier le scroll après affichage du dashboard
+                        setTimeout(() => {
+                            window.checkScrollNeeded();
+                        }, 500);
                         
                         console.log('[DASHBOARD_INTERCEPT] Dashboard minimaliste affiché');
                         return Promise.resolve(); // Retourner une promesse résolue
