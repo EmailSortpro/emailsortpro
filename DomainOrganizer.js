@@ -1,4 +1,4 @@
-// DomainOrganizer.js - Version condensée avec visualisation des emails
+// DomainOrganizer.js - Version avancée avec contrôle total
 
 class ModernDomainOrganizer {
     constructor() {
@@ -8,19 +8,21 @@ class ModernDomainOrganizer {
         this.processedEmailIds = new Set();
         this.createdFolders = new Map();
         this.expandedDomains = new Set();
+        this.selectedEmails = new Map(); // Pour la sélection multiple
+        this.customFolderNames = new Map(); // Noms de dossiers personnalisés
         
-        console.log('[ModernDomainOrganizer] ✅ Module condensé initialisé');
+        console.log('[ModernDomainOrganizer] ✅ Module avancé initialisé');
     }
 
     async show() {
-        console.log('[ModernDomainOrganizer] 📁 Affichage condensé...');
+        console.log('[ModernDomainOrganizer] 📁 Affichage module avancé...');
         
         try {
             if (!window.authService?.isAuthenticated()) {
                 throw new Error('Non authentifié');
             }
             
-            await this.renderCondensedPage();
+            await this.renderAdvancedPage();
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur:', error);
@@ -28,78 +30,99 @@ class ModernDomainOrganizer {
         }
     }
 
-    async renderCondensedPage() {
+    async renderAdvancedPage() {
         const pageContent = document.getElementById('pageContent');
         if (!pageContent) return;
 
-        pageContent.innerHTML = this.getCondensedHTML();
+        pageContent.innerHTML = this.getAdvancedHTML();
         this.attachEventListeners();
+        this.initializeDatePickers();
         
-        console.log('[ModernDomainOrganizer] ✅ Interface condensée chargée');
+        console.log('[ModernDomainOrganizer] ✅ Interface avancée chargée');
     }
 
-    getCondensedHTML() {
+    getAdvancedHTML() {
+        const today = new Date();
+        const monthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+        
         return `
-            <div class="organizer-condensed" style="max-width: 1200px; margin: 0 auto; padding: 16px;">
+            <div class="organizer-advanced" style="max-width: 1400px; margin: 0 auto; padding: 16px;">
                 
-                <!-- En-tête condensé -->
-                <div style="display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2);">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <i class="fas fa-folder-tree" style="font-size: 24px;"></i>
-                        <div>
-                            <h1 style="font-size: 20px; font-weight: 700; margin: 0;">Rangement par Domaine</h1>
-                            <p style="font-size: 13px; margin: 0; opacity: 0.9;">Analyse, organise et visualise tes emails</p>
+                <!-- En-tête avec contrôles avancés -->
+                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.2);">
+                    <div style="display: flex; align-items: center; justify-content: between; gap: 20px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-folder-tree" style="font-size: 28px;"></i>
+                            <div>
+                                <h1 style="font-size: 22px; font-weight: 700; margin: 0;">Rangement Avancé</h1>
+                                <p style="font-size: 14px; margin: 0; opacity: 0.9;">Contrôle total sur l'organisation de tes emails</p>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Actions rapides -->
-                    <div style="display: flex; gap: 8px;">
-                        <button id="quickAnalyzeBtn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-search"></i> Analyser
-                        </button>
-                        <button id="quickOrganizeBtn" disabled style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: not-allowed; display: flex; align-items: center; gap: 6px;">
-                            <i class="fas fa-folder-plus"></i> Organiser
-                        </button>
+                        
+                        <!-- Contrôles de dates -->
+                        <div style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.15); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);">
+                            <label style="font-size: 12px; font-weight: 600; opacity: 0.9;">PÉRIODE:</label>
+                            <input id="startDate" type="date" value="${monthAgo.toISOString().split('T')[0]}" style="border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 6px 8px; font-size: 12px; background: rgba(255,255,255,0.9); color: #374151;">
+                            <span style="color: rgba(255,255,255,0.8);">→</span>
+                            <input id="endDate" type="date" value="${today.toISOString().split('T')[0]}" style="border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; padding: 6px 8px; font-size: 12px; background: rgba(255,255,255,0.9); color: #374151;">
+                        </div>
+                        
+                        <!-- Actions principales -->
+                        <div style="display: flex; gap: 8px;">
+                            <button id="advancedAnalyzeBtn" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 10px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-search"></i> Analyser Période
+                            </button>
+                            <button id="advancedOrganizeBtn" disabled style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); padding: 10px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: not-allowed; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-magic"></i> Organiser Tout
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Stats compactes + Filtres -->
-                <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; margin-bottom: 20px;">
+                <!-- Panneau de contrôle condensé -->
+                <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 16px; margin-bottom: 20px;">
                     
-                    <!-- Stats en ligne -->
+                    <!-- Stats dynamiques -->
                     <div style="display: flex; gap: 12px; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
-                        <div class="stat-compact" style="text-align: center; min-width: 80px;">
-                            <div id="totalEmailsCount" style="font-size: 20px; font-weight: 700; color: #3b82f6;">0</div>
-                            <div style="font-size: 11px; color: #6b7280; font-weight: 500;">EMAILS</div>
+                        <div class="stat-compact" style="text-align: center; min-width: 70px;">
+                            <div id="totalEmailsCount" style="font-size: 18px; font-weight: 700; color: #3b82f6;">0</div>
+                            <div style="font-size: 10px; color: #6b7280; font-weight: 500;">EMAILS</div>
                         </div>
                         <div style="width: 1px; background: #e5e7eb;"></div>
-                        <div class="stat-compact" style="text-align: center; min-width: 80px;">
-                            <div id="domainsFoundCount" style="font-size: 20px; font-weight: 700; color: #10b981;">0</div>
-                            <div style="font-size: 11px; color: #6b7280; font-weight: 500;">DOMAINES</div>
+                        <div class="stat-compact" style="text-align: center; min-width: 70px;">
+                            <div id="domainsFoundCount" style="font-size: 18px; font-weight: 700; color: #10b981;">0</div>
+                            <div style="font-size: 10px; color: #6b7280; font-weight: 500;">DOMAINES</div>
                         </div>
                         <div style="width: 1px; background: #e5e7eb;"></div>
-                        <div class="stat-compact" style="text-align: center; min-width: 80px;">
-                            <div id="foldersCreatedCount" style="font-size: 20px; font-weight: 700; color: #f59e0b;">0</div>
-                            <div style="font-size: 11px; color: #6b7280; font-weight: 500;">DOSSIERS</div>
+                        <div class="stat-compact" style="text-align: center; min-width: 70px;">
+                            <div id="foldersCreatedCount" style="font-size: 18px; font-weight: 700; color: #f59e0b;">0</div>
+                            <div style="font-size: 10px; color: #6b7280; font-weight: 500;">DOSSIERS</div>
                         </div>
                         <div style="width: 1px; background: #e5e7eb;"></div>
-                        <div class="stat-compact" style="text-align: center; min-width: 80px;">
-                            <div id="emailsMovedCount" style="font-size: 20px; font-weight: 700; color: #8b5cf6;">0</div>
-                            <div style="font-size: 11px; color: #6b7280; font-weight: 500;">RANGÉS</div>
+                        <div class="stat-compact" style="text-align: center; min-width: 70px;">
+                            <div id="emailsMovedCount" style="font-size: 18px; font-weight: 700; color: #8b5cf6;">0</div>
+                            <div style="font-size: 10px; color: #6b7280; font-weight: 500;">DÉPLACÉS</div>
                         </div>
                     </div>
                     
-                    <!-- Filtres de tri -->
-                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 12px;">
-                        <label style="font-size: 12px; color: #6b7280; font-weight: 500;">TRI:</label>
-                        <select id="sortFilter" style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; font-size: 12px; background: white; color: #374151;">
-                            <option value="count">Plus d'emails</option>
-                            <option value="domain">Nom de domaine</option>
-                            <option value="recent">Plus récents</option>
-                            <option value="oldest">Plus anciens</option>
+                    <!-- Filtres -->
+                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 11px; color: #6b7280; font-weight: 600;">TRI:</label>
+                        <select id="sortFilter" style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 6px; font-size: 11px;">
+                            <option value="count">Nb emails</option>
+                            <option value="domain">Domaine</option>
+                            <option value="recent">Récents</option>
+                            <option value="oldest">Anciens</option>
                         </select>
-                        <label style="font-size: 12px; color: #6b7280; font-weight: 500;">MIN:</label>
-                        <input id="minEmailsFilter" type="number" min="1" value="5" style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 8px; font-size: 12px; width: 60px;">
+                        <input id="minEmailsFilter" type="number" min="1" value="2" placeholder="Min" style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 6px; font-size: 11px; width: 50px;">
+                    </div>
+                    
+                    <!-- Actions sélection -->
+                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 8px;">
+                        <span id="selectedCount" style="font-size: 11px; color: #6b7280; font-weight: 600;">0 sélectionné(s)</span>
+                        <button id="moveSelectedBtn" disabled style="background: #e5e7eb; color: #9ca3af; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: not-allowed;">
+                            <i class="fas fa-arrow-right"></i> Déplacer
+                        </button>
                     </div>
                 </div>
 
@@ -115,11 +138,11 @@ class ModernDomainOrganizer {
                     <div id="progressStatus" style="font-size: 11px; color: #6b7280; margin-top: 6px; text-align: center;">Initialisation...</div>
                 </div>
 
-                <!-- Liste condensée des domaines avec emails -->
+                <!-- Liste avancée des domaines -->
                 <div id="domainsContainer" style="background: white; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden;">
-                    <div style="padding: 20px; text-align: center; color: #6b7280;">
-                        <i class="fas fa-search" style="font-size: 32px; margin-bottom: 12px; color: #d1d5db;"></i>
-                        <p style="margin: 0; font-size: 14px;">Cliquez sur "Analyser" pour détecter les domaines</p>
+                    <div style="padding: 40px; text-align: center; color: #6b7280;">
+                        <i class="fas fa-calendar-alt" style="font-size: 32px; margin-bottom: 12px; color: #d1d5db;"></i>
+                        <p style="margin: 0; font-size: 14px;">Sélectionnez une période et cliquez sur "Analyser Période"</p>
                     </div>
                 </div>
 
@@ -127,97 +150,149 @@ class ModernDomainOrganizer {
                 <div id="statusMessages" style="margin-top: 16px;"></div>
             </div>
 
+            <!-- Modal de personnalisation du dossier -->
+            <div id="folderModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                <div style="background: white; border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                    <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1f2937;">Personnaliser le dossier</h3>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">DOMAINE:</label>
+                        <input id="modalDomain" readonly style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; font-size: 14px; background: #f9fafb; color: #6b7280;">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">NOM DU DOSSIER:</label>
+                        <input id="modalFolderName" style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; font-size: 14px;" placeholder="Nom personnalisé...">
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <button onclick="modernDomainOrganizer.closeFolderModal()" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer;">Annuler</button>
+                        <button onclick="modernDomainOrganizer.saveFolderName()" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Sauvegarder</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de déplacement d'emails -->
+            <div id="moveModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-height: 80vh; overflow-y: auto;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #1f2937;">Déplacer les emails sélectionnés</h3>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px;">DESTINATION:</label>
+                        <select id="modalDestination" style="width: 100%; border: 1px solid #d1d5db; border-radius: 6px; padding: 8px 12px; font-size: 14px;">
+                            <option value="">Choisir un dossier...</option>
+                        </select>
+                    </div>
+                    <div id="modalEmailsList" style="max-height: 200px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; margin-bottom: 16px; background: #f9fafb;">
+                        <!-- Liste des emails sélectionnés -->
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <button onclick="modernDomainOrganizer.closeMoveModal()" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer;">Annuler</button>
+                        <button onclick="modernDomainOrganizer.executeMove()" style="background: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;">Déplacer</button>
+                    </div>
+                </div>
+            </div>
+
             <style>
-                .domain-item {
-                    border-bottom: 1px solid #f3f4f6;
-                    transition: background-color 0.2s ease;
-                }
+                .domain-item { border-bottom: 1px solid #f3f4f6; transition: background-color 0.2s ease; }
+                .domain-item:hover { background-color: #f9fafb; }
+                .domain-item:last-child { border-bottom: none; }
+                .email-list { background-color: #f8fafc; border-top: 1px solid #e5e7eb; }
+                .email-item { border-bottom: 1px solid #e5e7eb; transition: background-color 0.15s ease; }
+                .email-item:hover { background-color: #f1f5f9; }
+                .email-item:last-child { border-bottom: none; }
+                .email-item.selected { background-color: #dbeafe !important; border-color: #3b82f6; }
+                .stat-compact:hover { transform: scale(1.05); transition: transform 0.2s ease; }
                 
-                .domain-item:hover {
-                    background-color: #f9fafb;
-                }
-                
-                .domain-item:last-child {
-                    border-bottom: none;
-                }
-                
-                .email-list {
-                    background-color: #f8fafc;
-                    border-top: 1px solid #e5e7eb;
-                }
-                
-                .email-item {
-                    border-bottom: 1px solid #e5e7eb;
-                    transition: background-color 0.15s ease;
-                }
-                
-                .email-item:hover {
-                    background-color: #f1f5f9;
-                }
-                
-                .email-item:last-child {
-                    border-bottom: none;
-                }
-                
-                .stat-compact:hover {
-                    transform: scale(1.05);
-                    transition: transform 0.2s ease;
-                }
-                
-                #quickOrganizeBtn:not(:disabled) {
+                #advancedOrganizeBtn:not(:disabled) {
                     background: rgba(255,255,255,0.3) !important;
                     border: 1px solid rgba(255,255,255,0.5) !important;
                     color: white !important;
                     cursor: pointer !important;
+                }
+                
+                #moveSelectedBtn:not(:disabled) {
+                    background: #3b82f6 !important;
+                    color: white !important;
+                    cursor: pointer !important;
+                }
+                
+                #folderModal.show, #moveModal.show {
+                    display: flex !important;
                 }
             </style>
         `;
     }
 
     attachEventListeners() {
-        // Boutons d'action
-        document.getElementById('quickAnalyzeBtn')?.addEventListener('click', () => this.startFullProcess());
-        document.getElementById('quickOrganizeBtn')?.addEventListener('click', () => this.startOrganization());
+        // Boutons principaux
+        document.getElementById('advancedAnalyzeBtn')?.addEventListener('click', () => this.startAnalysisWithDateRange());
+        document.getElementById('advancedOrganizeBtn')?.addEventListener('click', () => this.startFullOrganization());
         
         // Filtres
         document.getElementById('sortFilter')?.addEventListener('change', () => this.applyFilters());
         document.getElementById('minEmailsFilter')?.addEventListener('input', () => this.applyFilters());
+        
+        // Sélection multiple
+        document.getElementById('moveSelectedBtn')?.addEventListener('click', () => this.openMoveModal());
+        
+        // Dates
+        document.getElementById('startDate')?.addEventListener('change', () => this.validateDateRange());
+        document.getElementById('endDate')?.addEventListener('change', () => this.validateDateRange());
     }
 
-    async startFullProcess() {
-        if (this.isProcessing) return;
+    initializeDatePickers() {
+        this.validateDateRange();
+    }
+
+    validateDateRange() {
+        const startDate = document.getElementById('startDate')?.value;
+        const endDate = document.getElementById('endDate')?.value;
         
-        console.log('[ModernDomainOrganizer] 🚀 Début du processus complet');
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            this.showStatusMessage('⚠️ La date de début doit être antérieure à la date de fin', 'error');
+            return false;
+        }
+        
+        return true;
+    }
+
+    async startAnalysisWithDateRange() {
+        if (this.isProcessing || !this.validateDateRange()) return;
+        
+        const startDate = document.getElementById('startDate')?.value;
+        const endDate = document.getElementById('endDate')?.value;
+        
+        if (!startDate || !endDate) {
+            this.showStatusMessage('⚠️ Veuillez sélectionner une période complète', 'error');
+            return;
+        }
+        
+        console.log('[ModernDomainOrganizer] 🗓️ Analyse période:', startDate, '→', endDate);
         
         this.isProcessing = true;
         this.resetData();
         this.showProgress();
-        this.disableButton('quickAnalyzeBtn');
+        this.disableButton('advancedAnalyzeBtn');
         
         try {
-            // Phase 1: Analyse
-            await this.performAnalysis();
+            await this.performAnalysisWithDateRange(startDate, endDate);
+            this.displayAdvancedResults();
+            this.enableButton('advancedOrganizeBtn');
             
-            // Phase 2: Affichage
-            this.displayResults();
-            this.enableButton('quickOrganizeBtn');
-            
-            this.showStatusMessage('✅ Analyse terminée ! Vous pouvez maintenant organiser.', 'success');
+            const daysCount = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+            this.showStatusMessage(`✅ Analyse terminée ! ${daysCount} jours analysés.`, 'success');
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur:', error);
             this.showStatusMessage('❌ Erreur: ' + error.message, 'error');
         } finally {
             this.hideProgress();
-            this.enableButton('quickAnalyzeBtn');
+            this.enableButton('advancedAnalyzeBtn');
             this.isProcessing = false;
         }
     }
 
-    async performAnalysis() {
-        // Étape 1: Récupération
-        this.updateProgress(20, 'Récupération des emails...');
-        const emails = await this.getEmailsFromInbox();
+    async performAnalysisWithDateRange(startDate, endDate) {
+        // Étape 1: Récupération avec filtre de dates
+        this.updateProgress(20, 'Récupération des emails de la période...');
+        const emails = await this.getEmailsFromInboxWithDateRange(startDate, endDate);
         
         // Étape 2: Analyse
         this.updateProgress(60, 'Analyse des domaines...');
@@ -230,9 +305,16 @@ class ModernDomainOrganizer {
         this.updateProgress(100, 'Terminé !');
     }
 
-    async getEmailsFromInbox() {
+    async getEmailsFromInboxWithDateRange(startDate, endDate) {
         try {
-            const emails = await window.mailService.getEmailsFromFolder('inbox', 1500);
+            // Construire le filtre de dates pour l'API Microsoft Graph
+            const startISO = new Date(startDate + 'T00:00:00.000Z').toISOString();
+            const endISO = new Date(endDate + 'T23:59:59.999Z').toISOString();
+            
+            console.log('[ModernDomainOrganizer] 📅 Période:', startISO, '→', endISO);
+            
+            // PAS DE LIMITATION - Récupérer TOUS les emails de la période
+            const emails = await this.getAllEmailsInDateRange('inbox', startISO, endISO);
             
             const uniqueEmails = emails.filter(email => {
                 if (this.processedEmailIds.has(email.id)) return false;
@@ -241,6 +323,8 @@ class ModernDomainOrganizer {
             });
             
             this.updateStats({ totalEmails: uniqueEmails.length });
+            console.log('[ModernDomainOrganizer] ✅', uniqueEmails.length, 'emails uniques dans la période');
+            
             return uniqueEmails;
             
         } catch (error) {
@@ -248,7 +332,64 @@ class ModernDomainOrganizer {
         }
     }
 
+    async getAllEmailsInDateRange(folderId, startDate, endDate) {
+        console.log('[ModernDomainOrganizer] 🔄 Récupération complète sans limitation...');
+        
+        let allEmails = [];
+        let nextLink = null;
+        let pageCount = 0;
+        
+        do {
+            try {
+                const token = await window.authService.getAccessToken();
+                
+                // Construire l'URL avec filtre de dates
+                let url;
+                if (nextLink) {
+                    url = nextLink;
+                } else {
+                    const filter = `receivedDateTime ge ${startDate} and receivedDateTime le ${endDate}`;
+                    const select = 'id,subject,bodyPreview,body,from,toRecipients,ccRecipients,receivedDateTime,sentDateTime,isRead,importance,hasAttachments,flag,categories,parentFolderId,webLink';
+                    url = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages?$top=1000&$orderby=receivedDateTime desc&$select=${select}&$filter=${encodeURIComponent(filter)}`;
+                }
+                
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                allEmails = allEmails.concat(data.value || []);
+                nextLink = data['@odata.nextLink'];
+                pageCount++;
+                
+                // Mise à jour du progrès
+                this.updateProgress(20 + (pageCount * 5), `Récupération... ${allEmails.length} emails trouvés`);
+                
+                console.log('[ModernDomainOrganizer] 📄 Page', pageCount, ':', data.value?.length || 0, 'emails (Total:', allEmails.length, ')');
+                
+                // Petite pause pour éviter la limitation de l'API
+                if (nextLink) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+            } catch (error) {
+                console.error('[ModernDomainOrganizer] Erreur page', pageCount + 1, ':', error);
+                break;
+            }
+            
+        } while (nextLink && pageCount < 50); // Limite de sécurité à 50 pages (50k emails max)
+        
+        console.log('[ModernDomainOrganizer] ✅ Récupération terminée:', allEmails.length, 'emails sur', pageCount, 'pages');
+        return allEmails;
+    }
+
     analyzeEmailDomains(emails) {
+        console.log('[ModernDomainOrganizer] 🔍 Analyse de', emails.length, 'emails...');
+        
         emails.forEach((email, index) => {
             try {
                 const senderEmail = email.from?.emailAddress?.address;
@@ -260,7 +401,7 @@ class ModernDomainOrganizer {
                     }
                 }
                 
-                if (index % 100 === 0) {
+                if (index % 500 === 0) {
                     this.updateStats({
                         totalEmails: index + 1,
                         domainsFound: this.domainAnalysis.size
@@ -276,6 +417,8 @@ class ModernDomainOrganizer {
             totalEmails: emails.length,
             domainsFound: this.domainAnalysis.size
         });
+        
+        console.log('[ModernDomainOrganizer] ✅', this.domainAnalysis.size, 'domaines trouvés');
     }
 
     addEmailToDomain(domain, email) {
@@ -303,7 +446,7 @@ class ModernDomainOrganizer {
         }
     }
 
-    displayResults() {
+    displayAdvancedResults() {
         const container = document.getElementById('domainsContainer');
         if (!container) return;
         
@@ -313,29 +456,30 @@ class ModernDomainOrganizer {
             container.innerHTML = `
                 <div style="padding: 40px; text-align: center; color: #6b7280;">
                     <i class="fas fa-filter" style="font-size: 32px; margin-bottom: 12px; color: #d1d5db;"></i>
-                    <p style="margin: 0; font-size: 14px;">Aucun domaine trouvé avec les filtres actuels</p>
+                    <p style="margin: 0; font-size: 14px;">Aucun domaine trouvé avec les critères actuels</p>
                 </div>
             `;
             return;
         }
         
-        container.innerHTML = filteredDomains.map(domain => this.createDomainHTML(domain)).join('');
+        container.innerHTML = filteredDomains.map(domain => this.createAdvancedDomainHTML(domain)).join('');
     }
 
-    createDomainHTML(domainData) {
+    createAdvancedDomainHTML(domainData) {
         const isExpanded = this.expandedDomains.has(domainData.domain);
         const percentage = ((domainData.count / this.currentStats.totalEmails) * 100).toFixed(1);
         const firstDate = new Date(domainData.firstSeen).toLocaleDateString('fr-FR');
         const lastDate = new Date(domainData.lastSeen).toLocaleDateString('fr-FR');
+        const customName = this.customFolderNames.get(domainData.domain) || `📧 ${domainData.domain}`;
         
         return `
             <div class="domain-item">
-                <!-- En-tête du domaine -->
-                <div style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;" onclick="modernDomainOrganizer.toggleDomain('${domainData.domain}')">
-                    <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <!-- En-tête du domaine avec contrôles avancés -->
+                <div style="padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; cursor: pointer;" onclick="modernDomainOrganizer.toggleDomain('${domainData.domain}')">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'}" style="color: #6b7280; font-size: 12px; width: 12px;"></i>
-                            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px;">
+                            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #3b82f6, #2563eb); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">
                                 ${domainData.domain.charAt(0).toUpperCase()}
                             </div>
                         </div>
@@ -347,56 +491,83 @@ class ModernDomainOrganizer {
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- Contrôles avancés -->
                     <div style="display: flex; align-items: center; gap: 8px;">
+                        <!-- Nom du dossier personnalisé -->
+                        <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                            <i class="fas fa-folder" style="color: #6b7280; font-size: 12px;"></i>
+                            <span style="font-size: 11px; color: #374151; font-weight: 500; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${customName}</span>
+                            <button onclick="event.stopPropagation(); modernDomainOrganizer.editFolderName('${domainData.domain}')" style="background: none; border: none; color: #6b7280; cursor: pointer; padding: 2px;">
+                                <i class="fas fa-edit" style="font-size: 10px;"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Statut -->
                         ${domainData.folderCreated ? 
                             '<span style="background: #dcfce7; color: #059669; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;"><i class="fas fa-check"></i> Organisé</span>' :
                             '<span style="background: #fef3c7; color: #d97706; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;"><i class="fas fa-clock"></i> En attente</span>'
                         }
-                        <button onclick="event.stopPropagation(); modernDomainOrganizer.organizeSingleDomain('${domainData.domain}')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
+                        
+                        <!-- Actions -->
+                        <button onclick="event.stopPropagation(); modernDomainOrganizer.organizeSingleDomain('${domainData.domain}')" style="background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer;">
                             <i class="fas fa-folder-plus"></i> Organiser
                         </button>
                     </div>
                 </div>
                 
-                <!-- Liste des emails (expandable) -->
-                ${isExpanded ? this.createEmailsListHTML(domainData) : ''}
+                <!-- Liste des emails avec sélection multiple -->
+                ${isExpanded ? this.createAdvancedEmailsListHTML(domainData) : ''}
             </div>
         `;
     }
 
-    createEmailsListHTML(domainData) {
+    createAdvancedEmailsListHTML(domainData) {
         const sortedEmails = domainData.emails
-            .sort((a, b) => new Date(b.receivedDateTime || b.sentDateTime) - new Date(a.receivedDateTime || a.sentDateTime))
-            .slice(0, 20); // Limiter à 20 emails pour la performance
+            .sort((a, b) => new Date(b.receivedDateTime || b.sentDateTime) - new Date(a.receivedDateTime || a.sentDateTime));
         
         return `
             <div class="email-list" style="background-color: #f8fafc; border-top: 1px solid #e5e7eb;">
-                <div style="padding: 12px 20px; border-bottom: 1px solid #e5e7eb; background: #f1f5f9;">
-                    <div style="font-size: 12px; font-weight: 600; color: #374151; display: flex; justify-content: between;">
-                        <span>📧 Emails récents (${Math.min(sortedEmails.length, 20)}/${domainData.count})</span>
-                        ${domainData.count > 20 ? '<span style="color: #6b7280;">... et ' + (domainData.count - 20) + ' autres</span>' : ''}
+                <div style="padding: 12px 20px; border-bottom: 1px solid #e5e7eb; background: #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 12px; font-weight: 600; color: #374151;">
+                        📧 Tous les emails (${sortedEmails.length})
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="modernDomainOrganizer.selectAllEmails('${domainData.domain}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                            <i class="fas fa-check-square"></i> Tout sélectionner
+                        </button>
+                        <button onclick="modernDomainOrganizer.unselectAllEmails('${domainData.domain}')" style="background: #6b7280; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                            <i class="fas fa-square"></i> Tout déselectionner
+                        </button>
                     </div>
                 </div>
-                ${sortedEmails.map(email => this.createEmailItemHTML(email)).join('')}
+                ${sortedEmails.map(email => this.createAdvancedEmailItemHTML(email, domainData.domain)).join('')}
             </div>
         `;
     }
 
-    createEmailItemHTML(email) {
+    createAdvancedEmailItemHTML(email, domain) {
         const date = new Date(email.receivedDateTime || email.sentDateTime);
         const dateStr = date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
         const isRead = email.isRead;
         const hasAttachments = email.hasAttachments;
         const importance = email.importance;
+        const isSelected = this.selectedEmails.has(email.id);
         
         return `
-            <div class="email-item" style="padding: 12px 20px; display: flex; align-items: center; gap: 12px;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 120px;">
+            <div class="email-item ${isSelected ? 'selected' : ''}" style="padding: 12px 20px; display: flex; align-items: center; gap: 12px;">
+                <!-- Checkbox de sélection -->
+                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="modernDomainOrganizer.toggleEmailSelection('${email.id}', '${domain}', this.checked)" style="cursor: pointer;">
+                
+                <!-- Métadonnées -->
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 130px;">
                     <i class="fas fa-${isRead ? 'envelope-open' : 'envelope'}" style="color: ${isRead ? '#6b7280' : '#3b82f6'}; font-size: 12px;"></i>
                     ${hasAttachments ? '<i class="fas fa-paperclip" style="color: #6b7280; font-size: 10px;"></i>' : ''}
                     ${importance === 'high' ? '<i class="fas fa-exclamation" style="color: #ef4444; font-size: 10px;"></i>' : ''}
                     <span style="font-size: 11px; color: #6b7280; font-weight: 500;">${dateStr}</span>
                 </div>
+                
+                <!-- Contenu de l'email -->
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-size: 13px; font-weight: ${isRead ? '500' : '600'}; color: ${isRead ? '#6b7280' : '#1f2937'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                         ${email.subject || 'Sans objet'}
@@ -405,20 +576,241 @@ class ModernDomainOrganizer {
                         ${email.bodyPreview || 'Aperçu non disponible'}
                     </div>
                 </div>
-                <button onclick="modernDomainOrganizer.openEmail('${email.webLink}')" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
-                    <i class="fas fa-external-link-alt"></i> Voir
-                </button>
+                
+                <!-- Actions individuelles -->
+                <div style="display: flex; gap: 4px;">
+                    <button onclick="modernDomainOrganizer.openEmail('${email.webLink}')" style="background: #f3f4f6; border: 1px solid #d1d5db; color: #374151; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                        <i class="fas fa-external-link-alt"></i> Voir
+                    </button>
+                    <button onclick="modernDomainOrganizer.moveIndividualEmail('${email.id}', '${domain}')" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                        <i class="fas fa-arrow-right"></i> Déplacer
+                    </button>
+                </div>
             </div>
         `;
     }
 
+    // Gestion de la sélection multiple
+    toggleEmailSelection(emailId, domain, isSelected) {
+        if (isSelected) {
+            this.selectedEmails.set(emailId, { emailId, domain });
+        } else {
+            this.selectedEmails.delete(emailId);
+        }
+        
+        this.updateSelectionUI();
+    }
+
+    selectAllEmails(domain) {
+        const domainData = this.domainAnalysis.get(domain);
+        if (!domainData) return;
+        
+        domainData.emails.forEach(email => {
+            this.selectedEmails.set(email.id, { emailId: email.id, domain });
+        });
+        
+        this.displayAdvancedResults();
+        this.updateSelectionUI();
+    }
+
+    unselectAllEmails(domain) {
+        const domainData = this.domainAnalysis.get(domain);
+        if (!domainData) return;
+        
+        domainData.emails.forEach(email => {
+            this.selectedEmails.delete(email.id);
+        });
+        
+        this.displayAdvancedResults();
+        this.updateSelectionUI();
+    }
+
+    updateSelectionUI() {
+        const selectedCount = this.selectedEmails.size;
+        const selectedCountEl = document.getElementById('selectedCount');
+        const moveBtn = document.getElementById('moveSelectedBtn');
+        
+        if (selectedCountEl) {
+            selectedCountEl.textContent = `${selectedCount} sélectionné(s)`;
+        }
+        
+        if (moveBtn) {
+            moveBtn.disabled = selectedCount === 0;
+        }
+    }
+
+    // Gestion des modals
+    editFolderName(domain) {
+        const modal = document.getElementById('folderModal');
+        const domainInput = document.getElementById('modalDomain');
+        const folderInput = document.getElementById('modalFolderName');
+        
+        if (modal && domainInput && folderInput) {
+            domainInput.value = domain;
+            folderInput.value = this.customFolderNames.get(domain) || `📧 ${domain}`;
+            modal.classList.add('show');
+            folderInput.focus();
+        }
+    }
+
+    closeFolderModal() {
+        const modal = document.getElementById('folderModal');
+        if (modal) modal.classList.remove('show');
+    }
+
+    saveFolderName() {
+        const domainInput = document.getElementById('modalDomain');
+        const folderInput = document.getElementById('modalFolderName');
+        
+        if (domainInput && folderInput) {
+            const domain = domainInput.value;
+            const folderName = folderInput.value.trim();
+            
+            if (folderName) {
+                this.customFolderNames.set(domain, folderName);
+                this.displayAdvancedResults();
+                this.showStatusMessage(`✅ Nom du dossier mis à jour pour ${domain}`, 'success');
+            }
+        }
+        
+        this.closeFolderModal();
+    }
+
+    async openMoveModal() {
+        if (this.selectedEmails.size === 0) return;
+        
+        const modal = document.getElementById('moveModal');
+        const destinationSelect = document.getElementById('modalDestination');
+        const emailsList = document.getElementById('modalEmailsList');
+        
+        if (!modal || !destinationSelect || !emailsList) return;
+        
+        // Charger les dossiers disponibles
+        try {
+            const folders = await window.mailService.getFolders();
+            destinationSelect.innerHTML = '<option value="">Choisir un dossier...</option>';
+            
+            folders.forEach(folder => {
+                const option = document.createElement('option');
+                option.value = folder.id;
+                option.textContent = folder.displayName;
+                destinationSelect.appendChild(option);
+            });
+            
+            // Afficher la liste des emails sélectionnés
+            const selectedEmailsArray = Array.from(this.selectedEmails.values());
+            emailsList.innerHTML = selectedEmailsArray.map(({ emailId, domain }) => {
+                const domainData = this.domainAnalysis.get(domain);
+                const email = domainData?.emails.find(e => e.id === emailId);
+                
+                if (!email) return '';
+                
+                return `
+                    <div style="padding: 8px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 12px; font-weight: 600; color: #1f2937;">${email.subject || 'Sans objet'}</div>
+                            <div style="font-size: 10px; color: #6b7280;">De: ${domain}</div>
+                        </div>
+                        <button onclick="modernDomainOrganizer.removeFromSelection('${emailId}')" style="background: #ef4444; color: white; border: none; padding: 2px 6px; border-radius: 3px; font-size: 9px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            
+            modal.classList.add('show');
+            
+        } catch (error) {
+            this.showStatusMessage('❌ Erreur lors du chargement des dossiers', 'error');
+        }
+    }
+
+    closeMoveModal() {
+        const modal = document.getElementById('moveModal');
+        if (modal) modal.classList.remove('show');
+    }
+
+    removeFromSelection(emailId) {
+        this.selectedEmails.delete(emailId);
+        this.updateSelectionUI();
+        this.displayAdvancedResults();
+        
+        // Mettre à jour la modal
+        if (this.selectedEmails.size === 0) {
+            this.closeMoveModal();
+        } else {
+            this.openMoveModal();
+        }
+    }
+
+    async executeMove() {
+        const destinationSelect = document.getElementById('modalDestination');
+        const destinationId = destinationSelect?.value;
+        
+        if (!destinationId || this.selectedEmails.size === 0) {
+            this.showStatusMessage('⚠️ Veuillez sélectionner un dossier de destination', 'error');
+            return;
+        }
+        
+        this.closeMoveModal();
+        this.showProgress();
+        
+        try {
+            const selectedEmailsArray = Array.from(this.selectedEmails.keys());
+            const totalEmails = selectedEmailsArray.length;
+            
+            for (let i = 0; i < selectedEmailsArray.length; i++) {
+                const emailId = selectedEmailsArray[i];
+                const progress = ((i + 1) / totalEmails) * 100;
+                
+                this.updateProgress(progress, `Déplacement ${i + 1}/${totalEmails}...`);
+                
+                await this.moveEmailToFolder(emailId, destinationId);
+            }
+            
+            // Nettoyer la sélection et rafraîchir
+            this.selectedEmails.clear();
+            this.updateSelectionUI();
+            this.updateStats({ emailsMoved: this.currentStats.emailsMoved + totalEmails });
+            
+            this.showStatusMessage(`✅ ${totalEmails} emails déplacés avec succès !`, 'success');
+            
+        } catch (error) {
+            this.showStatusMessage('❌ Erreur lors du déplacement: ' + error.message, 'error');
+        } finally {
+            this.hideProgress();
+        }
+    }
+
+    async moveIndividualEmail(emailId, domain) {
+        try {
+            // Créer le dossier pour ce domaine s'il n'existe pas
+            const domainData = this.domainAnalysis.get(domain);
+            if (!domainData) return;
+            
+            if (!domainData.folderCreated) {
+                await this.createFolderForDomain(domainData);
+            }
+            
+            if (domainData.folderId) {
+                await this.moveEmailToFolder(emailId, domainData.folderId);
+                this.updateStats({ emailsMoved: this.currentStats.emailsMoved + 1 });
+                this.showStatusMessage(`✅ Email déplacé vers ${domainData.domain}`, 'success');
+            }
+            
+        } catch (error) {
+            this.showStatusMessage('❌ Erreur lors du déplacement: ' + error.message, 'error');
+        }
+    }
+
+    // Méthodes existantes adaptées...
     toggleDomain(domain) {
         if (this.expandedDomains.has(domain)) {
             this.expandedDomains.delete(domain);
         } else {
             this.expandedDomains.add(domain);
         }
-        this.displayResults();
+        this.displayAdvancedResults();
     }
 
     openEmail(webLink) {
@@ -429,7 +821,7 @@ class ModernDomainOrganizer {
 
     getFilteredDomains() {
         const sortFilter = document.getElementById('sortFilter')?.value || 'count';
-        const minEmails = parseInt(document.getElementById('minEmailsFilter')?.value) || 5;
+        const minEmails = parseInt(document.getElementById('minEmailsFilter')?.value) || 2;
         
         let domains = Array.from(this.domainAnalysis.values())
             .filter(domain => domain.count >= minEmails);
@@ -452,7 +844,7 @@ class ModernDomainOrganizer {
     }
 
     applyFilters() {
-        this.displayResults();
+        this.displayAdvancedResults();
     }
 
     async organizeSingleDomain(domain) {
@@ -470,7 +862,7 @@ class ModernDomainOrganizer {
                 emailsMoved: this.currentStats.emailsMoved + domainData.count 
             });
             
-            this.displayResults();
+            this.displayAdvancedResults();
             this.showStatusMessage(`✅ ${domain} organisé avec succès !`, 'success');
             
         } catch (error) {
@@ -479,12 +871,12 @@ class ModernDomainOrganizer {
         }
     }
 
-    async startOrganization() {
+    async startFullOrganization() {
         if (this.isProcessing || this.domainAnalysis.size === 0) return;
         
         this.isProcessing = true;
         this.showProgress();
-        this.disableButton('quickOrganizeBtn');
+        this.disableButton('advancedOrganizeBtn');
         
         try {
             const domains = Array.from(this.domainAnalysis.values());
@@ -504,14 +896,14 @@ class ModernDomainOrganizer {
                 });
             }
             
-            this.displayResults();
+            this.displayAdvancedResults();
             this.showStatusMessage('✅ Tous les domaines ont été organisés !', 'success');
             
         } catch (error) {
             this.showStatusMessage('❌ Erreur: ' + error.message, 'error');
         } finally {
             this.hideProgress();
-            this.enableButton('quickOrganizeBtn');
+            this.enableButton('advancedOrganizeBtn');
             this.isProcessing = false;
         }
     }
@@ -520,7 +912,7 @@ class ModernDomainOrganizer {
         if (domainData.folderCreated) return;
         
         try {
-            const folderName = `📧 ${domainData.domain}`;
+            const folderName = this.customFolderNames.get(domainData.domain) || `📧 ${domainData.domain}`;
             
             if (this.createdFolders.has(domainData.domain)) {
                 domainData.folderId = this.createdFolders.get(domainData.domain);
@@ -597,8 +989,10 @@ class ModernDomainOrganizer {
         this.domainAnalysis.clear();
         this.processedEmailIds.clear();
         this.expandedDomains.clear();
+        this.selectedEmails.clear();
         this.currentStats = { totalEmails: 0, domainsFound: 0, foldersCreated: 0, emailsMoved: 0 };
         this.updateStats(this.currentStats);
+        this.updateSelectionUI();
     }
 
     updateStats(newStats) {
@@ -685,14 +1079,14 @@ class ModernDomainOrganizer {
 }
 
 // Initialisation
-console.log('[ModernDomainOrganizer] 🚀 Chargement module condensé...');
+console.log('[ModernDomainOrganizer] 🚀 Chargement module avancé...');
 window.modernDomainOrganizer = new ModernDomainOrganizer();
 
 // Intercepter navigation
 document.addEventListener('click', (e) => {
     const navItem = e.target.closest('.nav-item[data-page="ranger"]');
     if (navItem) {
-        console.log('[ModernDomainOrganizer] 📁 Navigation vers Ranger');
+        console.log('[ModernDomainOrganizer] 📁 Navigation vers Ranger Avancé');
         e.preventDefault();
         e.stopPropagation();
         
@@ -703,4 +1097,4 @@ document.addEventListener('click', (e) => {
     }
 });
 
-console.log('[ModernDomainOrganizer] ✅ Module condensé prêt');
+console.log('[ModernDomainOrganizer] ✅ Module avancé prêt avec contrôle total');
