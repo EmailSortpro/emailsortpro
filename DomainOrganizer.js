@@ -80,7 +80,7 @@ class ModernDomainOrganizer {
                 </div>
 
                 <!-- Panneau de contrôle condensé -->
-                <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 16px; margin-bottom: 20px;">
+                <div style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 16px; margin-bottom: 20px;">
                     
                     <!-- Stats dynamiques -->
                     <div style="display: flex; gap: 12px; background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb;">
@@ -107,14 +107,19 @@ class ModernDomainOrganizer {
                     
                     <!-- Filtres -->
                     <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 8px;">
-                        <label style="font-size: 11px; color: #6b7280; font-weight: 600;">TRI:</label>
-                        <select id="sortFilter" style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 6px; font-size: 11px;">
-                            <option value="count">Nb emails</option>
-                            <option value="domain">Domaine</option>
-                            <option value="recent">Récents</option>
-                            <option value="oldest">Anciens</option>
-                        </select>
+                        <label style="font-size: 11px; color: #6b7280; font-weight: 600;">DOMAINE:</label>
+                        <input id="domainFilter" type="text" placeholder="Filtrer..." style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 6px; font-size: 11px; width: 80px;">
+                        <label style="font-size: 11px; color: #6b7280; font-weight: 600;">MIN:</label>
                         <input id="minEmailsFilter" type="number" min="1" value="2" placeholder="Min" style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 6px; font-size: 11px; width: 50px;">
+                    </div>
+                    
+                    <!-- Exclusions -->
+                    <div style="background: white; padding: 16px; border-radius: 8px; border: 1px solid #e5e7eb; display: flex; align-items: center; gap: 8px;">
+                        <label style="font-size: 11px; color: #6b7280; font-weight: 600;">EXCLURE:</label>
+                        <input id="excludeFilter" type="text" placeholder="@spam.com, @promo.fr" style="border: 1px solid #d1d5db; border-radius: 4px; padding: 4px 6px; font-size: 11px; width: 120px;">
+                        <button id="clearFiltersBtn" style="background: #6b7280; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                            <i class="fas fa-eraser"></i> Reset
+                        </button>
                     </div>
                     
                     <!-- Actions sélection -->
@@ -257,8 +262,10 @@ class ModernDomainOrganizer {
         document.getElementById('advancedOrganizeBtn')?.addEventListener('click', () => this.startFullOrganization());
         
         // Filtres
-        document.getElementById('sortFilter')?.addEventListener('change', () => this.applyFilters());
+        document.getElementById('domainFilter')?.addEventListener('input', () => this.applyFilters());
         document.getElementById('minEmailsFilter')?.addEventListener('input', () => this.applyFilters());
+        document.getElementById('excludeFilter')?.addEventListener('input', () => this.applyFilters());
+        document.getElementById('clearFiltersBtn')?.addEventListener('click', () => this.clearFilters());
         
         // Sélection multiple
         document.getElementById('moveSelectedBtn')?.addEventListener('click', () => this.openMoveModal());
@@ -799,12 +806,19 @@ class ModernDomainOrganizer {
             return;
         }
         
+        console.log('[ModernDomainOrganizer] 🚀 Début déplacement:', this.selectedEmails.size, 'emails vers', destinationId);
+        
         this.closeMoveModal();
         this.showProgress();
+        this.disableButton('moveSelectedBtn');
         
         try {
             const selectedEmailsArray = Array.from(this.selectedEmails.keys());
             const totalEmails = selectedEmailsArray.length;
+            let movedCount = 0;
+            let errorCount = 0;
+            
+            console.log('[ModernDomainOrganizer] 📧 Emails à déplacer:', selectedEmailsArray);
             
             for (let i = 0; i < selectedEmailsArray.length; i++) {
                 const emailId = selectedEmailsArray[i];
@@ -812,20 +826,44 @@ class ModernDomainOrganizer {
                 
                 this.updateProgress(progress, `Déplacement ${i + 1}/${totalEmails}...`);
                 
-                await this.moveEmailToFolder(emailId, destinationId);
+                try {
+                    await this.moveEmailToFolder(emailId, destinationId);
+                    movedCount++;
+                    console.log('[ModernDomainOrganizer] ✅ Email déplacé:', emailId);
+                } catch (error) {
+                    errorCount++;
+                    console.error('[ModernDomainOrganizer] ❌ Erreur déplacement:', emailId, error);
+                }
+                
+                // Petite pause pour éviter la limitation API
+                if (i < selectedEmailsArray.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
             }
             
             // Nettoyer la sélection et rafraîchir
             this.selectedEmails.clear();
             this.updateSelectionUI();
-            this.updateStats({ emailsMoved: this.currentStats.emailsMoved + totalEmails });
+            this.updateStats({ emailsMoved: this.currentStats.emailsMoved + movedCount });
             
-            this.showStatusMessage(`✅ ${totalEmails} emails déplacés avec succès !`, 'success');
+            // Message de résultat
+            if (errorCount === 0) {
+                this.showStatusMessage(`✅ ${movedCount} emails déplacés avec succès !`, 'success');
+            } else {
+                this.showStatusMessage(`⚠️ ${movedCount} déplacés, ${errorCount} erreurs`, 'error');
+            }
+            
+            // Rafraîchir l'affichage
+            setTimeout(() => {
+                this.displayAdvancedResults();
+            }, 1000);
             
         } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur globale déplacement:', error);
             this.showStatusMessage('❌ Erreur lors du déplacement: ' + error.message, 'error');
         } finally {
             this.hideProgress();
+            this.enableButton('moveSelectedBtn');
         }
     }
 
@@ -867,27 +905,53 @@ class ModernDomainOrganizer {
     }
 
     getFilteredDomains() {
-        const sortFilter = document.getElementById('sortFilter')?.value || 'count';
+        const domainFilter = document.getElementById('domainFilter')?.value.toLowerCase().trim() || '';
         const minEmails = parseInt(document.getElementById('minEmailsFilter')?.value) || 2;
+        const excludeFilter = document.getElementById('excludeFilter')?.value.toLowerCase().trim() || '';
+        
+        // Parser les exclusions (séparées par virgule)
+        const excludeDomains = excludeFilter.split(',').map(d => d.trim()).filter(d => d.length > 0);
         
         let domains = Array.from(this.domainAnalysis.values())
-            .filter(domain => domain.count >= minEmails);
+            .filter(domain => {
+                // Filtre par nombre minimum d'emails
+                if (domain.count < minEmails) return false;
+                
+                // Filtre par nom de domaine
+                if (domainFilter && !domain.domain.toLowerCase().includes(domainFilter)) return false;
+                
+                // Filtre d'exclusion
+                if (excludeDomains.length > 0) {
+                    const isExcluded = excludeDomains.some(excludeDomain => {
+                        if (excludeDomain.startsWith('@')) {
+                            return domain.domain.toLowerCase() === excludeDomain.substring(1);
+                        } else {
+                            return domain.domain.toLowerCase().includes(excludeDomain);
+                        }
+                    });
+                    if (isExcluded) return false;
+                }
+                
+                return true;
+            });
         
-        switch (sortFilter) {
-            case 'domain':
-                domains.sort((a, b) => a.domain.localeCompare(b.domain));
-                break;
-            case 'recent':
-                domains.sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
-                break;
-            case 'oldest':
-                domains.sort((a, b) => new Date(a.firstSeen) - new Date(b.firstSeen));
-                break;
-            default: // count
-                domains.sort((a, b) => b.count - a.count);
-        }
+        // Tri par nombre d'emails (décroissant)
+        domains.sort((a, b) => b.count - a.count);
         
         return domains;
+    }
+
+    clearFilters() {
+        const domainFilter = document.getElementById('domainFilter');
+        const excludeFilter = document.getElementById('excludeFilter');
+        const minEmailsFilter = document.getElementById('minEmailsFilter');
+        
+        if (domainFilter) domainFilter.value = '';
+        if (excludeFilter) excludeFilter.value = '';
+        if (minEmailsFilter) minEmailsFilter.value = '2';
+        
+        this.applyFilters();
+        this.showStatusMessage('✅ Filtres remis à zéro', 'info');
     }
 
     applyFilters() {
@@ -1007,21 +1071,35 @@ class ModernDomainOrganizer {
 
     async moveEmailToFolder(emailId, folderId) {
         try {
+            console.log('[ModernDomainOrganizer] 🔄 Déplacement email:', emailId, 'vers dossier:', folderId);
+            
+            const token = await window.authService.getAccessToken();
+            
             const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}/move`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${await window.authService.getAccessToken()}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ destinationId: folderId })
+                body: JSON.stringify({ 
+                    destinationId: folderId 
+                })
             });
             
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                const errorText = await response.text();
+                console.error('[ModernDomainOrganizer] Erreur API:', response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
+            const result = await response.json();
+            console.log('[ModernDomainOrganizer] ✅ Email déplacé avec succès:', result);
+            
+            return result;
+            
         } catch (error) {
-            console.warn('[ModernDomainOrganizer] Erreur déplacement:', emailId);
+            console.error('[ModernDomainOrganizer] ❌ Erreur déplacement email:', emailId, error);
+            throw error;
         }
     }
 
