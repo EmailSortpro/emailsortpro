@@ -98,23 +98,33 @@ class App {
             const contentHeight = document.documentElement.scrollHeight;
             const viewportHeight = window.innerHeight;
             
+            // Obtenir la page actuelle
+            const currentPage = [...body.classList].find(cls => cls.startsWith('page-'))?.replace('page-', '');
+            
             console.log('[SCROLL_MANAGER]', {
+                currentPage,
                 contentHeight,
                 viewportHeight,
                 bodyScrollHeight: body.scrollHeight,
                 needsScroll: contentHeight > viewportHeight
             });
             
-            if (contentHeight <= viewportHeight) {
-                body.classList.add('page-short-content');
+            // Dashboard: JAMAIS de scroll
+            if (currentPage === 'dashboard') {
+                body.classList.remove('needs-scroll');
                 body.style.overflow = 'hidden';
                 body.style.overflowY = 'hidden';
-                console.log('[SCROLL_MANAGER] Scroll forcé à hidden');
+                console.log('[SCROLL_MANAGER] Dashboard - scroll forcé à hidden');
+                return;
+            }
+            
+            // Autres pages: scroll seulement si vraiment nécessaire
+            if (contentHeight > viewportHeight + 50) { // Marge de 50px
+                body.classList.add('needs-scroll');
+                console.log('[SCROLL_MANAGER] Long content detected - scroll enabled for', currentPage);
             } else {
-                body.classList.remove('page-short-content');
-                body.style.overflow = '';
-                body.style.overflowY = '';
-                console.log('[SCROLL_MANAGER] Scroll restauré');
+                body.classList.remove('needs-scroll');
+                console.log('[SCROLL_MANAGER] Short content detected - scroll hidden for', currentPage);
             }
         };
 
@@ -123,7 +133,7 @@ class App {
             const body = document.body;
             
             // Nettoyer les anciennes classes de page
-            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
+            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'needs-scroll', 'login-mode');
             
             // Ajouter la nouvelle classe de page
             if (pageName) {
@@ -131,28 +141,17 @@ class App {
                 console.log(`[PAGE_MODE] Mode ${pageName} activé`);
             }
             
-            // Vérifier le scroll après un délai
+            // Dashboard: forcer immédiatement pas de scroll
+            if (pageName === 'dashboard') {
+                body.style.overflow = 'hidden';
+                body.style.overflowY = 'hidden';
+                console.log('[PAGE_MODE] Dashboard - scroll immédiatement masqué');
+                return;
+            }
+            
+            // Autres pages: vérifier après un délai
             setTimeout(() => {
-                const contentHeight = document.documentElement.scrollHeight;
-                const viewportHeight = window.innerHeight;
-                
-                console.log('[PAGE_MODE] Scroll check for', pageName, {
-                    contentHeight,
-                    viewportHeight,
-                    needsScroll: contentHeight > viewportHeight
-                });
-                
-                if (contentHeight <= viewportHeight) {
-                    body.classList.add('page-short-content');
-                    body.style.overflow = 'hidden';
-                    body.style.overflowY = 'hidden';
-                    console.log('[PAGE_MODE] Short content - scroll hidden');
-                } else {
-                    body.classList.remove('page-short-content');
-                    body.style.overflow = '';
-                    body.style.overflowY = '';
-                    console.log('[PAGE_MODE] Long content - scroll enabled');
-                }
+                window.checkScrollNeeded();
             }, 300);
         };
 
@@ -713,17 +712,22 @@ class App {
             window.setPageMode('dashboard');
         }
         
+        // Forcer immédiatement pas de scroll pour le dashboard
+        document.body.style.overflow = 'hidden';
+        document.body.style.overflowY = 'hidden';
+        console.log('[App] Dashboard scroll forcé à hidden');
+        
         // Charger le dashboard
         if (window.pageManager) {
             setTimeout(() => {
                 window.pageManager.loadPage('dashboard');
                 console.log('[App] Dashboard loading requested');
                 
-                // Vérifier le scroll après chargement du dashboard
+                // Re-forcer pas de scroll après chargement du dashboard
                 setTimeout(() => {
-                    if (window.checkScrollNeeded) {
-                        window.checkScrollNeeded();
-                    }
+                    document.body.style.overflow = 'hidden';
+                    document.body.style.overflowY = 'hidden';
+                    console.log('[App] Dashboard scroll re-forcé à hidden après chargement');
                 }, 500);
             }, 100);
         } else {
