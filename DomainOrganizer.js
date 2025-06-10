@@ -1,4 +1,4 @@
-// DomainOrganizer.js - Version 8.2 - Design Minimaliste et Condensé
+// DomainOrganizer.js - Version 8.3 - Scan Réel Intégré
 class DomainOrganizer {
     constructor() {
         this.isProcessing = false;
@@ -15,7 +15,16 @@ class DomainOrganizer {
         this.expandedDomains = new Set();
         this.currentStep = 1;
         
-        console.log('[DomainOrganizer] ✅ v8.2 - Design Minimaliste');
+        // Nouvelles propriétés pour le scan réel
+        this.realEmails = [];
+        this.scanProgress = {
+            totalEmails: 0,
+            processedEmails: 0,
+            domainsFound: new Set(),
+            startTime: null
+        };
+        
+        console.log('[DomainOrganizer] ✅ v8.3 - Scan Réel Intégré');
     }
 
     getPageHTML() {
@@ -65,6 +74,27 @@ class DomainOrganizer {
                                     </div>
                                 </div>
 
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Dossier source</label>
+                                        <select id="sourceFolder" class="input">
+                                            <option value="inbox">Boîte de réception</option>
+                                            <option value="sent">Éléments envoyés</option>
+                                            <option value="archive">Archive</option>
+                                            <option value="all">Tous les dossiers</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Limite d'emails</label>
+                                        <select id="emailLimit" class="input">
+                                            <option value="100">100 emails</option>
+                                            <option value="500" selected>500 emails</option>
+                                            <option value="1000">1000 emails</option>
+                                            <option value="2000">2000 emails</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div class="form-group">
                                     <label>Domaines à exclure (optionnel)</label>
                                     <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com" class="input">
@@ -105,6 +135,10 @@ class DomainOrganizer {
                                 
                                 <div class="progress-bar">
                                     <div class="progress-fill" id="progressBar"></div>
+                                </div>
+                                
+                                <div class="current-domain" id="currentDomain" style="margin-top: 12px; text-align: center; font-size: 13px; color: #6b7280;">
+                                    Initialisation...
                                 </div>
                             </div>
                         </div>
@@ -514,6 +548,11 @@ class DomainOrganizer {
                     background: linear-gradient(90deg, #10b981, #059669);
                 }
 
+                .current-domain {
+                    font-style: italic;
+                    opacity: 0.8;
+                }
+
                 /* Contrôles compacts */
                 .controls {
                     display: flex;
@@ -865,6 +904,252 @@ class DomainOrganizer {
         `;
     }
 
+    // Méthodes de scan réel
+    async startAnalysis(formData) {
+        try {
+            this.updateStepIndicator(2);
+            
+            this.configure({
+                excludeDomains: formData.excludeDomains,
+                excludeEmails: formData.excludeEmails
+            });
+            
+            // Réel scan au lieu de simulation
+            await this.performRealAnalysis(formData);
+            
+        } catch (error) {
+            console.error('[DomainOrganizer] Analysis error:', error);
+            this.showError(`Erreur: ${error.message}`);
+            this.resetForm();
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+
+    async performRealAnalysis(formData) {
+        console.log('[DomainOrganizer] 🔍 Starting real email analysis...');
+        
+        // Vérifier que MailService est disponible
+        if (!window.mailService) {
+            throw new Error('MailService non disponible');
+        }
+
+        // Réinitialiser les compteurs
+        this.scanProgress = {
+            totalEmails: 0,
+            processedEmails: 0,
+            domainsFound: new Set(),
+            startTime: Date.now()
+        };
+        
+        this.realEmails = [];
+        this.emailsByDomain.clear();
+
+        const progressBar = document.getElementById('progressBar');
+        const emailsAnalyzed = document.getElementById('emailsAnalyzed');
+        const domainsFound = document.getElementById('domainsFound');
+        const foldersToCreate = document.getElementById('foldersToCreate');
+        const analysisDescription = document.getElementById('analysisDescription');
+        const currentDomain = document.getElementById('currentDomain');
+
+        try {
+            // Étape 1: Connexion
+            if (analysisDescription) analysisDescription.textContent = 'Connexion à votre boîte mail...';
+            if (currentDomain) currentDomain.textContent = 'Initialisation...';
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Étape 2: Récupération des emails
+            if (analysisDescription) analysisDescription.textContent = 'Récupération des emails...';
+            
+            const emailLimit = parseInt(formData.emailLimit) || 500;
+            let emails = [];
+
+            if (formData.sourceFolder === 'all') {
+                // Récupérer de plusieurs dossiers
+                const folders = ['inbox', 'sent', 'archive'];
+                const limitPerFolder = Math.floor(emailLimit / folders.length);
+                
+                for (const folder of folders) {
+                    try {
+                        if (currentDomain) currentDomain.textContent = `Analyse du dossier: ${folder}`;
+                        const folderEmails = await window.mailService.getEmailsFromFolder(folder, {
+                            top: limitPerFolder,
+                            startDate: formData.startDate,
+                            endDate: formData.endDate
+                        });
+                        emails = emails.concat(folderEmails);
+                        
+                        // Mise à jour progressive
+                        this.scanProgress.totalEmails = emails.length;
+                        if (emailsAnalyzed) emailsAnalyzed.textContent = emails.length;
+                        
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    } catch (error) {
+                        console.warn(`[DomainOrganizer] Erreur dossier ${folder}:`, error);
+                    }
+                }
+            } else {
+                // Récupérer d'un seul dossier
+                if (currentDomain) currentDomain.textContent = `Analyse du dossier: ${formData.sourceFolder}`;
+                emails = await window.mailService.getEmailsFromFolder(formData.sourceFolder, {
+                    top: emailLimit,
+                    startDate: formData.startDate,
+                    endDate: formData.endDate
+                });
+            }
+
+            this.scanProgress.totalEmails = emails.length;
+            
+            if (emails.length === 0) {
+                throw new Error('Aucun email trouvé dans la période sélectionnée');
+            }
+
+            console.log(`[DomainOrganizer] 📧 ${emails.length} emails récupérés`);
+
+            // Étape 3: Analyse des domaines
+            if (analysisDescription) analysisDescription.textContent = 'Analyse des domaines...';
+            if (progressBar) progressBar.style.width = '20%';
+
+            for (let i = 0; i < emails.length; i++) {
+                const email = emails[i];
+                
+                // Extraire le domaine
+                const domain = this.extractDomain(email.from?.emailAddress?.address || email.sender?.emailAddress?.address || '');
+                
+                if (!domain || this.excludedDomains.has(domain.toLowerCase())) {
+                    continue;
+                }
+
+                if (currentDomain) currentDomain.textContent = `Analyse: ${domain}`;
+                
+                // Ajouter à la collection par domaine
+                if (!this.emailsByDomain.has(domain)) {
+                    this.emailsByDomain.set(domain, []);
+                    this.scanProgress.domainsFound.add(domain);
+                }
+                
+                this.emailsByDomain.get(domain).push({
+                    id: email.id,
+                    subject: email.subject || 'Sans objet',
+                    sender: email.from?.emailAddress?.address || email.sender?.emailAddress?.address || '',
+                    senderName: email.from?.emailAddress?.name || email.sender?.emailAddress?.name || domain,
+                    date: new Date(email.receivedDateTime || email.sentDateTime).toLocaleDateString('fr-FR'),
+                    targetFolder: this.suggestFolderName(domain),
+                    selected: true,
+                    originalEmail: email
+                });
+
+                this.scanProgress.processedEmails = i + 1;
+                
+                // Mise à jour progressive de l'interface
+                if (i % 10 === 0 || i === emails.length - 1) {
+                    const progress = Math.floor((i + 1) / emails.length * 80) + 20; // 20-100%
+                    if (progressBar) progressBar.style.width = `${progress}%`;
+                    if (emailsAnalyzed) emailsAnalyzed.textContent = this.scanProgress.processedEmails;
+                    if (domainsFound) domainsFound.textContent = this.scanProgress.domainsFound.size;
+                    if (foldersToCreate) {
+                        const uniqueFolders = new Set();
+                        this.emailsByDomain.forEach((emails, domain) => {
+                            uniqueFolders.add(this.suggestFolderName(domain));
+                        });
+                        foldersToCreate.textContent = uniqueFolders.size;
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+            }
+
+            // Finalisation
+            if (analysisDescription) analysisDescription.textContent = 'Finalisation de l\'analyse...';
+            if (progressBar) progressBar.style.width = '100%';
+            if (currentDomain) currentDomain.textContent = 'Analyse terminée';
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Construire les résultats
+            const results = this.buildAnalysisResults();
+            
+            console.log(`[DomainOrganizer] ✅ Analyse terminée: ${results.totalEmails} emails, ${results.totalDomains} domaines`);
+            
+            this.showRevisionStep(results);
+
+        } catch (error) {
+            console.error('[DomainOrganizer] Real analysis error:', error);
+            throw error;
+        }
+    }
+
+    extractDomain(email) {
+        if (!email) return null;
+        
+        const match = email.match(/@(.+)$/);
+        return match ? match[1].toLowerCase() : null;
+    }
+
+    suggestFolderName(domain) {
+        // Suggestions intelligentes de noms de dossiers
+        const domainMap = {
+            'linkedin.com': 'LinkedIn',
+            'github.com': 'GitHub', 
+            'amazon.com': 'Amazon',
+            'amazon.fr': 'Amazon',
+            'paypal.com': 'PayPal',
+            'netflix.com': 'Netflix',
+            'spotify.com': 'Spotify',
+            'facebook.com': 'Facebook',
+            'instagram.com': 'Instagram',
+            'twitter.com': 'Twitter',
+            'microsoft.com': 'Microsoft',
+            'google.com': 'Google',
+            'apple.com': 'Apple',
+            'dropbox.com': 'Dropbox',
+            'slack.com': 'Slack'
+        };
+
+        if (domainMap[domain]) {
+            return domainMap[domain];
+        }
+
+        // Extraire le nom principal du domaine
+        const parts = domain.split('.');
+        const mainPart = parts[0];
+        
+        // Capitaliser la première lettre
+        return mainPart.charAt(0).toUpperCase() + mainPart.slice(1);
+    }
+
+    buildAnalysisResults() {
+        const domains = [];
+        let totalEmails = 0;
+
+        this.emailsByDomain.forEach((emails, domain) => {
+            totalEmails += emails.length;
+            
+            domains.push({
+                domain: domain,
+                count: emails.length,
+                action: 'create-new', // On suppose toujours nouveau pour l'instant
+                suggestedFolder: this.suggestFolderName(domain),
+                emails: emails,
+                selected: true
+            });
+        });
+
+        // Trier par nombre d'emails décroissant
+        domains.sort((a, b) => b.count - a.count);
+
+        const uniqueFolders = new Set();
+        domains.forEach(domain => uniqueFolders.add(domain.suggestedFolder));
+
+        return {
+            totalEmails: totalEmails,
+            totalDomains: domains.length,
+            domainsToCreate: uniqueFolders.size,
+            domains: domains
+        };
+    }
+
     // Méthodes identiques mais optimisées
     updateStepIndicator(step) {
         console.log(`[DomainOrganizer] Updating to step ${step}`);
@@ -891,10 +1176,15 @@ class DomainOrganizer {
     }
 
     async initializePage() {
-        console.log('[DomainOrganizer] Initializing v8.2 Minimalist...');
+        console.log('[DomainOrganizer] Initializing v8.3 Real Scan...');
         
         if (!window.authService?.isAuthenticated()) {
             this.showError('Veuillez vous connecter');
+            return false;
+        }
+
+        if (!window.mailService) {
+            this.showError('MailService non disponible');
             return false;
         }
 
@@ -906,7 +1196,7 @@ class DomainOrganizer {
         this.updateStepIndicator(1);
         this.isActive = true;
         
-        console.log('[DomainOrganizer] ✅ Minimalist interface ready v8.2');
+        console.log('[DomainOrganizer] ✅ Real scan interface ready v8.3');
         return true;
     }
 
@@ -975,143 +1265,18 @@ class DomainOrganizer {
     getFormData() {
         const startDate = document.getElementById('startDate')?.value || '';
         const endDate = document.getElementById('endDate')?.value || '';
+        const sourceFolder = document.getElementById('sourceFolder')?.value || 'inbox';
+        const emailLimit = document.getElementById('emailLimit')?.value || '500';
         const excludeDomains = document.getElementById('excludeDomains')?.value
             .split(',').map(d => d.trim()).filter(d => d) || [];
         
-        return { startDate, endDate, excludeDomains, excludeEmails: [] };
-    }
-
-    async startAnalysis(formData) {
-        try {
-            this.updateStepIndicator(2);
-            
-            this.configure({
-                excludeDomains: formData.excludeDomains,
-                excludeEmails: formData.excludeEmails
-            });
-            
-            await this.simulateAnalysis();
-            
-        } catch (error) {
-            console.error('[DomainOrganizer] Analysis error:', error);
-            this.showError(`Erreur: ${error.message}`);
-            this.resetForm();
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    async simulateAnalysis() {
-        const progressBar = document.getElementById('progressBar');
-        const emailsAnalyzed = document.getElementById('emailsAnalyzed');
-        const domainsFound = document.getElementById('domainsFound');
-        const foldersToCreate = document.getElementById('foldersToCreate');
-        const analysisDescription = document.getElementById('analysisDescription');
-        
-        let progress = 0;
-        let emails = 0;
-        let domains = 0;
-        let folders = 0;
-        
-        const descriptions = [
-            'Connexion à votre boîte mail',
-            'Récupération des emails',
-            'Analyse des domaines',
-            'Calcul de l\'organisation',
-            'Finalisation'
-        ];
-        
-        let descIndex = 0;
-        
-        const interval = setInterval(() => {
-            progress += 20;
-            emails += Math.floor(Math.random() * 30) + 20;
-            
-            if (progress >= 40 && domains === 0) {
-                domains = Math.floor(emails / 30) + 3;
-                folders = Math.floor(domains * 0.7) + 1;
-            }
-            
-            if (progressBar) progressBar.style.width = `${Math.min(progress, 100)}%`;
-            if (emailsAnalyzed) emailsAnalyzed.textContent = emails;
-            if (domainsFound) domainsFound.textContent = domains;
-            if (foldersToCreate) foldersToCreate.textContent = folders;
-            
-            if (analysisDescription && descIndex < descriptions.length) {
-                analysisDescription.textContent = descriptions[descIndex];
-                descIndex++;
-            }
-            
-            if (progress >= 100) {
-                clearInterval(interval);
-                if (analysisDescription) analysisDescription.textContent = 'Analyse terminée';
-                
-                const results = this.generateMockData(domains, emails, folders);
-                setTimeout(() => this.showRevisionStep(results), 500);
-            }
-        }, 400);
-    }
-
-    generateMockData(domainCount, totalEmails, foldersToCreate) {
-        const mockDomains = [
-            'linkedin.com', 'github.com', 'amazon.com', 'paypal.com', 'medium.com', 
-            'stackoverflow.com', 'slack.com', 'dropbox.com', 'spotify.com', 'netflix.com'
-        ];
-        
-        const mockSubjects = [
-            'Confirmation de commande',
-            'Notification importante',
-            'Rapport mensuel',
-            'Invitation',
-            'Mise à jour',
-            'Newsletter',
-            'Facture',
-            'Nouveau message'
-        ];
-        
-        const domains = [];
-        let emailId = 1;
-        let remainingEmails = totalEmails;
-        
-        for (let i = 0; i < domainCount && remainingEmails > 0; i++) {
-            const domain = mockDomains[i % mockDomains.length];
-            const emailCount = i === domainCount - 1 
-                ? remainingEmails 
-                : Math.min(Math.floor(Math.random() * 40) + 10, remainingEmails);
-            
-            remainingEmails -= emailCount;
-            
-            const emails = [];
-            for (let j = 0; j < emailCount; j++) {
-                const date = new Date();
-                date.setDate(date.getDate() - Math.floor(Math.random() * 30));
-                
-                emails.push({
-                    id: `email_${emailId++}`,
-                    subject: mockSubjects[Math.floor(Math.random() * mockSubjects.length)],
-                    sender: `noreply@${domain}`,
-                    senderName: domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1),
-                    date: date.toLocaleDateString('fr-FR', { month: '2-digit', day: '2-digit' }),
-                    selected: true,
-                    targetFolder: domain.split('.')[0]
-                });
-            }
-            
-            domains.push({
-                domain: domain,
-                count: emailCount,
-                action: Math.random() > 0.3 ? 'create-new' : 'move-existing',
-                suggestedFolder: domain.split('.')[0],
-                emails: emails,
-                selected: true
-            });
-        }
-        
-        return {
-            totalEmails: totalEmails,
-            totalDomains: domainCount,
-            domainsToCreate: foldersToCreate,
-            domains: domains.sort((a, b) => b.count - a.count)
+        return { 
+            startDate, 
+            endDate, 
+            sourceFolder,
+            emailLimit,
+            excludeDomains, 
+            excludeEmails: [] 
         };
     }
 
@@ -1125,7 +1290,8 @@ class DomainOrganizer {
                     emailId: email.id,
                     domain: domain.domain,
                     targetFolder: email.targetFolder,
-                    selected: email.selected
+                    selected: email.selected,
+                    originalEmail: email.originalEmail
                 });
             });
         });
@@ -1542,7 +1708,9 @@ class DomainOrganizer {
         this.emailActions.clear();
         this.selectedActions.clear();
         this.expandedDomains.clear();
+        this.emailsByDomain.clear();
         this.currentAnalysis = null;
+        this.realEmails = [];
         this.isProcessing = false;
         this.currentStep = 1;
     }
@@ -1572,12 +1740,22 @@ class DomainOrganizer {
 window.organizerInstance = new DomainOrganizer();
 
 function showDomainOrganizerApp() {
-    console.log('[DomainOrganizer] 🚀 Launching v8.2 Minimalist...');
+    console.log('[DomainOrganizer] 🚀 Launching v8.3 Real Scan...');
     
     if (!window.authService?.isAuthenticated()) {
         const message = 'Veuillez vous connecter pour utiliser l\'organisateur';
         if (window.uiManager?.showToast) {
             window.uiManager.showToast(message, 'warning');
+        } else {
+            alert(message);
+        }
+        return;
+    }
+
+    if (!window.mailService) {
+        const message = 'MailService non disponible - Veuillez recharger la page';
+        if (window.uiManager?.showToast) {
+            window.uiManager.showToast(message, 'error');
         } else {
             alert(message);
         }
@@ -1606,9 +1784,12 @@ function showDomainOrganizerApp() {
         if (window.domainOrganizerActive && document.getElementById('step1')) {
             try {
                 await window.organizerInstance.initializePage();
-                console.log('[DomainOrganizer] ✅ Minimalist interface ready v8.2');
+                console.log('[DomainOrganizer] ✅ Real scan interface ready v8.3');
             } catch (error) {
                 console.error('[DomainOrganizer] Initialization error:', error);
+                if (window.uiManager?.showToast) {
+                    window.uiManager.showToast('Erreur d\'initialisation', 'error');
+                }
             }
         }
     }, 50);
@@ -1659,4 +1840,4 @@ window.domainOrganizer = {
     instance: window.organizerInstance
 };
 
-console.log('[DomainOrganizer] ✅ v8.2 Minimalist System ready');
+console.log('[DomainOrganizer] ✅ v8.3 Real Scan System ready');
