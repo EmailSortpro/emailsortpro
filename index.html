@@ -1467,6 +1467,12 @@
 
         // Fonction pour forcer la vérification du scroll - OPTIMISÉE
         window.checkScrollNeeded = function() {
+            // Si l'app est active, laisser app.js gérer le scroll
+            if (document.body.classList.contains('app-active') && window.app) {
+                console.log('[INDEX_SCROLL_CHECK] App active - delegating to app.js');
+                return;
+            }
+            
             // Éviter les appels multiples
             if (window.scrollCheckInProgress) return;
             window.scrollCheckInProgress = true;
@@ -1476,7 +1482,7 @@
                 const contentHeight = document.documentElement.scrollHeight;
                 const viewportHeight = window.innerHeight;
                 
-                console.log('[FORCE_SCROLL_CHECK]', {
+                console.log('[INDEX_FORCE_SCROLL_CHECK]', {
                     contentHeight,
                     viewportHeight,
                     bodyScrollHeight: body.scrollHeight,
@@ -1487,12 +1493,12 @@
                     body.classList.add('page-short-content');
                     body.style.overflow = 'hidden';
                     body.style.overflowY = 'hidden';
-                    console.log('[FORCE_SCROLL_CHECK] Scroll forcé à hidden');
+                    console.log('[INDEX_FORCE_SCROLL_CHECK] Scroll forcé à hidden');
                 } else {
                     body.classList.remove('page-short-content');
                     body.style.overflow = '';
                     body.style.overflowY = '';
-                    console.log('[FORCE_SCROLL_CHECK] Scroll restauré');
+                    console.log('[INDEX_FORCE_SCROLL_CHECK] Scroll restauré');
                 }
                 
                 window.scrollCheckInProgress = false;
@@ -1505,6 +1511,11 @@
         // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
         let resizeTimeout;
         window.addEventListener('resize', () => {
+            // Si l'app est active, laisser app.js gérer le resize
+            if (document.body.classList.contains('app-active') && window.app) {
+                return;
+            }
+            
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
         });
@@ -1546,6 +1557,12 @@
 
         // Gestion des modes d'affichage pour les pages - SCROLL OPTIMISÉ
         window.setPageMode = function(pageName) {
+            // Si l'app est active, laisser app.js gérer le scroll
+            if (document.body.classList.contains('app-active') && window.app) {
+                console.log('[PAGE_MODE] App active - delegating to app.js scroll manager');
+                return;
+            }
+            
             const appMain = document.querySelector('.app-main');
             const pageContent = document.getElementById('pageContent');
             const body = document.body;
@@ -1567,33 +1584,35 @@
                 console.log('[PAGE_MODE] Page mode activated - reduced spacing for:', pageName);
             }
             
-            // Gestion du scroll OPTIMISÉE - une seule vérification
-            clearTimeout(window.scrollCheckTimeout);
-            window.scrollCheckTimeout = setTimeout(() => {
-                const contentHeight = document.documentElement.scrollHeight;
-                const viewportHeight = window.innerHeight;
-                const bodyHeight = document.body.scrollHeight;
-                
-                console.log('[SCROLL_MANAGER]', {
-                    page: pageName,
-                    contentHeight,
-                    bodyHeight,
-                    viewportHeight,
-                    needsScroll: bodyHeight > viewportHeight
-                });
-                
-                if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
-                    body.classList.add('page-short-content');
-                    console.log('[SCROLL_MANAGER] Short content detected - scroll hidden');
-                    body.style.overflow = 'hidden';
-                    body.style.overflowY = 'hidden';
-                } else {
-                    body.classList.remove('page-short-content');
-                    console.log('[SCROLL_MANAGER] Long content detected - scroll enabled');
-                    body.style.overflow = '';
-                    body.style.overflowY = '';
-                }
-            }, 100); // Délai court pour éviter les appels multiples
+            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
+            if (!document.body.classList.contains('app-active')) {
+                clearTimeout(window.scrollCheckTimeout);
+                window.scrollCheckTimeout = setTimeout(() => {
+                    const contentHeight = document.documentElement.scrollHeight;
+                    const viewportHeight = window.innerHeight;
+                    const bodyHeight = document.body.scrollHeight;
+                    
+                    console.log('[INDEX_SCROLL_MANAGER]', {
+                        page: pageName,
+                        contentHeight,
+                        bodyHeight,
+                        viewportHeight,
+                        needsScroll: bodyHeight > viewportHeight
+                    });
+                    
+                    if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
+                        body.classList.add('page-short-content');
+                        console.log('[INDEX_SCROLL_MANAGER] Short content detected - scroll hidden');
+                        body.style.overflow = 'hidden';
+                        body.style.overflowY = 'hidden';
+                    } else {
+                        body.classList.remove('page-short-content');
+                        console.log('[INDEX_SCROLL_MANAGER] Long content detected - scroll enabled');
+                        body.style.overflow = '';
+                        body.style.overflowY = '';
+                    }
+                }, 100);
+            }
         };
 
         // Intercepter la méthode loadPage du PageManager pour le dashboard
@@ -1640,9 +1659,13 @@
                         // Animer les stats du dashboard
                         animateDashboardStats();
                         
-                        // Vérifier le scroll après affichage du dashboard
+                        // Vérifier le scroll après affichage du dashboard - DÉLÉGUÉ À APP.JS
                         setTimeout(() => {
-                            window.checkScrollNeeded();
+                            if (window.app && window.app.checkScrollNeeded) {
+                                window.app.checkScrollNeeded();
+                            } else {
+                                window.checkScrollNeeded();
+                            }
                         }, 300);
                         
                         console.log('[DASHBOARD_INTERCEPT] Dashboard sobre affiché et restauré');
@@ -1905,6 +1928,7 @@
         console.log('[INDEX] ✅ Scroll manager optimisé contre les boucles');
         console.log('[INDEX] ✅ Gestion resize events avec debouncing');
         console.log('[INDEX] ✅ Performance améliorée et logs épurés');
+        console.log('[INDEX] ✅ Délégation scroll manager à app.js quand actif');
     </script>
 </body>
 </html>
