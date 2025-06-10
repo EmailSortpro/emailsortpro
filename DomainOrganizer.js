@@ -508,6 +508,17 @@ class DomainOrganizer {
         // Attendre que le DOM soit complètement chargé
         await new Promise(resolve => setTimeout(resolve, 200));
         
+        // Diagnostic DOM
+        const domReady = this.diagnosticDOM();
+        if (!domReady) {
+            console.error('[DomainOrganizer] DOM not ready, retrying...');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!this.diagnosticDOM()) {
+                this.showError('Erreur de chargement de l\'interface');
+                return false;
+            }
+        }
+        
         this.setupEventListeners();
         this.setDefaultDates();
         this.isActive = true;
@@ -597,7 +608,7 @@ class DomainOrganizer {
     }
 
     async simulateAnalysis() {
-        console.log('[DomainOrganizer] Simulating detailed analysis...');
+        console.log('[DomainOrganizer] Simulating detailed analysis v6.9.1...');
         
         const progressBar = document.getElementById('progressBar');
         const progressText = document.getElementById('progressText');
@@ -638,19 +649,47 @@ class DomainOrganizer {
                 if (progressLabel) progressLabel.textContent = 'Terminé';
                 if (progressText) progressText.textContent = 'Analyse terminée !';
                 
+                console.log('[DomainOrganizer] Analysis simulation complete, generating results...');
+                
                 // Corriger le bug : générer les résultats AVANT de les afficher
                 const results = this.generateDetailedMockData(domains, emails);
-                console.log('[DomainOrganizer] Results generated:', results);
+                console.log('[DomainOrganizer] Results generated v6.9.1:', results);
                 
-                // Délai plus court et vérification que l'élément existe
+                // Préparer l'affichage des résultats avec vérification DOM
                 setTimeout(() => {
-                    if (document.getElementById('resultsCard')) {
-                        this.showDetailedResults(results);
+                    console.log('[DomainOrganizer] Preparing to show results...');
+                    
+                    // Forcer d'abord l'affichage de la carte résultats
+                    const progressCard = document.getElementById('progressCard');
+                    const resultsCard = document.getElementById('resultsCard');
+                    
+                    if (progressCard) {
+                        progressCard.style.display = 'none';
+                        console.log('[DomainOrganizer] Progress card hidden');
+                    }
+                    
+                    if (resultsCard) {
+                        resultsCard.style.display = 'block';
+                        console.log('[DomainOrganizer] Results card shown');
+                        
+                        // Attendre que le DOM soit rendu puis afficher les résultats
+                        setTimeout(() => {
+                            if (document.getElementById('statEmails')) {
+                                console.log('[DomainOrganizer] DOM ready, showing results');
+                                this.showDetailedResults(results);
+                            } else {
+                                console.error('[DomainOrganizer] DOM still not ready after card display');
+                                // Réessayer une fois de plus
+                                setTimeout(() => {
+                                    this.showDetailedResults(results);
+                                }, 500);
+                            }
+                        }, 200);
                     } else {
                         console.error('[DomainOrganizer] resultsCard element not found');
                         this.showError('Erreur d\'affichage des résultats');
                     }
-                }, 500);
+                }, 300);
             }
         }, 400);
     }
@@ -743,61 +782,102 @@ class DomainOrganizer {
     }
 
     showDetailedResults(results) {
-        console.log('[DomainOrganizer] Showing detailed clickable results:', results);
+        console.log('[DomainOrganizer] Showing detailed clickable results v6.9.1:', results);
         
-        // Vérification de sécurité : s'assurer que tous les éléments existent
-        const statEmails = document.getElementById('statEmails');
-        const statDomains = document.getElementById('statDomains');
-        const statNew = document.getElementById('statNew');
-        const statSelected = document.getElementById('statSelected');
-        
-        if (!statEmails || !statDomains || !statNew || !statSelected) {
-            console.error('[DomainOrganizer] One or more stat elements not found');
-            this.showError('Erreur d\'affichage des statistiques');
-            return;
-        }
-        
-        this.currentAnalysis = results;
-        this.emailActions.clear();
-        
-        // Initialize email actions
-        results.domains.forEach(domain => {
-            domain.emails.forEach(email => {
-                this.emailActions.set(email.id, {
-                    emailId: email.id,
-                    domain: domain.domain,
-                    targetFolder: email.targetFolder,
-                    selected: email.selected
-                });
+        // Attendre que le DOM soit stable
+        setTimeout(() => {
+            // Vérification de sécurité : s'assurer que tous les éléments existent
+            const statEmails = document.getElementById('statEmails');
+            const statDomains = document.getElementById('statDomains');
+            const statNew = document.getElementById('statNew');
+            const statSelected = document.getElementById('statSelected');
+            
+            console.log('[DomainOrganizer] DOM elements check:', {
+                statEmails: !!statEmails,
+                statDomains: !!statDomains,
+                statNew: !!statNew,
+                statSelected: !!statSelected
             });
-        });
-        
-        // Update statistics avec vérification
-        try {
-            statEmails.textContent = results.totalEmails.toLocaleString();
-            statDomains.textContent = results.totalDomains;
-            statNew.textContent = results.domainsToCreate;
             
-            // Calculer le nombre d'emails sélectionnés
-            const selectedCount = Array.from(this.emailActions.values()).filter(action => action.selected).length;
-            statSelected.textContent = selectedCount.toLocaleString();
+            if (!statEmails || !statDomains || !statNew || !statSelected) {
+                console.error('[DomainOrganizer] Missing stat elements - forcing card display first');
+                
+                // Forcer l'affichage de la carte résultats d'abord
+                const progressCard = document.getElementById('progressCard');
+                const resultsCard = document.getElementById('resultsCard');
+                
+                if (progressCard) progressCard.style.display = 'none';
+                if (resultsCard) resultsCard.style.display = 'block';
+                
+                // Réessayer après un délai
+                setTimeout(() => this.showDetailedResults(results), 300);
+                return;
+            }
             
-            console.log('[DomainOrganizer] Statistics updated successfully');
-        } catch (error) {
-            console.error('[DomainOrganizer] Error updating statistics:', error);
-        }
-        
-        this.displayClickableDomains(results.domains);
-        this.updateSelectedCount();
-        
-        // Vérifier que les cartes existent avant de les manipuler
-        const progressCard = document.getElementById('progressCard');
-        const resultsCard = document.getElementById('resultsCard');
-        
-        if (progressCard) progressCard.style.display = 'none';
-        if (resultsCard) resultsCard.style.display = 'block';
-        
-        console.log('[DomainOrganizer] ✅ Results displayed successfully');
+            this.currentAnalysis = results;
+            this.emailActions.clear();
+            
+            // Initialize email actions
+            if (results && results.domains) {
+                results.domains.forEach(domain => {
+                    if (domain.emails) {
+                        domain.emails.forEach(email => {
+                            this.emailActions.set(email.id, {
+                                emailId: email.id,
+                                domain: domain.domain,
+                                targetFolder: email.targetFolder,
+                                selected: email.selected
+                            });
+                        });
+                    }
+                });
+            }
+            
+            // Update statistics avec vérification renforcée
+            try {
+                if (statEmails && results.totalEmails !== undefined) {
+                    statEmails.textContent = results.totalEmails.toLocaleString();
+                }
+                if (statDomains && results.totalDomains !== undefined) {
+                    statDomains.textContent = results.totalDomains.toString();
+                }
+                if (statNew && results.domainsToCreate !== undefined) {
+                    statNew.textContent = results.domainsToCreate.toString();
+                }
+                
+                // Calculer le nombre d'emails sélectionnés
+                const selectedCount = Array.from(this.emailActions.values()).filter(action => action.selected).length;
+                if (statSelected) {
+                    statSelected.textContent = selectedCount.toLocaleString();
+                }
+                
+                console.log('[DomainOrganizer] Statistics updated successfully:', {
+                    totalEmails: results.totalEmails,
+                    totalDomains: results.totalDomains,
+                    domainsToCreate: results.domainsToCreate,
+                    selectedCount: selectedCount
+                });
+            } catch (error) {
+                console.error('[DomainOrganizer] Error updating statistics:', error);
+            }
+            
+            // Afficher les domaines
+            if (results.domains) {
+                this.displayClickableDomains(results.domains);
+            }
+            
+            this.updateSelectedCount();
+            
+            // Vérifier que les cartes existent avant de les manipuler
+            const progressCard = document.getElementById('progressCard');
+            const resultsCard = document.getElementById('resultsCard');
+            
+            if (progressCard) progressCard.style.display = 'none';
+            if (resultsCard) resultsCard.style.display = 'block';
+            
+            console.log('[DomainOrganizer] ✅ Results displayed successfully v6.9.1');
+            
+        }, 100);
     }
 
     displayClickableDomains(domains) {
@@ -978,13 +1058,29 @@ class DomainOrganizer {
     updateSelectedCount() {
         const selectedCount = Array.from(this.emailActions.values()).filter(action => action.selected).length;
         
-        // Vérification de sécurité
+        // Vérification de sécurité avec logs détaillés
         const statSelected = document.getElementById('statSelected');
         const selectedCountSpan = document.getElementById('selectedCount');
         const applyBtn = document.getElementById('applyBtn');
         
-        if (statSelected) statSelected.textContent = selectedCount.toLocaleString();
-        if (selectedCountSpan) selectedCountSpan.textContent = selectedCount.toLocaleString();
+        console.log('[DomainOrganizer] Updating selected count:', {
+            selectedCount,
+            hasStatSelected: !!statSelected,
+            hasSelectedCountSpan: !!selectedCountSpan,
+            hasApplyBtn: !!applyBtn
+        });
+        
+        if (statSelected) {
+            statSelected.textContent = selectedCount.toLocaleString();
+        } else {
+            console.warn('[DomainOrganizer] statSelected element not found');
+        }
+        
+        if (selectedCountSpan) {
+            selectedCountSpan.textContent = selectedCount.toLocaleString();
+        } else {
+            console.warn('[DomainOrganizer] selectedCountSpan element not found');
+        }
         
         if (applyBtn) {
             applyBtn.disabled = selectedCount === 0;
@@ -993,6 +1089,8 @@ class DomainOrganizer {
             } else {
                 applyBtn.innerHTML = `<i class="fas fa-play"></i> Organiser ${selectedCount.toLocaleString()} emails`;
             }
+        } else {
+            console.warn('[DomainOrganizer] applyBtn element not found');
         }
     }
 
@@ -1200,6 +1298,38 @@ class DomainOrganizer {
 
     exploreResults() {
         window.open('https://outlook.office.com/mail/', '_blank');
+    }
+
+    // Méthode de diagnostic pour vérifier l'état du DOM
+    diagnosticDOM() {
+        const elements = {
+            configCard: document.getElementById('configCard'),
+            progressCard: document.getElementById('progressCard'),
+            resultsCard: document.getElementById('resultsCard'),
+            executionCard: document.getElementById('executionCard'),
+            successCard: document.getElementById('successCard'),
+            statEmails: document.getElementById('statEmails'),
+            statDomains: document.getElementById('statDomains'),
+            statNew: document.getElementById('statNew'),
+            statSelected: document.getElementById('statSelected'),
+            selectedCount: document.getElementById('selectedCount'),
+            applyBtn: document.getElementById('applyBtn'),
+            detailedResults: document.getElementById('detailedResults')
+        };
+        
+        console.log('[DomainOrganizer] DOM Diagnostic:', elements);
+        
+        const missing = Object.entries(elements)
+            .filter(([key, element]) => !element)
+            .map(([key]) => key);
+            
+        if (missing.length > 0) {
+            console.error('[DomainOrganizer] Missing DOM elements:', missing);
+            return false;
+        }
+        
+        console.log('[DomainOrganizer] ✅ All DOM elements found');
+        return true;
     }
 
     // Méthodes pour les raccourcis clavier et autres fonctionnalités...
