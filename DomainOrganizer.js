@@ -413,14 +413,14 @@ class DomainOrganizer {
                     padding: 20px;
                 }
 
-                /* Header moderne */
+                /* Header compact moderne */
                 .organizer-header {
                     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-                    border-radius: 16px;
-                    padding: 24px 32px;
-                    margin-bottom: 24px;
+                    border-radius: 12px;
+                    padding: 16px 24px;
+                    margin-bottom: 16px;
                     color: white;
-                    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.3);
+                    box-shadow: 0 6px 20px -5px rgba(59, 130, 246, 0.3);
                 }
 
                 .header-content {
@@ -428,52 +428,54 @@ class DomainOrganizer {
                     justify-content: space-between;
                     align-items: center;
                     flex-wrap: wrap;
-                    gap: 24px;
+                    gap: 16px;
                 }
 
                 .header-left {
                     display: flex;
                     align-items: center;
-                    gap: 16px;
+                    gap: 12px;
                 }
 
                 .main-icon {
-                    width: 56px;
-                    height: 56px;
-                    background: rgba(255, 255, 255, 0.2);
-                    border-radius: 12px;
+                    width: 40px;
+                    height: 40px;
+                    background: rgba(255, 255, 255, 0.25);
+                    border-radius: 10px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 24px;
+                    font-size: 18px;
                     backdrop-filter: blur(10px);
                 }
 
                 .header-info h1 {
                     margin: 0;
-                    font-size: 24px;
+                    font-size: 18px;
                     font-weight: 700;
+                    color: white;
                 }
 
                 .header-subtitle {
-                    margin: 4px 0 0 0;
+                    margin: 2px 0 0 0;
                     opacity: 0.9;
-                    font-size: 16px;
+                    font-size: 13px;
+                    color: white;
                 }
 
-                /* Indicateur d'étapes */
+                /* Indicateur d'étapes compact */
                 .steps-indicator {
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                 }
 
                 .step {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 8px;
-                    opacity: 0.5;
+                    gap: 4px;
+                    opacity: 0.6;
                     transition: all 0.3s ease;
                 }
 
@@ -486,22 +488,23 @@ class DomainOrganizer {
                 }
 
                 .step-number {
-                    width: 32px;
-                    height: 32px;
+                    width: 26px;
+                    height: 26px;
                     border-radius: 50%;
-                    background: rgba(255, 255, 255, 0.2);
+                    background: rgba(255, 255, 255, 0.25);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-weight: 600;
-                    font-size: 14px;
+                    font-size: 12px;
                     transition: all 0.3s ease;
+                    color: white;
                 }
 
                 .step.active .step-number {
                     background: white;
                     color: var(--primary);
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
                 }
 
                 .step.completed .step-number {
@@ -510,15 +513,16 @@ class DomainOrganizer {
                 }
 
                 .step-label {
-                    font-size: 12px;
+                    font-size: 10px;
                     font-weight: 500;
                     white-space: nowrap;
+                    color: white;
                 }
 
                 .step-separator {
-                    width: 24px;
+                    width: 20px;
                     height: 2px;
-                    background: rgba(255, 255, 255, 0.3);
+                    background: rgba(255, 255, 255, 0.4);
                     border-radius: 1px;
                 }
 
@@ -540,8 +544,8 @@ class DomainOrganizer {
 
                 .content-card {
                     background: white;
-                    border-radius: 16px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                    border-radius: 12px;
+                    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
                     border: 1px solid var(--gray-200);
                     overflow: hidden;
                 }
@@ -549,21 +553,21 @@ class DomainOrganizer {
                 .card-header {
                     display: flex;
                     align-items: center;
-                    gap: 16px;
-                    padding: 24px 32px;
+                    gap: 12px;
+                    padding: 16px 20px;
                     border-bottom: 1px solid var(--gray-200);
                     background: var(--gray-50);
                 }
 
                 .card-icon {
-                    width: 48px;
-                    height: 48px;
+                    width: 36px;
+                    height: 36px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 12px;
+                    border-radius: 8px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 20px;
+                    font-size: 16px;
                     color: white;
                 }
 
@@ -573,25 +577,25 @@ class DomainOrganizer {
 
                 .card-title h2 {
                     margin: 0;
-                    font-size: 20px;
+                    font-size: 16px;
                     font-weight: 700;
                     color: var(--gray-900);
                 }
 
                 .card-title p {
-                    margin: 4px 0 0 0;
+                    margin: 2px 0 0 0;
                     color: var(--gray-600);
-                    font-size: 14px;
+                    font-size: 12px;
                 }
 
-                /* Alertes modernes */
+                /* Alertes compactes */
                 .alert {
                     display: flex;
-                    gap: 12px;
-                    padding: 16px 20px;
-                    border-radius: 12px;
-                    margin: 20px 32px;
-                    font-size: 14px;
+                    gap: 10px;
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    margin: 12px 20px;
+                    font-size: 12px;
                 }
 
                 .alert.info {
@@ -614,9 +618,9 @@ class DomainOrganizer {
 
                 .alert i {
                     color: inherit;
-                    font-size: 16px;
+                    font-size: 14px;
                     flex-shrink: 0;
-                    margin-top: 2px;
+                    margin-top: 1px;
                 }
 
                 .alert-content {
@@ -625,357 +629,225 @@ class DomainOrganizer {
 
                 .alert-content strong {
                     display: block;
-                    margin-bottom: 4px;
+                    margin-bottom: 2px;
                     font-weight: 600;
                 }
 
                 .alert-content p {
                     margin: 0;
-                    line-height: 1.5;
+                    line-height: 1.4;
                 }
 
                 .alert-content ul {
-                    margin: 8px 0 0 0;
-                    padding-left: 16px;
+                    margin: 4px 0 0 0;
+                    padding-left: 12px;
                 }
 
                 .alert-content li {
-                    margin-bottom: 4px;
+                    margin-bottom: 2px;
                 }
 
-                /* Formulaire moderne */
+                /* Formulaire compact */
                 .config-form {
-                    padding: 32px;
+                    padding: 20px;
                 }
 
                 .form-section {
-                    margin-bottom: 32px;
+                    margin-bottom: 20px;
                 }
 
                 .form-section h3 {
-                    margin: 0 0 16px 0;
-                    font-size: 16px;
+                    margin: 0 0 12px 0;
+                    font-size: 14px;
                     font-weight: 600;
                     color: var(--gray-800);
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 6px;
                 }
 
                 .form-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 20px;
+                    gap: 16px;
                 }
 
                 .form-group {
                     display: flex;
                     flex-direction: column;
-                    gap: 6px;
+                    gap: 4px;
                 }
 
                 .form-group label {
-                    font-size: 14px;
+                    font-size: 12px;
                     font-weight: 500;
                     color: var(--gray-700);
                 }
 
                 .form-input {
-                    padding: 12px 16px;
+                    padding: 8px 12px;
                     border: 2px solid var(--gray-300);
-                    border-radius: 8px;
-                    font-size: 14px;
+                    border-radius: 6px;
+                    font-size: 12px;
                     transition: all 0.2s ease;
                     background: white;
-                }
-
-                .form-input:focus {
-                    outline: none;
-                    border-color: var(--primary);
-                    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
                 }
 
                 .form-group small {
-                    font-size: 12px;
+                    font-size: 10px;
                     color: var(--gray-500);
-                }
-
-                /* Boutons modernes */
-                .btn {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 12px 20px;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                    text-decoration: none;
-                    white-space: nowrap;
-                }
-
-                .btn-primary {
-                    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    color: white;
-                    box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
-                }
-
-                .btn-primary:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 15px rgba(59, 130, 246, 0.3);
-                }
-
-                .btn-secondary {
-                    background: white;
-                    color: var(--gray-700);
-                    border: 2px solid var(--gray-300);
-                }
-
-                .btn-secondary:hover {
-                    background: var(--gray-50);
-                    border-color: var(--gray-400);
-                }
-
-                .btn-large {
-                    padding: 16px 24px;
-                    font-size: 16px;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 4px;
-                }
-
-                .btn-large small {
-                    font-size: 12px;
-                    opacity: 0.8;
-                    font-weight: 400;
-                }
-
-                .btn-small {
-                    padding: 8px 12px;
-                    font-size: 12px;
-                }
-
-                .btn:disabled {
-                    background: var(--gray-300);
-                    color: var(--gray-500);
-                    cursor: not-allowed;
-                    transform: none;
-                    box-shadow: none;
                 }
 
                 .form-actions {
                     display: flex;
                     justify-content: center;
-                    margin-top: 32px;
+                    margin-top: 20px;
                 }
 
-                /* Progression */
+                /* Progression compacte */
                 .analysis-progress,
                 .organization-progress {
-                    padding: 32px;
+                    padding: 20px;
                 }
 
                 .progress-info {
-                    margin-bottom: 24px;
+                    margin-bottom: 16px;
                 }
 
                 .progress-stats {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 20px;
-                    margin-bottom: 24px;
+                    gap: 12px;
+                    margin-bottom: 16px;
                 }
 
                 .stat {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 16px;
+                    gap: 8px;
+                    padding: 10px;
                     background: var(--gray-50);
-                    border-radius: 12px;
+                    border-radius: 8px;
                     border: 1px solid var(--gray-200);
                 }
 
                 .stat-icon {
-                    width: 40px;
-                    height: 40px;
+                    width: 28px;
+                    height: 28px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 10px;
+                    border-radius: 6px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 16px;
+                    font-size: 12px;
                     color: white;
                 }
 
-                .stat-content {
-                    flex: 1;
-                }
-
                 .stat-number {
-                    font-size: 20px;
+                    font-size: 16px;
                     font-weight: 700;
                     color: var(--gray-900);
-                    margin-bottom: 2px;
+                    margin-bottom: 1px;
                 }
 
                 .stat-label {
-                    font-size: 12px;
+                    font-size: 10px;
                     color: var(--gray-600);
                     text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                    letter-spacing: 0.3px;
                 }
 
-                .progress-bar-container {
-                    position: relative;
-                    height: 8px;
-                    background: var(--gray-200);
-                    border-radius: 4px;
-                    overflow: hidden;
-                }
-
-                .progress-bar {
-                    height: 100%;
-                    background: linear-gradient(90deg, var(--primary), var(--info));
-                    border-radius: 4px;
-                    transition: width 0.5s ease;
-                    width: 0%;
-                    position: relative;
-                }
-
-                .progress-bar.success {
-                    background: linear-gradient(90deg, var(--success), var(--success-dark));
-                }
-
-                .progress-bar::after {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-                    animation: shimmer 2s infinite;
-                }
-
-                @keyframes shimmer {
-                    0% { transform: translateX(-100%); }
-                    100% { transform: translateX(100%); }
-                }
-
-                .progress-percent {
-                    position: absolute;
-                    top: -24px;
-                    right: 0;
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: var(--gray-700);
-                }
-
-                /* Cartes de résumé */
+                /* Cartes de résumé compactes */
                 .summary-cards {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 16px;
-                    margin: 24px 32px;
+                    gap: 12px;
+                    margin: 16px 20px;
                 }
 
                 .summary-card {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 20px;
+                    gap: 10px;
+                    padding: 12px;
                     background: white;
                     border: 2px solid var(--gray-200);
-                    border-radius: 12px;
+                    border-radius: 8px;
                     transition: all 0.2s ease;
                 }
 
-                .summary-card:hover {
-                    border-color: var(--primary);
-                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-                }
-
                 .summary-icon {
-                    width: 48px;
-                    height: 48px;
+                    width: 32px;
+                    height: 32px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-                    border-radius: 12px;
+                    border-radius: 8px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 20px;
+                    font-size: 14px;
                     color: white;
                 }
 
                 .summary-number {
-                    font-size: 24px;
+                    font-size: 18px;
                     font-weight: 700;
                     color: var(--gray-900);
-                    margin-bottom: 2px;
+                    margin-bottom: 1px;
                 }
 
                 .summary-label {
-                    font-size: 13px;
+                    font-size: 10px;
                     color: var(--gray-600);
                     text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                    letter-spacing: 0.3px;
                 }
 
-                /* Contrôles rapides */
+                /* Contrôles compacts */
                 .quick-controls {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 20px 32px;
+                    padding: 12px 20px;
                     border-top: 1px solid var(--gray-200);
                     border-bottom: 1px solid var(--gray-200);
                     background: var(--gray-50);
                     flex-wrap: wrap;
-                    gap: 16px;
+                    gap: 12px;
                 }
 
                 .control-group {
                     display: flex;
-                    gap: 8px;
+                    gap: 6px;
                     flex-wrap: wrap;
                 }
 
                 .search-container {
                     position: relative;
-                    width: 300px;
+                    width: 200px;
                 }
 
                 .search-input {
                     width: 100%;
-                    padding: 10px 16px 10px 40px;
+                    padding: 6px 12px 6px 28px;
                     border: 2px solid var(--gray-300);
-                    border-radius: 8px;
-                    font-size: 14px;
+                    border-radius: 6px;
+                    font-size: 12px;
                     background: white;
                     transition: all 0.2s ease;
                 }
 
-                .search-input:focus {
-                    outline: none;
-                    border-color: var(--primary);
-                    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-                }
-
                 .search-icon {
                     position: absolute;
-                    left: 12px;
+                    left: 8px;
                     top: 50%;
                     transform: translateY(-50%);
                     color: var(--gray-400);
-                    font-size: 14px;
+                    font-size: 12px;
                 }
 
-                /* Liste des domaines */
+                /* Liste des domaines ultra-compacte */
                 .domains-list {
-                    max-height: 500px;
+                    max-height: 300px;
                     overflow-y: auto;
                 }
 
@@ -984,40 +856,31 @@ class DomainOrganizer {
                     transition: all 0.2s ease;
                 }
 
-                .domain-item:hover {
-                    background: var(--gray-50);
-                }
-
-                .domain-item.expanded {
-                    background: #eff6ff;
-                    border-color: var(--primary);
-                }
-
                 .domain-header {
                     display: flex;
                     align-items: center;
-                    padding: 16px 32px;
+                    padding: 10px 20px;
                     cursor: pointer;
-                    gap: 16px;
+                    gap: 12px;
                 }
 
                 .domain-checkbox {
-                    width: 18px;
-                    height: 18px;
+                    width: 16px;
+                    height: 16px;
                     cursor: pointer;
                     accent-color: var(--primary);
                 }
 
                 .domain-avatar {
-                    width: 44px;
-                    height: 44px;
-                    border-radius: 12px;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 8px;
                     background: linear-gradient(135deg, var(--primary), var(--primary-dark));
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 16px;
+                    font-size: 12px;
                     font-weight: 600;
                     text-transform: uppercase;
                 }
@@ -1028,64 +891,50 @@ class DomainOrganizer {
                 }
 
                 .domain-name {
-                    font-size: 16px;
+                    font-size: 14px;
                     font-weight: 600;
                     color: var(--gray-900);
-                    margin-bottom: 4px;
+                    margin-bottom: 2px;
                 }
 
                 .domain-meta {
                     display: flex;
-                    gap: 16px;
-                    font-size: 13px;
+                    gap: 12px;
+                    font-size: 11px;
                     color: var(--gray-600);
                 }
 
                 .domain-controls {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 8px;
                 }
 
                 .folder-select {
-                    padding: 8px 12px;
+                    padding: 4px 8px;
                     border: 2px solid var(--gray-300);
-                    border-radius: 6px;
-                    font-size: 13px;
+                    border-radius: 4px;
+                    font-size: 11px;
                     background: white;
-                    min-width: 150px;
+                    min-width: 100px;
                 }
 
                 .badge {
-                    padding: 4px 10px;
-                    border-radius: 20px;
-                    font-size: 11px;
+                    padding: 2px 6px;
+                    border-radius: 12px;
+                    font-size: 9px;
                     font-weight: 600;
                     text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-
-                .badge-new {
-                    background: #d1fae5;
-                    color: #065f46;
-                }
-
-                .badge-existing {
-                    background: #dbeafe;
-                    color: #1e40af;
+                    letter-spacing: 0.3px;
                 }
 
                 .expand-icon {
                     color: var(--gray-400);
-                    font-size: 14px;
+                    font-size: 12px;
                     transition: transform 0.3s ease;
                 }
 
-                .domain-item.expanded .expand-icon {
-                    transform: rotate(90deg);
-                }
-
-                /* Emails */
+                /* Emails ultra-compacts */
                 .emails-list {
                     display: none;
                     background: white;
@@ -1099,25 +948,16 @@ class DomainOrganizer {
                 .email-item {
                     display: flex;
                     align-items: center;
-                    padding: 12px 32px 12px 64px;
-                    gap: 12px;
+                    padding: 6px 20px 6px 44px;
+                    gap: 8px;
                     border-bottom: 1px solid var(--gray-100);
-                    font-size: 13px;
+                    font-size: 11px;
                     transition: all 0.2s ease;
                 }
 
-                .email-item:hover {
-                    background: var(--gray-50);
-                }
-
-                .email-item.selected {
-                    background: #eff6ff;
-                    border-left: 3px solid var(--primary);
-                }
-
                 .email-checkbox {
-                    width: 16px;
-                    height: 16px;
+                    width: 14px;
+                    height: 14px;
                     cursor: pointer;
                     accent-color: var(--primary);
                 }
@@ -1130,7 +970,7 @@ class DomainOrganizer {
                 .email-subject {
                     font-weight: 500;
                     color: var(--gray-900);
-                    margin-bottom: 2px;
+                    margin-bottom: 1px;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
@@ -1138,48 +978,33 @@ class DomainOrganizer {
 
                 .email-meta {
                     color: var(--gray-600);
-                    font-size: 12px;
+                    font-size: 10px;
                 }
 
                 .email-folder-select {
-                    padding: 4px 8px;
+                    padding: 2px 6px;
                     border: 1px solid var(--gray-300);
-                    border-radius: 4px;
-                    font-size: 11px;
+                    border-radius: 3px;
+                    font-size: 9px;
                     background: white;
-                    min-width: 120px;
+                    min-width: 80px;
                 }
 
-                /* Actions de révision */
+                /* Actions compactes */
                 .revision-actions {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 24px 32px;
+                    padding: 16px 20px;
                     border-top: 1px solid var(--gray-200);
                     background: var(--gray-50);
                     flex-wrap: wrap;
-                    gap: 16px;
-                }
-
-                .checkbox-modern {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    cursor: pointer;
-                    font-size: 14px;
-                    color: var(--gray-700);
-                }
-
-                .checkbox-modern input {
-                    width: 18px;
-                    height: 18px;
-                    accent-color: var(--primary);
+                    gap: 12px;
                 }
 
                 .action-right {
                     display: flex;
-                    gap: 12px;
+                    gap: 8px;
                     align-items: center;
                 }
 
