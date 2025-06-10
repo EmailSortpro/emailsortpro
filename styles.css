@@ -406,7 +406,7 @@ body.login-mode {
     font-size: var(--text-lg);
 }
 
-/* Navigation avec design ultra-moderne CENTRÉE */
+/* Navigation avec design ultra-moderne BOUTONS ÉNORMES */
 .app-nav {
     background: var(--bg-primary);
     border-bottom: 1px solid var(--border);
@@ -415,7 +415,7 @@ body.login-mode {
     align-items: center;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 20px 28px; /* Padding encore plus généreux */
+    padding: 24px 32px; /* Padding encore plus généreux */
     /* Permettre le scroll horizontal invisible */
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -428,7 +428,7 @@ body.login-mode {
     display: flex;
     justify-content: center; /* Centrer les boutons */
     align-items: center;
-    gap: 20px; /* Gap plus généreux entre boutons */
+    gap: 24px; /* Gap ÉNORME entre boutons */
     /* Permettre le scroll horizontal invisible */
     overflow-x: auto !important;
     overflow-y: hidden !important;
