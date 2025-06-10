@@ -119,9 +119,33 @@ body {
 /* Par défaut: masquer le scroll pour toutes les pages */
 body {
     overflow-y: hidden !important;
+    overflow-x: hidden !important;
 }
 
-/* Pages spécifiques qui ont BESOIN de scroll */
+/* Suppression complète de TOUTES les scrollbars */
+body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+html::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+body {
+    -ms-overflow-style: none !important;  /* IE et Edge */
+    scrollbar-width: none !important;  /* Firefox */
+}
+
+html {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+}
+
+/* Pages spécifiques qui ont BESOIN de scroll - activé dynamiquement */
 body.page-scanner.needs-scroll {
     overflow-y: auto !important;
 }
@@ -142,14 +166,16 @@ body.page-settings.needs-scroll {
     overflow-y: auto !important;
 }
 
-/* Dashboard: TOUJOURS sans scroll par défaut */
+/* Dashboard: TOUJOURS sans scroll */
 body.page-dashboard {
     overflow-y: hidden !important;
+    overflow-x: hidden !important;
 }
 
 /* Force masquer même si détecté comme ayant besoin de scroll */
 body.page-dashboard.needs-scroll {
     overflow-y: hidden !important;
+    overflow-x: hidden !important;
 }
 
 /* Login: toujours sans scroll */
@@ -157,20 +183,32 @@ body.login-mode {
     overflow: hidden !important;
 }
 
-/* Suppression complète de la scrollbar dans tous les cas */
-body::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-}
-
-body {
-    -ms-overflow-style: none !important;  /* IE et Edge */
-    scrollbar-width: none !important;  /* Firefox */
-}
-
-/* Navigation: pas de scroll horizontal */
+/* Navigation: suppression complète du scroll */
 .app-nav {
     overflow-x: hidden !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.app-nav::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Container de navigation */
+#mainNav {
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+#mainNav::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 /* Dashboard container: pas de scroll */
@@ -181,6 +219,27 @@ body {
 /* Action cards: pas de scroll */
 .dashboard-actions {
     overflow: hidden !important;
+}
+
+/* Header: pas de scroll */
+.app-header {
+    overflow: hidden !important;
+}
+
+.header-content {
+    overflow: hidden !important;
+}
+
+/* Masquer toutes les scrollbars potentielles */
+*::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+}
+
+* {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
 }
 
 /* =====================================
