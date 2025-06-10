@@ -406,15 +406,15 @@ body.login-mode {
     font-size: var(--text-lg);
 }
 
-/* Navigation avec boutons plus grands */
+/* Navigation avec design ultra-moderne */
 .app-nav {
     background: var(--bg-primary);
     border-bottom: 1px solid var(--border);
     display: flex;
     max-width: 1400px;
     margin: 0 auto;
-    padding: 16px 24px; /* Padding augmenté */
-    gap: 16px; /* Gap augmenté entre boutons */
+    padding: 20px 28px; /* Padding encore plus généreux */
+    gap: 20px; /* Gap plus généreux entre boutons */
     /* Permettre le scroll horizontal invisible */
     overflow-x: auto !important;
     overflow-y: hidden !important;
@@ -556,52 +556,60 @@ body.login-mode {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
 }
 
-/* Responsive - maintenir les grandes tailles mais s'adapter */
+/* Responsive - maintenir le style moderne sur tous les écrans */
 @media (max-width: 768px) {
     .app-nav {
-        gap: 12px;
-        padding: 14px 20px;
+        gap: 16px;
+        padding: 18px 24px;
     }
     
     .nav-item {
-        min-width: 140px; /* Encore grand sur mobile */
-        height: 56px; /* Plus grand que avant */
-        padding: 16px 20px;
+        min-width: 160px; /* Encore très grand sur mobile */
+        height: 64px; /* Garde une bonne hauteur */
+        padding: 20px 24px;
         font-size: 16px;
-        gap: 10px;
-        /* Garder les bordures fortes sur mobile */
-        border-width: 2px;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        gap: 12px;
+        border-radius: 20px; /* Garde l'arrondi moderne */
+        /* Garder les ombres modernes sur mobile */
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
     }
     
     .nav-item i {
-        font-size: 20px !important; /* Encore grandes sur mobile */
-        width: 24px;
-        height: 24px;
+        font-size: 22px !important; /* Grandes icônes sur mobile */
+        width: 28px;
+        height: 28px;
     }
     
     .nav-item span {
         font-size: 16px;
+        letter-spacing: 0.3px;
     }
 }
 
 @media (max-width: 480px) {
+    .app-nav {
+        gap: 12px;
+        padding: 16px 20px;
+    }
+    
     .nav-item {
-        min-width: 120px; /* Minimum viable */
-        height: 52px;
-        padding: 14px 18px;
+        min-width: 140px; /* Minimum viable mais encore confortable */
+        height: 58px;
+        padding: 18px 20px;
         font-size: 15px;
-        gap: 8px;
+        gap: 10px;
+        border-radius: 18px; /* Garde l'aspect moderne */
     }
     
     .nav-item i {
-        font-size: 18px !important;
-        width: 22px;
-        height: 22px;
+        font-size: 20px !important;
+        width: 26px;
+        height: 26px;
     }
     
     .nav-item span {
         font-size: 15px;
+        letter-spacing: 0.2px;
     }
 }
 
