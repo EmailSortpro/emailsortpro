@@ -491,7 +491,7 @@ body.app-active #pageContent {
 .dashboard-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 20px 20px 20px;
+    padding: 24px 20px 20px 20px;
 }
 
 .dashboard-header {
@@ -959,7 +959,7 @@ body.app-active #pageContent {
     }
     
     .dashboard-container {
-        padding: 0 15px 15px 15px;
+        padding: 24px 15px 15px 15px;
     }
     
     .page-minimal {
@@ -1057,7 +1057,7 @@ body.app-active #pageContent {
     }
     
     .dashboard-container {
-        padding: 0 10px 10px 10px;
+        padding: 24px 10px 10px 10px;
     }
     
     .page-minimal {
