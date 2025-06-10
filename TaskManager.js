@@ -1645,6 +1645,7 @@ class TasksView {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
         
+        // Informations riches de la tâche
         const recipient = task.hasEmail ? 
             (task.emailFromName || this.extractNameFromEmail(task.emailFrom) || 'Email inconnu') :
             (task.client !== 'Interne' ? task.client : task.type || 'Tâche');
@@ -1652,6 +1653,9 @@ class TasksView {
         const taskTypeDisplay = this.getTaskTypeDisplay(task);
         const dueDateDisplay = this.formatDueDateSimple(task.dueDate);
         const priorityColor = this.getPriorityColor(task.priority);
+        
+        // Résumé structuré pour les emails
+        const hasStructuredContent = task.description && task.description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         
         return `
             <div class="task-card-harmonized ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
@@ -1679,10 +1683,106 @@ class TasksView {
                         <span class="recipient-name-harmonized">${this.escapeHtml(recipient)}</span>
                         ${task.hasEmail && task.needsReply ? '<span class="reply-indicator-harmonized">• Réponse requise</span>' : ''}
                     </div>
+                    
+                    ${hasStructuredContent ? `
+                        <div class="task-structured-summary">
+                            ${this.renderTaskSummary(task)}
+                        </div>
+                    ` : ''}
+                    
+                    ${task.actions && task.actions.length > 0 ? `
+                        <div class="task-actions-preview">
+                            <div class="actions-header">
+                                <i class="fas fa-tasks"></i>
+                                <span>Actions requises (${task.actions.length})</span>
+                            </div>
+                            <div class="actions-list">
+                                ${task.actions.slice(0, 3).map((action, idx) => `
+                                    <div class="action-item">
+                                        <span class="action-number">${idx + 1}</span>
+                                        <span class="action-text">${this.escapeHtml(action.text)}</span>
+                                        ${action.deadline ? `<span class="action-deadline">${this.formatDeadline(action.deadline)}</span>` : ''}
+                                    </div>
+                                `).join('')}
+                                ${task.actions.length > 3 ? `<div class="more-actions">+${task.actions.length - 3} autres actions</div>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.keyInfo && task.keyInfo.length > 0 ? `
+                        <div class="task-key-info-preview">
+                            <div class="key-info-header">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Informations clés</span>
+                            </div>
+                            <div class="key-info-list">
+                                ${task.keyInfo.slice(0, 2).map(info => `
+                                    <div class="key-info-item">
+                                        <i class="fas fa-chevron-right"></i>
+                                        <span>${this.escapeHtml(info)}</span>
+                                    </div>
+                                `).join('')}
+                                ${task.keyInfo.length > 2 ? `<div class="more-info">+${task.keyInfo.length - 2} autres infos</div>` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                        <div class="task-suggestions-preview">
+                            <div class="suggestions-header">
+                                <i class="fas fa-reply-all"></i>
+                                <span>${task.suggestedReplies.length} suggestion${task.suggestedReplies.length > 1 ? 's' : ''} de réponse IA</span>
+                                <button class="view-suggestions-btn" onclick="event.stopPropagation(); window.tasksView.showSuggestedReplies('${task.id}')">
+                                    <i class="fas fa-eye"></i>
+                                    Voir
+                                </button>
+                            </div>
+                            <div class="suggestions-preview">
+                                ${task.suggestedReplies.slice(0, 1).map(reply => `
+                                    <div class="suggestion-preview-item">
+                                        <div class="suggestion-tone">${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}</div>
+                                        <div class="suggestion-preview-text">${this.escapeHtml(reply.content.substring(0, 80))}${reply.content.length > 80 ? '...' : ''}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
                 
                 <div class="task-actions-harmonized">
                     ${this.renderTaskActions(task)}
+                </div>
+            </div>
+        `;
+    }
+
+    renderTaskSummary(task) {
+        if (!task.description || !task.description.includes('📧 RÉSUMÉ EXÉCUTIF')) {
+            return '';
+        }
+        
+        const lines = task.description.split('\n');
+        let summary = '';
+        
+        // Extraire les sections principales
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.includes('🎯 ACTIONS REQUISES:') || line.includes('💡 INFORMATIONS CLÉS:') || line.includes('⚠️ POINTS D\'ATTENTION:')) {
+                break;
+            }
+            if (line && !line.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━') && !line.includes('📧 RÉSUMÉ EXÉCUTIF')) {
+                summary += line + '\n';
+            }
+        }
+        
+        return `
+            <div class="structured-summary">
+                <div class="summary-header">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Résumé exécutif</span>
+                </div>
+                <div class="summary-content">
+                    ${this.escapeHtml(summary.trim()).replace(/\n/g, '<br>')}
                 </div>
             </div>
         `;
@@ -3216,34 +3316,30 @@ class TasksView {
                 box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
             }
 
-            /* Container des tâches */
-            .tasks-container-harmonized {
-                background: transparent;
-            }
-
-            /* Liste de tâches harmonisée */
+            /* Liste de tâches harmonisée avec contenu riche */
             .tasks-list-harmonized {
                 display: flex;
                 flex-direction: column;
                 gap: 0;
                 background: transparent;
             }
-            
+
+            /* Cartes de tâches avec contenu riche */
             .task-card-harmonized {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
                 border-radius: 0;
-                padding: 14px;
+                padding: 16px;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 position: relative;
                 overflow: hidden;
-                min-height: 76px;
-                max-height: 76px;
+                min-height: auto;
                 border-bottom: 1px solid #e5e7eb;
+                gap: var(--gap-md);
             }
             
             .task-card-harmonized:first-child {
@@ -3303,6 +3399,217 @@ class TasksView {
                 color: #6b7280;
             }
 
+            /* Contenu principal étendu */
+            .task-main-content-harmonized {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                gap: var(--gap-sm);
+            }
+            
+            /* Sections de contenu riche */
+            .task-structured-summary {
+                margin-top: var(--gap-sm);
+                padding: var(--gap-sm);
+                background: rgba(59, 130, 246, 0.05);
+                border: 1px solid rgba(59, 130, 246, 0.1);
+                border-radius: 6px;
+            }
+            
+            .structured-summary .summary-header {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-xs);
+                margin-bottom: var(--gap-xs);
+                font-weight: 600;
+                font-size: 12px;
+                color: #3b82f6;
+            }
+            
+            .structured-summary .summary-content {
+                font-size: 12px;
+                line-height: 1.4;
+                color: #374151;
+            }
+            
+            .task-actions-preview {
+                margin-top: var(--gap-sm);
+                padding: var(--gap-sm);
+                background: rgba(16, 185, 129, 0.05);
+                border: 1px solid rgba(16, 185, 129, 0.1);
+                border-radius: 6px;
+            }
+            
+            .actions-header {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-xs);
+                margin-bottom: var(--gap-xs);
+                font-weight: 600;
+                font-size: 12px;
+                color: #10b981;
+            }
+            
+            .actions-list {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .action-item {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-xs);
+                font-size: 11px;
+                line-height: 1.3;
+            }
+            
+            .action-number {
+                background: #10b981;
+                color: white;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 9px;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+            
+            .action-text {
+                flex: 1;
+                color: #374151;
+                font-weight: 500;
+            }
+            
+            .action-deadline {
+                font-size: 10px;
+                color: #f59e0b;
+                font-weight: 600;
+            }
+            
+            .more-actions {
+                font-size: 10px;
+                color: #6b7280;
+                font-style: italic;
+                margin-top: 2px;
+            }
+            
+            .task-key-info-preview {
+                margin-top: var(--gap-sm);
+                padding: var(--gap-sm);
+                background: rgba(245, 158, 11, 0.05);
+                border: 1px solid rgba(245, 158, 11, 0.1);
+                border-radius: 6px;
+            }
+            
+            .key-info-header {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-xs);
+                margin-bottom: var(--gap-xs);
+                font-weight: 600;
+                font-size: 12px;
+                color: #f59e0b;
+            }
+            
+            .key-info-list {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .key-info-item {
+                display: flex;
+                align-items: center;
+                gap: var(--gap-xs);
+                font-size: 11px;
+                line-height: 1.3;
+                color: #374151;
+            }
+            
+            .key-info-item i {
+                color: #f59e0b;
+                font-size: 8px;
+                flex-shrink: 0;
+            }
+            
+            .more-info {
+                font-size: 10px;
+                color: #6b7280;
+                font-style: italic;
+                margin-top: 2px;
+            }
+            
+            .task-suggestions-preview {
+                margin-top: var(--gap-sm);
+                padding: var(--gap-sm);
+                background: rgba(139, 92, 246, 0.05);
+                border: 1px solid rgba(139, 92, 246, 0.1);
+                border-radius: 6px;
+            }
+            
+            .suggestions-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: var(--gap-xs);
+                font-weight: 600;
+                font-size: 12px;
+                color: #8b5cf6;
+            }
+            
+            .view-suggestions-btn {
+                background: rgba(139, 92, 246, 0.1);
+                color: #8b5cf6;
+                border: 1px solid rgba(139, 92, 246, 0.2);
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-size: 10px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: var(--transition);
+                display: flex;
+                align-items: center;
+                gap: 2px;
+            }
+            
+            .view-suggestions-btn:hover {
+                background: rgba(139, 92, 246, 0.2);
+                border-color: rgba(139, 92, 246, 0.3);
+            }
+            
+            .suggestions-preview {
+                display: flex;
+                flex-direction: column;
+                gap: var(--gap-xs);
+            }
+            
+            .suggestion-preview-item {
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            
+            .suggestion-tone {
+                font-size: 10px;
+                font-weight: 600;
+                color: #8b5cf6;
+            }
+            
+            .suggestion-preview-text {
+                font-size: 11px;
+                line-height: 1.3;
+                color: #374151;
+                background: rgba(255, 255, 255, 0.5);
+                padding: 4px 6px;
+                border-radius: 4px;
+                font-style: italic;
+            }
+
             /* Éléments de tâche */
             .task-checkbox-harmonized {
                 margin-right: var(--gap-md);
@@ -3355,9 +3662,7 @@ class TasksView {
                 min-width: 0;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                gap: var(--gap-xs);
-                height: 100%;
+                gap: var(--gap-sm);
             }
             
             .task-header-harmonized {
