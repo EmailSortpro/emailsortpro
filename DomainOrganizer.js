@@ -1796,6 +1796,12 @@ class DomainOrganizer {
     resetForm() {
         this.updateStepIndicator(1);
         
+        // Arrêter le scroll manager si actif
+        if (window.scrollManagerInterval) {
+            clearInterval(window.scrollManagerInterval);
+            window.scrollManagerInterval = null;
+        }
+        
         const form = document.getElementById('organizeForm');
         if (form) form.reset();
         
@@ -1808,6 +1814,8 @@ class DomainOrganizer {
         this.realEmails = [];
         this.isProcessing = false;
         this.currentStep = 1;
+        
+        console.log('[DomainOrganizer] 🔄 Form reset completed');
     }
 
     configure(options = {}) {
@@ -1836,6 +1844,12 @@ window.organizerInstance = new DomainOrganizer();
 
 function showDomainOrganizerApp() {
     console.log('[DomainOrganizer] 🚀 Launching v8.3 Real Scan...');
+    
+    // Arrêter toute boucle existante du scroll manager
+    if (window.scrollManagerInterval) {
+        clearInterval(window.scrollManagerInterval);
+        window.scrollManagerInterval = null;
+    }
     
     if (!window.authService?.isAuthenticated()) {
         const message = 'Veuillez vous connecter pour utiliser l\'organisateur';
@@ -1875,6 +1889,20 @@ function showDomainOrganizerApp() {
         }
     }
 
+    // Forcer l'arrêt du scroll manager pour cette page
+    setTimeout(() => {
+        if (window.scrollManagerInterval) {
+            clearInterval(window.scrollManagerInterval);
+            window.scrollManagerInterval = null;
+        }
+        
+        // Activer le scroll pour cette page
+        document.body.style.overflow = 'auto';
+        document.documentElement.style.overflow = 'auto';
+        
+        console.log('[DomainOrganizer] 🔧 Scroll manager stopped, page scroll enabled');
+    }, 100);
+
     setTimeout(async () => {
         if (window.domainOrganizerActive && document.getElementById('step1')) {
             try {
@@ -1887,7 +1915,7 @@ function showDomainOrganizerApp() {
                 }
             }
         }
-    }, 50);
+    }, 150);
 }
 
 // Event handling
@@ -1935,4 +1963,4 @@ window.domainOrganizer = {
     instance: window.organizerInstance
 };
 
-console.log('[DomainOrganizer] ✅ v8.3 Real Scan System ready - UNLIMITED EMAILS WITH PAGINATION');
+console.log('[DomainOrganizer] ✅ v8.3 Real Scan System ready - UNLIMITED EMAILS WITH PAGINATION - SCROLL FIXED');
