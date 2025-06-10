@@ -1,4 +1,4 @@
-// app.js - Application avec gestion intelligente du scroll
+// app.js - Application avec gestion intelligente du scroll et navigation dashboard corrigée
 
 class App {
     constructor() {
@@ -8,6 +8,7 @@ class App {
         this.maxInitAttempts = 3;
         this.isInitializing = false;
         this.initializationPromise = null;
+        this.currentPage = 'dashboard'; // Suivre la page actuelle
         
         console.log('[App] Constructor - Application starting...');
     }
@@ -87,64 +88,76 @@ class App {
     }
 
     // =====================================
-    // GESTION INTELLIGENTE DU SCROLL
+    // GESTION INTELLIGENTE DU SCROLL CORRIGÉE
     // =====================================
     initializeScrollManager() {
         console.log('[App] Initializing scroll manager...');
         
-        // Fonction pour vérifier si le scroll est nécessaire
+        // Fonction pour vérifier si le scroll est nécessaire - ÉVITER LES BOUCLES
+        let scrollCheckInProgress = false;
         window.checkScrollNeeded = () => {
-            const body = document.body;
-            const contentHeight = document.documentElement.scrollHeight;
-            const viewportHeight = window.innerHeight;
+            if (scrollCheckInProgress) return;
+            scrollCheckInProgress = true;
             
-            // Obtenir la page actuelle
-            const currentPage = [...body.classList].find(cls => cls.startsWith('page-'))?.replace('page-', '');
-            
-            console.log('[SCROLL_MANAGER]', {
-                currentPage,
-                contentHeight,
-                viewportHeight,
-                bodyScrollHeight: body.scrollHeight,
-                needsScroll: contentHeight > viewportHeight
-            });
-            
-            // Dashboard: JAMAIS de scroll
-            if (currentPage === 'dashboard') {
-                body.classList.remove('needs-scroll');
-                body.style.overflow = 'hidden';
-                body.style.overflowY = 'hidden';
-                body.style.overflowX = 'hidden';
-                console.log('[SCROLL_MANAGER] Dashboard - scroll forcé à hidden');
-                return;
-            }
-            
-            // Autres pages: scroll seulement si vraiment nécessaire avec seuil plus élevé
-            const threshold = 100; // Seuil augmenté pour éviter les scrolls inutiles
-            if (contentHeight > viewportHeight + threshold) {
-                body.classList.add('needs-scroll');
-                console.log('[SCROLL_MANAGER] Long content detected - scroll enabled for', currentPage);
-            } else {
-                body.classList.remove('needs-scroll');
-                body.style.overflow = 'hidden';
-                body.style.overflowY = 'hidden';
-                body.style.overflowX = 'hidden';
-                console.log('[SCROLL_MANAGER] Short content detected - scroll hidden for', currentPage);
-            }
+            setTimeout(() => {
+                const body = document.body;
+                const contentHeight = document.documentElement.scrollHeight;
+                const viewportHeight = window.innerHeight;
+                
+                // Obtenir la page actuelle
+                const currentPage = this.currentPage || 'dashboard';
+                
+                console.log('[SCROLL_MANAGER]', {
+                    currentPage,
+                    contentHeight,
+                    viewportHeight,
+                    bodyScrollHeight: body.scrollHeight,
+                    needsScroll: contentHeight > viewportHeight
+                });
+                
+                // Dashboard: JAMAIS de scroll
+                if (currentPage === 'dashboard') {
+                    body.classList.remove('needs-scroll');
+                    body.style.overflow = 'hidden';
+                    body.style.overflowY = 'hidden';
+                    body.style.overflowX = 'hidden';
+                    console.log('[SCROLL_MANAGER] Dashboard - scroll forcé à hidden');
+                    scrollCheckInProgress = false;
+                    return;
+                }
+                
+                // Autres pages: scroll seulement si vraiment nécessaire avec seuil plus élevé
+                const threshold = 100;
+                if (contentHeight > viewportHeight + threshold) {
+                    body.classList.add('needs-scroll');
+                    console.log('[SCROLL_MANAGER] Long content detected - scroll enabled for', currentPage);
+                } else {
+                    body.classList.remove('needs-scroll');
+                    body.style.overflow = 'hidden';
+                    body.style.overflowY = 'hidden';
+                    body.style.overflowX = 'hidden';
+                    console.log('[SCROLL_MANAGER] Short content detected - scroll hidden for', currentPage);
+                }
+                
+                scrollCheckInProgress = false;
+            }, 100);
         };
 
-        // Fonction pour définir le mode de page
+        // Fonction pour définir le mode de page - CORRIGÉE POUR DASHBOARD
         window.setPageMode = (pageName) => {
+            if (!pageName) return;
+            
             const body = document.body;
+            
+            // Mettre à jour la page actuelle
+            this.currentPage = pageName;
             
             // Nettoyer les anciennes classes de page
             body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'needs-scroll', 'login-mode');
             
             // Ajouter la nouvelle classe de page
-            if (pageName) {
-                body.classList.add(`page-${pageName}`);
-                console.log(`[PAGE_MODE] Mode ${pageName} activé`);
-            }
+            body.classList.add(`page-${pageName}`);
+            console.log(`[PAGE_MODE] Mode ${pageName} activé`);
             
             // Dashboard: forcer immédiatement pas de scroll
             if (pageName === 'dashboard') {
@@ -155,27 +168,27 @@ class App {
                 return;
             }
             
-            // Autres pages: vérifier après un délai plus long pour s'assurer que le contenu est chargé
+            // Autres pages: vérifier après un délai
             setTimeout(() => {
-                window.checkScrollNeeded();
-            }, 500); // Délai augmenté pour laisser le temps au contenu de se charger
+                if (this.currentPage === pageName) { // S'assurer qu'on est toujours sur la même page
+                    window.checkScrollNeeded();
+                }
+            }, 300);
         };
 
-        // Observer plus intelligent pour détecter les changements de contenu réels
+        // Observer pour les changements de contenu - OPTIMISÉ
         if (window.MutationObserver) {
             let scrollCheckTimeout;
             const contentObserver = new MutationObserver((mutations) => {
-                // Vérifier si les mutations affectent réellement la taille du contenu
                 const hasContentChanges = mutations.some(mutation => 
                     mutation.type === 'childList' || 
                     (mutation.type === 'attributes' && ['style', 'class'].includes(mutation.attributeName))
                 );
                 
-                if (hasContentChanges) {
+                if (hasContentChanges && this.currentPage !== 'dashboard') {
                     clearTimeout(scrollCheckTimeout);
                     scrollCheckTimeout = setTimeout(() => {
-                        const currentPage = [...document.body.classList].find(cls => cls.startsWith('page-'))?.replace('page-', '');
-                        if (currentPage !== 'dashboard') { // Ne pas check pour le dashboard
+                        if (this.currentPage !== 'dashboard') {
                             window.checkScrollNeeded();
                         }
                     }, 200);
@@ -192,18 +205,18 @@ class App {
             console.log('[SCROLL_MANAGER] Enhanced content observer initialized');
         }
 
-        // Vérifier à chaque redimensionnement de fenêtre
+        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            clearTimeout(window.scrollCheckTimeout);
-            window.scrollCheckTimeout = setTimeout(() => {
-                const currentPage = [...document.body.classList].find(cls => cls.startsWith('page-'))?.replace('page-', '');
-                if (currentPage !== 'dashboard') { // Ne pas check pour le dashboard
+            if (this.currentPage === 'dashboard') return; // Ignorer pour dashboard
+            
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (this.currentPage !== 'dashboard') {
                     window.checkScrollNeeded();
                 }
             }, 250);
         });
-
-        // Observer les changements de contenu intelligent déjà inclus ci-dessus
 
         console.log('[App] ✅ Scroll manager initialized');
     }
@@ -211,15 +224,13 @@ class App {
     async ensureTaskManagerReady() {
         console.log('[App] Ensuring TaskManager is ready...');
         
-        // Vérifier si TaskManager existe déjà
         if (window.taskManager && window.taskManager.initialized) {
             console.log('[App] ✅ TaskManager already ready');
             return true;
         }
         
-        // Attendre que TaskManager soit initialisé (il est chargé avant app.js)
         let attempts = 0;
-        const maxAttempts = 50; // 5 secondes max
+        const maxAttempts = 50;
         
         while ((!window.taskManager || !window.taskManager.initialized) && attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 100));
@@ -231,7 +242,6 @@ class App {
             return false;
         }
         
-        // Vérifier que les méthodes essentielles existent
         const essentialMethods = ['createTaskFromEmail', 'createTask', 'updateTask', 'deleteTask', 'getStats'];
         for (const method of essentialMethods) {
             if (typeof window.taskManager[method] !== 'function') {
@@ -252,7 +262,6 @@ class App {
             return true;
         }
         
-        // Attendre que PageManager soit chargé
         let attempts = 0;
         const maxAttempts = 30;
         
@@ -278,7 +287,6 @@ class App {
             return true;
         }
         
-        // TasksView est créé dans TaskManager.js, attendre
         let attempts = 0;
         const maxAttempts = 30;
         
@@ -483,7 +491,7 @@ class App {
             newLoginBtn.addEventListener('click', () => this.login());
         }
 
-        // Intercepter les changements de navigation pour la gestion du scroll
+        // NAVIGATION CORRIGÉE - NE PAS INTERFÉRER AVEC INDEX.HTML
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
             item.parentNode.replaceChild(newItem, item);
@@ -491,11 +499,18 @@ class App {
             newItem.addEventListener('click', (e) => {
                 const page = e.currentTarget.dataset.page;
                 if (page && window.pageManager) {
+                    // Mettre à jour la page actuelle AVANT de charger
+                    this.currentPage = page;
+                    
                     // Définir le mode de page avant de charger
                     if (window.setPageMode) {
                         window.setPageMode(page);
                     }
-                    window.pageManager.loadPage(page);
+                    
+                    // Laisser index.html gérer le dashboard, app.js gère les autres
+                    if (page !== 'dashboard') {
+                        window.pageManager.loadPage(page);
+                    }
                 }
             });
         });
@@ -527,7 +542,6 @@ class App {
         window.addEventListener('unhandledrejection', (event) => {
             console.error('[App] Unhandled promise rejection:', event.reason);
             
-            // Vérifier s'il s'agit d'une erreur de TaskManager
             if (event.reason && event.reason.message && 
                 event.reason.message.includes('Cannot read properties of undefined')) {
                 
@@ -645,6 +659,7 @@ class App {
         this.isAuthenticated = false;
         this.isInitializing = false;
         this.initializationPromise = null;
+        this.currentPage = 'dashboard';
         
         if (window.authService) {
             window.authService.forceCleanup();
@@ -671,11 +686,9 @@ class App {
     showLogin() {
         console.log('[App] Showing login page');
         
-        // Activer le mode login pour masquer le scroll
         document.body.classList.add('login-mode');
         document.body.classList.remove('app-active');
         
-        // S'assurer que la page de login est visible
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.style.display = 'flex';
@@ -735,7 +748,8 @@ class App {
             window.uiManager.updateAuthStatus(this.user);
         }
         
-        // Définir le mode dashboard et charger
+        // INITIALISATION DASHBOARD CORRIGÉE - LAISSER INDEX.HTML GÉRER
+        this.currentPage = 'dashboard';
         if (window.setPageMode) {
             window.setPageMode('dashboard');
         }
@@ -745,22 +759,8 @@ class App {
         document.body.style.overflowY = 'hidden';
         console.log('[App] Dashboard scroll forcé à hidden');
         
-        // Charger le dashboard
-        if (window.pageManager) {
-            setTimeout(() => {
-                window.pageManager.loadPage('dashboard');
-                console.log('[App] Dashboard loading requested');
-                
-                // Re-forcer pas de scroll après chargement du dashboard
-                setTimeout(() => {
-                    document.body.style.overflow = 'hidden';
-                    document.body.style.overflowY = 'hidden';
-                    console.log('[App] Dashboard scroll re-forcé à hidden après chargement');
-                }, 500);
-            }, 100);
-        } else {
-            console.warn('[App] PageManager not available');
-        }
+        // LAISSER INDEX.HTML CHARGER LE DASHBOARD - NE PAS INTERFÉRER
+        console.log('[App] Dashboard loading delegated to index.html');
         
         // Forcer l'affichage avec CSS
         this.forceAppDisplay();
@@ -820,7 +820,6 @@ class App {
         const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
             loadingOverlay.classList.remove('active');
-            // Ne pas forcer overflow auto ici, laisser la gestion du scroll aux classes CSS
         }
     }
 
@@ -889,7 +888,6 @@ class App {
 // FONCTIONS GLOBALES D'URGENCE
 // =====================================
 
-// Fonction globale pour le reset d'urgence
 window.emergencyReset = function() {
     console.log('[App] Emergency reset triggered');
     
@@ -909,7 +907,6 @@ window.emergencyReset = function() {
     window.location.reload();
 };
 
-// Fonction pour forcer l'affichage
 window.forceShowApp = function() {
     console.log('[Global] Force show app triggered');
     if (window.app && typeof window.app.showAppWithTransition === 'function') {
@@ -920,7 +917,6 @@ window.forceShowApp = function() {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) loginPage.style.display = 'none';
         
-        // Appliquer la gestion du scroll
         if (window.setPageMode) {
             window.setPageMode('dashboard');
         }
@@ -958,11 +954,9 @@ function checkServicesReady() {
 // INITIALISATION PRINCIPALE
 // =====================================
 
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[App] DOM loaded, creating app instance...');
     
-    // Initialiser le mode login dès le chargement
     document.body.classList.add('login-mode');
     
     window.app = new App();
@@ -993,7 +987,6 @@ document.addEventListener('DOMContentLoaded', () => {
     waitForServices();
 });
 
-// Fallback si l'initialisation échoue
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.app) {
@@ -1013,4 +1006,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded - VERSION WITH INTELLIGENT SCROLL MANAGEMENT');
+console.log('✅ App loaded - DASHBOARD NAVIGATION FIXED');
