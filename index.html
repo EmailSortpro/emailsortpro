@@ -480,6 +480,18 @@
             display: none; /* Caché par défaut */
         }
 
+        /* FORCER LA SUPPRESSION DU LOGO DANS LE HEADER */
+        .app-header .logo,
+        .header-content .logo,
+        .logo {
+            display: none !important;
+        }
+
+        /* Masquer complètement tout le contenu du header */
+        .app-header .header-content {
+            display: none !important;
+        }
+
         .header-content {
             display: flex;
             justify-content: space-between;
@@ -577,7 +589,7 @@
         }
 
         body.app-active .app-header {
-            display: block !important;
+            display: none !important; /* Forcer la suppression complète */
         }
 
         body.app-active .app-nav {
@@ -585,7 +597,7 @@
         }
 
         body.app-active .app-main {
-            margin-top: 120px; /* Header + Nav */
+            margin-top: 60px; /* Seulement la nav */
         }
 
         body.app-active #pageContent {
@@ -604,20 +616,6 @@
         .dashboard-header {
             text-align: center;
             margin-bottom: 60px;
-        }
-
-        .dashboard-title {
-            font-size: 36px;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 15px;
-        }
-
-        .dashboard-subtitle {
-            font-size: 20px;
-            color: #64748b;
-            font-weight: 400;
-            margin-bottom: 40px;
         }
 
         /* Guide rapide */
@@ -900,7 +898,7 @@
             }
             
             body.app-active .app-main {
-                margin-top: 140px;
+                margin-top: 80px; /* Nav seulement */
             }
             
             #pageContent {
@@ -1119,8 +1117,6 @@
                 <div class="dashboard-container">
                     <!-- Header du dashboard -->
                     <div class="dashboard-header">
-                        <h1 class="dashboard-title">EmailSortPro AI</h1>
-                        <p class="dashboard-subtitle">Organisez vos emails intelligemment</p>
                         
                         <!-- Guide rapide -->
                         <div class="quick-guide">
