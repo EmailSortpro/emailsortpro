@@ -3923,10 +3923,611 @@ class TasksView {
         this.refreshView();
     }
 
-    // Continue with all existing methods from the original TasksView...
-    // All the bulk actions, filtering, rendering, etc. methods remain the same
+    // =====================================
+    // MÉTHODES MANQUANTES DE L'ORIGINAL
+    // =====================================
 
-    // Placeholder for all existing methods that haven't been shown yet
+    renderGroupedView(tasks, groupMode) {
+        const groups = this.createTaskGroups(tasks, groupMode);
+        
+        return `
+            <div class="tasks-grouped-harmonized">
+                ${groups.map(group => this.renderTaskGroup(group, groupMode)).join('')}
+            </div>
+        `;
+    }
+
+    renderTaskGroup(group, groupType) {
+        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+        const avatarColor = this.generateAvatarColor(group.name);
+        
+        return `
+            <div class="task-group-harmonized" data-group-key="${group.key}">
+                <div class="group-header-harmonized" onclick="window.tasksView.toggleGroup('${group.key}')">
+                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+                        ${groupType === 'grouped-domain' ? 
+                            '<i class="fas fa-globe"></i>' : 
+                            group.name.charAt(0).toUpperCase()
+                        }
+                    </div>
+                    <div class="group-info-harmonized">
+                        <div class="group-name-harmonized">${displayName}</div>
+                        <div class="group-meta-harmonized">${group.count} tâche${group.count > 1 ? 's' : ''} • ${this.formatRelativeDate(group.latestDate)}</div>
+                    </div>
+                    <div class="group-expand-harmonized">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                
+                <div class="group-content-harmonized" style="display: none;">
+                    ${group.tasks.map(task => this.renderTaskItem(task)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    createTaskGroups(tasks, groupMode) {
+        const groups = {};
+        
+        tasks.forEach(task => {
+            let groupKey, groupName;
+            
+            if (groupMode === 'grouped-domain') {
+                if (task.hasEmail && task.emailDomain) {
+                    groupKey = task.emailDomain;
+                    groupName = task.emailDomain;
+                } else {
+                    groupKey = 'internal';
+                    groupName = 'Tâches internes';
+                }
+            } else { // grouped-sender
+                if (task.hasEmail && task.emailFromName) {
+                    groupKey = task.emailFrom || task.emailFromName;
+                    groupName = task.emailFromName;
+                } else {
+                    groupKey = task.client || 'internal';
+                    groupName = task.client || 'Tâches internes';
+                }
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    key: groupKey,
+                    name: groupName,
+                    tasks: [],
+                    count: 0,
+                    latestDate: null
+                };
+            }
+            
+            groups[groupKey].tasks.push(task);
+            groups[groupKey].count++;
+            
+            const taskDate = new Date(task.createdAt);
+            if (!groups[groupKey].latestDate || taskDate > groups[groupKey].latestDate) {
+                groups[groupKey].latestDate = taskDate;
+            }
+        });
+        
+        return Object.values(groups).sort((a, b) => {
+            if (!a.latestDate && !b.latestDate) return 0;
+            if (!a.latestDate) return 1;
+            if (!b.latestDate) return -1;
+            return b.latestDate - a.latestDate;
+        });
+    }
+
+    toggleGroup(groupKey) {
+        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+        if (!group) return;
+        
+        const content = group.querySelector('.group-content-harmonized');
+        const icon = group.querySelector('.group-expand-harmonized i');
+        const header = group.querySelector('.group-header-harmonized');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            group.classList.add('expanded');
+            header.classList.add('expanded-header');
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+            group.classList.remove('expanded');
+            header.classList.remove('expanded-header');
+        }
+    }
+
+    generateAvatarColor(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const hue = Math.abs(hash) % 360;
+        const saturation = 65 + (Math.abs(hash) % 20);
+        const lightness = 45 + (Math.abs(hash) % 15);
+        
+        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
+    }
+
+    formatRelativeDate(date) {
+        if (!date) return 'Date inconnue';
+        
+        const now = new Date();
+        const diff = now - date;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        
+        if (days === 0) return 'Aujourd\'hui';
+        if (days === 1) return 'Hier';
+        if (days < 7) return `Il y a ${days} jours`;
+        if (days < 30) return `Il y a ${Math.floor(days / 7)} semaines`;
+        return date.toLocaleDateString('fr-FR');
+    }
+
+    renderEmptyState() {
+        return `
+            <div class="empty-state-harmonized">
+                <div class="empty-state-icon-harmonized">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 class="empty-state-title-harmonized">Aucune tâche trouvée</h3>
+                <p class="empty-state-text-harmonized">
+                    ${this.hasActiveFilters() ? 'Aucune tâche ne correspond à vos critères' : 'Vous n\'avez aucune tâche'}
+                </p>
+                ${this.hasActiveFilters() ? `
+                    <button class="btn-harmonized btn-primary" onclick="window.tasksView.resetAllFilters()">
+                        <i class="fas fa-undo"></i>
+                        <span>Réinitialiser les filtres</span>
+                    </button>
+                ` : `
+                    <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
+                        <i class="fas fa-plus"></i>
+                        <span>Créer votre première tâche</span>
+                    </button>
+                `}
+            </div>
+        `;
+    }
+
+    getTaskTypeDisplay(task) {
+        if (task.hasEmail) {
+            return { icon: '📧', label: 'Email' };
+        }
+        
+        switch (task.category) {
+            case 'meeting':
+                return { icon: '🗓️', label: 'Réunion' };
+            case 'call':
+                return { icon: '📞', label: 'Appel' };
+            case 'document':
+                return { icon: '📄', label: 'Document' };
+            case 'project':
+                return { icon: '🎯', label: 'Projet' };
+            default:
+                return { icon: '✓', label: task.type || 'Tâche' };
+        }
+    }
+
+    getPriorityColor(priority) {
+        const colors = {
+            urgent: '#ef4444',
+            high: '#f97316',
+            medium: '#3b82f6',
+            low: '#10b981'
+        };
+        return colors[priority] || colors.medium;
+    }
+
+    formatDueDateSimple(dateString) {
+        if (!dateString) {
+            return { html: '<span class="no-deadline-harmonized">Pas d\'échéance</span>', text: '' };
+        }
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'deadline-normal-harmonized';
+        let text = '';
+        let bgColor = '#f3f4f6';
+        let textColor = '#6b7280';
+        
+        if (diffDays < 0) {
+            className = 'deadline-overdue-harmonized';
+            text = `En retard (${Math.abs(diffDays)}j)`;
+            bgColor = '#fef2f2';
+            textColor = '#dc2626';
+        } else if (diffDays === 0) {
+            className = 'deadline-today-harmonized';
+            text = 'Aujourd\'hui';
+            bgColor = '#fef3c7';
+            textColor = '#d97706';
+        } else if (diffDays === 1) {
+            className = 'deadline-tomorrow-harmonized';
+            text = 'Demain';
+            bgColor = '#fef3c7';
+            textColor = '#d97706';
+        } else if (diffDays <= 7) {
+            className = 'deadline-week-harmonized';
+            text = `${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+            bgColor = '#eff6ff';
+            textColor = '#2563eb';
+        } else {
+            text = date.toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'short',
+                year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+            });
+        }
+        
+        return {
+            html: `<span class="deadline-badge-harmonized ${className}" style="background-color: ${bgColor}; color: ${textColor};">
+                📅 ${text}
+            </span>`,
+            text: text
+        };
+    }
+
+    extractNameFromEmail(email) {
+        if (!email) return null;
+        
+        const namePart = email.split('@')[0];
+        if (!namePart) return null;
+        
+        return namePart
+            .replace(/[._-]/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+    }
+
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+            case 'todo': return this.currentFilters.status === 'todo';
+            case 'in-progress': return this.currentFilters.status === 'in-progress';
+            case 'completed': return this.currentFilters.status === 'completed';
+            case 'overdue': return this.currentFilters.overdue;
+            case 'needsReply': return this.currentFilters.needsReply;
+            default: return false;
+        }
+    }
+
+    hasActiveFilters() {
+        return this.currentFilters.status !== 'all' ||
+               this.currentFilters.priority !== 'all' ||
+               this.currentFilters.category !== 'all' ||
+               this.currentFilters.client !== 'all' ||
+               this.currentFilters.tag !== 'all' ||
+               this.currentFilters.dateRange !== 'all' ||
+               this.currentFilters.search !== '' ||
+               this.currentFilters.overdue ||
+               this.currentFilters.needsReply;
+    }
+
+    buildClientFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(task => {
+            if (task.client) {
+                clients.add(task.client);
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        Array.from(clients).sort().forEach(client => {
+            const count = tasks.filter(t => t.client === client).length;
+            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    updateFilter(filterType, value) {
+        this.currentFilters[filterType] = value;
+        this.refreshView();
+        console.log('[TasksView] Filter updated:', filterType, '=', value);
+    }
+
+    resetAllFilters() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            tag: 'all',
+            search: '',
+            sortBy: 'created',
+            dateRange: 'all',
+            overdue: false,
+            needsReply: false
+        };
+        
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.querySelector('option[value="all"]')) {
+                select.value = 'all';
+            } else if (select.id === 'sortByFilter') {
+                select.value = 'created';
+            }
+        });
+        
+        this.refreshView();
+        this.showToast('Filtres réinitialisés', 'info');
+    }
+
+    refreshView() {
+        const container = document.getElementById('tasksContainer');
+        if (container) {
+            container.innerHTML = this.renderTasksList();
+        }
+        
+        const stats = window.taskManager.getStats();
+        document.querySelectorAll('.status-filters-harmonized').forEach(container => {
+            container.innerHTML = this.buildStatusPills(stats);
+        });
+    }
+
+    refreshTasks() {
+        this.refreshView();
+        this.showToast('Tâches actualisées', 'success');
+    }
+
+    markComplete(taskId) {
+        window.taskManager.updateTask(taskId, { status: 'completed' });
+        this.showToast('Tâche marquée comme terminée', 'success');
+        this.refreshView();
+    }
+
+    async replyToEmailWithAI(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        if (task.suggestedReplies && task.suggestedReplies.length > 0) {
+            this.showSuggestedReplies(taskId);
+            return;
+        }
+        
+        try {
+            this.showToast('Génération de suggestions IA...', 'info');
+            
+            const newSuggestions = await window.taskManager.generateIntelligentReplySuggestions(
+                { 
+                    from: { emailAddress: { name: task.emailFromName, address: task.emailFrom } },
+                    subject: task.emailSubject,
+                    body: { content: task.emailContent },
+                    bodyPreview: task.emailContent
+                }, 
+                task
+            );
+            
+            if (newSuggestions && newSuggestions.length > 0) {
+                window.taskManager.updateTask(taskId, { 
+                    suggestedReplies: newSuggestions,
+                    aiRepliesGenerated: true,
+                    aiRepliesGeneratedAt: new Date().toISOString()
+                });
+                
+                this.showToast('Suggestions IA générées !', 'success');
+                this.showSuggestedReplies(taskId);
+                this.refreshView();
+            } else {
+                this.showToast('Impossible de générer des suggestions', 'warning');
+                this.replyToEmailBasic(taskId);
+            }
+            
+        } catch (error) {
+            console.error('[TasksView] Error generating AI suggestions:', error);
+            this.showToast('Erreur IA, réponse basique', 'warning');
+            this.replyToEmailBasic(taskId);
+        }
+    }
+
+    replyToEmailBasic(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        const subject = `Re: ${task.emailSubject || 'Votre message'}`;
+        const to = task.emailFrom;
+        const body = `Bonjour ${task.emailFromName || ''},\n\nMerci pour votre message.\n\nCordialement,`;
+        
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(mailtoLink);
+        
+        window.taskManager.updateTask(taskId, { emailReplied: true });
+        this.showToast('Email de réponse ouvert', 'success');
+    }
+
+    showSuggestedReplies(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
+
+        const uniqueId = 'replies_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;"><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="replies-list">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="reply-suggestion-card">
+                                    <div class="reply-card-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <div class="reply-card-actions">
+                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
+                                                <i class="fas fa-copy"></i> Copier
+                                            </button>
+                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
+                                                <i class="fas fa-paper-plane"></i> Utiliser
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="reply-subject-line">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content-preview">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    showCreateModal() {
+        const uniqueId = 'create_task_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 600px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;">Créer une nouvelle tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="form-group">
+                            <label>Titre de la tâche *</label>
+                            <input type="text" id="new-task-title" class="form-input" placeholder="Titre de la tâche" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea id="new-task-description" class="form-textarea" rows="4" placeholder="Description détaillée..."></textarea>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Priorité</label>
+                                <select id="new-task-priority" class="form-select">
+                                    <option value="low">📄 Basse</option>
+                                    <option value="medium" selected>📌 Normale</option>
+                                    <option value="high">⚡ Haute</option>
+                                    <option value="urgent">🚨 Urgente</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Date d'échéance</label>
+                                <input type="date" id="new-task-duedate" class="form-input" />
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Client/Projet</label>
+                            <input type="text" id="new-task-client" class="form-input" placeholder="Nom du client ou projet" value="Interne" />
+                        </div>
+                    </div>
+                    <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 10px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 8px 16px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                            Annuler
+                        </button>
+                        <button onclick="window.tasksView.createNewTask('${uniqueId}');"
+                                style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-plus"></i> Créer la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+            const titleInput = document.getElementById('new-task-title');
+            if (titleInput) titleInput.focus();
+        }, 100);
+    }
+
+    createNewTask(modalId) {
+        const title = document.getElementById('new-task-title')?.value?.trim();
+        const description = document.getElementById('new-task-description')?.value?.trim();
+        const priority = document.getElementById('new-task-priority')?.value;
+        const dueDate = document.getElementById('new-task-duedate')?.value;
+        const client = document.getElementById('new-task-client')?.value?.trim();
+
+        if (!title) {
+            this.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        const taskData = {
+            title,
+            description,
+            priority,
+            dueDate: dueDate || null,
+            client: client || 'Interne',
+            category: 'work',
+            type: 'tâche',
+            method: 'manual'
+        };
+
+        try {
+            const task = window.taskManager.createTask(taskData);
+            document.getElementById(modalId).remove();
+            document.body.style.overflow = 'auto';
+            
+            this.showToast('Tâche créée avec succès', 'success');
+            this.refreshView();
+        } catch (error) {
+            console.error('[TasksView] Error creating task:', error);
+            this.showToast('Erreur lors de la création', 'error');
+        }
+    }
+
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        
+        const panel = document.getElementById('advancedFiltersPanel');
+        const toggle = document.querySelector('.filters-toggle');
+        
+        if (panel) {
+            panel.classList.toggle('show', this.showAdvancedFilters);
+        }
+        
+        if (toggle) {
+            toggle.classList.toggle('active', this.showAdvancedFilters);
+            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
+                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
+            }
+        }
+    }
+
     handleTaskClick(event, taskId) {
         this.showTaskDetails(taskId);
     }
