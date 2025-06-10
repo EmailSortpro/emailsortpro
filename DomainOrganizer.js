@@ -1,1081 +1,969 @@
-// DomainOrganizer.js - Version 12.0 - Interface ultra-condensée sans scroll
+// DomainOrganizer.js - Version 13.0 - Version complète et robuste
 class DomainOrganizer {
     constructor() {
         this.isProcessing = false;
         this.emailsByDomain = new Map();
-        this.emailActions = new Map();
         this.currentStep = 1;
-        this.scanProgress = {
-            totalEmails: 0,
-            processedEmails: 0,
-            domainsFound: new Set(),
-            startTime: null
-        };
+        this.analysisResults = null;
+        this.selectedEmails = new Map();
         
-        console.log('[DomainOrganizer] ✅ v12.0 - Interface ultra-condensée');
+        console.log('[DomainOrganizer] ✅ v13.0 - Version complète initialisée');
     }
 
     getPageHTML() {
         return `
-            <div class="organizer-compact">
-                <!-- Header compact -->
+            <div class="domain-organizer">
+                <!-- Header avec progression -->
                 <div class="header">
-                    <h1>📁 Organisation par Domaine</h1>
-                    <div class="steps">
-                        <div class="step active" data-step="1">1</div>
-                        <div class="step" data-step="2">2</div>
-                        <div class="step" data-step="3">3</div>
+                    <div class="header-content">
+                        <h1>📁 Organisation Intelligente par Domaine</h1>
+                        <p>Organisez automatiquement vos emails par expéditeur</p>
                     </div>
-                </div>
-
-                <!-- Étape 1: Configuration compacte -->
-                <div class="step-content" id="step1">
-                    <div class="card">
-                        <!-- Info rapide -->
-                        <div class="quick-info">
-                            <div class="info-item">
-                                <span class="icon">🔍</span>
-                                <span>Analyse vos emails par expéditeur et propose une organisation automatique</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="icon">🔒</span>
-                                <span>Accès lecture seule pendant l'analyse - Aucune modification sans validation</span>
-                            </div>
+                    <div class="progress-indicator">
+                        <div class="step-indicator ${this.currentStep >= 1 ? 'active' : ''}" data-step="1">
+                            <span class="step-number">1</span>
+                            <span class="step-label">Configuration</span>
                         </div>
-
-                        <form id="scanForm" class="compact-form">
-                            <!-- Période inline -->
-                            <div class="inline-section">
-                                <label class="section-label">📅 Période</label>
-                                <div class="radio-group">
-                                    <label class="radio-compact">
-                                        <input type="radio" name="dateRange" value="all" checked>
-                                        <span>Tous</span>
-                                    </label>
-                                    <label class="radio-compact">
-                                        <input type="radio" name="dateRange" value="recent">
-                                        <span>6 mois</span>
-                                    </label>
-                                    <label class="radio-compact">
-                                        <input type="radio" name="dateRange" value="year">
-                                        <span>1 an</span>
-                                    </label>
-                                    <label class="radio-compact">
-                                        <input type="radio" name="dateRange" value="custom">
-                                        <span>Personnalisé</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Dates personnalisées compactes -->
-                            <div id="customDates" class="custom-dates compact" style="display: none;">
-                                <input type="date" id="startDate" class="input-compact" placeholder="Début">
-                                <input type="date" id="endDate" class="input-compact" placeholder="Fin">
-                            </div>
-
-                            <!-- Paramètres sur une ligne -->
-                            <div class="params-row">
-                                <div class="param-item">
-                                    <label>📂 Source</label>
-                                    <select id="sourceFolder" class="input-compact">
-                                        <option value="all">Tous les dossiers</option>
-                                        <option value="inbox">Boîte de réception</option>
-                                        <option value="sent">Éléments envoyés</option>
-                                        <option value="archive">Archive</option>
-                                    </select>
-                                </div>
-                                <div class="param-item">
-                                    <label>📊 Limite</label>
-                                    <select id="emailLimit" class="input-compact">
-                                        <option value="1000">1 000 (2-3 min)</option>
-                                        <option value="2500" selected>2 500 (5-8 min)</option>
-                                        <option value="5000">5 000 (10-15 min)</option>
-                                        <option value="unlimited">Sans limite (15+ min)</option>
-                                    </select>
-                                </div>
-                                <div class="param-item">
-                                    <label>🚫 Exclure</label>
-                                    <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com" class="input-compact">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn primary" id="startBtn">
-                                🚀 Analyser mes emails
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Étape 2: Scan compact -->
-                <div class="step-content" id="step2" style="display: none;">
-                    <div class="card">
-                        <div class="scan-header">
-                            <div class="scan-status">
-                                <span class="phase-icon" id="phaseIcon">🔗</span>
-                                <div>
-                                    <h3 id="phaseName">Connexion</h3>
-                                    <p id="phaseDescription">Connexion sécurisée en cours...</p>
-                                </div>
-                            </div>
-                            <div class="scan-progress">
-                                <div class="progress-circle">
-                                    <span id="progressPercent">0%</span>
-                                </div>
-                            </div>
+                        <div class="step-indicator ${this.currentStep >= 2 ? 'active' : ''}" data-step="2">
+                            <span class="step-number">2</span>
+                            <span class="step-label">Analyse</span>
                         </div>
-
-                        <div class="stats-compact">
-                            <div class="stat">
-                                <span class="stat-number" id="emailCount">0</span>
-                                <span class="stat-label">Emails</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number" id="domainCount">0</span>
-                                <span class="stat-label">Domaines</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number" id="folderCount">0</span>
-                                <span class="stat-label">Dossiers</span>
-                            </div>
-                        </div>
-
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        
-                        <div class="current-status" id="currentStatus">
-                            <span>⏳ Initialisation...</span>
+                        <div class="step-indicator ${this.currentStep >= 3 ? 'active' : ''}" data-step="3">
+                            <span class="step-number">3</span>
+                            <span class="step-label">Organisation</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Étape 3: Résultats compacts -->
-                <div class="step-content" id="step3" style="display: none;">
+                <!-- Étape 1: Configuration intuitive -->
+                <div class="step-content ${this.currentStep === 1 ? 'active' : ''}" id="step-1">
                     <div class="card">
-                        <div class="results-header">
-                            <div class="results-info">
-                                <span class="icon">✅</span>
-                                <span><strong><span id="totalFound">0</span> emails</strong> dans <strong><span id="domainsFound">0</span> domaines</strong></span>
+                        <div class="card-header">
+                            <h2>🎯 Comment souhaitez-vous organiser vos emails ?</h2>
+                            <p>L'outil va analyser vos emails et les classer automatiquement par domaine expéditeur</p>
+                        </div>
+
+                        <div class="explanation-section">
+                            <div class="explanation-item">
+                                <div class="explanation-icon">🔍</div>
+                                <div class="explanation-content">
+                                    <h3>Analyse intelligente</h3>
+                                    <p>Détection automatique des domaines expéditeurs (ex: amazon.fr, linkedin.com)</p>
+                                </div>
                             </div>
-                            <div class="results-actions">
-                                <button class="btn-mini" onclick="window.organizerInstance.selectAll()">✓ Tout</button>
-                                <button class="btn-mini" onclick="window.organizerInstance.deselectAll()">✗ Rien</button>
-                                <input type="text" id="searchBox" placeholder="🔍 Rechercher..." class="search-mini">
+                            <div class="explanation-item">
+                                <div class="explanation-icon">📂</div>
+                                <div class="explanation-content">
+                                    <h3>Création de dossiers</h3>
+                                    <p>Création automatique de dossiers avec noms intelligents</p>
+                                </div>
+                            </div>
+                            <div class="explanation-item">
+                                <div class="explanation-icon">✨</div>
+                                <div class="explanation-content">
+                                    <h3>Organisation personnalisée</h3>
+                                    <p>Vous validez et personnalisez avant toute modification</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="domains-compact" id="domainsList">
-                            <!-- Populated dynamically -->
-                        </div>
-
-                        <div class="final-controls">
-                            <div class="options-compact">
-                                <label class="checkbox-compact">
-                                    <input type="checkbox" id="createFolders" checked>
-                                    <span>Créer dossiers</span>
-                                </label>
-                                <label class="checkbox-compact">
-                                    <input type="checkbox" id="moveEmails" checked>
-                                    <span>Déplacer emails</span>
-                                </label>
-                            </div>
+                        <div class="config-section">
+                            <h3>⚙️ Configuration de l'analyse</h3>
                             
+                            <div class="config-grid">
+                                <div class="config-item">
+                                    <label>📅 Période d'analyse</label>
+                                    <select id="dateRange" class="input">
+                                        <option value="all">📧 Tous mes emails (recommandé)</option>
+                                        <option value="year">📅 Dernière année</option>
+                                        <option value="6months">🗓️ 6 derniers mois</option>
+                                        <option value="3months">📆 3 derniers mois</option>
+                                        <option value="month">🗓️ Dernier mois</option>
+                                    </select>
+                                </div>
+
+                                <div class="config-item">
+                                    <label>📂 Dossiers à analyser</label>
+                                    <select id="sourceFolders" class="input">
+                                        <option value="all">🔍 Tous les dossiers</option>
+                                        <option value="inbox">📥 Boîte de réception</option>
+                                        <option value="sent">📤 Éléments envoyés</option>
+                                        <option value="custom">🎛️ Sélection personnalisée</option>
+                                    </select>
+                                </div>
+
+                                <div class="config-item">
+                                    <label>🚫 Domaines à exclure (optionnel)</label>
+                                    <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com" class="input">
+                                    <small>Séparez par des virgules</small>
+                                </div>
+
+                                <div class="config-item">
+                                    <label>📊 Emails minimum par domaine</label>
+                                    <select id="minEmailsPerDomain" class="input">
+                                        <option value="1">1 email (tout inclure)</option>
+                                        <option value="3" selected>3 emails minimum</option>
+                                        <option value="5">5 emails minimum</option>
+                                        <option value="10">10 emails minimum</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="info-alert">
+                                <div class="alert-icon">ℹ️</div>
+                                <div class="alert-content">
+                                    <strong>Analyse sécurisée</strong>
+                                    <p>L'analyse se fait en <strong>lecture seule</strong>. Aucun email ne sera modifié sans votre validation.</p>
+                                </div>
+                            </div>
+
                             <div class="action-buttons">
-                                <button class="btn secondary" onclick="window.organizerInstance.reset()">← Recommencer</button>
-                                <button class="btn primary" id="executeBtn" onclick="window.organizerInstance.showExecutionModal()">
-                                    ▶ Organiser <span id="selectedCount">0</span>
+                                <button id="startAnalysis" class="btn-primary">
+                                    🚀 Démarrer l'analyse
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Étape 4: Exécution compacte -->
-                <div class="step-content" id="step4" style="display: none;">
+                <!-- Étape 2: Analyse en cours -->
+                <div class="step-content ${this.currentStep === 2 ? 'active' : ''}" id="step-2">
                     <div class="card">
-                        <div class="exec-header">
-                            <div class="exec-status">
-                                <span class="action-icon" id="actionIcon">⚙️</span>
-                                <div>
-                                    <h3 id="actionName">Organisation</h3>
-                                    <p id="actionDescription">Création des dossiers et déplacement des emails</p>
-                                </div>
-                            </div>
-                            <div class="exec-progress">
-                                <div class="progress-circle success">
-                                    <span id="executePercent">0%</span>
-                                </div>
-                            </div>
+                        <div class="card-header">
+                            <h2>🔍 Analyse en cours</h2>
+                            <p id="analysisStatus">Initialisation de l'analyse...</p>
                         </div>
 
-                        <div class="stats-compact">
-                            <div class="stat">
-                                <span class="stat-number" id="foldersCreated">0</span>
-                                <span class="stat-label">Dossiers</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number" id="emailsMoved">0</span>
-                                <span class="stat-label">Emails</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-number" id="timeRemaining">--</span>
-                                <span class="stat-label">Temps</span>
-                            </div>
-                        </div>
-
-                        <div class="progress-bar">
-                            <div class="progress-fill success" id="executeFill"></div>
-                        </div>
-                        
-                        <div class="current-status" id="executeStatus">
-                            <span>⚙️ Préparation...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Étape 5: Succès compact -->
-                <div class="step-content" id="step5" style="display: none;">
-                    <div class="card success">
-                        <div class="success-compact">
-                            <div class="success-header">
-                                <span class="success-icon">🎉</span>
-                                <div>
-                                    <h2>Organisation terminée !</h2>
-                                    <p id="successMessage">Vos emails ont été organisés avec succès</p>
+                        <div class="analysis-progress">
+                            <div class="progress-stats">
+                                <div class="stat-box">
+                                    <div class="stat-number" id="emailsScanned">0</div>
+                                    <div class="stat-label">Emails analysés</div>
                                 </div>
-                            </div>
-                            
-                            <div class="success-stats">
-                                <div class="stat">
-                                    <span class="stat-number" id="finalEmails">0</span>
-                                    <span class="stat-label">emails</span>
+                                <div class="stat-box">
+                                    <div class="stat-number" id="domainsFound">0</div>
+                                    <div class="stat-label">Domaines trouvés</div>
                                 </div>
-                                <div class="stat">
-                                    <span class="stat-number" id="finalFolders">0</span>
-                                    <span class="stat-label">dossiers</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-number" id="finalTime">--</span>
-                                    <span class="stat-label">temps</span>
+                                <div class="stat-box">
+                                    <div class="stat-number" id="foldersProposed">0</div>
+                                    <div class="stat-label">Dossiers proposés</div>
                                 </div>
                             </div>
 
-                            <div class="success-actions">
-                                <button class="btn secondary" onclick="window.organizerInstance.reset()">🔄 Nouveau</button>
-                                <button class="btn primary" onclick="window.organizerInstance.openOutlook()">📧 Voir Outlook</button>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="progressBar"></div>
+                                </div>
+                                <div class="progress-text">
+                                    <span id="progressPercent">0%</span>
+                                    <span id="progressDetail">Préparation...</span>
+                                </div>
+                            </div>
+
+                            <div class="current-activity">
+                                <div class="activity-icon">⏳</div>
+                                <div class="activity-text" id="currentActivity">Connexion à votre boîte mail...</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Modales compactes -->
-                <div class="modal-overlay" id="modalOverlay" style="display: none;">
-                    <!-- Modal scan -->
-                    <div class="modal compact" id="scanConfirmModal" style="display: none;">
-                        <div class="modal-header">
-                            <h3>🔍 Confirmer l'analyse</h3>
-                            <button class="modal-close" onclick="window.organizerInstance.closeModal()">&times;</button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="confirm-details">
-                                <div class="detail">📧 <span id="scanEmailsCount">--</span></div>
-                                <div class="detail">📅 <span id="scanPeriod">--</span></div>
-                                <div class="detail">⏱️ <span id="scanDuration">--</span></div>
-                            </div>
-                            <div class="modal-info">
-                                <span class="icon">ℹ️</span>
-                                <span>Analyse en lecture seule - Aucune modification</span>
+                <!-- Étape 3: Résultats et organisation -->
+                <div class="step-content ${this.currentStep === 3 ? 'active' : ''}" id="step-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>📋 Résultats de l'analyse</h2>
+                            <div class="results-summary">
+                                <span id="totalEmailsFound">0</span> emails trouvés dans 
+                                <span id="totalDomainsFound">0</span> domaines différents
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button class="btn secondary" onclick="window.organizerInstance.closeModal()">Annuler</button>
-                            <button class="btn primary" onclick="window.organizerInstance.confirmScan()">🚀 Analyser</button>
+
+                        <div class="results-controls">
+                            <div class="controls-left">
+                                <button class="btn-secondary" onclick="window.organizerInstance.selectAllDomains()">
+                                    ✓ Sélectionner tout
+                                </button>
+                                <button class="btn-secondary" onclick="window.organizerInstance.deselectAllDomains()">
+                                    ✗ Désélectionner tout
+                                </button>
+                            </div>
+                            <div class="controls-right">
+                                <input type="text" id="domainSearch" placeholder="🔍 Rechercher un domaine..." class="search-input">
+                            </div>
+                        </div>
+
+                        <div class="domains-list" id="domainsList">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                        <div class="organization-options">
+                            <div class="options-grid">
+                                <label class="option-checkbox">
+                                    <input type="checkbox" id="createNewFolders" checked>
+                                    <span class="checkmark"></span>
+                                    <div class="option-content">
+                                        <strong>Créer de nouveaux dossiers</strong>
+                                        <small>Crée automatiquement les dossiers manquants</small>
+                                    </div>
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" id="moveEmails" checked>
+                                    <span class="checkmark"></span>
+                                    <div class="option-content">
+                                        <strong>Déplacer les emails</strong>
+                                        <small>Déplace les emails vers leurs dossiers respectifs</small>
+                                    </div>
+                                </label>
+                                <label class="option-checkbox">
+                                    <input type="checkbox" id="preserveRead">
+                                    <span class="checkmark"></span>
+                                    <div class="option-content">
+                                        <strong>Conserver l'état de lecture</strong>
+                                        <small>Préserve si les emails sont lus ou non lus</small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="final-actions">
+                            <div class="action-summary">
+                                <span id="selectedEmailsCount">0</span> emails sélectionnés dans 
+                                <span id="selectedDomainsCount">0</span> domaines
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn-secondary" onclick="window.organizerInstance.goBackToConfig()">
+                                    ← Modifier la configuration
+                                </button>
+                                <button id="executeOrganization" class="btn-primary" onclick="window.organizerInstance.executeOrganization()">
+                                    ▶️ Organiser les emails
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Modal execution -->
-                    <div class="modal compact" id="executeConfirmModal" style="display: none;">
+                <!-- Modal de confirmation -->
+                <div class="modal-overlay" id="confirmModal" style="display: none;">
+                    <div class="modal">
                         <div class="modal-header">
                             <h3>⚠️ Confirmer l'organisation</h3>
                             <button class="modal-close" onclick="window.organizerInstance.closeModal()">&times;</button>
                         </div>
                         <div class="modal-body">
-                            <div class="warning-compact">
-                                <span class="icon">⚠️</span>
-                                <span>Cette action va modifier votre boîte mail</span>
+                            <div class="confirmation-details">
+                                <div class="detail-row">
+                                    <span class="detail-label">📧 Emails à organiser :</span>
+                                    <span class="detail-value" id="confirmEmailCount">0</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">📁 Dossiers à créer :</span>
+                                    <span class="detail-value" id="confirmFolderCount">0</span>
+                                </div>
+                                <div class="detail-row">
+                                    <span class="detail-label">⏱️ Temps estimé :</span>
+                                    <span class="detail-value" id="confirmTimeEstimate">--</span>
+                                </div>
                             </div>
-                            <div class="confirm-details">
-                                <div class="detail">📧 <span id="executeEmailsCount">--</span> emails</div>
-                                <div class="detail">📁 <span id="executeFoldersCount">--</span> dossiers</div>
-                                <div class="detail">⏱️ <span id="executeDuration">--</span></div>
+
+                            <div class="warning-message">
+                                <div class="warning-icon">⚠️</div>
+                                <div class="warning-content">
+                                    <strong>Cette action va modifier votre boîte mail</strong>
+                                    <p>Les emails sélectionnés seront déplacés vers leurs dossiers respectifs. Cette action ne peut pas être annulée automatiquement.</p>
+                                </div>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button class="btn secondary" onclick="window.organizerInstance.closeModal()">Annuler</button>
-                            <button class="btn primary" onclick="window.organizerInstance.confirmExecution()">▶ Confirmer</button>
+                            <button class="btn-secondary" onclick="window.organizerInstance.closeModal()">
+                                Annuler
+                            </button>
+                            <button class="btn-primary" onclick="window.organizerInstance.confirmOrganization()">
+                                ✅ Confirmer l'organisation
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                <!-- Toast notifications -->
+                <div class="toast-container" id="toastContainer"></div>
             </div>
 
             <style>
-                /* Interface ultra-compacte avec optimisations */
-                .organizer-compact {
-                    max-width: 1000px;
+                /* Design system moderne et robuste */
+                .domain-organizer {
+                    max-width: 1200px;
                     margin: 0 auto;
-                    padding: 16px;
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    background: #fafafa;
-                    height: 100vh;
-                    overflow: hidden;
+                    padding: 20px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    background-color: #f8fafc;
+                    min-height: 100vh;
+                    line-height: 1.6;
+                }
+
+                /* Header */
+                .header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-radius: 16px;
+                    padding: 24px 32px;
+                    margin-bottom: 24px;
+                    color: white;
+                    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+                }
+
+                .header-content h1 {
+                    margin: 0 0 8px 0;
+                    font-size: 28px;
+                    font-weight: 800;
+                    letter-spacing: -0.5px;
+                }
+
+                .header-content p {
+                    margin: 0;
+                    opacity: 0.9;
+                    font-size: 16px;
+                }
+
+                .progress-indicator {
+                    display: flex;
+                    justify-content: center;
+                    gap: 20px;
+                    margin-top: 24px;
+                }
+
+                .step-indicator {
                     display: flex;
                     flex-direction: column;
-                    opacity: 1;
-                    visibility: visible;
-                    transition: opacity 0.3s ease;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 16px;
+                    border-radius: 12px;
+                    background: rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(10px);
+                    transition: all 0.3s ease;
+                    min-width: 120px;
                 }
 
-                /* Éviter la page grise */
+                .step-indicator.active {
+                    background: rgba(255, 255, 255, 0.2);
+                    transform: translateY(-2px);
+                }
+
+                .step-number {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.3);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 700;
+                    font-size: 14px;
+                }
+
+                .step-indicator.active .step-number {
+                    background: white;
+                    color: #667eea;
+                }
+
+                .step-label {
+                    font-size: 12px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    opacity: 0.9;
+                }
+
+                /* Cards */
+                .card {
+                    background: white;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                    overflow: hidden;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .card-header {
+                    padding: 32px;
+                    border-bottom: 1px solid #f1f5f9;
+                    background: #fafbfc;
+                }
+
+                .card-header h2 {
+                    margin: 0 0 8px 0;
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: #1e293b;
+                }
+
+                .card-header p {
+                    margin: 0;
+                    color: #64748b;
+                    font-size: 16px;
+                }
+
+                .results-summary {
+                    margin-top: 16px;
+                    padding: 16px 20px;
+                    background: #f0fdf4;
+                    border-radius: 8px;
+                    color: #166534;
+                    font-weight: 600;
+                    border: 1px solid #bbf7d0;
+                }
+
+                /* Step content */
                 .step-content {
-                    opacity: 1 !important;
-                    visibility: visible !important;
-                    display: block !important;
-                }
-
-                .step-content:not(.active) {
-                    display: none !important;
+                    display: none;
+                    opacity: 0;
+                    transition: opacity 0.4s ease;
                 }
 
                 .step-content.active {
-                    display: block !important;
-                    opacity: 1 !important;
-                    visibility: visible !important;
-                }
-
-                /* Progress optimisé */
-                .progress-fill {
-                    height: 100%;
-                    background: #007acc;
-                    border-radius: 3px;
-                    transition: width 0.2s ease; /* Réduit de 0.3s à 0.2s */
-                    width: 0%;
-                    will-change: width; /* Optimisation GPU */
-                }
-
-                .progress-circle {
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 50%;
-                    background: conic-gradient(#007acc 0%, #f1f5f9 0%);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    position: relative;
-                    transition: background 0.2s ease; /* Optimisé */
-                    will-change: background; /* Optimisation GPU */
-                }
-
-                /* Stats avec animation fluide */
-                .stat-number {
                     display: block;
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: #111;
-                    margin-bottom: 2px;
-                    transition: all 0.2s ease; /* Animation des changements de valeurs */
+                    opacity: 1;
                 }
 
-                /* Optimisation du scan */
-                .scan-header {
-                    min-height: 60px; /* Hauteur fixe pour éviter les jumps */
+                /* Explanation section */
+                .explanation-section {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 20px;
+                    margin: 32px 0;
+                    padding: 0 32px;
                 }
 
-                .current-status {
-                    text-align: center;
-                    font-size: 12px;
-                    color: #6b7280;
-                    padding: 8px;
+                .explanation-item {
+                    display: flex;
+                    gap: 16px;
+                    padding: 20px;
                     background: #f8fafc;
-                    border-radius: 6px;
-                    min-height: 32px; /* Hauteur fixe */
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .explanation-icon {
+                    font-size: 24px;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
+                    background: linear-gradient(135deg, #667eea, #764ba2);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                }
-
-                /* Optimisation domaines list */
-                .domains-compact {
-                    flex: 1;
-                    overflow-y: auto;
-                    margin-bottom: 16px;
-                    border-radius: 8px;
-                    border: 1px solid #e2e8f0;
-                    background: white;
-                    min-height: 200px; /* Hauteur minimum pour éviter les jumps */
-                }
-
-                /* Loading states */
-                .loading {
-                    opacity: 0.7;
-                    pointer-events: none;
-                }
-
-                /* Optimisation animations */
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-
-                .step-content {
-                    animation: fadeIn 0.2s ease; /* Réduit de 0.3s à 0.2s */
-                }
-
-                /* Mode démo indicator */
-                .demo-indicator {
-                    position: absolute;
-                    top: 10px;
-                    right: 10px;
-                    background: #fbbf24;
-                    color: #92400e;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 10px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                }
-
-                /* Optimisation responsive */
-                @media (max-width: 768px) {
-                    .organizer-compact {
-                        padding: 12px;
-                        height: 100vh; /* Force la hauteur sur mobile */
-                    }
-                    
-                    .params-row {
-                        grid-template-columns: 1fr;
-                        gap: 12px;
-                    }
-                    
-                    .results-header {
-                        flex-direction: column;
-                        gap: 12px;
-                        align-items: stretch;
-                    }
-                    
-                    .final-controls {
-                        flex-direction: column;
-                        gap: 12px;
-                    }
-                    
-                    .domain-item {
-                        grid-template-columns: auto 1fr auto;
-                        gap: 8px;
-                    }
-                    
-                    .domain-avatar {
-                        grid-row: 1 / 3;
-                    }
-
-                    /* Force l'affichage sur mobile */
-                    .step-content {
-                        display: block !important;
-                        visibility: visible !important;
-                        opacity: 1 !important;
-                    }
-                }
-
-                /* Header ultra-compact */
-                .header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 16px 20px;
-                    background: white;
-                    border-radius: 12px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    margin-bottom: 16px;
                     flex-shrink: 0;
                 }
 
-                .header h1 {
-                    margin: 0;
-                    font-size: 20px;
-                    font-weight: 700;
-                    color: #111;
+                .explanation-content h3 {
+                    margin: 0 0 8px 0;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #1e293b;
                 }
 
-                .steps {
+                .explanation-content p {
+                    margin: 0;
+                    font-size: 14px;
+                    color: #64748b;
+                }
+
+                /* Configuration section */
+                .config-section {
+                    padding: 32px;
+                }
+
+                .config-section h3 {
+                    margin: 0 0 24px 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1e293b;
+                }
+
+                .config-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                    gap: 24px;
+                    margin-bottom: 32px;
+                }
+
+                .config-item {
                     display: flex;
+                    flex-direction: column;
                     gap: 8px;
                 }
 
-                .step {
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50%;
-                    background: #f0f0f0;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: #666;
-                    transition: all 0.3s ease;
-                }
-
-                .step.active {
-                    background: #007acc;
-                    color: white;
-                    transform: scale(1.1);
-                }
-
-                .step.completed {
-                    background: #10b981;
-                    color: white;
-                }
-
-                /* Cards compactes */
-                .card {
-                    background: white;
-                    border-radius: 12px;
-                    padding: 20px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    border: 1px solid #f0f0f0;
-                    flex: 1;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .card.success {
-                    background: linear-gradient(135deg, #10b981, #059669);
-                    color: white;
-                    border: none;
-                }
-
-                /* Info rapide */
-                .quick-info {
-                    display: flex;
-                    gap: 16px;
-                    margin-bottom: 16px;
-                    padding: 12px;
-                    background: #f8fafc;
-                    border-radius: 8px;
-                    font-size: 13px;
-                }
-
-                .info-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    flex: 1;
-                }
-
-                .info-item .icon {
+                .config-item label {
                     font-size: 14px;
+                    font-weight: 600;
+                    color: #374151;
+                }
+
+                .config-item small {
+                    font-size: 12px;
+                    color: #6b7280;
+                    margin-top: 4px;
+                }
+
+                .input {
+                    padding: 12px 16px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    background: white;
+                    transition: border-color 0.3s ease;
+                }
+
+                .input:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                }
+
+                /* Info alert */
+                .info-alert {
+                    display: flex;
+                    gap: 12px;
+                    padding: 16px 20px;
+                    background: #eff6ff;
+                    border-radius: 8px;
+                    border: 1px solid #bfdbfe;
+                    margin-bottom: 32px;
+                }
+
+                .alert-icon {
+                    font-size: 20px;
+                    color: #1d4ed8;
                     flex-shrink: 0;
                 }
 
-                /* Formulaire compact */
-                .compact-form {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                }
-
-                .inline-section {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .section-label {
-                    font-size: 14px;
+                .alert-content strong {
+                    display: block;
+                    color: #1e40af;
                     font-weight: 600;
-                    color: #374151;
-                    min-width: 80px;
+                    margin-bottom: 4px;
                 }
 
-                .radio-group {
-                    display: flex;
-                    gap: 12px;
-                }
-
-                .radio-compact {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    cursor: pointer;
-                    font-size: 13px;
-                    color: #374151;
-                    padding: 6px 10px;
-                    border-radius: 6px;
-                    border: 1px solid #e5e7eb;
-                    background: white;
-                    transition: all 0.2s ease;
-                }
-
-                .radio-compact:hover {
-                    background: #f8fafc;
-                }
-
-                .radio-compact:has(input:checked) {
-                    background: #eff6ff;
-                    border-color: #007acc;
-                    color: #007acc;
-                }
-
-                .radio-compact input {
+                .alert-content p {
                     margin: 0;
-                    width: 14px;
-                    height: 14px;
-                    accent-color: #007acc;
+                    color: #1e40af;
+                    font-size: 14px;
                 }
 
-                /* Dates personnalisées */
-                .custom-dates.compact {
-                    display: flex;
-                    gap: 12px;
-                    margin-top: 8px;
-                    padding-left: 92px;
-                }
-
-                /* Paramètres sur une ligne */
-                .params-row {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr 1fr;
-                    gap: 16px;
-                }
-
-                .param-item {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
-                }
-
-                .param-item label {
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: #374151;
-                }
-
-                .input-compact {
-                    padding: 8px 10px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    background: white;
-                }
-
-                .input-compact:focus {
-                    outline: none;
-                    border-color: #007acc;
-                    box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.1);
-                }
-
-                /* Boutons */
-                .btn {
-                    padding: 10px 18px;
+                /* Buttons */
+                .btn-primary {
+                    background: linear-gradient(135deg, #667eea, #764ba2);
+                    color: white;
                     border: none;
+                    padding: 16px 32px;
                     border-radius: 8px;
-                    font-size: 13px;
+                    font-size: 16px;
                     font-weight: 600;
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: all 0.3s ease;
                     display: inline-flex;
                     align-items: center;
-                    gap: 6px;
-                    justify-content: center;
+                    gap: 8px;
                 }
 
-                .btn.primary {
-                    background: #007acc;
-                    color: white;
+                .btn-primary:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
                 }
 
-                .btn.primary:hover {
-                    background: #0066a3;
-                    transform: translateY(-1px);
-                }
-
-                .btn.primary:disabled {
+                .btn-primary:disabled {
                     background: #9ca3af;
                     cursor: not-allowed;
                     transform: none;
+                    box-shadow: none;
                 }
 
-                .btn.secondary {
-                    background: #f8fafc;
+                .btn-secondary {
+                    background: white;
                     color: #374151;
-                    border: 1px solid #e5e7eb;
-                }
-
-                .btn.secondary:hover {
-                    background: #f1f5f9;
-                }
-
-                .btn-mini {
-                    padding: 4px 8px;
-                    font-size: 11px;
-                    background: #f8fafc;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    color: #374151;
-                }
-
-                .btn-mini:hover {
-                    background: #f1f5f9;
-                }
-
-                /* Scan compact */
-                .scan-header, .exec-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 16px;
-                }
-
-                .scan-status, .exec-status {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-
-                .phase-icon, .action-icon {
-                    font-size: 20px;
-                    width: 36px;
-                    height: 36px;
+                    border: 2px solid #e5e7eb;
+                    padding: 12px 24px;
                     border-radius: 8px;
-                    background: #007acc;
-                    color: white;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    flex-shrink: 0;
-                }
-
-                .scan-status h3, .exec-status h3 {
-                    margin: 0 0 2px 0;
                     font-size: 14px;
                     font-weight: 600;
-                    color: #111;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
                 }
 
-                .scan-status p, .exec-status p {
-                    margin: 0;
-                    font-size: 12px;
-                    color: #6b7280;
+                .btn-secondary:hover {
+                    border-color: #d1d5db;
+                    background: #f9fafb;
                 }
 
-                .progress-circle {
-                    width: 50px;
-                    height: 50px;
-                    border-radius: 50%;
-                    background: conic-gradient(#007acc 0%, #f1f5f9 0%);
+                .action-buttons {
                     display: flex;
-                    align-items: center;
                     justify-content: center;
-                    position: relative;
+                    gap: 16px;
                 }
 
-                .progress-circle::before {
-                    content: '';
-                    width: 36px;
-                    height: 36px;
-                    border-radius: 50%;
-                    background: white;
-                    position: absolute;
+                /* Analysis progress */
+                .analysis-progress {
+                    padding: 32px;
                 }
 
-                .progress-circle span {
-                    font-size: 11px;
-                    font-weight: 600;
-                    color: #007acc;
-                    z-index: 1;
-                }
-
-                .progress-circle.success {
-                    background: conic-gradient(#10b981 0%, #f1f5f9 0%);
-                }
-
-                .progress-circle.success span {
-                    color: #10b981;
-                }
-
-                /* Stats compactes */
-                .stats-compact {
+                .progress-stats {
                     display: grid;
                     grid-template-columns: repeat(3, 1fr);
-                    gap: 12px;
-                    margin-bottom: 16px;
+                    gap: 24px;
+                    margin-bottom: 32px;
                 }
 
-                .stat {
+                .stat-box {
                     text-align: center;
-                    padding: 12px 8px;
+                    padding: 24px;
                     background: #f8fafc;
-                    border-radius: 8px;
+                    border-radius: 12px;
                     border: 1px solid #e2e8f0;
                 }
 
                 .stat-number {
-                    display: block;
-                    font-size: 18px;
-                    font-weight: 700;
-                    color: #111;
-                    margin-bottom: 2px;
+                    font-size: 32px;
+                    font-weight: 800;
+                    color: #1e293b;
+                    margin-bottom: 8px;
+                    letter-spacing: -1px;
                 }
 
                 .stat-label {
-                    font-size: 10px;
-                    color: #6b7280;
+                    font-size: 12px;
+                    color: #64748b;
                     text-transform: uppercase;
-                    letter-spacing: 0.5px;
+                    letter-spacing: 1px;
                     font-weight: 600;
                 }
 
+                .progress-bar-container {
+                    margin-bottom: 24px;
+                }
+
                 .progress-bar {
-                    height: 6px;
+                    height: 12px;
                     background: #f1f5f9;
-                    border-radius: 3px;
+                    border-radius: 6px;
                     overflow: hidden;
                     margin-bottom: 12px;
                 }
 
                 .progress-fill {
                     height: 100%;
-                    background: #007acc;
-                    border-radius: 3px;
-                    transition: width 0.3s ease;
+                    background: linear-gradient(90deg, #667eea, #764ba2);
+                    border-radius: 6px;
+                    transition: width 0.5s ease;
                     width: 0%;
                 }
 
-                .progress-fill.success {
-                    background: #10b981;
+                .progress-text {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 14px;
+                    color: #64748b;
+                    font-weight: 500;
                 }
 
-                .current-status {
-                    text-align: center;
-                    font-size: 12px;
-                    color: #6b7280;
-                    padding: 8px;
+                .current-activity {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 16px 20px;
                     background: #f8fafc;
-                    border-radius: 6px;
+                    border-radius: 8px;
+                    border: 1px solid #e2e8f0;
                 }
 
-                /* Résultats compacts */
-                .results-header {
+                .activity-icon {
+                    font-size: 18px;
+                    color: #667eea;
+                }
+
+                .activity-text {
+                    font-size: 14px;
+                    color: #374151;
+                    font-weight: 500;
+                }
+
+                /* Results controls */
+                .results-controls {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 16px;
-                    padding-bottom: 12px;
-                    border-bottom: 1px solid #f0f0f0;
+                    padding: 24px 32px;
+                    border-bottom: 1px solid #f1f5f9;
+                    background: #fafbfc;
                 }
 
-                .results-info {
+                .controls-left {
                     display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    font-size: 13px;
-                    color: #166534;
-                }
-
-                .results-info .icon {
-                    font-size: 16px;
-                }
-
-                .results-actions {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .search-mini {
-                    padding: 4px 8px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 4px;
-                    font-size: 11px;
-                    width: 120px;
-                    background: white;
-                }
-
-                /* Domaines compacts */
-                .domains-compact {
-                    flex: 1;
-                    overflow-y: auto;
-                    margin-bottom: 16px;
-                    border-radius: 8px;
-                    border: 1px solid #e2e8f0;
-                    background: white;
-                }
-
-                .domain-item {
-                    display: grid;
-                    grid-template-columns: auto auto 1fr auto;
-                    align-items: center;
                     gap: 12px;
-                    padding: 10px 12px;
-                    border-bottom: 1px solid #f8fafc;
-                    font-size: 12px;
                 }
 
-                .domain-item:hover {
+                .search-input {
+                    padding: 10px 16px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    min-width: 250px;
+                    background: white;
+                }
+
+                .search-input:focus {
+                    outline: none;
+                    border-color: #667eea;
+                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                }
+
+                /* Domains list */
+                .domains-list {
+                    max-height: 500px;
+                    overflow-y: auto;
+                    background: white;
+                }
+
+                .domain-row {
+                    display: flex;
+                    align-items: center;
+                    padding: 20px 32px;
+                    border-bottom: 1px solid #f1f5f9;
+                    transition: background-color 0.3s ease;
+                }
+
+                .domain-row:hover {
                     background: #f8fafc;
                 }
 
-                .domain-item:last-child {
+                .domain-row:last-child {
                     border-bottom: none;
                 }
 
                 .domain-checkbox {
-                    width: 16px;
-                    height: 16px;
-                    accent-color: #007acc;
+                    width: 20px;
+                    height: 20px;
+                    margin-right: 20px;
+                    accent-color: #667eea;
+                    cursor: pointer;
                 }
 
                 .domain-avatar {
-                    width: 24px;
-                    height: 24px;
-                    border-radius: 4px;
-                    background: #007acc;
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 12px;
+                    background: linear-gradient(135deg, #667eea, #764ba2);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
-                    font-size: 10px;
-                    font-weight: 600;
+                    font-size: 18px;
+                    font-weight: 700;
+                    margin-right: 20px;
+                    text-transform: uppercase;
                 }
 
                 .domain-info {
+                    flex: 1;
                     min-width: 0;
                 }
 
                 .domain-name {
-                    font-size: 13px;
+                    font-size: 16px;
                     font-weight: 600;
-                    color: #111;
-                    margin-bottom: 2px;
+                    color: #1e293b;
+                    margin-bottom: 4px;
                 }
 
-                .domain-meta {
-                    font-size: 11px;
-                    color: #6b7280;
+                .domain-stats {
+                    font-size: 14px;
+                    color: #64748b;
                 }
 
-                .domain-folder {
-                    padding: 4px 8px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 4px;
-                    font-size: 11px;
-                    background: white;
-                    min-width: 100px;
-                }
-
-                /* Contrôles finaux */
-                .final-controls {
+                .domain-controls {
                     display: flex;
-                    justify-content: space-between;
                     align-items: center;
-                    padding-top: 12px;
-                    border-top: 1px solid #f0f0f0;
-                    flex-shrink: 0;
-                }
-
-                .options-compact {
-                    display: flex;
                     gap: 16px;
                 }
 
-                .checkbox-compact {
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
+                .folder-select {
+                    padding: 8px 12px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    background: white;
+                    min-width: 180px;
+                }
+
+                .folder-select:focus {
+                    outline: none;
+                    border-color: #667eea;
+                }
+
+                .expand-btn {
+                    background: none;
+                    border: none;
+                    color: #64748b;
                     cursor: pointer;
-                    font-size: 12px;
+                    padding: 8px;
+                    border-radius: 4px;
+                    transition: all 0.3s ease;
+                }
+
+                .expand-btn:hover {
+                    background: #f1f5f9;
                     color: #374151;
                 }
 
-                .checkbox-compact input {
-                    width: 14px;
-                    height: 14px;
-                    accent-color: #007acc;
+                /* Email list */
+                .emails-list {
+                    display: none;
+                    background: #f8fafc;
+                    border-top: 1px solid #f1f5f9;
+                    max-height: 300px;
+                    overflow-y: auto;
                 }
 
-                .action-buttons {
-                    display: flex;
-                    gap: 12px;
+                .emails-list.expanded {
+                    display: block;
                 }
 
-                /* Succès compact */
-                .success-compact {
-                    text-align: center;
-                }
-
-                .success-header {
+                .email-row {
                     display: flex;
                     align-items: center;
-                    justify-content: center;
-                    gap: 12px;
-                    margin-bottom: 20px;
+                    padding: 12px 32px 12px 100px;
+                    border-bottom: 1px solid #f1f5f9;
+                    font-size: 14px;
                 }
 
-                .success-icon {
-                    font-size: 32px;
+                .email-row:last-child {
+                    border-bottom: none;
                 }
 
-                .success-header h2 {
-                    color: white;
-                    margin: 0 0 4px 0;
-                    font-size: 18px;
+                .email-checkbox {
+                    width: 16px;
+                    height: 16px;
+                    margin-right: 16px;
+                    accent-color: #667eea;
                 }
 
-                .success-header p {
-                    opacity: 0.9;
-                    margin: 0;
-                    font-size: 13px;
+                .email-info {
+                    flex: 1;
+                    min-width: 0;
                 }
 
-                .success-stats {
-                    display: flex;
-                    justify-content: center;
-                    gap: 20px;
-                    margin-bottom: 20px;
+                .email-subject {
+                    font-weight: 500;
+                    color: #1e293b;
+                    margin-bottom: 2px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
 
-                .success-stats .stat {
-                    background: rgba(255, 255, 255, 0.15);
-                    color: white;
-                    border-color: rgba(255, 255, 255, 0.2);
+                .email-meta {
+                    color: #64748b;
+                    font-size: 12px;
                 }
 
-                .success-stats .stat-number {
-                    color: white;
-                }
-
-                .success-stats .stat-label {
-                    color: rgba(255, 255, 255, 0.8);
-                }
-
-                .success-actions {
-                    display: flex;
-                    justify-content: center;
-                    gap: 12px;
-                }
-
-                .success-actions .btn.secondary {
-                    background: rgba(255, 255, 255, 0.15);
-                    color: white;
-                    border-color: rgba(255, 255, 255, 0.3);
-                }
-
-                .success-actions .btn.primary {
+                .email-folder-select {
+                    padding: 4px 8px;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 4px;
+                    font-size: 12px;
                     background: white;
-                    color: #059669;
+                    min-width: 120px;
                 }
 
-                /* Modales compactes */
+                /* Organization options */
+                .organization-options {
+                    padding: 32px;
+                    border-top: 1px solid #f1f5f9;
+                    background: #fafbfc;
+                }
+
+                .options-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 20px;
+                    margin-bottom: 32px;
+                }
+
+                .option-checkbox {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+                    padding: 20px;
+                    background: white;
+                    border-radius: 12px;
+                    border: 2px solid #e5e7eb;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+
+                .option-checkbox:hover {
+                    border-color: #667eea;
+                }
+
+                .option-checkbox input[type="checkbox"] {
+                    display: none;
+                }
+
+                .checkmark {
+                    width: 20px;
+                    height: 20px;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 4px;
+                    background: white;
+                    position: relative;
+                    transition: all 0.3s ease;
+                    flex-shrink: 0;
+                    margin-top: 2px;
+                }
+
+                .option-checkbox input[type="checkbox"]:checked + .checkmark {
+                    background: #667eea;
+                    border-color: #667eea;
+                }
+
+                .option-checkbox input[type="checkbox"]:checked + .checkmark::after {
+                    content: '✓';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    color: white;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+
+                .option-content strong {
+                    display: block;
+                    color: #1e293b;
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                }
+
+                .option-content small {
+                    color: #64748b;
+                    font-size: 12px;
+                }
+
+                /* Final actions */
+                .final-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 32px;
+                    border-top: 1px solid #f1f5f9;
+                    background: white;
+                }
+
+                .action-summary {
+                    font-size: 16px;
+                    color: #374151;
+                    font-weight: 500;
+                }
+
+                /* Modal */
                 .modal-overlay {
                     position: fixed;
                     top: 0;
@@ -1083,1295 +971,757 @@ class DomainOrganizer {
                     right: 0;
                     bottom: 0;
                     background: rgba(0, 0, 0, 0.5);
-                    z-index: 1000;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    padding: 20px;
+                    z-index: 1000;
+                    backdrop-filter: blur(4px);
                 }
 
-                .modal.compact {
+                .modal {
                     background: white;
-                    border-radius: 12px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-                    max-width: 400px;
-                    width: 100%;
+                    border-radius: 16px;
+                    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 90vh;
+                    overflow-y: auto;
                 }
 
                 .modal-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 16px 20px;
-                    border-bottom: 1px solid #f0f0f0;
+                    padding: 24px 32px;
+                    border-bottom: 1px solid #f1f5f9;
                 }
 
                 .modal-header h3 {
                     margin: 0;
-                    font-size: 14px;
+                    font-size: 18px;
                     font-weight: 600;
-                    color: #111;
+                    color: #1e293b;
                 }
 
                 .modal-close {
                     background: none;
                     border: none;
-                    font-size: 18px;
+                    font-size: 24px;
                     color: #9ca3af;
                     cursor: pointer;
-                    padding: 2px;
+                    padding: 4px;
+                    border-radius: 4px;
+                    transition: all 0.3s ease;
+                }
+
+                .modal-close:hover {
+                    background: #f3f4f6;
+                    color: #6b7280;
                 }
 
                 .modal-body {
-                    padding: 20px;
+                    padding: 32px;
                 }
 
-                .confirm-details {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                    margin-bottom: 16px;
-                    font-size: 12px;
+                .confirmation-details {
+                    margin-bottom: 24px;
                 }
 
-                .detail {
+                .detail-row {
                     display: flex;
                     justify-content: space-between;
-                    padding: 6px 8px;
-                    background: #f8fafc;
-                    border-radius: 4px;
+                    padding: 12px 0;
+                    border-bottom: 1px solid #f1f5f9;
                 }
 
-                .modal-info, .warning-compact {
+                .detail-row:last-child {
+                    border-bottom: none;
+                }
+
+                .detail-label {
+                    color: #64748b;
+                    font-weight: 500;
+                }
+
+                .detail-value {
+                    color: #1e293b;
+                    font-weight: 600;
+                }
+
+                .warning-message {
                     display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 8px 12px;
-                    border-radius: 6px;
-                    font-size: 12px;
-                }
-
-                .modal-info {
-                    background: #eff6ff;
-                    color: #1e40af;
-                }
-
-                .warning-compact {
+                    gap: 12px;
+                    padding: 20px;
                     background: #fef3c7;
+                    border-radius: 8px;
+                    border: 1px solid #fbbf24;
+                }
+
+                .warning-icon {
+                    font-size: 20px;
+                    color: #d97706;
+                    flex-shrink: 0;
+                }
+
+                .warning-content strong {
+                    display: block;
                     color: #92400e;
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                }
+
+                .warning-content p {
+                    margin: 0;
+                    color: #92400e;
+                    font-size: 14px;
                 }
 
                 .modal-footer {
                     display: flex;
                     justify-content: flex-end;
-                    gap: 8px;
-                    padding: 12px 20px;
-                    border-top: 1px solid #f0f0f0;
+                    gap: 16px;
+                    padding: 24px 32px;
+                    border-top: 1px solid #f1f5f9;
                     background: #fafbfc;
                 }
 
-                /* Responsive compact */
+                /* Toast notifications */
+                .toast-container {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 1001;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .toast {
+                    padding: 16px 20px;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 500;
+                    min-width: 300px;
+                    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+                    animation: slideInRight 0.3s ease;
+                }
+
+                .toast.success {
+                    background: #10b981;
+                }
+
+                .toast.error {
+                    background: #ef4444;
+                }
+
+                .toast.warning {
+                    background: #f59e0b;
+                }
+
+                .toast.info {
+                    background: #3b82f6;
+                }
+
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+
+                /* Responsive */
                 @media (max-width: 768px) {
-                    .organizer-compact {
-                        padding: 12px;
+                    .domain-organizer {
+                        padding: 16px;
                     }
-                    
-                    .params-row {
+
+                    .header {
+                        padding: 20px;
+                    }
+
+                    .header-content h1 {
+                        font-size: 24px;
+                    }
+
+                    .progress-indicator {
+                        flex-direction: column;
+                        gap: 12px;
+                    }
+
+                    .step-indicator {
+                        flex-direction: row;
+                        min-width: auto;
+                        width: 100%;
+                    }
+
+                    .explanation-section {
                         grid-template-columns: 1fr;
-                        gap: 12px;
+                        padding: 0 20px;
                     }
-                    
-                    .results-header {
+
+                    .config-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .progress-stats {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .results-controls {
                         flex-direction: column;
-                        gap: 12px;
-                        align-items: stretch;
+                        gap: 16px;
                     }
-                    
-                    .final-controls {
+
+                    .final-actions {
                         flex-direction: column;
+                        gap: 16px;
+                    }
+
+                    .domain-row {
+                        flex-wrap: wrap;
                         gap: 12px;
                     }
-                    
-                    .domain-item {
-                        grid-template-columns: auto 1fr auto;
-                        gap: 8px;
+
+                    .domain-controls {
+                        width: 100%;
+                        justify-content: space-between;
                     }
-                    
-                    .domain-avatar {
-                        grid-row: 1 / 3;
+
+                    .modal {
+                        width: 95%;
+                        margin: 20px;
+                    }
+
+                    .options-grid {
+                        grid-template-columns: 1fr;
                     }
                 }
 
-                /* Scrollbar ultra-fine */
-                .domains-compact::-webkit-scrollbar {
-                    width: 4px;
+                /* Scrollbar styling */
+                .domains-list::-webkit-scrollbar,
+                .emails-list::-webkit-scrollbar {
+                    width: 8px;
                 }
 
-                .domains-compact::-webkit-scrollbar-track {
-                    background: #f8fafc;
+                .domains-list::-webkit-scrollbar-track,
+                .emails-list::-webkit-scrollbar-track {
+                    background: #f1f5f9;
                 }
 
-                .domains-compact::-webkit-scrollbar-thumb {
+                .domains-list::-webkit-scrollbar-thumb,
+                .emails-list::-webkit-scrollbar-thumb {
                     background: #cbd5e1;
-                    border-radius: 2px;
+                    border-radius: 4px;
                 }
 
-                /* Animations */
-                .step-content {
-                    animation: fadeIn 0.3s ease;
-                }
-
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
+                .domains-list::-webkit-scrollbar-thumb:hover,
+                .emails-list::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
                 }
             </style>
         `;
     }
 
     // ================================================
-    // MÉTHODES SIMPLIFIÉES (identiques mais optimisées)
+    // INITIALISATION ET GESTION D'INTERFACE
     // ================================================
-
-    // Toutes les méthodes principales restent identiques
-    // mais l'interface est ultra-compacte
-
-    showScanConfirmModal(formData) {
-        const modal = document.getElementById('scanConfirmModal');
-        const overlay = document.getElementById('modalOverlay');
+    async initialize() {
+        console.log('[DomainOrganizer] Initializing v13.0...');
         
-        const emailLimit = formData.emailLimit === 'unlimited' ? 10000 : parseInt(formData.emailLimit);
-        const estimatedTime = this.calculateEstimatedTime(emailLimit);
-        const periodText = this.getPeriodText(formData.dateRange, formData.startDate, formData.endDate);
-        
-        document.getElementById('scanEmailsCount').textContent = `${emailLimit.toLocaleString()} max`;
-        document.getElementById('scanPeriod').textContent = periodText;
-        document.getElementById('scanDuration').textContent = estimatedTime;
-        
-        this.pendingFormData = formData;
-        
-        overlay.style.display = 'flex';
-        modal.style.display = 'block';
-    }
-
-    showExecutionModal() {
-        if (!this.currentAnalysis) return;
-        
-        const selectedDomains = this.currentAnalysis.domains.filter(d => d.selected);
-        const totalEmails = selectedDomains.reduce((sum, d) => sum + d.count, 0);
-        
-        if (totalEmails === 0) {
-            this.showError('Aucun email sélectionné');
-            return;
-        }
-        
-        const modal = document.getElementById('executeConfirmModal');
-        const overlay = document.getElementById('modalOverlay');
-        
-        const createFolders = document.getElementById('createFolders')?.checked ?? true;
-        const moveEmails = document.getElementById('moveEmails')?.checked ?? true;
-        
-        if (!createFolders && !moveEmails) {
-            this.showError('Veuillez sélectionner au moins une action');
-            return;
-        }
-        
-        const uniqueFolders = new Set(selectedDomains.map(d => d.suggestedFolder));
-        const estimatedTime = Math.ceil(totalEmails / 50) + ' min';
-        
-        document.getElementById('executeEmailsCount').textContent = totalEmails.toLocaleString();
-        document.getElementById('executeFoldersCount').textContent = uniqueFolders.size;
-        document.getElementById('executeDuration').textContent = estimatedTime;
-        
-        overlay.style.display = 'flex';
-        modal.style.display = 'block';
-    }
-
-    closeModal() {
-        const overlay = document.getElementById('modalOverlay');
-        const modals = overlay.querySelectorAll('.modal');
-        
-        modals.forEach(modal => modal.style.display = 'none');
-        overlay.style.display = 'none';
-    }
-
-    confirmScan() {
-        this.closeModal();
-        if (this.pendingFormData) {
-            this.startCompleteScan(this.pendingFormData);
-        }
-    }
-
-    confirmExecution() {
-        this.closeModal();
-        this.execute();
-    }
-
-    calculateEstimatedTime(emailCount) {
-        if (emailCount <= 1000) return '2-3 min';
-        if (emailCount <= 2500) return '5-8 min';
-        if (emailCount <= 5000) return '10-15 min';
-        return '15+ min';
-    }
-
-    getPeriodText(dateRange, startDate, endDate) {
-        switch(dateRange) {
-            case 'all': return 'Tous les emails';
-            case 'recent': return '6 derniers mois';
-            case 'year': return 'Dernière année';
-            case 'custom': 
-                if (startDate && endDate) {
-                    return `${new Date(startDate).toLocaleDateString('fr-FR')} - ${new Date(endDate).toLocaleDateString('fr-FR')}`;
-                } else if (startDate) {
-                    return `Depuis ${new Date(startDate).toLocaleDateString('fr-FR')}`;
-                } else if (endDate) {
-                    return `Jusqu'à ${new Date(endDate).toLocaleDateString('fr-FR')}`;
-                }
-                return 'Période personnalisée';
-            default: return 'Non défini';
-        }
-    }
-
-    // Toutes les autres méthodes restent identiques mais avec l'interface compacte
-    async startCompleteScan(formData) {
-        try {
-            console.log('[DomainOrganizer] 🚀 Starting instant scan...');
-            
-            // Assurer que l'étape 2 s'affiche immédiatement
-            this.updateStep(2);
-            
-            // Forcer un repaint pour éviter la page grise
-            await new Promise(resolve => {
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(resolve);
-                });
-            });
-            
-            this.configure(formData);
-            
-            // Démarrer le scan immédiatement
-            await this.performDateBasedScan(formData);
-            
-        } catch (error) {
-            console.error('[DomainOrganizer] Scan error:', error);
-            
-            // En cas d'erreur, basculer vers des données de démonstration
-            console.log('[DomainOrganizer] Switching to demo mode due to error');
-            this.handleDemoMode(error.message);
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    handleDemoMode(errorMessage) {
-        console.log('[DomainOrganizer] Entering demo mode');
-        
-        // Mettre à jour l'interface pour indiquer le mode démo
-        this.updateStep(2);
-        this.updatePhase('📧', 'Mode Démo', 'Données d\'exemple');
-        
-        // Créer rapidement des données de démonstration
-        const demoEmails = this.createDemoEmails();
-        this.emailsByDomain.clear();
-        
-        demoEmails.forEach(email => {
-            const domain = this.extractDomain(email);
-            if (!this.emailsByDomain.has(domain)) {
-                this.emailsByDomain.set(domain, []);
-            }
-            this.emailsByDomain.get(domain).push({
-                id: email.id,
-                subject: email.subject,
-                sender: email.from?.emailAddress?.address || 'demo@' + domain,
-                senderName: email.from?.emailAddress?.name || domain,
-                date: this.formatDate(email),
-                targetFolder: this.suggestFolder(domain),
-                selected: true,
-                originalEmail: email
-            });
-        });
-
-        // Mettre à jour l'interface rapidement
-        const emailCount = document.getElementById('emailCount');
-        const domainCount = document.getElementById('domainCount');
-        const folderCount = document.getElementById('folderCount');
-        const statusText = document.getElementById('currentStatus');
-        
-        const results = this.buildResults();
-        
-        if (emailCount) emailCount.textContent = results.totalEmails.toLocaleString();
-        if (domainCount) domainCount.textContent = results.totalDomains;
-        if (folderCount) folderCount.textContent = results.totalDomains;
-        if (statusText) statusText.innerHTML = '<span>📧 Mode démonstration actif</span>';
-        
-        this.updateProgress(100);
-        
-        // Passer directement aux résultats
-        setTimeout(() => {
-            this.showResults(results);
-        }, 500);
-    }
-
-    async performDateBasedScan(formData) {
-        console.log('[DomainOrganizer] 🔍 Starting instant scan...');
-        
-        if (!window.mailService) {
-            throw new Error('MailService non disponible');
-        }
-
-        // Réinitialiser
-        this.scanProgress = {
-            totalEmails: 0,
-            processedEmails: 0,
-            domainsFound: new Set(),
-            startTime: Date.now()
-        };
-        
-        this.emailsByDomain.clear();
-
-        // Éléments DOM
-        const phaseIcon = document.getElementById('phaseIcon');
-        const phaseName = document.getElementById('phaseName');
-        const phaseDescription = document.getElementById('phaseDescription');
-        const statusText = document.getElementById('currentStatus');
-        const progressFill = document.getElementById('progressFill');
-        const progressPercent = document.getElementById('progressPercent');
-        const emailCount = document.getElementById('emailCount');
-        const domainCount = document.getElementById('domainCount');
-        const folderCount = document.getElementById('folderCount');
-
-        try {
-            // ================================================
-            // SCAN ULTRA-RAPIDE OPTIMISÉ
-            // ================================================
-            
-            // Phase 1: Connexion instantanée
-            this.updatePhase('🔗', 'Connexion', 'Vérification accès');
-            this.updateProgress(10);
-            if (statusText) statusText.innerHTML = '<span>🔗 Connexion...</span>';
-
-            // Test de connexion rapide
-            let connectionTest;
-            try {
-                connectionTest = await Promise.race([
-                    window.mailService.testConnection(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000))
-                ]);
-            } catch (error) {
-                // Si timeout ou erreur, on continue avec une connexion simulée
-                console.warn('[DomainOrganizer] Connection test failed, proceeding with mock data');
-                connectionTest = { success: true, user: 'Utilisateur connecté' };
-            }
-
-            if (!connectionTest.success) {
-                throw new Error(`Connexion impossible: ${connectionTest.error}`);
-            }
-
-            this.updateProgress(20);
-            if (statusText) statusText.innerHTML = `<span>✅ Connecté</span>`;
-
-            // Phase 2: Configuration rapide
-            this.updatePhase('⚙️', 'Configuration', 'Calcul paramètres');
-            const dateRange = this.calculateDateRange(formData);
-            const emailLimit = formData.emailLimit === 'unlimited' ? 5000 : Math.min(parseInt(formData.emailLimit), 1000); // Limiter pour la rapidité
-            
-            this.updateProgress(30);
-            if (statusText) statusText.innerHTML = `<span>⚙️ ${dateRange.description}</span>`;
-
-            // Phase 3: Récupération optimisée
-            this.updatePhase('📥', 'Récupération', 'Chargement optimisé');
-            
-            let allEmails = [];
-            const folders = formData.sourceFolder === 'all' ? 
-                ['inbox', 'sent'] : // Réduire le nombre de dossiers pour la rapidité
-                [formData.sourceFolder];
-
-            // Récupération parallèle pour plus de rapidité
-            const folderPromises = folders.map(async (folder, index) => {
-                try {
-                    const options = { 
-                        top: Math.min(Math.floor(emailLimit / folders.length), 500) // Limite réduite
-                    };
-                    
-                    if (dateRange.startDate) options.startDate = dateRange.startDate;
-                    if (dateRange.endDate) options.endDate = dateRange.endDate;
-
-                    console.log(`[DomainOrganizer] Fetching from ${folder} with limit ${options.top}`);
-                    
-                    // Timeout pour éviter les blocages
-                    const folderEmails = await Promise.race([
-                        window.mailService.getEmailsFromFolder(folder, options),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout ${folder}`)), 5000))
-                    ]);
-                    
-                    console.log(`[DomainOrganizer] Retrieved ${folderEmails.length} emails from ${folder}`);
-                    return folderEmails;
-                } catch (error) {
-                    console.warn(`[DomainOrganizer] Error fetching ${folder}:`, error);
-                    return []; // Retourner tableau vide en cas d'erreur
-                }
-            });
-
-            // Attendre toutes les récupérations avec mise à jour progressive
-            const folderResults = await Promise.all(folderPromises);
-            folderResults.forEach(folderEmails => {
-                allEmails = allEmails.concat(folderEmails);
-                if (emailCount) emailCount.textContent = allEmails.length.toLocaleString();
-                this.updateProgress(40 + (allEmails.length / emailLimit) * 20);
-            });
-
-            if (statusText) statusText.innerHTML = `<span>📥 ${allEmails.length} emails récupérés</span>`;
-
-            // Cas spécial : Si pas d'emails réels, créer des données de démonstration
-            if (allEmails.length === 0) {
-                console.warn('[DomainOrganizer] No emails found, creating demo data');
-                allEmails = this.createDemoEmails();
-                if (emailCount) emailCount.textContent = allEmails.length.toLocaleString();
-            }
-
-            this.updateProgress(70);
-
-            // Phase 4: Analyse ultra-rapide
-            this.updatePhase('🔍', 'Analyse', 'Classification instantanée');
-            this.scanProgress.totalEmails = allEmails.length;
-            
-            // Traitement par lots pour éviter les blocages
-            const batchSize = 100;
-            for (let i = 0; i < allEmails.length; i += batchSize) {
-                const batch = allEmails.slice(i, i + batchSize);
-                
-                batch.forEach(email => {
-                    const domain = this.extractDomain(email);
-                    
-                    if (!domain || formData.excludeDomains.includes(domain.toLowerCase())) {
-                        this.scanProgress.processedEmails++;
-                        return;
-                    }
-
-                    if (!this.emailsByDomain.has(domain)) {
-                        this.emailsByDomain.set(domain, []);
-                        this.scanProgress.domainsFound.add(domain);
-                    }
-                    
-                    this.emailsByDomain.get(domain).push({
-                        id: email.id || `email-${Date.now()}-${Math.random()}`,
-                        subject: email.subject || 'Sans objet',
-                        sender: this.extractSenderEmail(email),
-                        senderName: this.extractSenderName(email) || domain,
-                        date: this.formatDate(email),
-                        targetFolder: this.suggestFolder(domain),
-                        selected: true,
-                        originalEmail: email
-                    });
-
-                    this.scanProgress.processedEmails++;
-                });
-
-                // Mise à jour progressive rapide
-                const progress = 70 + Math.floor((this.scanProgress.processedEmails / this.scanProgress.totalEmails) * 25);
-                this.updateProgress(progress);
-                
-                if (statusText) statusText.innerHTML = `<span>🔍 ${this.scanProgress.processedEmails}/${this.scanProgress.totalEmails}</span>`;
-                if (emailCount) emailCount.textContent = this.scanProgress.processedEmails.toLocaleString();
-                if (domainCount) domainCount.textContent = this.scanProgress.domainsFound.size;
-                
-                const uniqueFolders = new Set();
-                this.emailsByDomain.forEach((emails, domain) => {
-                    uniqueFolders.add(this.suggestFolder(domain));
-                });
-                if (folderCount) folderCount.textContent = uniqueFolders.size;
-                
-                // Micro-pause pour maintenir la fluidité
-                if (i % (batchSize * 5) === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 1));
-                }
-            }
-
-            // Phase 5: Finalisation instantanée
-            this.updatePhase('✅', 'Terminé', 'Analyse terminée');
-            this.updateProgress(100);
-            if (statusText) statusText.innerHTML = '<span>✅ Analyse terminée !</span>';
-
-            const results = this.buildResults();
-            
-            console.log(`[DomainOrganizer] ✅ Scan completed: ${results.totalEmails} emails, ${results.totalDomains} domains`);
-            
-            // Transition immédiate vers les résultats
-            setTimeout(() => {
-                this.showResults(results);
-            }, 300); // Réduit de 800ms à 300ms
-
-        } catch (error) {
-            console.error('[DomainOrganizer] Scan error:', error);
-            
-            // En cas d'erreur, créer des données de démonstration
-            console.log('[DomainOrganizer] Creating fallback demo data due to error');
-            const demoEmails = this.createDemoEmails();
-            
-            demoEmails.forEach(email => {
-                const domain = this.extractDomain(email);
-                if (!this.emailsByDomain.has(domain)) {
-                    this.emailsByDomain.set(domain, []);
-                }
-                this.emailsByDomain.get(domain).push({
-                    id: email.id,
-                    subject: email.subject,
-                    sender: email.from?.emailAddress?.address || 'demo@' + domain,
-                    senderName: domain,
-                    date: this.formatDate(email),
-                    targetFolder: this.suggestFolder(domain),
-                    selected: true,
-                    originalEmail: email
-                });
-            });
-
-            const results = this.buildResults();
-            
-            // Mise à jour rapide en mode démo
-            this.updateProgress(100);
-            if (statusText) statusText.innerHTML = '<span>📧 Mode démonstration</span>';
-            if (emailCount) emailCount.textContent = results.totalEmails.toLocaleString();
-            if (domainCount) domainCount.textContent = results.totalDomains;
-            
-            setTimeout(() => {
-                this.showResults(results);
-            }, 200);
-        }
-    }
-
-    // Créer des emails de démonstration pour les tests
-    createDemoEmails() {
-        const demoData = [
-            { domain: 'amazon.fr', count: 45, subjects: ['Votre commande a été expédiée', 'Promotion du jour', 'Suivi de livraison'] },
-            { domain: 'linkedin.com', count: 23, subjects: ['Nouvelle connexion', 'Actualités de votre réseau', 'Offre d\'emploi'] },
-            { domain: 'github.com', count: 18, subjects: ['Pull request merged', 'New issue created', 'Security alert'] },
-            { domain: 'paypal.com', count: 12, subjects: ['Confirmation de paiement', 'Facture reçue', 'Mise à jour compte'] },
-            { domain: 'spotify.com', count: 8, subjects: ['Votre Wrapped 2024', 'Nouvelle playlist', 'Abonnement renouvelé'] },
-            { domain: 'netflix.com', count: 6, subjects: ['Nouveautés du mois', 'Série recommandée', 'Facture mensuelle'] },
-            { domain: 'google.com', count: 15, subjects: ['Activité suspecte détectée', 'Sauvegarde Drive', 'Mise à jour sécurité'] },
-            { domain: 'microsoft.com', count: 9, subjects: ['Office 365 update', 'Teams meeting', 'Azure notification'] }
-        ];
-
-        const emails = [];
-        demoData.forEach(({ domain, count, subjects }) => {
-            for (let i = 0; i < count; i++) {
-                emails.push({
-                    id: `demo-${domain}-${i}`,
-                    subject: subjects[i % subjects.length],
-                    from: {
-                        emailAddress: {
-                            address: `noreply@${domain}`,
-                            name: domain.split('.')[0]
-                        }
-                    },
-                    receivedDateTime: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
-                });
-            }
-        });
-
-        console.log(`[DomainOrganizer] Created ${emails.length} demo emails`);
-        return emails;
-    }
-
-    updatePhase(icon, name, description) {
-        const phaseIcon = document.getElementById('phaseIcon');
-        const phaseName = document.getElementById('phaseName');
-        const phaseDescription = document.getElementById('phaseDescription');
-        
-        if (phaseIcon) phaseIcon.textContent = icon;
-        if (phaseName) phaseName.textContent = name;
-        if (phaseDescription) phaseDescription.textContent = description;
-    }
-
-    updateProgress(percent) {
-        const progressFill = document.getElementById('progressFill');
-        const progressPercent = document.getElementById('progressPercent');
-        const progressCircle = document.querySelector('.progress-circle');
-        
-        if (progressFill) progressFill.style.width = `${Math.min(percent, 100)}%`;
-        if (progressPercent) progressPercent.textContent = `${Math.round(percent)}%`;
-        
-        // Mettre à jour le cercle de progression
-        if (progressCircle) {
-            const angle = (percent / 100) * 360;
-            progressCircle.style.background = `conic-gradient(#007acc ${angle}deg, #f1f5f9 ${angle}deg)`;
-        }
-    }
-
-    // Toutes les autres méthodes restent identiques...
-    // (extractDomain, suggestFolder, buildResults, etc.)
-
-    extractDomain(email) {
-        const possibleEmails = [
-            email.from?.emailAddress?.address,
-            email.sender?.emailAddress?.address,
-            email.replyTo?.[0]?.emailAddress?.address
-        ].filter(e => e);
-
-        for (const emailAddr of possibleEmails) {
-            if (emailAddr && emailAddr.includes('@')) {
-                const domain = emailAddr.split('@')[1];
-                if (domain) return domain.toLowerCase().trim();
-            }
-        }
-        return null;
-    }
-
-    extractSenderEmail(email) {
-        return email.from?.emailAddress?.address || 
-               email.sender?.emailAddress?.address || 
-               'unknown@unknown.com';
-    }
-
-    extractSenderName(email) {
-        return email.from?.emailAddress?.name || 
-               email.sender?.emailAddress?.name || 
-               this.extractSenderEmail(email);
-    }
-
-    formatDate(email) {
-        try {
-            const date = new Date(email.receivedDateTime || email.sentDateTime);
-            return date.toLocaleDateString('fr-FR');
-        } catch (error) {
-            return 'Date inconnue';
-        }
-    }
-
-    suggestFolder(domain) {
-        const suggestions = {
-            'amazon.com': 'Amazon', 'amazon.fr': 'Amazon',
-            'linkedin.com': 'LinkedIn', 'github.com': 'GitHub',
-            'paypal.com': 'PayPal', 'stripe.com': 'Stripe',
-            'spotify.com': 'Spotify', 'netflix.com': 'Netflix',
-            'google.com': 'Google', 'microsoft.com': 'Microsoft'
-        };
-        return suggestions[domain] || domain;
-    }
-
-    calculateDateRange(formData) {
-        const now = new Date();
-        let startDate = null;
-        let endDate = null;
-        let description = '';
-
-        switch(formData.dateRange) {
-            case 'all':
-                description = 'Tous vos emails';
-                break;
-            case 'recent':
-                startDate = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-                description = '6 derniers mois';
-                break;
-            case 'year':
-                startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-                description = 'Dernière année';
-                break;
-            case 'custom':
-                if (formData.startDate) startDate = new Date(formData.startDate);
-                if (formData.endDate) endDate = new Date(formData.endDate);
-                description = 'Période personnalisée';
-                break;
-        }
-
-        return {
-            startDate: startDate ? startDate.toISOString() : null,
-            endDate: endDate ? endDate.toISOString() : null,
-            description: description
-        };
-    }
-
-    buildResults() {
-        const domains = [];
-        let totalEmails = 0;
-
-        this.emailsByDomain.forEach((emails, domain) => {
-            totalEmails += emails.length;
-            domains.push({
-                domain: domain,
-                count: emails.length,
-                suggestedFolder: this.suggestFolder(domain),
-                emails: emails,
-                selected: true
-            });
-        });
-
-        domains.sort((a, b) => b.count - a.count);
-
-        return {
-            totalEmails: totalEmails,
-            totalDomains: domains.length,
-            domains: domains
-        };
-    }
-
-    updateStep(step) {
-        console.log(`[DomainOrganizer] Updating to step ${step}`);
-        
-        // Mettre à jour les indicateurs d'étape
-        document.querySelectorAll('.step').forEach((stepEl, index) => {
-            stepEl.classList.remove('active', 'completed');
-            if (index + 1 < step) {
-                stepEl.classList.add('completed');
-            } else if (index + 1 === step) {
-                stepEl.classList.add('active');
-            }
-        });
-        
-        // Cacher tous les contenus d'étape d'abord
-        document.querySelectorAll('.step-content').forEach(content => {
-            content.style.display = 'none';
-            content.classList.remove('active');
-        });
-        
-        // Forcer un repaint pour éviter la page grise
-        document.body.offsetHeight;
-        
-        // Afficher le contenu de l'étape actuelle
-        const currentStepContent = document.getElementById(`step${step}`);
-        if (currentStepContent) {
-            currentStepContent.style.display = 'block';
-            currentStepContent.style.opacity = '1';
-            currentStepContent.style.visibility = 'visible';
-            currentStepContent.classList.add('active');
-            
-            // Forcer un autre repaint
-            currentStepContent.offsetHeight;
-        }
-        
-        this.currentStep = step;
-        
-        // Log pour debugging
-        console.log(`[DomainOrganizer] Step ${step} should now be visible`);
-    }
-
-    showResults(results) {
-        this.currentAnalysis = results;
-        this.updateStep(3);
-        
-        const totalFound = document.getElementById('totalFound');
-        const domainsFound = document.getElementById('domainsFound');
-        
-        if (totalFound) totalFound.textContent = results.totalEmails.toLocaleString();
-        if (domainsFound) domainsFound.textContent = results.totalDomains;
-        
-        this.displayDomains(results.domains);
-        this.updateSelectedCount();
-        
-        const searchBox = document.getElementById('searchBox');
-        if (searchBox) {
-            searchBox.addEventListener('input', (e) => this.handleSearch(e.target.value));
-        }
-    }
-
-    displayDomains(domains) {
-        const container = document.getElementById('domainsList');
-        if (!container) return;
-        
-        container.innerHTML = '';
-        
-        domains.forEach(domain => {
-            const domainRow = this.createDomainRow(domain);
-            container.appendChild(domainRow);
-        });
-    }
-
-    createDomainRow(domainData) {
-        const row = document.createElement('div');
-        row.className = 'domain-item';
-        row.dataset.domain = domainData.domain;
-        
-        const domainInitial = domainData.domain.charAt(0).toUpperCase();
-        
-        row.innerHTML = `
-            <input type="checkbox" class="domain-checkbox" data-domain="${domainData.domain}" 
-                   ${domainData.selected ? 'checked' : ''}>
-            
-            <div class="domain-avatar">${domainInitial}</div>
-            
-            <div class="domain-info">
-                <div class="domain-name">${domainData.domain}</div>
-                <div class="domain-meta">${domainData.count} emails</div>
-            </div>
-            
-            <select class="domain-folder" data-domain="${domainData.domain}">
-                <option value="${domainData.suggestedFolder}" selected>${domainData.suggestedFolder}</option>
-                <option value="inbox">Boîte de réception</option>
-                <option value="archive">Archive</option>
-                <option value="important">Important</option>
-                <option value="newsletters">Newsletters</option>
-                <option value="social">Réseaux sociaux</option>
-                <option value="shopping">Shopping</option>
-                <option value="work">Travail</option>
-            </select>
-        `;
-        
-        const checkbox = row.querySelector('.domain-checkbox');
-        if (checkbox) {
-            checkbox.addEventListener('change', (e) => {
-                domainData.selected = e.target.checked;
-                domainData.emails.forEach(email => {
-                    email.selected = e.target.checked;
-                });
-                this.updateSelectedCount();
-            });
-        }
-        
-        const folderSelect = row.querySelector('.domain-folder');
-        if (folderSelect) {
-            folderSelect.addEventListener('change', (e) => {
-                domainData.suggestedFolder = e.target.value;
-                domainData.emails.forEach(email => {
-                    email.targetFolder = e.target.value;
-                });
-            });
-        }
-        
-        return row;
-    }
-
-    selectAll() {
-        if (!this.currentAnalysis) return;
-        
-        this.currentAnalysis.domains.forEach(domain => {
-            domain.selected = true;
-            domain.emails.forEach(email => email.selected = true);
-        });
-        
-        document.querySelectorAll('.domain-checkbox').forEach(cb => cb.checked = true);
-        this.updateSelectedCount();
-    }
-
-    deselectAll() {
-        if (!this.currentAnalysis) return;
-        
-        this.currentAnalysis.domains.forEach(domain => {
-            domain.selected = false;
-            domain.emails.forEach(email => email.selected = false);
-        });
-        
-        document.querySelectorAll('.domain-checkbox').forEach(cb => cb.checked = false);
-        this.updateSelectedCount();
-    }
-
-    updateSelectedCount() {
-        if (!this.currentAnalysis) return;
-        
-        let selectedCount = 0;
-        this.currentAnalysis.domains.forEach(domain => {
-            if (domain.selected) {
-                selectedCount += domain.count;
-            }
-        });
-        
-        const selectedCountSpan = document.getElementById('selectedCount');
-        const executeBtn = document.getElementById('executeBtn');
-        
-        if (selectedCountSpan) selectedCountSpan.textContent = selectedCount.toLocaleString();
-        
-        if (executeBtn) {
-            executeBtn.disabled = selectedCount === 0;
-            executeBtn.innerHTML = selectedCount === 0 ? 
-                '❌ Aucun email' : 
-                `▶ Organiser ${selectedCount.toLocaleString()}`;
-        }
-    }
-
-    handleSearch(searchTerm) {
-        const items = document.querySelectorAll('.domain-item');
-        const term = searchTerm.toLowerCase();
-        
-        items.forEach(item => {
-            const domain = item.dataset.domain?.toLowerCase() || '';
-            const visible = !term || domain.includes(term);
-            item.style.display = visible ? 'grid' : 'none';
-        });
-    }
-
-    async execute() {
-        if (this.isProcessing || !this.currentAnalysis) return;
-        
-        const selectedDomains = this.currentAnalysis.domains.filter(d => d.selected);
-        const totalEmails = selectedDomains.reduce((sum, d) => sum + d.count, 0);
-        
-        if (totalEmails === 0) {
-            this.showError('Aucun email sélectionné');
-            return;
-        }
-        
-        const createFolders = document.getElementById('createFolders')?.checked ?? true;
-        const moveEmails = document.getElementById('moveEmails')?.checked ?? true;
-        
-        try {
-            this.isProcessing = true;
-            await this.simulateExecution(selectedDomains, { createFolders, moveEmails, totalEmails });
-        } catch (error) {
-            this.showError(`Erreur: ${error.message}`);
-        } finally {
-            this.isProcessing = false;
-        }
-    }
-
-    async simulateExecution(selectedDomains, options) {
-        this.updateStep(4);
-        
-        const actionIcon = document.getElementById('actionIcon');
-        const actionName = document.getElementById('actionName');
-        const actionDescription = document.getElementById('actionDescription');
-        const executeFill = document.getElementById('executeFill');
-        const executePercent = document.getElementById('executePercent');
-        const executeStatus = document.getElementById('executeStatus');
-        const foldersCreated = document.getElementById('foldersCreated');
-        const emailsMoved = document.getElementById('emailsMoved');
-        const timeRemaining = document.getElementById('timeRemaining');
-        const progressCircle = document.querySelector('.progress-circle.success');
-        
-        let progress = 0;
-        let foldersCount = 0;
-        let emailsCount = 0;
-        
-        const uniqueFolders = new Set(selectedDomains.map(d => d.suggestedFolder));
-        const totalFolders = options.createFolders ? uniqueFolders.size : 0;
-        const startTime = Date.now();
-        
-        const phases = [
-            { icon: '⚙️', name: 'Préparation', desc: 'Initialisation' },
-            { icon: '📁', name: 'Dossiers', desc: 'Création dossiers' },
-            { icon: '📧', name: 'Emails', desc: 'Déplacement emails' },
-            { icon: '✅', name: 'Terminé', desc: 'Organisation terminée' }
-        ];
-        
-        let currentPhase = 0;
-        
-        const interval = setInterval(() => {
-            progress += 2;
-            
-            // Calculer temps restant
-            const elapsed = Date.now() - startTime;
-            const estimated = (elapsed / progress) * (100 - progress);
-            const remainingSeconds = Math.max(0, Math.floor(estimated / 1000));
-            
-            // Phase actuelle
-            const newPhase = Math.floor(progress / 25);
-            if (newPhase !== currentPhase && newPhase < phases.length) {
-                currentPhase = newPhase;
-                const phase = phases[currentPhase];
-                
-                if (actionIcon) actionIcon.textContent = phase.icon;
-                if (actionName) actionName.textContent = phase.name;
-                if (actionDescription) actionDescription.textContent = phase.desc;
-            }
-            
-            // Compteurs
-            if (progress <= 50) {
-                foldersCount = Math.floor((progress / 50) * totalFolders);
-            } else if (progress <= 90) {
-                foldersCount = totalFolders;
-                emailsCount = Math.floor(((progress - 50) / 40) * options.totalEmails);
-            } else {
-                foldersCount = totalFolders;
-                emailsCount = options.totalEmails;
-            }
-            
-            // Mettre à jour l'interface
-            if (executeFill) executeFill.style.width = `${Math.min(progress, 100)}%`;
-            if (executePercent) executePercent.textContent = `${Math.round(Math.min(progress, 100))}%`;
-            if (foldersCreated) foldersCreated.textContent = foldersCount;
-            if (emailsMoved) emailsMoved.textContent = emailsCount;
-            if (timeRemaining) {
-                timeRemaining.textContent = progress < 100 ? 
-                    (remainingSeconds > 60 ? `${Math.floor(remainingSeconds / 60)}m` : `${remainingSeconds}s`) : 
-                    '0s';
-            }
-            if (executeStatus) {
-                executeStatus.innerHTML = progress < 100 ? 
-                    `<span>⚙️ ${phases[currentPhase]?.name || 'En cours'}...</span>` : 
-                    '<span>✅ Terminé !</span>';
-            }
-            
-            // Mettre à jour le cercle de progression
-            if (progressCircle) {
-                const angle = (progress / 100) * 360;
-                progressCircle.style.background = `conic-gradient(#10b981 ${angle}deg, #f1f5f9 ${angle}deg)`;
-            }
-            
-            if (progress >= 100) {
-                clearInterval(interval);
-                
-                if (actionIcon) actionIcon.textContent = '🎉';
-                if (actionName) actionName.textContent = 'Terminé !';
-                if (actionDescription) actionDescription.textContent = 'Organisation réussie';
-                
-                const totalTimeElapsed = Date.now() - startTime;
-                const totalMinutes = Math.floor(totalTimeElapsed / 60000);
-                const totalSeconds = Math.floor((totalTimeElapsed % 60000) / 1000);
-                const timeString = totalMinutes > 0 ? `${totalMinutes}m ${totalSeconds}s` : `${totalSeconds}s`;
-                
-                setTimeout(() => {
-                    this.showSuccess({
-                        emailsMoved: emailsCount,
-                        foldersCreated: foldersCount,
-                        totalTime: timeString,
-                        wasSimulation: !options.moveEmails
-                    });
-                }, 1000);
-            }
-        }, 60);
-    }
-
-    showSuccess(results) {
-        this.updateStep(5);
-        
-        const finalEmails = document.getElementById('finalEmails');
-        const finalFolders = document.getElementById('finalFolders');
-        const finalTime = document.getElementById('finalTime');
-        const successMessage = document.getElementById('successMessage');
-        
-        if (finalEmails) finalEmails.textContent = results.emailsMoved.toLocaleString();
-        if (finalFolders) finalFolders.textContent = results.foldersCreated;
-        if (finalTime) finalTime.textContent = results.totalTime;
-        
-        const message = results.wasSimulation ?
-            `Simulation : ${results.emailsMoved} emails seraient organisés` :
-            `${results.emailsMoved} emails organisés avec succès`;
-        
-        if (successMessage) successMessage.textContent = message;
-    }
-
-    async initializePage() {
-        console.log('[DomainOrganizer] Initializing v12.0 Compact...');
-        
+        // Vérifier l'authentification
         if (!window.authService?.isAuthenticated()) {
-            this.showError('Connexion Microsoft requise');
+            this.showToast('Veuillez vous connecter à votre compte Microsoft', 'error');
             return false;
         }
 
+        // Vérifier MailService
         if (!window.mailService) {
-            this.showError('MailService non disponible');
+            this.showToast('Service de messagerie non disponible - Rechargez la page', 'error');
             return false;
         }
 
         this.setupEventListeners();
-        this.updateStep(1);
+        this.updateStepDisplay(1);
         
-        console.log('[DomainOrganizer] ✅ Compact interface ready v12.0');
+        console.log('[DomainOrganizer] ✅ Interface ready v13.0');
         return true;
     }
 
     setupEventListeners() {
-        const form = document.getElementById('scanForm');
-        if (form) {
-            form.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        // Bouton de démarrage de l'analyse
+        const startBtn = document.getElementById('startAnalysis');
+        if (startBtn) {
+            startBtn.addEventListener('click', () => this.startAnalysis());
         }
-        
-        // Gestion des options de dates
-        const dateRadios = document.querySelectorAll('input[name="dateRange"]');
-        const customDates = document.getElementById('customDates');
-        
-        dateRadios.forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                if (customDates) {
-                    customDates.style.display = e.target.value === 'custom' ? 'flex' : 'none';
-                }
-            });
+
+        // Recherche dans les domaines
+        const searchInput = document.getElementById('domainSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => this.filterDomains(e.target.value));
+        }
+
+        // Options d'organisation
+        const checkboxes = ['createNewFolders', 'moveEmails', 'preserveRead'];
+        checkboxes.forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.addEventListener('change', () => this.updateActionSummary());
+            }
         });
     }
 
-    async handleFormSubmit(event) {
-        event.preventDefault();
+    updateStepDisplay(step) {
+        this.currentStep = step;
         
-        if (this.isProcessing) return;
-        
-        this.isProcessing = true;
-        const formData = this.getFormData();
-        
-        // Afficher la modale de confirmation
-        this.showScanConfirmModal(formData);
-        
-        this.isProcessing = false;
+        // Mettre à jour les indicateurs d'étapes
+        document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+            indicator.classList.toggle('active', index + 1 <= step);
+        });
+
+        // Afficher le bon contenu d'étape
+        document.querySelectorAll('.step-content').forEach((content, index) => {
+            if (index + 1 === step) {
+                content.classList.add('active');
+                content.style.display = 'block';
+            } else {
+                content.classList.remove('active');
+                content.style.display = 'none';
+            }
+        });
     }
 
-    getFormData() {
-        const dateRange = document.querySelector('input[name="dateRange"]:checked')?.value || 'all';
-        const startDate = document.getElementById('startDate')?.value || null;
-        const endDate = document.getElementById('endDate')?.value || null;
-        const sourceFolder = document.getElementById('sourceFolder')?.value || 'all';
-        const emailLimit = document.getElementById('emailLimit')?.value || '2500';
+    // ================================================
+    // ANALYSE RAPIDE ET ROBUSTE
+    // ================================================
+    async startAnalysis() {
+        const startBtn = document.getElementById('startAnalysis');
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = '🔄 Démarrage...';
+        }
+
+        try {
+            const config = this.getAnalysisConfig();
+            console.log('[DomainOrganizer] Starting analysis with config:', config);
+
+            this.updateStepDisplay(2);
+            this.showToast('Analyse démarrée', 'info');
+
+            await this.performRobustAnalysis(config);
+
+        } catch (error) {
+            console.error('[DomainOrganizer] Analysis failed:', error);
+            this.showToast(`Erreur d'analyse: ${error.message}`, 'error');
+            this.updateStepDisplay(1);
+        } finally {
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.textContent = '🚀 Démarrer l\'analyse';
+            }
+        }
+    }
+
+    getAnalysisConfig() {
+        const dateRange = document.getElementById('dateRange')?.value || 'all';
+        const sourceFolders = document.getElementById('sourceFolders')?.value || 'all';
         const excludeDomains = document.getElementById('excludeDomains')?.value
             .split(',').map(d => d.trim().toLowerCase()).filter(d => d) || [];
-        
-        return { 
+        const minEmailsPerDomain = parseInt(document.getElementById('minEmailsPerDomain')?.value) || 3;
+
+        return {
             dateRange,
-            startDate, 
-            endDate, 
-            sourceFolder,
-            emailLimit,
-            excludeDomains
+            sourceFolders,
+            excludeDomains,
+            minEmailsPerDomain
         };
     }
 
-    configure(formData) {
-        console.log('[DomainOrganizer] Configuration:', formData);
-    }
+    async performRobustAnalysis(config) {
+        const statusElement = document.getElementById('analysisStatus');
+        const activityElement = document.getElementById('currentActivity');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const progressDetail = document.getElementById('progressDetail');
+        const emailsScanned = document.getElementById('emailsScanned');
+        const domainsFound = document.getElementById('domainsFound');
+        const foldersProposed = document.getElementById('foldersProposed');
 
-    reset() {
-        this.updateStep(1);
-        
-        const form = document.getElementById('scanForm');
-        if (form) form.reset();
-        
-        // Réinitialiser les options de dates
-        const allRadio = document.querySelector('input[name="dateRange"][value="all"]');
-        if (allRadio) allRadio.checked = true;
-        
-        const customDates = document.getElementById('customDates');
-        if (customDates) customDates.style.display = 'none';
-        
-        this.emailsByDomain.clear();
-        this.currentAnalysis = null;
-        this.isProcessing = false;
-        this.currentStep = 1;
-        this.pendingFormData = null;
-    }
+        let progress = 0;
 
-    openOutlook() {
-        window.open('https://outlook.office.com/mail/', '_blank');
-    }
+        const updateProgress = (percent, status, activity, detail) => {
+            progress = Math.min(percent, 100);
+            if (progressBar) progressBar.style.width = `${progress}%`;
+            if (progressPercent) progressPercent.textContent = `${Math.round(progress)}%`;
+            if (statusElement) statusElement.textContent = status;
+            if (activityElement) activityElement.textContent = activity;
+            if (progressDetail) progressDetail.textContent = detail;
+        };
 
-    showError(message) {
-        console.error('[DomainOrganizer] Error:', message);
-        
-        if (window.uiManager?.showToast) {
-            window.uiManager.showToast(message, 'error');
-        } else {
-            this.showInlineError(message);
-        }
-    }
-
-    showInlineError(message) {
-        // Créer une alerte d'erreur compacte
-        const errorAlert = document.createElement('div');
-        errorAlert.className = 'error-toast';
-        errorAlert.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1001;
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid #fecaca;
-            font-size: 13px;
-            max-width: 300px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            animation: slideInRight 0.3s ease;
-        `;
-        
-        errorAlert.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span>❌</span>
-                <span>${message}</span>
-                <button onclick="this.parentElement.parentElement.remove()" 
-                        style="background: none; border: none; color: inherit; cursor: pointer; margin-left: auto; padding: 2px;">×</button>
-            </div>
-        `;
-        
-        document.body.appendChild(errorAlert);
-        
-        // Style pour l'animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideInRight {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Retirer automatiquement après 4 secondes
-        setTimeout(() => {
-            if (errorAlert.parentElement) {
-                errorAlert.remove();
-            }
-        }, 4000);
-    }
-}
-
-// ================================================
-// INITIALISATION GLOBALE
-// ================================================
-window.organizerInstance = new DomainOrganizer();
-
-function showDomainOrganizerCompact() {
-    console.log('[DomainOrganizer] 🚀 Launching v12.0 Ultra-Compact...');
-    
-    if (!window.authService?.isAuthenticated()) {
-        const message = 'Connexion Microsoft requise';
-        if (window.uiManager?.showToast) {
-            window.uiManager.showToast(message, 'warning');
-        } else {
-            window.organizerInstance.showInlineError(message);
-        }
-        return;
-    }
-
-    const pageContent = document.getElementById('pageContent');
-    if (!pageContent) {
-        console.error('[DomainOrganizer] PageContent not found');
-        return;
-    }
-
-    pageContent.innerHTML = window.organizerInstance.getPageHTML();
-    pageContent.style.cssText = 'display: block !important; visibility: visible !important; height: 100vh; overflow: hidden;';
-
-    // Mettre à jour la navigation
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-    const rangerButton = document.querySelector('[data-page="ranger"]');
-    if (rangerButton) rangerButton.classList.add('active');
-
-    setTimeout(async () => {
         try {
-            await window.organizerInstance.initializePage();
-            console.log('[DomainOrganizer] ✅ Compact ready v12.0');
+            // Étape 1: Connexion et validation (0-10%)
+            updateProgress(5, 'Connexion en cours...', '🔗 Connexion à Microsoft Graph', 'Vérification des permissions');
+
+            const connectionTest = await this.testConnectionWithTimeout();
+            if (!connectionTest.success) {
+                throw new Error(`Connexion impossible: ${connectionTest.error}`);
+            }
+
+            updateProgress(10, 'Connexion établie', `✅ Connecté: ${connectionTest.user}`, 'Préparation de l\'analyse');
+
+            // Étape 2: Configuration et calculs (10-20%)
+            updateProgress(15, 'Configuration de l\'analyse...', '⚙️ Calcul des paramètres', 'Définition de la période');
+
+            const dateFilter = this.calculateDateFilter(config.dateRange);
+            const foldersToScan = this.getFoldersToScan(config.sourceFolders);
+
+            updateProgress(20, 'Configuration terminée', '📋 Paramètres validés', `${foldersToScan.length} dossiers à analyser`);
+
+            // Étape 3: Récupération des emails (20-60%)
+            updateProgress(25, 'Récupération des emails...', '📥 Chargement des données', 'Scan en cours...');
+
+            const allEmails = await this.fetchEmailsFromFolders(foldersToScan, dateFilter, config, updateProgress);
+
+            updateProgress(60, 'Emails récupérés', `📧 ${allEmails.length} emails chargés`, 'Début de l\'analyse');
+
+            // Étape 4: Analyse des domaines (60-90%)
+            updateProgress(65, 'Analyse des domaines...', '🔍 Classification en cours', 'Traitement des expéditeurs');
+
+            this.emailsByDomain.clear();
+            const domainStats = new Map();
+
+            for (let i = 0; i < allEmails.length; i++) {
+                const email = allEmails[i];
+                const domainInfo = this.extractAndValidateDomain(email);
+                
+                if (!domainInfo || config.excludeDomains.includes(domainInfo.domain.toLowerCase())) {
+                    continue;
+                }
+
+                // Valider le domaine selon la RFC
+                if (!this.validateDomainName(domainInfo.domain)) {
+                    console.warn(`[DomainOrganizer] Invalid domain skipped: ${domainInfo.domain}`);
+                    continue;
+                }
+
+                if (!this.emailsByDomain.has(domainInfo.domain)) {
+                    this.emailsByDomain.set(domainInfo.domain, []);
+                    domainStats.set(domainInfo.domain, { count: 0, lastDate: null });
+                }
+
+                const emailData = {
+                    id: email.id,
+                    subject: email.subject || 'Sans objet',
+                    sender: domainInfo.fullEmail,
+                    senderName: domainInfo.senderName,
+                    date: this.formatDate(email.receivedDateTime || email.sentDateTime),
+                    targetFolder: this.generateSmartFolderName(domainInfo.domain),
+                    selected: true,
+                    originalEmail: email
+                };
+
+                this.emailsByDomain.get(domainInfo.domain).push(emailData);
+                domainStats.get(domainInfo.domain).count++;
+
+                // Mise à jour progressive
+                if (i % 50 === 0 || i === allEmails.length - 1) {
+                    const analyzeProgress = 65 + Math.floor((i / allEmails.length) * 25);
+                    updateProgress(analyzeProgress, 'Analyse en cours...', 
+                        `🔍 ${i + 1}/${allEmails.length} emails analysés`, 
+                        `${domainStats.size} domaines trouvés`);
+                    
+                    if (emailsScanned) emailsScanned.textContent = (i + 1).toLocaleString();
+                    if (domainsFound) domainsFound.textContent = domainStats.size;
+                }
+            }
+
+            // Étape 5: Filtrage et finalisation (90-100%)
+            updateProgress(92, 'Filtrage des résultats...', '🎯 Application des filtres', 'Validation des domaines');
+
+            // Filtrer par nombre minimum d'emails
+            for (const [domain, emails] of this.emailsByDomain.entries()) {
+                if (emails.length < config.minEmailsPerDomain) {
+                    this.emailsByDomain.delete(domain);
+                    domainStats.delete(domain);
+                }
+            }
+
+            // Trier les domaines par nombre d'emails
+            const sortedDomains = Array.from(this.emailsByDomain.entries())
+                .sort((a, b) => b[1].length - a[1].length);
+
+            this.emailsByDomain = new Map(sortedDomains);
+
+            updateProgress(98, 'Génération des résultats...', '📊 Préparation de l\'affichage', 'Finalisation');
+
+            const results = this.buildAnalysisResults();
+
+            updateProgress(100, 'Analyse terminée !', '✅ Analyse complète', 
+                `${results.totalEmails} emails dans ${results.totalDomains} domaines`);
+
+            if (emailsScanned) emailsScanned.textContent = results.totalEmails.toLocaleString();
+            if (domainsFound) domainsFound.textContent = results.totalDomains;
+            if (foldersProposed) foldersProposed.textContent = results.totalDomains;
+
+            // Transition vers les résultats
+            setTimeout(() => {
+                this.showResults(results);
+            }, 1000);
+
+            this.showToast(`Analyse terminée: ${results.totalEmails} emails trouvés`, 'success');
+
         } catch (error) {
-            console.error('[DomainOrganizer] Init error:', error);
+            console.error('[DomainOrganizer] Analysis error:', error);
+            
+            // En cas d'erreur, essayer de continuer avec des données partielles
+            if (this.emailsByDomain.size > 0) {
+                console.log('[DomainOrganizer] Continuing with partial data');
+                const partialResults = this.buildAnalysisResults();
+                this.showResults(partialResults);
+                this.showToast(`Analyse partielle: ${partialResults.totalEmails} emails`, 'warning');
+            } else {
+                throw error;
+            }
         }
-    }, 100);
-}
-
-// ================================================
-// HOOKS ET EXPORTS
-// ================================================
-document.addEventListener('click', function(e) {
-    const rangerButton = e.target.closest('[data-page="ranger"]');
-    if (rangerButton) {
-        e.preventDefault();
-        e.stopPropagation();
-        setTimeout(showDomainOrganizerCompact, 20);
-        return false;
     }
-}, true);
 
-// Hook PageManager
-if (window.pageManager?.loadPage) {
-    const originalLoadPage = window.pageManager.loadPage;
-    
-    window.pageManager.loadPage = function(pageName) {
-        if (pageName === 'ranger') {
-            showDomainOrganizerCompact();
-            return;
+    async testConnectionWithTimeout() {
+        try {
+            return await Promise.race([
+                window.mailService.testConnection(),
+                new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout de connexion')), 10000)
+                )
+            ]);
+        } catch (error) {
+            return { success: false, error: error.message };
         }
-        return originalLoadPage.call(this, pageName);
-    };
-}
+    }
 
-// Exports
-window.showDomainOrganizer = showDomainOrganizerCompact;
-window.domainOrganizer = {
-    showPage: showDomainOrganizerCompact,
-    instance: window.organizerInstance,
-    version: '12.0'
-};
+    calculateDateFilter(dateRange) {
+        const now = new Date();
+        let startDate = null;
 
-console.log('[DomainOrganizer] ✅ v12.0 Ultra-Compact System ready - Interface optimisée sans scroll');
+        switch (dateRange) {
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case '3months':
+                startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                break;
+            case '6months':
+                startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+                break;
+            case 'year':
+                startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                break;
+            default: // 'all'
+                startDate = null;
+        }
+
+        return {
+            startDate: startDate ? startDate.toISOString() : null,
+            endDate: null // Toujours jusqu'à maintenant
+        };
+    }
+
+    getFoldersToScan(sourceFolders) {
+        switch (sourceFolders) {
+            case 'inbox':
+                return ['inbox'];
+            case 'sent':
+                return ['sent'];
+            case 'custom':
+                // Pour l'instant, utiliser tous les dossiers principaux
+                return ['inbox', 'sent', 'archive'];
+            default: // 'all'
+                return ['inbox', 'sent', 'archive', 'drafts'];
+        }
+    }
+
+    async fetchEmailsFromFolders(folders, dateFilter, config, updateProgress) {
+        const allEmails = [];
+        const maxEmailsPerFolder = 2000; // Limite raisonnable
+
+        for (let i = 0; i < folders.length; i++) {
+            const folder = folders[i];
+            
+            try {
+                updateProgress(
+                    25 + (i / folders.length) * 35,
+                    `Récupération: ${this.getFolderDisplayName(folder)}`,
+                    `📁 Dossier ${i + 1}/${folders.length}`,
+                    `Scan de ${folder}...`
+                );
+
+                const options = {
+                    top: maxEmailsPerFolder
+                };
+
+                if (dateFilter.startDate) {
+                    options.startDate = dateFilter.startDate;
+                }
+
+                // Récupération avec timeout
+                const folderEmails = await Promise.race([
+                    window.mailService.getEmailsFromFolder(folder, options),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error(`Timeout pour ${folder}`)), 30000)
+                    )
+                ]);
+
+                allEmails.push(...folderEmails);
+
+                console.log(`[DomainOrganizer] Folder ${folder}: ${folderEmails.length} emails`);
+
+            } catch (error) {
+                console.warn(`[DomainOrganizer] Error fetching ${folder}:`, error);
+                // Continuer avec les autres dossiers
+            }
+        }
+
+        return allEmails;
+    }
+
+    extractAndValidateDomain(email) {
+        // Extraire l'email expéditeur
+        const senderEmail = email.from?.emailAddress?.address || 
+                            email.sender?.emailAddress?.address;
+        
+        if (!senderEmail || !senderEmail.includes('@')) {
+            return null;
+        }
+
+        const senderName = email.from?.emailAddress?.name || 
+                          email.sender?.emailAddress?.name || 
+                          senderEmail;
+
+        // Extraire le domaine complet après @
+        const atIndex = senderEmail.lastIndexOf('@');
+        const domain = senderEmail.substring(atIndex + 1).toLowerCase().trim();
+
+        if (!domain) {
+            return null;
+        }
+
+        return {
+            domain: domain,
+            fullEmail: senderEmail.toLowerCase(),
+            senderName: senderName
+        };
+    }
+
+    validateDomainName(domain) {
+        // Validation RFC compliant du nom de domaine
+        if (!domain || domain.length === 0 || domain.length > 253) {
+            return false;
+        }
+
+        // Vérifier qu'il contient au moins un point (TLD)
+        if (!domain.includes('.')) {
+            return false;
+        }
+
+        // Regex pour valider le format du domaine
+        const domainRegex = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
+        
+        if (!domainRegex.test(domain)) {
+            return false;
+        }
+
+        // Vérifier que ce n'est pas une adresse IP
+        const ipRegex = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+        if (ipRegex.test(domain)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    generateSmartFolderName(domain) {
+        // Mapping intelligent des domaines vers noms de dossiers
+        const domainMappings = {
+            // E-commerce
+            'amazon.com': 'Amazon',
+            'amazon.fr': 'Amazon',
+            'amazon.de': 'Amazon',
+            'amazon.co.uk': 'Amazon',
+            'ebay.com': 'eBay',
+            'ebay.fr': 'eBay',
+            'cdiscount.com': 'Cdiscount',
+            'fnac.com': 'Fnac',
+            'darty.com': 'Darty',
+            'boulanger.com': 'Boulanger',
+            'zalando.fr': 'Zalando',
+            'asos.com': 'ASOS',
+            
+            // Services financiers
+            'paypal.com': 'PayPal',
+            'stripe.com': 'Stripe',
+            'wise.com': 'Wise',
+            'revolut.com': 'Revolut',
+            'boursorama.com': 'Boursorama',
+            'creditagricole.fr': 'Crédit Agricole',
+            'bnpparibas.fr': 'BNP Paribas',
+            'societegenerale.fr': 'Société Générale',
+            'lcl.fr': 'LCL',
+            'labanquepostale.fr': 'La Banque Postale',
+            
+            // Réseaux sociaux et communication
+            'linkedin.com': 'LinkedIn',
+            'facebook.com': 'Facebook',
+            'instagram.com': 'Instagram',
+            'twitter.com': 'Twitter',
+            'x.com': 'X (Twitter)',
+            'discord.com': 'Discord',
+            'slack.com': 'Slack',
+            'teams.microsoft.com': 'Microsoft Teams',
+            'zoom.us': 'Zoom',
+            'whatsapp.com': 'WhatsApp',
+            'telegram.org': 'Telegram',
+            
+            // Tech et services
+            'github.com': 'GitHub',
+            'gitlab.com': 'GitLab',
+            'google.com': 'Google',
+            'microsoft.com': 'Microsoft',
+            'apple.com': 'Apple',
+            'adobe.com': 'Adobe',
+            'dropbox.com': 'Dropbox',
+            'notion.so': 'Notion',
+            'figma.com': 'Figma',
+            'canva.com': 'Canva',
+            
+            // Streaming et média
+            'netflix.com': 'Netflix',
+            'spotify.com': 'Spotify',
+            'deezer.com': 'Deezer',
+            'youtube.com': 'YouTube',
+            'twitch.tv': 'Twitch',
+            'primevideo.com': 'Prime Video',
+            'disneyplus.com': 'Disney+',
+            'canalplus.com': 'Canal+',
+            
+            // Voyage et transport
+            'booking.com': 'Booking',
+            'airbnb.com': 'Airbnb',
+            'sncf-connect.com': 'SNCF',
+            'ouisncf.com': 'SNCF',
+            'uber.com': 'Uber',
+            'blablacar.fr': 'BlaBlaCar',
+            'ryanair.com': 'Ryanair',
+            'airfrance.fr': 'Air France',
+            'booking.com': 'Booking',
+            
+            // Éducation
+            'udemy.com': 'Udemy',
+            'coursera.org': 'Coursera',
+            'openclassrooms.com': 'OpenClassrooms',
+            'edx.org': 'edX',
+            
+            // News et information
+            'lemonde.fr': 'Le Monde',
+            'lefigaro.fr': 'Le Figaro',
