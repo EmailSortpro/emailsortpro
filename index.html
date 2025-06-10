@@ -255,7 +255,8 @@
     </script>
     
     <!-- Chargement du fichier config.js principal (optionnel, pour surcharge) -->
-    <script src="config.js" onerror="console.log('[INDEX] config.js non trouvé, utilisation de la configuration inline')"></script>
+    <!-- Désactivé pour éviter 404 error -->
+    <!-- <script src="config.js"></script> -->
 
     <!-- Styles intégrés pour l'application -->
     <style>
@@ -579,52 +580,89 @@
             display: none !important;
         }
 
-        /* BOUTONS DE NAVIGATION PARFAITEMENT VISIBLES */
+        /* NAVIGATION SOBRE ET ÉLÉGANTE */
+        .app-nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 999;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            display: none;
+        }
+
+        .app-nav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        #mainNav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 0 20px;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            white-space: nowrap;
+        }
+
+        #mainNav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        /* BOUTONS SOBRES ET ÉLÉGANTS */
         .nav-item {
-            background: #ffffff;
-            border: 2px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            min-width: 130px;
-            max-width: 180px;
-            height: 50px;
+            background: transparent;
+            border: 1px solid transparent;
+            min-width: 120px;
+            max-width: 160px;
+            height: 44px;
             padding: 10px 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             font-size: 14px;
-            font-weight: 600;
-            color: #374151;
+            font-weight: 500;
+            color: #6b7280;
             cursor: pointer;
-            border-radius: 25px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            transition: all 0.2s ease;
             white-space: nowrap;
             flex-shrink: 0;
-            position: relative;
             text-decoration: none;
         }
 
         .nav-item i {
-            font-size: 18px !important;
-            width: 20px;
-            height: 20px;
+            font-size: 16px !important;
+            width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 900 !important;
             color: inherit;
             flex-shrink: 0;
         }
 
         .nav-item span {
             font-size: 14px;
-            font-weight: 600;
+            font-weight: inherit;
             color: inherit;
             flex-shrink: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-width: 100px;
         }
 
         .nav-item .fas,
@@ -635,71 +673,31 @@
         }
 
         .nav-item:hover {
-            background: #f8fafc;
-            border-color: #5B21B6;
-            color: #5B21B6;
-            box-shadow: 
-                0 4px 15px rgba(91, 33, 182, 0.2),
-                0 2px 8px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px) scale(1.02);
+            background: #f3f4f6;
+            color: #374151;
         }
 
-        /* ÉTAT ACTIF AVEC CERCLE ARRONDI TRÈS VISIBLE */
+        /* ÉTAT ACTIF SOBRE */
         .nav-item.active {
-            background: linear-gradient(135deg, #5B21B6 0%, #7C3AED 100%);
-            border: 3px solid rgba(255, 255, 255, 0.4);
+            background: #5B21B6;
+            border: 1px solid #5B21B6;
             color: white !important;
-            box-shadow: 
-                0 0 0 2px #4C1D95,
-                0 8px 25px rgba(91, 33, 182, 0.4),
-                0 4px 15px rgba(91, 33, 182, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.3);
-            transform: translateY(-3px) scale(1.05);
         }
 
         .nav-item.active i,
         .nav-item.active span {
             color: white !important;
-            filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
-            font-weight: 700;
+            font-weight: 600;
         }
 
         .nav-item.active:hover {
-            background: linear-gradient(135deg, #4C1D95 0%, #5B21B6 100%);
-            box-shadow: 
-                0 0 0 3px #4C1D95,
-                0 10px 30px rgba(91, 33, 182, 0.5),
-                0 5px 20px rgba(91, 33, 182, 0.4);
-            transform: translateY(-4px) scale(1.08);
+            background: #4C1D95;
+            border-color: #4C1D95;
         }
 
         .nav-item:focus {
-            outline: 3px solid rgba(91, 33, 182, 0.6);
-            outline-offset: 3px;
-            box-shadow: 
-                0 0 0 8px rgba(91, 33, 182, 0.15),
-                0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.6s;
-            pointer-events: none;
-            border-radius: 25px;
-        }
-
-        .nav-item:hover::before {
-            left: 100%;
-        }
-
-        .nav-item.active::before {
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            outline: 2px solid #5B21B6;
+            outline-offset: 2px;
         }
 
         /* Contenu principal */
@@ -1478,180 +1476,81 @@
     <!-- 1. Services Core -->
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
-    <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
-    <script src="CategoryManagerUI.js" onerror="console.warn('CategoryManagerUI.js sera créé automatiquement')"></script>
+    <script src="UIManager.js" onerror="console.log('UIManager.js manquant')"></script>
 
     <!-- 2. CategoryManager -->
-    <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
+    <script src="CategoryManager.js" onerror="console.log('CategoryManager.js manquant')"></script>
     
-    <!-- 3. TaskManager AVANT PageManager pour éviter les conflits -->
-    <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
+    <!-- 3. TaskManager AVANT PageManager -->
+    <script src="TaskManager.js" onerror="console.log('TaskManager.js manquant')"></script>
     
     <!-- 4. Autres Managers -->
-    <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
-    <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
+    <script src="EmailScanner.js" onerror="console.log('EmailScanner.js manquant')"></script>
+    <script src="AITaskAnalyzer.js" onerror="console.log('AITaskAnalyzer.js manquant')"></script>
     
     <!-- 5. Page Manager APRÈS TaskManager -->
-    <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
+    <script src="PageManager.js" onerror="console.log('PageManager.js manquant')"></script>
     
     <!-- 6. Modules de pages -->
-    <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
-    <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
-    <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
+    <script src="startscan.js" onerror="console.log('startscan.js manquant')"></script>
+    <script src="DomainOrganizer.js" onerror="console.log('DomainOrganizer.js manquant')"></script>
+    <script src="CategoriesPage.js" onerror="console.log('CategoriesPage.js manquant')"></script>
     
     <!-- 7. Modules Optionnels -->
-    <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
+    <script src="Onboarding.js" onerror="console.log('Onboarding.js manquant')"></script>
     
     <!-- 8. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
     <script>
-        // Fonction pour forcer l'affichage de l'app
-        window.forceShowApp = function() {
-            console.log('[FORCE] Forcing app display...');
-            
-            // Ne pas forcer si déjà affiché
-            if (appAlreadyShown || document.body.classList.contains('app-active')) {
-                console.log('[FORCE] App already displayed, skipping force display');
-                return;
-            }
-            
-            // Ajouter la classe pour activer l'app
-            document.body.classList.add('app-active');
-            
-            // Masquer explicitement la page de login
-            const loginPage = document.getElementById('loginPage');
-            if (loginPage) {
-                loginPage.style.display = 'none';
-            }
-            
-            appAlreadyShown = true;
-            console.log('[FORCE] App display activated');
-        };
-
-        // Fonction pour masquer le loading et afficher l'app
+        // Fonction simple pour afficher l'app
         window.showApp = function() {
-            console.log('[SHOW_APP] Switching to app interface...');
+            if (appAlreadyShown) return;
             
-            // Si l'app est déjà affichée, ne rien faire
-            if (appAlreadyShown) {
-                console.log('[SHOW_APP] App already shown, skipping...');
-                return;
-            }
-            
-            // Retirer le mode login
             document.body.classList.remove('login-mode');
             
-            // Masquer le loading
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (loadingOverlay) {
                 loadingOverlay.classList.remove('active');
             }
             
-            // Activer l'interface app
             document.body.classList.add('app-active');
             
-            // Masquer explicitement la page de login
             const loginPage = document.getElementById('loginPage');
             if (loginPage) {
                 loginPage.style.display = 'none';
             }
             
-            // Initialiser en mode dashboard
-            window.setPageMode('dashboard');
-            
-            // Forcer la vérification du scroll après initialisation
-            setTimeout(() => {
-                window.checkScrollNeeded();
-            }, 1000);
-            
             appAlreadyShown = true;
-            console.log('[SHOW_APP] App interface activated');
         };
 
-        // Variable pour éviter les vérifications multiples
-        let authCheckInProgress = false;
+        // Variable simple pour éviter les chargements multiples
         let appAlreadyShown = false;
 
-        // Vérification précoce IMMÉDIATE de l'authentification
-        const earlyAuthCheck = () => {
-            // Vérifier le localStorage pour des tokens existants
+        // Vérification simple et discrète
+        const checkAuth = () => {
             try {
                 const msalAccount = localStorage.getItem('msal.account.keys');
-                const msalToken = localStorage.getItem('msal.token.keys');
-                
-                if (msalAccount && msalToken) {
-                    console.log('[EARLY_AUTH] Tokens detected in localStorage, user likely authenticated');
-                    
-                    // Cacher immédiatement la page de login
-                    const loginPage = document.getElementById('loginPage');
-                    if (loginPage) {
-                        loginPage.style.display = 'none';
-                        console.log('[EARLY_AUTH] Login page immediately hidden');
-                    }
-                    
-                    // Activer l'app immédiatement
+                if (msalAccount) {
+                    document.getElementById('loginPage').style.display = 'none';
                     document.body.classList.add('app-active');
                     document.body.classList.remove('login-mode');
                     appAlreadyShown = true;
-                    console.log('[EARLY_AUTH] App mode activated immediately');
-                    
                     return true;
                 }
-            } catch (error) {
-                console.warn('[EARLY_AUTH] Error checking localStorage:', error);
-            }
-            
+            } catch (e) {}
             return false;
         };
 
-        // Exécuter la vérification précoce TOUT DE SUITE
-        earlyAuthCheck();
+        // Exécuter discrètement
+        checkAuth();
 
-        // Ajouter une fonction pour forcer la vérification du scroll
-        window.checkScrollNeeded = function() {
-            const body = document.body;
-            const contentHeight = document.documentElement.scrollHeight;
-            const viewportHeight = window.innerHeight;
-            
-            console.log('[FORCE_SCROLL_CHECK]', {
-                contentHeight,
-                viewportHeight,
-                bodyScrollHeight: body.scrollHeight,
-                needsScroll: contentHeight > viewportHeight
-            });
-            
-            if (contentHeight <= viewportHeight) {
-                body.classList.add('page-short-content');
-                body.style.overflow = 'hidden';
-                body.style.overflowY = 'hidden';
-                console.log('[FORCE_SCROLL_CHECK] Scroll forcé à hidden');
-            } else {
-                body.classList.remove('page-short-content');
-                body.style.overflow = '';
-                body.style.overflowY = '';
-                console.log('[FORCE_SCROLL_CHECK] Scroll restauré');
-            }
-        };
-
-        // Ajouter une classe pour le mode login initial
+        // Mode login initial
         document.body.classList.add('login-mode');
 
-        // Vérifier à chaque redimensionnement de fenêtre
-        window.addEventListener('resize', window.checkScrollNeeded);
-
-        // Fonction pour les actions du dashboard
+        // Fonction simple pour les actions du dashboard
         function startDashboardAction(action) {
-            console.log(`Dashboard Action: ${action}`);
-            
-            // Ajouter un effet visuel de clic
-            event.target.closest('.action-card').style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                event.target.closest('.action-card').style.transform = '';
-            }, 150);
-
-            // Rediriger vers l'action appropriée via PageManager
             switch(action) {
                 case 'scan':
                     if (window.pageManager) {
@@ -1676,209 +1575,115 @@
             }
         }
 
-        /* NOUVELLE FONCTION: Gestion des modes d'affichage pour les pages */
+        // Gestion simple des modes de page
         window.setPageMode = function(pageName) {
-            const appMain = document.querySelector('.app-main');
-            const pageContent = document.getElementById('pageContent');
-            const body = document.body;
-            
-            // Nettoyer les anciennes classes de page
-            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'page-short-content', 'login-mode');
-            
-            if (pageName === 'dashboard') {
-                // Mode dashboard: espacement normal
-                appMain.classList.remove('page-mode');
-                appMain.classList.add('dashboard-mode');
-                pageContent.classList.remove('non-dashboard');
-                body.classList.add('page-dashboard');
-                console.log('[PAGE_MODE] Dashboard mode activated - normal spacing');
-            } else {
-                // Mode page: espacement réduit
-                appMain.classList.remove('dashboard-mode');
-                appMain.classList.add('page-mode');
-                pageContent.classList.add('non-dashboard');
-                body.classList.add(`page-${pageName}`);
-                console.log('[PAGE_MODE] Page mode activated - reduced spacing for:', pageName);
-            }
-            
-            // Gestion intelligente du scroll selon la page
-            setTimeout(() => {
-                const contentHeight = document.documentElement.scrollHeight;
-                const viewportHeight = window.innerHeight;
-                const bodyHeight = document.body.scrollHeight;
-                
-                console.log('[SCROLL_MANAGER]', {
-                    page: pageName,
-                    contentHeight,
-                    bodyHeight,
-                    viewportHeight,
-                    documentHeight: document.documentElement.scrollHeight,
-                    needsScroll: bodyHeight > viewportHeight
-                });
-                
-                // Vérification plus précise: si le contenu total est plus petit que la viewport
-                if (bodyHeight <= viewportHeight || contentHeight <= viewportHeight) {
-                    body.classList.add('page-short-content');
-                    console.log('[SCROLL_MANAGER] Short content detected - scroll hidden');
-                    
-                    // Force la suppression du scroll
-                    body.style.overflow = 'hidden';
-                    body.style.overflowY = 'hidden';
-                } else {
-                    body.classList.remove('page-short-content');
-                    console.log('[SCROLL_MANAGER] Long content detected - scroll enabled');
-                    
-                    // Restaure le scroll normal
-                    body.style.overflow = '';
-                    body.style.overflowY = '';
-                }
-            }, 300); // Délai réduit pour une réaction plus rapide
+            document.body.className = document.body.className.replace(/page-\w+/g, '');
+            if (pageName) document.body.classList.add(`page-${pageName}`);
         };
 
-        // INTERCEPT PAGEMANAGER DASHBOARD LOADING
-        // Intercepter la méthode loadPage du PageManager pour le dashboard
+        // Gestion simple du dashboard
         window.interceptDashboardLoad = function() {
-            if (window.pageManager && window.pageManager.loadPage) {
-                const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
-                
-                window.pageManager.loadPage = function(pageName, ...args) {
-                    console.log(`[DASHBOARD_INTERCEPT] LoadPage called for: ${pageName}`);
-                    
-                    // Appliquer le mode d'affichage approprié
-                    window.setPageMode(pageName);
-                    
-                    if (pageName === 'dashboard') {
-                        console.log('[DASHBOARD_INTERCEPT] Intercepting dashboard load - using new minimaliste design');
-                        
-                        // Ne pas charger l'ancien dashboard, le nouveau est déjà dans l'index.html
-                        // Juste s'assurer que la navigation est mise à jour
-                        const navItems = document.querySelectorAll('.nav-item');
-                        navItems.forEach(item => {
-                            item.classList.remove('active');
-                            if (item.dataset.page === 'dashboard') {
-                                item.classList.add('active');
-                            }
-                        });
-                        
-                        // Vider le contenu dynamique pour montrer le dashboard statique de l'index
-                        const pageContent = document.getElementById('pageContent');
-                        if (pageContent) {
-                            // Le dashboard minimaliste est déjà dans pageContent depuis l'index.html
-                            // On s'assure juste qu'il est visible
-                            pageContent.style.display = 'block';
-                            pageContent.style.opacity = '1';
-                        }
-                        
-                        // Animer les stats du dashboard
-                        animateDashboardStats();
-                        
-                        // Vérifier le scroll après affichage du dashboard
-                        setTimeout(() => {
-                            window.checkScrollNeeded();
-                        }, 500);
-                        
-                        console.log('[DASHBOARD_INTERCEPT] Dashboard minimaliste affiché');
-                        return Promise.resolve(); // Retourner une promesse résolue
-                    } else {
-                        // Pour toutes les autres pages, utiliser la méthode originale
-                        return originalLoadPage(pageName, ...args);
-                    }
-                };
-                
-                console.log('[DASHBOARD_INTERCEPT] PageManager dashboard interception configured');
-            } else {
-                console.warn('[DASHBOARD_INTERCEPT] PageManager not ready, will retry...');
+            if (!window.pageManager || !window.pageManager.loadPage) {
                 setTimeout(window.interceptDashboardLoad, 500);
+                return;
             }
+            
+            const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
+            
+            window.pageManager.loadPage = function(pageName, ...args) {
+                // Mettre à jour la navigation
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.page === pageName);
+                });
+                
+                if (pageName === 'dashboard') {
+                    // Restaurer le dashboard
+                    const pageContent = document.getElementById('pageContent');
+                    if (pageContent) {
+                        pageContent.innerHTML = `
+                            <div class="dashboard-container">
+                                <div class="dashboard-header">
+                                    <div class="quick-guide">
+                                        <p class="guide-intro">Commencez par <strong>Scanner</strong> vos emails pour découvrir la puissance de l'IA :</p>
+                                        <div class="guide-steps">
+                                            <span class="guide-step">1) Sélectionnez la période</span>
+                                            <span class="guide-step">2) L'IA analyse automatiquement</span>
+                                            <span class="guide-step">3) Récupérez vos emails triés</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dashboard-actions">
+                                    <div class="action-card scan-card" onclick="startDashboardAction('scan')">
+                                        <div class="action-icon"><i class="fas fa-search"></i></div>
+                                        <h3 class="action-title">Scanner</h3>
+                                        <p class="action-description">Commencez ici ! L'IA analyse vos emails<small>1) Choisissez la période<br>2) Analyse automatique<br>3) Emails classés par catégories</small></p>
+                                    </div>
+                                    <div class="action-card organize-card" onclick="startDashboardAction('organize')">
+                                        <div class="action-icon"><i class="fas fa-layer-group"></i></div>
+                                        <h3 class="action-title">Organiser</h3>
+                                        <p class="action-description">Triez par expéditeur et domaines<small>1) Analyse des expéditeurs<br>2) Groupement automatique<br>3) Création de dossiers</small></p>
+                                    </div>
+                                    <div class="action-card tasks-card" onclick="startDashboardAction('tasks')">
+                                        <div class="action-icon"><i class="fas fa-tasks"></i></div>
+                                        <h3 class="action-title">Tâches</h3>
+                                        <p class="action-description">Consultez vos tâches générées<small>1) Tâches détectées<br>2) Priorités assignées<br>3) Suivi et validation</small></p>
+                                    </div>
+                                    <div class="action-card settings-card" onclick="startDashboardAction('settings')">
+                                        <div class="action-icon"><i class="fas fa-sliders-h"></i></div>
+                                        <h3 class="action-title">Paramètres</h3>
+                                        <p class="action-description">Personnalisez l'IA à vos besoins<small>1) Catégories custom<br>2) Règles de tri<br>3) Préférences d'analyse</small></p>
+                                    </div>
+                                </div>
+                                <div class="dashboard-stats">
+                                    <div class="stat"><div class="stat-number">1,247</div><div class="stat-label">Emails analysés</div></div>
+                                    <div class="stat"><div class="stat-number">23</div><div class="stat-label">Tâches créées</div></div>
+                                    <div class="stat"><div class="stat-number">8h</div><div class="stat-label">Temps économisé</div></div>
+                                </div>
+                            </div>
+                        `;
+                        pageContent.style.display = 'block';
+                        pageContent.style.opacity = '1';
+                    }
+                    return Promise.resolve();
+                } else {
+                    return originalLoadPage(pageName, ...args);
+                }
+            };
         };
 
         // Lancer l'interception du dashboard
         setTimeout(window.interceptDashboardLoad, 1000);
 
-        // Animation des statistiques du dashboard
-        function animateDashboardStats() {
-            setTimeout(() => {
-                const emailsCount = document.getElementById('emailsCount');
-                const tasksCount = document.getElementById('tasksCount');
-                const timesSaved = document.getElementById('timesSaved');
-                
-                if (emailsCount) emailsCount.textContent = '1,247';
-                if (tasksCount) tasksCount.textContent = '23';
-                if (timesSaved) timesSaved.textContent = '8h';
-            }, 1000);
-        }
-
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INDEX] DOM loaded for emailsortpro.netlify.app...');
+            // Gestion des clics sur les éléments de navigation
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const pageName = this.dataset.page;
+                    
+                    if (window.pageManager && window.pageManager.loadPage) {
+                        window.pageManager.loadPage(pageName);
+                    } else {
+                        navItems.forEach(navItem => navItem.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
             
-            // Animer les stats du dashboard
-            animateDashboardStats();
-            
-            // Si l'app est déjà affichée depuis la vérification précoce, ne rien faire
+            // Si l'app est déjà affichée, ne rien faire
             if (appAlreadyShown) {
-                console.log('[INDEX] App already shown via early auth, skipping additional checks');
                 return;
             }
             
-            // Fonction de vérification d'authentification sécurisée
-            const safeAuthCheck = () => {
-                // Vérifications multiples pour éviter les conflits
-                if (authCheckInProgress || appAlreadyShown) {
-                    console.log('[INDEX] Auth check already in progress or app shown, skipping...');
-                    return false;
-                }
-                
-                // Vérifier si l'app est déjà active (affichée par app.js)
-                if (document.body.classList.contains('app-active')) {
-                    console.log('[INDEX] App already active via app.js, skipping...');
-                    appAlreadyShown = true;
-                    return true;
-                }
-                
-                try {
-                    if (window.authService && typeof window.authService.isAuthenticated === 'function') {
-                        if (window.authService.isAuthenticated()) {
-                            console.log('[INDEX] User already authenticated, showing app...');
-                            window.showApp();
-                            return true;
-                        }
-                    }
-                } catch (error) {
-                    console.warn('[INDEX] Auth check error:', error);
-                }
-                return false;
-            };
-            
-            // Vérification avec délai seulement si pas déjà fait
-            setTimeout(() => {
-                // Vérifier d'abord si app.js a déjà affiché l'app
-                if (document.body.classList.contains('app-active')) {
-                    console.log('[INDEX] App already displayed by app.js, no need for additional check');
-                    appAlreadyShown = true;
-                    return;
-                }
-                
-                if (!safeAuthCheck()) {
-                    // Une seule retry après 800ms
-                    setTimeout(() => {
-                        if (!document.body.classList.contains('app-active')) {
-                            safeAuthCheck();
-                        }
-                    }, 800);
-                }
-            }, 200);
-            
+            // Gestion du bouton de login
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
-                    if (authCheckInProgress) {
-                        console.log('[INDEX] Auth process already in progress...');
-                        return;
-                    }
+                    if (authCheckInProgress) return;
                     
                     authCheckInProgress = true;
-                    
                     this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
                     this.disabled = true;
                     
@@ -1889,106 +1694,27 @@
                     
                     if (window.app && window.app.login) {
                         window.app.login().then(() => {
-                            console.log('[LOGIN] Login successful, showing app...');
                             window.showApp();
                             authCheckInProgress = false;
                         }).catch((error) => {
-                            console.error('[LOGIN] Login failed:', error);
                             authCheckInProgress = false;
-                            // Réinitialiser le bouton en cas d'erreur
                             this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
                             this.disabled = false;
                             if (loadingOverlay) {
                                 loadingOverlay.classList.remove('active');
                             }
                         });
-                    } else {
-                        authCheckInProgress = false;
-                        this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                        this.disabled = false;
-                        if (loadingOverlay) {
-                            loadingOverlay.classList.remove('active');
-                        }
                     }
                 });
             }
-            
-            // Vérifier la configuration après le chargement du DOM
-            setTimeout(function() {
-                if (window.AppConfig) {
-                    const validation = window.AppConfig.validate();
-                    console.log('[INDEX] Configuration validation for new domain:', validation);
-                    
-                    const debugInfo = window.AppConfig.getDebugInfo();
-                    console.log('[INDEX] Debug info for emailsortpro.netlify.app:', debugInfo);
-                    
-                    if (!validation.valid) {
-                        console.log('[INDEX] Configuration invalid for new domain:', validation.issues);
-                        
-                        const errorBanner = document.createElement('div');
-                        errorBanner.className = 'config-error-banner';
-                        errorBanner.innerHTML = `
-                            <div>
-                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour emailsortpro.netlify.app
-                            </div>
-                            <div>
-                                Vérifiez votre configuration Azure App Registration
-                            </div>
-                            <div class="config-error-actions">
-                                <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
-                                <a href="/setup.html" class="config-error-btn">Configuration</a>
-                                <button class="config-error-btn" onclick="console.log('Debug:', window.AppConfig.getDebugInfo())">Debug</button>
-                            </div>
-                        `;
-                        document.body.appendChild(errorBanner);
-                    } else {
-                        console.log('[INDEX] ✅ Configuration valid for emailsortpro.netlify.app');
-                    }
-                } else {
-                    console.warn('[INDEX] AppConfig not available');
-                }
-            }, 1000);
         });
         
-        // Fonction globale pour basculer vers l'app après connexion
+        // Fonctions globales simples
         window.onAuthSuccess = function() {
-            console.log('[AUTH_SUCCESS] Authentication successful, switching to app...');
-            // Ne pas appeler showApp() si l'app est déjà affichée par app.js
-            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
-                window.showApp();
-            } else {
-                console.log('[AUTH_SUCCESS] App already active, skipping duplicate display');
-            }
+            if (!appAlreadyShown) window.showApp();
         };
 
-        // Fonction de diagnostic accessible globalement
-        window.checkServices = function() {
-            console.log('=== Diagnostic des services pour emailsortpro.netlify.app ===');
-            console.log('AppConfig:', window.AppConfig ? 'OK' : 'MANQUANT');
-            if (window.AppConfig) {
-                console.log('Environment:', window.AppConfig.app.environment);
-                console.log('Domain:', window.AppConfig.app.domain);
-                console.log('Client ID:', window.AppConfig.msal.clientId?.substring(0, 8) + '...');
-                console.log('Redirect URI:', window.AppConfig.msal.redirectUri);
-                console.log('Debug info:', window.AppConfig.getDebugInfo());
-            }
-            console.log('authService:', window.authService ? 'OK' : 'MANQUANT');
-            console.log('mailService:', window.mailService ? 'OK' : 'MANQUANT');
-            console.log('uiManager:', window.uiManager ? 'OK' : 'MANQUANT');
-            console.log('taskManager:', window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT');
-            console.log('tasksView:', window.tasksView ? 'OK' : 'MANQUANT');
-            console.log('pageManager:', window.pageManager ? 'OK' : 'MANQUANT');
-            console.log('categoryManager:', window.categoryManager ? 'OK' : 'MANQUANT');
-            console.log('Current hostname:', window.location.hostname);
-            console.log('Expected hostname: emailsortpro.netlify.app');
-            console.log('=== Ordre de chargement ===');
-            console.log('1. TaskManager chargé AVANT PageManager');
-            console.log('2. TasksView créé dans TaskManager');
-            console.log('3. PageManager délègue les tâches à TasksView');
-            console.log('4. Interface unifiée entre emails et tâches');
-        };
-
-        // Fonction pour créer CategoryManagerUI si manquant
+        // Créer CategoryManagerUI si manquant
         if (!window.CategoryManagerUI) {
             window.CategoryManagerUI = class {
                 static renderCategorySelector(categories = {}) {
@@ -2000,31 +1726,7 @@
                     ).join('');
                 }
             };
-            console.log('✅ CategoryManagerUI créé automatiquement');
         }
-
-        // Log de confirmation du domaine
-        console.log('[INDEX] ✅ Configuration loaded for emailsortpro.netlify.app');
-        console.log('[INDEX] Current hostname:', window.location.hostname);
-        console.log('[INDEX] Expected hostname: emailsortpro.netlify.app');
-        console.log('[INDEX] Domain match:', window.location.hostname === 'emailsortpro.netlify.app');
-        console.log('[INDEX] 🎯 NOUVEAU DASHBOARD INTÉGRÉ:');
-        console.log('[INDEX] 1. Design minimaliste et intuitif');
-        console.log('[INDEX] 2. Explications étape par étape');
-        console.log('[INDEX] 3. Navigation vers les bonnes pages');
-        console.log('[INDEX] 🚀 ESPACEMENT CORRIGÉ:');
-        console.log('[INDEX] ✅ Dashboard: espacement normal conservé');
-        console.log('[INDEX] ✅ Autres pages: espacement supprimé au-dessus du contenu');
-        console.log('[INDEX] 🎯 SCROLL INTELLIGENT:');
-        console.log('[INDEX] ✅ Login: scroll masqué');
-        console.log('[INDEX] ✅ Pages courtes: scroll automatiquement masqué');
-        console.log('[INDEX] ✅ Pages longues: scroll visible selon le contenu');
-        console.log('[INDEX] ✅ Détection automatique de la hauteur du contenu');
-        console.log('[INDEX] 🎯 NAVIGATION CORRIGÉE:');
-        console.log('[INDEX] ✅ Boutons visibles avec icônes et texte');
-        console.log('[INDEX] ✅ État actif avec cercle arrondi très visible');
-        console.log('[INDEX] ✅ Animations et effets visuels');
-        console.log('[INDEX] ✅ Responsive parfait sur tous les écrans');
     </script>
 </body>
 </html>
