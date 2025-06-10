@@ -1,4 +1,4 @@
-// UIManager.js - Version corrigée avec support complet des catégories v8.0
+// UIManager.js - Version corrigée avec support complet des catégories v8.1 et affichage utilisateur en blanc
 
 class UIManager {
     constructor() {
@@ -315,26 +315,32 @@ class UIManager {
     }
 
     // =====================================
-    // GESTION DE L'AUTHENTIFICATION
+    // GESTION DE L'AUTHENTIFICATION - AFFICHAGE EN BLANC
     // =====================================
     updateAuthStatus(user) {
         const authStatus = document.getElementById('authStatus');
         if (!authStatus) return;
 
         if (user) {
-            const initials = this.getUserInitials(user.displayName || user.mail || 'U');
+            // Utiliser les informations par défaut si nécessaire
+            const userName = user.displayName || 'Vianney Hastings';
+            const userEmail = user.mail || user.userPrincipalName || 'vianney.hastings@hotmail.fr';
+            const initials = this.getUserInitials(userName);
+            
             authStatus.innerHTML = `
                 <div class="user-info">
-                    <div class="user-avatar">${initials}</div>
                     <div class="user-details">
-                        <div class="user-name">${user.displayName || 'Unknown User'}</div>
-                        <div class="user-email">${user.mail || user.userPrincipalName || ''}</div>
+                        <div class="user-name">${userName}</div>
+                        <div class="user-email">${userEmail}</div>
                     </div>
+                    <div class="user-avatar">${initials}</div>
                     <button class="logout-btn" onclick="window.app?.logout()" title="Logout">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
             `;
+            
+            console.log('[UIManager] User display updated:', { userName, userEmail });
         } else {
             authStatus.innerHTML = `
                 <span class="auth-status-text">
@@ -348,7 +354,7 @@ class UIManager {
     }
 
     getUserInitials(name) {
-        if (!name) return 'U';
+        if (!name) return 'VH';
         
         const words = name.split(' ').filter(word => word.length > 0);
         if (words.length >= 2) {
@@ -363,87 +369,141 @@ class UIManager {
         const styles = document.createElement('style');
         styles.id = 'auth-styles';
         styles.textContent = `
+            /* STYLES POUR AFFICHAGE UTILISATEUR EN BLANC DANS LE HEADER */
             .user-info {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 8px;
-                border-radius: 12px;
+                padding: 8px 12px;
+                border-radius: 8px;
                 background: rgba(255, 255, 255, 0.1);
                 backdrop-filter: blur(8px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
             }
             
-            .user-avatar {
-                width: 40px;
-                height: 40px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                font-size: 14px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-            
             .user-details {
                 display: flex;
                 flex-direction: column;
+                align-items: flex-end;
                 gap: 2px;
             }
             
+            /* NOM ET EMAIL EN BLANC AVEC IMPORTANT */
             .user-name {
-                font-weight: 600;
-                color: #1f2937;
-                font-size: 14px;
-                line-height: 1.2;
+                font-weight: 600 !important;
+                color: white !important;
+                font-size: 14px !important;
+                line-height: 1.2 !important;
+                margin: 0 !important;
             }
             
             .user-email {
-                font-size: 12px;
-                color: #6b7280;
-                line-height: 1.2;
+                font-size: 12px !important;
+                color: white !important;
+                opacity: 0.9 !important;
+                line-height: 1.2 !important;
+                margin: 0 !important;
+            }
+            
+            .user-avatar {
+                width: 32px !important;
+                height: 32px !important;
+                background: rgba(255, 255, 255, 0.2) !important;
+                color: white !important;
+                border-radius: 50% !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-weight: 600 !important;
+                font-size: 13px !important;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+                flex-shrink: 0 !important;
             }
             
             .logout-btn {
-                background: rgba(239, 68, 68, 0.1);
-                border: 1px solid rgba(239, 68, 68, 0.2);
-                color: #ef4444;
-                padding: 8px;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                background: rgba(239, 68, 68, 0.2) !important;
+                border: 1px solid rgba(239, 68, 68, 0.3) !important;
+                color: #ff6b6b !important;
+                padding: 6px !important;
+                border-radius: 6px !important;
+                cursor: pointer !important;
+                transition: all 0.2s ease !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                font-size: 12px !important;
+                width: 24px !important;
+                height: 24px !important;
             }
             
             .logout-btn:hover {
-                background: rgba(239, 68, 68, 0.2);
-                transform: scale(1.05);
+                background: rgba(239, 68, 68, 0.3) !important;
+                transform: scale(1.05) !important;
             }
             
             .auth-status-text {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: #6b7280;
-                font-size: 14px;
-                font-weight: 500;
-                padding: 8px 12px;
-                border-radius: 8px;
-                background: rgba(107, 114, 128, 0.1);
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                color: rgba(255, 255, 255, 0.8) !important;
+                font-size: 14px !important;
+                font-weight: 500 !important;
+                padding: 8px 12px !important;
+                border-radius: 8px !important;
+                background: rgba(255, 255, 255, 0.1) !important;
             }
             
+            /* FORCER LE BLANC POUR TOUS LES ÉLÉMENTS DANS LE HEADER */
+            .app-header .user-info * {
+                color: white !important;
+            }
+            
+            .app-header .user-name {
+                color: white !important;
+                font-weight: 600 !important;
+            }
+            
+            .app-header .user-email {
+                color: white !important;
+                opacity: 0.9 !important;
+            }
+            
+            .app-header .user-avatar {
+                color: white !important;
+                background: rgba(255, 255, 255, 0.2) !important;
+            }
+            
+            /* RESPONSIVE */
             @media (max-width: 768px) {
                 .user-details {
-                    display: none;
+                    display: none !important;
                 }
                 
                 .user-info {
-                    gap: 8px;
+                    gap: 8px !important;
+                    padding: 6px 8px !important;
+                }
+                
+                .user-avatar {
+                    width: 28px !important;
+                    height: 28px !important;
+                    font-size: 12px !important;
+                }
+                
+                .logout-btn {
+                    width: 20px !important;
+                    height: 20px !important;
+                    font-size: 10px !important;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                .user-details {
+                    display: none !important;
+                }
+                
+                .logout-btn {
+                    display: none !important;
                 }
             }
         `;
@@ -1127,7 +1187,7 @@ try {
     // S'assurer que tous les styles sont chargés
     window.uiManager.ensureAllStyles();
     
-    console.log('[UIManager] ✅ Global instance created successfully with enhanced category support');
+    console.log('[UIManager] ✅ Global instance created successfully with WHITE USER DISPLAY');
 } catch (error) {
     console.error('[UIManager] ❌ Failed to create global instance:', error);
     
@@ -1144,4 +1204,4 @@ try {
     };
 }
 
-console.log('✅ UIManager loaded with enhanced error handling and category support v8.0');
+console.log('✅ UIManager loaded with WHITE USER DISPLAY support v8.1');
