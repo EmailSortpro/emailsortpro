@@ -579,52 +579,89 @@
             display: none !important;
         }
 
-        /* BOUTONS DE NAVIGATION PARFAITEMENT VISIBLES */
+        /* NAVIGATION SOBRE ET ÉLÉGANTE */
+        .app-nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 999;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            display: none;
+        }
+
+        .app-nav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        #mainNav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 0 20px;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            white-space: nowrap;
+        }
+
+        #mainNav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        /* BOUTONS SOBRES ET ÉLÉGANTS */
         .nav-item {
-            background: #ffffff;
-            border: 2px solid #e2e8f0;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            min-width: 130px;
-            max-width: 180px;
-            height: 50px;
+            background: transparent;
+            border: 1px solid transparent;
+            min-width: 120px;
+            max-width: 160px;
+            height: 44px;
             padding: 10px 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             font-size: 14px;
-            font-weight: 600;
-            color: #374151;
+            font-weight: 500;
+            color: #6b7280;
             cursor: pointer;
-            border-radius: 25px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            transition: all 0.2s ease;
             white-space: nowrap;
             flex-shrink: 0;
-            position: relative;
             text-decoration: none;
         }
 
         .nav-item i {
-            font-size: 18px !important;
-            width: 20px;
-            height: 20px;
+            font-size: 16px !important;
+            width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 900 !important;
             color: inherit;
             flex-shrink: 0;
         }
 
         .nav-item span {
             font-size: 14px;
-            font-weight: 600;
+            font-weight: inherit;
             color: inherit;
             flex-shrink: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-width: 100px;
         }
 
         .nav-item .fas,
@@ -635,64 +672,31 @@
         }
 
         .nav-item:hover {
-            background: #f8fafc;
-            border-color: #5B21B6;
-            color: #5B21B6;
-            box-shadow: 
-                0 4px 15px rgba(91, 33, 182, 0.2),
-                0 2px 8px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px) scale(1.02);
+            background: #f3f4f6;
+            color: #374151;
         }
 
-        /* ÉTAT ACTIF ERGONOMIQUE ET SIMPLE */
+        /* ÉTAT ACTIF SOBRE */
         .nav-item.active {
             background: #5B21B6;
-            border: 2px solid #5B21B6;
+            border: 1px solid #5B21B6;
             color: white !important;
-            box-shadow: 0 2px 8px rgba(91, 33, 182, 0.2);
-            transform: none;
         }
 
         .nav-item.active i,
         .nav-item.active span {
             color: white !important;
-            font-weight: 700;
+            font-weight: 600;
         }
 
         .nav-item.active:hover {
             background: #4C1D95;
             border-color: #4C1D95;
-            box-shadow: 0 4px 12px rgba(91, 33, 182, 0.25);
-            transform: translateY(-1px);
         }
 
         .nav-item:focus {
-            outline: 3px solid rgba(91, 33, 182, 0.6);
-            outline-offset: 3px;
-            box-shadow: 
-                0 0 0 8px rgba(91, 33, 182, 0.15),
-                0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-item::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: left 0.6s;
-            pointer-events: none;
-            border-radius: 25px;
-        }
-
-        .nav-item:hover::before {
-            left: 100%;
-        }
-
-        .nav-item.active::before {
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            outline: 2px solid #5B21B6;
+            outline-offset: 2px;
         }
 
         /* Contenu principal */
