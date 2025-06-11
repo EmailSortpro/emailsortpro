@@ -1,4 +1,4 @@
-// ModernDomainOrganizer.js - Version corrigée et opérationnelle
+.email-modal {// ModernDomainOrganizer.js - Version corrigée et opérationnelle
 // Interface complète avec édition et recherche
 
 class ModernDomainOrganizer {
@@ -18,8 +18,26 @@ class ModernDomainOrganizer {
     getPageHTML() {
         return `
             <div class="modern-organizer">
-                <!-- Header avec progression -->
+                <!-- Header avec progression et boutons d'action -->
                 <div class="organizer-header">
+                    <!-- Boutons d'action principaux -->
+                    <div class="header-actions" id="headerActions" style="display: none;">
+                        <div class="action-group">
+                            <button class="btn btn-outline" id="headerCreateFoldersBtn" onclick="window.modernDomainOrganizer.createFoldersOnly()">
+                                <i class="fas fa-folder-plus"></i>
+                                Créer dossiers uniquement
+                            </button>
+                            <button class="btn btn-primary" id="headerExecuteBtn" onclick="window.modernDomainOrganizer.executeOrganization()">
+                                <i class="fas fa-rocket"></i>
+                                Organisation complète
+                            </button>
+                        </div>
+                        <div class="action-info">
+                            <span id="actionSummary">Prêt à organiser</span>
+                        </div>
+                    </div>
+
+                    <!-- Barre de progression -->
                     <div class="progress-steps">
                         <div class="step active" data-step="configuration">
                             <div class="step-circle">1</div>
@@ -162,6 +180,10 @@ class ModernDomainOrganizer {
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         </div>
+                                        <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.showFolderTree()">
+                                            <i class="fas fa-sitemap"></i>
+                                            Voir arborescence
+                                        </button>
                                     </div>
                                     
                                     <div class="control-groups">
@@ -286,7 +308,41 @@ class ModernDomainOrganizer {
                     </div>
                 </div>
 
-                <!-- Modal d'édition d'email -->
+                <!-- Arborescence des dossiers -->
+                <div class="folder-tree-modal hidden" id="folderTreeModal">
+                    <div class="folder-tree-content">
+                        <div class="folder-tree-header">
+                            <h3>📂 Arborescence complète des dossiers</h3>
+                            <button class="modal-close" onclick="window.modernDomainOrganizer.closeFolderTree()">×</button>
+                        </div>
+                        <div class="folder-tree-body" id="folderTreeBody">
+                            <!-- Rempli dynamiquement -->
+                        </div>
+                        <div class="folder-tree-footer">
+                            <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.closeFolderTree()">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal d'alerte moderne -->
+                <div class="modern-alert-modal hidden" id="modernAlertModal">
+                    <div class="modern-alert-content">
+                        <div class="alert-icon" id="alertIcon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="alert-body">
+                            <h3 id="alertTitle">Confirmation requise</h3>
+                            <p id="alertMessage">Message d'alerte</p>
+                            <div class="alert-details" id="alertDetails"></div>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn btn-secondary" id="alertCancelBtn">Annuler</button>
+                            <button class="btn btn-danger" id="alertConfirmBtn">Confirmer</button>
+                        </div>
+                    </div>
+                </div>
                 <div class="email-modal hidden" id="emailModal">
                     <div class="email-modal-content">
                         <div class="email-modal-header">
@@ -320,7 +376,7 @@ class ModernDomainOrganizer {
                     box-sizing: border-box;
                 }
 
-                /* Header fixe */
+                /* Header avec boutons d'action */
                 .organizer-header {
                     background: white;
                     border-radius: 16px;
@@ -328,6 +384,55 @@ class ModernDomainOrganizer {
                     margin-bottom: 20px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
                     flex-shrink: 0;
+                }
+
+                .header-actions {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 24px;
+                    padding: 16px;
+                    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                    border-radius: 12px;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .action-group {
+                    display: flex;
+                    gap: 12px;
+                }
+
+                .action-info {
+                    font-size: 14px;
+                    color: #6b7280;
+                    font-weight: 500;
+                }
+
+                .btn-outline {
+                    background: white;
+                    color: #374151;
+                    border: 2px solid #d1d5db;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                }
+
+                .btn-outline:hover {
+                    background: #f9fafb;
+                    border-color: #9ca3af;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }
+
+                .btn-primary {
+                    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+                    color: white;
+                    border: 2px solid transparent;
+                    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+                }
+
+                .btn-primary:hover:not(:disabled) {
+                    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
                 }
 
                 /* Contenu principal avec scroll */
@@ -595,10 +700,14 @@ class ModernDomainOrganizer {
 
                 .search-section {
                     width: 100%;
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
                 }
 
                 .search-container {
                     position: relative;
+                    flex: 1;
                     max-width: 400px;
                 }
 
@@ -874,7 +983,149 @@ class ModernDomainOrganizer {
                     gap: 8px;
                 }
 
-                .email-modal {
+                /* Modals */
+                .folder-tree-modal, .modern-alert-modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.6);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                    animation: fadeIn 0.3s ease;
+                    backdrop-filter: blur(4px);
+                }
+
+                .folder-tree-modal.hidden, .modern-alert-modal.hidden {
+                    display: none;
+                }
+
+                .folder-tree-content {
+                    background: white;
+                    border-radius: 16px;
+                    max-width: 800px;
+                    max-height: 80vh;
+                    width: 90%;
+                    overflow: hidden;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                }
+
+                .folder-tree-header {
+                    padding: 24px;
+                    border-bottom: 1px solid #e5e7eb;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                }
+
+                .folder-tree-header h3 {
+                    margin: 0;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1f2937;
+                }
+
+                .folder-tree-body {
+                    padding: 24px;
+                    max-height: 60vh;
+                    overflow-y: auto;
+                    font-family: 'SF Mono', Monaco, monospace;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    background: #fafafa;
+                }
+
+                .folder-tree-footer {
+                    padding: 16px 24px;
+                    border-top: 1px solid #e5e7eb;
+                    display: flex;
+                    justify-content: flex-end;
+                    background: #f9fafb;
+                }
+
+                /* Modal d'alerte moderne */
+                .modern-alert-content {
+                    background: white;
+                    border-radius: 20px;
+                    max-width: 500px;
+                    width: 90%;
+                    overflow: hidden;
+                    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.4);
+                    animation: slideInUp 0.4s ease;
+                }
+
+                .alert-icon {
+                    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+                    color: white;
+                    padding: 32px;
+                    text-align: center;
+                    font-size: 48px;
+                }
+
+                .alert-body {
+                    padding: 32px 24px;
+                    text-align: center;
+                }
+
+                .alert-body h3 {
+                    margin: 0 0 16px 0;
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: #1f2937;
+                }
+
+                .alert-body p {
+                    margin: 0 0 20px 0;
+                    font-size: 16px;
+                    color: #6b7280;
+                    line-height: 1.6;
+                }
+
+                .alert-details {
+                    background: #fef3cd;
+                    border: 1px solid #fbbf24;
+                    border-radius: 12px;
+                    padding: 16px;
+                    margin: 16px 0;
+                    text-align: left;
+                }
+
+                .alert-actions {
+                    padding: 24px;
+                    border-top: 1px solid #e5e7eb;
+                    display: flex;
+                    gap: 12px;
+                    justify-content: flex-end;
+                    background: #f9fafb;
+                }
+
+                .btn-danger {
+                    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                    color: white;
+                    border: 2px solid transparent;
+                    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+                }
+
+                .btn-danger:hover:not(:disabled) {
+                    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+                }
+
+                @keyframes slideInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px) scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
                     position: fixed;
                     top: 0;
                     left: 0;
@@ -1270,6 +1521,8 @@ class ModernDomainOrganizer {
         document.getElementById('startScanBtn')?.addEventListener('click', () => this.startAnalysis());
         document.getElementById('executeBtn')?.addEventListener('click', () => this.executeOrganization());
         document.getElementById('createFoldersBtn')?.addEventListener('click', () => this.createFoldersOnly());
+        document.getElementById('headerExecuteBtn')?.addEventListener('click', () => this.executeOrganization());
+        document.getElementById('headerCreateFoldersBtn')?.addEventListener('click', () => this.createFoldersOnly());
         document.getElementById('saveEmailBtn')?.addEventListener('click', () => this.saveEmailChanges());
     }
 
@@ -1292,6 +1545,13 @@ class ModernDomainOrganizer {
         document.getElementById(`step-${stepName}`)?.classList.remove('hidden');
         this.updateStepProgress(stepName);
         this.currentStep = stepName;
+        
+        // Gérer l'affichage des boutons d'action
+        if (stepName === 'plan') {
+            this.showHeaderActions();
+        } else {
+            this.hideHeaderActions();
+        }
     }
 
     updateStepProgress(currentStep) {
@@ -1510,6 +1770,9 @@ class ModernDomainOrganizer {
         
         this.displayPlanSummary(summary);
         this.displayDomainsWithEmails(container);
+        
+        // Afficher les boutons d'action
+        this.showHeaderActions();
     }
 
     displayPlanSummary(summary) {
@@ -1754,7 +2017,159 @@ class ModernDomainOrganizer {
         }
     }
 
-    // Contrôles globaux
+    showHeaderActions() {
+        const headerActions = document.getElementById('headerActions');
+        const actionSummary = document.getElementById('actionSummary');
+        
+        if (headerActions && actionSummary) {
+            headerActions.style.display = 'flex';
+            
+            const totalEmails = Array.from(this.organizationPlan.values())
+                .reduce((sum, plan) => {
+                    if (plan.selected) {
+                        return sum + plan.emails.filter(e => e.selected !== false).length;
+                    }
+                    return sum;
+                }, 0);
+            
+            const newFolders = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.selected && plan.action === 'create-new').length;
+            
+            actionSummary.textContent = `${newFolders} nouveaux dossiers • ${totalEmails.toLocaleString()} emails sélectionnés`;
+        }
+    }
+
+    hideHeaderActions() {
+        const headerActions = document.getElementById('headerActions');
+        if (headerActions) {
+            headerActions.style.display = 'none';
+        }
+    }
+
+    // Arborescence des dossiers
+    showFolderTree() {
+        const modal = document.getElementById('folderTreeModal');
+        const body = document.getElementById('folderTreeBody');
+        
+        if (!modal || !body) return;
+        
+        // Générer l'arborescence
+        const tree = this.generateFolderTree();
+        body.innerHTML = `<pre>${tree}</pre>`;
+        
+        modal.classList.remove('hidden');
+    }
+
+    closeFolderTree() {
+        const modal = document.getElementById('folderTreeModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    generateFolderTree() {
+        const folders = Array.from(this.allFolders.values());
+        const rootFolders = folders.filter(f => !f.parentFolderId);
+        const subFolders = folders.filter(f => f.parentFolderId);
+        
+        let tree = '📂 Boîte mail\n';
+        tree += '├── 📧 Dossiers principaux\n';
+        
+        rootFolders.forEach((folder, index) => {
+            const isLast = index === rootFolders.length - 1 && subFolders.length === 0;
+            const prefix = isLast ? '└── ' : '├── ';
+            tree += `${prefix}📁 ${folder.displayName} (${folder.totalItemCount} emails)\n`;
+            
+            // Ajouter les sous-dossiers
+            const children = subFolders.filter(sf => sf.parentFolderId === folder.id);
+            children.forEach((child, childIndex) => {
+                const childPrefix = isLast ? '    ' : '│   ';
+                const childIsLast = childIndex === children.length - 1;
+                const childSymbol = childIsLast ? '└── ' : '├── ';
+                tree += `${childPrefix}${childSymbol}📂 ${child.displayName} (${child.totalItemCount} emails)\n`;
+            });
+        });
+        
+        if (subFolders.length > 0) {
+            const orphanFolders = subFolders.filter(sf => 
+                !rootFolders.find(rf => rf.id === sf.parentFolderId)
+            );
+            
+            if (orphanFolders.length > 0) {
+                tree += '└── 📂 Autres dossiers\n';
+                orphanFolders.forEach((folder, index) => {
+                    const isLast = index === orphanFolders.length - 1;
+                    const prefix = isLast ? '    └── ' : '    ├── ';
+                    tree += `${prefix}📁 ${folder.displayName} (${folder.totalItemCount} emails)\n`;
+                });
+            }
+        }
+        
+        tree += `\n📊 Total: ${this.allFolders.size} dossiers`;
+        return tree;
+    }
+
+    // Alertes modernes
+    showModernAlert(options) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('modernAlertModal');
+            const icon = document.getElementById('alertIcon');
+            const title = document.getElementById('alertTitle');
+            const message = document.getElementById('alertMessage');
+            const details = document.getElementById('alertDetails');
+            const cancelBtn = document.getElementById('alertCancelBtn');
+            const confirmBtn = document.getElementById('alertConfirmBtn');
+            
+            if (!modal) {
+                resolve(false);
+                return;
+            }
+            
+            // Configuration de l'alerte
+            icon.innerHTML = `<i class="fas ${options.icon || 'fa-exclamation-triangle'}"></i>`;
+            title.textContent = options.title || 'Confirmation requise';
+            message.textContent = options.message || '';
+            
+            if (options.details) {
+                details.innerHTML = options.details;
+                details.style.display = 'block';
+            } else {
+                details.style.display = 'none';
+            }
+            
+            cancelBtn.textContent = options.cancelText || 'Annuler';
+            confirmBtn.textContent = options.confirmText || 'Confirmer';
+            confirmBtn.className = `btn ${options.dangerMode ? 'btn-danger' : 'btn-primary'}`;
+            
+            // Event listeners
+            const handleCancel = () => {
+                modal.classList.add('hidden');
+                resolve(false);
+            };
+            
+            const handleConfirm = () => {
+                modal.classList.add('hidden');
+                resolve(true);
+            };
+            
+            cancelBtn.onclick = handleCancel;
+            confirmBtn.onclick = handleConfirm;
+            
+            // Fermeture avec Escape
+            const handleKeydown = (e) => {
+                if (e.key === 'Escape') {
+                    modal.classList.add('hidden');
+                    document.removeEventListener('keydown', handleKeydown);
+                    resolve(false);
+                }
+            };
+            
+            document.addEventListener('keydown', handleKeydown);
+            
+            // Afficher la modal
+            modal.classList.remove('hidden');
+        });
+    }
     expandAllDomains() {
         this.organizationPlan.forEach((plan, domain) => {
             this.expandedDomains.add(domain);
@@ -1991,14 +2406,47 @@ class ModernDomainOrganizer {
         if (this.isProcessing) return;
         
         try {
-            this.isProcessing = true;
+            // Collecte des informations
+            const foldersToCreate = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.selected && plan.action === 'create-new')
+                .map(plan => plan.targetFolder);
             
-            // Afficher une modal de confirmation
-            if (!confirm('Voulez-vous créer seulement les nouveaux dossiers sans déplacer les emails ?')) {
-                this.isProcessing = false;
+            if (foldersToCreate.length === 0) {
+                await this.showModernAlert({
+                    icon: 'fa-info-circle',
+                    title: 'Aucune action nécessaire',
+                    message: 'Tous les dossiers sélectionnés existent déjà.',
+                    confirmText: 'Compris',
+                    dangerMode: false
+                });
                 return;
             }
             
+            // Alerte de confirmation moderne
+            const confirmed = await this.showModernAlert({
+                icon: 'fa-folder-plus',
+                title: 'Création de dossiers',
+                message: 'Vous allez créer de nouveaux dossiers dans votre boîte mail.',
+                details: `
+                    <strong>📁 Dossiers à créer :</strong>
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        ${foldersToCreate.map(folder => `<li>${folder}</li>`).join('')}
+                    </ul>
+                    <div style="background: #e0f7fa; padding: 12px; border-radius: 8px; margin-top: 12px;">
+                        <strong>💡 Bon à savoir :</strong><br>
+                        • Cette action ne déplace aucun email<br>
+                        • Vous pourrez ensuite relancer l'analyse<br>
+                        • Les dossiers seront créés à la racine
+                    </div>
+                `,
+                confirmText: `Créer ${foldersToCreate.length} dossier${foldersToCreate.length > 1 ? 's' : ''}`,
+                dangerMode: false
+            });
+            
+            if (!confirmed) return;
+            
+            this.isProcessing = true;
+            this.hideHeaderActions();
             this.goToStep('execution');
             
             const results = {
@@ -2013,16 +2461,7 @@ class ModernDomainOrganizer {
             
             this.addExecutionLog('📁 Début de la création des dossiers seulement', 'info');
             
-            // Collecter les nouveaux dossiers à créer
-            const foldersToCreate = new Set();
-            
-            this.organizationPlan.forEach((plan, domain) => {
-                if (plan.selected && plan.action === 'create-new') {
-                    foldersToCreate.add(plan.targetFolder);
-                }
-            });
-            
-            const totalFolders = foldersToCreate.size;
+            const totalFolders = foldersToCreate.length;
             let processed = 0;
             
             for (const folderName of foldersToCreate) {
@@ -2038,6 +2477,9 @@ class ModernDomainOrganizer {
                     results.createdFolders.push(folderName);
                     this.updateExecutionStat('foldersCreated', results.foldersCreated);
                     
+                    // Pause entre créations
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
                 } catch (error) {
                     console.error(`[ModernDomainOrganizer] Erreur création ${folderName}:`, error);
                     this.addExecutionLog(`❌ Erreur pour le dossier "${folderName}": ${error.message}`, 'error');
@@ -2050,7 +2492,7 @@ class ModernDomainOrganizer {
             this.updateExecutionProgress(100, 'Création des dossiers terminée !');
             this.addExecutionLog('✅ Création des dossiers terminée avec succès !', 'success');
             
-            // Recharger les dossiers pour mettre à jour la détection
+            // Recharger les dossiers
             await this.loadAllFolders();
             this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
             
@@ -2069,9 +2511,7 @@ class ModernDomainOrganizer {
         if (this.isProcessing) return;
         
         try {
-            this.isProcessing = true;
-            
-            // Confirmation avec détails
+            // Collecte des informations pour l'alerte
             const selectedEmails = Array.from(this.organizationPlan.values())
                 .reduce((sum, plan) => {
                     if (plan.selected) {
@@ -2081,13 +2521,63 @@ class ModernDomainOrganizer {
                 }, 0);
             
             const newFolders = Array.from(this.organizationPlan.values())
-                .filter(plan => plan.selected && plan.action === 'create-new').length;
+                .filter(plan => plan.selected && plan.action === 'create-new');
             
-            if (!confirm(`Voulez-vous vraiment :\n- Créer ${newFolders} nouveaux dossiers\n- Déplacer ${selectedEmails} emails\n\nCette action est irréversible !`)) {
-                this.isProcessing = false;
+            const existingFolders = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.selected && plan.action === 'use-existing');
+            
+            if (selectedEmails === 0) {
+                await this.showModernAlert({
+                    icon: 'fa-info-circle',
+                    title: 'Aucun email sélectionné',
+                    message: 'Veuillez sélectionner au moins un email à déplacer.',
+                    confirmText: 'Compris',
+                    dangerMode: false
+                });
                 return;
             }
             
+            // Alerte de confirmation avec détails complets
+            const confirmed = await this.showModernAlert({
+                icon: 'fa-exclamation-triangle',
+                title: 'Organisation complète de votre boîte mail',
+                message: 'Cette action va modifier définitivement votre boîte mail.',
+                details: `
+                    <div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                        <strong>⚠️ ATTENTION - ACTION IRRÉVERSIBLE</strong><br>
+                        Une fois déplacés, les emails ne pourront pas être automatiquement remis à leur place d'origine.
+                    </div>
+                    
+                    <strong>📊 Résumé de l'opération :</strong>
+                    <ul style="margin: 8px 0; padding-left: 20px;">
+                        <li><strong>${selectedEmails.toLocaleString()} emails</strong> seront déplacés</li>
+                        <li><strong>${newFolders.length} nouveaux dossiers</strong> seront créés</li>
+                        <li><strong>${existingFolders.length} dossiers existants</strong> seront utilisés</li>
+                    </ul>
+                    
+                    ${newFolders.length > 0 ? `
+                    <details style="margin: 12px 0;">
+                        <summary style="cursor: pointer; font-weight: bold;">📁 Nouveaux dossiers (${newFolders.length})</summary>
+                        <ul style="margin: 8px 0; padding-left: 20px; font-size: 13px;">
+                            ${newFolders.map(plan => `<li>${plan.targetFolder} (${plan.emailCount} emails)</li>`).join('')}
+                        </ul>
+                    </details>
+                    ` : ''}
+                    
+                    <div style="background: #fef3cd; border: 1px solid #fbbf24; border-radius: 8px; padding: 12px; margin-top: 16px;">
+                        <strong>💡 Recommandation :</strong><br>
+                        Assurez-vous d'avoir une sauvegarde de votre boîte mail avant de continuer.
+                    </div>
+                `,
+                confirmText: 'Oui, organiser ma boîte mail',
+                cancelText: 'Annuler',
+                dangerMode: true
+            });
+            
+            if (!confirmed) return;
+            
+            this.isProcessing = true;
+            this.hideHeaderActions();
             this.goToStep('execution');
             
             const results = {
@@ -2158,7 +2648,7 @@ class ModernDomainOrganizer {
                         results.createdFolders.push(folderName);
                         this.updateExecutionStat('foldersCreated', results.foldersCreated);
                         
-                        // Petite pause après création
+                        // Pause après création
                         await new Promise(resolve => setTimeout(resolve, 500));
                     } else {
                         this.addExecutionLog(`📁 Utilisation du dossier existant "${folderName}"`, 'info');
@@ -2177,7 +2667,7 @@ class ModernDomainOrganizer {
                         
                         this.updateExecutionStat('emailsMoved', results.emailsMoved);
                         
-                        // Pause entre les lots pour éviter les rate limits
+                        // Pause entre les lots
                         await new Promise(resolve => setTimeout(resolve, 300));
                     }
                     
