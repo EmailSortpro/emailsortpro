@@ -489,23 +489,25 @@ class ModernDomainOrganizer {
                     background: white;
                     border-radius: 12px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    height: calc(100vh - 200px);
-                    max-height: 600px;
+                    height: calc(100vh - 220px);
+                    min-height: 500px;
+                    max-height: none;
                     display: flex;
                     flex-direction: column;
                     overflow: hidden;
+                    position: relative;
                 }
 
                 /* Header condensé */
                 .card-header-simple {
-                    padding: 10px 16px;
+                    padding: 8px 16px;
                     flex-shrink: 0;
                     border-bottom: 1px solid #e5e7eb;
                     text-align: center;
                 }
 
                 .card-header-simple h2 {
-                    font-size: 18px;
+                    font-size: 16px;
                     font-weight: 600;
                     margin: 0;
                     color: #1f2937;
@@ -514,11 +516,12 @@ class ModernDomainOrganizer {
                 /* Contenu principal */
                 .plan-content-simple {
                     flex: 1;
-                    padding: 12px 16px 0 16px;
+                    padding: 10px 16px;
                     display: flex;
                     flex-direction: column;
-                    gap: 10px;
+                    gap: 8px;
                     overflow: hidden;
+                    padding-bottom: 70px; /* Espace réservé pour les boutons */
                 }
 
                 /* Top bar avec stats + options */
@@ -529,40 +532,40 @@ class ModernDomainOrganizer {
                     background: #f8fafc;
                     border: 1px solid #e5e7eb;
                     border-radius: 6px;
-                    padding: 8px 12px;
+                    padding: 6px 10px;
                     flex-shrink: 0;
-                    gap: 12px;
+                    gap: 10px;
                     flex-wrap: wrap;
                 }
 
                 .stats-simple {
                     display: flex;
-                    gap: 16px;
+                    gap: 12px;
                     align-items: center;
-                    font-size: 12px;
+                    font-size: 11px;
                     color: #374151;
                 }
 
                 .stats-simple strong {
-                    font-size: 14px;
+                    font-size: 13px;
                     color: #1f2937;
                 }
 
                 .options-simple {
                     display: flex;
-                    gap: 12px;
+                    gap: 8px;
                     align-items: center;
                 }
 
                 .options-simple label {
                     display: flex;
                     align-items: center;
-                    gap: 4px;
-                    font-size: 11px;
+                    gap: 3px;
+                    font-size: 10px;
                     color: #374151;
                     cursor: pointer;
-                    padding: 4px 8px;
-                    border-radius: 4px;
+                    padding: 3px 6px;
+                    border-radius: 3px;
                     background: white;
                     border: 1px solid #d1d5db;
                     transition: all 0.2s;
@@ -574,12 +577,12 @@ class ModernDomainOrganizer {
                 }
 
                 .options-simple input[type="radio"] {
-                    width: 12px;
-                    height: 12px;
+                    width: 11px;
+                    height: 11px;
                 }
 
                 .count-simple {
-                    font-size: 11px;
+                    font-size: 10px;
                     color: #0369a1;
                     font-weight: 500;
                     white-space: nowrap;
@@ -589,16 +592,16 @@ class ModernDomainOrganizer {
                 .controls-simple {
                     display: flex;
                     justify-content: center;
-                    gap: 6px;
+                    gap: 4px;
                     flex-shrink: 0;
                 }
 
                 .btn-xs {
-                    padding: 4px 8px;
-                    font-size: 10px;
+                    padding: 3px 6px;
+                    font-size: 9px;
                     border: 1px solid #d1d5db;
                     background: white;
-                    border-radius: 4px;
+                    border-radius: 3px;
                     cursor: pointer;
                     color: #374151;
                     transition: all 0.2s;
@@ -623,42 +626,46 @@ class ModernDomainOrganizer {
                     background: white;
                     flex: 1;
                     overflow-y: auto;
-                    min-height: 250px;
-                    max-height: 400px;
+                    min-height: 200px;
+                    max-height: calc(100vh - 400px);
                 }
 
-                /* Action bar FIXE en bas */
+                /* Action bar ABSOLUMENT FIXE en bas */
                 .action-bar-simple {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     gap: 12px;
                     padding: 12px 16px;
                     border-top: 2px solid #e5e7eb;
-                    flex-shrink: 0;
-                    background: #fafbfc;
+                    background: #ffffff;
                     border-radius: 0 0 12px 12px;
-                    position: relative;
-                    z-index: 10;
+                    z-index: 100;
+                    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
                 }
 
                 .btn-execute {
                     background: #3b82f6 !important;
                     color: white !important;
-                    padding: 10px 20px !important;
+                    padding: 12px 24px !important;
                     font-size: 14px !important;
-                    font-weight: 600 !important;
-                    border-radius: 6px !important;
+                    font-weight: 700 !important;
+                    border-radius: 8px !important;
                     border: none !important;
                     cursor: pointer !important;
-                    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
+                    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
                     transition: all 0.2s !important;
+                    min-width: 120px !important;
                 }
 
                 .btn-execute:hover {
                     background: #2563eb !important;
-                    transform: translateY(-1px) !important;
-                    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4) !important;
                 }
 
                 /* Introduction compacte */
@@ -1436,36 +1443,37 @@ class ModernDomainOrganizer {
 
                 @media (max-width: 768px) {
                     .modern-organizer {
-                        padding: 6px;
+                        padding: 4px;
                     }
 
                     .organizer-header {
-                        padding: 8px;
-                        margin-bottom: 8px;
+                        padding: 6px;
+                        margin-bottom: 6px;
                     }
 
                     .step-card {
-                        padding: 12px;
+                        padding: 8px;
+                        min-height: 350px;
+                    }
+
+                    /* Plan mobile avec bouton fixe */
+                    .plan-card-simple {
+                        height: calc(100vh - 180px);
                         min-height: 400px;
                     }
 
-                    /* Plan mobile simplifié */
-                    .plan-card-simple {
-                        height: calc(100vh - 160px);
-                        max-height: none;
-                    }
-
                     .card-header-simple {
-                        padding: 8px 12px;
+                        padding: 6px 12px;
                     }
 
                     .card-header-simple h2 {
-                        font-size: 16px;
+                        font-size: 14px;
                     }
 
                     .plan-content-simple {
-                        padding: 8px 12px 0 12px;
-                        gap: 8px;
+                        padding: 8px 12px;
+                        padding-bottom: 65px;
+                        gap: 6px;
                     }
 
                     .action-bar-simple {
@@ -1474,100 +1482,101 @@ class ModernDomainOrganizer {
 
                     .plan-top-bar {
                         flex-direction: column;
-                        gap: 8px;
-                        padding: 6px;
+                        gap: 6px;
+                        padding: 4px 6px;
                     }
 
                     .stats-simple {
-                        gap: 10px;
+                        gap: 8px;
                         justify-content: space-around;
                         width: 100%;
-                        font-size: 11px;
+                        font-size: 10px;
                     }
 
                     .stats-simple strong {
-                        font-size: 13px;
+                        font-size: 12px;
                     }
 
                     .options-simple {
-                        gap: 8px;
+                        gap: 6px;
                         justify-content: center;
                     }
 
                     .options-simple label {
-                        font-size: 10px;
-                        padding: 3px 6px;
+                        font-size: 9px;
+                        padding: 2px 4px;
                     }
 
                     .count-simple {
-                        font-size: 10px;
+                        font-size: 9px;
                         text-align: center;
                     }
 
                     .controls-simple {
-                        gap: 4px;
+                        gap: 3px;
                     }
 
                     .btn-xs {
+                        padding: 2px 4px;
+                        font-size: 8px;
+                    }
+
+                    .domains-container-simple {
+                        min-height: 150px;
+                        max-height: calc(100vh - 350px);
+                    }
+
+                    .btn-execute {
+                        padding: 10px 16px !important;
+                        font-size: 12px !important;
+                        min-width: 100px !important;
+                    }
+
+                    .domain-header {
+                        padding: 6px 8px;
+                        gap: 6px;
+                    }
+
+                    .domain-name {
+                        font-size: 11px;
+                    }
+
+                    .domain-stats {
+                        font-size: 9px;
+                    }
+
+                    .folder-input {
+                        font-size: 9px;
+                        padding: 3px 5px;
+                        min-width: 70px;
+                    }
+
+                    .action-badge {
+                        font-size: 7px;
+                        padding: 1px 3px;
+                    }
+
+                    .emails-list {
+                        max-height: 80px;
+                    }
+
+                    .email-item {
                         padding: 3px 6px;
                         font-size: 9px;
                     }
 
-                    .domains-container-simple {
-                        min-height: 200px;
-                        max-height: 300px;
-                    }
-
-                    .btn-execute {
-                        padding: 8px 16px !important;
-                        font-size: 12px !important;
-                    }
-
-                    .domain-header {
-                        padding: 8px 12px;
-                        gap: 8px;
-                    }
-
-                    .domain-name {
-                        font-size: 12px;
-                    }
-
-                    .domain-stats {
-                        font-size: 10px;
-                    }
-
-                    .folder-input {
-                        font-size: 10px;
-                        padding: 4px 6px;
-                        min-width: 80px;
-                    }
-
-                    .action-badge {
-                        font-size: 8px;
-                        padding: 1px 4px;
-                    }
-
-                    .emails-list {
-                        max-height: 100px;
-                    }
-
-                    .email-item {
-                        padding: 4px 8px;
-                        font-size: 10px;
-                    }
-
                     .domain-content {
-                        padding: 0 12px 8px 28px;
+                        padding: 0 8px 6px 20px;
                     }
 
                     .btn {
-                        padding: 6px 12px;
-                        font-size: 12px;
+                        padding: 5px 10px;
+                        font-size: 11px;
                     }
 
                     .btn-large {
-                        padding: 8px 16px;
-                        font-size: 13px;
+                        padding: 6px 12px;
+                        font-size: 11px;
                     }
                 }
 
