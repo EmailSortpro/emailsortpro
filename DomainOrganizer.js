@@ -1197,161 +1197,175 @@ class ModernDomainOrganizer {
                     to { opacity: 1; transform: translateY(0); }
                 }
 
+                .action-new {
+                    background: #d1fae5;
+                    color: #065f46;
+                }
+
+                .action-existing {
+                    background: #e0e7ff;
+                    color: #3730a3;
+                }
+
                 @media (max-width: 768px) {
                     .modern-organizer {
-                        padding: 8px;
+                        padding: 6px;
                     }
 
                     .organizer-header {
-                        padding: 12px;
-                        margin-bottom: 12px;
+                        padding: 10px;
+                        margin-bottom: 10px;
                     }
 
                     .step-card {
-                        padding: 16px;
-                        height: calc(100vh - 180px);
-                        min-height: 450px;
+                        padding: 14px;
+                        height: calc(100vh - 160px);
+                        min-height: 400px;
                     }
 
                     .plan-card {
-                        height: calc(100vh - 180px);
-                        min-height: 500px;
-                        max-height: calc(100vh - 180px);
+                        height: calc(100vh - 160px);
+                        min-height: 450px;
+                        max-height: calc(100vh - 160px);
                     }
 
                     .plan-action-bar {
-                        padding: 10px 0;
+                        padding: 8px 0 0 0;
                         border-top: 1px solid #e5e7eb;
                         box-shadow: 0 -1px 4px rgba(0,0,0,0.1);
                     }
 
+                    .card-header {
+                        margin-bottom: 12px;
+                    }
+
                     .card-header h2 {
-                        font-size: 20px;
+                        font-size: 18px;
                     }
 
-                    .process-flow {
-                        flex-direction: column;
-                        gap: 6px;
-                    }
-
-                    .flow-step {
-                        min-width: auto;
-                    }
-
-                    .flow-arrow {
-                        transform: rotate(90deg);
+                    .card-header p {
                         font-size: 12px;
                     }
 
-                    .example-compact {
-                        flex-direction: column;
-                        gap: 12px;
-                        padding: 12px;
-                    }
-
-                    .example-side {
-                        max-width: 100%;
-                    }
-
-                    .example-arrow {
-                        transform: rotate(90deg);
-                        margin: 0;
-                    }
-
-                    .tip-item {
-                        font-size: 12px;
-                    }
-
-                    .criteria-row {
-                        flex-direction: column;
-                        gap: 12px;
+                    .plan-content {
+                        gap: 8px;
                     }
 
                     .controls-row {
                         flex-direction: column;
-                        gap: 6px;
-                        padding: 8px;
+                        gap: 4px;
+                        padding: 6px;
                     }
 
                     .action-buttons {
                         width: 100%;
                         justify-content: center;
-                        gap: 4px;
+                        gap: 3px;
                     }
 
                     .action-buttons .btn {
                         flex: 1;
                         min-width: 0;
-                        padding: 6px 8px;
-                        font-size: 11px;
-                    }
-
-                    .scan-stats, .execution-stats {
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 8px;
+                        padding: 4px 6px;
+                        font-size: 10px;
                     }
 
                     .plan-summary {
                         grid-template-columns: repeat(2, 1fr);
-                        gap: 8px;
-                        padding: 8px;
+                        gap: 6px;
+                        padding: 6px;
                     }
 
                     .summary-value {
-                        font-size: 18px;
+                        font-size: 16px;
                     }
 
-                    .option-row {
-                        gap: 6px;
-                    }
-
-                    .option-label {
-                        font-size: 13px;
-                        padding: 4px;
+                    .summary-label {
+                        font-size: 9px;
                     }
 
                     .execution-options {
-                        padding: 8px;
+                        padding: 6px;
+                    }
+
+                    .option-row {
+                        gap: 4px;
+                        margin-bottom: 4px;
+                    }
+
+                    .option-label {
+                        font-size: 11px;
+                        padding: 3px;
+                    }
+
+                    .selection-info {
+                        font-size: 11px;
                     }
 
                     .domain-header {
                         flex-wrap: wrap;
-                        gap: 8px;
-                        padding: 10px 12px;
+                        gap: 6px;
+                        padding: 8px 10px;
                         min-height: auto;
+                    }
+
+                    .domain-name {
+                        font-size: 12px;
+                    }
+
+                    .domain-stats {
+                        font-size: 10px;
                     }
 
                     .domain-actions {
                         width: 100%;
                         justify-content: space-between;
+                        gap: 4px;
                     }
 
                     .folder-input {
-                        min-width: 100px;
-                        font-size: 11px;
+                        min-width: 80px;
+                        font-size: 10px;
+                        padding: 3px 6px;
+                    }
+
+                    .action-badge {
+                        font-size: 8px;
+                        padding: 1px 4px;
+                    }
+
+                    .emails-list {
+                        max-height: 100px;
+                    }
+
+                    .email-item {
+                        padding: 4px 8px;
+                        gap: 4px;
+                        font-size: 10px;
+                    }
+
+                    .domain-content {
+                        padding: 0 10px 8px 30px;
                     }
 
                     .btn-large {
-                        padding: 10px 16px;
-                        font-size: 14px;
+                        padding: 8px 12px;
+                        font-size: 12px;
                     }
 
                     .action-bar {
                         flex-direction: row;
-                        gap: 8px;
-                        padding: 8px 0 0 0;
-                        margin-top: 8px;
+                        gap: 6px;
+                        padding: 6px 0 0 0;
+                        margin-top: 6px;
                     }
 
                     .action-bar .btn {
                         flex: 1;
                         justify-content: center;
                         min-width: 0;
-                    }
-
-                    .btn {
-                        padding: 8px 12px;
-                        font-size: 13px;
+                        padding: 6px 8px;
+                        font-size: 11px;
                     }
                 }
 
