@@ -1213,158 +1213,129 @@ class ModernDomainOrganizer {
                     }
 
                     .organizer-header {
-                        padding: 10px;
-                        margin-bottom: 10px;
+                        padding: 8px;
+                        margin-bottom: 8px;
                     }
 
                     .step-card {
-                        padding: 14px;
-                        height: calc(100vh - 160px);
-                        min-height: 400px;
+                        padding: 12px;
+                        height: calc(100vh - 140px);
+                        min-height: 350px;
                     }
 
                     .plan-card {
-                        height: calc(100vh - 160px);
-                        min-height: 450px;
-                        max-height: calc(100vh - 160px);
+                        height: calc(100vh - 140px);
+                        max-height: calc(100vh - 140px);
                     }
 
                     .plan-action-bar {
-                        padding: 8px 0 0 0;
+                        padding: 6px 0 0 0;
                         border-top: 1px solid #e5e7eb;
-                        box-shadow: 0 -1px 4px rgba(0,0,0,0.1);
                     }
 
                     .card-header {
-                        margin-bottom: 12px;
+                        margin-bottom: 8px;
                     }
 
                     .card-header h2 {
-                        font-size: 18px;
+                        font-size: 16px;
                     }
 
                     .card-header p {
-                        font-size: 12px;
+                        font-size: 11px;
                     }
 
                     .plan-content {
-                        gap: 8px;
+                        gap: 6px;
+                        padding-bottom: 4px;
+                    }
+
+                    .domains-container-no-scroll {
+                        min-height: 80px;
+                        max-height: 150px;
                     }
 
                     .controls-row {
-                        flex-direction: column;
-                        gap: 4px;
-                        padding: 6px;
-                    }
-
-                    .action-buttons {
-                        width: 100%;
-                        justify-content: center;
-                        gap: 3px;
+                        padding: 4px;
+                        gap: 2px;
                     }
 
                     .action-buttons .btn {
-                        flex: 1;
-                        min-width: 0;
-                        padding: 4px 6px;
-                        font-size: 10px;
+                        padding: 3px 4px;
+                        font-size: 9px;
                     }
 
                     .plan-summary {
                         grid-template-columns: repeat(2, 1fr);
-                        gap: 6px;
-                        padding: 6px;
+                        gap: 4px;
+                        padding: 4px;
                     }
 
                     .summary-value {
-                        font-size: 16px;
+                        font-size: 14px;
                     }
 
                     .summary-label {
-                        font-size: 9px;
+                        font-size: 8px;
                     }
 
                     .execution-options {
-                        padding: 6px;
-                    }
-
-                    .option-row {
-                        gap: 4px;
-                        margin-bottom: 4px;
+                        padding: 4px;
                     }
 
                     .option-label {
-                        font-size: 11px;
-                        padding: 3px;
+                        font-size: 10px;
+                        padding: 2px;
                     }
 
                     .selection-info {
-                        font-size: 11px;
+                        font-size: 10px;
                     }
 
                     .domain-header {
-                        flex-wrap: wrap;
-                        gap: 6px;
-                        padding: 8px 10px;
-                        min-height: auto;
+                        padding: 6px 8px;
+                        gap: 4px;
                     }
 
                     .domain-name {
-                        font-size: 12px;
+                        font-size: 11px;
                     }
 
                     .domain-stats {
-                        font-size: 10px;
-                    }
-
-                    .domain-actions {
-                        width: 100%;
-                        justify-content: space-between;
-                        gap: 4px;
+                        font-size: 9px;
                     }
 
                     .folder-input {
-                        min-width: 80px;
-                        font-size: 10px;
-                        padding: 3px 6px;
+                        font-size: 9px;
+                        padding: 2px 4px;
+                        min-width: 60px;
                     }
 
                     .action-badge {
-                        font-size: 8px;
-                        padding: 1px 4px;
+                        font-size: 7px;
+                        padding: 1px 3px;
                     }
 
                     .emails-list {
-                        max-height: 100px;
+                        max-height: 80px;
                     }
 
                     .email-item {
-                        padding: 4px 8px;
-                        gap: 4px;
-                        font-size: 10px;
+                        padding: 3px 6px;
+                        font-size: 9px;
                     }
 
                     .domain-content {
-                        padding: 0 10px 8px 30px;
-                    }
-
-                    .btn-large {
-                        padding: 8px 12px;
-                        font-size: 12px;
-                    }
-
-                    .action-bar {
-                        flex-direction: row;
-                        gap: 6px;
-                        padding: 6px 0 0 0;
-                        margin-top: 6px;
+                        padding: 0 8px 6px 25px;
                     }
 
                     .action-bar .btn {
-                        flex: 1;
-                        justify-content: center;
-                        min-width: 0;
                         padding: 6px 8px;
+                        font-size: 11px;
+                    }
+
+                    .btn-large {
+                        padding: 6px 10px;
                         font-size: 11px;
                     }
                 }
