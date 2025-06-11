@@ -1,5 +1,5 @@
-// ModernDomainOrganizer.js - Version optimisée sans défilement
-// Interface compacte avec boutons toujours visibles
+// ModernDomainOrganizer.js - Version corrigée avec gestion d'erreurs complète
+// Interface compacte et optimisée - SEULE LA PAGE PLAN MODIFIÉE
 
 class ModernDomainOrganizer {
     constructor() {
@@ -48,7 +48,7 @@ class ModernDomainOrganizer {
                     </div>
                 </div>
 
-                <!-- Contenu principal avec hauteur fixe -->
+                <!-- Contenu principal -->
                 <div class="organizer-main">
                     <div class="organizer-content">
                         <!-- Introduction compacte -->
@@ -137,42 +137,40 @@ class ModernDomainOrganizer {
                                     <p>Paramétrez l'analyse selon vos besoins</p>
                                 </div>
 
-                                <div class="card-body">
-                                    <div class="config-grid">
-                                        <div class="config-group">
-                                            <label>📅 Période d'analyse</label>
-                                            <div class="date-row">
-                                                <input type="date" id="startDate" title="Date de début">
-                                                <span>→</span>
-                                                <input type="date" id="endDate" title="Date de fin">
+                                <div class="config-grid">
+                                    <div class="config-group">
+                                        <label>📅 Période d'analyse</label>
+                                        <div class="date-row">
+                                            <input type="date" id="startDate" title="Date de début">
+                                            <span>→</span>
+                                            <input type="date" id="endDate" title="Date de fin">
+                                        </div>
+                                    </div>
+
+                                    <div class="config-group">
+                                        <label>📊 Critères</label>
+                                        <div class="criteria-row">
+                                            <div class="input-group">
+                                                <span>Min emails/domaine</span>
+                                                <input type="number" id="minEmails" value="3" min="1" max="50">
+                                            </div>
+                                            <div class="input-group">
+                                                <span>Limite scan</span>
+                                                <select id="emailLimit">
+                                                    <option value="0">Tous</option>
+                                                    <option value="1000">1000</option>
+                                                    <option value="2000">2000</option>
+                                                    <option value="5000">5000</option>
+                                                </select>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div class="config-group">
-                                            <label>📊 Critères</label>
-                                            <div class="criteria-row">
-                                                <div class="input-group">
-                                                    <span>Min emails/domaine</span>
-                                                    <input type="number" id="minEmails" value="3" min="1" max="50">
-                                                </div>
-                                                <div class="input-group">
-                                                    <span>Limite scan</span>
-                                                    <select id="emailLimit">
-                                                        <option value="0">Tous</option>
-                                                        <option value="1000">1000</option>
-                                                        <option value="2000">2000</option>
-                                                        <option value="5000">5000</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="config-group">
-                                            <label>🚫 Exclusions (optionnel)</label>
-                                            <input type="text" id="excludeDomains" placeholder="domaine1.com, domaine2.com" 
-                                                   value="gmail.com, outlook.com, hotmail.com, hotmail.fr">
-                                            <textarea id="excludeEmails" placeholder="email1@exemple.com&#10;email2@exemple.com" rows="2"></textarea>
-                                        </div>
+                                    <div class="config-group">
+                                        <label>🚫 Exclusions (optionnel)</label>
+                                        <input type="text" id="excludeDomains" placeholder="domaine1.com, domaine2.com" 
+                                               value="gmail.com, outlook.com, hotmail.com, hotmail.fr">
+                                        <textarea id="excludeEmails" placeholder="email1@exemple.com&#10;email2@exemple.com" rows="2"></textarea>
                                     </div>
                                 </div>
 
@@ -197,69 +195,67 @@ class ModernDomainOrganizer {
                                     <p id="scanStatus">Initialisation...</p>
                                 </div>
 
-                                <div class="card-body">
-                                    <div class="scan-progress">
-                                        <div class="progress-container">
-                                            <div class="progress-bar">
-                                                <div class="progress-fill" id="progressBar"></div>
-                                            </div>
-                                            <div class="progress-text" id="progressPercent">0%</div>
+                                <div class="scan-progress">
+                                    <div class="progress-container">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="progressBar"></div>
                                         </div>
+                                        <div class="progress-text" id="progressPercent">0%</div>
+                                    </div>
 
-                                        <div class="scan-stats">
-                                            <div class="stat">
-                                                <span class="stat-number" id="scannedEmails">0</span>
-                                                <span class="stat-label">Emails</span>
-                                            </div>
-                                            <div class="stat">
-                                                <span class="stat-number" id="foundDomains">0</span>
-                                                <span class="stat-label">Domaines</span>
-                                            </div>
-                                            <div class="stat">
-                                                <span class="stat-number" id="existingFolders">0</span>
-                                                <span class="stat-label">Existants</span>
-                                            </div>
-                                            <div class="stat">
-                                                <span class="stat-number" id="newFoldersNeeded">0</span>
-                                                <span class="stat-label">Nouveaux</span>
-                                            </div>
+                                    <div class="scan-stats">
+                                        <div class="stat">
+                                            <span class="stat-number" id="scannedEmails">0</span>
+                                            <span class="stat-label">Emails</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="foundDomains">0</span>
+                                            <span class="stat-label">Domaines</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="existingFolders">0</span>
+                                            <span class="stat-label">Existants</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="newFoldersNeeded">0</span>
+                                            <span class="stat-label">Nouveaux</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Plan -->
+                        <!-- Plan - VERSION OPTIMISÉE SANS DÉFILEMENT -->
                         <div class="step-content hidden" id="step-plan">
-                            <div class="step-card plan-card">
+                            <div class="step-card plan-card-fixed">
                                 <div class="card-header">
                                     <h2>📋 Plan d'organisation</h2>
                                     <p>Modifiez selon vos besoins</p>
                                 </div>
 
-                                <div class="plan-body">
+                                <div class="plan-content-fixed">
                                     <div class="plan-summary" id="planSummary"></div>
 
                                     <div class="plan-controls">
                                         <div class="controls-row">
                                             <div class="action-buttons">
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.selectAllDomains()">
-                                                    ✅ Tout
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.selectAllDomains()">
+                                                    ✅ Tout sélectionner
                                                 </button>
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.deselectAllDomains()">
-                                                    ❌ Rien
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.deselectAllDomains()">
+                                                    ❌ Tout désélectionner
                                                 </button>
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.expandAllDomains()">
-                                                    📂 Déplier
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.expandAllDomains()">
+                                                    📂 Tout déplier
                                                 </button>
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.collapseAllDomains()">
-                                                    📁 Replier
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.collapseAllDomains()">
+                                                    📁 Tout replier
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="domains-container" id="domainsContainer"></div>
+                                    <div class="domains-container-fixed" id="domainsContainer"></div>
 
                                     <div class="execution-options">
                                         <div class="option-row">
@@ -278,7 +274,7 @@ class ModernDomainOrganizer {
                                     </div>
                                 </div>
 
-                                <div class="action-bar">
+                                <div class="action-bar-fixed">
                                     <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('configuration')">
                                         <i class="fas fa-arrow-left"></i>
                                         Reconfigurer
@@ -299,36 +295,34 @@ class ModernDomainOrganizer {
                                     <p id="executionStatus">Préparation...</p>
                                 </div>
 
-                                <div class="card-body">
-                                    <div class="execution-progress">
-                                        <div class="progress-container">
-                                            <div class="progress-bar">
-                                                <div class="progress-fill" id="executionProgressBar"></div>
-                                            </div>
-                                            <div class="progress-text" id="executionPercent">0%</div>
+                                <div class="execution-progress">
+                                    <div class="progress-container">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="executionProgressBar"></div>
                                         </div>
-
-                                        <div class="execution-stats">
-                                            <div class="stat">
-                                                <span class="stat-number" id="foldersCreated">0</span>
-                                                <span class="stat-label">Dossiers</span>
-                                            </div>
-                                            <div class="stat">
-                                                <span class="stat-number" id="emailsMoved">0</span>
-                                                <span class="stat-label">Emails</span>
-                                            </div>
-                                            <div class="stat">
-                                                <span class="stat-number" id="domainsProcessed">0</span>
-                                                <span class="stat-label">Domaines</span>
-                                            </div>
-                                            <div class="stat">
-                                                <span class="stat-number" id="errorsCount">0</span>
-                                                <span class="stat-label">Erreurs</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="execution-log" id="executionLog"></div>
+                                        <div class="progress-text" id="executionPercent">0%</div>
                                     </div>
+
+                                    <div class="execution-stats">
+                                        <div class="stat">
+                                            <span class="stat-number" id="foldersCreated">0</span>
+                                            <span class="stat-label">Dossiers</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="emailsMoved">0</span>
+                                            <span class="stat-label">Emails</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="domainsProcessed">0</span>
+                                            <span class="stat-label">Domaines</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="errorsCount">0</span>
+                                            <span class="stat-label">Erreurs</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="execution-log" id="executionLog"></div>
                                 </div>
                             </div>
                         </div>
@@ -336,12 +330,9 @@ class ModernDomainOrganizer {
                         <!-- Success -->
                         <div class="step-content hidden" id="step-success">
                             <div class="step-card success-card">
-                                <div class="card-header">
+                                <div class="success-content">
                                     <div class="success-icon">🎉</div>
                                     <h2 id="successTitle">Terminé !</h2>
-                                </div>
-                                
-                                <div class="card-body">
                                     <div class="success-report" id="successReport"></div>
                                 </div>
 
@@ -388,15 +379,14 @@ class ModernDomainOrganizer {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
                     display: flex;
                     flex-direction: column;
-                    height: 100vh;
+                    min-height: 100vh;
                     box-sizing: border-box;
-                    overflow: hidden;
                 }
 
                 .organizer-header {
                     background: white;
                     border-radius: 12px;
-                    padding: 16px;
+                    padding: 20px;
                     margin-bottom: 16px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
                     flex-shrink: 0;
@@ -404,14 +394,7 @@ class ModernDomainOrganizer {
 
                 .organizer-main {
                     flex: 1;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                }
-
-                .organizer-content {
-                    flex: 1;
-                    overflow: hidden;
+                    overflow-y: auto;
                 }
 
                 .progress-steps {
@@ -477,10 +460,6 @@ class ModernDomainOrganizer {
 
                 .step-content {
                     animation: fadeIn 0.3s ease;
-                    height: 100%;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
                 }
 
                 .step-content.hidden {
@@ -490,18 +469,14 @@ class ModernDomainOrganizer {
                 .step-card {
                     background: white;
                     border-radius: 12px;
+                    padding: 24px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    overflow: hidden;
+                    min-height: 500px;
                 }
 
                 .card-header {
                     text-align: center;
-                    padding: 20px 24px 16px 24px;
-                    flex-shrink: 0;
-                    border-bottom: 1px solid #f3f4f6;
+                    margin-bottom: 24px;
                 }
 
                 .card-header h2 {
@@ -517,22 +492,34 @@ class ModernDomainOrganizer {
                     margin: 0;
                 }
 
-                .card-body {
-                    flex: 1;
-                    padding: 20px 24px;
-                    overflow-y: auto;
-                }
-
-                .plan-body {
-                    flex: 1;
-                    padding: 16px 24px;
-                    overflow: hidden;
+                /* MODIFICATIONS SPÉCIFIQUES POUR LA PAGE PLAN */
+                .plan-card-fixed {
+                    background: white;
+                    border-radius: 12px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    height: calc(100vh - 200px);
                     display: flex;
                     flex-direction: column;
-                    gap: 12px;
+                    overflow: hidden;
                 }
 
-                .action-bar {
+                .plan-card-fixed .card-header {
+                    padding: 20px 24px 16px 24px;
+                    margin-bottom: 0;
+                    flex-shrink: 0;
+                    border-bottom: 1px solid #f3f4f6;
+                }
+
+                .plan-content-fixed {
+                    flex: 1;
+                    padding: 16px 24px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    overflow: hidden;
+                }
+
+                .action-bar-fixed {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
@@ -542,6 +529,15 @@ class ModernDomainOrganizer {
                     flex-shrink: 0;
                     background: #fafbfc;
                     border-radius: 0 0 12px 12px;
+                }
+
+                .domains-container-fixed {
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    background: white;
+                    flex: 1;
+                    overflow-y: auto;
+                    min-height: 200px;
                 }
 
                 /* Introduction compacte */
@@ -569,10 +565,17 @@ class ModernDomainOrganizer {
                     margin-bottom: 8px;
                 }
 
-                .flow-step span {
+                .flow-step h4 {
                     font-size: 14px;
                     font-weight: 600;
+                    margin: 0 0 4px 0;
                     color: #1f2937;
+                }
+
+                .flow-step p {
+                    font-size: 12px;
+                    color: #6b7280;
+                    margin: 0;
                 }
 
                 .flow-arrow {
@@ -778,10 +781,10 @@ class ModernDomainOrganizer {
                 .plan-summary {
                     background: #f8fafc;
                     border-radius: 8px;
-                    padding: 12px;
+                    padding: 16px;
                     display: grid;
                     grid-template-columns: repeat(4, 1fr);
-                    gap: 12px;
+                    gap: 16px;
                     text-align: center;
                     flex-shrink: 0;
                 }
@@ -793,13 +796,13 @@ class ModernDomainOrganizer {
                 }
 
                 .summary-value {
-                    font-size: 20px;
+                    font-size: 24px;
                     font-weight: 700;
                     color: #1f2937;
                 }
 
                 .summary-label {
-                    font-size: 11px;
+                    font-size: 12px;
                     color: #6b7280;
                 }
 
@@ -809,28 +812,17 @@ class ModernDomainOrganizer {
 
                 .controls-row {
                     display: flex;
-                    justify-content: center;
+                    justify-content: space-between;
                     align-items: center;
-                    gap: 8px;
-                    padding: 8px;
+                    gap: 16px;
+                    padding: 12px;
                     background: #f9fafb;
                     border-radius: 8px;
                 }
 
                 .action-buttons {
                     display: flex;
-                    gap: 6px;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                }
-
-                .domains-container {
-                    border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    background: white;
-                    flex: 1;
-                    overflow-y: auto;
-                    min-height: 0;
+                    gap: 8px;
                 }
 
                 .domain-item {
@@ -842,10 +834,10 @@ class ModernDomainOrganizer {
                 }
 
                 .domain-header {
-                    padding: 10px 12px;
+                    padding: 12px 16px;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
+                    gap: 12px;
                     cursor: pointer;
                     transition: background-color 0.2s;
                 }
@@ -857,7 +849,6 @@ class ModernDomainOrganizer {
                 .domain-checkbox {
                     width: 16px;
                     height: 16px;
-                    flex-shrink: 0;
                 }
 
                 .domain-expand {
@@ -867,7 +858,6 @@ class ModernDomainOrganizer {
                     padding: 2px;
                     color: #6b7280;
                     font-size: 12px;
-                    flex-shrink: 0;
                 }
 
                 .domain-info {
@@ -876,40 +866,37 @@ class ModernDomainOrganizer {
                 }
 
                 .domain-name {
-                    font-size: 13px;
+                    font-size: 14px;
                     font-weight: 600;
                     color: #1f2937;
                 }
 
                 .domain-stats {
-                    font-size: 11px;
+                    font-size: 12px;
                     color: #6b7280;
-                    margin-top: 1px;
+                    margin-top: 2px;
                 }
 
                 .domain-actions {
                     display: flex;
                     align-items: center;
-                    gap: 6px;
-                    flex-shrink: 0;
+                    gap: 8px;
                 }
 
                 .folder-input {
-                    padding: 4px 8px;
+                    padding: 6px 10px;
                     border: 1px solid #d1d5db;
                     border-radius: 4px;
-                    font-size: 11px;
-                    min-width: 100px;
-                    max-width: 120px;
+                    font-size: 12px;
+                    min-width: 120px;
                 }
 
                 .action-badge {
                     padding: 2px 6px;
                     border-radius: 4px;
-                    font-size: 9px;
+                    font-size: 10px;
                     font-weight: 500;
                     text-transform: uppercase;
-                    flex-shrink: 0;
                 }
 
                 .action-new {
@@ -924,7 +911,7 @@ class ModernDomainOrganizer {
 
                 .domain-content {
                     display: none;
-                    padding: 0 12px 8px 36px;
+                    padding: 0 16px 12px 40px;
                     background: #fafbfc;
                 }
 
@@ -933,7 +920,7 @@ class ModernDomainOrganizer {
                 }
 
                 .emails-list {
-                    max-height: 120px;
+                    max-height: 200px;
                     overflow-y: auto;
                     border: 1px solid #e5e7eb;
                     border-radius: 6px;
@@ -941,12 +928,12 @@ class ModernDomainOrganizer {
                 }
 
                 .email-item {
-                    padding: 6px 8px;
+                    padding: 8px 12px;
                     border-bottom: 1px solid #f3f4f6;
                     display: flex;
                     align-items: center;
-                    gap: 6px;
-                    font-size: 11px;
+                    gap: 8px;
+                    font-size: 12px;
                 }
 
                 .email-item:last-child {
@@ -956,7 +943,6 @@ class ModernDomainOrganizer {
                 .email-checkbox {
                     width: 14px;
                     height: 14px;
-                    flex-shrink: 0;
                 }
 
                 .email-info {
@@ -973,29 +959,28 @@ class ModernDomainOrganizer {
                 }
 
                 .email-from {
-                    font-size: 10px;
+                    font-size: 11px;
                     color: #6b7280;
                 }
 
                 .email-date {
-                    font-size: 10px;
+                    font-size: 11px;
                     color: #9ca3af;
-                    flex-shrink: 0;
                 }
 
                 .execution-options {
                     background: #f0f9ff;
                     border: 1px solid #bae6fd;
                     border-radius: 8px;
-                    padding: 12px;
+                    padding: 16px;
                     flex-shrink: 0;
                 }
 
                 .option-row {
                     display: flex;
                     flex-direction: column;
-                    gap: 8px;
-                    margin-bottom: 8px;
+                    gap: 12px;
+                    margin-bottom: 12px;
                 }
 
                 .option-label {
@@ -1003,9 +988,8 @@ class ModernDomainOrganizer {
                     align-items: center;
                     gap: 8px;
                     cursor: pointer;
-                    padding: 6px;
+                    padding: 8px;
                     border-radius: 6px;
-                    font-size: 13px;
                     transition: background 0.2s;
                 }
 
@@ -1016,26 +1000,25 @@ class ModernDomainOrganizer {
                 .option-label input[type="radio"] {
                     width: 16px;
                     height: 16px;
-                    flex-shrink: 0;
                 }
 
                 .selection-info {
                     text-align: center;
-                    font-size: 12px;
+                    font-size: 14px;
                     font-weight: 500;
                     color: #0369a1;
                 }
 
                 /* Execution */
                 .execution-log {
-                    max-height: 120px;
+                    max-height: 150px;
                     overflow-y: auto;
                     background: #f9fafb;
                     border: 1px solid #e5e7eb;
                     border-radius: 6px;
-                    padding: 8px;
+                    padding: 12px;
                     font-family: 'SF Mono', Monaco, monospace;
-                    font-size: 10px;
+                    font-size: 11px;
                 }
 
                 .log-entry {
@@ -1063,10 +1046,9 @@ class ModernDomainOrganizer {
                     border: 1px solid #bbf7d0;
                     border-radius: 8px;
                     padding: 16px;
+                    margin: 16px 0;
                     text-align: left;
                     font-size: 14px;
-                    overflow-y: auto;
-                    max-height: 300px;
                 }
 
                 .report-section {
@@ -1159,11 +1141,21 @@ class ModernDomainOrganizer {
                 }
 
                 /* Buttons */
+                .action-bar {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 24px;
+                    padding-top: 16px;
+                    border-top: 1px solid #e5e7eb;
+                }
+
                 .btn {
-                    padding: 8px 16px;
+                    padding: 10px 20px;
                     border: none;
                     border-radius: 6px;
-                    font-size: 13px;
+                    font-size: 14px;
                     font-weight: 600;
                     cursor: pointer;
                     display: flex;
@@ -1171,7 +1163,6 @@ class ModernDomainOrganizer {
                     gap: 6px;
                     transition: all 0.2s;
                     text-decoration: none;
-                    white-space: nowrap;
                 }
 
                 .btn:disabled {
@@ -1208,19 +1199,14 @@ class ModernDomainOrganizer {
                     background: #f9fafb;
                 }
 
-                .btn-tiny {
-                    padding: 4px 8px;
-                    font-size: 11px;
-                }
-
                 .btn-small {
                     padding: 6px 12px;
                     font-size: 12px;
                 }
 
                 .btn-large {
-                    padding: 12px 24px;
-                    font-size: 15px;
+                    padding: 14px 28px;
+                    font-size: 16px;
                     font-weight: 700;
                 }
 
@@ -1231,38 +1217,47 @@ class ModernDomainOrganizer {
 
                 @media (max-width: 768px) {
                     .modern-organizer {
-                        padding: 8px;
-                        height: 100vh;
+                        padding: 6px;
                     }
 
                     .organizer-header {
-                        padding: 12px;
+                        padding: 8px;
                         margin-bottom: 8px;
                     }
 
-                    .card-header {
-                        padding: 16px 16px 12px 16px;
+                    .step-card {
+                        padding: 12px;
+                        min-height: 400px;
                     }
 
-                    .card-header h2 {
+                    /* Plan mobile optimisé */
+                    .plan-card-fixed {
+                        height: calc(100vh - 150px);
+                    }
+
+                    .plan-card-fixed .card-header {
+                        padding: 12px 16px 8px 16px;
+                    }
+
+                    .plan-card-fixed .card-header h2 {
                         font-size: 18px;
                     }
 
-                    .card-header p {
+                    .plan-card-fixed .card-header p {
                         font-size: 12px;
                     }
 
-                    .card-body {
-                        padding: 16px;
-                    }
-
-                    .plan-body {
-                        padding: 12px 16px;
+                    .plan-content-fixed {
+                        padding: 8px 16px;
                         gap: 8px;
                     }
 
-                    .action-bar {
-                        padding: 12px 16px;
+                    .action-bar-fixed {
+                        padding: 8px 16px;
+                    }
+
+                    .domains-container-fixed {
+                        min-height: 120px;
                     }
 
                     .plan-summary {
@@ -1290,8 +1285,8 @@ class ModernDomainOrganizer {
                     }
 
                     .domain-header {
-                        padding: 8px 10px;
-                        gap: 6px;
+                        padding: 8px 12px;
+                        gap: 8px;
                     }
 
                     .domain-name {
@@ -1304,9 +1299,8 @@ class ModernDomainOrganizer {
 
                     .folder-input {
                         font-size: 10px;
-                        padding: 3px 6px;
+                        padding: 4px 6px;
                         min-width: 80px;
-                        max-width: 100px;
                     }
 
                     .action-badge {
@@ -1319,12 +1313,12 @@ class ModernDomainOrganizer {
                     }
 
                     .email-item {
-                        padding: 4px 6px;
+                        padding: 4px 8px;
                         font-size: 10px;
                     }
 
                     .domain-content {
-                        padding: 0 10px 6px 28px;
+                        padding: 0 12px 8px 28px;
                     }
 
                     .execution-options {
@@ -1348,11 +1342,6 @@ class ModernDomainOrganizer {
                     .btn-large {
                         padding: 8px 16px;
                         font-size: 13px;
-                    }
-
-                    .btn-tiny {
-                        padding: 2px 6px;
-                        font-size: 9px;
                     }
                 }
 
@@ -1388,30 +1377,6 @@ class ModernDomainOrganizer {
                     border-radius: 6px;
                     margin: 8px 0;
                     font-size: 14px;
-                }
-
-                /* Fix pour assurer la visibilité du bouton d'exécution */
-                .plan-card {
-                    display: flex;
-                    flex-direction: column;
-                    height: 100%;
-                }
-
-                .plan-card .action-bar {
-                    margin-top: 0;
-                }
-
-                /* Assurer que les domaines ne débordent pas */
-                .domains-container {
-                    min-height: 200px;
-                    max-height: 300px;
-                }
-
-                @media (max-width: 768px) {
-                    .domains-container {
-                        min-height: 150px;
-                        max-height: 200px;
-                    }
                 }
             </style>
         `;
@@ -1699,6 +1664,7 @@ class ModernDomainOrganizer {
             });
 
             console.log(`[ModernDomainOrganizer] ✅ ${this.allFolders.size} dossiers chargés`);
+            console.log('[ModernDomainOrganizer] Liste complète:', Array.from(this.allFolders.keys()));
             this.updateStat('existingFolders', this.allFolders.size);
             
         } catch (error) {
@@ -1718,7 +1684,7 @@ class ModernDomainOrganizer {
             const scanLimit = config.emailLimit === 0 ? 10000 : config.emailLimit;
             
             const options = {
-                top: Math.min(scanLimit, 10000),
+                top: Math.min(scanLimit, 10000), // Limitation de sécurité
                 orderBy: 'receivedDateTime desc'
             };
 
@@ -1768,6 +1734,7 @@ class ModernDomainOrganizer {
                     domainData.emails.push(email);
                 } catch (emailError) {
                     console.warn('[ModernDomainOrganizer] Erreur traitement email:', emailError);
+                    // Continue avec l'email suivant
                 }
             }
 
@@ -1991,7 +1958,7 @@ class ModernDomainOrganizer {
                 
                 <div class="domain-content ${isExpanded ? 'expanded' : ''}">
                     <div class="emails-list">
-                        ${plan.emails.slice(0, 10).map((email) => `
+                        ${plan.emails.map((email) => `
                             <div class="email-item" data-email-id="${email.id}">
                                 <input type="checkbox" class="email-checkbox" ${email.selected !== false ? 'checked' : ''} 
                                        onchange="window.modernDomainOrganizer.toggleEmailSelection('${domain}', '${email.id}')"
@@ -2007,11 +1974,6 @@ class ModernDomainOrganizer {
                                 <div class="email-date">${safeDate(email)}</div>
                             </div>
                         `).join('')}
-                        ${plan.emails.length > 10 ? `
-                            <div class="email-item" style="font-style: italic; color: #6b7280;">
-                                ... et ${plan.emails.length - 10} autres emails
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
             `;
@@ -2020,6 +1982,7 @@ class ModernDomainOrganizer {
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur création élément domaine:', error);
             
+            // Élément de fallback en cas d'erreur
             const fallbackDiv = document.createElement('div');
             fallbackDiv.className = 'domain-item error';
             fallbackDiv.innerHTML = `
@@ -2288,6 +2251,7 @@ class ModernDomainOrganizer {
                     results.createdFolders.push(plan.targetFolder);
                     this.updateExecutionStat('foldersCreated', results.foldersCreated);
                     
+                    // Pause pour éviter les rate limits
                     await new Promise(resolve => setTimeout(resolve, 300));
                     
                 } catch (error) {
@@ -2304,6 +2268,7 @@ class ModernDomainOrganizer {
             this.updateExecutionProgress(100, 'Création terminée !');
             this.addExecutionLog('✅ Création des dossiers terminée', 'success');
             
+            // Recharger les dossiers
             try {
                 await this.loadAllFolders();
                 this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
@@ -2363,6 +2328,7 @@ class ModernDomainOrganizer {
             
             const folderActions = new Map();
             
+            // Préparation des actions
             this.organizationPlan.forEach((plan, domain) => {
                 if (!plan.selected) return;
                 
@@ -2397,6 +2363,7 @@ class ModernDomainOrganizer {
             const totalFolders = folderActions.size;
             let processed = 0;
             
+            // Traitement de chaque dossier
             for (const [folderName, folderData] of folderActions) {
                 try {
                     this.updateExecutionProgress(
@@ -2406,6 +2373,7 @@ class ModernDomainOrganizer {
                     
                     let targetFolderId = folderData.targetFolderId;
                     
+                    // Création du dossier si nécessaire
                     if (folderData.action === 'create-new') {
                         this.addExecutionLog(`📁 Création du dossier "${folderName}"`, 'info');
                         const newFolder = await this.createFolder(folderName);
@@ -2419,6 +2387,7 @@ class ModernDomainOrganizer {
                         this.addExecutionLog(`📁 Utilisation du dossier "${folderName}"`, 'info');
                     }
                     
+                    // Déplacement des emails par lots
                     const batchSize = 10;
                     let moved = 0;
                     
@@ -2448,6 +2417,7 @@ class ModernDomainOrganizer {
                 processed++;
             }
             
+            // Comptage des domaines traités
             this.organizationPlan.forEach((plan, domain) => {
                 if (plan.selected && plan.emails.some(e => e.selected !== false)) {
                     results.domainsProcessed++;
@@ -2481,10 +2451,13 @@ class ModernDomainOrganizer {
                 throw new Error('Non authentifié');
             }
             
+            // Vérification avant création
             console.log(`[ModernDomainOrganizer] 🔍 Vérification existence du dossier: "${folderName}"`);
             
+            // Recharger la liste des dossiers pour s'assurer qu'elle est à jour
             await this.loadAllFolders();
             
+            // Vérifier si le dossier existe déjà
             const existingFolder = this.findExistingFolderByName(folderName);
             if (existingFolder) {
                 console.log(`[ModernDomainOrganizer] ✅ Dossier existe déjà: "${existingFolder.displayName}" (ID: ${existingFolder.id})`);
@@ -2507,9 +2480,11 @@ class ModernDomainOrganizer {
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 
+                // Gestion spécifique de l'erreur "dossier existe déjà"
                 if (response.status === 409 && errorData.error?.code === 'ErrorFolderExists') {
                     console.log(`[ModernDomainOrganizer] ⚠️ Le dossier "${folderName}" existe déjà selon l'API`);
                     
+                    // Recharger et chercher le dossier existant
                     await this.loadAllFolders();
                     const foundFolder = this.findExistingFolderByName(folderName);
                     
@@ -2517,6 +2492,7 @@ class ModernDomainOrganizer {
                         console.log(`[ModernDomainOrganizer] ✅ Dossier existant trouvé après rechargement: "${foundFolder.displayName}"`);
                         return foundFolder;
                     } else {
+                        // Créer un nom alternatif si on ne trouve toujours pas le dossier
                         const alternativeName = `${folderName}_${Date.now()}`;
                         console.log(`[ModernDomainOrganizer] 🔄 Tentative avec nom alternatif: "${alternativeName}"`);
                         
@@ -2544,6 +2520,7 @@ class ModernDomainOrganizer {
             const result = await response.json();
             console.log(`[ModernDomainOrganizer] ✅ Nouveau dossier créé: "${result.displayName}" (ID: ${result.id})`);
             
+            // Ajouter le nouveau dossier à notre cache
             this.allFolders.set(result.displayName.toLowerCase().trim(), {
                 id: result.id,
                 displayName: result.displayName,
@@ -2591,6 +2568,7 @@ class ModernDomainOrganizer {
             
             const result = await response.json();
             
+            // Vérifier les erreurs dans la réponse batch
             if (result.responses) {
                 const errors = result.responses.filter(r => r.status >= 400);
                 if (errors.length > 0) {
@@ -2719,6 +2697,7 @@ class ModernDomainOrganizer {
             log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
             
+            // Limiter le nombre d'entrées pour éviter la surcharge
             const entries = log.querySelectorAll('.log-entry');
             if (entries.length > 100) {
                 entries[0].remove();
@@ -2768,6 +2747,7 @@ class ModernDomainOrganizer {
             
             currentCard.insertBefore(messageDiv, currentCard.firstChild);
             
+            // Auto-suppression après 5 secondes
             setTimeout(() => {
                 if (messageDiv.parentNode) {
                     messageDiv.remove();
@@ -2841,12 +2821,14 @@ class ModernDomainOrganizer {
             const domainLower = domain.toLowerCase().trim();
             console.log(`[ModernDomainOrganizer] 🔍 Recherche dossier pour: "${domainLower}"`);
             
+            // 1. Recherche exacte
             const exactMatch = this.allFolders.get(domainLower);
             if (exactMatch) {
                 console.log(`[ModernDomainOrganizer] ✅ Correspondance exacte: "${exactMatch.displayName}"`);
                 return exactMatch;
             }
             
+            // 2. Recherche par partie principale du domaine
             const domainParts = domainLower.split('.');
             if (domainParts.length > 1) {
                 const mainDomain = domainParts[0];
@@ -2857,6 +2839,7 @@ class ModernDomainOrganizer {
                 }
             }
             
+            // 3. Recherche inversée (nom de dossier contient le domaine)
             for (const [folderKey, folder] of this.allFolders) {
                 if (folderKey.includes(domainLower)) {
                     console.log(`[ModernDomainOrganizer] ✅ Correspondance contient: "${folder.displayName}"`);
@@ -2864,8 +2847,9 @@ class ModernDomainOrganizer {
                 }
             }
             
+            // 4. Recherche approximative (domaine contient nom de dossier)
             for (const [folderKey, folder] of this.allFolders) {
-                if (domainLower.includes(folderKey) && folderKey.length > 3) {
+                if (domainLower.includes(folderKey) && folderKey.length > 3) { // Éviter les matches trop courts
                     console.log(`[ModernDomainOrganizer] ✅ Correspondance approximative: "${folder.displayName}"`);
                     return folder;
                 }
@@ -2886,6 +2870,7 @@ class ModernDomainOrganizer {
             const nameLower = name.toLowerCase().trim();
             console.log(`[ModernDomainOrganizer] 🔍 Recherche dossier par nom: "${nameLower}"`);
             
+            // Recherche exacte par nom
             for (const folder of this.allFolders.values()) {
                 if (folder.displayName.toLowerCase().trim() === nameLower) {
                     console.log(`[ModernDomainOrganizer] ✅ Dossier trouvé par nom: "${folder.displayName}"`);
@@ -2915,6 +2900,7 @@ class ModernDomainOrganizer {
 
     saveEmailChanges() {
         try {
+            // Placeholder pour l'édition d'emails (fonctionnalité avancée)
             this.closeEmailModal();
             this.showMessage('Fonctionnalité d\'édition en développement', 'info');
         } catch (error) {
@@ -2961,6 +2947,7 @@ class ModernDomainOrganizer {
             
             this.initializePage();
             
+            // Mise à jour de la navigation
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
@@ -2979,6 +2966,7 @@ class ModernDomainOrganizer {
 try {
     window.modernDomainOrganizer = new ModernDomainOrganizer();
     
+    // Gestion autonome des événements
     document.addEventListener('DOMContentLoaded', function() {
         try {
             document.addEventListener('click', function(e) {
@@ -2997,6 +2985,7 @@ try {
         }
     });
     
+    // Fonction globale d'accès
     window.showModernDomainOrganizer = function() {
         try {
             window.modernDomainOrganizer.showPage();
