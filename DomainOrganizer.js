@@ -11,6 +11,7 @@ class ModernDomainOrganizer {
         this.emailsByDomain = new Map();
         this.totalEmailsScanned = 0;
         this.expandedDomains = new Set();
+        this.currentEditEmail = null;
         
         console.log('[ModernDomainOrganizer] ✅ Initialisé');
     }
@@ -3140,6 +3141,8 @@ class ModernDomainOrganizer {
                 .filter((f, i, arr) => arr.indexOf(f) === i); // Unique
             
             const modalBody = document.getElementById('emailModalBody');
+            if (!modalBody) return;
+            
             modalBody.innerHTML = `
                 <div class="email-edit-section">
                     <label class="email-edit-label">📧 Email à déplacer</label>
@@ -3191,22 +3194,27 @@ class ModernDomainOrganizer {
                 const select = document.getElementById('folderSelect');
                 const customInput = document.getElementById('customFolderInput');
                 
-                // Chercher si c'est un dossier existant
-                const existingOption = Array.from(select.options).find(option => 
-                    option.textContent.includes(email.customFolder)
-                );
-                
-                if (existingOption) {
-                    select.value = existingOption.value;
-                } else {
-                    select.value = 'custom';
-                    customInput.classList.remove('hidden');
-                    customInput.value = email.customFolder;
+                if (select && customInput) {
+                    // Chercher si c'est un dossier existant
+                    const existingOption = Array.from(select.options).find(option => 
+                        option.textContent.includes(email.customFolder)
+                    );
+                    
+                    if (existingOption) {
+                        select.value = existingOption.value;
+                    } else {
+                        select.value = 'custom';
+                        customInput.classList.remove('hidden');
+                        customInput.value = email.customFolder;
+                    }
                 }
             }
             
             // Afficher le modal
-            document.getElementById('emailModal').classList.remove('hidden');
+            const modal = document.getElementById('emailModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur édition email:', error);
@@ -3219,11 +3227,13 @@ class ModernDomainOrganizer {
             const select = document.getElementById('folderSelect');
             const customInput = document.getElementById('customFolderInput');
             
-            if (select.value === 'custom') {
-                customInput.classList.remove('hidden');
-                customInput.focus();
-            } else {
-                customInput.classList.add('hidden');
+            if (select && customInput) {
+                if (select.value === 'custom') {
+                    customInput.classList.remove('hidden');
+                    customInput.focus();
+                } else {
+                    customInput.classList.add('hidden');
+                }
             }
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur changement sélection:', error);
@@ -3238,14 +3248,13 @@ class ModernDomainOrganizer {
             const select = document.getElementById('folderSelect');
             const customInput = document.getElementById('customFolderInput');
             
-            let targetFolder = null;
-            let targetFolderId = null;
+            if (!select) return;
             
             if (select.value === 'default') {
                 // Retour au dossier par défaut
                 email.customFolder = null;
                 email.customFolderId = null;
-            } else if (select.value === 'custom') {
+            } else if (select.value === 'custom' && customInput) {
                 // Nouveau dossier personnalisé
                 const customName = customInput.value.trim();
                 if (!customName) {
