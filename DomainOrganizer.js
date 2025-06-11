@@ -234,44 +234,46 @@ class ModernDomainOrganizer {
                                 </div>
 
                                 <div class="plan-content-fixed">
-                                    <div class="plan-summary" id="planSummary"></div>
+                                    <!-- Résumé + Options d'exécution fusionnées -->
+                                    <div class="plan-summary-compact">
+                                        <div class="summary-stats" id="planSummary"></div>
+                                        <div class="execution-options-compact">
+                                            <div class="option-row-compact">
+                                                <label class="option-label-compact">
+                                                    <input type="radio" name="executionType" value="folders-only">
+                                                    <span>📁 Dossiers seulement</span>
+                                                </label>
+                                                <label class="option-label-compact">
+                                                    <input type="radio" name="executionType" value="complete" checked>
+                                                    <span>⚡ Complet</span>
+                                                </label>
+                                            </div>
+                                            <div class="selection-info-compact">
+                                                <span id="selectedEmailsText">0 emails sélectionnés</span>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                     <div class="plan-controls">
                                         <div class="controls-row">
                                             <div class="action-buttons">
-                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.selectAllDomains()">
-                                                    ✅ Tout sélectionner
+                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.selectAllDomains()">
+                                                    ✅ Tout
                                                 </button>
-                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.deselectAllDomains()">
-                                                    ❌ Tout désélectionner
+                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.deselectAllDomains()">
+                                                    ❌ Rien
                                                 </button>
-                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.expandAllDomains()">
-                                                    📂 Tout déplier
+                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.expandAllDomains()">
+                                                    📂 Déplier
                                                 </button>
-                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.collapseAllDomains()">
-                                                    📁 Tout replier
+                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.collapseAllDomains()">
+                                                    📁 Replier
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="domains-container-fixed" id="domainsContainer"></div>
-
-                                    <div class="execution-options">
-                                        <div class="option-row">
-                                            <label class="option-label">
-                                                <input type="radio" name="executionType" value="folders-only">
-                                                <span>📁 Créer dossiers seulement (test)</span>
-                                            </label>
-                                            <label class="option-label">
-                                                <input type="radio" name="executionType" value="complete" checked>
-                                                <span>⚡ Créer + Déplacer emails (complet)</span>
-                                            </label>
-                                        </div>
-                                        <div class="selection-info">
-                                            <span id="selectedEmailsText">0 emails sélectionnés</span>
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <div class="action-bar-fixed">
@@ -497,14 +499,14 @@ class ModernDomainOrganizer {
                     background: white;
                     border-radius: 12px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    height: calc(100vh - 200px);
+                    height: calc(100vh - 180px);
                     display: flex;
                     flex-direction: column;
                     overflow: hidden;
                 }
 
                 .plan-card-fixed .card-header {
-                    padding: 20px 24px 16px 24px;
+                    padding: 16px 20px 12px 20px;
                     margin-bottom: 0;
                     flex-shrink: 0;
                     border-bottom: 1px solid #f3f4f6;
@@ -512,10 +514,10 @@ class ModernDomainOrganizer {
 
                 .plan-content-fixed {
                     flex: 1;
-                    padding: 16px 24px;
+                    padding: 12px 20px;
                     display: flex;
                     flex-direction: column;
-                    gap: 16px;
+                    gap: 10px;
                     overflow: hidden;
                 }
 
@@ -524,11 +526,92 @@ class ModernDomainOrganizer {
                     justify-content: space-between;
                     align-items: center;
                     gap: 12px;
-                    padding: 16px 24px;
+                    padding: 14px 20px;
                     border-top: 1px solid #e5e7eb;
                     flex-shrink: 0;
                     background: #fafbfc;
                     border-radius: 0 0 12px 12px;
+                }
+
+                /* Résumé compact fusionné avec options */
+                .plan-summary-compact {
+                    background: #f8fafc;
+                    border-radius: 8px;
+                    padding: 12px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 16px;
+                    flex-shrink: 0;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .summary-stats {
+                    display: flex;
+                    gap: 20px;
+                    align-items: center;
+                }
+
+                .summary-item {
+                    text-align: center;
+                    min-width: 50px;
+                }
+
+                .summary-value {
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: #1f2937;
+                    line-height: 1;
+                }
+
+                .summary-label {
+                    font-size: 10px;
+                    color: #6b7280;
+                    margin-top: 2px;
+                }
+
+                .execution-options-compact {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                    align-items: flex-end;
+                }
+
+                .option-row-compact {
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+                }
+
+                .option-label-compact {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    cursor: pointer;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    background: white;
+                    border: 1px solid #d1d5db;
+                    transition: all 0.2s;
+                }
+
+                .option-label-compact:hover {
+                    background: #f9fafb;
+                    border-color: #3b82f6;
+                }
+
+                .option-label-compact input[type="radio"] {
+                    width: 14px;
+                    height: 14px;
+                    flex-shrink: 0;
+                }
+
+                .selection-info-compact {
+                    font-size: 11px;
+                    font-weight: 500;
+                    color: #0369a1;
+                    text-align: right;
                 }
 
                 .domains-container-fixed {
@@ -537,7 +620,36 @@ class ModernDomainOrganizer {
                     background: white;
                     flex: 1;
                     overflow-y: auto;
-                    min-height: 200px;
+                    min-height: 250px;
+                }
+
+                /* Contrôles optimisés */
+                .plan-controls {
+                    flex-shrink: 0;
+                }
+
+                .controls-row {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px;
+                    background: #f9fafb;
+                    border-radius: 6px;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .action-buttons {
+                    display: flex;
+                    gap: 4px;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                .btn-tiny {
+                    padding: 3px 8px;
+                    font-size: 10px;
+                    border-radius: 4px;
                 }
 
                 /* Introduction compacte */
@@ -789,40 +901,8 @@ class ModernDomainOrganizer {
                     flex-shrink: 0;
                 }
 
-                .summary-item {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
-                }
-
-                .summary-value {
-                    font-size: 24px;
-                    font-weight: 700;
-                    color: #1f2937;
-                }
-
-                .summary-label {
-                    font-size: 12px;
-                    color: #6b7280;
-                }
-
                 .plan-controls {
                     flex-shrink: 0;
-                }
-
-                .controls-row {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: 16px;
-                    padding: 12px;
-                    background: #f9fafb;
-                    border-radius: 8px;
-                }
-
-                .action-buttons {
-                    display: flex;
-                    gap: 8px;
                 }
 
                 .domain-item {
@@ -1232,56 +1312,77 @@ class ModernDomainOrganizer {
 
                     /* Plan mobile optimisé */
                     .plan-card-fixed {
-                        height: calc(100vh - 150px);
+                        height: calc(100vh - 140px);
                     }
 
                     .plan-card-fixed .card-header {
-                        padding: 12px 16px 8px 16px;
+                        padding: 10px 14px 8px 14px;
                     }
 
                     .plan-card-fixed .card-header h2 {
-                        font-size: 18px;
+                        font-size: 16px;
                     }
 
                     .plan-card-fixed .card-header p {
-                        font-size: 12px;
+                        font-size: 11px;
                     }
 
                     .plan-content-fixed {
-                        padding: 8px 16px;
+                        padding: 8px 14px;
                         gap: 8px;
                     }
 
                     .action-bar-fixed {
-                        padding: 8px 16px;
+                        padding: 10px 14px;
                     }
 
-                    .domains-container-fixed {
-                        min-height: 120px;
-                    }
-
-                    .plan-summary {
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 8px;
+                    .plan-summary-compact {
+                        flex-direction: column;
+                        gap: 10px;
                         padding: 8px;
                     }
 
+                    .summary-stats {
+                        gap: 12px;
+                        justify-content: space-around;
+                        width: 100%;
+                    }
+
                     .summary-value {
-                        font-size: 16px;
+                        font-size: 14px;
                     }
 
                     .summary-label {
+                        font-size: 9px;
+                    }
+
+                    .option-row-compact {
+                        gap: 8px;
+                        justify-content: center;
+                    }
+
+                    .option-label-compact {
                         font-size: 10px;
+                        padding: 3px 6px;
+                    }
+
+                    .selection-info-compact {
+                        font-size: 9px;
+                        text-align: center;
+                    }
+
+                    .domains-container-fixed {
+                        min-height: 180px;
                     }
 
                     .controls-row {
-                        padding: 6px;
-                        gap: 4px;
+                        padding: 4px;
+                        gap: 3px;
                     }
 
                     .action-buttons .btn {
-                        padding: 3px 6px;
-                        font-size: 10px;
+                        padding: 2px 5px;
+                        font-size: 9px;
                     }
 
                     .domain-header {
