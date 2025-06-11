@@ -1577,17 +1577,20 @@ class ModernDomainOrganizer {
             
             folders.forEach(folder => {
                 if (folder && folder.displayName) {
-                    const folderKey = folder.displayName.toLowerCase();
+                    const folderKey = folder.displayName.toLowerCase().trim();
                     this.allFolders.set(folderKey, {
                         id: folder.id,
                         displayName: folder.displayName,
                         totalItemCount: folder.totalItemCount || 0,
                         parentFolderId: folder.parentFolderId
                     });
+                    
+                    console.log(`[ModernDomainOrganizer] Dossier: "${folder.displayName}"`);
                 }
             });
 
             console.log(`[ModernDomainOrganizer] ✅ ${this.allFolders.size} dossiers chargés`);
+            console.log('[ModernDomainOrganizer] Liste complète:', Array.from(this.allFolders.keys()));
             this.updateStat('existingFolders', this.allFolders.size);
             
         } catch (error) {
@@ -1692,6 +1695,7 @@ class ModernDomainOrganizer {
                     const existingFolder = this.findExistingFolder(domain);
                     
                     if (existingFolder) {
+                        console.log(`[ModernDomainOrganizer] ✅ Dossier existant trouvé pour ${domain}: ${existingFolder.displayName}`);
                         this.organizationPlan.set(domain, {
                             domain,
                             action: 'use-existing',
@@ -1702,6 +1706,7 @@ class ModernDomainOrganizer {
                             selected: true
                         });
                     } else {
+                        console.log(`[ModernDomainOrganizer] 📁 Nouveau dossier nécessaire pour ${domain}`);
                         this.organizationPlan.set(domain, {
                             domain,
                             action: 'create-new',
@@ -1719,7 +1724,7 @@ class ModernDomainOrganizer {
             });
 
             this.updateStat('newFoldersNeeded', newFoldersCount);
-            console.log(`[ModernDomainOrganizer] Plan créé: ${this.organizationPlan.size} domaines`);
+            console.log(`[ModernDomainOrganizer] Plan créé: ${this.organizationPlan.size} domaines, ${newFoldersCount} nouveaux dossiers`);
             
             if (this.organizationPlan.size === 0) {
                 throw new Error('Aucun plan d\'organisation créé');
@@ -1987,13 +1992,18 @@ class ModernDomainOrganizer {
             
             const plan = this.organizationPlan.get(domain);
             if (plan) {
-                plan.targetFolder = newName.trim();
+                const trimmedName = newName.trim();
+                plan.targetFolder = trimmedName;
                 
-                const existingFolder = this.findExistingFolderByName(newName.trim());
+                console.log(`[ModernDomainOrganizer] 🔄 Mise à jour nom dossier pour ${domain}: "${trimmedName}"`);
+                
+                const existingFolder = this.findExistingFolderByName(trimmedName);
                 if (existingFolder) {
+                    console.log(`[ModernDomainOrganizer] ✅ Dossier existant trouvé: "${existingFolder.displayName}"`);
                     plan.action = 'use-existing';
                     plan.targetFolderId = existingFolder.id;
                 } else {
+                    console.log(`[ModernDomainOrganizer] 📁 Nouveau dossier sera créé: "${trimmedName}"`);
                     plan.action = 'create-new';
                     plan.targetFolderId = null;
                 }
@@ -2399,6 +2409,21 @@ class ModernDomainOrganizer {
                 throw new Error('Non authentifié');
             }
             
+            // Vérification avant création
+            console.log(`[ModernDomainOrganizer] 🔍 Vérification existence du dossier: "${folderName}"`);
+            
+            // Recharger la liste des dossiers pour s'assurer qu'elle est à jour
+            await this.loadAllFolders();
+            
+            // Vérifier si le dossier existe déjà
+            const existingFolder = this.findExistingFolderByName(folderName);
+            if (existingFolder) {
+                console.log(`[ModernDomainOrganizer] ✅ Dossier existe déjà: "${existingFolder.displayName}" (ID: ${existingFolder.id})`);
+                return existingFolder;
+            }
+            
+            console.log(`[ModernDomainOrganizer] 📁 Création du nouveau dossier: "${folderName}"`);
+            
             const accessToken = await window.authService.getAccessToken();
             
             const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
@@ -2411,11 +2436,57 @@ class ModernDomainOrganizer {
             });
             
             if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                
+                // Gestion spécifique de l'erreur "dossier existe déjà"
+                if (response.status === 409 && errorData.error?.code === 'ErrorFolderExists') {
+                    console.log(`[ModernDomainOrganizer] ⚠️ Le dossier "${folderName}" existe déjà selon l'API`);
+                    
+                    // Recharger et chercher le dossier existant
+                    await this.loadAllFolders();
+                    const foundFolder = this.findExistingFolderByName(folderName);
+                    
+                    if (foundFolder) {
+                        console.log(`[ModernDomainOrganizer] ✅ Dossier existant trouvé après rechargement: "${foundFolder.displayName}"`);
+                        return foundFolder;
+                    } else {
+                        // Créer un nom alternatif si on ne trouve toujours pas le dossier
+                        const alternativeName = `${folderName}_${Date.now()}`;
+                        console.log(`[ModernDomainOrganizer] 🔄 Tentative avec nom alternatif: "${alternativeName}"`);
+                        
+                        const retryResponse = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ displayName: alternativeName })
+                        });
+                        
+                        if (retryResponse.ok) {
+                            const result = await retryResponse.json();
+                            console.log(`[ModernDomainOrganizer] ✅ Dossier créé avec nom alternatif: "${result.displayName}"`);
+                            return result;
+                        }
+                    }
+                }
+                
                 const errorText = await response.text();
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
-            return await response.json();
+            const result = await response.json();
+            console.log(`[ModernDomainOrganizer] ✅ Nouveau dossier créé: "${result.displayName}" (ID: ${result.id})`);
+            
+            // Ajouter le nouveau dossier à notre cache
+            this.allFolders.set(result.displayName.toLowerCase().trim(), {
+                id: result.id,
+                displayName: result.displayName,
+                totalItemCount: 0,
+                parentFolderId: result.parentFolderId
+            });
+            
+            return result;
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur création dossier:', error);
@@ -2705,25 +2776,44 @@ class ModernDomainOrganizer {
         try {
             if (!domain) return null;
             
-            // Recherche exacte
-            const exactMatch = this.allFolders.get(domain.toLowerCase());
-            if (exactMatch) return exactMatch;
+            const domainLower = domain.toLowerCase().trim();
+            console.log(`[ModernDomainOrganizer] 🔍 Recherche dossier pour: "${domainLower}"`);
             
-            // Recherche par partie principale
-            const domainParts = domain.split('.');
-            if (domainParts.length > 1) {
-                const mainDomain = domainParts[0];
-                const mainMatch = this.allFolders.get(mainDomain.toLowerCase());
-                if (mainMatch) return mainMatch;
+            // 1. Recherche exacte
+            const exactMatch = this.allFolders.get(domainLower);
+            if (exactMatch) {
+                console.log(`[ModernDomainOrganizer] ✅ Correspondance exacte: "${exactMatch.displayName}"`);
+                return exactMatch;
             }
             
-            // Recherche approximative
+            // 2. Recherche par partie principale du domaine
+            const domainParts = domainLower.split('.');
+            if (domainParts.length > 1) {
+                const mainDomain = domainParts[0];
+                const mainMatch = this.allFolders.get(mainDomain);
+                if (mainMatch) {
+                    console.log(`[ModernDomainOrganizer] ✅ Correspondance partielle: "${mainMatch.displayName}" pour ${mainDomain}`);
+                    return mainMatch;
+                }
+            }
+            
+            // 3. Recherche inversée (nom de dossier contient le domaine)
             for (const [folderKey, folder] of this.allFolders) {
-                if (folderKey.includes(domain.toLowerCase()) || domain.toLowerCase().includes(folderKey)) {
+                if (folderKey.includes(domainLower)) {
+                    console.log(`[ModernDomainOrganizer] ✅ Correspondance contient: "${folder.displayName}"`);
                     return folder;
                 }
             }
             
+            // 4. Recherche approximative (domaine contient nom de dossier)
+            for (const [folderKey, folder] of this.allFolders) {
+                if (domainLower.includes(folderKey) && folderKey.length > 3) { // Éviter les matches trop courts
+                    console.log(`[ModernDomainOrganizer] ✅ Correspondance approximative: "${folder.displayName}"`);
+                    return folder;
+                }
+            }
+            
+            console.log(`[ModernDomainOrganizer] ❌ Aucun dossier trouvé pour: "${domainLower}"`);
             return null;
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur recherche dossier:', error);
@@ -2735,11 +2825,18 @@ class ModernDomainOrganizer {
         try {
             if (!name) return null;
             
+            const nameLower = name.toLowerCase().trim();
+            console.log(`[ModernDomainOrganizer] 🔍 Recherche dossier par nom: "${nameLower}"`);
+            
+            // Recherche exacte par nom
             for (const folder of this.allFolders.values()) {
-                if (folder.displayName.toLowerCase() === name.toLowerCase()) {
+                if (folder.displayName.toLowerCase().trim() === nameLower) {
+                    console.log(`[ModernDomainOrganizer] ✅ Dossier trouvé par nom: "${folder.displayName}"`);
                     return folder;
                 }
             }
+            
+            console.log(`[ModernDomainOrganizer] ❌ Aucun dossier trouvé pour le nom: "${nameLower}"`);
             return null;
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur recherche dossier par nom:', error);
