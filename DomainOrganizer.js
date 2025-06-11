@@ -227,46 +227,48 @@ class ModernDomainOrganizer {
 
                         <!-- Plan -->
                         <div class="step-content hidden" id="step-plan">
-                            <div class="step-card">
+                            <div class="step-card plan-card">
                                 <div class="card-header">
                                     <h2>📋 Plan d'organisation</h2>
                                     <p>Modifiez selon vos besoins</p>
                                 </div>
 
-                                <div class="plan-summary" id="planSummary"></div>
+                                <div class="plan-content">
+                                    <div class="plan-summary" id="planSummary"></div>
 
-                                <div class="plan-controls">
-                                    <div class="controls-row">
-                                        <div class="search-box">
-                                            <input type="text" id="domainSearch" placeholder="🔍 Rechercher..." 
-                                                   onkeyup="window.modernDomainOrganizer.searchDomains(this.value)">
-                                        </div>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.selectAllDomains()">
-                                                ✅ Tout
-                                            </button>
-                                            <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.expandAllDomains()">
-                                                📂 Déplier
-                                            </button>
+                                    <div class="plan-controls">
+                                        <div class="controls-row">
+                                            <div class="search-box">
+                                                <input type="text" id="domainSearch" placeholder="🔍 Rechercher..." 
+                                                       onkeyup="window.modernDomainOrganizer.searchDomains(this.value)">
+                                            </div>
+                                            <div class="action-buttons">
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.selectAllDomains()">
+                                                    ✅ Tout
+                                                </button>
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.expandAllDomains()">
+                                                    📂 Déplier
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <div class="domains-container" id="domainsContainer"></div>
+                                    <div class="domains-container" id="domainsContainer"></div>
 
-                                <div class="execution-options">
-                                    <div class="option-row">
-                                        <label class="option-label">
-                                            <input type="radio" name="executionType" value="folders-only">
-                                            <span>📁 Créer dossiers seulement (test)</span>
-                                        </label>
-                                        <label class="option-label">
-                                            <input type="radio" name="executionType" value="complete" checked>
-                                            <span>⚡ Créer + Déplacer emails (complet)</span>
-                                        </label>
-                                    </div>
-                                    <div class="selection-info">
-                                        <span id="selectedEmailsText">0 emails sélectionnés</span>
+                                    <div class="execution-options">
+                                        <div class="option-row">
+                                            <label class="option-label">
+                                                <input type="radio" name="executionType" value="folders-only">
+                                                <span>📁 Créer dossiers seulement (test)</span>
+                                            </label>
+                                            <label class="option-label">
+                                                <input type="radio" name="executionType" value="complete" checked>
+                                                <span>⚡ Créer + Déplacer emails (complet)</span>
+                                            </label>
+                                        </div>
+                                        <div class="selection-info">
+                                            <span id="selectedEmailsText">0 emails sélectionnés</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -275,7 +277,7 @@ class ModernDomainOrganizer {
                                         <i class="fas fa-arrow-left"></i>
                                         Reconfigurer
                                     </button>
-                                    <button class="btn btn-primary btn-large" id="executeSelectedBtn">
+                                    <button class="btn btn-primary btn-large" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
                                         <i class="fas fa-play"></i>
                                         <span id="executeButtonText">Exécuter</span>
                                     </button>
@@ -1208,6 +1210,10 @@ class ModernDomainOrganizer {
                         max-height: calc(100vh - 120px);
                     }
 
+                    .plan-card {
+                        height: calc(100vh - 120px);
+                    }
+
                     .card-header h2 {
                         font-size: 20px;
                     }
@@ -1286,6 +1292,16 @@ class ModernDomainOrganizer {
                         padding: 12px 20px;
                         font-size: 14px;
                     }
+
+                    .action-bar {
+                        flex-direction: column;
+                        gap: 12px;
+                    }
+
+                    .action-bar .btn {
+                        width: 100%;
+                        justify-content: center;
+                    }
                 }
 
                 .hidden {
@@ -1348,18 +1364,35 @@ class ModernDomainOrganizer {
 
     setupEventListeners() {
         try {
+            // Event listeners pour les boutons principaux
             const startBtn = document.getElementById('startScanBtn');
             const executeBtn = document.getElementById('executeSelectedBtn');
             const saveBtn = document.getElementById('saveEmailBtn');
             
-            if (startBtn) startBtn.addEventListener('click', () => this.startAnalysis());
-            if (executeBtn) executeBtn.addEventListener('click', () => this.executeSelectedAction());
-            if (saveBtn) saveBtn.addEventListener('click', () => this.saveEmailChanges());
+            if (startBtn) {
+                startBtn.addEventListener('click', () => this.startAnalysis());
+                console.log('[ModernDomainOrganizer] ✅ Event listener startScanBtn ajouté');
+            }
             
-            // Écouter les changements de type d'exécution
+            if (executeBtn) {
+                executeBtn.addEventListener('click', () => this.executeSelectedAction());
+                console.log('[ModernDomainOrganizer] ✅ Event listener executeSelectedBtn ajouté');
+            }
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => this.saveEmailChanges());
+                console.log('[ModernDomainOrganizer] ✅ Event listener saveEmailBtn ajouté');
+            }
+            
+            // Event listeners pour les types d'exécution
             document.querySelectorAll('input[name="executionType"]').forEach(radio => {
-                radio.addEventListener('change', () => this.updateExecutionButton());
+                radio.addEventListener('change', () => {
+                    console.log('[ModernDomainOrganizer] Type d\'exécution changé:', radio.value);
+                    this.updateExecutionButton();
+                });
             });
+            
+            console.log('[ModernDomainOrganizer] ✅ Tous les event listeners configurés');
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur setup listeners:', error);
         }
@@ -1751,6 +1784,13 @@ class ModernDomainOrganizer {
             this.displayDomainsWithEmails(container);
             this.updateTotalEmailsCount();
             this.updateExecutionButton();
+            
+            // Réattacher les event listeners après affichage
+            setTimeout(() => {
+                this.setupEventListeners();
+            }, 100);
+            
+            console.log('[ModernDomainOrganizer] ✅ Plan d\'organisation affiché avec boutons');
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur affichage plan:', error);
