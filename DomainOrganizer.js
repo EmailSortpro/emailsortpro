@@ -225,65 +225,62 @@ class ModernDomainOrganizer {
                             </div>
                         </div>
 
-                        <!-- Plan - VERSION OPTIMISÉE SANS DÉFILEMENT -->
+                        <!-- Plan - VERSION ULTRA-OPTIMISÉE -->
                         <div class="step-content hidden" id="step-plan">
-                            <div class="step-card plan-card-fixed">
-                                <div class="card-header">
+                            <div class="step-card plan-card-ultra">
+                                <!-- Header minimal -->
+                                <div class="card-header-minimal">
                                     <h2>📋 Plan d'organisation</h2>
-                                    <p>Modifiez selon vos besoins</p>
                                 </div>
 
-                                <div class="plan-content-fixed">
-                                    <!-- Résumé + Options d'exécution fusionnées -->
-                                    <div class="plan-summary-compact">
-                                        <div class="summary-stats" id="planSummary"></div>
-                                        <div class="execution-options-compact">
-                                            <div class="option-row-compact">
-                                                <label class="option-label-compact">
-                                                    <input type="radio" name="executionType" value="folders-only">
-                                                    <span>📁 Dossiers seulement</span>
-                                                </label>
-                                                <label class="option-label-compact">
-                                                    <input type="radio" name="executionType" value="complete" checked>
-                                                    <span>⚡ Complet</span>
-                                                </label>
-                                            </div>
-                                            <div class="selection-info-compact">
-                                                <span id="selectedEmailsText">0 emails sélectionnés</span>
-                                            </div>
+                                <!-- Contenu ultra-compact -->
+                                <div class="plan-content-ultra">
+                                    <!-- Ligne unique : Stats + Options + Sélection -->
+                                    <div class="plan-header-line">
+                                        <!-- Stats compactes -->
+                                        <div class="stats-ultra" id="planSummary">
+                                            <span class="stat-ultra"><strong>16</strong> Dom</span>
+                                            <span class="stat-ultra"><strong>145</strong> Emails</span>
+                                            <span class="stat-ultra"><strong>15</strong> Nouv</span>
+                                        </div>
+                                        
+                                        <!-- Options d'exécution -->
+                                        <div class="options-ultra">
+                                            <label class="radio-ultra">
+                                                <input type="radio" name="executionType" value="folders-only">
+                                                📁 Dossiers
+                                            </label>
+                                            <label class="radio-ultra">
+                                                <input type="radio" name="executionType" value="complete" checked>
+                                                ⚡ Complet
+                                            </label>
+                                        </div>
+                                        
+                                        <!-- Compteur sélection -->
+                                        <div class="selection-ultra">
+                                            <span id="selectedEmailsText">145 emails sélectionnés</span>
                                         </div>
                                     </div>
 
-                                    <div class="plan-controls">
-                                        <div class="controls-row">
-                                            <div class="action-buttons">
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.selectAllDomains()">
-                                                    ✅ Tout
-                                                </button>
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.deselectAllDomains()">
-                                                    ❌ Rien
-                                                </button>
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.expandAllDomains()">
-                                                    📂 Déplier
-                                                </button>
-                                                <button class="btn btn-outline btn-tiny" onclick="window.modernDomainOrganizer.collapseAllDomains()">
-                                                    📁 Replier
-                                                </button>
-                                            </div>
-                                        </div>
+                                    <!-- Contrôles rapides -->
+                                    <div class="controls-ultra">
+                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.selectAllDomains()">✅ Tout</button>
+                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.deselectAllDomains()">❌ Rien</button>
+                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.expandAllDomains()">📂 Déplier</button>
+                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.collapseAllDomains()">📁 Replier</button>
                                     </div>
 
-                                    <div class="domains-container-fixed" id="domainsContainer"></div>
+                                    <!-- Zone des domaines maximisée -->
+                                    <div class="domains-container-ultra" id="domainsContainer"></div>
                                 </div>
 
-                                <div class="action-bar-fixed">
-                                    <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('configuration')">
-                                        <i class="fas fa-arrow-left"></i>
-                                        Reconfigurer
+                                <!-- Boutons d'action TOUJOURS VISIBLES -->
+                                <div class="action-bar-ultra">
+                                    <button class="btn btn-secondary btn-compact" onclick="window.modernDomainOrganizer.goToStep('configuration')">
+                                        ← Reconfigurer
                                     </button>
-                                    <button class="btn btn-primary btn-large" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
-                                        <i class="fas fa-play"></i>
-                                        <span id="executeButtonText">Exécuter</span>
+                                    <button class="btn btn-primary btn-compact" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
+                                        <span id="executeButtonText">⚡ Exécuter</span>
                                     </button>
                                 </div>
                             </div>
@@ -494,162 +491,185 @@ class ModernDomainOrganizer {
                     margin: 0;
                 }
 
-                /* MODIFICATIONS SPÉCIFIQUES POUR LA PAGE PLAN */
-                .plan-card-fixed {
+                /* VERSION ULTRA-COMPACTE POUR LE PLAN */
+                .plan-card-ultra {
                     background: white;
                     border-radius: 12px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    height: calc(100vh - 180px);
+                    height: calc(100vh - 160px);
                     display: flex;
                     flex-direction: column;
                     overflow: hidden;
                 }
 
-                .plan-card-fixed .card-header {
-                    padding: 16px 20px 12px 20px;
-                    margin-bottom: 0;
+                /* Header minimal */
+                .card-header-minimal {
+                    padding: 8px 16px;
                     flex-shrink: 0;
-                    border-bottom: 1px solid #f3f4f6;
-                }
-
-                .plan-content-fixed {
-                    flex: 1;
-                    padding: 12px 20px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    overflow: hidden;
-                }
-
-                .action-bar-fixed {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: 12px;
-                    padding: 14px 20px;
-                    border-top: 1px solid #e5e7eb;
-                    flex-shrink: 0;
-                    background: #fafbfc;
-                    border-radius: 0 0 12px 12px;
-                }
-
-                /* Résumé compact fusionné avec options */
-                .plan-summary-compact {
-                    background: #f8fafc;
-                    border-radius: 8px;
-                    padding: 12px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    gap: 16px;
-                    flex-shrink: 0;
-                    border: 1px solid #e5e7eb;
-                }
-
-                .summary-stats {
-                    display: flex;
-                    gap: 20px;
-                    align-items: center;
-                }
-
-                .summary-item {
+                    border-bottom: 1px solid #e5e7eb;
                     text-align: center;
-                    min-width: 50px;
                 }
 
-                .summary-value {
+                .card-header-minimal h2 {
                     font-size: 18px;
-                    font-weight: 700;
+                    font-weight: 600;
+                    margin: 0;
                     color: #1f2937;
-                    line-height: 1;
                 }
 
-                .summary-label {
-                    font-size: 10px;
-                    color: #6b7280;
-                    margin-top: 2px;
-                }
-
-                .execution-options-compact {
+                /* Contenu ultra-compact */
+                .plan-content-ultra {
+                    flex: 1;
+                    padding: 8px 16px;
                     display: flex;
                     flex-direction: column;
-                    gap: 6px;
-                    align-items: flex-end;
+                    gap: 8px;
+                    overflow: hidden;
                 }
 
-                .option-row-compact {
+                /* Ligne unique avec tout */
+                .plan-header-line {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    background: #f8fafc;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    flex-shrink: 0;
+                    gap: 12px;
+                }
+
+                /* Stats ultra-compactes */
+                .stats-ultra {
                     display: flex;
                     gap: 12px;
                     align-items: center;
                 }
 
-                .option-label-compact {
+                .stat-ultra {
+                    font-size: 11px;
+                    color: #374151;
+                    white-space: nowrap;
+                }
+
+                .stat-ultra strong {
+                    font-size: 14px;
+                    color: #1f2937;
+                }
+
+                /* Options d'exécution ultra-compactes */
+                .options-ultra {
+                    display: flex;
+                    gap: 8px;
+                    align-items: center;
+                }
+
+                .radio-ultra {
                     display: flex;
                     align-items: center;
-                    gap: 6px;
+                    gap: 4px;
+                    font-size: 10px;
+                    color: #374151;
                     cursor: pointer;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
+                    padding: 2px 6px;
+                    border-radius: 3px;
                     background: white;
                     border: 1px solid #d1d5db;
                     transition: all 0.2s;
                 }
 
-                .option-label-compact:hover {
+                .radio-ultra:hover {
+                    border-color: #3b82f6;
+                    background: #f0f9ff;
+                }
+
+                .radio-ultra input[type="radio"] {
+                    width: 12px;
+                    height: 12px;
+                    margin: 0;
+                }
+
+                /* Sélection ultra-compacte */
+                .selection-ultra {
+                    font-size: 10px;
+                    color: #0369a1;
+                    font-weight: 500;
+                    white-space: nowrap;
+                }
+
+                /* Contrôles micro */
+                .controls-ultra {
+                    display: flex;
+                    justify-content: center;
+                    gap: 4px;
+                    flex-shrink: 0;
+                }
+
+                .btn-micro {
+                    padding: 2px 6px;
+                    font-size: 9px;
+                    border: 1px solid #d1d5db;
+                    background: white;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    color: #374151;
+                    transition: all 0.2s;
+                }
+
+                .btn-micro:hover {
                     background: #f9fafb;
                     border-color: #3b82f6;
                 }
 
-                .option-label-compact input[type="radio"] {
-                    width: 14px;
-                    height: 14px;
-                    flex-shrink: 0;
-                }
-
-                .selection-info-compact {
-                    font-size: 11px;
-                    font-weight: 500;
-                    color: #0369a1;
-                    text-align: right;
-                }
-
-                .domains-container-fixed {
+                /* Zone des domaines maximisée */
+                .domains-container-ultra {
                     border: 1px solid #e5e7eb;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     background: white;
                     flex: 1;
                     overflow-y: auto;
-                    min-height: 250px;
+                    min-height: 0;
                 }
 
-                /* Contrôles optimisés */
-                .plan-controls {
-                    flex-shrink: 0;
-                }
-
-                .controls-row {
+                /* Boutons d'action GARANTIS VISIBLES */
+                .action-bar-ultra {
                     display: flex;
-                    justify-content: center;
+                    justify-content: space-between;
                     align-items: center;
-                    gap: 6px;
-                    padding: 6px;
-                    background: #f9fafb;
+                    gap: 12px;
+                    padding: 10px 16px;
+                    border-top: 2px solid #e5e7eb;
+                    flex-shrink: 0;
+                    background: #fafbfc;
+                    border-radius: 0 0 12px 12px;
+                    min-height: 50px;
+                }
+
+                .btn-compact {
+                    padding: 8px 16px;
+                    font-size: 13px;
+                    font-weight: 600;
                     border-radius: 6px;
-                    border: 1px solid #e5e7eb;
+                    border: none;
+                    cursor: pointer;
+                    transition: all 0.2s;
                 }
 
-                .action-buttons {
-                    display: flex;
-                    gap: 4px;
-                    flex-wrap: wrap;
-                    justify-content: center;
+                .btn-compact.btn-secondary {
+                    background: #f3f4f6;
+                    color: #374151;
                 }
 
-                .btn-tiny {
-                    padding: 3px 8px;
-                    font-size: 10px;
-                    border-radius: 4px;
+                .btn-compact.btn-primary {
+                    background: #3b82f6;
+                    color: white;
+                    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+                }
+
+                .btn-compact.btn-primary:hover {
+                    background: #2563eb;
+                    transform: translateY(-1px);
                 }
 
                 /* Introduction compacte */
@@ -1310,79 +1330,76 @@ class ModernDomainOrganizer {
                         min-height: 400px;
                     }
 
-                    /* Plan mobile optimisé */
-                    .plan-card-fixed {
-                        height: calc(100vh - 140px);
+                    /* Plan ultra-compact mobile */
+                    .plan-card-ultra {
+                        height: calc(100vh - 120px);
                     }
 
-                    .plan-card-fixed .card-header {
-                        padding: 10px 14px 8px 14px;
+                    .card-header-minimal {
+                        padding: 6px 12px;
                     }
 
-                    .plan-card-fixed .card-header h2 {
+                    .card-header-minimal h2 {
                         font-size: 16px;
                     }
 
-                    .plan-card-fixed .card-header p {
-                        font-size: 11px;
+                    .plan-content-ultra {
+                        padding: 6px 12px;
+                        gap: 6px;
                     }
 
-                    .plan-content-fixed {
-                        padding: 8px 14px;
-                        gap: 8px;
+                    .action-bar-ultra {
+                        padding: 8px 12px;
+                        min-height: 45px;
                     }
 
-                    .action-bar-fixed {
-                        padding: 10px 14px;
-                    }
-
-                    .plan-summary-compact {
+                    .plan-header-line {
                         flex-direction: column;
-                        gap: 10px;
-                        padding: 8px;
+                        gap: 6px;
+                        padding: 6px;
                     }
 
-                    .summary-stats {
-                        gap: 12px;
+                    .stats-ultra {
+                        gap: 8px;
                         justify-content: space-around;
                         width: 100%;
                     }
 
-                    .summary-value {
-                        font-size: 14px;
-                    }
-
-                    .summary-label {
+                    .stat-ultra {
                         font-size: 9px;
                     }
 
-                    .option-row-compact {
-                        gap: 8px;
+                    .stat-ultra strong {
+                        font-size: 12px;
+                    }
+
+                    .options-ultra {
+                        gap: 6px;
                         justify-content: center;
                     }
 
-                    .option-label-compact {
-                        font-size: 10px;
-                        padding: 3px 6px;
+                    .radio-ultra {
+                        font-size: 9px;
+                        padding: 2px 4px;
                     }
 
-                    .selection-info-compact {
+                    .selection-ultra {
                         font-size: 9px;
                         text-align: center;
                     }
 
-                    .domains-container-fixed {
-                        min-height: 180px;
-                    }
-
-                    .controls-row {
-                        padding: 4px;
+                    .controls-ultra {
                         gap: 3px;
                     }
 
-                    .action-buttons .btn {
-                        padding: 2px 5px;
-                        font-size: 9px;
+                    .btn-micro {
+                        padding: 1px 4px;
+                        font-size: 8px;
+                    }
+
+                    .btn-compact {
+                        padding: 6px 12px;
+                        font-size: 11px;
                     }
 
                     .domain-header {
@@ -1952,22 +1969,10 @@ class ModernDomainOrganizer {
                 .filter(plan => plan.action === 'use-existing');
 
             summary.innerHTML = `
-                <div class="summary-item">
-                    <div class="summary-value">${this.organizationPlan.size}</div>
-                    <div class="summary-label">Domaines</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-value">${totalEmails.toLocaleString()}</div>
-                    <div class="summary-label">Emails</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-value">${newFolders.length}</div>
-                    <div class="summary-label">Nouveaux</div>
-                </div>
-                <div class="summary-item">
-                    <div class="summary-value">${existingFolders.length}</div>
-                    <div class="summary-label">Existants</div>
-                </div>
+                <span class="stat-ultra"><strong>${this.organizationPlan.size}</strong> Dom</span>
+                <span class="stat-ultra"><strong>${totalEmails.toLocaleString()}</strong> Emails</span>
+                <span class="stat-ultra"><strong>${newFolders.length}</strong> Nouv</span>
+                <span class="stat-ultra"><strong>${existingFolders.length}</strong> Exist</span>
             `;
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur affichage résumé:', error);
