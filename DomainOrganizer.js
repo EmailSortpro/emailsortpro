@@ -1,4 +1,6 @@
-// ModernDomainOrganizer.js - Version étendue avec édition complète
+.domain-item.hidden {
+                    display: none;
+                }// ModernDomainOrganizer.js - Version étendue avec édition complète
 // Interface large avec modification des dossiers et visualisation des emails
 
 class ModernDomainOrganizer {
@@ -13,6 +15,80 @@ class ModernDomainOrganizer {
         this.expandedDomains = new Set();
         
         console.log('[ModernDomainOrganizer] ✅ Initialisé');
+    }
+
+    // ================================================
+    // RECHERCHE ET FILTRAGE
+    // ================================================
+
+    searchDomains(searchTerm) {
+        const clearButton = document.querySelector('.search-clear');
+        const container = document.getElementById('domainsContainer');
+        
+        if (!container) return;
+        
+        // Afficher/masquer le bouton clear
+        if (clearButton) {
+            clearButton.style.display = searchTerm ? 'block' : 'none';
+        }
+        
+        // Filtrer les domaines
+        const domainItems = container.querySelectorAll('.domain-item');
+        let visibleCount = 0;
+        
+        domainItems.forEach(item => {
+            const domain = item.dataset.domain;
+            const domainName = item.querySelector('.domain-name').textContent.toLowerCase();
+            
+            if (!searchTerm || domainName.includes(searchTerm.toLowerCase())) {
+                item.classList.remove('hidden');
+                visibleCount++;
+            } else {
+                item.classList.add('hidden');
+            }
+        });
+        
+        // Afficher un message si aucun résultat
+        this.showSearchResults(visibleCount, searchTerm);
+    }
+
+    showSearchResults(count, searchTerm) {
+        const container = document.getElementById('domainsContainer');
+        if (!container) return;
+        
+        // Supprimer le message précédent s'il existe
+        const existingMessage = container.querySelector('.search-no-results');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        // Afficher un message si aucun résultat
+        if (count === 0 && searchTerm) {
+            const message = document.createElement('div');
+            message.className = 'search-no-results';
+            message.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6b7280;">
+                    <i class="fas fa-search" style="font-size: 24px; margin-bottom: 12px; opacity: 0.5;"></i>
+                    <p style="margin: 0; font-size: 16px;">Aucun domaine trouvé pour "${searchTerm}"</p>
+                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.7;">Essayez avec un autre terme de recherche</p>
+                </div>
+            `;
+            container.appendChild(message);
+        }
+    }
+
+    clearSearch() {
+        const searchInput = document.getElementById('domainSearch');
+        const clearButton = document.querySelector('.search-clear');
+        
+        if (searchInput) {
+            searchInput.value = '';
+            this.searchDomains('');
+        }
+        
+        if (clearButton) {
+            clearButton.style.display = 'none';
+        }
     }
 
     // ================================================
@@ -47,8 +123,9 @@ class ModernDomainOrganizer {
                     </div>
                 </div>
 
-                <!-- Contenu principal -->
-                <div class="organizer-content">
+                <!-- Contenu principal avec scroll -->
+                <div class="organizer-main">
+                    <div class="organizer-content">
                     <!-- Étape 1: Configuration -->
                     <div class="step-content" id="step-configuration">
                         <div class="step-card">
@@ -156,30 +233,45 @@ class ModernDomainOrganizer {
                             </div>
 
                             <div class="plan-controls">
-                                <div class="control-group">
-                                    <button class="btn btn-outline" onclick="window.modernDomainOrganizer.expandAllDomains()">
-                                        <i class="fas fa-expand-alt"></i>
-                                        Tout déplier
-                                    </button>
-                                    <button class="btn btn-outline" onclick="window.modernDomainOrganizer.collapseAllDomains()">
-                                        <i class="fas fa-compress-alt"></i>
-                                        Tout replier
-                                    </button>
+                                <div class="search-section">
+                                    <div class="search-container">
+                                        <i class="fas fa-search search-icon"></i>
+                                        <input type="text" id="domainSearch" placeholder="Rechercher un domaine..." 
+                                               onkeyup="window.modernDomainOrganizer.searchDomains(this.value)">
+                                        <button class="search-clear" onclick="window.modernDomainOrganizer.clearSearch()" style="display: none;">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="control-group">
-                                    <button class="btn btn-outline" onclick="window.modernDomainOrganizer.selectAllDomains()">
-                                        <i class="fas fa-check-square"></i>
-                                        Tout sélectionner
-                                    </button>
-                                    <button class="btn btn-outline" onclick="window.modernDomainOrganizer.deselectAllDomains()">
-                                        <i class="fas fa-square"></i>
-                                        Tout désélectionner
-                                    </button>
+                                
+                                <div class="control-groups">
+                                    <div class="control-group">
+                                        <button class="btn btn-outline" onclick="window.modernDomainOrganizer.expandAllDomains()">
+                                            <i class="fas fa-expand-alt"></i>
+                                            Tout déplier
+                                        </button>
+                                        <button class="btn btn-outline" onclick="window.modernDomainOrganizer.collapseAllDomains()">
+                                            <i class="fas fa-compress-alt"></i>
+                                            Tout replier
+                                        </button>
+                                    </div>
+                                    <div class="control-group">
+                                        <button class="btn btn-outline" onclick="window.modernDomainOrganizer.selectAllDomains()">
+                                            <i class="fas fa-check-square"></i>
+                                            Tout sélectionner
+                                        </button>
+                                        <button class="btn btn-outline" onclick="window.modernDomainOrganizer.deselectAllDomains()">
+                                            <i class="fas fa-square"></i>
+                                            Tout désélectionner
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="domains-container" id="domainsContainer">
-                                <!-- Rempli dynamiquement -->
+                            <div class="domains-section">
+                                <div class="domains-container" id="domainsContainer">
+                                    <!-- Rempli dynamiquement -->
+                                </div>
                             </div>
 
                             <div class="warning-box">
@@ -301,18 +393,31 @@ class ModernDomainOrganizer {
                     margin: 0 auto;
                     padding: 20px;
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-                    min-height: 100vh;
-                    height: auto;
-                    overflow-y: auto;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100vh;
+                    box-sizing: border-box;
                 }
 
-                /* Header étendu */
+                /* Header fixe */
                 .organizer-header {
                     background: white;
                     border-radius: 16px;
                     padding: 24px;
-                    margin-bottom: 24px;
+                    margin-bottom: 20px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    flex-shrink: 0;
+                }
+
+                /* Contenu principal avec scroll */
+                .organizer-main {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding-right: 8px;
+                }
+
+                .organizer-content {
+                    height: 100%;
                 }
 
                 .progress-steps {
@@ -391,10 +496,10 @@ class ModernDomainOrganizer {
                     border-radius: 16px;
                     padding: 32px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    min-height: 60vh;
-                    max-height: none;
-                    height: auto;
+                    height: 100%;
                     overflow: visible;
+                    display: flex;
+                    flex-direction: column;
                 }
 
                 .card-header {
@@ -564,8 +669,8 @@ class ModernDomainOrganizer {
                 /* Contrôles du plan */
                 .plan-controls {
                     display: flex;
-                    justify-content: space-between;
-                    align-items: center;
+                    flex-direction: column;
+                    gap: 16px;
                     margin-bottom: 24px;
                     padding: 16px;
                     background: #f9fafb;
@@ -573,20 +678,104 @@ class ModernDomainOrganizer {
                     border: 1px solid #e5e7eb;
                 }
 
+                .search-section {
+                    width: 100%;
+                }
+
+                .search-container {
+                    position: relative;
+                    max-width: 400px;
+                }
+
+                .search-container input {
+                    width: 100%;
+                    padding: 12px 16px 12px 40px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    transition: border-color 0.2s ease;
+                }
+
+                .search-container input:focus {
+                    outline: none;
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+
+                .search-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #6b7280;
+                    font-size: 14px;
+                }
+
+                .search-clear {
+                    position: absolute;
+                    right: 8px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 4px;
+                    border-radius: 4px;
+                    color: #6b7280;
+                    transition: color 0.2s ease;
+                }
+
+                .search-clear:hover {
+                    color: #374151;
+                    background: #e5e7eb;
+                }
+
+                .control-groups {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
                 .control-group {
                     display: flex;
                     gap: 12px;
                 }
 
-                /* Conteneur des domaines */
+                /* Section des domaines */
+                .domains-section {
+                    flex: 1;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                /* Conteneur des domaines avec scroll */
                 .domains-container {
-                    height: auto;
-                    max-height: none;
-                    overflow: visible;
+                    flex: 1;
+                    overflow-y: auto;
                     border: 1px solid #e5e7eb;
                     border-radius: 12px;
                     background: white;
-                    margin-bottom: 24px;
+                    max-height: 500px;
+                }
+
+                /* Style de la scrollbar */
+                .domains-container::-webkit-scrollbar {
+                    width: 8px;
+                }
+
+                .domains-container::-webkit-scrollbar-track {
+                    background: #f1f5f9;
+                    border-radius: 4px;
+                }
+
+                .domains-container::-webkit-scrollbar-thumb {
+                    background: #cbd5e1;
+                    border-radius: 4px;
+                }
+
+                .domains-container::-webkit-scrollbar-thumb:hover {
+                    background: #94a3b8;
                 }
 
                 .domain-item {
@@ -1062,11 +1251,16 @@ class ModernDomainOrganizer {
                 @media (max-width: 768px) {
                     .modern-organizer {
                         padding: 12px;
+                        height: 100vh;
+                    }
+
+                    .organizer-header {
+                        padding: 16px;
+                        margin-bottom: 16px;
                     }
 
                     .step-card {
                         padding: 20px;
-                        min-height: 50vh;
                     }
 
                     .form-row {
@@ -1092,8 +1286,21 @@ class ModernDomainOrganizer {
                     }
 
                     .plan-controls {
+                        padding: 12px;
+                    }
+
+                    .control-groups {
                         flex-direction: column;
                         gap: 12px;
+                        align-items: stretch;
+                    }
+
+                    .control-group {
+                        justify-content: center;
+                    }
+
+                    .search-container {
+                        max-width: 100%;
                     }
 
                     .domain-header {
@@ -1116,10 +1323,11 @@ class ModernDomainOrganizer {
 
                     .domains-container {
                         border-radius: 8px;
+                        max-height: 400px;
                     }
 
                     .emails-list {
-                        max-height: 300px;
+                        max-height: 250px;
                     }
                 }
 
