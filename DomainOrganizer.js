@@ -238,22 +238,24 @@ class ModernDomainOrganizer {
 
                                     <div class="plan-controls">
                                         <div class="controls-row">
-                                            <div class="search-box">
-                                                <input type="text" id="domainSearch" placeholder="🔍 Rechercher..." 
-                                                       onkeyup="window.modernDomainOrganizer.searchDomains(this.value)">
-                                            </div>
                                             <div class="action-buttons">
                                                 <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.selectAllDomains()">
-                                                    ✅ Tout
+                                                    ✅ Tout sélectionner
+                                                </button>
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.deselectAllDomains()">
+                                                    ❌ Tout désélectionner
                                                 </button>
                                                 <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.expandAllDomains()">
-                                                    📂 Déplier
+                                                    📂 Tout déplier
+                                                </button>
+                                                <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.collapseAllDomains()">
+                                                    📁 Tout replier
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="domains-container" id="domainsContainer"></div>
+                                    <div class="domains-container-no-scroll" id="domainsContainer"></div>
 
                                     <div class="execution-options">
                                         <div class="option-row">
@@ -1267,17 +1269,21 @@ class ModernDomainOrganizer {
 
                     .controls-row {
                         flex-direction: column;
-                        gap: 8px;
+                        gap: 6px;
                         padding: 8px;
-                    }
-
-                    .search-box {
-                        max-width: 100%;
                     }
 
                     .action-buttons {
                         width: 100%;
                         justify-content: center;
+                        gap: 4px;
+                    }
+
+                    .action-buttons .btn {
+                        flex: 1;
+                        min-width: 0;
+                        padding: 6px 8px;
+                        font-size: 11px;
                     }
 
                     .scan-stats, .execution-stats {
@@ -1308,19 +1314,21 @@ class ModernDomainOrganizer {
                         padding: 8px;
                     }
 
-                    .domains-container {
-                        min-height: 120px;
-                    }
-
                     .domain-header {
                         flex-wrap: wrap;
                         gap: 8px;
-                        padding: 12px;
+                        padding: 10px 12px;
+                        min-height: auto;
                     }
 
                     .domain-actions {
                         width: 100%;
                         justify-content: space-between;
+                    }
+
+                    .folder-input {
+                        min-width: 100px;
+                        font-size: 11px;
                     }
 
                     .btn-large {
