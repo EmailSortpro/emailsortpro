@@ -225,61 +225,52 @@ class ModernDomainOrganizer {
                             </div>
                         </div>
 
-                        <!-- Plan - VERSION ULTRA-OPTIMISÉE -->
+                        <!-- Plan - VERSION SIMPLIFIÉE AVEC BOUTON VISIBLE -->
                         <div class="step-content hidden" id="step-plan">
-                            <div class="step-card plan-card-ultra">
-                                <!-- Header minimal -->
-                                <div class="card-header-minimal">
+                            <div class="step-card plan-card-simple">
+                                <!-- Header condensé -->
+                                <div class="card-header-simple">
                                     <h2>📋 Plan d'organisation</h2>
                                 </div>
 
-                                <!-- Contenu ultra-compact -->
-                                <div class="plan-content-ultra">
-                                    <!-- Ligne unique : Stats + Options + Sélection -->
-                                    <div class="plan-header-line">
-                                        <!-- Stats compactes -->
-                                        <div class="stats-ultra" id="planSummary">
-                                            <span class="stat-ultra"><strong>16</strong> Dom</span>
-                                            <span class="stat-ultra"><strong>145</strong> Emails</span>
-                                            <span class="stat-ultra"><strong>15</strong> Nouv</span>
+                                <!-- Contenu principal -->
+                                <div class="plan-content-simple">
+                                    <!-- Stats + Options en ligne -->
+                                    <div class="plan-top-bar">
+                                        <div class="stats-simple" id="planSummary">
+                                            <span><strong>16</strong> Domaines</span>
+                                            <span><strong>145</strong> Emails</span>
+                                            <span><strong>15</strong> Nouveaux</span>
                                         </div>
-                                        
-                                        <!-- Options d'exécution -->
-                                        <div class="options-ultra">
-                                            <label class="radio-ultra">
-                                                <input type="radio" name="executionType" value="folders-only">
-                                                📁 Dossiers
-                                            </label>
-                                            <label class="radio-ultra">
-                                                <input type="radio" name="executionType" value="complete" checked>
-                                                ⚡ Complet
-                                            </label>
+                                        <div class="options-simple">
+                                            <label><input type="radio" name="executionType" value="folders-only"> 📁 Dossiers</label>
+                                            <label><input type="radio" name="executionType" value="complete" checked> ⚡ Complet</label>
                                         </div>
-                                        
-                                        <!-- Compteur sélection -->
-                                        <div class="selection-ultra">
+                                        <div class="count-simple">
                                             <span id="selectedEmailsText">145 emails sélectionnés</span>
                                         </div>
                                     </div>
 
-                                    <!-- Contrôles rapides -->
-                                    <div class="controls-ultra">
-                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.selectAllDomains()">✅ Tout</button>
-                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.deselectAllDomains()">❌ Rien</button>
-                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.expandAllDomains()">📂 Déplier</button>
-                                        <button class="btn-micro" onclick="window.modernDomainOrganizer.collapseAllDomains()">📁 Replier</button>
+                                    <!-- Contrôles -->
+                                    <div class="controls-simple">
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.selectAllDomains()">✅ Tout</button>
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.deselectAllDomains()">❌ Rien</button>
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.expandAllDomains()">📂 Déplier</button>
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.collapseAllDomains()">📁 Replier</button>
                                     </div>
 
-                                    <!-- Zone des domaines maximisée -->
-                                    <div class="domains-container-ultra" id="domainsContainer"></div>
+                                    <!-- Liste des domaines avec hauteur fixe -->
+                                    <div class="domains-wrapper">
+                                        <div class="domains-container-simple" id="domainsContainer"></div>
+                                    </div>
                                 </div>
 
-                                <!-- Boutons d'action TOUJOURS VISIBLES -->
-                                <div class="action-bar-ultra">
-                                    <button class="btn btn-secondary btn-compact" onclick="window.modernDomainOrganizer.goToStep('configuration')">
+                                <!-- Boutons d'action FIXES en bas -->
+                                <div class="action-bar-simple">
+                                    <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('configuration')">
                                         ← Reconfigurer
                                     </button>
-                                    <button class="btn btn-primary btn-compact" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
+                                    <button class="btn btn-primary btn-execute" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
                                         <span id="executeButtonText">⚡ Exécuter</span>
                                     </button>
                                 </div>
@@ -491,185 +482,181 @@ class ModernDomainOrganizer {
                     margin: 0;
                 }
 
-                /* VERSION ULTRA-COMPACTE POUR LE PLAN */
-                .plan-card-ultra {
+                /* VERSION SIMPLIFIÉE - BOUTON GARANTI VISIBLE */
+                .plan-card-simple {
                     background: white;
                     border-radius: 12px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    height: calc(100vh - 160px);
+                    height: calc(100vh - 200px);
+                    max-height: 600px;
                     display: flex;
                     flex-direction: column;
                     overflow: hidden;
                 }
 
-                /* Header minimal */
-                .card-header-minimal {
-                    padding: 8px 16px;
+                /* Header condensé */
+                .card-header-simple {
+                    padding: 10px 16px;
                     flex-shrink: 0;
                     border-bottom: 1px solid #e5e7eb;
                     text-align: center;
                 }
 
-                .card-header-minimal h2 {
+                .card-header-simple h2 {
                     font-size: 18px;
                     font-weight: 600;
                     margin: 0;
                     color: #1f2937;
                 }
 
-                /* Contenu ultra-compact */
-                .plan-content-ultra {
+                /* Contenu principal */
+                .plan-content-simple {
                     flex: 1;
-                    padding: 8px 16px;
+                    padding: 12px 16px 0 16px;
                     display: flex;
                     flex-direction: column;
-                    gap: 8px;
+                    gap: 10px;
                     overflow: hidden;
                 }
 
-                /* Ligne unique avec tout */
-                .plan-header-line {
+                /* Top bar avec stats + options */
+                .plan-top-bar {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     background: #f8fafc;
                     border: 1px solid #e5e7eb;
                     border-radius: 6px;
-                    padding: 6px 12px;
+                    padding: 8px 12px;
                     flex-shrink: 0;
                     gap: 12px;
+                    flex-wrap: wrap;
                 }
 
-                /* Stats ultra-compactes */
-                .stats-ultra {
+                .stats-simple {
                     display: flex;
-                    gap: 12px;
+                    gap: 16px;
                     align-items: center;
-                }
-
-                .stat-ultra {
-                    font-size: 11px;
+                    font-size: 12px;
                     color: #374151;
-                    white-space: nowrap;
                 }
 
-                .stat-ultra strong {
+                .stats-simple strong {
                     font-size: 14px;
                     color: #1f2937;
                 }
 
-                /* Options d'exécution ultra-compactes */
-                .options-ultra {
+                .options-simple {
                     display: flex;
-                    gap: 8px;
+                    gap: 12px;
                     align-items: center;
                 }
 
-                .radio-ultra {
+                .options-simple label {
                     display: flex;
                     align-items: center;
                     gap: 4px;
-                    font-size: 10px;
+                    font-size: 11px;
                     color: #374151;
                     cursor: pointer;
-                    padding: 2px 6px;
-                    border-radius: 3px;
+                    padding: 4px 8px;
+                    border-radius: 4px;
                     background: white;
                     border: 1px solid #d1d5db;
                     transition: all 0.2s;
                 }
 
-                .radio-ultra:hover {
+                .options-simple label:hover {
                     border-color: #3b82f6;
                     background: #f0f9ff;
                 }
 
-                .radio-ultra input[type="radio"] {
+                .options-simple input[type="radio"] {
                     width: 12px;
                     height: 12px;
-                    margin: 0;
                 }
 
-                /* Sélection ultra-compacte */
-                .selection-ultra {
-                    font-size: 10px;
+                .count-simple {
+                    font-size: 11px;
                     color: #0369a1;
                     font-weight: 500;
                     white-space: nowrap;
                 }
 
-                /* Contrôles micro */
-                .controls-ultra {
+                /* Contrôles */
+                .controls-simple {
                     display: flex;
                     justify-content: center;
-                    gap: 4px;
+                    gap: 6px;
                     flex-shrink: 0;
                 }
 
-                .btn-micro {
-                    padding: 2px 6px;
-                    font-size: 9px;
+                .btn-xs {
+                    padding: 4px 8px;
+                    font-size: 10px;
                     border: 1px solid #d1d5db;
                     background: white;
-                    border-radius: 3px;
+                    border-radius: 4px;
                     cursor: pointer;
                     color: #374151;
                     transition: all 0.2s;
                 }
 
-                .btn-micro:hover {
+                .btn-xs:hover {
                     background: #f9fafb;
                     border-color: #3b82f6;
                 }
 
-                /* Zone des domaines maximisée */
-                .domains-container-ultra {
+                /* Wrapper pour les domaines */
+                .domains-wrapper {
+                    flex: 1;
+                    min-height: 0;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .domains-container-simple {
                     border: 1px solid #e5e7eb;
                     border-radius: 6px;
                     background: white;
                     flex: 1;
                     overflow-y: auto;
-                    min-height: 0;
+                    min-height: 250px;
+                    max-height: 400px;
                 }
 
-                /* Boutons d'action GARANTIS VISIBLES */
-                .action-bar-ultra {
+                /* Action bar FIXE en bas */
+                .action-bar-simple {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     gap: 12px;
-                    padding: 10px 16px;
+                    padding: 12px 16px;
                     border-top: 2px solid #e5e7eb;
                     flex-shrink: 0;
                     background: #fafbfc;
                     border-radius: 0 0 12px 12px;
-                    min-height: 50px;
+                    position: relative;
+                    z-index: 10;
                 }
 
-                .btn-compact {
-                    padding: 8px 16px;
-                    font-size: 13px;
-                    font-weight: 600;
-                    border-radius: 6px;
-                    border: none;
-                    cursor: pointer;
-                    transition: all 0.2s;
+                .btn-execute {
+                    background: #3b82f6 !important;
+                    color: white !important;
+                    padding: 10px 20px !important;
+                    font-size: 14px !important;
+                    font-weight: 600 !important;
+                    border-radius: 6px !important;
+                    border: none !important;
+                    cursor: pointer !important;
+                    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
+                    transition: all 0.2s !important;
                 }
 
-                .btn-compact.btn-secondary {
-                    background: #f3f4f6;
-                    color: #374151;
-                }
-
-                .btn-compact.btn-primary {
-                    background: #3b82f6;
-                    color: white;
-                    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
-                }
-
-                .btn-compact.btn-primary:hover {
-                    background: #2563eb;
-                    transform: translateY(-1px);
+                .btn-execute:hover {
+                    background: #2563eb !important;
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
                 }
 
                 /* Introduction compacte */
@@ -1330,76 +1317,78 @@ class ModernDomainOrganizer {
                         min-height: 400px;
                     }
 
-                    /* Plan ultra-compact mobile */
-                    .plan-card-ultra {
-                        height: calc(100vh - 120px);
+                    /* Plan mobile simplifié */
+                    .plan-card-simple {
+                        height: calc(100vh - 160px);
+                        max-height: none;
                     }
 
-                    .card-header-minimal {
-                        padding: 6px 12px;
+                    .card-header-simple {
+                        padding: 8px 12px;
                     }
 
-                    .card-header-minimal h2 {
+                    .card-header-simple h2 {
                         font-size: 16px;
                     }
 
-                    .plan-content-ultra {
-                        padding: 6px 12px;
-                        gap: 6px;
+                    .plan-content-simple {
+                        padding: 8px 12px 0 12px;
+                        gap: 8px;
                     }
 
-                    .action-bar-ultra {
-                        padding: 8px 12px;
-                        min-height: 45px;
+                    .action-bar-simple {
+                        padding: 10px 12px;
                     }
 
-                    .plan-header-line {
+                    .plan-top-bar {
                         flex-direction: column;
-                        gap: 6px;
+                        gap: 8px;
                         padding: 6px;
                     }
 
-                    .stats-ultra {
-                        gap: 8px;
+                    .stats-simple {
+                        gap: 10px;
                         justify-content: space-around;
                         width: 100%;
+                        font-size: 11px;
                     }
 
-                    .stat-ultra {
-                        font-size: 9px;
+                    .stats-simple strong {
+                        font-size: 13px;
                     }
 
-                    .stat-ultra strong {
-                        font-size: 12px;
-                    }
-
-                    .options-ultra {
-                        gap: 6px;
+                    .options-simple {
+                        gap: 8px;
                         justify-content: center;
                     }
 
-                    .radio-ultra {
-                        font-size: 9px;
-                        padding: 2px 4px;
+                    .options-simple label {
+                        font-size: 10px;
+                        padding: 3px 6px;
                     }
 
-                    .selection-ultra {
-                        font-size: 9px;
+                    .count-simple {
+                        font-size: 10px;
                         text-align: center;
                     }
 
-                    .controls-ultra {
-                        gap: 3px;
+                    .controls-simple {
+                        gap: 4px;
                     }
 
-                    .btn-micro {
-                        padding: 1px 4px;
-                        font-size: 8px;
+                    .btn-xs {
+                        padding: 3px 6px;
+                        font-size: 9px;
                     }
 
-                    .btn-compact {
-                        padding: 6px 12px;
-                        font-size: 11px;
+                    .domains-container-simple {
+                        min-height: 200px;
+                        max-height: 300px;
+                    }
+
+                    .btn-execute {
+                        padding: 8px 16px !important;
+                        font-size: 12px !important;
                     }
 
                     .domain-header {
@@ -1437,19 +1426,6 @@ class ModernDomainOrganizer {
 
                     .domain-content {
                         padding: 0 12px 8px 28px;
-                    }
-
-                    .execution-options {
-                        padding: 8px;
-                    }
-
-                    .option-label {
-                        font-size: 11px;
-                        padding: 4px;
-                    }
-
-                    .selection-info {
-                        font-size: 10px;
                     }
 
                     .btn {
@@ -1969,10 +1945,10 @@ class ModernDomainOrganizer {
                 .filter(plan => plan.action === 'use-existing');
 
             summary.innerHTML = `
-                <span class="stat-ultra"><strong>${this.organizationPlan.size}</strong> Dom</span>
-                <span class="stat-ultra"><strong>${totalEmails.toLocaleString()}</strong> Emails</span>
-                <span class="stat-ultra"><strong>${newFolders.length}</strong> Nouv</span>
-                <span class="stat-ultra"><strong>${existingFolders.length}</strong> Exist</span>
+                <span><strong>${this.organizationPlan.size}</strong> Domaines</span>
+                <span><strong>${totalEmails.toLocaleString()}</strong> Emails</span>
+                <span><strong>${newFolders.length}</strong> Nouveaux</span>
+                <span><strong>${existingFolders.length}</strong> Existants</span>
             `;
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur affichage résumé:', error);
