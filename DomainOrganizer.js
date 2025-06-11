@@ -207,10 +207,16 @@ class ModernDomainOrganizer {
                                         <i class="fas fa-arrow-left"></i>
                                         Retour configuration
                                     </button>
-                                    <button class="btn btn-primary" id="executeBtn">
-                                        <i class="fas fa-play"></i>
-                                        Exécuter le plan
-                                    </button>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-outline" id="createFoldersBtn" onclick="window.modernDomainOrganizer.createFoldersOnly()">
+                                            <i class="fas fa-folder-plus"></i>
+                                            Créer les dossiers seulement
+                                        </button>
+                                        <button class="btn btn-primary" id="executeBtn" onclick="window.modernDomainOrganizer.executeOrganization()">
+                                            <i class="fas fa-play"></i>
+                                            Créer dossiers + Déplacer emails
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1020,6 +1026,11 @@ class ModernDomainOrganizer {
                     margin-top: 32px;
                 }
 
+                .action-buttons {
+                    display: flex;
+                    gap: 12px;
+                }
+
                 .btn {
                     padding: 12px 24px;
                     border: none;
@@ -1258,6 +1269,7 @@ class ModernDomainOrganizer {
     setupEventListeners() {
         document.getElementById('startScanBtn')?.addEventListener('click', () => this.startAnalysis());
         document.getElementById('executeBtn')?.addEventListener('click', () => this.executeOrganization());
+        document.getElementById('createFoldersBtn')?.addEventListener('click', () => this.createFoldersOnly());
         document.getElementById('saveEmailBtn')?.addEventListener('click', () => this.saveEmailChanges());
     }
 
@@ -1361,18 +1373,25 @@ class ModernDomainOrganizer {
 
     async loadAllFolders() {
         try {
+            console.log('[ModernDomainOrganizer] Chargement de tous les dossiers...');
             const folders = await window.mailService.getFolders();
             this.allFolders.clear();
             
+            // Traiter tous les dossiers y compris les sous-dossiers
             folders.forEach(folder => {
-                this.allFolders.set(folder.displayName.toLowerCase(), {
+                const folderKey = folder.displayName.toLowerCase();
+                this.allFolders.set(folderKey, {
                     id: folder.id,
                     displayName: folder.displayName,
-                    totalItemCount: folder.totalItemCount || 0
+                    totalItemCount: folder.totalItemCount || 0,
+                    parentFolderId: folder.parentFolderId
                 });
+                
+                console.log(`[ModernDomainOrganizer] Dossier trouvé: "${folder.displayName}" (${folder.totalItemCount} items)`);
             });
 
-            console.log(`[ModernDomainOrganizer] ${this.allFolders.size} dossiers chargés`);
+            console.log(`[ModernDomainOrganizer] ✅ ${this.allFolders.size} dossiers chargés au total`);
+            console.log('[ModernDomainOrganizer] Liste des dossiers:', Array.from(this.allFolders.keys()));
             this.updateStat('existingFolders', this.allFolders.size);
             
         } catch (error) {
@@ -1967,12 +1986,19 @@ class ModernDomainOrganizer {
         window.uiManager?.showToast('Modifications sauvegardées', 'success');
     }
 
-    // Exécution
-    async executeOrganization() {
+    // Création des dossiers seulement
+    async createFoldersOnly() {
         if (this.isProcessing) return;
         
         try {
             this.isProcessing = true;
+            
+            // Afficher une modal de confirmation
+            if (!confirm('Voulez-vous créer seulement les nouveaux dossiers sans déplacer les emails ?')) {
+                this.isProcessing = false;
+                return;
+            }
+            
             this.goToStep('execution');
             
             const results = {
@@ -1985,7 +2011,96 @@ class ModernDomainOrganizer {
                 processedDomains: []
             };
             
-            this.addExecutionLog('🚀 Début de l\'organisation automatique', 'info');
+            this.addExecutionLog('📁 Début de la création des dossiers seulement', 'info');
+            
+            // Collecter les nouveaux dossiers à créer
+            const foldersToCreate = new Set();
+            
+            this.organizationPlan.forEach((plan, domain) => {
+                if (plan.selected && plan.action === 'create-new') {
+                    foldersToCreate.add(plan.targetFolder);
+                }
+            });
+            
+            const totalFolders = foldersToCreate.size;
+            let processed = 0;
+            
+            for (const folderName of foldersToCreate) {
+                try {
+                    this.updateExecutionProgress(
+                        (processed / totalFolders) * 100,
+                        `Création du dossier "${folderName}"...`
+                    );
+                    
+                    this.addExecutionLog(`📁 Création du dossier "${folderName}"`, 'info');
+                    await this.createFolder(folderName);
+                    results.foldersCreated++;
+                    results.createdFolders.push(folderName);
+                    this.updateExecutionStat('foldersCreated', results.foldersCreated);
+                    
+                } catch (error) {
+                    console.error(`[ModernDomainOrganizer] Erreur création ${folderName}:`, error);
+                    this.addExecutionLog(`❌ Erreur pour le dossier "${folderName}": ${error.message}`, 'error');
+                    results.errors.push({ folder: folderName, error: error.message });
+                }
+                
+                processed++;
+            }
+            
+            this.updateExecutionProgress(100, 'Création des dossiers terminée !');
+            this.addExecutionLog('✅ Création des dossiers terminée avec succès !', 'success');
+            
+            // Recharger les dossiers pour mettre à jour la détection
+            await this.loadAllFolders();
+            this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
+            
+            setTimeout(() => this.showFinalReport(results), 1500);
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur création dossiers:', error);
+            this.addExecutionLog(`❌ Erreur critique: ${error.message}`, 'error');
+            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+    // Exécution complète (dossiers + emails)
+    async executeOrganization() {
+        if (this.isProcessing) return;
+        
+        try {
+            this.isProcessing = true;
+            
+            // Confirmation avec détails
+            const selectedEmails = Array.from(this.organizationPlan.values())
+                .reduce((sum, plan) => {
+                    if (plan.selected) {
+                        return sum + plan.emails.filter(e => e.selected !== false).length;
+                    }
+                    return sum;
+                }, 0);
+            
+            const newFolders = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.selected && plan.action === 'create-new').length;
+            
+            if (!confirm(`Voulez-vous vraiment :\n- Créer ${newFolders} nouveaux dossiers\n- Déplacer ${selectedEmails} emails\n\nCette action est irréversible !`)) {
+                this.isProcessing = false;
+                return;
+            }
+            
+            this.goToStep('execution');
+            
+            const results = {
+                foldersCreated: 0,
+                emailsMoved: 0,
+                domainsProcessed: 0,
+                emailsSkipped: 0,
+                errors: [],
+                createdFolders: [],
+                processedDomains: []
+            };
+            
+            this.addExecutionLog('🚀 Début de l\'organisation automatique complète', 'info');
             
             const folderActions = new Map();
             
@@ -2042,6 +2157,9 @@ class ModernDomainOrganizer {
                         results.foldersCreated++;
                         results.createdFolders.push(folderName);
                         this.updateExecutionStat('foldersCreated', results.foldersCreated);
+                        
+                        // Petite pause après création
+                        await new Promise(resolve => setTimeout(resolve, 500));
                     } else {
                         this.addExecutionLog(`📁 Utilisation du dossier existant "${folderName}"`, 'info');
                     }
@@ -2051,12 +2169,15 @@ class ModernDomainOrganizer {
                     
                     for (let i = 0; i < folderData.emails.length; i += batchSize) {
                         const batch = folderData.emails.slice(i, i + batchSize);
+                        
+                        this.addExecutionLog(`📧 Déplacement de ${batch.length} emails vers "${folderName}"...`, 'info');
                         await this.moveEmailBatch(batch, targetFolderId);
                         moved += batch.length;
                         results.emailsMoved += batch.length;
                         
                         this.updateExecutionStat('emailsMoved', results.emailsMoved);
                         
+                        // Pause entre les lots pour éviter les rate limits
                         await new Promise(resolve => setTimeout(resolve, 300));
                     }
                     
@@ -2071,6 +2192,7 @@ class ModernDomainOrganizer {
                 processed++;
             }
             
+            // Compter les domaines traités
             this.organizationPlan.forEach((plan, domain) => {
                 if (plan.selected && plan.emails.some(e => e.selected !== false && e.customAction !== 'skip')) {
                     results.domainsProcessed++;
@@ -2269,18 +2391,35 @@ class ModernDomainOrganizer {
     }
 
     findExistingFolder(domain) {
-        if (this.allFolders.has(domain.toLowerCase())) {
-            return this.allFolders.get(domain.toLowerCase());
+        console.log(`[ModernDomainOrganizer] Recherche dossier pour domaine: ${domain}`);
+        
+        // Recherche exacte par nom de domaine
+        const exactMatch = this.allFolders.get(domain.toLowerCase());
+        if (exactMatch) {
+            console.log(`[ModernDomainOrganizer] ✅ Correspondance exacte trouvée: ${exactMatch.displayName}`);
+            return exactMatch;
         }
         
+        // Recherche par partie principale du domaine (avant le premier point)
         const domainParts = domain.split('.');
         if (domainParts.length > 1) {
             const mainDomain = domainParts[0];
-            if (this.allFolders.has(mainDomain.toLowerCase())) {
-                return this.allFolders.get(mainDomain.toLowerCase());
+            const mainMatch = this.allFolders.get(mainDomain.toLowerCase());
+            if (mainMatch) {
+                console.log(`[ModernDomainOrganizer] ✅ Correspondance partielle trouvée: ${mainMatch.displayName} pour ${mainDomain}`);
+                return mainMatch;
             }
         }
         
+        // Recherche approximative dans tous les noms de dossiers
+        for (const [folderKey, folder] of this.allFolders) {
+            if (folderKey.includes(domain.toLowerCase()) || domain.toLowerCase().includes(folderKey)) {
+                console.log(`[ModernDomainOrganizer] ✅ Correspondance approximative trouvée: ${folder.displayName}`);
+                return folder;
+            }
+        }
+        
+        console.log(`[ModernDomainOrganizer] ❌ Aucun dossier existant trouvé pour: ${domain}`);
         return null;
     }
 
