@@ -53,7 +53,7 @@ class ModernDomainOrganizer {
                     <div class="organizer-content">
                         <!-- Introduction compacte -->
                         <div class="step-content" id="step-introduction">
-                            <div class="step-card">
+                            <div class="step-card intro-card">
                                 <div class="card-header">
                                     <h2>🎯 Organisateur automatique par domaine</h2>
                                     <p>Créez automatiquement des dossiers par expéditeur (amazon.com, paypal.com...)</p>
@@ -63,65 +63,67 @@ class ModernDomainOrganizer {
                                     <div class="process-flow">
                                         <div class="flow-step">
                                             <div class="flow-icon">⚙️</div>
-                                            <h4>Configuration</h4>
-                                            <p>Période, exclusions</p>
+                                            <span>Configuration</span>
                                         </div>
                                         <div class="flow-arrow">→</div>
                                         <div class="flow-step">
                                             <div class="flow-icon">🔍</div>
-                                            <h4>Analyse</h4>
-                                            <p>Scan + détection</p>
+                                            <span>Analyse</span>
                                         </div>
                                         <div class="flow-arrow">→</div>
                                         <div class="flow-step">
                                             <div class="flow-icon">📋</div>
-                                            <h4>Édition</h4>
-                                            <p>Personnalisation</p>
+                                            <span>Édition</span>
                                         </div>
                                         <div class="flow-arrow">→</div>
                                         <div class="flow-step">
                                             <div class="flow-icon">⚡</div>
-                                            <h4>Exécution</h4>
-                                            <p>Création & tri</p>
+                                            <span>Exécution</span>
                                         </div>
                                     </div>
 
                                     <div class="example-compact">
-                                        <div class="example-before">
+                                        <div class="example-side">
                                             <h4>📥 Avant</h4>
-                                            <div class="inbox-preview">
-                                                <div class="email-line">Amazon - Livraison</div>
-                                                <div class="email-line">PayPal - Paiement</div>
-                                                <div class="email-line">Amazon - Promo</div>
-                                                <div class="email-line">GitHub - Notification</div>
+                                            <div class="preview-box">
+                                                <div class="preview-line">Amazon - Livraison</div>
+                                                <div class="preview-line">PayPal - Paiement</div>
+                                                <div class="preview-line">Amazon - Promo</div>
+                                                <div class="preview-line">GitHub - Notification</div>
                                             </div>
                                         </div>
                                         <div class="example-arrow">→</div>
-                                        <div class="example-after">
+                                        <div class="example-side">
                                             <h4>📁 Après</h4>
-                                            <div class="folders-preview">
-                                                <div class="folder-item">📁 amazon.com (2)</div>
-                                                <div class="folder-item">📁 paypal.com (1)</div>
-                                                <div class="folder-item">📁 github.com (1)</div>
+                                            <div class="preview-box">
+                                                <div class="preview-line">📁 amazon.com (2)</div>
+                                                <div class="preview-line">📁 paypal.com (1)</div>
+                                                <div class="preview-line">📁 github.com (1)</div>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div class="tips-compact">
-                                        <h4>💡 Conseils rapides</h4>
-                                        <ul>
-                                            <li><strong>Testez :</strong> Commencez par créer les dossiers seulement</li>
-                                            <li><strong>Seuil :</strong> 3+ emails par domaine évite les dossiers vides</li>
-                                            <li><strong>Exclusions :</strong> Gmail/Outlook déjà exclus par défaut</li>
-                                        </ul>
+                                        <div class="tip-item">
+                                            <span class="tip-icon">🧪</span>
+                                            <span><strong>Testez :</strong> Créez d'abord les dossiers seulement</span>
+                                        </div>
+                                        <div class="tip-item">
+                                            <span class="tip-icon">📊</span>
+                                            <span><strong>Seuil :</strong> 3+ emails par domaine recommandé</span>
+                                        </div>
+                                        <div class="tip-item">
+                                            <span class="tip-icon">🚫</span>
+                                            <span><strong>Exclusions :</strong> Gmail/Outlook déjà exclus</span>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div class="action-bar">
                                     <div></div>
                                     <button class="btn btn-primary btn-large" onclick="window.modernDomainOrganizer.goToStep('configuration')">
-                                        <i class="fas fa-play"></i>
-                                        Commencer
+                                        <i class="fas fa-arrow-right"></i>
+                                        Commencer l'organisation
                                     </button>
                                 </div>
                             </div>
@@ -1193,25 +1195,54 @@ class ModernDomainOrganizer {
 
                 @media (max-width: 768px) {
                     .modern-organizer {
+                        padding: 8px;
+                    }
+
+                    .organizer-header {
                         padding: 12px;
+                        margin-bottom: 12px;
+                    }
+
+                    .step-card {
+                        padding: 16px;
+                        max-height: calc(100vh - 120px);
+                    }
+
+                    .card-header h2 {
+                        font-size: 20px;
                     }
 
                     .process-flow {
                         flex-direction: column;
-                        gap: 8px;
+                        gap: 6px;
+                    }
+
+                    .flow-step {
+                        min-width: auto;
                     }
 
                     .flow-arrow {
                         transform: rotate(90deg);
+                        font-size: 12px;
                     }
 
                     .example-compact {
                         flex-direction: column;
                         gap: 12px;
+                        padding: 12px;
+                    }
+
+                    .example-side {
+                        max-width: 100%;
                     }
 
                     .example-arrow {
                         transform: rotate(90deg);
+                        margin: 0;
+                    }
+
+                    .tip-item {
+                        font-size: 12px;
                     }
 
                     .criteria-row {
@@ -1249,6 +1280,11 @@ class ModernDomainOrganizer {
                     .domain-actions {
                         width: 100%;
                         justify-content: space-between;
+                    }
+
+                    .btn-large {
+                        padding: 12px 20px;
+                        font-size: 14px;
                     }
                 }
 
