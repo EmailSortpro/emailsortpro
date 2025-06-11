@@ -272,7 +272,7 @@ class ModernDomainOrganizer {
                                     </div>
                                 </div>
 
-                                <div class="action-bar">
+                                <div class="action-bar plan-action-bar">
                                     <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('configuration')">
                                         <i class="fas fa-arrow-left"></i>
                                         Reconfigurer
@@ -1214,6 +1214,13 @@ class ModernDomainOrganizer {
                     .plan-card {
                         height: calc(100vh - 180px);
                         min-height: 500px;
+                        max-height: calc(100vh - 180px);
+                    }
+
+                    .plan-action-bar {
+                        padding: 10px 0;
+                        border-top: 1px solid #e5e7eb;
+                        box-shadow: 0 -1px 4px rgba(0,0,0,0.1);
                     }
 
                     .card-header h2 {
@@ -1302,7 +1309,7 @@ class ModernDomainOrganizer {
                     }
 
                     .domains-container {
-                        max-height: 200px;
+                        min-height: 120px;
                     }
 
                     .domain-header {
