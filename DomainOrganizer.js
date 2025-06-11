@@ -1,10 +1,10 @@
-// ModernDomainOrganizer.js - Version corrigée et opérationnelle
-// Interface complète avec édition et recherche
+// ModernDomainOrganizer.js - Version améliorée avec explications et navigation
+// Interface complète avec édition, recherche et navigation intuitive
 
 class ModernDomainOrganizer {
     constructor() {
         this.isProcessing = false;
-        this.currentStep = 'configuration';
+        this.currentStep = 'introduction';
         this.scanResults = null;
         this.organizationPlan = new Map();
         this.allFolders = new Map();
@@ -21,7 +21,12 @@ class ModernDomainOrganizer {
                 <!-- Header avec progression -->
                 <div class="organizer-header">
                     <div class="progress-steps">
-                        <div class="step active" data-step="configuration">
+                        <div class="step active" data-step="introduction">
+                            <div class="step-circle">ℹ️</div>
+                            <span>Introduction</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="configuration">
                             <div class="step-circle">1</div>
                             <span>Configuration</span>
                         </div>
@@ -46,12 +51,160 @@ class ModernDomainOrganizer {
                 <!-- Contenu principal avec scroll -->
                 <div class="organizer-main">
                     <div class="organizer-content">
+                        <!-- Étape Introduction -->
+                        <div class="step-content" id="step-introduction">
+                            <div class="step-card">
+                                <div class="card-header">
+                                    <h2>📧 Organisateur automatique d'emails par domaine</h2>
+                                    <p>Rangez automatiquement vos emails en créant des dossiers par domaine d'expéditeur</p>
+                                </div>
+
+                                <div class="intro-content">
+                                    <div class="how-it-works">
+                                        <h3>🔍 Comment ça marche ?</h3>
+                                        <div class="steps-explanation">
+                                            <div class="explanation-step">
+                                                <div class="step-number">1</div>
+                                                <div class="step-details">
+                                                    <h4>Configuration personnalisée</h4>
+                                                    <p>Définissez la période d'analyse, le nombre minimum d'emails par domaine et les exclusions. Vous gardez le contrôle total !</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="explanation-step">
+                                                <div class="step-number">2</div>
+                                                <div class="step-details">
+                                                    <h4>Analyse intelligente</h4>
+                                                    <p>Le système scanne vos emails, détecte automatiquement les domaines fréquents et vérifie les dossiers existants pour éviter les doublons.</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="explanation-step">
+                                                <div class="step-number">3</div>
+                                                <div class="step-details">
+                                                    <h4>Plan personnalisable</h4>
+                                                    <p>Visualisez et modifiez le plan proposé : renommez les dossiers, excluez des emails spécifiques, ajustez tout selon vos besoins.</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="explanation-step">
+                                                <div class="step-number">4</div>
+                                                <div class="step-details">
+                                                    <h4>Exécution sécurisée</h4>
+                                                    <p>Créez d'abord les dossiers seulement pour tester, ou lancez l'organisation complète. Tout est réversible !</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="features-grid">
+                                        <div class="feature-card">
+                                            <div class="feature-icon">🎯</div>
+                                            <h4>Ciblage précis</h4>
+                                            <p>Organisez par domaine : tous les emails d'Amazon dans un dossier "amazon.com", de PayPal dans "paypal.com", etc.</p>
+                                        </div>
+                                        
+                                        <div class="feature-card">
+                                            <div class="feature-icon">🛡️</div>
+                                            <h4>Sécurité maximale</h4>
+                                            <p>Vos emails restent dans votre boîte mail. Aucune suppression, seulement du rangement intelligent.</p>
+                                        </div>
+                                        
+                                        <div class="feature-card">
+                                            <div class="feature-icon">⚡</div>
+                                            <h4>Ultra rapide</h4>
+                                            <p>Traitez des milliers d'emails en quelques minutes. Gain de temps énorme pour l'organisation future.</p>
+                                        </div>
+                                        
+                                        <div class="feature-card">
+                                            <div class="feature-icon">🎨</div>
+                                            <h4>Contrôle total</h4>
+                                            <p>Modifiez tout : noms de dossiers, sélection d'emails, exclusions. C'est VOTRE organisation !</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="example-section">
+                                        <h3>💡 Exemple concret</h3>
+                                        <div class="example-box">
+                                            <div class="example-before">
+                                                <h4>Avant :</h4>
+                                                <div class="inbox-mess">
+                                                    <div class="email-line">📧 Facture Amazon - livraison demain</div>
+                                                    <div class="email-line">📧 Newsletter LinkedIn - 5 nouvelles invitations</div>
+                                                    <div class="email-line">📧 Confirmation PayPal - paiement effectué</div>
+                                                    <div class="email-line">📧 Offre spéciale Amazon - 20% de réduction</div>
+                                                    <div class="email-line">📧 Rapport GitHub - merge request approuvée</div>
+                                                    <div class="email-line">📧 Notification PayPal - nouveau vendeur</div>
+                                                    <div class="email-line">📧 Update LinkedIn - votre réseau grandit</div>
+                                                </div>
+                                                <p class="mess-label">😵 Boîte de réception en désordre...</p>
+                                            </div>
+                                            
+                                            <div class="arrow">→</div>
+                                            
+                                            <div class="example-after">
+                                                <h4>Après :</h4>
+                                                <div class="organized-folders">
+                                                    <div class="folder-group">
+                                                        <div class="folder-name">📁 amazon.com (2 emails)</div>
+                                                        <div class="folder-emails">
+                                                            <div class="email-line">📧 Facture Amazon - livraison demain</div>
+                                                            <div class="email-line">📧 Offre spéciale Amazon - 20% de réduction</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="folder-group">
+                                                        <div class="folder-name">📁 linkedin.com (2 emails)</div>
+                                                        <div class="folder-emails">
+                                                            <div class="email-line">📧 Newsletter LinkedIn - 5 nouvelles invitations</div>
+                                                            <div class="email-line">📧 Update LinkedIn - votre réseau grandit</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="folder-group">
+                                                        <div class="folder-name">📁 paypal.com (2 emails)</div>
+                                                        <div class="folder-emails">
+                                                            <div class="email-line">📧 Confirmation PayPal - paiement effectué</div>
+                                                            <div class="email-line">📧 Notification PayPal - nouveau vendeur</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="folder-group">
+                                                        <div class="folder-name">📁 github.com (1 email)</div>
+                                                        <div class="folder-emails">
+                                                            <div class="email-line">📧 Rapport GitHub - merge request approuvée</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <p class="organized-label">✨ Organisation parfaite !</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="tips-section">
+                                        <h3>💡 Conseils pour bien commencer</h3>
+                                        <ul class="tips-list">
+                                            <li><strong>Testez d'abord :</strong> Commencez avec une période courte (7-15 jours) pour voir le résultat</li>
+                                            <li><strong>Minimum d'emails :</strong> Utilisez 3-5 emails minimum par domaine pour éviter les dossiers avec peu de contenu</li>
+                                            <li><strong>Exclusions intelligentes :</strong> Excluez les domaines personnels (gmail.com, outlook.com) qui sont déjà triés</li>
+                                            <li><strong>Création progressive :</strong> Créez d'abord les dossiers seulement, puis déplacez les emails une fois satisfait</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="action-bar">
+                                    <div></div>
+                                    <button class="btn btn-primary btn-large" onclick="window.modernDomainOrganizer.goToStep('configuration')">
+                                        <i class="fas fa-arrow-right"></i>
+                                        Commencer l'organisation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Étape 1: Configuration -->
-                        <div class="step-content" id="step-configuration">
+                        <div class="step-content hidden" id="step-configuration">
                             <div class="step-card">
                                 <div class="card-header">
                                     <h2>🎯 Configuration du rangement automatique</h2>
-                                    <p>Le système va analyser vos emails, détecter les dossiers existants et créer un plan personnalisable</p>
+                                    <p>Personnalisez l'analyse selon vos besoins. Vous pourrez tout modifier après l'analyse.</p>
                                 </div>
 
                                 <div class="config-section">
@@ -59,14 +212,17 @@ class ModernDomainOrganizer {
                                         <div class="form-group">
                                             <label>Date de début</label>
                                             <input type="date" id="startDate">
+                                            <div class="help-text">Plus la période est longue, plus l'analyse sera complète</div>
                                         </div>
                                         <div class="form-group">
                                             <label>Date de fin</label>
                                             <input type="date" id="endDate">
+                                            <div class="help-text">Généralement aujourd'hui pour inclure les emails récents</div>
                                         </div>
                                         <div class="form-group">
                                             <label>Min emails/domaine</label>
                                             <input type="number" id="minEmails" value="3" min="1" max="50">
+                                            <div class="help-text">Évite les dossiers avec trop peu d'emails</div>
                                         </div>
                                         <div class="form-group">
                                             <label>Limite d'emails à scanner</label>
@@ -76,6 +232,7 @@ class ModernDomainOrganizer {
                                                 <option value="2000">2000 emails (normal)</option>
                                                 <option value="5000">5000 emails (complet)</option>
                                             </select>
+                                            <div class="help-text">0 = analyse complète (peut prendre du temps)</div>
                                         </div>
                                     </div>
 
@@ -83,20 +240,24 @@ class ModernDomainOrganizer {
                                         <label>Domaines à exclure (optionnel)</label>
                                         <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com" 
                                                value="gmail.com, outlook.com, hotmail.com">
-                                        <div class="help-text">Séparez par des virgules</div>
+                                        <div class="help-text">Domaines personnels généralement déjà bien organisés</div>
                                     </div>
 
                                     <div class="form-group">
                                         <label>Emails spécifiques à exclure (optionnel)</label>
                                         <textarea id="excludeEmails" placeholder="noreply@exemple.com&#10;contact@service.com" rows="3"></textarea>
-                                        <div class="help-text">Un email par ligne</div>
+                                        <div class="help-text">Adresses spécifiques à ignorer (un email par ligne)</div>
                                     </div>
                                 </div>
 
                                 <div class="action-bar">
+                                    <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('introduction')">
+                                        <i class="fas fa-arrow-left"></i>
+                                        Retour
+                                    </button>
                                     <button class="btn btn-primary" id="startScanBtn">
                                         <i class="fas fa-search"></i>
-                                        Analyser et créer le plan
+                                        Analyser mes emails
                                     </button>
                                 </div>
                             </div>
@@ -107,7 +268,7 @@ class ModernDomainOrganizer {
                             <div class="step-card">
                                 <div class="card-header">
                                     <h2>🔍 Analyse en cours</h2>
-                                    <p id="scanStatus">Initialisation...</p>
+                                    <p id="scanStatus">Initialisation de l'analyse...</p>
                                 </div>
 
                                 <div class="scan-progress">
@@ -136,6 +297,18 @@ class ModernDomainOrganizer {
                                             <span class="stat-label">Nouveaux dossiers</span>
                                         </div>
                                     </div>
+
+                                    <div class="scan-info">
+                                        <div class="info-box">
+                                            <h4>🔍 Que fait l'analyse ?</h4>
+                                            <ul>
+                                                <li>Scan de tous vos emails dans la période choisie</li>
+                                                <li>Extraction et comptage des domaines d'expéditeurs</li>
+                                                <li>Vérification des dossiers existants pour éviter les doublons</li>
+                                                <li>Création d'un plan d'organisation personnalisable</li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -145,7 +318,7 @@ class ModernDomainOrganizer {
                             <div class="step-card">
                                 <div class="card-header">
                                     <h2>📋 Plan d'organisation - Édition complète</h2>
-                                    <p>Modifiez les noms de dossiers, visualisez et gérez chaque email individuellement</p>
+                                    <p>Voici le plan proposé. Modifiez tout ce que vous voulez avant l'exécution !</p>
                                 </div>
 
                                 <div class="plan-summary" id="planSummary">
@@ -194,29 +367,46 @@ class ModernDomainOrganizer {
                                     </div>
                                 </div>
 
+                                <div class="plan-options">
+                                    <div class="option-box">
+                                        <h4>🚀 Options d'exécution</h4>
+                                        <div class="execution-choices">
+                                            <div class="choice-item">
+                                                <input type="radio" id="createOnly" name="executionType" value="folders-only">
+                                                <label for="createOnly">
+                                                    <strong>Créer les dossiers seulement</strong>
+                                                    <span>Parfait pour tester le plan sans déplacer d'emails</span>
+                                                </label>
+                                            </div>
+                                            <div class="choice-item">
+                                                <input type="radio" id="createAndMove" name="executionType" value="complete" checked>
+                                                <label for="createAndMove">
+                                                    <strong>Créer les dossiers ET déplacer les emails</strong>
+                                                    <span>Organisation complète et automatique</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="warning-box">
                                     <div class="warning-icon">⚠️</div>
                                     <div>
-                                        <strong>Attention :</strong> Cette action va déplacer <strong id="totalEmailsCount">0</strong> emails sélectionnés vers leurs dossiers.
-                                        <br>Vérifiez bien vos modifications avant de continuer.
+                                        <strong>Vérification finale :</strong> 
+                                        <span id="selectedEmailsText">0 emails sélectionnés</span> seront organisés selon votre choix.
+                                        <br>Les emails restent dans votre boîte mail, juste mieux rangés !
                                     </div>
                                 </div>
 
                                 <div class="action-bar">
                                     <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('configuration')">
                                         <i class="fas fa-arrow-left"></i>
-                                        Retour configuration
+                                        Reconfigurer
                                     </button>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-outline" id="createFoldersBtn" onclick="window.modernDomainOrganizer.createFoldersOnly()">
-                                            <i class="fas fa-folder-plus"></i>
-                                            Créer les dossiers seulement
-                                        </button>
-                                        <button class="btn btn-primary" id="executeBtn" onclick="window.modernDomainOrganizer.executeOrganization()">
-                                            <i class="fas fa-play"></i>
-                                            Créer dossiers + Déplacer emails
-                                        </button>
-                                    </div>
+                                    <button class="btn btn-primary btn-large" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
+                                        <i class="fas fa-play"></i>
+                                        <span id="executeButtonText">Créer dossiers + Déplacer emails</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -225,8 +415,8 @@ class ModernDomainOrganizer {
                         <div class="step-content hidden" id="step-execution">
                             <div class="step-card">
                                 <div class="card-header">
-                                    <h2>⚡ Exécution automatique</h2>
-                                    <p id="executionStatus">Préparation...</p>
+                                    <h2>⚡ <span id="executionTitle">Exécution en cours</span></h2>
+                                    <p id="executionStatus">Préparation de l'organisation...</p>
                                 </div>
 
                                 <div class="execution-progress">
@@ -271,14 +461,18 @@ class ModernDomainOrganizer {
                                 </div>
                                 
                                 <div class="success-content">
-                                    <h2>🎉 Rangement terminé avec succès !</h2>
+                                    <h2>🎉 <span id="successTitle">Organisation terminée avec succès !</span></h2>
                                     <div class="success-report" id="successReport"></div>
                                 </div>
 
                                 <div class="action-bar">
+                                    <button class="btn btn-outline" onclick="window.modernDomainOrganizer.goToStep('plan')">
+                                        <i class="fas fa-arrow-left"></i>
+                                        Retour au plan
+                                    </button>
                                     <button class="btn btn-primary" onclick="window.modernDomainOrganizer.restart()">
                                         <i class="fas fa-redo"></i>
-                                        Nouveau rangement
+                                        Nouvelle organisation
                                     </button>
                                 </div>
                             </div>
@@ -353,7 +547,7 @@ class ModernDomainOrganizer {
                     flex-direction: column;
                     align-items: center;
                     gap: 8px;
-                    min-width: 140px;
+                    min-width: 120px;
                     opacity: 0.5;
                     transition: all 0.3s ease;
                 }
@@ -440,6 +634,236 @@ class ModernDomainOrganizer {
                     margin: 0;
                 }
 
+                /* Styles pour l'introduction */
+                .intro-content {
+                    max-width: 1000px;
+                    margin: 0 auto;
+                }
+
+                .how-it-works {
+                    margin-bottom: 40px;
+                }
+
+                .how-it-works h3 {
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    margin-bottom: 24px;
+                    text-align: center;
+                }
+
+                .steps-explanation {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 24px;
+                    margin-bottom: 32px;
+                }
+
+                .explanation-step {
+                    display: flex;
+                    gap: 16px;
+                    padding: 24px;
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .step-number {
+                    width: 32px;
+                    height: 32px;
+                    background: #3b82f6;
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: 600;
+                    font-size: 16px;
+                    flex-shrink: 0;
+                }
+
+                .step-details h4 {
+                    margin: 0 0 8px 0;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #1f2937;
+                }
+
+                .step-details p {
+                    margin: 0;
+                    font-size: 14px;
+                    color: #6b7280;
+                    line-height: 1.5;
+                }
+
+                .features-grid {
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 20px;
+                    margin-bottom: 40px;
+                }
+
+                .feature-card {
+                    padding: 24px;
+                    background: white;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 12px;
+                    text-align: center;
+                    transition: all 0.3s ease;
+                }
+
+                .feature-card:hover {
+                    border-color: #3b82f6;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                }
+
+                .feature-icon {
+                    font-size: 32px;
+                    margin-bottom: 12px;
+                }
+
+                .feature-card h4 {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    margin: 0 0 8px 0;
+                }
+
+                .feature-card p {
+                    font-size: 14px;
+                    color: #6b7280;
+                    margin: 0;
+                    line-height: 1.5;
+                }
+
+                .example-section {
+                    margin-bottom: 40px;
+                }
+
+                .example-section h3 {
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    margin-bottom: 24px;
+                    text-align: center;
+                }
+
+                .example-box {
+                    display: flex;
+                    align-items: center;
+                    gap: 32px;
+                    padding: 32px;
+                    background: #f8fafc;
+                    border-radius: 16px;
+                    border: 1px solid #e2e8f0;
+                }
+
+                .example-before, .example-after {
+                    flex: 1;
+                }
+
+                .example-before h4, .example-after h4 {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    margin: 0 0 16px 0;
+                }
+
+                .inbox-mess {
+                    background: white;
+                    border: 1px solid #fca5a5;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                }
+
+                .organized-folders {
+                    background: white;
+                    border: 1px solid #86efac;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                }
+
+                .email-line {
+                    font-size: 14px;
+                    color: #374151;
+                    margin-bottom: 8px;
+                    padding: 8px;
+                    background: #f9fafb;
+                    border-radius: 4px;
+                }
+
+                .folder-group {
+                    margin-bottom: 12px;
+                }
+
+                .folder-name {
+                    font-weight: 600;
+                    color: #1f2937;
+                    margin-bottom: 8px;
+                    padding: 8px;
+                    background: #eff6ff;
+                    border-radius: 4px;
+                    border-left: 4px solid #3b82f6;
+                }
+
+                .folder-emails .email-line {
+                    margin-left: 16px;
+                    background: #f0f9ff;
+                }
+
+                .mess-label {
+                    text-align: center;
+                    color: #dc2626;
+                    font-weight: 500;
+                    margin: 0;
+                }
+
+                .organized-label {
+                    text-align: center;
+                    color: #059669;
+                    font-weight: 500;
+                    margin: 0;
+                }
+
+                .arrow {
+                    font-size: 24px;
+                    color: #3b82f6;
+                    font-weight: bold;
+                }
+
+                .tips-section h3 {
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: #1f2937;
+                    margin-bottom: 16px;
+                    text-align: center;
+                }
+
+                .tips-list {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    list-style: none;
+                    padding: 0;
+                }
+
+                .tips-list li {
+                    padding: 16px;
+                    margin-bottom: 12px;
+                    background: #fffbeb;
+                    border: 1px solid #fcd34d;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: #92400e;
+                }
+
+                .tips-list li strong {
+                    color: #78350f;
+                }
+
                 .config-section {
                     max-width: 800px;
                     margin: 0 auto 32px;
@@ -491,6 +915,34 @@ class ModernDomainOrganizer {
                     font-size: 12px;
                     color: #6b7280;
                     margin-top: 4px;
+                }
+
+                .scan-info {
+                    margin-top: 24px;
+                }
+
+                .info-box {
+                    background: #f0f9ff;
+                    border: 1px solid #bae6fd;
+                    border-radius: 12px;
+                    padding: 20px;
+                }
+
+                .info-box h4 {
+                    margin: 0 0 12px 0;
+                    color: #0369a1;
+                    font-size: 16px;
+                }
+
+                .info-box ul {
+                    margin: 0;
+                    padding-left: 20px;
+                    color: #075985;
+                }
+
+                .info-box li {
+                    margin-bottom: 6px;
+                    font-size: 14px;
                 }
 
                 .progress-container {
@@ -661,6 +1113,7 @@ class ModernDomainOrganizer {
                     overflow: hidden;
                     display: flex;
                     flex-direction: column;
+                    margin-bottom: 24px;
                 }
 
                 .domains-container {
@@ -669,7 +1122,7 @@ class ModernDomainOrganizer {
                     border: 1px solid #e5e7eb;
                     border-radius: 12px;
                     background: white;
-                    max-height: 500px;
+                    max-height: 400px;
                 }
 
                 .domains-container::-webkit-scrollbar {
@@ -872,6 +1325,79 @@ class ModernDomainOrganizer {
                 .email-actions {
                     display: flex;
                     gap: 8px;
+                }
+
+                .plan-options {
+                    margin-bottom: 24px;
+                }
+
+                .option-box {
+                    background: #f0f9ff;
+                    border: 1px solid #bae6fd;
+                    border-radius: 12px;
+                    padding: 24px;
+                }
+
+                .option-box h4 {
+                    margin: 0 0 16px 0;
+                    color: #0369a1;
+                    font-size: 18px;
+                }
+
+                .execution-choices {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+
+                .choice-item {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 12px;
+                    padding: 16px;
+                    background: white;
+                    border: 2px solid #e5e7eb;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+
+                .choice-item:hover {
+                    border-color: #3b82f6;
+                }
+
+                .choice-item input[type="radio"] {
+                    width: 20px;
+                    height: 20px;
+                    margin-top: 2px;
+                    cursor: pointer;
+                }
+
+                .choice-item label {
+                    flex: 1;
+                    cursor: pointer;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .choice-item label strong {
+                    font-size: 16px;
+                    color: #1f2937;
+                }
+
+                .choice-item label span {
+                    font-size: 14px;
+                    color: #6b7280;
+                }
+
+                .choice-item input[type="radio"]:checked + label {
+                    color: #3b82f6;
+                }
+
+                .choice-item:has(input[type="radio"]:checked) {
+                    border-color: #3b82f6;
+                    background: #eff6ff;
                 }
 
                 .email-modal {
@@ -1085,6 +1611,12 @@ class ModernDomainOrganizer {
                     font-size: 12px;
                 }
 
+                .btn-large {
+                    padding: 16px 32px;
+                    font-size: 16px;
+                    font-weight: 700;
+                }
+
                 .success-card {
                     text-align: center;
                 }
@@ -1158,6 +1690,14 @@ class ModernDomainOrganizer {
                     .modern-organizer {
                         max-width: 1000px;
                         padding: 16px;
+                    }
+
+                    .features-grid {
+                        grid-template-columns: 1fr;
+                    }
+
+                    .steps-explanation {
+                        grid-template-columns: 1fr;
                     }
                 }
 
@@ -1242,6 +1782,23 @@ class ModernDomainOrganizer {
                     .emails-list {
                         max-height: 250px;
                     }
+
+                    .example-box {
+                        flex-direction: column;
+                        gap: 20px;
+                    }
+
+                    .arrow {
+                        transform: rotate(90deg);
+                    }
+
+                    .execution-choices {
+                        gap: 12px;
+                    }
+
+                    .choice-item {
+                        padding: 12px;
+                    }
                 }
 
                 .hidden {
@@ -1268,9 +1825,13 @@ class ModernDomainOrganizer {
 
     setupEventListeners() {
         document.getElementById('startScanBtn')?.addEventListener('click', () => this.startAnalysis());
-        document.getElementById('executeBtn')?.addEventListener('click', () => this.executeOrganization());
-        document.getElementById('createFoldersBtn')?.addEventListener('click', () => this.createFoldersOnly());
+        document.getElementById('executeSelectedBtn')?.addEventListener('click', () => this.executeSelectedAction());
         document.getElementById('saveEmailBtn')?.addEventListener('click', () => this.saveEmailChanges());
+        
+        // Écouter les changements de type d'exécution
+        document.querySelectorAll('input[name="executionType"]').forEach(radio => {
+            radio.addEventListener('change', () => this.updateExecutionButton());
+        });
     }
 
     setDefaultDates() {
@@ -1295,7 +1856,7 @@ class ModernDomainOrganizer {
     }
 
     updateStepProgress(currentStep) {
-        const steps = ['configuration', 'scanning', 'plan', 'execution'];
+        const steps = ['introduction', 'configuration', 'scanning', 'plan', 'execution'];
         const currentIndex = steps.indexOf(currentStep);
 
         document.querySelectorAll('.step').forEach((step, index) => {
@@ -1307,6 +1868,29 @@ class ModernDomainOrganizer {
                 step.classList.add('active');
             }
         });
+    }
+
+    updateExecutionButton() {
+        const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
+        const buttonText = document.getElementById('executeButtonText');
+        
+        if (buttonText) {
+            if (executionType === 'folders-only') {
+                buttonText.textContent = 'Créer les dossiers seulement';
+            } else {
+                buttonText.textContent = 'Créer dossiers + Déplacer emails';
+            }
+        }
+    }
+
+    executeSelectedAction() {
+        const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
+        
+        if (executionType === 'folders-only') {
+            this.createFoldersOnly();
+        } else {
+            this.executeOrganization();
+        }
     }
 
     // Analyse des emails
@@ -1325,21 +1909,21 @@ class ModernDomainOrganizer {
             this.organizationPlan.clear();
             this.expandedDomains.clear();
             
-            this.updateProgress(5, 'Chargement des dossiers...');
+            this.updateProgress(5, 'Chargement des dossiers existants...');
             await this.loadAllFolders();
-            this.updateProgress(15, 'Dossiers chargés');
+            this.updateProgress(15, 'Dossiers chargés avec succès');
 
             this.updateProgress(20, 'Début du scan des emails...');
             const emails = await this.scanEmails(config);
-            this.updateProgress(70, `${emails.length} emails scannés`);
+            this.updateProgress(70, `${emails.length} emails scannés avec succès`);
 
-            this.updateProgress(75, 'Analyse des domaines...');
+            this.updateProgress(75, 'Analyse des domaines en cours...');
             await this.analyzeDomains(emails, config);
-            this.updateProgress(85, 'Domaines analysés');
+            this.updateProgress(85, 'Analyse des domaines terminée');
 
-            this.updateProgress(90, 'Création du plan...');
+            this.updateProgress(90, 'Création du plan d\'organisation...');
             this.createOrganizationPlan();
-            this.updateProgress(100, 'Plan créé');
+            this.updateProgress(100, 'Plan créé avec succès !');
 
             setTimeout(() => this.showOrganizationPlan(), 1000);
             
@@ -1391,7 +1975,6 @@ class ModernDomainOrganizer {
             });
 
             console.log(`[ModernDomainOrganizer] ✅ ${this.allFolders.size} dossiers chargés au total`);
-            console.log('[ModernDomainOrganizer] Liste des dossiers:', Array.from(this.allFolders.keys()));
             this.updateStat('existingFolders', this.allFolders.size);
             
         } catch (error) {
@@ -1510,6 +2093,8 @@ class ModernDomainOrganizer {
         
         this.displayPlanSummary(summary);
         this.displayDomainsWithEmails(container);
+        this.updateTotalEmailsCount();
+        this.updateExecutionButton();
     }
 
     displayPlanSummary(summary) {
@@ -1540,8 +2125,6 @@ class ModernDomainOrganizer {
                 <div class="summary-label">Dossiers existants</div>
             </div>
         `;
-
-        this.updateTotalEmailsCount();
     }
 
     displayDomainsWithEmails(container) {
@@ -1748,9 +2331,9 @@ class ModernDomainOrganizer {
                 return sum;
             }, 0);
         
-        const element = document.getElementById('totalEmailsCount');
+        const element = document.getElementById('selectedEmailsText');
         if (element) {
-            element.textContent = totalSelected.toLocaleString();
+            element.textContent = `${totalSelected.toLocaleString()} emails sélectionnés`;
         }
     }
 
@@ -1993,13 +2576,17 @@ class ModernDomainOrganizer {
         try {
             this.isProcessing = true;
             
-            // Afficher une modal de confirmation
-            if (!confirm('Voulez-vous créer seulement les nouveaux dossiers sans déplacer les emails ?')) {
+            const selectedDomains = Array.from(this.organizationPlan.values()).filter(p => p.selected);
+            const newFolders = selectedDomains.filter(p => p.action === 'create-new');
+            
+            if (newFolders.length === 0) {
+                window.uiManager?.showToast('Aucun nouveau dossier à créer', 'warning');
                 this.isProcessing = false;
                 return;
             }
             
             this.goToStep('execution');
+            document.getElementById('executionTitle').textContent = 'Création des dossiers';
             
             const results = {
                 foldersCreated: 0,
@@ -2013,35 +2600,29 @@ class ModernDomainOrganizer {
             
             this.addExecutionLog('📁 Début de la création des dossiers seulement', 'info');
             
-            // Collecter les nouveaux dossiers à créer
-            const foldersToCreate = new Set();
-            
-            this.organizationPlan.forEach((plan, domain) => {
-                if (plan.selected && plan.action === 'create-new') {
-                    foldersToCreate.add(plan.targetFolder);
-                }
-            });
-            
-            const totalFolders = foldersToCreate.size;
+            const totalFolders = newFolders.length;
             let processed = 0;
             
-            for (const folderName of foldersToCreate) {
+            for (const plan of newFolders) {
                 try {
                     this.updateExecutionProgress(
                         (processed / totalFolders) * 100,
-                        `Création du dossier "${folderName}"...`
+                        `Création du dossier "${plan.targetFolder}"...`
                     );
                     
-                    this.addExecutionLog(`📁 Création du dossier "${folderName}"`, 'info');
-                    await this.createFolder(folderName);
+                    this.addExecutionLog(`📁 Création du dossier "${plan.targetFolder}"`, 'info');
+                    await this.createFolder(plan.targetFolder);
                     results.foldersCreated++;
-                    results.createdFolders.push(folderName);
+                    results.createdFolders.push(plan.targetFolder);
                     this.updateExecutionStat('foldersCreated', results.foldersCreated);
                     
+                    // Pause pour éviter les rate limits
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
                 } catch (error) {
-                    console.error(`[ModernDomainOrganizer] Erreur création ${folderName}:`, error);
-                    this.addExecutionLog(`❌ Erreur pour le dossier "${folderName}": ${error.message}`, 'error');
-                    results.errors.push({ folder: folderName, error: error.message });
+                    console.error(`[ModernDomainOrganizer] Erreur création ${plan.targetFolder}:`, error);
+                    this.addExecutionLog(`❌ Erreur pour le dossier "${plan.targetFolder}": ${error.message}`, 'error');
+                    results.errors.push({ folder: plan.targetFolder, error: error.message });
                 }
                 
                 processed++;
@@ -2054,7 +2635,10 @@ class ModernDomainOrganizer {
             await this.loadAllFolders();
             this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
             
-            setTimeout(() => this.showFinalReport(results), 1500);
+            setTimeout(() => {
+                document.getElementById('successTitle').textContent = 'Dossiers créés avec succès !';
+                this.showFinalReport(results);
+            }, 1500);
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur création dossiers:', error);
@@ -2064,6 +2648,7 @@ class ModernDomainOrganizer {
             this.isProcessing = false;
         }
     }
+
     // Exécution complète (dossiers + emails)
     async executeOrganization() {
         if (this.isProcessing) return;
@@ -2071,7 +2656,6 @@ class ModernDomainOrganizer {
         try {
             this.isProcessing = true;
             
-            // Confirmation avec détails
             const selectedEmails = Array.from(this.organizationPlan.values())
                 .reduce((sum, plan) => {
                     if (plan.selected) {
@@ -2080,15 +2664,14 @@ class ModernDomainOrganizer {
                     return sum;
                 }, 0);
             
-            const newFolders = Array.from(this.organizationPlan.values())
-                .filter(plan => plan.selected && plan.action === 'create-new').length;
-            
-            if (!confirm(`Voulez-vous vraiment :\n- Créer ${newFolders} nouveaux dossiers\n- Déplacer ${selectedEmails} emails\n\nCette action est irréversible !`)) {
+            if (selectedEmails === 0) {
+                window.uiManager?.showToast('Aucun email sélectionné à organiser', 'warning');
                 this.isProcessing = false;
                 return;
             }
             
             this.goToStep('execution');
+            document.getElementById('executionTitle').textContent = 'Organisation complète';
             
             const results = {
                 foldersCreated: 0,
@@ -2207,7 +2790,10 @@ class ModernDomainOrganizer {
             this.updateExecutionProgress(100, 'Organisation terminée !');
             this.addExecutionLog('🎉 Organisation automatique terminée avec succès !', 'success');
             
-            setTimeout(() => this.showFinalReport(results), 1500);
+            setTimeout(() => {
+                document.getElementById('successTitle').textContent = 'Organisation terminée avec succès !';
+                this.showFinalReport(results);
+            }, 1500);
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur exécution:', error);
@@ -2271,7 +2857,7 @@ class ModernDomainOrganizer {
         if (!report) return;
         
         let reportHTML = '<div class="report-section">';
-        reportHTML += '<h4>📊 Résumé de l\'organisation</h4>';
+        reportHTML += '<h4>📊 Résumé de l\'opération</h4>';
         reportHTML += '<ul class="report-list">';
         reportHTML += `<li><span>Emails déplacés:</span> <strong>${results.emailsMoved.toLocaleString()}</strong></li>`;
         reportHTML += `<li><span>Emails ignorés:</span> <strong>${results.emailsSkipped.toLocaleString()}</strong></li>`;
@@ -2433,14 +3019,14 @@ class ModernDomainOrganizer {
     }
 
     restart() {
-        this.currentStep = 'configuration';
+        this.currentStep = 'introduction';
         this.scanResults = null;
         this.organizationPlan.clear();
         this.emailsByDomain.clear();
         this.expandedDomains.clear();
         this.totalEmailsScanned = 0;
         
-        this.goToStep('configuration');
+        this.goToStep('introduction');
         this.setDefaultDates();
     }
 
