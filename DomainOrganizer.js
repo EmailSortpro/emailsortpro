@@ -302,6 +302,8 @@ class ModernDomainOrganizer {
                     padding: 20px;
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
                     min-height: 100vh;
+                    height: auto;
+                    overflow-y: auto;
                 }
 
                 /* Header étendu */
@@ -389,7 +391,10 @@ class ModernDomainOrganizer {
                     border-radius: 16px;
                     padding: 32px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    min-height: 70vh;
+                    min-height: 60vh;
+                    max-height: none;
+                    height: auto;
+                    overflow: visible;
                 }
 
                 .card-header {
@@ -575,11 +580,13 @@ class ModernDomainOrganizer {
 
                 /* Conteneur des domaines */
                 .domains-container {
-                    max-height: 600px;
-                    overflow-y: auto;
+                    height: auto;
+                    max-height: none;
+                    overflow: visible;
                     border: 1px solid #e5e7eb;
                     border-radius: 12px;
                     background: white;
+                    margin-bottom: 24px;
                 }
 
                 .domain-item {
@@ -701,7 +708,8 @@ class ModernDomainOrganizer {
                 }
 
                 .emails-list {
-                    max-height: 300px;
+                    height: auto;
+                    max-height: 400px;
                     overflow-y: auto;
                     border: 1px solid #e5e7eb;
                     border-radius: 8px;
@@ -1047,12 +1055,18 @@ class ModernDomainOrganizer {
                 @media (max-width: 1200px) {
                     .modern-organizer {
                         max-width: 1000px;
+                        padding: 16px;
                     }
                 }
 
                 @media (max-width: 768px) {
                     .modern-organizer {
-                        padding: 16px;
+                        padding: 12px;
+                    }
+
+                    .step-card {
+                        padding: 20px;
+                        min-height: 50vh;
                     }
 
                     .form-row {
@@ -1086,6 +1100,7 @@ class ModernDomainOrganizer {
                         flex-direction: column;
                         align-items: flex-start;
                         gap: 12px;
+                        padding: 16px;
                     }
 
                     .domain-actions {
@@ -1096,6 +1111,15 @@ class ModernDomainOrganizer {
                     .email-modal-content {
                         width: 95%;
                         margin: 20px;
+                        max-height: 90vh;
+                    }
+
+                    .domains-container {
+                        border-radius: 8px;
+                    }
+
+                    .emails-list {
+                        max-height: 300px;
                     }
                 }
 
@@ -1222,7 +1246,7 @@ class ModernDomainOrganizer {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const minEmails = parseInt(document.getElementById('minEmails').value) || 3;
-        const emailLimit = parseInt(document.getElementById('emailLimit').value) || 500;
+        const emailLimit = parseInt(document.getElementById('emailLimit').value);
         
         const excludeDomains = document.getElementById('excludeDomains').value
             .split(',')
@@ -1263,10 +1287,13 @@ class ModernDomainOrganizer {
         const allEmails = [];
         
         try {
-            console.log(`[ModernDomainOrganizer] Scan avec limite: ${config.emailLimit} emails`);
+            console.log(`[ModernDomainOrganizer] Scan avec limite: ${config.emailLimit === 0 ? 'tous les emails' : config.emailLimit + ' emails'}`);
+            
+            // Scanner sans limitation par défaut
+            const scanLimit = config.emailLimit === 0 ? 10000 : config.emailLimit; // Limite pratique de 10k pour éviter les timeouts
             
             const options = {
-                top: config.emailLimit === 0 ? 2000 : config.emailLimit,
+                top: scanLimit,
                 orderBy: 'receivedDateTime desc'
             };
 
