@@ -1207,11 +1207,13 @@ class ModernDomainOrganizer {
 
                     .step-card {
                         padding: 16px;
-                        max-height: calc(100vh - 120px);
+                        height: calc(100vh - 180px);
+                        min-height: 450px;
                     }
 
                     .plan-card {
-                        height: calc(100vh - 120px);
+                        height: calc(100vh - 180px);
+                        min-height: 500px;
                     }
 
                     .card-header h2 {
@@ -1258,7 +1260,12 @@ class ModernDomainOrganizer {
 
                     .controls-row {
                         flex-direction: column;
-                        gap: 12px;
+                        gap: 8px;
+                        padding: 8px;
+                    }
+
+                    .search-box {
+                        max-width: 100%;
                     }
 
                     .action-buttons {
@@ -1268,19 +1275,40 @@ class ModernDomainOrganizer {
 
                     .scan-stats, .execution-stats {
                         grid-template-columns: repeat(2, 1fr);
+                        gap: 8px;
                     }
 
                     .plan-summary {
                         grid-template-columns: repeat(2, 1fr);
+                        gap: 8px;
+                        padding: 8px;
+                    }
+
+                    .summary-value {
+                        font-size: 18px;
                     }
 
                     .option-row {
-                        gap: 8px;
+                        gap: 6px;
+                    }
+
+                    .option-label {
+                        font-size: 13px;
+                        padding: 4px;
+                    }
+
+                    .execution-options {
+                        padding: 8px;
+                    }
+
+                    .domains-container {
+                        max-height: 200px;
                     }
 
                     .domain-header {
                         flex-wrap: wrap;
                         gap: 8px;
+                        padding: 12px;
                     }
 
                     .domain-actions {
@@ -1289,18 +1317,26 @@ class ModernDomainOrganizer {
                     }
 
                     .btn-large {
-                        padding: 12px 20px;
+                        padding: 10px 16px;
                         font-size: 14px;
                     }
 
                     .action-bar {
-                        flex-direction: column;
-                        gap: 12px;
+                        flex-direction: row;
+                        gap: 8px;
+                        padding: 8px 0 0 0;
+                        margin-top: 8px;
                     }
 
                     .action-bar .btn {
-                        width: 100%;
+                        flex: 1;
                         justify-content: center;
+                        min-width: 0;
+                    }
+
+                    .btn {
+                        padding: 8px 12px;
+                        font-size: 13px;
                     }
                 }
 
