@@ -1,5 +1,5 @@
-// ModernDomainOrganizer.js - Version améliorée avec explications et navigation
-// Interface complète avec édition, recherche et navigation intuitive
+// ModernDomainOrganizer.js - Version corrigée avec gestion d'erreurs complète
+// Interface compacte et optimisée
 
 class ModernDomainOrganizer {
     constructor() {
@@ -22,169 +22,97 @@ class ModernDomainOrganizer {
                 <div class="organizer-header">
                     <div class="progress-steps">
                         <div class="step active" data-step="introduction">
-                            <div class="step-circle">ℹ️</div>
-                            <span>Introduction</span>
+                            <div class="step-circle">💡</div>
+                            <span>Guide</span>
                         </div>
                         <div class="step-line"></div>
                         <div class="step" data-step="configuration">
-                            <div class="step-circle">1</div>
-                            <span>Configuration</span>
+                            <div class="step-circle">⚙️</div>
+                            <span>Config</span>
                         </div>
                         <div class="step-line"></div>
                         <div class="step" data-step="scanning">
-                            <div class="step-circle">2</div>
-                            <span>Analyse</span>
+                            <div class="step-circle">🔍</div>
+                            <span>Scan</span>
                         </div>
                         <div class="step-line"></div>
                         <div class="step" data-step="plan">
-                            <div class="step-circle">3</div>
-                            <span>Plan & Édition</span>
+                            <div class="step-circle">📋</div>
+                            <span>Plan</span>
                         </div>
                         <div class="step-line"></div>
                         <div class="step" data-step="execution">
-                            <div class="step-circle">4</div>
-                            <span>Exécution</span>
+                            <div class="step-circle">⚡</div>
+                            <span>Action</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Contenu principal avec scroll -->
+                <!-- Contenu principal -->
                 <div class="organizer-main">
                     <div class="organizer-content">
-                        <!-- Étape Introduction -->
+                        <!-- Introduction compacte -->
                         <div class="step-content" id="step-introduction">
                             <div class="step-card">
                                 <div class="card-header">
-                                    <h2>📧 Organisateur automatique d'emails par domaine</h2>
-                                    <p>Rangez automatiquement vos emails en créant des dossiers par domaine d'expéditeur</p>
+                                    <h2>🎯 Organisateur automatique par domaine</h2>
+                                    <p>Créez automatiquement des dossiers par expéditeur (amazon.com, paypal.com...)</p>
                                 </div>
 
-                                <div class="intro-content">
-                                    <div class="how-it-works">
-                                        <h3>🔍 Comment ça marche ?</h3>
-                                        <div class="steps-explanation">
-                                            <div class="explanation-step">
-                                                <div class="step-number">1</div>
-                                                <div class="step-details">
-                                                    <h4>Configuration personnalisée</h4>
-                                                    <p>Définissez la période d'analyse, le nombre minimum d'emails par domaine et les exclusions. Vous gardez le contrôle total !</p>
-                                                </div>
+                                <div class="intro-compact">
+                                    <div class="process-flow">
+                                        <div class="flow-step">
+                                            <div class="flow-icon">⚙️</div>
+                                            <h4>Configuration</h4>
+                                            <p>Période, exclusions</p>
+                                        </div>
+                                        <div class="flow-arrow">→</div>
+                                        <div class="flow-step">
+                                            <div class="flow-icon">🔍</div>
+                                            <h4>Analyse</h4>
+                                            <p>Scan + détection</p>
+                                        </div>
+                                        <div class="flow-arrow">→</div>
+                                        <div class="flow-step">
+                                            <div class="flow-icon">📋</div>
+                                            <h4>Édition</h4>
+                                            <p>Personnalisation</p>
+                                        </div>
+                                        <div class="flow-arrow">→</div>
+                                        <div class="flow-step">
+                                            <div class="flow-icon">⚡</div>
+                                            <h4>Exécution</h4>
+                                            <p>Création & tri</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="example-compact">
+                                        <div class="example-before">
+                                            <h4>📥 Avant</h4>
+                                            <div class="inbox-preview">
+                                                <div class="email-line">Amazon - Livraison</div>
+                                                <div class="email-line">PayPal - Paiement</div>
+                                                <div class="email-line">Amazon - Promo</div>
+                                                <div class="email-line">GitHub - Notification</div>
                                             </div>
-                                            
-                                            <div class="explanation-step">
-                                                <div class="step-number">2</div>
-                                                <div class="step-details">
-                                                    <h4>Analyse intelligente</h4>
-                                                    <p>Le système scanne vos emails, détecte automatiquement les domaines fréquents et vérifie les dossiers existants pour éviter les doublons.</p>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="explanation-step">
-                                                <div class="step-number">3</div>
-                                                <div class="step-details">
-                                                    <h4>Plan personnalisable</h4>
-                                                    <p>Visualisez et modifiez le plan proposé : renommez les dossiers, excluez des emails spécifiques, ajustez tout selon vos besoins.</p>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="explanation-step">
-                                                <div class="step-number">4</div>
-                                                <div class="step-details">
-                                                    <h4>Exécution sécurisée</h4>
-                                                    <p>Créez d'abord les dossiers seulement pour tester, ou lancez l'organisation complète. Tout est réversible !</p>
-                                                </div>
+                                        </div>
+                                        <div class="example-arrow">→</div>
+                                        <div class="example-after">
+                                            <h4>📁 Après</h4>
+                                            <div class="folders-preview">
+                                                <div class="folder-item">📁 amazon.com (2)</div>
+                                                <div class="folder-item">📁 paypal.com (1)</div>
+                                                <div class="folder-item">📁 github.com (1)</div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="features-grid">
-                                        <div class="feature-card">
-                                            <div class="feature-icon">🎯</div>
-                                            <h4>Ciblage précis</h4>
-                                            <p>Organisez par domaine : tous les emails d'Amazon dans un dossier "amazon.com", de PayPal dans "paypal.com", etc.</p>
-                                        </div>
-                                        
-                                        <div class="feature-card">
-                                            <div class="feature-icon">🛡️</div>
-                                            <h4>Sécurité maximale</h4>
-                                            <p>Vos emails restent dans votre boîte mail. Aucune suppression, seulement du rangement intelligent.</p>
-                                        </div>
-                                        
-                                        <div class="feature-card">
-                                            <div class="feature-icon">⚡</div>
-                                            <h4>Ultra rapide</h4>
-                                            <p>Traitez des milliers d'emails en quelques minutes. Gain de temps énorme pour l'organisation future.</p>
-                                        </div>
-                                        
-                                        <div class="feature-card">
-                                            <div class="feature-icon">🎨</div>
-                                            <h4>Contrôle total</h4>
-                                            <p>Modifiez tout : noms de dossiers, sélection d'emails, exclusions. C'est VOTRE organisation !</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="example-section">
-                                        <h3>💡 Exemple concret</h3>
-                                        <div class="example-box">
-                                            <div class="example-before">
-                                                <h4>Avant :</h4>
-                                                <div class="inbox-mess">
-                                                    <div class="email-line">📧 Facture Amazon - livraison demain</div>
-                                                    <div class="email-line">📧 Newsletter LinkedIn - 5 nouvelles invitations</div>
-                                                    <div class="email-line">📧 Confirmation PayPal - paiement effectué</div>
-                                                    <div class="email-line">📧 Offre spéciale Amazon - 20% de réduction</div>
-                                                    <div class="email-line">📧 Rapport GitHub - merge request approuvée</div>
-                                                    <div class="email-line">📧 Notification PayPal - nouveau vendeur</div>
-                                                    <div class="email-line">📧 Update LinkedIn - votre réseau grandit</div>
-                                                </div>
-                                                <p class="mess-label">😵 Boîte de réception en désordre...</p>
-                                            </div>
-                                            
-                                            <div class="arrow">→</div>
-                                            
-                                            <div class="example-after">
-                                                <h4>Après :</h4>
-                                                <div class="organized-folders">
-                                                    <div class="folder-group">
-                                                        <div class="folder-name">📁 amazon.com (2 emails)</div>
-                                                        <div class="folder-emails">
-                                                            <div class="email-line">📧 Facture Amazon - livraison demain</div>
-                                                            <div class="email-line">📧 Offre spéciale Amazon - 20% de réduction</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="folder-group">
-                                                        <div class="folder-name">📁 linkedin.com (2 emails)</div>
-                                                        <div class="folder-emails">
-                                                            <div class="email-line">📧 Newsletter LinkedIn - 5 nouvelles invitations</div>
-                                                            <div class="email-line">📧 Update LinkedIn - votre réseau grandit</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="folder-group">
-                                                        <div class="folder-name">📁 paypal.com (2 emails)</div>
-                                                        <div class="folder-emails">
-                                                            <div class="email-line">📧 Confirmation PayPal - paiement effectué</div>
-                                                            <div class="email-line">📧 Notification PayPal - nouveau vendeur</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="folder-group">
-                                                        <div class="folder-name">📁 github.com (1 email)</div>
-                                                        <div class="folder-emails">
-                                                            <div class="email-line">📧 Rapport GitHub - merge request approuvée</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <p class="organized-label">✨ Organisation parfaite !</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="tips-section">
-                                        <h3>💡 Conseils pour bien commencer</h3>
-                                        <ul class="tips-list">
-                                            <li><strong>Testez d'abord :</strong> Commencez avec une période courte (7-15 jours) pour voir le résultat</li>
-                                            <li><strong>Minimum d'emails :</strong> Utilisez 3-5 emails minimum par domaine pour éviter les dossiers avec peu de contenu</li>
-                                            <li><strong>Exclusions intelligentes :</strong> Excluez les domaines personnels (gmail.com, outlook.com) qui sont déjà triés</li>
-                                            <li><strong>Création progressive :</strong> Créez d'abord les dossiers seulement, puis déplacez les emails une fois satisfait</li>
+                                    <div class="tips-compact">
+                                        <h4>💡 Conseils rapides</h4>
+                                        <ul>
+                                            <li><strong>Testez :</strong> Commencez par créer les dossiers seulement</li>
+                                            <li><strong>Seuil :</strong> 3+ emails par domaine évite les dossiers vides</li>
+                                            <li><strong>Exclusions :</strong> Gmail/Outlook déjà exclus par défaut</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -192,61 +120,55 @@ class ModernDomainOrganizer {
                                 <div class="action-bar">
                                     <div></div>
                                     <button class="btn btn-primary btn-large" onclick="window.modernDomainOrganizer.goToStep('configuration')">
-                                        <i class="fas fa-arrow-right"></i>
-                                        Commencer l'organisation
+                                        <i class="fas fa-play"></i>
+                                        Commencer
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Étape 1: Configuration -->
+                        <!-- Configuration -->
                         <div class="step-content hidden" id="step-configuration">
                             <div class="step-card">
                                 <div class="card-header">
-                                    <h2>🎯 Configuration du rangement automatique</h2>
-                                    <p>Personnalisez l'analyse selon vos besoins. Vous pourrez tout modifier après l'analyse.</p>
+                                    <h2>⚙️ Configuration</h2>
+                                    <p>Paramétrez l'analyse selon vos besoins</p>
                                 </div>
 
-                                <div class="config-section">
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label>Date de début</label>
-                                            <input type="date" id="startDate">
-                                            <div class="help-text">Plus la période est longue, plus l'analyse sera complète</div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Date de fin</label>
-                                            <input type="date" id="endDate">
-                                            <div class="help-text">Généralement aujourd'hui pour inclure les emails récents</div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Min emails/domaine</label>
-                                            <input type="number" id="minEmails" value="3" min="1" max="50">
-                                            <div class="help-text">Évite les dossiers avec trop peu d'emails</div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Limite d'emails à scanner</label>
-                                            <select id="emailLimit">
-                                                <option value="0">Tous les emails (recommandé)</option>
-                                                <option value="1000">1000 emails (rapide)</option>
-                                                <option value="2000">2000 emails (normal)</option>
-                                                <option value="5000">5000 emails (complet)</option>
-                                            </select>
-                                            <div class="help-text">0 = analyse complète (peut prendre du temps)</div>
+                                <div class="config-grid">
+                                    <div class="config-group">
+                                        <label>📅 Période d'analyse</label>
+                                        <div class="date-row">
+                                            <input type="date" id="startDate" title="Date de début">
+                                            <span>→</span>
+                                            <input type="date" id="endDate" title="Date de fin">
                                         </div>
                                     </div>
 
-                                    <div class="form-group">
-                                        <label>Domaines à exclure (optionnel)</label>
-                                        <input type="text" id="excludeDomains" placeholder="gmail.com, outlook.com" 
-                                               value="gmail.com, outlook.com, hotmail.com">
-                                        <div class="help-text">Domaines personnels généralement déjà bien organisés</div>
+                                    <div class="config-group">
+                                        <label>📊 Critères</label>
+                                        <div class="criteria-row">
+                                            <div class="input-group">
+                                                <span>Min emails/domaine</span>
+                                                <input type="number" id="minEmails" value="3" min="1" max="50">
+                                            </div>
+                                            <div class="input-group">
+                                                <span>Limite scan</span>
+                                                <select id="emailLimit">
+                                                    <option value="0">Tous</option>
+                                                    <option value="1000">1000</option>
+                                                    <option value="2000">2000</option>
+                                                    <option value="5000">5000</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div class="form-group">
-                                        <label>Emails spécifiques à exclure (optionnel)</label>
-                                        <textarea id="excludeEmails" placeholder="noreply@exemple.com&#10;contact@service.com" rows="3"></textarea>
-                                        <div class="help-text">Adresses spécifiques à ignorer (un email par ligne)</div>
+                                    <div class="config-group">
+                                        <label>🚫 Exclusions (optionnel)</label>
+                                        <input type="text" id="excludeDomains" placeholder="domaine1.com, domaine2.com" 
+                                               value="gmail.com, outlook.com, hotmail.com, hotmail.fr">
+                                        <textarea id="excludeEmails" placeholder="email1@exemple.com&#10;email2@exemple.com" rows="2"></textarea>
                                     </div>
                                 </div>
 
@@ -257,18 +179,18 @@ class ModernDomainOrganizer {
                                     </button>
                                     <button class="btn btn-primary" id="startScanBtn">
                                         <i class="fas fa-search"></i>
-                                        Analyser mes emails
+                                        Analyser
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Étape 2: Scanning -->
+                        <!-- Scanning -->
                         <div class="step-content hidden" id="step-scanning">
                             <div class="step-card">
                                 <div class="card-header">
                                     <h2>🔍 Analyse en cours</h2>
-                                    <p id="scanStatus">Initialisation de l'analyse...</p>
+                                    <p id="scanStatus">Initialisation...</p>
                                 </div>
 
                                 <div class="scan-progress">
@@ -282,119 +204,67 @@ class ModernDomainOrganizer {
                                     <div class="scan-stats">
                                         <div class="stat">
                                             <span class="stat-number" id="scannedEmails">0</span>
-                                            <span class="stat-label">Emails scannés</span>
+                                            <span class="stat-label">Emails</span>
                                         </div>
                                         <div class="stat">
                                             <span class="stat-number" id="foundDomains">0</span>
-                                            <span class="stat-label">Domaines trouvés</span>
+                                            <span class="stat-label">Domaines</span>
                                         </div>
                                         <div class="stat">
                                             <span class="stat-number" id="existingFolders">0</span>
-                                            <span class="stat-label">Dossiers existants</span>
+                                            <span class="stat-label">Existants</span>
                                         </div>
                                         <div class="stat">
                                             <span class="stat-number" id="newFoldersNeeded">0</span>
-                                            <span class="stat-label">Nouveaux dossiers</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="scan-info">
-                                        <div class="info-box">
-                                            <h4>🔍 Que fait l'analyse ?</h4>
-                                            <ul>
-                                                <li>Scan de tous vos emails dans la période choisie</li>
-                                                <li>Extraction et comptage des domaines d'expéditeurs</li>
-                                                <li>Vérification des dossiers existants pour éviter les doublons</li>
-                                                <li>Création d'un plan d'organisation personnalisable</li>
-                                            </ul>
+                                            <span class="stat-label">Nouveaux</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Étape 3: Plan et Édition -->
+                        <!-- Plan -->
                         <div class="step-content hidden" id="step-plan">
                             <div class="step-card">
                                 <div class="card-header">
-                                    <h2>📋 Plan d'organisation - Édition complète</h2>
-                                    <p>Voici le plan proposé. Modifiez tout ce que vous voulez avant l'exécution !</p>
+                                    <h2>📋 Plan d'organisation</h2>
+                                    <p>Modifiez selon vos besoins</p>
                                 </div>
 
-                                <div class="plan-summary" id="planSummary">
-                                    <!-- Rempli dynamiquement -->
-                                </div>
+                                <div class="plan-summary" id="planSummary"></div>
 
                                 <div class="plan-controls">
-                                    <div class="search-section">
-                                        <div class="search-container">
-                                            <i class="fas fa-search search-icon"></i>
-                                            <input type="text" id="domainSearch" placeholder="Rechercher un domaine..." 
+                                    <div class="controls-row">
+                                        <div class="search-box">
+                                            <input type="text" id="domainSearch" placeholder="🔍 Rechercher..." 
                                                    onkeyup="window.modernDomainOrganizer.searchDomains(this.value)">
-                                            <button class="search-clear" onclick="window.modernDomainOrganizer.clearSearch()" style="display: none;">
-                                                <i class="fas fa-times"></i>
-                                            </button>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="control-groups">
-                                        <div class="control-group">
-                                            <button class="btn btn-outline" onclick="window.modernDomainOrganizer.expandAllDomains()">
-                                                <i class="fas fa-expand-alt"></i>
-                                                Tout déplier
+                                        <div class="action-buttons">
+                                            <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.selectAllDomains()">
+                                                ✅ Tout
                                             </button>
-                                            <button class="btn btn-outline" onclick="window.modernDomainOrganizer.collapseAllDomains()">
-                                                <i class="fas fa-compress-alt"></i>
-                                                Tout replier
-                                            </button>
-                                        </div>
-                                        <div class="control-group">
-                                            <button class="btn btn-outline" onclick="window.modernDomainOrganizer.selectAllDomains()">
-                                                <i class="fas fa-check-square"></i>
-                                                Tout sélectionner
-                                            </button>
-                                            <button class="btn btn-outline" onclick="window.modernDomainOrganizer.deselectAllDomains()">
-                                                <i class="fas fa-square"></i>
-                                                Tout désélectionner
+                                            <button class="btn btn-outline btn-small" onclick="window.modernDomainOrganizer.expandAllDomains()">
+                                                📂 Déplier
                                             </button>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="domains-section">
-                                    <div class="domains-container" id="domainsContainer">
-                                        <!-- Rempli dynamiquement -->
-                                    </div>
-                                </div>
+                                <div class="domains-container" id="domainsContainer"></div>
 
-                                <div class="plan-options">
-                                    <div class="option-box">
-                                        <h4>🚀 Options d'exécution</h4>
-                                        <div class="execution-choices">
-                                            <div class="choice-item">
-                                                <input type="radio" id="createOnly" name="executionType" value="folders-only">
-                                                <label for="createOnly">
-                                                    <strong>Créer les dossiers seulement</strong>
-                                                    <span>Parfait pour tester le plan sans déplacer d'emails</span>
-                                                </label>
-                                            </div>
-                                            <div class="choice-item">
-                                                <input type="radio" id="createAndMove" name="executionType" value="complete" checked>
-                                                <label for="createAndMove">
-                                                    <strong>Créer les dossiers ET déplacer les emails</strong>
-                                                    <span>Organisation complète et automatique</span>
-                                                </label>
-                                            </div>
-                                        </div>
+                                <div class="execution-options">
+                                    <div class="option-row">
+                                        <label class="option-label">
+                                            <input type="radio" name="executionType" value="folders-only">
+                                            <span>📁 Créer dossiers seulement (test)</span>
+                                        </label>
+                                        <label class="option-label">
+                                            <input type="radio" name="executionType" value="complete" checked>
+                                            <span>⚡ Créer + Déplacer emails (complet)</span>
+                                        </label>
                                     </div>
-                                </div>
-
-                                <div class="warning-box">
-                                    <div class="warning-icon">⚠️</div>
-                                    <div>
-                                        <strong>Vérification finale :</strong> 
-                                        <span id="selectedEmailsText">0 emails sélectionnés</span> seront organisés selon votre choix.
-                                        <br>Les emails restent dans votre boîte mail, juste mieux rangés !
+                                    <div class="selection-info">
+                                        <span id="selectedEmailsText">0 emails sélectionnés</span>
                                     </div>
                                 </div>
 
@@ -403,20 +273,20 @@ class ModernDomainOrganizer {
                                         <i class="fas fa-arrow-left"></i>
                                         Reconfigurer
                                     </button>
-                                    <button class="btn btn-primary btn-large" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
+                                    <button class="btn btn-primary btn-large" id="executeSelectedBtn">
                                         <i class="fas fa-play"></i>
-                                        <span id="executeButtonText">Créer dossiers + Déplacer emails</span>
+                                        <span id="executeButtonText">Exécuter</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Étape 4: Execution -->
+                        <!-- Execution -->
                         <div class="step-content hidden" id="step-execution">
                             <div class="step-card">
                                 <div class="card-header">
-                                    <h2>⚡ <span id="executionTitle">Exécution en cours</span></h2>
-                                    <p id="executionStatus">Préparation de l'organisation...</p>
+                                    <h2>⚡ <span id="executionTitle">Exécution</span></h2>
+                                    <p id="executionStatus">Préparation...</p>
                                 </div>
 
                                 <div class="execution-progress">
@@ -430,19 +300,19 @@ class ModernDomainOrganizer {
                                     <div class="execution-stats">
                                         <div class="stat">
                                             <span class="stat-number" id="foldersCreated">0</span>
-                                            <span class="stat-label">Dossiers créés</span>
+                                            <span class="stat-label">Dossiers</span>
                                         </div>
                                         <div class="stat">
                                             <span class="stat-number" id="emailsMoved">0</span>
-                                            <span class="stat-label">Emails déplacés</span>
+                                            <span class="stat-label">Emails</span>
                                         </div>
                                         <div class="stat">
                                             <span class="stat-number" id="domainsProcessed">0</span>
-                                            <span class="stat-label">Domaines traités</span>
+                                            <span class="stat-label">Domaines</span>
                                         </div>
                                         <div class="stat">
-                                            <span class="stat-number" id="emailsSkipped">0</span>
-                                            <span class="stat-label">Emails ignorés</span>
+                                            <span class="stat-number" id="errorsCount">0</span>
+                                            <span class="stat-label">Erreurs</span>
                                         </div>
                                     </div>
 
@@ -454,25 +324,20 @@ class ModernDomainOrganizer {
                         <!-- Success -->
                         <div class="step-content hidden" id="step-success">
                             <div class="step-card success-card">
-                                <div class="success-animation">
-                                    <div class="success-circle">
-                                        <i class="fas fa-check"></i>
-                                    </div>
-                                </div>
-                                
                                 <div class="success-content">
-                                    <h2>🎉 <span id="successTitle">Organisation terminée avec succès !</span></h2>
+                                    <div class="success-icon">🎉</div>
+                                    <h2 id="successTitle">Terminé !</h2>
                                     <div class="success-report" id="successReport"></div>
                                 </div>
 
                                 <div class="action-bar">
                                     <button class="btn btn-outline" onclick="window.modernDomainOrganizer.goToStep('plan')">
                                         <i class="fas fa-arrow-left"></i>
-                                        Retour au plan
+                                        Retour
                                     </button>
                                     <button class="btn btn-primary" onclick="window.modernDomainOrganizer.restart()">
                                         <i class="fas fa-redo"></i>
-                                        Nouvelle organisation
+                                        Recommencer
                                     </button>
                                 </div>
                             </div>
@@ -480,22 +345,20 @@ class ModernDomainOrganizer {
                     </div>
                 </div>
 
-                <!-- Modal d'édition d'email -->
+                <!-- Modal d'édition -->
                 <div class="email-modal hidden" id="emailModal">
                     <div class="email-modal-content">
                         <div class="email-modal-header">
-                            <h3>📧 Détails de l'email</h3>
+                            <h3>📧 Édition email</h3>
                             <button class="modal-close" onclick="window.modernDomainOrganizer.closeEmailModal()">×</button>
                         </div>
-                        <div class="email-modal-body" id="emailModalBody">
-                            <!-- Contenu dynamique -->
-                        </div>
+                        <div class="email-modal-body" id="emailModalBody"></div>
                         <div class="email-modal-footer">
                             <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.closeEmailModal()">
                                 Fermer
                             </button>
                             <button class="btn btn-primary" id="saveEmailBtn">
-                                Sauvegarder les modifications
+                                Sauvegarder
                             </button>
                         </div>
                     </div>
@@ -504,35 +367,28 @@ class ModernDomainOrganizer {
 
             <style>
                 .modern-organizer {
-                    max-width: 1400px;
+                    max-width: 1200px;
                     margin: 0 auto;
-                    padding: 20px;
+                    padding: 16px;
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
                     display: flex;
                     flex-direction: column;
-                    height: 100vh;
+                    min-height: 100vh;
                     box-sizing: border-box;
                 }
 
-                /* Header fixe */
                 .organizer-header {
                     background: white;
-                    border-radius: 16px;
-                    padding: 24px;
-                    margin-bottom: 20px;
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-bottom: 16px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
                     flex-shrink: 0;
                 }
 
-                /* Contenu principal avec scroll */
                 .organizer-main {
                     flex: 1;
                     overflow-y: auto;
-                    padding-right: 8px;
-                }
-
-                .organizer-content {
-                    height: 100%;
                 }
 
                 .progress-steps {
@@ -546,10 +402,10 @@ class ModernDomainOrganizer {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 8px;
-                    min-width: 120px;
+                    gap: 6px;
+                    min-width: 80px;
                     opacity: 0.5;
-                    transition: all 0.3s ease;
+                    transition: opacity 0.3s;
                 }
 
                 .step.active, .step.completed {
@@ -557,16 +413,15 @@ class ModernDomainOrganizer {
                 }
 
                 .step-circle {
-                    width: 40px;
-                    height: 40px;
+                    width: 36px;
+                    height: 36px;
                     border-radius: 50%;
-                    background: #e5e7eb;
+                    background: #f3f4f6;
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-weight: 600;
-                    color: #6b7280;
                     font-size: 16px;
+                    transition: background 0.3s;
                 }
 
                 .step.active .step-circle {
@@ -583,22 +438,22 @@ class ModernDomainOrganizer {
                     flex: 1;
                     height: 2px;
                     background: #e5e7eb;
-                    margin: 0 -10px;
+                    margin: 0 -5px;
                 }
 
                 .step span {
-                    font-size: 14px;
+                    font-size: 12px;
                     font-weight: 500;
                     color: #6b7280;
-                    text-align: center;
                 }
 
                 .step.active span {
                     color: #1f2937;
+                    font-weight: 600;
                 }
 
                 .step-content {
-                    animation: fadeIn 0.4s ease;
+                    animation: fadeIn 0.3s ease;
                 }
 
                 .step-content.hidden {
@@ -607,357 +462,228 @@ class ModernDomainOrganizer {
 
                 .step-card {
                     background: white;
-                    border-radius: 16px;
-                    padding: 32px;
+                    border-radius: 12px;
+                    padding: 24px;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                    height: 100%;
-                    overflow: visible;
-                    display: flex;
-                    flex-direction: column;
+                    min-height: 500px;
                 }
 
                 .card-header {
                     text-align: center;
-                    margin-bottom: 32px;
+                    margin-bottom: 24px;
                 }
 
                 .card-header h2 {
-                    font-size: 28px;
+                    font-size: 24px;
                     font-weight: 700;
                     margin: 0 0 8px 0;
                     color: #1f2937;
                 }
 
                 .card-header p {
-                    font-size: 16px;
+                    font-size: 14px;
                     color: #6b7280;
                     margin: 0;
                 }
 
-                /* Styles pour l'introduction */
-                .intro-content {
-                    max-width: 1000px;
+                /* Introduction compacte */
+                .intro-compact {
+                    max-width: 900px;
                     margin: 0 auto;
                 }
 
-                .how-it-works {
-                    margin-bottom: 40px;
-                }
-
-                .how-it-works h3 {
-                    font-size: 24px;
-                    font-weight: 600;
-                    color: #1f2937;
-                    margin-bottom: 24px;
-                    text-align: center;
-                }
-
-                .steps-explanation {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 24px;
-                    margin-bottom: 32px;
-                }
-
-                .explanation-step {
+                .process-flow {
                     display: flex;
-                    gap: 16px;
-                    padding: 24px;
-                    background: #f8fafc;
-                    border-radius: 12px;
-                    border: 1px solid #e2e8f0;
-                }
-
-                .step-number {
-                    width: 32px;
-                    height: 32px;
-                    background: #3b82f6;
-                    color: white;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
                     justify-content: center;
-                    font-weight: 600;
-                    font-size: 16px;
-                    flex-shrink: 0;
-                }
-
-                .step-details h4 {
-                    margin: 0 0 8px 0;
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: #1f2937;
-                }
-
-                .step-details p {
-                    margin: 0;
-                    font-size: 14px;
-                    color: #6b7280;
-                    line-height: 1.5;
-                }
-
-                .features-grid {
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 20px;
-                    margin-bottom: 40px;
-                }
-
-                .feature-card {
-                    padding: 24px;
-                    background: white;
-                    border: 2px solid #e5e7eb;
-                    border-radius: 12px;
-                    text-align: center;
-                    transition: all 0.3s ease;
-                }
-
-                .feature-card:hover {
-                    border-color: #3b82f6;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                }
-
-                .feature-icon {
-                    font-size: 32px;
-                    margin-bottom: 12px;
-                }
-
-                .feature-card h4 {
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #1f2937;
-                    margin: 0 0 8px 0;
-                }
-
-                .feature-card p {
-                    font-size: 14px;
-                    color: #6b7280;
-                    margin: 0;
-                    line-height: 1.5;
-                }
-
-                .example-section {
-                    margin-bottom: 40px;
-                }
-
-                .example-section h3 {
-                    font-size: 24px;
-                    font-weight: 600;
-                    color: #1f2937;
-                    margin-bottom: 24px;
-                    text-align: center;
-                }
-
-                .example-box {
-                    display: flex;
                     align-items: center;
-                    gap: 32px;
-                    padding: 32px;
-                    background: #f8fafc;
-                    border-radius: 16px;
-                    border: 1px solid #e2e8f0;
+                    gap: 12px;
+                    margin-bottom: 24px;
+                    flex-wrap: wrap;
                 }
 
-                .example-before, .example-after {
-                    flex: 1;
-                }
-
-                .example-before h4, .example-after h4 {
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #1f2937;
-                    margin: 0 0 16px 0;
-                }
-
-                .inbox-mess {
-                    background: white;
-                    border: 1px solid #fca5a5;
-                    border-radius: 8px;
-                    padding: 16px;
-                    margin-bottom: 12px;
-                }
-
-                .organized-folders {
-                    background: white;
-                    border: 1px solid #86efac;
-                    border-radius: 8px;
-                    padding: 16px;
-                    margin-bottom: 12px;
-                }
-
-                .email-line {
-                    font-size: 14px;
-                    color: #374151;
-                    margin-bottom: 8px;
-                    padding: 8px;
-                    background: #f9fafb;
-                    border-radius: 4px;
-                }
-
-                .folder-group {
-                    margin-bottom: 12px;
-                }
-
-                .folder-name {
-                    font-weight: 600;
-                    color: #1f2937;
-                    margin-bottom: 8px;
-                    padding: 8px;
-                    background: #eff6ff;
-                    border-radius: 4px;
-                    border-left: 4px solid #3b82f6;
-                }
-
-                .folder-emails .email-line {
-                    margin-left: 16px;
-                    background: #f0f9ff;
-                }
-
-                .mess-label {
+                .flow-step {
                     text-align: center;
-                    color: #dc2626;
-                    font-weight: 500;
-                    margin: 0;
+                    min-width: 120px;
                 }
 
-                .organized-label {
-                    text-align: center;
-                    color: #059669;
-                    font-weight: 500;
-                    margin: 0;
-                }
-
-                .arrow {
+                .flow-icon {
                     font-size: 24px;
+                    margin-bottom: 8px;
+                }
+
+                .flow-step h4 {
+                    font-size: 14px;
+                    font-weight: 600;
+                    margin: 0 0 4px 0;
+                    color: #1f2937;
+                }
+
+                .flow-step p {
+                    font-size: 12px;
+                    color: #6b7280;
+                    margin: 0;
+                }
+
+                .flow-arrow {
+                    font-size: 16px;
                     color: #3b82f6;
                     font-weight: bold;
                 }
 
-                .tips-section h3 {
-                    font-size: 24px;
-                    font-weight: 600;
-                    color: #1f2937;
-                    margin-bottom: 16px;
-                    text-align: center;
-                }
-
-                .tips-list {
-                    max-width: 800px;
-                    margin: 0 auto;
-                    list-style: none;
-                    padding: 0;
-                }
-
-                .tips-list li {
-                    padding: 16px;
-                    margin-bottom: 12px;
-                    background: #fffbeb;
-                    border: 1px solid #fcd34d;
-                    border-radius: 8px;
-                    font-size: 14px;
-                    line-height: 1.5;
-                    color: #92400e;
-                }
-
-                .tips-list li strong {
-                    color: #78350f;
-                }
-
-                .config-section {
-                    max-width: 800px;
-                    margin: 0 auto 32px;
-                }
-
-                .form-row {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr 150px 200px;
+                .example-compact {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                     gap: 20px;
                     margin-bottom: 24px;
+                    padding: 20px;
+                    background: #f8fafc;
+                    border-radius: 8px;
                 }
 
-                .form-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
+                .example-before, .example-after {
+                    flex: 1;
+                    max-width: 200px;
                 }
 
-                .form-group label {
+                .example-before h4, .example-after h4 {
                     font-size: 14px;
-                    font-weight: 500;
+                    font-weight: 600;
+                    margin: 0 0 12px 0;
+                    color: #1f2937;
+                }
+
+                .inbox-preview, .folders-preview {
+                    background: white;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 6px;
+                    padding: 12px;
+                }
+
+                .email-line, .folder-item {
+                    font-size: 12px;
+                    padding: 4px 0;
                     color: #374151;
                 }
 
-                .form-group input,
-                .form-group select,
-                .form-group textarea {
-                    padding: 12px 16px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 8px;
+                .example-arrow {
+                    font-size: 20px;
+                    color: #3b82f6;
+                    font-weight: bold;
+                }
+
+                .tips-compact h4 {
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin: 0 0 12px 0;
+                    color: #1f2937;
+                }
+
+                .tips-compact ul {
+                    margin: 0;
+                    padding-left: 16px;
+                    list-style: none;
+                }
+
+                .tips-compact li {
                     font-size: 14px;
-                    transition: border-color 0.2s;
+                    margin-bottom: 8px;
+                    color: #374151;
+                    position: relative;
                 }
 
-                .form-group input:focus,
-                .form-group select:focus,
-                .form-group textarea:focus {
-                    outline: none;
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                .tips-compact li:before {
+                    content: "•";
+                    color: #3b82f6;
+                    position: absolute;
+                    left: -16px;
                 }
 
-                .form-group textarea {
-                    resize: vertical;
-                    font-family: inherit;
+                /* Configuration */
+                .config-grid {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 20px;
+                    max-width: 600px;
+                    margin: 0 auto;
                 }
 
-                .help-text {
+                .config-group {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                }
+
+                .config-group label {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #374151;
+                }
+
+                .date-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+
+                .date-row input {
+                    flex: 1;
+                    padding: 10px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    font-size: 14px;
+                }
+
+                .criteria-row {
+                    display: flex;
+                    gap: 16px;
+                }
+
+                .input-group {
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .input-group span {
                     font-size: 12px;
                     color: #6b7280;
-                    margin-top: 4px;
                 }
 
-                .scan-info {
-                    margin-top: 24px;
-                }
-
-                .info-box {
-                    background: #f0f9ff;
-                    border: 1px solid #bae6fd;
-                    border-radius: 12px;
-                    padding: 20px;
-                }
-
-                .info-box h4 {
-                    margin: 0 0 12px 0;
-                    color: #0369a1;
-                    font-size: 16px;
-                }
-
-                .info-box ul {
-                    margin: 0;
-                    padding-left: 20px;
-                    color: #075985;
-                }
-
-                .info-box li {
-                    margin-bottom: 6px;
+                .input-group input, .input-group select {
+                    padding: 10px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
                     font-size: 14px;
                 }
 
+                .config-group input[type="text"], .config-group textarea {
+                    padding: 10px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    resize: none;
+                }
+
+                .config-group input:focus, .config-group select:focus, .config-group textarea:focus {
+                    outline: none;
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+                }
+
+                /* Progress */
                 .progress-container {
                     position: relative;
-                    width: 100%;
-                    margin-bottom: 24px;
+                    margin-bottom: 20px;
                 }
 
                 .progress-bar {
                     width: 100%;
-                    height: 16px;
+                    height: 12px;
                     background: #e5e7eb;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     overflow: hidden;
-                    position: relative;
                 }
 
                 .progress-fill {
@@ -965,7 +691,6 @@ class ModernDomainOrganizer {
                     background: linear-gradient(90deg, #3b82f6, #1d4ed8);
                     width: 0%;
                     transition: width 0.4s ease;
-                    border-radius: 8px;
                 }
 
                 .progress-text {
@@ -973,7 +698,7 @@ class ModernDomainOrganizer {
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
-                    font-size: 12px;
+                    font-size: 10px;
                     font-weight: 600;
                     color: #1f2937;
                 }
@@ -981,192 +706,116 @@ class ModernDomainOrganizer {
                 .scan-stats, .execution-stats {
                     display: grid;
                     grid-template-columns: repeat(4, 1fr);
-                    gap: 20px;
-                    margin-bottom: 24px;
+                    gap: 16px;
+                    margin-bottom: 20px;
                 }
 
                 .stat {
                     text-align: center;
-                    padding: 16px;
+                    padding: 12px;
                     background: #f8fafc;
-                    border-radius: 12px;
+                    border-radius: 8px;
                     border: 1px solid #e5e7eb;
                 }
 
                 .stat-number {
                     display: block;
-                    font-size: 24px;
+                    font-size: 20px;
                     font-weight: 700;
                     color: #1f2937;
                 }
 
                 .stat-label {
-                    font-size: 12px;
+                    font-size: 11px;
                     color: #6b7280;
-                    margin-top: 4px;
+                    margin-top: 2px;
                 }
 
+                /* Plan */
                 .plan-summary {
                     background: #f8fafc;
-                    border-radius: 12px;
-                    padding: 24px;
-                    margin-bottom: 24px;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 16px;
                     display: grid;
                     grid-template-columns: repeat(4, 1fr);
-                    gap: 20px;
+                    gap: 16px;
                     text-align: center;
                 }
 
                 .summary-item {
                     display: flex;
                     flex-direction: column;
-                    gap: 6px;
+                    gap: 4px;
                 }
 
                 .summary-value {
-                    font-size: 28px;
+                    font-size: 24px;
                     font-weight: 700;
                     color: #1f2937;
                 }
 
                 .summary-label {
-                    font-size: 14px;
+                    font-size: 12px;
                     color: #6b7280;
                 }
 
                 .plan-controls {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                    margin-bottom: 24px;
-                    padding: 16px;
-                    background: #f9fafb;
-                    border-radius: 12px;
-                    border: 1px solid #e5e7eb;
+                    margin-bottom: 16px;
                 }
 
-                .search-section {
-                    width: 100%;
-                }
-
-                .search-container {
-                    position: relative;
-                    max-width: 400px;
-                }
-
-                .search-container input {
-                    width: 100%;
-                    padding: 12px 16px 12px 40px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 8px;
-                    font-size: 14px;
-                    transition: border-color 0.2s ease;
-                }
-
-                .search-container input:focus {
-                    outline: none;
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-                }
-
-                .search-icon {
-                    position: absolute;
-                    left: 12px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: #6b7280;
-                    font-size: 14px;
-                }
-
-                .search-clear {
-                    position: absolute;
-                    right: 8px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    padding: 4px;
-                    border-radius: 4px;
-                    color: #6b7280;
-                    transition: color 0.2s ease;
-                }
-
-                .search-clear:hover {
-                    color: #374151;
-                    background: #e5e7eb;
-                }
-
-                .control-groups {
+                .controls-row {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    gap: 16px;
+                    padding: 12px;
+                    background: #f9fafb;
+                    border-radius: 8px;
                 }
 
-                .control-group {
-                    display: flex;
-                    gap: 12px;
-                }
-
-                .domains-section {
+                .search-box {
                     flex: 1;
-                    overflow: hidden;
+                    max-width: 300px;
+                }
+
+                .search-box input {
+                    width: 100%;
+                    padding: 8px 12px;
+                    border: 1px solid #d1d5db;
+                    border-radius: 6px;
+                    font-size: 14px;
+                }
+
+                .action-buttons {
                     display: flex;
-                    flex-direction: column;
-                    margin-bottom: 24px;
+                    gap: 8px;
                 }
 
                 .domains-container {
-                    flex: 1;
-                    overflow-y: auto;
                     border: 1px solid #e5e7eb;
-                    border-radius: 12px;
+                    border-radius: 8px;
                     background: white;
-                    max-height: 400px;
-                }
-
-                .domains-container::-webkit-scrollbar {
-                    width: 8px;
-                }
-
-                .domains-container::-webkit-scrollbar-track {
-                    background: #f1f5f9;
-                    border-radius: 4px;
-                }
-
-                .domains-container::-webkit-scrollbar-thumb {
-                    background: #cbd5e1;
-                    border-radius: 4px;
-                }
-
-                .domains-container::-webkit-scrollbar-thumb:hover {
-                    background: #94a3b8;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    margin-bottom: 16px;
                 }
 
                 .domain-item {
                     border-bottom: 1px solid #f3f4f6;
-                    transition: all 0.2s ease;
                 }
 
                 .domain-item:last-child {
                     border-bottom: none;
                 }
 
-                .domain-item.expanded {
-                    background: #fafbfc;
-                }
-
-                .domain-item.hidden {
-                    display: none;
-                }
-
                 .domain-header {
-                    padding: 20px;
+                    padding: 12px 16px;
                     display: flex;
                     align-items: center;
-                    gap: 16px;
+                    gap: 12px;
                     cursor: pointer;
-                    transition: background-color 0.2s ease;
+                    transition: background-color 0.2s;
                 }
 
                 .domain-header:hover {
@@ -1174,24 +823,17 @@ class ModernDomainOrganizer {
                 }
 
                 .domain-checkbox {
-                    width: 20px;
-                    height: 20px;
-                    cursor: pointer;
+                    width: 16px;
+                    height: 16px;
                 }
 
                 .domain-expand {
                     background: none;
                     border: none;
                     cursor: pointer;
-                    padding: 4px;
-                    border-radius: 4px;
+                    padding: 2px;
                     color: #6b7280;
-                    transition: color 0.2s ease;
-                }
-
-                .domain-expand:hover {
-                    color: #374151;
-                    background: #e5e7eb;
+                    font-size: 12px;
                 }
 
                 .domain-info {
@@ -1200,45 +842,35 @@ class ModernDomainOrganizer {
                 }
 
                 .domain-name {
-                    font-size: 16px;
+                    font-size: 14px;
                     font-weight: 600;
                     color: #1f2937;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
                 }
 
                 .domain-stats {
-                    font-size: 14px;
+                    font-size: 12px;
                     color: #6b7280;
-                    margin-top: 4px;
+                    margin-top: 2px;
                 }
 
                 .domain-actions {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    gap: 8px;
                 }
 
                 .folder-input {
-                    padding: 8px 12px;
+                    padding: 6px 10px;
                     border: 1px solid #d1d5db;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    min-width: 180px;
-                    transition: border-color 0.2s ease;
-                }
-
-                .folder-input:focus {
-                    outline: none;
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+                    border-radius: 4px;
+                    font-size: 12px;
+                    min-width: 120px;
                 }
 
                 .action-badge {
-                    padding: 4px 8px;
-                    border-radius: 6px;
-                    font-size: 11px;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-size: 10px;
                     font-weight: 500;
                     text-transform: uppercase;
                 }
@@ -1255,8 +887,7 @@ class ModernDomainOrganizer {
 
                 .domain-content {
                     display: none;
-                    padding: 0 20px 20px 60px;
-                    border-top: 1px solid #e5e7eb;
+                    padding: 0 16px 12px 40px;
                     background: #fafbfc;
                 }
 
@@ -1265,25 +896,20 @@ class ModernDomainOrganizer {
                 }
 
                 .emails-list {
-                    height: auto;
-                    max-height: 400px;
+                    max-height: 200px;
                     overflow-y: auto;
                     border: 1px solid #e5e7eb;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     background: white;
                 }
 
                 .email-item {
-                    padding: 12px 16px;
+                    padding: 8px 12px;
                     border-bottom: 1px solid #f3f4f6;
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    transition: background-color 0.2s ease;
-                }
-
-                .email-item:hover {
-                    background: #f9fafb;
+                    gap: 8px;
+                    font-size: 12px;
                 }
 
                 .email-item:last-child {
@@ -1291,9 +917,8 @@ class ModernDomainOrganizer {
                 }
 
                 .email-checkbox {
-                    width: 16px;
-                    height: 16px;
-                    cursor: pointer;
+                    width: 14px;
+                    height: 14px;
                 }
 
                 .email-info {
@@ -1302,104 +927,129 @@ class ModernDomainOrganizer {
                 }
 
                 .email-subject {
-                    font-size: 14px;
                     font-weight: 500;
                     color: #1f2937;
-                    margin-bottom: 2px;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                 }
 
                 .email-from {
-                    font-size: 12px;
+                    font-size: 11px;
                     color: #6b7280;
                 }
 
                 .email-date {
-                    font-size: 12px;
+                    font-size: 11px;
                     color: #9ca3af;
-                    white-space: nowrap;
                 }
 
-                .email-actions {
-                    display: flex;
-                    gap: 8px;
-                }
-
-                .plan-options {
-                    margin-bottom: 24px;
-                }
-
-                .option-box {
+                .execution-options {
                     background: #f0f9ff;
                     border: 1px solid #bae6fd;
-                    border-radius: 12px;
-                    padding: 24px;
-                }
-
-                .option-box h4 {
-                    margin: 0 0 16px 0;
-                    color: #0369a1;
-                    font-size: 18px;
-                }
-
-                .execution-choices {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 16px;
-                }
-
-                .choice-item {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
-                    padding: 16px;
-                    background: white;
-                    border: 2px solid #e5e7eb;
                     border-radius: 8px;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
+                    padding: 16px;
+                    margin-bottom: 16px;
                 }
 
-                .choice-item:hover {
-                    border-color: #3b82f6;
-                }
-
-                .choice-item input[type="radio"] {
-                    width: 20px;
-                    height: 20px;
-                    margin-top: 2px;
-                    cursor: pointer;
-                }
-
-                .choice-item label {
-                    flex: 1;
-                    cursor: pointer;
+                .option-row {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 12px;
+                    margin-bottom: 12px;
                 }
 
-                .choice-item label strong {
-                    font-size: 16px;
-                    color: #1f2937;
+                .option-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    padding: 8px;
+                    border-radius: 6px;
+                    transition: background 0.2s;
                 }
 
-                .choice-item label span {
+                .option-label:hover {
+                    background: rgba(255, 255, 255, 0.7);
+                }
+
+                .option-label input[type="radio"] {
+                    width: 16px;
+                    height: 16px;
+                }
+
+                .selection-info {
+                    text-align: center;
                     font-size: 14px;
+                    font-weight: 500;
+                    color: #0369a1;
+                }
+
+                /* Execution */
+                .execution-log {
+                    max-height: 150px;
+                    overflow-y: auto;
+                    background: #f9fafb;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 6px;
+                    padding: 12px;
+                    font-family: 'SF Mono', Monaco, monospace;
+                    font-size: 11px;
+                }
+
+                .log-entry {
+                    margin-bottom: 2px;
                     color: #6b7280;
+                    line-height: 1.3;
                 }
 
-                .choice-item input[type="radio"]:checked + label {
-                    color: #3b82f6;
+                .log-entry.success { color: #059669; }
+                .log-entry.error { color: #dc2626; }
+                .log-entry.info { color: #3b82f6; }
+
+                /* Success */
+                .success-card {
+                    text-align: center;
                 }
 
-                .choice-item:has(input[type="radio"]:checked) {
-                    border-color: #3b82f6;
-                    background: #eff6ff;
+                .success-icon {
+                    font-size: 48px;
+                    margin-bottom: 16px;
                 }
 
+                .success-report {
+                    background: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin: 16px 0;
+                    text-align: left;
+                    font-size: 14px;
+                }
+
+                .report-section {
+                    margin-bottom: 12px;
+                }
+
+                .report-section h4 {
+                    margin: 0 0 8px 0;
+                    color: #065f46;
+                    font-size: 14px;
+                }
+
+                .report-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+
+                .report-list li {
+                    padding: 2px 0;
+                    color: #047857;
+                    font-size: 13px;
+                }
+
+                /* Modal */
                 .email-modal {
                     position: fixed;
                     top: 0;
@@ -1411,7 +1061,6 @@ class ModernDomainOrganizer {
                     align-items: center;
                     justify-content: center;
                     z-index: 1000;
-                    animation: fadeIn 0.3s ease;
                 }
 
                 .email-modal.hidden {
@@ -1420,16 +1069,16 @@ class ModernDomainOrganizer {
 
                 .email-modal-content {
                     background: white;
-                    border-radius: 16px;
-                    max-width: 800px;
-                    max-height: 80vh;
+                    border-radius: 12px;
+                    max-width: 600px;
                     width: 90%;
+                    max-height: 80vh;
                     overflow: hidden;
                     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
                 }
 
                 .email-modal-header {
-                    padding: 24px;
+                    padding: 16px;
                     border-bottom: 1px solid #e5e7eb;
                     display: flex;
                     justify-content: space-between;
@@ -1439,135 +1088,56 @@ class ModernDomainOrganizer {
 
                 .email-modal-header h3 {
                     margin: 0;
-                    font-size: 18px;
+                    font-size: 16px;
                     font-weight: 600;
-                    color: #1f2937;
                 }
 
                 .modal-close {
                     background: none;
                     border: none;
-                    font-size: 24px;
+                    font-size: 20px;
                     cursor: pointer;
                     color: #6b7280;
                     padding: 4px;
-                    border-radius: 4px;
-                    transition: color 0.2s ease;
-                }
-
-                .modal-close:hover {
-                    color: #374151;
-                    background: #e5e7eb;
                 }
 
                 .email-modal-body {
-                    padding: 24px;
-                    max-height: 60vh;
+                    padding: 16px;
+                    max-height: 50vh;
                     overflow-y: auto;
                 }
 
                 .email-modal-footer {
-                    padding: 24px;
+                    padding: 16px;
                     border-top: 1px solid #e5e7eb;
                     display: flex;
                     justify-content: flex-end;
-                    gap: 12px;
+                    gap: 8px;
                     background: #f9fafb;
                 }
 
-                .email-field {
-                    margin-bottom: 16px;
-                }
-
-                .email-field label {
-                    display: block;
-                    font-size: 14px;
-                    font-weight: 500;
-                    color: #374151;
-                    margin-bottom: 6px;
-                }
-
-                .email-field input,
-                .email-field select,
-                .email-field textarea {
-                    width: 100%;
-                    padding: 10px 12px;
-                    border: 1px solid #d1d5db;
-                    border-radius: 6px;
-                    font-size: 14px;
-                }
-
-                .email-field textarea {
-                    min-height: 100px;
-                    resize: vertical;
-                    font-family: inherit;
-                }
-
-                .warning-box {
-                    background: #fef3cd;
-                    border: 1px solid #fbbf24;
-                    border-radius: 12px;
-                    padding: 20px;
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
-                    margin-bottom: 24px;
-                    font-size: 14px;
-                    color: #92400e;
-                }
-
-                .warning-icon {
-                    font-size: 20px;
-                    flex-shrink: 0;
-                    margin-top: 2px;
-                }
-
-                .execution-log {
-                    max-height: 200px;
-                    overflow-y: auto;
-                    background: #f9fafb;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    padding: 16px;
-                    font-family: 'SF Mono', Monaco, monospace;
-                    font-size: 12px;
-                    margin-top: 20px;
-                }
-
-                .log-entry {
-                    margin-bottom: 4px;
-                    color: #6b7280;
-                    line-height: 1.4;
-                }
-
-                .log-entry.success { color: #059669; }
-                .log-entry.error { color: #dc2626; }
-                .log-entry.info { color: #3b82f6; }
-
+                /* Buttons */
                 .action-bar {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    gap: 16px;
-                    margin-top: 32px;
-                }
-
-                .action-buttons {
-                    display: flex;
                     gap: 12px;
+                    margin-top: 24px;
+                    padding-top: 16px;
+                    border-top: 1px solid #e5e7eb;
                 }
 
                 .btn {
-                    padding: 12px 24px;
+                    padding: 10px 20px;
                     border: none;
-                    border-radius: 8px;
+                    border-radius: 6px;
                     font-size: 14px;
                     font-weight: 600;
                     cursor: pointer;
                     display: flex;
                     align-items: center;
-                    gap: 8px;
-                    transition: all 0.2s ease;
+                    gap: 6px;
+                    transition: all 0.2s;
                     text-decoration: none;
                 }
 
@@ -1603,7 +1173,6 @@ class ModernDomainOrganizer {
 
                 .btn-outline:hover {
                     background: #f9fafb;
-                    border-color: #9ca3af;
                 }
 
                 .btn-small {
@@ -1612,113 +1181,52 @@ class ModernDomainOrganizer {
                 }
 
                 .btn-large {
-                    padding: 16px 32px;
+                    padding: 14px 28px;
                     font-size: 16px;
                     font-weight: 700;
                 }
 
-                .success-card {
-                    text-align: center;
-                }
-
-                .success-animation {
-                    margin-bottom: 24px;
-                }
-
-                .success-circle {
-                    width: 80px;
-                    height: 80px;
-                    background: #10b981;
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin: 0 auto;
-                    animation: bounce 0.6s ease;
-                }
-
-                .success-circle i {
-                    font-size: 32px;
-                    color: white;
-                }
-
-                .success-report {
-                    background: #f0fdf4;
-                    border: 1px solid #bbf7d0;
-                    border-radius: 12px;
-                    padding: 24px;
-                    margin: 24px 0;
-                    text-align: left;
-                }
-
-                .report-section {
-                    margin-bottom: 20px;
-                }
-
-                .report-section h4 {
-                    margin: 0 0 12px 0;
-                    color: #065f46;
-                    font-size: 16px;
-                }
-
-                .report-list {
-                    list-style: none;
-                    padding: 0;
-                    margin: 0;
-                }
-
-                .report-list li {
-                    padding: 4px 0;
-                    color: #047857;
-                    font-size: 14px;
-                    display: flex;
-                    justify-content: space-between;
-                }
-
                 @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(20px); }
+                    from { opacity: 0; transform: translateY(10px); }
                     to { opacity: 1; transform: translateY(0); }
-                }
-
-                @keyframes bounce {
-                    0%, 20%, 53%, 80%, 100% { transform: scale(1); }
-                    40%, 43% { transform: scale(1.1); }
-                    70% { transform: scale(1.05); }
-                }
-
-                @media (max-width: 1200px) {
-                    .modern-organizer {
-                        max-width: 1000px;
-                        padding: 16px;
-                    }
-
-                    .features-grid {
-                        grid-template-columns: 1fr;
-                    }
-
-                    .steps-explanation {
-                        grid-template-columns: 1fr;
-                    }
                 }
 
                 @media (max-width: 768px) {
                     .modern-organizer {
                         padding: 12px;
-                        height: 100vh;
                     }
 
-                    .organizer-header {
-                        padding: 16px;
-                        margin-bottom: 16px;
+                    .process-flow {
+                        flex-direction: column;
+                        gap: 8px;
                     }
 
-                    .step-card {
-                        padding: 20px;
+                    .flow-arrow {
+                        transform: rotate(90deg);
                     }
 
-                    .form-row {
-                        grid-template-columns: 1fr;
+                    .example-compact {
+                        flex-direction: column;
                         gap: 12px;
+                    }
+
+                    .example-arrow {
+                        transform: rotate(90deg);
+                    }
+
+                    .criteria-row {
+                        flex-direction: column;
+                        gap: 12px;
+                    }
+
+                    .controls-row {
+                        flex-direction: column;
+                        gap: 12px;
+                    }
+
+                    .action-buttons {
+                        width: 100%;
+                        justify-content: center;
                     }
 
                     .scan-stats, .execution-stats {
@@ -1729,270 +1237,341 @@ class ModernDomainOrganizer {
                         grid-template-columns: repeat(2, 1fr);
                     }
 
-                    .progress-steps {
-                        flex-wrap: wrap;
-                        gap: 12px;
-                    }
-
-                    .step-line {
-                        display: none;
-                    }
-
-                    .plan-controls {
-                        padding: 12px;
-                    }
-
-                    .control-groups {
-                        flex-direction: column;
-                        gap: 12px;
-                        align-items: stretch;
-                    }
-
-                    .control-group {
-                        justify-content: center;
-                    }
-
-                    .search-container {
-                        max-width: 100%;
+                    .option-row {
+                        gap: 8px;
                     }
 
                     .domain-header {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 12px;
-                        padding: 16px;
+                        flex-wrap: wrap;
+                        gap: 8px;
                     }
 
                     .domain-actions {
                         width: 100%;
                         justify-content: space-between;
                     }
-
-                    .email-modal-content {
-                        width: 95%;
-                        margin: 20px;
-                        max-height: 90vh;
-                    }
-
-                    .domains-container {
-                        border-radius: 8px;
-                        max-height: 400px;
-                    }
-
-                    .emails-list {
-                        max-height: 250px;
-                    }
-
-                    .example-box {
-                        flex-direction: column;
-                        gap: 20px;
-                    }
-
-                    .arrow {
-                        transform: rotate(90deg);
-                    }
-
-                    .execution-choices {
-                        gap: 12px;
-                    }
-
-                    .choice-item {
-                        padding: 12px;
-                    }
                 }
 
                 .hidden {
                     display: none !important;
                 }
+
+                .error-message {
+                    background: #fef2f2;
+                    border: 1px solid #fecaca;
+                    color: #dc2626;
+                    padding: 12px;
+                    border-radius: 6px;
+                    margin: 8px 0;
+                    font-size: 14px;
+                }
+
+                .warning-message {
+                    background: #fef3cd;
+                    border: 1px solid #fbbf24;
+                    color: #92400e;
+                    padding: 12px;
+                    border-radius: 6px;
+                    margin: 8px 0;
+                    font-size: 14px;
+                }
+
+                .info-message {
+                    background: #eff6ff;
+                    border: 1px solid #bfdbfe;
+                    color: #1e40af;
+                    padding: 12px;
+                    border-radius: 6px;
+                    margin: 8px 0;
+                    font-size: 14px;
+                }
             </style>
         `;
     }
 
-    // Méthodes principales
+    // Méthodes principales avec gestion d'erreurs renforcée
     async initializePage() {
-        console.log('[ModernDomainOrganizer] Initialisation...');
-        
-        if (!window.authService?.isAuthenticated()) {
-            window.uiManager?.showToast('Veuillez vous connecter', 'warning');
+        try {
+            console.log('[ModernDomainOrganizer] Initialisation...');
+            
+            if (!window.authService?.isAuthenticated()) {
+                this.showError('Veuillez vous connecter pour continuer');
+                return false;
+            }
+
+            this.setupEventListeners();
+            this.setDefaultDates();
+            
+            return true;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur initialisation:', error);
+            this.showError('Erreur lors de l\'initialisation: ' + error.message);
             return false;
         }
-
-        this.setupEventListeners();
-        this.setDefaultDates();
-        
-        return true;
     }
 
     setupEventListeners() {
-        document.getElementById('startScanBtn')?.addEventListener('click', () => this.startAnalysis());
-        document.getElementById('executeSelectedBtn')?.addEventListener('click', () => this.executeSelectedAction());
-        document.getElementById('saveEmailBtn')?.addEventListener('click', () => this.saveEmailChanges());
-        
-        // Écouter les changements de type d'exécution
-        document.querySelectorAll('input[name="executionType"]').forEach(radio => {
-            radio.addEventListener('change', () => this.updateExecutionButton());
-        });
+        try {
+            const startBtn = document.getElementById('startScanBtn');
+            const executeBtn = document.getElementById('executeSelectedBtn');
+            const saveBtn = document.getElementById('saveEmailBtn');
+            
+            if (startBtn) startBtn.addEventListener('click', () => this.startAnalysis());
+            if (executeBtn) executeBtn.addEventListener('click', () => this.executeSelectedAction());
+            if (saveBtn) saveBtn.addEventListener('click', () => this.saveEmailChanges());
+            
+            // Écouter les changements de type d'exécution
+            document.querySelectorAll('input[name="executionType"]').forEach(radio => {
+                radio.addEventListener('change', () => this.updateExecutionButton());
+            });
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur setup listeners:', error);
+        }
     }
 
     setDefaultDates() {
-        const today = new Date();
-        const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-        
-        const startDate = document.getElementById('startDate');
-        const endDate = document.getElementById('endDate');
-        
-        if (startDate) startDate.valueAsDate = thirtyDaysAgo;
-        if (endDate) endDate.valueAsDate = today;
+        try {
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            
+            if (startDate) startDate.valueAsDate = thirtyDaysAgo;
+            if (endDate) endDate.valueAsDate = today;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur dates par défaut:', error);
+        }
     }
 
     goToStep(stepName) {
-        document.querySelectorAll('.step-content').forEach(content => {
-            content.classList.add('hidden');
-        });
+        try {
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.add('hidden');
+            });
 
-        document.getElementById(`step-${stepName}`)?.classList.remove('hidden');
-        this.updateStepProgress(stepName);
-        this.currentStep = stepName;
+            const stepElement = document.getElementById(`step-${stepName}`);
+            if (stepElement) {
+                stepElement.classList.remove('hidden');
+                this.updateStepProgress(stepName);
+                this.currentStep = stepName;
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur navigation:', error);
+        }
     }
 
     updateStepProgress(currentStep) {
-        const steps = ['introduction', 'configuration', 'scanning', 'plan', 'execution'];
-        const currentIndex = steps.indexOf(currentStep);
+        try {
+            const steps = ['introduction', 'configuration', 'scanning', 'plan', 'execution'];
+            const currentIndex = steps.indexOf(currentStep);
 
-        document.querySelectorAll('.step').forEach((step, index) => {
-            step.classList.remove('active', 'completed');
-            
-            if (index < currentIndex) {
-                step.classList.add('completed');
-            } else if (index === currentIndex) {
-                step.classList.add('active');
-            }
-        });
+            document.querySelectorAll('.step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                
+                if (index < currentIndex) {
+                    step.classList.add('completed');
+                } else if (index === currentIndex) {
+                    step.classList.add('active');
+                }
+            });
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour progression:', error);
+        }
     }
 
     updateExecutionButton() {
-        const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
-        const buttonText = document.getElementById('executeButtonText');
-        
-        if (buttonText) {
-            if (executionType === 'folders-only') {
-                buttonText.textContent = 'Créer les dossiers seulement';
-            } else {
-                buttonText.textContent = 'Créer dossiers + Déplacer emails';
+        try {
+            const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
+            const buttonText = document.getElementById('executeButtonText');
+            
+            if (buttonText) {
+                if (executionType === 'folders-only') {
+                    buttonText.textContent = 'Créer dossiers';
+                } else {
+                    buttonText.textContent = 'Exécution complète';
+                }
             }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour bouton:', error);
         }
     }
 
     executeSelectedAction() {
-        const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
-        
-        if (executionType === 'folders-only') {
-            this.createFoldersOnly();
-        } else {
-            this.executeOrganization();
+        try {
+            const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
+            
+            if (executionType === 'folders-only') {
+                this.createFoldersOnly();
+            } else {
+                this.executeOrganization();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur action sélectionnée:', error);
+            this.showError('Erreur lors de l\'exécution: ' + error.message);
         }
     }
 
-    // Analyse des emails
+    // Analyse avec gestion d'erreurs
     async startAnalysis() {
         if (this.isProcessing) return;
         
         try {
             this.isProcessing = true;
+            this.clearErrors();
             this.goToStep('scanning');
             
             const config = this.getConfigurationFromForm();
+            if (!this.validateConfiguration(config)) {
+                this.goToStep('configuration');
+                return;
+            }
+            
             console.log('[ModernDomainOrganizer] Configuration:', config);
             
+            // Reset
             this.emailsByDomain.clear();
             this.allFolders.clear();
             this.organizationPlan.clear();
             this.expandedDomains.clear();
             
-            this.updateProgress(5, 'Chargement des dossiers existants...');
-            await this.loadAllFolders();
-            this.updateProgress(15, 'Dossiers chargés avec succès');
-
-            this.updateProgress(20, 'Début du scan des emails...');
-            const emails = await this.scanEmails(config);
-            this.updateProgress(70, `${emails.length} emails scannés avec succès`);
-
-            this.updateProgress(75, 'Analyse des domaines en cours...');
-            await this.analyzeDomains(emails, config);
-            this.updateProgress(85, 'Analyse des domaines terminée');
-
-            this.updateProgress(90, 'Création du plan d\'organisation...');
-            this.createOrganizationPlan();
-            this.updateProgress(100, 'Plan créé avec succès !');
-
-            setTimeout(() => this.showOrganizationPlan(), 1000);
+            // Étapes avec gestion d'erreurs
+            await this.executeWithProgress([
+                { percent: 5, message: 'Chargement des dossiers...', action: () => this.loadAllFolders() },
+                { percent: 20, message: 'Scan des emails...', action: () => this.scanEmails(config) },
+                { percent: 70, message: 'Analyse des domaines...', action: (emails) => this.analyzeDomains(emails, config) },
+                { percent: 90, message: 'Création du plan...', action: () => this.createOrganizationPlan() },
+                { percent: 100, message: 'Terminé !', action: () => this.showOrganizationPlan() }
+            ]);
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur analyse:', error);
-            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+            this.showError('Erreur lors de l\'analyse: ' + error.message);
             this.goToStep('configuration');
         } finally {
             this.isProcessing = false;
         }
     }
 
-    getConfigurationFromForm() {
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        const minEmails = parseInt(document.getElementById('minEmails').value) || 3;
-        const emailLimit = parseInt(document.getElementById('emailLimit').value);
+    async executeWithProgress(steps) {
+        let result = null;
         
-        const excludeDomains = document.getElementById('excludeDomains').value
-            .split(',')
-            .map(d => d.trim())
-            .filter(d => d);
+        for (const step of steps) {
+            try {
+                this.updateProgress(step.percent, step.message);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (step.action) {
+                    result = await step.action(result);
+                }
+            } catch (error) {
+                throw new Error(`${step.message} - ${error.message}`);
+            }
+        }
         
-        const excludeEmails = document.getElementById('excludeEmails').value
-            .split('\n')
-            .map(e => e.trim())
-            .filter(e => e);
+        return result;
+    }
 
-        return { startDate, endDate, minEmails, emailLimit, excludeDomains, excludeEmails };
+    validateConfiguration(config) {
+        try {
+            if (!config.startDate || !config.endDate) {
+                this.showError('Veuillez sélectionner une période valide');
+                return false;
+            }
+            
+            const startDate = new Date(config.startDate);
+            const endDate = new Date(config.endDate);
+            
+            if (startDate >= endDate) {
+                this.showError('La date de début doit être antérieure à la date de fin');
+                return false;
+            }
+            
+            if (config.minEmails < 1 || config.minEmails > 100) {
+                this.showError('Le nombre minimum d\'emails doit être entre 1 et 100');
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur validation:', error);
+            this.showError('Configuration invalide: ' + error.message);
+            return false;
+        }
+    }
+
+    getConfigurationFromForm() {
+        try {
+            const startDate = document.getElementById('startDate')?.value || '';
+            const endDate = document.getElementById('endDate')?.value || '';
+            const minEmails = parseInt(document.getElementById('minEmails')?.value) || 3;
+            const emailLimit = parseInt(document.getElementById('emailLimit')?.value) || 0;
+            
+            const excludeDomains = (document.getElementById('excludeDomains')?.value || '')
+                .split(',')
+                .map(d => d.trim())
+                .filter(d => d);
+            
+            const excludeEmails = (document.getElementById('excludeEmails')?.value || '')
+                .split('\n')
+                .map(e => e.trim())
+                .filter(e => e);
+
+            return { startDate, endDate, minEmails, emailLimit, excludeDomains, excludeEmails };
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur lecture config:', error);
+            throw new Error('Impossible de lire la configuration');
+        }
     }
 
     async loadAllFolders() {
         try {
-            console.log('[ModernDomainOrganizer] Chargement de tous les dossiers...');
+            console.log('[ModernDomainOrganizer] Chargement des dossiers...');
+            
+            if (!window.mailService) {
+                throw new Error('Service mail non disponible');
+            }
+            
             const folders = await window.mailService.getFolders();
+            if (!Array.isArray(folders)) {
+                throw new Error('Format de dossiers invalide');
+            }
+            
             this.allFolders.clear();
             
-            // Traiter tous les dossiers y compris les sous-dossiers
             folders.forEach(folder => {
-                const folderKey = folder.displayName.toLowerCase();
-                this.allFolders.set(folderKey, {
-                    id: folder.id,
-                    displayName: folder.displayName,
-                    totalItemCount: folder.totalItemCount || 0,
-                    parentFolderId: folder.parentFolderId
-                });
-                
-                console.log(`[ModernDomainOrganizer] Dossier trouvé: "${folder.displayName}" (${folder.totalItemCount} items)`);
+                if (folder && folder.displayName) {
+                    const folderKey = folder.displayName.toLowerCase();
+                    this.allFolders.set(folderKey, {
+                        id: folder.id,
+                        displayName: folder.displayName,
+                        totalItemCount: folder.totalItemCount || 0,
+                        parentFolderId: folder.parentFolderId
+                    });
+                }
             });
 
-            console.log(`[ModernDomainOrganizer] ✅ ${this.allFolders.size} dossiers chargés au total`);
+            console.log(`[ModernDomainOrganizer] ✅ ${this.allFolders.size} dossiers chargés`);
             this.updateStat('existingFolders', this.allFolders.size);
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur chargement dossiers:', error);
-            throw error;
+            throw new Error('Impossible de charger les dossiers: ' + error.message);
         }
     }
 
     async scanEmails(config) {
-        const allEmails = [];
-        
         try {
-            console.log(`[ModernDomainOrganizer] Scan avec limite: ${config.emailLimit === 0 ? 'tous les emails' : config.emailLimit + ' emails'}`);
+            console.log('[ModernDomainOrganizer] Scan des emails...');
+            
+            if (!window.mailService) {
+                throw new Error('Service mail non disponible');
+            }
             
             const scanLimit = config.emailLimit === 0 ? 10000 : config.emailLimit;
             
             const options = {
-                top: scanLimit,
+                top: Math.min(scanLimit, 10000), // Limitation de sécurité
                 orderBy: 'receivedDateTime desc'
             };
 
@@ -2000,573 +1579,541 @@ class ModernDomainOrganizer {
             if (config.endDate) options.endDate = config.endDate;
 
             const emails = await window.mailService.getEmailsFromFolder('inbox', options);
-            allEmails.push(...emails);
+            
+            if (!Array.isArray(emails)) {
+                throw new Error('Format d\'emails invalide');
+            }
             
             console.log(`[ModernDomainOrganizer] ${emails.length} emails récupérés`);
             this.updateStat('scannedEmails', emails.length);
             
+            return emails;
+            
         } catch (error) {
-            console.error('[ModernDomainOrganizer] Erreur scan inbox:', error);
-            throw error;
+            console.error('[ModernDomainOrganizer] Erreur scan emails:', error);
+            throw new Error('Impossible de scanner les emails: ' + error.message);
         }
-
-        return allEmails;
     }
 
     async analyzeDomains(emails, config) {
-        const domainCounts = new Map();
-        
-        console.log(`[ModernDomainOrganizer] Analyse de ${emails.length} emails...`);
-        
-        for (const email of emails) {
-            const domain = this.extractDomain(email);
-            if (!domain) continue;
+        try {
+            const domainCounts = new Map();
             
-            if (this.shouldExcludeDomain(domain, config.excludeDomains)) continue;
-            if (this.shouldExcludeEmail(email, config.excludeEmails)) continue;
+            console.log(`[ModernDomainOrganizer] Analyse de ${emails.length} emails...`);
             
-            if (!domainCounts.has(domain)) {
-                domainCounts.set(domain, {
-                    count: 0,
-                    emails: []
-                });
+            for (const email of emails) {
+                try {
+                    const domain = this.extractDomain(email);
+                    if (!domain) continue;
+                    
+                    if (this.shouldExcludeDomain(domain, config.excludeDomains)) continue;
+                    if (this.shouldExcludeEmail(email, config.excludeEmails)) continue;
+                    
+                    if (!domainCounts.has(domain)) {
+                        domainCounts.set(domain, {
+                            count: 0,
+                            emails: []
+                        });
+                    }
+                    
+                    const domainData = domainCounts.get(domain);
+                    domainData.count++;
+                    domainData.emails.push(email);
+                } catch (emailError) {
+                    console.warn('[ModernDomainOrganizer] Erreur traitement email:', emailError);
+                    // Continue avec l'email suivant
+                }
+            }
+
+            // Filtrer par seuil minimum
+            domainCounts.forEach((data, domain) => {
+                if (data.count >= config.minEmails) {
+                    this.emailsByDomain.set(domain, data);
+                }
+            });
+
+            console.log(`[ModernDomainOrganizer] ${this.emailsByDomain.size} domaines valides trouvés`);
+            this.updateStat('foundDomains', this.emailsByDomain.size);
+            
+            if (this.emailsByDomain.size === 0) {
+                throw new Error('Aucun domaine trouvé avec le seuil configuré');
             }
             
-            const domainData = domainCounts.get(domain);
-            domainData.count++;
-            domainData.emails.push(email);
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur analyse domaines:', error);
+            throw new Error('Erreur lors de l\'analyse des domaines: ' + error.message);
         }
-
-        domainCounts.forEach((data, domain) => {
-            if (data.count >= config.minEmails) {
-                this.emailsByDomain.set(domain, data);
-            }
-        });
-
-        console.log(`[ModernDomainOrganizer] ${this.emailsByDomain.size} domaines valides trouvés`);
-        this.updateStat('foundDomains', this.emailsByDomain.size);
     }
 
     createOrganizationPlan() {
-        this.organizationPlan.clear();
-        
-        let newFoldersCount = 0;
-        
-        this.emailsByDomain.forEach((data, domain) => {
-            const existingFolder = this.findExistingFolder(domain);
+        try {
+            this.organizationPlan.clear();
             
-            if (existingFolder) {
-                this.organizationPlan.set(domain, {
-                    domain,
-                    action: 'use-existing',
-                    targetFolder: existingFolder.displayName,
-                    targetFolderId: existingFolder.id,
-                    emailCount: data.count,
-                    emails: data.emails,
-                    selected: true
-                });
-            } else {
-                this.organizationPlan.set(domain, {
-                    domain,
-                    action: 'create-new',
-                    targetFolder: domain,
-                    targetFolderId: null,
-                    emailCount: data.count,
-                    emails: data.emails,
-                    selected: true
-                });
-                newFoldersCount++;
-            }
-        });
+            let newFoldersCount = 0;
+            
+            this.emailsByDomain.forEach((data, domain) => {
+                try {
+                    const existingFolder = this.findExistingFolder(domain);
+                    
+                    if (existingFolder) {
+                        this.organizationPlan.set(domain, {
+                            domain,
+                            action: 'use-existing',
+                            targetFolder: existingFolder.displayName,
+                            targetFolderId: existingFolder.id,
+                            emailCount: data.count,
+                            emails: data.emails,
+                            selected: true
+                        });
+                    } else {
+                        this.organizationPlan.set(domain, {
+                            domain,
+                            action: 'create-new',
+                            targetFolder: domain,
+                            targetFolderId: null,
+                            emailCount: data.count,
+                            emails: data.emails,
+                            selected: true
+                        });
+                        newFoldersCount++;
+                    }
+                } catch (domainError) {
+                    console.warn(`[ModernDomainOrganizer] Erreur plan pour ${domain}:`, domainError);
+                }
+            });
 
-        this.updateStat('newFoldersNeeded', newFoldersCount);
-        console.log(`[ModernDomainOrganizer] Plan créé: ${this.organizationPlan.size} domaines`);
+            this.updateStat('newFoldersNeeded', newFoldersCount);
+            console.log(`[ModernDomainOrganizer] Plan créé: ${this.organizationPlan.size} domaines`);
+            
+            if (this.organizationPlan.size === 0) {
+                throw new Error('Aucun plan d\'organisation créé');
+            }
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur création plan:', error);
+            throw new Error('Erreur lors de la création du plan: ' + error.message);
+        }
     }
 
     showOrganizationPlan() {
-        this.goToStep('plan');
-        
-        const summary = document.getElementById('planSummary');
-        const container = document.getElementById('domainsContainer');
-        
-        if (!summary || !container) return;
-        
-        this.displayPlanSummary(summary);
-        this.displayDomainsWithEmails(container);
-        this.updateTotalEmailsCount();
-        this.updateExecutionButton();
+        try {
+            this.goToStep('plan');
+            
+            const summary = document.getElementById('planSummary');
+            const container = document.getElementById('domainsContainer');
+            
+            if (!summary || !container) {
+                throw new Error('Éléments d\'interface manquants');
+            }
+            
+            this.displayPlanSummary(summary);
+            this.displayDomainsWithEmails(container);
+            this.updateTotalEmailsCount();
+            this.updateExecutionButton();
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage plan:', error);
+            this.showError('Erreur lors de l\'affichage du plan: ' + error.message);
+        }
     }
 
     displayPlanSummary(summary) {
-        const totalEmails = Array.from(this.organizationPlan.values())
-            .reduce((sum, plan) => sum + plan.emailCount, 0);
-        
-        const newFolders = Array.from(this.organizationPlan.values())
-            .filter(plan => plan.action === 'create-new');
-        
-        const existingFolders = Array.from(this.organizationPlan.values())
-            .filter(plan => plan.action === 'use-existing');
+        try {
+            const totalEmails = Array.from(this.organizationPlan.values())
+                .reduce((sum, plan) => sum + plan.emailCount, 0);
+            
+            const newFolders = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.action === 'create-new');
+            
+            const existingFolders = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.action === 'use-existing');
 
-        summary.innerHTML = `
-            <div class="summary-item">
-                <div class="summary-value">${this.organizationPlan.size}</div>
-                <div class="summary-label">Domaines trouvés</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value">${totalEmails.toLocaleString()}</div>
-                <div class="summary-label">Total emails</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value">${newFolders.length}</div>
-                <div class="summary-label">Nouveaux dossiers</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-value">${existingFolders.length}</div>
-                <div class="summary-label">Dossiers existants</div>
-            </div>
-        `;
+            summary.innerHTML = `
+                <div class="summary-item">
+                    <div class="summary-value">${this.organizationPlan.size}</div>
+                    <div class="summary-label">Domaines</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${totalEmails.toLocaleString()}</div>
+                    <div class="summary-label">Emails</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${newFolders.length}</div>
+                    <div class="summary-label">Nouveaux</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value">${existingFolders.length}</div>
+                    <div class="summary-label">Existants</div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage résumé:', error);
+        }
     }
 
     displayDomainsWithEmails(container) {
-        container.innerHTML = '';
-        
-        const sortedDomains = Array.from(this.organizationPlan.entries())
-            .sort((a, b) => b[1].emailCount - a[1].emailCount);
+        try {
+            container.innerHTML = '';
+            
+            const sortedDomains = Array.from(this.organizationPlan.entries())
+                .sort((a, b) => b[1].emailCount - a[1].emailCount);
 
-        sortedDomains.forEach(([domain, plan]) => {
-            const domainElement = this.createDomainElement(domain, plan);
-            container.appendChild(domainElement);
-        });
+            sortedDomains.forEach(([domain, plan]) => {
+                try {
+                    const domainElement = this.createDomainElement(domain, plan);
+                    container.appendChild(domainElement);
+                } catch (elementError) {
+                    console.warn(`[ModernDomainOrganizer] Erreur élément ${domain}:`, elementError);
+                }
+            });
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage domaines:', error);
+        }
     }
 
     createDomainElement(domain, plan) {
-        const div = document.createElement('div');
-        div.className = 'domain-item';
-        div.dataset.domain = domain;
-        
-        const isExpanded = this.expandedDomains.has(domain);
-        if (isExpanded) {
-            div.classList.add('expanded');
-        }
+        try {
+            const div = document.createElement('div');
+            div.className = 'domain-item';
+            div.dataset.domain = domain;
+            
+            const isExpanded = this.expandedDomains.has(domain);
+            if (isExpanded) {
+                div.classList.add('expanded');
+            }
 
-        div.innerHTML = `
-            <div class="domain-header" onclick="window.modernDomainOrganizer.toggleDomain('${domain}')">
-                <input type="checkbox" class="domain-checkbox" ${plan.selected ? 'checked' : ''} 
-                       onclick="event.stopPropagation(); window.modernDomainOrganizer.toggleDomainSelection('${domain}')" 
-                       data-domain="${domain}">
-                
-                <button class="domain-expand">
-                    <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'}"></i>
-                </button>
-                
-                <div class="domain-info">
-                    <div class="domain-name">
-                        📧 ${domain}
-                    </div>
-                    <div class="domain-stats">
-                        ${plan.emailCount} emails • ${plan.emails.filter(e => e.selected !== false).length} sélectionnés
-                    </div>
-                </div>
-                
-                <div class="domain-actions" onclick="event.stopPropagation()">
-                    <input type="text" class="folder-input" value="${plan.targetFolder}" 
-                           placeholder="Nom du dossier" data-domain="${domain}"
-                           onchange="window.modernDomainOrganizer.updateFolderName('${domain}', this.value)">
+            const safeSubject = (email) => {
+                try {
+                    return email.subject || '(Sans sujet)';
+                } catch {
+                    return '(Erreur)';
+                }
+            };
+
+            const safeFrom = (email) => {
+                try {
+                    return email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+                } catch {
+                    return 'Inconnu';
+                }
+            };
+
+            const safeDate = (email) => {
+                try {
+                    return new Date(email.receivedDateTime).toLocaleDateString();
+                } catch {
+                    return 'Date inconnue';
+                }
+            };
+
+            div.innerHTML = `
+                <div class="domain-header" onclick="window.modernDomainOrganizer.toggleDomain('${domain}')">
+                    <input type="checkbox" class="domain-checkbox" ${plan.selected ? 'checked' : ''} 
+                           onclick="event.stopPropagation(); window.modernDomainOrganizer.toggleDomainSelection('${domain}')" 
+                           data-domain="${domain}">
                     
-                    <span class="action-badge ${plan.action === 'create-new' ? 'action-new' : 'action-existing'}">
-                        ${plan.action === 'create-new' ? 'Nouveau' : 'Existant'}
-                    </span>
-                </div>
-            </div>
-            
-            <div class="domain-content ${isExpanded ? 'expanded' : ''}">
-                <div class="emails-list">
-                    ${this.createEmailsList(domain, plan.emails)}
-                </div>
-            </div>
-        `;
-
-        return div;
-    }
-
-    createEmailsList(domain, emails) {
-        return emails.map((email, index) => `
-            <div class="email-item" data-email-id="${email.id}">
-                <input type="checkbox" class="email-checkbox" ${email.selected !== false ? 'checked' : ''} 
-                       onchange="window.modernDomainOrganizer.toggleEmailSelection('${domain}', '${email.id}')"
-                       data-domain="${domain}" data-email-id="${email.id}">
-                
-                <div class="email-info">
-                    <div class="email-subject" title="${email.subject || '(Pas de sujet)'}">
-                        ${email.subject || '(Pas de sujet)'}
-                    </div>
-                    <div class="email-from">
-                        De: ${email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu'}
-                    </div>
-                </div>
-                
-                <div class="email-date">
-                    ${new Date(email.receivedDateTime).toLocaleDateString()}
-                </div>
-                
-                <div class="email-actions">
-                    <button class="btn btn-outline btn-small" 
-                            onclick="window.modernDomainOrganizer.editEmail('${domain}', '${email.id}')">
-                        <i class="fas fa-edit"></i>
-                        Éditer
+                    <button class="domain-expand">
+                        <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'}"></i>
                     </button>
+                    
+                    <div class="domain-info">
+                        <div class="domain-name">📧 ${domain}</div>
+                        <div class="domain-stats">
+                            ${plan.emailCount} emails • ${plan.emails.filter(e => e.selected !== false).length} sélectionnés
+                        </div>
+                    </div>
+                    
+                    <div class="domain-actions" onclick="event.stopPropagation()">
+                        <input type="text" class="folder-input" value="${plan.targetFolder}" 
+                               placeholder="Nom du dossier" data-domain="${domain}"
+                               onchange="window.modernDomainOrganizer.updateFolderName('${domain}', this.value)">
+                        
+                        <span class="action-badge ${plan.action === 'create-new' ? 'action-new' : 'action-existing'}">
+                            ${plan.action === 'create-new' ? 'Nouveau' : 'Existant'}
+                        </span>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+                
+                <div class="domain-content ${isExpanded ? 'expanded' : ''}">
+                    <div class="emails-list">
+                        ${plan.emails.map((email) => `
+                            <div class="email-item" data-email-id="${email.id}">
+                                <input type="checkbox" class="email-checkbox" ${email.selected !== false ? 'checked' : ''} 
+                                       onchange="window.modernDomainOrganizer.toggleEmailSelection('${domain}', '${email.id}')"
+                                       data-domain="${domain}" data-email-id="${email.id}">
+                                
+                                <div class="email-info">
+                                    <div class="email-subject" title="${safeSubject(email)}">
+                                        ${safeSubject(email)}
+                                    </div>
+                                    <div class="email-from">De: ${safeFrom(email)}</div>
+                                </div>
+                                
+                                <div class="email-date">${safeDate(email)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            return div;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur création élément domaine:', error);
+            
+            // Élément de fallback en cas d'erreur
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'domain-item error';
+            fallbackDiv.innerHTML = `
+                <div class="domain-header">
+                    <div class="domain-info">
+                        <div class="domain-name">❌ ${domain}</div>
+                        <div class="domain-stats">Erreur d'affichage</div>
+                    </div>
+                </div>
+            `;
+            return fallbackDiv;
+        }
     }
 
-    // Gestion des interactions
+    // Gestion des interactions avec protection d'erreurs
     toggleDomain(domain) {
-        if (this.expandedDomains.has(domain)) {
-            this.expandedDomains.delete(domain);
-        } else {
-            this.expandedDomains.add(domain);
-        }
-        
-        const domainElement = document.querySelector(`[data-domain="${domain}"]`);
-        if (domainElement) {
-            const content = domainElement.querySelector('.domain-content');
-            const icon = domainElement.querySelector('.domain-expand i');
-            
+        try {
             if (this.expandedDomains.has(domain)) {
-                domainElement.classList.add('expanded');
-                content.classList.add('expanded');
-                icon.className = 'fas fa-chevron-down';
+                this.expandedDomains.delete(domain);
             } else {
-                domainElement.classList.remove('expanded');
-                content.classList.remove('expanded');
-                icon.className = 'fas fa-chevron-right';
-            }
-        }
-    }
-
-    toggleDomainSelection(domain) {
-        const plan = this.organizationPlan.get(domain);
-        if (plan) {
-            plan.selected = !plan.selected;
-            
-            plan.emails.forEach(email => {
-                email.selected = plan.selected;
-            });
-            
-            this.updateDomainDisplay(domain);
-            this.updateTotalEmailsCount();
-        }
-    }
-
-    toggleEmailSelection(domain, emailId) {
-        const plan = this.organizationPlan.get(domain);
-        if (plan) {
-            const email = plan.emails.find(e => e.id === emailId);
-            if (email) {
-                email.selected = !email.selected;
-                
-                const selectedEmails = plan.emails.filter(e => e.selected !== false).length;
-                plan.selected = selectedEmails > 0;
-                
-                this.updateDomainDisplay(domain);
-                this.updateTotalEmailsCount();
-            }
-        }
-    }
-
-    updateFolderName(domain, newName) {
-        const plan = this.organizationPlan.get(domain);
-        if (plan) {
-            plan.targetFolder = newName;
-            
-            const existingFolder = this.findExistingFolderByName(newName);
-            if (existingFolder) {
-                plan.action = 'use-existing';
-                plan.targetFolderId = existingFolder.id;
-            } else {
-                plan.action = 'create-new';
-                plan.targetFolderId = null;
+                this.expandedDomains.add(domain);
             }
             
             const domainElement = document.querySelector(`[data-domain="${domain}"]`);
             if (domainElement) {
-                const badge = domainElement.querySelector('.action-badge');
-                badge.className = `action-badge ${plan.action === 'create-new' ? 'action-new' : 'action-existing'}`;
-                badge.textContent = plan.action === 'create-new' ? 'Nouveau' : 'Existant';
+                const content = domainElement.querySelector('.domain-content');
+                const icon = domainElement.querySelector('.domain-expand i');
+                
+                if (this.expandedDomains.has(domain)) {
+                    domainElement.classList.add('expanded');
+                    if (content) content.classList.add('expanded');
+                    if (icon) icon.className = 'fas fa-chevron-down';
+                } else {
+                    domainElement.classList.remove('expanded');
+                    if (content) content.classList.remove('expanded');
+                    if (icon) icon.className = 'fas fa-chevron-right';
+                }
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur toggle domaine:', error);
+        }
+    }
+
+    toggleDomainSelection(domain) {
+        try {
+            const plan = this.organizationPlan.get(domain);
+            if (plan) {
+                plan.selected = !plan.selected;
+                
+                plan.emails.forEach(email => {
+                    email.selected = plan.selected;
+                });
+                
+                this.updateDomainDisplay(domain);
+                this.updateTotalEmailsCount();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sélection domaine:', error);
+        }
+    }
+
+    toggleEmailSelection(domain, emailId) {
+        try {
+            const plan = this.organizationPlan.get(domain);
+            if (plan) {
+                const email = plan.emails.find(e => e.id === emailId);
+                if (email) {
+                    email.selected = !email.selected;
+                    
+                    const selectedEmails = plan.emails.filter(e => e.selected !== false).length;
+                    plan.selected = selectedEmails > 0;
+                    
+                    this.updateDomainDisplay(domain);
+                    this.updateTotalEmailsCount();
+                }
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sélection email:', error);
+        }
+    }
+
+    updateFolderName(domain, newName) {
+        try {
+            if (!newName || newName.trim() === '') {
+                this.showWarning('Le nom du dossier ne peut pas être vide');
+                return;
             }
             
-            this.displayPlanSummary(document.getElementById('planSummary'));
+            const plan = this.organizationPlan.get(domain);
+            if (plan) {
+                plan.targetFolder = newName.trim();
+                
+                const existingFolder = this.findExistingFolderByName(newName.trim());
+                if (existingFolder) {
+                    plan.action = 'use-existing';
+                    plan.targetFolderId = existingFolder.id;
+                } else {
+                    plan.action = 'create-new';
+                    plan.targetFolderId = null;
+                }
+                
+                const domainElement = document.querySelector(`[data-domain="${domain}"]`);
+                if (domainElement) {
+                    const badge = domainElement.querySelector('.action-badge');
+                    if (badge) {
+                        badge.className = `action-badge ${plan.action === 'create-new' ? 'action-new' : 'action-existing'}`;
+                        badge.textContent = plan.action === 'create-new' ? 'Nouveau' : 'Existant';
+                    }
+                }
+                
+                this.displayPlanSummary(document.getElementById('planSummary'));
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour nom dossier:', error);
+            this.showError('Erreur lors de la mise à jour du nom de dossier');
         }
     }
 
     updateDomainDisplay(domain) {
-        const plan = this.organizationPlan.get(domain);
-        if (!plan) return;
-        
-        const domainElement = document.querySelector(`[data-domain="${domain}"]`);
-        if (domainElement) {
-            const domainCheckbox = domainElement.querySelector('.domain-checkbox');
-            domainCheckbox.checked = plan.selected;
+        try {
+            const plan = this.organizationPlan.get(domain);
+            if (!plan) return;
             
-            const selectedEmails = plan.emails.filter(e => e.selected !== false).length;
-            const statsElement = domainElement.querySelector('.domain-stats');
-            statsElement.textContent = `${plan.emailCount} emails • ${selectedEmails} sélectionnés`;
-            
-            plan.emails.forEach(email => {
-                const emailCheckbox = domainElement.querySelector(`[data-email-id="${email.id}"]`);
-                if (emailCheckbox) {
-                    emailCheckbox.checked = email.selected !== false;
+            const domainElement = document.querySelector(`[data-domain="${domain}"]`);
+            if (domainElement) {
+                const domainCheckbox = domainElement.querySelector('.domain-checkbox');
+                if (domainCheckbox) domainCheckbox.checked = plan.selected;
+                
+                const selectedEmails = plan.emails.filter(e => e.selected !== false).length;
+                const statsElement = domainElement.querySelector('.domain-stats');
+                if (statsElement) {
+                    statsElement.textContent = `${plan.emailCount} emails • ${selectedEmails} sélectionnés`;
                 }
-            });
+                
+                plan.emails.forEach(email => {
+                    const emailCheckbox = domainElement.querySelector(`[data-email-id="${email.id}"]`);
+                    if (emailCheckbox) {
+                        emailCheckbox.checked = email.selected !== false;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour affichage domaine:', error);
         }
     }
 
     updateTotalEmailsCount() {
-        const totalSelected = Array.from(this.organizationPlan.values())
-            .reduce((sum, plan) => {
-                if (plan.selected) {
-                    return sum + plan.emails.filter(e => e.selected !== false).length;
-                }
-                return sum;
-            }, 0);
-        
-        const element = document.getElementById('selectedEmailsText');
-        if (element) {
-            element.textContent = `${totalSelected.toLocaleString()} emails sélectionnés`;
+        try {
+            const totalSelected = Array.from(this.organizationPlan.values())
+                .reduce((sum, plan) => {
+                    if (plan.selected) {
+                        return sum + plan.emails.filter(e => e.selected !== false).length;
+                    }
+                    return sum;
+                }, 0);
+            
+            const element = document.getElementById('selectedEmailsText');
+            if (element) {
+                element.textContent = `${totalSelected.toLocaleString()} emails sélectionnés`;
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour total:', error);
         }
     }
 
     // Contrôles globaux
     expandAllDomains() {
-        this.organizationPlan.forEach((plan, domain) => {
-            this.expandedDomains.add(domain);
-        });
-        this.showOrganizationPlan();
-    }
-
-    collapseAllDomains() {
-        this.expandedDomains.clear();
-        this.showOrganizationPlan();
+        try {
+            this.organizationPlan.forEach((plan, domain) => {
+                this.expandedDomains.add(domain);
+            });
+            this.showOrganizationPlan();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur déplier tout:', error);
+        }
     }
 
     selectAllDomains() {
-        this.organizationPlan.forEach((plan, domain) => {
-            plan.selected = true;
-            plan.emails.forEach(email => {
-                email.selected = true;
+        try {
+            this.organizationPlan.forEach((plan, domain) => {
+                plan.selected = true;
+                plan.emails.forEach(email => {
+                    email.selected = true;
+                });
+                this.updateDomainDisplay(domain);
             });
-            this.updateDomainDisplay(domain);
-        });
-        this.updateTotalEmailsCount();
-    }
-
-    deselectAllDomains() {
-        this.organizationPlan.forEach((plan, domain) => {
-            plan.selected = false;
-            plan.emails.forEach(email => {
-                email.selected = false;
-            });
-            this.updateDomainDisplay(domain);
-        });
-        this.updateTotalEmailsCount();
+            this.updateTotalEmailsCount();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sélectionner tout:', error);
+        }
     }
 
     // Recherche
     searchDomains(searchTerm) {
-        const clearButton = document.querySelector('.search-clear');
-        const container = document.getElementById('domainsContainer');
-        
-        if (!container) return;
-        
-        if (clearButton) {
-            clearButton.style.display = searchTerm ? 'block' : 'none';
-        }
-        
-        const domainItems = container.querySelectorAll('.domain-item');
-        let visibleCount = 0;
-        
-        domainItems.forEach(item => {
-            const domain = item.dataset.domain;
-            const domainName = item.querySelector('.domain-name').textContent.toLowerCase();
+        try {
+            const container = document.getElementById('domainsContainer');
+            if (!container) return;
             
-            if (!searchTerm || domainName.includes(searchTerm.toLowerCase())) {
-                item.classList.remove('hidden');
-                visibleCount++;
+            const domainItems = container.querySelectorAll('.domain-item');
+            let visibleCount = 0;
+            
+            domainItems.forEach(item => {
+                try {
+                    const domain = item.dataset.domain;
+                    const domainName = item.querySelector('.domain-name')?.textContent?.toLowerCase() || '';
+                    
+                    if (!searchTerm || domainName.includes(searchTerm.toLowerCase())) {
+                        item.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                } catch (itemError) {
+                    console.warn('[ModernDomainOrganizer] Erreur item recherche:', itemError);
+                }
+            });
+            
+            if (visibleCount === 0 && searchTerm) {
+                this.showSearchNoResults(searchTerm, container);
             } else {
-                item.classList.add('hidden');
+                this.clearSearchNoResults(container);
             }
-        });
-        
-        this.showSearchResults(visibleCount, searchTerm);
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur recherche:', error);
+        }
     }
 
-    showSearchResults(count, searchTerm) {
-        const container = document.getElementById('domainsContainer');
-        if (!container) return;
-        
-        const existingMessage = container.querySelector('.search-no-results');
-        if (existingMessage) {
-            existingMessage.remove();
-        }
-        
-        if (count === 0 && searchTerm) {
+    showSearchNoResults(searchTerm, container) {
+        try {
+            this.clearSearchNoResults(container);
+            
             const message = document.createElement('div');
             message.className = 'search-no-results';
             message.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #6b7280;">
-                    <i class="fas fa-search" style="font-size: 24px; margin-bottom: 12px; opacity: 0.5;"></i>
-                    <p style="margin: 0; font-size: 16px;">Aucun domaine trouvé pour "${searchTerm}"</p>
-                    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.7;">Essayez avec un autre terme de recherche</p>
+                <div style="text-align: center; padding: 20px; color: #6b7280;">
+                    <p>Aucun domaine trouvé pour "${searchTerm}"</p>
                 </div>
             `;
             container.appendChild(message);
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage no results:', error);
         }
     }
 
-    clearSearch() {
-        const searchInput = document.getElementById('domainSearch');
-        const clearButton = document.querySelector('.search-clear');
-        
-        if (searchInput) {
-            searchInput.value = '';
-            this.searchDomains('');
-        }
-        
-        if (clearButton) {
-            clearButton.style.display = 'none';
-        }
-    }
-
-    // Édition d'email
-    editEmail(domain, emailId) {
-        const plan = this.organizationPlan.get(domain);
-        if (!plan) return;
-        
-        const email = plan.emails.find(e => e.id === emailId);
-        if (!email) return;
-        
-        this.showEmailModal(domain, email);
-    }
-
-    showEmailModal(domain, email) {
-        const modal = document.getElementById('emailModal');
-        const modalBody = document.getElementById('emailModalBody');
-        
-        if (!modal || !modalBody) return;
-        
-        modalBody.innerHTML = `
-            <div class="email-field">
-                <label>Sujet</label>
-                <input type="text" id="emailSubject" value="${email.subject || ''}" readonly>
-            </div>
-            
-            <div class="email-field">
-                <label>Expéditeur</label>
-                <input type="text" id="emailFrom" value="${email.from?.emailAddress?.address || ''}" readonly>
-            </div>
-            
-            <div class="email-field">
-                <label>Date de réception</label>
-                <input type="text" id="emailDate" value="${new Date(email.receivedDateTime).toLocaleString()}" readonly>
-            </div>
-            
-            <div class="email-field">
-                <label>Dossier de destination</label>
-                <select id="emailTargetFolder">
-                    <option value="keep-domain">Garder avec le domaine (${domain})</option>
-                    <option value="custom">Dossier personnalisé</option>
-                    ${Array.from(this.allFolders.values()).map(folder => 
-                        `<option value="${folder.id}">${folder.displayName}</option>`
-                    ).join('')}
-                </select>
-            </div>
-            
-            <div class="email-field" id="customFolderField" style="display: none;">
-                <label>Nom du dossier personnalisé</label>
-                <input type="text" id="customFolderName" placeholder="Nom du nouveau dossier">
-            </div>
-            
-            <div class="email-field">
-                <label>Action</label>
-                <select id="emailAction">
-                    <option value="move">Déplacer cet email</option>
-                    <option value="skip">Ignorer cet email</option>
-                </select>
-            </div>
-            
-            <div class="email-field">
-                <label>Aperçu du contenu</label>
-                <textarea id="emailPreview" readonly rows="4">${email.bodyPreview || 'Pas d\'aperçu disponible'}</textarea>
-            </div>
-        `;
-        
-        const targetFolderSelect = document.getElementById('emailTargetFolder');
-        const customFolderField = document.getElementById('customFolderField');
-        
-        targetFolderSelect.addEventListener('change', () => {
-            if (targetFolderSelect.value === 'custom') {
-                customFolderField.style.display = 'block';
-            } else {
-                customFolderField.style.display = 'none';
+    clearSearchNoResults(container) {
+        try {
+            const existingMessage = container.querySelector('.search-no-results');
+            if (existingMessage) {
+                existingMessage.remove();
             }
-        });
-        
-        modal.dataset.domain = domain;
-        modal.dataset.emailId = email.id;
-        
-        modal.classList.remove('hidden');
-    }
-
-    closeEmailModal() {
-        const modal = document.getElementById('emailModal');
-        if (modal) {
-            modal.classList.add('hidden');
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur clear no results:', error);
         }
-    }
-
-    saveEmailChanges() {
-        const modal = document.getElementById('emailModal');
-        const domain = modal.dataset.domain;
-        const emailId = modal.dataset.emailId;
-        
-        const plan = this.organizationPlan.get(domain);
-        if (!plan) return;
-        
-        const email = plan.emails.find(e => e.id === emailId);
-        if (!email) return;
-        
-        const targetFolder = document.getElementById('emailTargetFolder').value;
-        const customFolderName = document.getElementById('customFolderName').value;
-        const action = document.getElementById('emailAction').value;
-        
-        if (action === 'skip') {
-            email.selected = false;
-            email.customAction = 'skip';
-        } else {
-            email.selected = true;
-            email.customAction = 'move';
-            
-            if (targetFolder === 'custom' && customFolderName) {
-                email.customFolder = customFolderName;
-                email.customFolderId = null;
-            } else if (targetFolder !== 'keep-domain') {
-                const folder = Array.from(this.allFolders.values()).find(f => f.id === targetFolder);
-                if (folder) {
-                    email.customFolder = folder.displayName;
-                    email.customFolderId = folder.id;
-                }
-            } else {
-                delete email.customFolder;
-                delete email.customFolderId;
-            }
-        }
-        
-        this.updateDomainDisplay(domain);
-        this.updateTotalEmailsCount();
-        
-        this.closeEmailModal();
-        window.uiManager?.showToast('Modifications sauvegardées', 'success');
     }
 
     // Création des dossiers seulement
@@ -2575,13 +2122,13 @@ class ModernDomainOrganizer {
         
         try {
             this.isProcessing = true;
+            this.clearErrors();
             
             const selectedDomains = Array.from(this.organizationPlan.values()).filter(p => p.selected);
             const newFolders = selectedDomains.filter(p => p.action === 'create-new');
             
             if (newFolders.length === 0) {
-                window.uiManager?.showToast('Aucun nouveau dossier à créer', 'warning');
-                this.isProcessing = false;
+                this.showWarning('Aucun nouveau dossier à créer');
                 return;
             }
             
@@ -2592,13 +2139,12 @@ class ModernDomainOrganizer {
                 foldersCreated: 0,
                 emailsMoved: 0,
                 domainsProcessed: 0,
-                emailsSkipped: 0,
+                errorsCount: 0,
                 errors: [],
-                createdFolders: [],
-                processedDomains: []
+                createdFolders: []
             };
             
-            this.addExecutionLog('📁 Début de la création des dossiers seulement', 'info');
+            this.addExecutionLog('📁 Début de la création des dossiers', 'info');
             
             const totalFolders = newFolders.length;
             let processed = 0;
@@ -2612,49 +2158,57 @@ class ModernDomainOrganizer {
                     
                     this.addExecutionLog(`📁 Création du dossier "${plan.targetFolder}"`, 'info');
                     await this.createFolder(plan.targetFolder);
+                    
                     results.foldersCreated++;
                     results.createdFolders.push(plan.targetFolder);
                     this.updateExecutionStat('foldersCreated', results.foldersCreated);
                     
                     // Pause pour éviter les rate limits
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await new Promise(resolve => setTimeout(resolve, 300));
                     
                 } catch (error) {
                     console.error(`[ModernDomainOrganizer] Erreur création ${plan.targetFolder}:`, error);
-                    this.addExecutionLog(`❌ Erreur pour le dossier "${plan.targetFolder}": ${error.message}`, 'error');
+                    this.addExecutionLog(`❌ Erreur pour "${plan.targetFolder}": ${error.message}`, 'error');
                     results.errors.push({ folder: plan.targetFolder, error: error.message });
+                    results.errorsCount++;
+                    this.updateExecutionStat('errorsCount', results.errorsCount);
                 }
                 
                 processed++;
             }
             
-            this.updateExecutionProgress(100, 'Création des dossiers terminée !');
-            this.addExecutionLog('✅ Création des dossiers terminée avec succès !', 'success');
+            this.updateExecutionProgress(100, 'Création terminée !');
+            this.addExecutionLog('✅ Création des dossiers terminée', 'success');
             
-            // Recharger les dossiers pour mettre à jour la détection
-            await this.loadAllFolders();
-            this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
+            // Recharger les dossiers
+            try {
+                await this.loadAllFolders();
+                this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
+            } catch (reloadError) {
+                console.warn('[ModernDomainOrganizer] Erreur rechargement dossiers:', reloadError);
+            }
             
             setTimeout(() => {
-                document.getElementById('successTitle').textContent = 'Dossiers créés avec succès !';
+                document.getElementById('successTitle').textContent = 'Dossiers créés !';
                 this.showFinalReport(results);
-            }, 1500);
+            }, 1000);
             
         } catch (error) {
             console.error('[ModernDomainOrganizer] Erreur création dossiers:', error);
             this.addExecutionLog(`❌ Erreur critique: ${error.message}`, 'error');
-            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+            this.showError('Erreur lors de la création des dossiers: ' + error.message);
         } finally {
             this.isProcessing = false;
         }
     }
 
-    // Exécution complète (dossiers + emails)
+    // Exécution complète
     async executeOrganization() {
         if (this.isProcessing) return;
         
         try {
             this.isProcessing = true;
+            this.clearErrors();
             
             const selectedEmails = Array.from(this.organizationPlan.values())
                 .reduce((sum, plan) => {
@@ -2665,8 +2219,7 @@ class ModernDomainOrganizer {
                 }, 0);
             
             if (selectedEmails === 0) {
-                window.uiManager?.showToast('Aucun email sélectionné à organiser', 'warning');
-                this.isProcessing = false;
+                this.showWarning('Aucun email sélectionné à organiser');
                 return;
             }
             
@@ -2677,24 +2230,22 @@ class ModernDomainOrganizer {
                 foldersCreated: 0,
                 emailsMoved: 0,
                 domainsProcessed: 0,
-                emailsSkipped: 0,
+                errorsCount: 0,
                 errors: [],
                 createdFolders: [],
                 processedDomains: []
             };
             
-            this.addExecutionLog('🚀 Début de l\'organisation automatique complète', 'info');
+            this.addExecutionLog('🚀 Début de l\'organisation complète', 'info');
             
             const folderActions = new Map();
             
+            // Préparation des actions
             this.organizationPlan.forEach((plan, domain) => {
                 if (!plan.selected) return;
                 
                 plan.emails.forEach(email => {
-                    if (email.selected === false || email.customAction === 'skip') {
-                        results.emailsSkipped++;
-                        return;
-                    }
+                    if (email.selected === false) return;
                     
                     let targetFolder, targetFolderId, action;
                     
@@ -2724,6 +2275,7 @@ class ModernDomainOrganizer {
             const totalFolders = folderActions.size;
             let processed = 0;
             
+            // Traitement de chaque dossier
             for (const [folderName, folderData] of folderActions) {
                 try {
                     this.updateExecutionProgress(
@@ -2733,6 +2285,7 @@ class ModernDomainOrganizer {
                     
                     let targetFolderId = folderData.targetFolderId;
                     
+                    // Création du dossier si nécessaire
                     if (folderData.action === 'create-new') {
                         this.addExecutionLog(`📁 Création du dossier "${folderName}"`, 'info');
                         const newFolder = await this.createFolder(folderName);
@@ -2741,26 +2294,25 @@ class ModernDomainOrganizer {
                         results.createdFolders.push(folderName);
                         this.updateExecutionStat('foldersCreated', results.foldersCreated);
                         
-                        // Petite pause après création
                         await new Promise(resolve => setTimeout(resolve, 500));
                     } else {
-                        this.addExecutionLog(`📁 Utilisation du dossier existant "${folderName}"`, 'info');
+                        this.addExecutionLog(`📁 Utilisation du dossier "${folderName}"`, 'info');
                     }
                     
+                    // Déplacement des emails par lots
                     const batchSize = 10;
                     let moved = 0;
                     
                     for (let i = 0; i < folderData.emails.length; i += batchSize) {
                         const batch = folderData.emails.slice(i, i + batchSize);
                         
-                        this.addExecutionLog(`📧 Déplacement de ${batch.length} emails vers "${folderName}"...`, 'info');
+                        this.addExecutionLog(`📧 Déplacement de ${batch.length} emails vers "${folderName}"`, 'info');
                         await this.moveEmailBatch(batch, targetFolderId);
                         moved += batch.length;
                         results.emailsMoved += batch.length;
                         
                         this.updateExecutionStat('emailsMoved', results.emailsMoved);
                         
-                        // Pause entre les lots pour éviter les rate limits
                         await new Promise(resolve => setTimeout(resolve, 300));
                     }
                     
@@ -2768,318 +2320,507 @@ class ModernDomainOrganizer {
                     
                 } catch (error) {
                     console.error(`[ModernDomainOrganizer] Erreur ${folderName}:`, error);
-                    this.addExecutionLog(`❌ Erreur pour le dossier "${folderName}": ${error.message}`, 'error');
+                    this.addExecutionLog(`❌ Erreur pour "${folderName}": ${error.message}`, 'error');
                     results.errors.push({ folder: folderName, error: error.message });
+                    results.errorsCount++;
+                    this.updateExecutionStat('errorsCount', results.errorsCount);
                 }
                 
                 processed++;
             }
             
-            // Compter les domaines traités
+            // Comptage des domaines traités
             this.organizationPlan.forEach((plan, domain) => {
-                if (plan.selected && plan.emails.some(e => e.selected !== false && e.customAction !== 'skip')) {
+                if (plan.selected && plan.emails.some(e => e.selected !== false)) {
                     results.domainsProcessed++;
-                    const emailsProcessed = plan.emails.filter(e => e.selected !== false && e.customAction !== 'skip').length;
+                    const emailsProcessed = plan.emails.filter(e => e.selected !== false).length;
                     results.processedDomains.push(`${domain} (${emailsProcessed} emails)`);
                 }
             });
             
             this.updateExecutionStat('domainsProcessed', results.domainsProcessed);
-            this.updateExecutionStat('emailsSkipped', results.emailsSkipped);
             
             this.updateExecutionProgress(100, 'Organisation terminée !');
-            this.addExecutionLog('🎉 Organisation automatique terminée avec succès !', 'success');
+            this.addExecutionLog('🎉 Organisation terminée avec succès !', 'success');
             
             setTimeout(() => {
-                document.getElementById('successTitle').textContent = 'Organisation terminée avec succès !';
+                document.getElementById('successTitle').textContent = 'Organisation terminée !';
                 this.showFinalReport(results);
-            }, 1500);
+            }, 1000);
             
         } catch (error) {
-            console.error('[ModernDomainOrganizer] Erreur exécution:', error);
+            console.error('[ModernDomainOrganizer] Erreur organisation:', error);
             this.addExecutionLog(`❌ Erreur critique: ${error.message}`, 'error');
-            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+            this.showError('Erreur lors de l\'organisation: ' + error.message);
         } finally {
             this.isProcessing = false;
         }
     }
 
     async createFolder(folderName) {
-        const accessToken = await window.authService.getAccessToken();
-        
-        const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ displayName: folderName })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Impossible de créer le dossier "${folderName}": ${response.statusText}`);
+        try {
+            if (!window.authService?.isAuthenticated()) {
+                throw new Error('Non authentifié');
+            }
+            
+            const accessToken = await window.authService.getAccessToken();
+            
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ displayName: folderName })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            return await response.json();
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur création dossier:', error);
+            throw new Error(`Impossible de créer le dossier "${folderName}": ${error.message}`);
         }
-        
-        return await response.json();
     }
 
     async moveEmailBatch(emails, targetFolderId) {
-        const accessToken = await window.authService.getAccessToken();
-        
-        const batchRequests = emails.map((email, index) => ({
-            id: index.toString(),
-            method: 'POST',
-            url: `/me/messages/${email.id}/move`,
-            body: { destinationId: targetFolderId },
-            headers: { 'Content-Type': 'application/json' }
-        }));
-        
-        const response = await fetch('https://graph.microsoft.com/v1.0/$batch', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ requests: batchRequests })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Erreur déplacement: ${response.statusText}`);
+        try {
+            if (!window.authService?.isAuthenticated()) {
+                throw new Error('Non authentifié');
+            }
+            
+            const accessToken = await window.authService.getAccessToken();
+            
+            const batchRequests = emails.map((email, index) => ({
+                id: index.toString(),
+                method: 'POST',
+                url: `/me/messages/${email.id}/move`,
+                body: { destinationId: targetFolderId },
+                headers: { 'Content-Type': 'application/json' }
+            }));
+            
+            const response = await fetch('https://graph.microsoft.com/v1.0/$batch', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ requests: batchRequests })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const result = await response.json();
+            
+            // Vérifier les erreurs dans la réponse batch
+            if (result.responses) {
+                const errors = result.responses.filter(r => r.status >= 400);
+                if (errors.length > 0) {
+                    console.warn('[ModernDomainOrganizer] Erreurs batch:', errors);
+                }
+            }
+            
+            return result;
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur déplacement batch:', error);
+            throw new Error(`Erreur lors du déplacement: ${error.message}`);
         }
-        
-        return await response.json();
     }
 
     showFinalReport(results) {
-        this.goToStep('success');
-        
-        const report = document.getElementById('successReport');
-        if (!report) return;
-        
-        let reportHTML = '<div class="report-section">';
-        reportHTML += '<h4>📊 Résumé de l\'opération</h4>';
-        reportHTML += '<ul class="report-list">';
-        reportHTML += `<li><span>Emails déplacés:</span> <strong>${results.emailsMoved.toLocaleString()}</strong></li>`;
-        reportHTML += `<li><span>Emails ignorés:</span> <strong>${results.emailsSkipped.toLocaleString()}</strong></li>`;
-        reportHTML += `<li><span>Domaines traités:</span> <strong>${results.domainsProcessed}</strong></li>`;
-        reportHTML += `<li><span>Dossiers créés:</span> <strong>${results.foldersCreated}</strong></li>`;
-        reportHTML += '</ul></div>';
-        
-        if (results.createdFolders.length > 0) {
-            reportHTML += '<div class="report-section">';
-            reportHTML += '<h4>✨ Nouveaux dossiers créés</h4>';
+        try {
+            this.goToStep('success');
+            
+            const report = document.getElementById('successReport');
+            if (!report) return;
+            
+            let reportHTML = '<div class="report-section">';
+            reportHTML += '<h4>📊 Résumé</h4>';
             reportHTML += '<ul class="report-list">';
-            results.createdFolders.slice(0, 15).forEach(folder => {
-                reportHTML += `<li>📁 ${folder}</li>`;
-            });
-            if (results.createdFolders.length > 15) {
-                reportHTML += `<li><em>... et ${results.createdFolders.length - 15} autres dossiers</em></li>`;
+            reportHTML += `<li>Emails déplacés: <strong>${results.emailsMoved.toLocaleString()}</strong></li>`;
+            reportHTML += `<li>Domaines traités: <strong>${results.domainsProcessed}</strong></li>`;
+            reportHTML += `<li>Dossiers créés: <strong>${results.foldersCreated}</strong></li>`;
+            if (results.errorsCount > 0) {
+                reportHTML += `<li>Erreurs: <strong>${results.errorsCount}</strong></li>`;
             }
             reportHTML += '</ul></div>';
-        }
-        
-        if (results.processedDomains.length > 0) {
-            reportHTML += '<div class="report-section">';
-            reportHTML += '<h4>📧 Domaines organisés</h4>';
-            reportHTML += '<ul class="report-list">';
-            results.processedDomains.slice(0, 10).forEach(domain => {
-                reportHTML += `<li>${domain}</li>`;
-            });
-            if (results.processedDomains.length > 10) {
-                reportHTML += `<li><em>... et ${results.processedDomains.length - 10} autres domaines</em></li>`;
+            
+            if (results.createdFolders.length > 0) {
+                reportHTML += '<div class="report-section">';
+                reportHTML += '<h4>✨ Nouveaux dossiers</h4>';
+                reportHTML += '<ul class="report-list">';
+                results.createdFolders.slice(0, 10).forEach(folder => {
+                    reportHTML += `<li>📁 ${folder}</li>`;
+                });
+                if (results.createdFolders.length > 10) {
+                    reportHTML += `<li><em>... et ${results.createdFolders.length - 10} autres</em></li>`;
+                }
+                reportHTML += '</ul></div>';
             }
-            reportHTML += '</ul></div>';
+            
+            if (results.errors.length > 0) {
+                reportHTML += '<div class="report-section">';
+                reportHTML += '<h4>⚠️ Erreurs</h4>';
+                reportHTML += '<ul class="report-list">';
+                results.errors.slice(0, 5).forEach(error => {
+                    reportHTML += `<li style="color: #dc2626;">${error.folder}: ${error.error}</li>`;
+                });
+                if (results.errors.length > 5) {
+                    reportHTML += `<li><em>... et ${results.errors.length - 5} autres erreurs</em></li>`;
+                }
+                reportHTML += '</ul></div>';
+            }
+            
+            report.innerHTML = reportHTML;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur rapport final:', error);
         }
-        
-        if (results.errors.length > 0) {
-            reportHTML += '<div class="report-section">';
-            reportHTML += '<h4>⚠️ Erreurs rencontrées</h4>';
-            reportHTML += '<ul class="report-list">';
-            results.errors.forEach(error => {
-                reportHTML += `<li style="color: #dc2626;">${error.folder}: ${error.error}</li>`;
-            });
-            reportHTML += '</ul></div>';
-        }
-        
-        report.innerHTML = reportHTML;
     }
 
-    // Utilitaires
+    // Utilitaires avec gestion d'erreurs
     updateProgress(percent, message) {
-        const progressFill = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressPercent');
-        const status = document.getElementById('scanStatus');
+        try {
+            const progressFill = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressPercent');
+            const status = document.getElementById('scanStatus');
 
-        if (progressFill) progressFill.style.width = `${percent}%`;
-        if (progressText) progressText.textContent = `${Math.round(percent)}%`;
-        if (status) status.textContent = message;
+            if (progressFill) progressFill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+            if (progressText) progressText.textContent = `${Math.round(percent)}%`;
+            if (status) status.textContent = message || 'En cours...';
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour progress:', error);
+        }
     }
 
     updateStat(statId, value) {
-        const element = document.getElementById(statId);
-        if (element) {
-            element.textContent = value.toLocaleString();
+        try {
+            const element = document.getElementById(statId);
+            if (element) {
+                element.textContent = (value || 0).toLocaleString();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour stat:', error);
         }
     }
 
     updateExecutionProgress(percent, message) {
-        const progressFill = document.getElementById('executionProgressBar');
-        const progressText = document.getElementById('executionPercent');
-        const status = document.getElementById('executionStatus');
+        try {
+            const progressFill = document.getElementById('executionProgressBar');
+            const progressText = document.getElementById('executionPercent');
+            const status = document.getElementById('executionStatus');
 
-        if (progressFill) progressFill.style.width = `${percent}%`;
-        if (progressText) progressText.textContent = `${Math.round(percent)}%`;
-        if (status) status.textContent = message;
+            if (progressFill) progressFill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+            if (progressText) progressText.textContent = `${Math.round(percent)}%`;
+            if (status) status.textContent = message || 'En cours...';
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour execution progress:', error);
+        }
     }
 
     updateExecutionStat(statId, value) {
-        const element = document.getElementById(statId);
-        if (element) {
-            element.textContent = value.toLocaleString();
+        try {
+            const element = document.getElementById(statId);
+            if (element) {
+                element.textContent = (value || 0).toLocaleString();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour execution stat:', error);
         }
     }
 
     addExecutionLog(message, type = 'info') {
-        const log = document.getElementById('executionLog');
-        if (!log) return;
-        
-        const entry = document.createElement('div');
-        entry.className = `log-entry ${type}`;
-        entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
-        
-        log.appendChild(entry);
-        log.scrollTop = log.scrollHeight;
+        try {
+            const log = document.getElementById('executionLog');
+            if (!log) return;
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            
+            // Limiter le nombre d'entrées pour éviter la surcharge
+            const entries = log.querySelectorAll('.log-entry');
+            if (entries.length > 100) {
+                entries[0].remove();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur ajout log:', error);
+        }
     }
 
+    // Gestion des erreurs et messages
+    showError(message) {
+        try {
+            console.error('[ModernDomainOrganizer] Erreur:', message);
+            this.showMessage(message, 'error');
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast(message, 'error');
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage erreur:', error);
+        }
+    }
+
+    showWarning(message) {
+        try {
+            console.warn('[ModernDomainOrganizer] Avertissement:', message);
+            this.showMessage(message, 'warning');
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast(message, 'warning');
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage warning:', error);
+        }
+    }
+
+    showMessage(message, type) {
+        try {
+            this.clearErrors();
+            
+            const currentCard = document.querySelector('.step-content:not(.hidden) .step-card');
+            if (!currentCard) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${type}-message`;
+            messageDiv.textContent = message;
+            
+            currentCard.insertBefore(messageDiv, currentCard.firstChild);
+            
+            // Auto-suppression après 5 secondes
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 5000);
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage message:', error);
+        }
+    }
+
+    clearErrors() {
+        try {
+            document.querySelectorAll('.error-message, .warning-message, .info-message').forEach(el => {
+                el.remove();
+            });
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur clear errors:', error);
+        }
+    }
+
+    // Extraction et validation des données
     extractDomain(email) {
         try {
-            const address = email.from?.emailAddress?.address;
-            if (!address) return null;
-            return address.toLowerCase().split('@')[1] || null;
+            const address = email?.from?.emailAddress?.address;
+            if (!address || typeof address !== 'string') return null;
+            
+            const parts = address.toLowerCase().split('@');
+            return parts.length === 2 ? parts[1] : null;
         } catch (error) {
             return null;
         }
     }
 
     shouldExcludeDomain(domain, excludedDomains) {
-        return excludedDomains.some(excluded => 
-            domain.toLowerCase().includes(excluded.toLowerCase())
-        );
+        try {
+            if (!domain || !Array.isArray(excludedDomains)) return false;
+            
+            return excludedDomains.some(excluded => {
+                try {
+                    return domain.toLowerCase().includes(excluded.toLowerCase());
+                } catch {
+                    return false;
+                }
+            });
+        } catch (error) {
+            return false;
+        }
     }
 
     shouldExcludeEmail(email, excludedEmails) {
-        const address = email.from?.emailAddress?.address?.toLowerCase();
-        if (!address) return false;
-        
-        return excludedEmails.some(excluded => 
-            address.includes(excluded.toLowerCase())
-        );
+        try {
+            const address = email?.from?.emailAddress?.address?.toLowerCase();
+            if (!address || !Array.isArray(excludedEmails)) return false;
+            
+            return excludedEmails.some(excluded => {
+                try {
+                    return address.includes(excluded.toLowerCase());
+                } catch {
+                    return false;
+                }
+            });
+        } catch (error) {
+            return false;
+        }
     }
 
     findExistingFolder(domain) {
-        console.log(`[ModernDomainOrganizer] Recherche dossier pour domaine: ${domain}`);
-        
-        // Recherche exacte par nom de domaine
-        const exactMatch = this.allFolders.get(domain.toLowerCase());
-        if (exactMatch) {
-            console.log(`[ModernDomainOrganizer] ✅ Correspondance exacte trouvée: ${exactMatch.displayName}`);
-            return exactMatch;
-        }
-        
-        // Recherche par partie principale du domaine (avant le premier point)
-        const domainParts = domain.split('.');
-        if (domainParts.length > 1) {
-            const mainDomain = domainParts[0];
-            const mainMatch = this.allFolders.get(mainDomain.toLowerCase());
-            if (mainMatch) {
-                console.log(`[ModernDomainOrganizer] ✅ Correspondance partielle trouvée: ${mainMatch.displayName} pour ${mainDomain}`);
-                return mainMatch;
+        try {
+            if (!domain) return null;
+            
+            // Recherche exacte
+            const exactMatch = this.allFolders.get(domain.toLowerCase());
+            if (exactMatch) return exactMatch;
+            
+            // Recherche par partie principale
+            const domainParts = domain.split('.');
+            if (domainParts.length > 1) {
+                const mainDomain = domainParts[0];
+                const mainMatch = this.allFolders.get(mainDomain.toLowerCase());
+                if (mainMatch) return mainMatch;
             }
-        }
-        
-        // Recherche approximative dans tous les noms de dossiers
-        for (const [folderKey, folder] of this.allFolders) {
-            if (folderKey.includes(domain.toLowerCase()) || domain.toLowerCase().includes(folderKey)) {
-                console.log(`[ModernDomainOrganizer] ✅ Correspondance approximative trouvée: ${folder.displayName}`);
-                return folder;
+            
+            // Recherche approximative
+            for (const [folderKey, folder] of this.allFolders) {
+                if (folderKey.includes(domain.toLowerCase()) || domain.toLowerCase().includes(folderKey)) {
+                    return folder;
+                }
             }
+            
+            return null;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur recherche dossier:', error);
+            return null;
         }
-        
-        console.log(`[ModernDomainOrganizer] ❌ Aucun dossier existant trouvé pour: ${domain}`);
-        return null;
     }
 
     findExistingFolderByName(name) {
-        for (const folder of this.allFolders.values()) {
-            if (folder.displayName.toLowerCase() === name.toLowerCase()) {
-                return folder;
+        try {
+            if (!name) return null;
+            
+            for (const folder of this.allFolders.values()) {
+                if (folder.displayName.toLowerCase() === name.toLowerCase()) {
+                    return folder;
+                }
             }
+            return null;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur recherche dossier par nom:', error);
+            return null;
         }
-        return null;
+    }
+
+    // Modal management
+    closeEmailModal() {
+        try {
+            const modal = document.getElementById('emailModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur fermeture modal:', error);
+        }
+    }
+
+    saveEmailChanges() {
+        try {
+            // Placeholder pour l'édition d'emails (fonctionnalité avancée)
+            this.closeEmailModal();
+            this.showMessage('Fonctionnalité d\'édition en développement', 'info');
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sauvegarde email:', error);
+        }
     }
 
     restart() {
-        this.currentStep = 'introduction';
-        this.scanResults = null;
-        this.organizationPlan.clear();
-        this.emailsByDomain.clear();
-        this.expandedDomains.clear();
-        this.totalEmailsScanned = 0;
-        
-        this.goToStep('introduction');
-        this.setDefaultDates();
+        try {
+            this.currentStep = 'introduction';
+            this.scanResults = null;
+            this.organizationPlan.clear();
+            this.emailsByDomain.clear();
+            this.expandedDomains.clear();
+            this.totalEmailsScanned = 0;
+            this.isProcessing = false;
+            
+            this.clearErrors();
+            this.goToStep('introduction');
+            this.setDefaultDates();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur restart:', error);
+        }
     }
 
     // Interface publique
     showPage() {
-        console.log('[ModernDomainOrganizer] Affichage de la page...');
-        
-        if (!window.authService?.isAuthenticated()) {
-            window.uiManager?.showToast('Veuillez vous connecter', 'warning');
-            return;
+        try {
+            console.log('[ModernDomainOrganizer] Affichage de la page...');
+            
+            if (!window.authService?.isAuthenticated()) {
+                this.showError('Veuillez vous connecter pour continuer');
+                return;
+            }
+            
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) loginPage.style.display = 'none';
+            
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContent.style.display = 'block';
+                pageContent.innerHTML = this.getPageHTML();
+            }
+            
+            this.initializePage();
+            
+            // Mise à jour de la navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const rangerButton = document.querySelector('[data-page="ranger"]');
+            if (rangerButton) rangerButton.classList.add('active');
+            
+            console.log('[ModernDomainOrganizer] ✅ Page affichée');
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage page:', error);
+            this.showError('Erreur lors de l\'affichage de la page: ' + error.message);
         }
-        
-        const loginPage = document.getElementById('loginPage');
-        if (loginPage) loginPage.style.display = 'none';
-        
-        const pageContent = document.getElementById('pageContent');
-        if (pageContent) {
-            pageContent.style.display = 'block';
-            pageContent.innerHTML = this.getPageHTML();
-        }
-        
-        this.initializePage();
-        
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        const rangerButton = document.querySelector('[data-page="ranger"]');
-        if (rangerButton) rangerButton.classList.add('active');
-        
-        console.log('[ModernDomainOrganizer] ✅ Page affichée');
     }
 }
 
-// Initialisation
-window.modernDomainOrganizer = new ModernDomainOrganizer();
-
-// Gestion autonome
-document.addEventListener('DOMContentLoaded', function() {
-    document.addEventListener('click', function(e) {
-        const rangerButton = e.target.closest('[data-page="ranger"]');
-        if (!rangerButton) return;
-        
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        
-        window.modernDomainOrganizer.showPage();
-        return false;
-    }, true);
-});
-
-window.showModernDomainOrganizer = function() {
-    window.modernDomainOrganizer.showPage();
-};
-
-console.log('[ModernDomainOrganizer] ✅ Module complet et opérationnel chargé');
+// Initialisation avec gestion d'erreurs
+try {
+    window.modernDomainOrganizer = new ModernDomainOrganizer();
+    
+    // Gestion autonome des événements
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            document.addEventListener('click', function(e) {
+                const rangerButton = e.target.closest('[data-page="ranger"]');
+                if (!rangerButton) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                window.modernDomainOrganizer.showPage();
+                return false;
+            }, true);
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur setup événements:', error);
+        }
+    });
+    
+    // Fonction globale d'accès
+    window.showModernDomainOrganizer = function() {
+        try {
+            window.modernDomainOrganizer.showPage();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur fonction globale:', error);
+        }
+    };
+    
+    console.log('[ModernDomainOrganizer] ✅ Module chargé avec gestion d\'erreurs complète');
+    
+} catch (error) {
+    console.error('[ModernDomainOrganizer] ❌ Erreur fatale lors du chargement:', error);
+}
