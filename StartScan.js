@@ -1,6 +1,6 @@
-// StartScan.js - Version 8.1 - Intégration complète avec paramètres
+// StartScan.js - Version 8.2 - Intégration complète avec paramètres - CORRIGÉ
 
-console.log('[StartScan] 🚀 Loading StartScan.js v8.1...');
+console.log('[StartScan] 🚀 Loading StartScan.js v8.2...');
 
 class MinimalScanModule {
     constructor() {
@@ -14,14 +14,15 @@ class MinimalScanModule {
         this.settings = {};
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
+        this.settingsCheckInterval = null;
         
-        console.log('[MinimalScan] Scanner ultra-minimaliste v8.1 initialized avec intégration paramètres');
+        console.log('[MinimalScan] Scanner ultra-minimaliste v8.2 initialized avec intégration paramètres - CORRIGÉ');
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
     }
 
     // ================================================
-    // INTÉGRATION AVEC LES PARAMÈTRES - NOUVEAU
+    // INTÉGRATION AVEC LES PARAMÈTRES - CORRIGÉE
     // ================================================
     loadSettingsFromCategoryManager() {
         try {
@@ -60,6 +61,13 @@ class MinimalScanModule {
                 }
             }
             
+            // Si aucun paramètre n'a été trouvé, utiliser les valeurs par défaut
+            if (!this.settings || Object.keys(this.settings).length === 0) {
+                this.settings = this.getDefaultSettings();
+                this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+                console.log('[MinimalScan] ✅ Paramètres par défaut utilisés');
+            }
+            
             this.lastSettingsSync = Date.now();
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur chargement paramètres:', error);
@@ -86,7 +94,7 @@ class MinimalScanModule {
     }
 
     // ================================================
-    // VÉRIFICATION PÉRIODIQUE DES PARAMÈTRES - NOUVEAU
+    // VÉRIFICATION PÉRIODIQUE DES PARAMÈTRES
     // ================================================
     checkSettingsUpdate() {
         const now = Date.now();
@@ -156,7 +164,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v8.1 avec intégration paramètres */
+            /* Scanner Ultra-Minimaliste v8.2 avec intégration paramètres - CORRIGÉ */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -218,25 +226,44 @@ class MinimalScanModule {
                 margin-bottom: 35px;
             }
             
-            /* NOUVEAU: Affichage des catégories pré-sélectionnées */
+            /* NOUVEAU: Affichage des catégories pré-sélectionnées - AMÉLIORÉ */
             .preselected-info {
-                background: rgba(102, 126, 234, 0.1);
-                border: 1px solid rgba(102, 126, 234, 0.3);
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 2px solid #3b82f6;
                 border-radius: 12px;
-                padding: 12px 16px;
+                padding: 16px 20px;
                 margin: 20px 0;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                color: #4338ca;
+                gap: 12px;
+                color: #1e40af;
                 font-size: 14px;
-                font-weight: 500;
+                font-weight: 600;
                 text-align: left;
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .preselected-info::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, #3b82f6, #8b5cf6);
             }
             
             .preselected-info i {
-                color: #8b5cf6;
-                font-size: 16px;
+                color: #f59e0b;
+                font-size: 18px;
+                animation: pulse 2s infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
             }
             
             /* Étapes visuelles */
@@ -522,7 +549,7 @@ class MinimalScanModule {
                 
                 .preselected-info {
                     font-size: 12px;
-                    padding: 10px 12px;
+                    padding: 12px 16px;
                 }
             }
             
@@ -555,16 +582,16 @@ class MinimalScanModule {
                 }
                 
                 .preselected-info {
-                    background: rgba(102, 126, 234, 0.15);
-                    border-color: rgba(102, 126, 234, 0.3);
-                    color: #a5b4fc;
+                    background: rgba(59, 130, 246, 0.15);
+                    border-color: rgba(59, 130, 246, 0.4);
+                    color: #93c5fd;
                 }
             }
         `;
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles minimalistes ajoutés avec intégration paramètres');
+        console.log('[MinimalScan] ✅ Styles minimalistes ajoutés avec intégration paramètres - CORRIGÉ');
     }
 
     async render(container) {
@@ -1226,4 +1253,4 @@ window.forceScannerSync = function() {
     return window.minimalScanModule.getDebugInfo();
 };
 
-console.log('[StartScan] 🚀 Scanner minimaliste v8.1 prêt avec intégration paramètres complète!');
+console.log('[StartScan] 🚀 Scanner minimaliste v8.2 prêt avec intégration paramètres complète - CORRIGÉ!');
