@@ -37,12 +37,24 @@ class CategoriesPage {
     // =====================================
     renderSettings(container) {
         try {
-            const settings = this.loadSettings();
+            // Initialiser les paramètres par défaut si nécessaire
+            let settings = this.initializeDefaultSettings();
             
             container.innerHTML = `
                 <div class="settings-page-compact">
                     <div class="page-header-compact">
                         <h1>Paramètres</h1>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.debugSettings()" title="Debug">
+                                <i class="fas fa-bug"></i> Debug
+                            </button>
+                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.testCategorySelection()" title="Test">
+                                <i class="fas fa-vial"></i> Test
+                            </button>
+                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.forceUpdateUI()" title="Refresh">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Onglets -->
@@ -75,6 +87,15 @@ class CategoriesPage {
             // Initialiser les événements après le rendu
             setTimeout(() => {
                 this.initializeEventListeners();
+                
+                // Activer le mode debug temporairement
+                this.setDebugMode(true);
+                
+                // Vérifier l'état après initialisation
+                setTimeout(() => {
+                    console.log('[CategoriesPage] Vérification post-initialisation...');
+                    this.testCategorySelection();
+                }, 500);
             }, 100);
             
         } catch (error) {
@@ -456,12 +477,17 @@ class CategoriesPage {
     }
 
     // =====================================
-    // ONGLET AUTOMATISATION - CORRIGÉ
+    // ONGLET AUTOMATISATION - CORRIGÉ AVEC DEBUG
     // =====================================
     renderAutomationTab(settings) {
         try {
             const categories = window.categoryManager?.getCategories() || {};
             const preselectedCategories = settings.taskPreselectedCategories || [];
+            
+            console.log('[CategoriesPage] DEBUG - Rendu automatisation:');
+            console.log('  - Catégories disponibles:', Object.keys(categories));
+            console.log('  - Catégories pré-sélectionnées:', preselectedCategories);
+            console.log('  - Settings complets:', settings);
             
             return `
                 <div class="automation-focused-layout">
@@ -472,17 +498,25 @@ class CategoriesPage {
                         </div>
                         <p>Sélectionnez les catégories d'emails qui seront automatiquement proposées pour la création de tâches et configurez le comportement de l'automatisation.</p>
                         
-                        <!-- Sélection des catégories - CORRIGÉ -->
+                        <!-- Debug info -->
+                        <div style="background: #f0f9ff; padding: 10px; border-radius: 6px; margin: 10px 0; font-size: 12px; color: #0369a1;">
+                            <strong>Debug:</strong> ${preselectedCategories.length} catégorie(s) pré-sélectionnée(s): ${preselectedCategories.join(', ')}
+                        </div>
+                        
+                        <!-- Sélection des catégories - CORRIGÉ AVEC DEBUG -->
                         <div class="task-automation-section">
                             <h4><i class="fas fa-tags"></i> Catégories pré-sélectionnées</h4>
                             <div class="categories-selection-grid-automation">
                                 ${Object.entries(categories).map(([id, category]) => {
                                     const isPreselected = preselectedCategories.includes(id);
+                                    console.log(`  - ${id} (${category.name}): ${isPreselected ? 'SELECTED' : 'not selected'}`);
                                     return `
-                                        <label class="category-checkbox-item-enhanced">
+                                        <label class="category-checkbox-item-enhanced" data-category-id="${id}">
                                             <input type="checkbox" 
                                                    value="${id}"
-                                                   ${isPreselected ? 'checked' : ''}>
+                                                   data-category-name="${category.name}"
+                                                   ${isPreselected ? 'checked' : ''}
+                                                   onchange="console.log('Checkbox ${id} changed to:', this.checked); window.categoriesPage.updateTaskPreselectedCategories();">
                                             <div class="category-checkbox-content-enhanced">
                                                 <span class="cat-icon-automation" style="background: ${category.color}20; color: ${category.color}">
                                                     ${category.icon}
@@ -627,7 +661,7 @@ class CategoriesPage {
         try {
             const settings = this.loadSettings();
             
-            settings.preferences = {
+            const preferences = {
                 darkMode: document.getElementById('darkMode')?.checked || false,
                 compactView: document.getElementById('compactView')?.checked || false,
                 showNotifications: document.getElementById('showNotifications')?.checked !== false,
@@ -635,8 +669,14 @@ class CategoriesPage {
                 detectCC: document.getElementById('detectCC')?.checked !== false
             };
             
+            settings.preferences = preferences;
             this.saveSettings(settings);
-            console.log('[CategoriesPage] Préférences sauvegardées:', settings.preferences);
+            
+            console.log('[CategoriesPage] Préférences sauvegardées:', preferences);
+            
+            // Notifier les autres modules
+            this.notifySettingsChange('preferences', preferences);
+            
             window.uiManager?.showToast('Préférences sauvegardées', 'success');
         } catch (error) {
             console.error('[CategoriesPage] Erreur savePreferences:', error);
@@ -659,13 +699,11 @@ class CategoriesPage {
             this.saveSettings(settings);
             
             console.log('[CategoriesPage] Paramètres de scan sauvegardés:', scanSettings);
-            window.uiManager?.showToast('Paramètres de scan sauvegardés', 'success');
             
-            // Synchroniser avec EmailScanner s'il existe
-            if (window.emailScanner && typeof window.emailScanner.updateSettings === 'function') {
-                window.emailScanner.updateSettings(scanSettings);
-                console.log('[CategoriesPage] Paramètres synchronisés avec EmailScanner');
-            }
+            // Notifier les autres modules
+            this.notifySettingsChange('scanSettings', scanSettings);
+            
+            window.uiManager?.showToast('Paramètres de scan sauvegardés', 'success');
         } catch (error) {
             console.error('[CategoriesPage] Erreur saveScanSettings:', error);
             window.uiManager?.showToast('Erreur de sauvegarde', 'error');
@@ -687,8 +725,11 @@ class CategoriesPage {
             this.saveSettings(settings);
             
             console.log('[CategoriesPage] Paramètres d\'automatisation sauvegardés:', automationSettings);
-            window.uiManager?.showToast('Paramètres d\'automatisation sauvegardés', 'success');
             
+            // Notifier les autres modules
+            this.notifySettingsChange('automationSettings', automationSettings);
+            
+            window.uiManager?.showToast('Paramètres d\'automatisation sauvegardés', 'success');
             this.updateAutomationStats();
         } catch (error) {
             console.error('[CategoriesPage] Erreur saveAutomationSettings:', error);
@@ -698,27 +739,109 @@ class CategoriesPage {
 
     updateTaskPreselectedCategories() {
         try {
+            console.log('[CategoriesPage] DEBUG updateTaskPreselectedCategories() appelée');
+            
             const settings = this.loadSettings();
+            console.log('  - Settings actuels:', settings.taskPreselectedCategories);
+            
+            // Sélectionner TOUS les checkboxes de catégories dans la grille
             const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
+            console.log(`  - ${checkboxes.length} checkboxes trouvées`);
             
             const selectedCategories = [];
-            checkboxes.forEach(checkbox => {
-                if (checkbox.checked) {
+            checkboxes.forEach((checkbox, index) => {
+                console.log(`  - Checkbox ${index}: value="${checkbox.value}", checked=${checkbox.checked}, name="${checkbox.dataset.categoryName}"`);
+                if (checkbox.checked && checkbox.value) {
                     selectedCategories.push(checkbox.value);
-                    console.log(`[CategoriesPage] Catégorie sélectionnée: ${checkbox.value}`);
                 }
             });
             
+            console.log('  - Nouvelles catégories sélectionnées:', selectedCategories);
+            
+            // Sauvegarder
             settings.taskPreselectedCategories = selectedCategories;
             this.saveSettings(settings);
             
-            console.log('[CategoriesPage] Catégories pré-sélectionnées mises à jour:', selectedCategories);
-            window.uiManager?.showToast(`${selectedCategories.length} catégorie(s) sélectionnée(s)`, 'success');
+            console.log('  - Paramètres sauvegardés:', settings.taskPreselectedCategories);
             
+            // Notifier les autres modules
+            this.notifySettingsChange('taskPreselectedCategories', selectedCategories);
+            
+            window.uiManager?.showToast(`${selectedCategories.length} catégorie(s) sélectionnée(s)`, 'success');
             this.updateAutomationStats();
+            
         } catch (error) {
             console.error('[CategoriesPage] Erreur updateTaskPreselectedCategories:', error);
             window.uiManager?.showToast('Erreur de mise à jour', 'error');
+        }
+    }
+
+    // =====================================
+    // NOTIFICATION DES CHANGEMENTS VERS AUTRES MODULES
+    // =====================================
+    notifySettingsChange(settingType, value) {
+        try {
+            console.log(`[CategoriesPage] Notification changement: ${settingType} =`, value);
+            
+            // Notifier EmailScanner
+            if (window.emailScanner) {
+                if (settingType === 'scanSettings') {
+                    if (typeof window.emailScanner.updateSettings === 'function') {
+                        window.emailScanner.updateSettings(value);
+                        console.log('  - EmailScanner notifié (updateSettings)');
+                    }
+                    if (typeof window.emailScanner.applyScanSettings === 'function') {
+                        window.emailScanner.applyScanSettings(value);
+                        console.log('  - EmailScanner notifié (applyScanSettings)');
+                    }
+                }
+                
+                if (settingType === 'preferences' && typeof window.emailScanner.updatePreferences === 'function') {
+                    window.emailScanner.updatePreferences(value);
+                    console.log('  - EmailScanner notifié (updatePreferences)');
+                }
+            }
+            
+            // Notifier TaskCreator / AITaskAnalyzer
+            if (window.aiTaskAnalyzer) {
+                if (settingType === 'taskPreselectedCategories' && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
+                    console.log('  - AITaskAnalyzer notifié (updatePreselectedCategories)');
+                }
+                
+                if (settingType === 'automationSettings' && typeof window.aiTaskAnalyzer.updateAutomationSettings === 'function') {
+                    window.aiTaskAnalyzer.updateAutomationSettings(value);
+                    console.log('  - AITaskAnalyzer notifié (updateAutomationSettings)');
+                }
+            }
+            
+            // Notifier CategoryManager
+            if (window.categoryManager) {
+                if (settingType === 'preferences') {
+                    if (value.excludeSpam !== undefined && typeof window.categoryManager.setSpamExclusion === 'function') {
+                        window.categoryManager.setSpamExclusion(value.excludeSpam);
+                        console.log('  - CategoryManager notifié (setSpamExclusion)');
+                    }
+                    if (value.detectCC !== undefined && typeof window.categoryManager.setCCDetection === 'function') {
+                        window.categoryManager.setCCDetection(value.detectCC);
+                        console.log('  - CategoryManager notifié (setCCDetection)');
+                    }
+                }
+                
+                if (settingType === 'activeCategories' && typeof window.categoryManager.setActiveCategories === 'function') {
+                    window.categoryManager.setActiveCategories(value);
+                    console.log('  - CategoryManager notifié (setActiveCategories)');
+                }
+            }
+            
+            // Event global pour d'autres modules
+            window.dispatchEvent(new CustomEvent('settingsChanged', {
+                detail: { type: settingType, value: value }
+            }));
+            console.log('  - Event global dispatché: settingsChanged');
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur notification:', error);
         }
     }
 
@@ -804,12 +927,91 @@ class CategoriesPage {
             }
             
             this.saveSettings(settings);
+            
+            // Notifier les autres modules
+            this.notifySettingsChange('activeCategories', settings.activeCategories);
+            
             console.log(`[CategoriesPage] Catégorie ${categoryId} ${isActive ? 'activée' : 'désactivée'}`);
             window.uiManager?.showToast(`Catégorie ${isActive ? 'activée' : 'désactivée'}`, 'success', 2000);
         } catch (error) {
             console.error('[CategoriesPage] Erreur toggleCategory:', error);
             window.uiManager?.showToast('Erreur de modification', 'error');
         }
+    }
+
+    // =====================================
+    // MÉTHODES DE DEBUG ET TEST
+    // =====================================
+    
+    debugSettings() {
+        const settings = this.loadSettings();
+        console.log('\n=== DEBUG SETTINGS ===');
+        console.log('Settings complets:', settings);
+        console.log('Catégories pré-sélectionnées:', settings.taskPreselectedCategories);
+        console.log('Catégories actives:', settings.activeCategories);
+        console.log('Paramètres scan:', settings.scanSettings);
+        console.log('Paramètres automation:', settings.automationSettings);
+        console.log('Préférences:', settings.preferences);
+        console.log('========================\n');
+        return settings;
+    }
+    
+    testCategorySelection() {
+        console.log('\n=== TEST CATEGORY SELECTION ===');
+        const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
+        console.log(`Trouvé ${checkboxes.length} checkboxes`);
+        
+        checkboxes.forEach((checkbox, index) => {
+            console.log(`Checkbox ${index}:`);
+            console.log(`  - Value: ${checkbox.value}`);
+            console.log(`  - Checked: ${checkbox.checked}`);
+            console.log(`  - Data name: ${checkbox.dataset.categoryName}`);
+            console.log(`  - Parent label: ${checkbox.closest('label')?.dataset.categoryId}`);
+        });
+        
+        const categories = window.categoryManager?.getCategories() || {};
+        console.log('Catégories disponibles:', Object.keys(categories));
+        console.log('================================\n');
+        
+        return { checkboxes: checkboxes.length, categories: Object.keys(categories) };
+    }
+    
+    forceUpdateUI() {
+        console.log('[CategoriesPage] Force update UI...');
+        setTimeout(() => {
+            this.refreshCurrentTab();
+        }, 100);
+    }
+
+    // =====================================
+    // INITIALISATION DES PARAMÈTRES PAR DÉFAUT
+    // =====================================
+    
+    initializeDefaultSettings() {
+        const settings = this.loadSettings();
+        let hasChanges = false;
+        
+        // Si pas de catégories pré-sélectionnées, sélectionner les plus importantes
+        if (!settings.taskPreselectedCategories || settings.taskPreselectedCategories.length === 0) {
+            settings.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+            hasChanges = true;
+            console.log('[CategoriesPage] Catégories par défaut définies:', settings.taskPreselectedCategories);
+        }
+        
+        // Si pas de catégories actives, toutes sont actives par défaut
+        if (!settings.activeCategories) {
+            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
+            settings.activeCategories = allCategories;
+            hasChanges = true;
+            console.log('[CategoriesPage] Catégories actives par défaut définies:', settings.activeCategories);
+        }
+        
+        if (hasChanges) {
+            this.saveSettings(settings);
+            console.log('[CategoriesPage] Paramètres par défaut sauvegardés');
+        }
+        
+        return settings;
     }
 
     refreshCurrentTab() {
