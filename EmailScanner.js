@@ -995,7 +995,7 @@ window.testEmailScanner = function() {
     console.group('🧪 TEST EmailScanner');
     
     const testEmail = {
-        subject: "Newsletter hebdomadaire - Si vous ne souhaitez plus recevoir de communication de notre part, paramétrez vos choix ici",
+        subject: "Newsletter hebdomadaire - Désabonnez-vous ici",
         from: { emailAddress: { address: "newsletter@example.com", name: "Example News" } },
         bodyPreview: "Voici votre newsletter avec un lien pour vous désinscrire",
         receivedDateTime: new Date().toISOString()
@@ -1008,44 +1008,12 @@ window.testEmailScanner = function() {
     return result;
 };
 
-window.testMultilingualPatterns = function() {
-    console.group('🌍 TEST PATTERNS MULTILINGUES');
-    
-    if (window.categoryManager && typeof window.categoryManager.testMultilingualPatterns === 'function') {
-        const results = window.categoryManager.testMultilingualPatterns();
-        
-        console.log('Résultats globaux:', results);
-        
-        if (results.percentage >= 90) {
-            console.log('🎉 EXCELLENT: Détection multilingue optimale!');
-        } else if (results.percentage >= 80) {
-            console.log('✅ BON: Détection multilingue satisfaisante');
-        } else if (results.percentage >= 70) {
-            console.log('⚠️ MOYEN: Détection multilingue à améliorer');
-        } else {
-            console.log('❌ FAIBLE: Détection multilingue problématique');
-        }
-        
-        console.groupEnd();
-        return results;
-    } else {
-        console.error('CategoryManager ou méthode testMultilingualPatterns non disponible');
-        console.groupEnd();
-        return null;
-    }
-};
-
 window.debugEmailCategories = function() {
     console.group('📊 DEBUG Catégories');
     console.log('Settings:', window.emailScanner.settings);
     console.log('Emails total:', window.emailScanner.emails.length);
     console.log('Breakdown:', window.emailScanner.getDetailedResults().breakdown);
     console.log('Top senders:', window.emailScanner.getTopSenders(5));
-    
-    // Test des patterns multilingues
-    console.log('\n=== TEST PATTERNS MULTILINGUES ===');
-    window.testMultilingualPatterns();
-    
     console.groupEnd();
 };
 
