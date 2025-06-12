@@ -1,10 +1,4 @@
-
-paste-2.txt
-110.30 KB •2,674 lines
-•
-Formatting may be inconsistent from source
-
-// PageManager.js - Version 12.1 - Synchronisation fixée avec paramètres
+// PageManager.js - Version 13.1 - Restauration interface originale + synchronisation
 
 class PageManager {
     constructor() {
@@ -22,6 +16,12 @@ class PageManager {
         this.currentViewMode = 'grouped-domain';
         this.currentCategory = null;
         
+        // NOUVEAU: Synchronisation légère ajoutée à l'ancien système
+        this.syncState = {
+            lastSettingsSync: 0,
+            isRefreshing: false
+        };
+        
         // Page renderers - DASHBOARD SUPPRIMÉ
         this.pages = {
             scanner: (container) => this.renderScanner(container),
@@ -37,11 +37,11 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 12.1 - Synchronisation fixée avec paramètres');
+        console.log('[PageManager] ✅ Version 13.1 - Restauration interface originale + synchronisation');
     }
 
     // ================================================
-    // ÉVÉNEMENTS GLOBAUX - SYNCHRONISATION FIXÉE
+    // ÉVÉNEMENTS GLOBAUX - SYNCHRONISATION SIMPLIFIÉE
     // ================================================
     setupEventListeners() {
         // Écouter les changements de paramètres depuis CategoriesPage
@@ -74,10 +74,16 @@ class PageManager {
                 this.loadPage('emails');
             }
         });
+
+        // Synchronisation forcée
+        window.addEventListener('forceSynchronization', (event) => {
+            console.log('[PageManager] 📨 forceSynchronization reçu');
+            this.forceSynchronization();
+        });
     }
 
     // ================================================
-    // GESTION DES CHANGEMENTS DE PARAMÈTRES - NOUVELLE
+    // GESTION DES CHANGEMENTS DE PARAMÈTRES - LÉGÈRE
     // ================================================
     handleSettingsChanged(settingsData) {
         console.log('[PageManager] 🔧 Traitement changement paramètres:', settingsData);
@@ -137,6 +143,21 @@ class PageManager {
                 }
                 break;
         }
+    }
+
+    // ================================================
+    // SYNCHRONISATION FORCÉE - SIMPLE
+    // ================================================
+    async forceSynchronization() {
+        console.log('[PageManager] 🚀 === SYNCHRONISATION FORCÉE ===');
+        
+        this.syncState.lastSettingsSync = Date.now();
+        
+        if (this.currentPage === 'emails' && !this.syncState.isRefreshing) {
+            this.refreshEmailsView();
+        }
+        
+        console.log('[PageManager] ✅ Synchronisation forcée terminée');
     }
 
     // =====================================
@@ -214,7 +235,7 @@ class PageManager {
     }
 
     // =====================================
-    // EMAILS PAGE - SYNCHRONISÉE AVEC PARAMÈTRES
+    // EMAILS PAGE - INTERFACE ORIGINALE RESTAURÉE
     // =====================================
     async renderEmails(container) {
         // Récupérer les emails depuis EmailScanner centralisé
@@ -471,12 +492,18 @@ class PageManager {
     }
 
     refreshEmailsView() {
+        if (this.syncState.isRefreshing) return;
+        
+        this.syncState.isRefreshing = true;
+        
         const emailsContainer = document.querySelector('.tasks-container-harmonized');
         if (emailsContainer) {
             emailsContainer.innerHTML = this.renderEmailsList();
         }
         
         this.updateControlsBar();
+        
+        this.syncState.isRefreshing = false;
     }
 
     updateControlsBar() {
@@ -1277,7 +1304,7 @@ class PageManager {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES
+    // MÉTHODES UTILITAIRES CONSERVÉES ET ENRICHIES
     // ================================================
     async refreshEmails() {
         window.uiManager?.showLoading('Actualisation...');
@@ -1483,7 +1510,7 @@ class PageManager {
     // ================================================
     
     async renderScanner(container) {
-        console.log('[PageManager] Rendu page scanner...');
+        console.log('[PageManager] 🎯 Rendu page scanner...');
         
         if (window.scanStartModule && 
             typeof window.scanStartModule.render === 'function' && 
@@ -1590,7 +1617,7 @@ class PageManager {
     }
 
     // ================================================
-    // STYLES HARMONISÉS AVEC BADGE PRÉ-SÉLECTIONNÉ
+    // STYLES CSS HARMONISÉS AVEC BADGE PRÉ-SÉLECTIONNÉ
     // ================================================
     addHarmonizedEmailStyles() {
         if (document.getElementById('harmonizedEmailStyles')) return;
@@ -2127,7 +2154,7 @@ class PageManager {
                 border-left: 3px solid #22c55e;
             }
             
-            /* NOUVEAU: Style pour emails pré-sélectionnés */
+            /* Email pré-sélectionné */
             .task-harmonized-card.preselected-task {
                 background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
                 border-left: 3px solid #8b5cf6;
@@ -2237,7 +2264,7 @@ class PageManager {
                 border-color: #bbf7d0;
             }
             
-            /* NOUVEAU: Badge pré-sélectionné */
+            /* Badge pré-sélectionné */
             .preselected-badge-harmonized {
                 background: #fdf4ff;
                 color: #8b5cf6;
@@ -2675,4 +2702,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v12.1 loaded - Synchronisation fixée avec paramètres');
+console.log('✅ PageManager v13.1 loaded - Interface originale restaurée + synchronisation');
