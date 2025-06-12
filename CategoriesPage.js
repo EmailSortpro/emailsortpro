@@ -1,4 +1,4 @@
-// CategoriesPage.js - Version 8.2 - Intégral avec fixes synchronisation
+// CategoriesPage.js - Version 8.3 - Synchronisation fixée
 
 class CategoriesPage {
     constructor() {
@@ -6,12 +6,13 @@ class CategoriesPage {
         this.searchTerm = '';
         this.editingKeyword = null;
         this.isInitialized = false;
-        this.eventListenersSetup = false; // Éviter les doublons
+        this.eventListenersSetup = false;
+        this.lastNotificationTime = 0; // Pour éviter les notifications en boucle
         
         // Bind toutes les méthodes
         this.bindMethods();
         
-        console.log('[CategoriesPage] ✅ Version 8.2 - Intégral avec fixes synchronisation');
+        console.log('[CategoriesPage] ✅ Version 8.3 - Synchronisation fixée');
     }
 
     bindMethods() {
@@ -50,6 +51,8 @@ class CategoriesPage {
     }
 
     saveSettings(newSettings) {
+        console.log('[CategoriesPage] 💾 Sauvegarde paramètres:', newSettings);
+        
         if (window.categoryManager && typeof window.categoryManager.updateSettings === 'function') {
             window.categoryManager.updateSettings(newSettings);
         } else {
@@ -100,10 +103,22 @@ class CategoriesPage {
     }
 
     // ================================================
-    // NOTIFICATION DES CHANGEMENTS - AMÉLIORÉE
+    // NOTIFICATION DES CHANGEMENTS - FIXÉE
     // ================================================
     notifySettingsChange(settingType, value) {
-        console.log(`[CategoriesPage] Notification changement: ${settingType}`, value);
+        const now = Date.now();
+        
+        // Éviter les notifications en boucle (max 1 par seconde par type)
+        const notificationKey = `${settingType}_${JSON.stringify(value)}`;
+        if (this.lastNotification === notificationKey && (now - this.lastNotificationTime) < 1000) {
+            console.log(`[CategoriesPage] 🔄 Notification ignorée (trop récente): ${settingType}`);
+            return;
+        }
+        
+        this.lastNotification = notificationKey;
+        this.lastNotificationTime = now;
+        
+        console.log(`[CategoriesPage] 📢 Notification changement: ${settingType}`, value);
         
         // Dispatching d'événement global avec délai pour éviter les conflits
         setTimeout(() => {
@@ -148,14 +163,21 @@ class CategoriesPage {
         }
         
         // PageManager - forcer la mise à jour des emails si nécessaire
-        if (window.pageManager && 
-            (settingType === 'preferences' || settingType === 'activeCategories')) {
-            
-            // Recatégoriser les emails si nécessaire
-            if (window.emailScanner && window.emailScanner.emails.length > 0) {
-                setTimeout(() => {
-                    window.emailScanner.recategorizeEmails?.();
-                }, 100);
+        if (window.pageManager) {
+            if (settingType === 'taskPreselectedCategories' || 
+                settingType === 'activeCategories' || 
+                settingType === 'preferences') {
+                
+                console.log('[CategoriesPage] 🔄 Déclenchement re-catégorisation via PageManager');
+                
+                // Recatégoriser les emails si nécessaire
+                if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                    setTimeout(() => {
+                        if (typeof window.emailScanner.recategorizeEmails === 'function') {
+                            window.emailScanner.recategorizeEmails();
+                        }
+                    }, 200);
+                }
             }
         }
     }
@@ -569,14 +591,14 @@ class CategoriesPage {
     }
 
     // ================================================
-    // ONGLET AUTOMATISATION - ROBUSTE
+    // ONGLET AUTOMATISATION - ROBUSTE AVEC DEBUG
     // ================================================
     renderAutomationTab(settings, moduleStatus) {
         try {
             const categories = window.categoryManager?.getCategories() || {};
             const preselectedCategories = settings.taskPreselectedCategories || [];
             
-            console.log('[CategoriesPage] Rendu automatisation:');
+            console.log('[CategoriesPage] 🎯 Rendu automatisation:');
             console.log('  - Catégories disponibles:', Object.keys(categories));
             console.log('  - Catégories pré-sélectionnées:', preselectedCategories);
             
@@ -593,13 +615,18 @@ class CategoriesPage {
                         </div>
                         <p>Sélectionnez les catégories d'emails qui seront automatiquement proposées pour la création de tâches et configurez le comportement de l'automatisation.</p>
                         
+                        <!-- Debug Info -->
+                        <div class="debug-info" style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px; margin: 16px 0; font-size: 12px; font-family: monospace;">
+                            <strong>🔍 Debug:</strong> ${preselectedCategories.length} catégorie(s) actuellement sélectionnée(s): ${preselectedCategories.join(', ')}
+                        </div>
+                        
                         <!-- Sélection des catégories -->
                         <div class="task-automation-section">
                             <h4><i class="fas fa-tags"></i> Catégories pré-sélectionnées</h4>
                             <div class="categories-selection-grid-automation" id="categoriesSelectionGrid">
                                 ${Object.entries(categories).map(([id, category]) => {
                                     const isPreselected = preselectedCategories.includes(id);
-                                    console.log(`[CategoriesPage] Catégorie ${id} (${category.name}): ${isPreselected ? 'SÉLECTIONNÉE' : 'non sélectionnée'}`);
+                                    console.log(`[CategoriesPage] 📋 Catégorie ${id} (${category.name}): ${isPreselected ? 'SÉLECTIONNÉE' : 'non sélectionnée'}`);
                                     return `
                                         <label class="category-checkbox-item-enhanced" data-category-id="${id}">
                                             <input type="checkbox" 
@@ -614,6 +641,7 @@ class CategoriesPage {
                                                 </span>
                                                 <span class="cat-name-automation">${category.name}</span>
                                                 ${category.isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
+                                                ${isPreselected ? '<span class="selected-indicator">✓ Sélectionné</span>' : ''}
                                             </div>
                                         </label>
                                     `;
@@ -819,376 +847,6 @@ class CategoriesPage {
     }
 
     // ================================================
-    // MODAL DE CRÉATION DE CATÉGORIE PERSONNALISÉE - SÉCURISÉ
-    // ================================================
-    showCreateCategoryModal() {
-        if (!window.categoryManager) {
-            this.showToast('CategoryManager non disponible', 'error');
-            return;
-        }
-
-        const modalId = 'createCategoryModal';
-        
-        // Supprimer les modales existantes
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const modalHTML = `
-            <div id="${modalId}" class="modal-overlay">
-                <div class="modal-container-large">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-plus"></i> Créer une nouvelle catégorie</h2>
-                        <button class="modal-close" onclick="window.categoriesPage.closeModal('${modalId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <form id="createCategoryForm" onsubmit="window.categoriesPage.createNewCategory(event)">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="categoryName">Nom de la catégorie *</label>
-                                    <input type="text" id="categoryName" required placeholder="Ex: Support Client" maxlength="50">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="categoryIcon">Icône</label>
-                                    <div class="icon-selector">
-                                        <input type="text" id="categoryIcon" value="📂" maxlength="2">
-                                        <div class="icon-suggestions">
-                                            ${['📂', '💼', '🔧', '📞', '💰', '📊', '🎯', '🚀', '⚡', '🔔', '📧', '🏷️'].map(icon => 
-                                                `<button type="button" class="icon-option" onclick="document.getElementById('categoryIcon').value='${icon}'">${icon}</button>`
-                                            ).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="categoryColor">Couleur</label>
-                                    <div class="color-selector">
-                                        <input type="color" id="categoryColor" value="#6366f1">
-                                        <div class="color-presets">
-                                            ${['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16', '#f97316'].map(color => 
-                                                `<button type="button" class="color-preset" style="background: ${color}" onclick="document.getElementById('categoryColor').value='${color}'"></button>`
-                                            ).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group full-width">
-                                    <label for="categoryDescription">Description (optionnelle)</label>
-                                    <textarea id="categoryDescription" placeholder="Description de cette catégorie" rows="2" maxlength="200"></textarea>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="categoryPriority">Priorité</label>
-                                    <select id="categoryPriority">
-                                        <option value="10">Très basse (10)</option>
-                                        <option value="30" selected>Normale (30)</option>
-                                        <option value="50">Haute (50)</option>
-                                        <option value="70">Très haute (70)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="keywords-section">
-                                <h4><i class="fas fa-key"></i> Mots-clés de détection</h4>
-                                <p class="keywords-help">Ajoutez des mots-clés pour que cette catégorie soit automatiquement détectée dans les emails</p>
-                                
-                                <div class="keywords-input-group">
-                                    <label>Mots-clés absolus (détection garantie)</label>
-                                    <textarea id="absoluteKeywords" placeholder="urgent, action required, immediate attention" rows="2"></textarea>
-                                    <small>Séparez par des virgules. Ces mots garantissent la catégorisation.</small>
-                                </div>
-                                
-                                <div class="keywords-input-group">
-                                    <label>Mots-clés forts (score élevé)</label>
-                                    <textarea id="strongKeywords" placeholder="important, priority, asap" rows="2"></textarea>
-                                    <small>Mots-clés avec un poids important dans la détection.</small>
-                                </div>
-                                
-                                <div class="keywords-input-group">
-                                    <label>Mots-clés faibles (indices)</label>
-                                    <textarea id="weakKeywords" placeholder="help, support, question" rows="2"></textarea>
-                                    <small>Mots-clés qui donnent des indices mais ne garantissent pas la catégorisation.</small>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button type="button" class="btn-compact btn-secondary" onclick="window.categoriesPage.closeModal('${modalId}')">
-                            Annuler
-                        </button>
-                        <button type="submit" form="createCategoryForm" class="btn-compact btn-primary">
-                            <i class="fas fa-check"></i> Créer la catégorie
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        
-        // Focus sur le champ nom
-        setTimeout(() => {
-            document.getElementById('categoryName')?.focus();
-        }, 100);
-    }
-
-    createNewCategory(event) {
-        event.preventDefault();
-        
-        try {
-            const name = document.getElementById('categoryName').value.trim();
-            const icon = document.getElementById('categoryIcon').value.trim() || '📂';
-            const color = document.getElementById('categoryColor').value;
-            const description = document.getElementById('categoryDescription').value.trim();
-            const priority = parseInt(document.getElementById('categoryPriority').value);
-            
-            // Récupérer les mots-clés
-            const absoluteKeywords = document.getElementById('absoluteKeywords').value
-                .split(',').map(k => k.trim()).filter(k => k.length > 0);
-            const strongKeywords = document.getElementById('strongKeywords').value
-                .split(',').map(k => k.trim()).filter(k => k.length > 0);
-            const weakKeywords = document.getElementById('weakKeywords').value
-                .split(',').map(k => k.trim()).filter(k => k.length > 0);
-            
-            if (!name) {
-                this.showToast('Le nom est requis', 'warning');
-                return;
-            }
-            
-            const categoryData = {
-                name,
-                icon,
-                color,
-                description,
-                priority,
-                keywords: {
-                    absolute: absoluteKeywords,
-                    strong: strongKeywords,
-                    weak: weakKeywords,
-                    exclusions: []
-                }
-            };
-            
-            if (window.categoryManager) {
-                const newCategory = window.categoryManager.createCustomCategory(categoryData);
-                
-                this.showToast(`Catégorie "${name}" créée avec succès`, 'success');
-                this.closeModal('createCategoryModal');
-                this.refreshCurrentTab();
-                
-                console.log('[CategoriesPage] Nouvelle catégorie créée:', newCategory);
-            } else {
-                throw new Error('CategoryManager non disponible');
-            }
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur création catégorie:', error);
-            this.showToast(`Erreur: ${error.message}`, 'error');
-        }
-    }
-
-    editCustomCategory(categoryId) {
-        if (!window.categoryManager) {
-            this.showToast('CategoryManager non disponible', 'error');
-            return;
-        }
-        
-        const category = window.categoryManager.getCategory(categoryId);
-        if (!category || !category.isCustom) {
-            this.showToast('Catégorie personnalisée non trouvée', 'error');
-            return;
-        }
-        
-        const keywords = window.categoryManager.getCategoryKeywords(categoryId);
-        const modalId = 'editCategoryModal';
-        
-        // Supprimer les modales existantes
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const modalHTML = `
-            <div id="${modalId}" class="modal-overlay">
-                <div class="modal-container-large">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-edit"></i> Modifier la catégorie "${category.name}"</h2>
-                        <button class="modal-close" onclick="window.categoriesPage.closeModal('${modalId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-content">
-                        <form id="editCategoryForm" onsubmit="window.categoriesPage.updateCustomCategory(event, '${categoryId}')">
-                            <div class="form-grid">
-                                <div class="form-group">
-                                    <label for="editCategoryName">Nom de la catégorie *</label>
-                                    <input type="text" id="editCategoryName" required value="${category.name}" maxlength="50">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="editCategoryIcon">Icône</label>
-                                    <div class="icon-selector">
-                                        <input type="text" id="editCategoryIcon" value="${category.icon}" maxlength="2">
-                                        <div class="icon-suggestions">
-                                            ${['📂', '💼', '🔧', '📞', '💰', '📊', '🎯', '🚀', '⚡', '🔔', '📧', '🏷️'].map(icon => 
-                                                `<button type="button" class="icon-option" onclick="document.getElementById('editCategoryIcon').value='${icon}'">${icon}</button>`
-                                            ).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="editCategoryColor">Couleur</label>
-                                    <div class="color-selector">
-                                        <input type="color" id="editCategoryColor" value="${category.color}">
-                                        <div class="color-presets">
-                                            ${['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16', '#f97316'].map(color => 
-                                                `<button type="button" class="color-preset" style="background: ${color}" onclick="document.getElementById('editCategoryColor').value='${color}'"></button>`
-                                            ).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="form-group full-width">
-                                    <label for="editCategoryDescription">Description (optionnelle)</label>
-                                    <textarea id="editCategoryDescription" rows="2" maxlength="200">${category.description || ''}</textarea>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="editCategoryPriority">Priorité</label>
-                                    <select id="editCategoryPriority">
-                                        <option value="10" ${category.priority === 10 ? 'selected' : ''}>Très basse (10)</option>
-                                        <option value="30" ${category.priority === 30 ? 'selected' : ''}>Normale (30)</option>
-                                        <option value="50" ${category.priority === 50 ? 'selected' : ''}>Haute (50)</option>
-                                        <option value="70" ${category.priority === 70 ? 'selected' : ''}>Très haute (70)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="keywords-section">
-                                <h4><i class="fas fa-key"></i> Mots-clés de détection</h4>
-                                
-                                <div class="keywords-input-group">
-                                    <label>Mots-clés absolus</label>
-                                    <textarea id="editAbsoluteKeywords" rows="2">${keywords.absolute?.join(', ') || ''}</textarea>
-                                </div>
-                                
-                                <div class="keywords-input-group">
-                                    <label>Mots-clés forts</label>
-                                    <textarea id="editStrongKeywords" rows="2">${keywords.strong?.join(', ') || ''}</textarea>
-                                </div>
-                                
-                                <div class="keywords-input-group">
-                                    <label>Mots-clés faibles</label>
-                                    <textarea id="editWeakKeywords" rows="2">${keywords.weak?.join(', ') || ''}</textarea>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button type="button" class="btn-compact btn-secondary" onclick="window.categoriesPage.closeModal('${modalId}')">
-                            Annuler
-                        </button>
-                        <button type="submit" form="editCategoryForm" class="btn-compact btn-primary">
-                            <i class="fas fa-save"></i> Sauvegarder
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    updateCustomCategory(event, categoryId) {
-        event.preventDefault();
-        
-        try {
-            const name = document.getElementById('editCategoryName').value.trim();
-            const icon = document.getElementById('editCategoryIcon').value.trim() || '📂';
-            const color = document.getElementById('editCategoryColor').value;
-            const description = document.getElementById('editCategoryDescription').value.trim();
-            const priority = parseInt(document.getElementById('editCategoryPriority').value);
-            
-            // Récupérer les mots-clés
-            const absoluteKeywords = document.getElementById('editAbsoluteKeywords').value
-                .split(',').map(k => k.trim()).filter(k => k.length > 0);
-            const strongKeywords = document.getElementById('editStrongKeywords').value
-                .split(',').map(k => k.trim()).filter(k => k.length > 0);
-            const weakKeywords = document.getElementById('editWeakKeywords').value
-                .split(',').map(k => k.trim()).filter(k => k.length > 0);
-            
-            if (!name) {
-                this.showToast('Le nom est requis', 'warning');
-                return;
-            }
-            
-            const updates = {
-                name,
-                icon,
-                color,
-                description,
-                priority
-            };
-            
-            const keywords = {
-                absolute: absoluteKeywords,
-                strong: strongKeywords,
-                weak: weakKeywords,
-                exclusions: []
-            };
-            
-            if (window.categoryManager) {
-                window.categoryManager.updateCustomCategory(categoryId, updates);
-                window.categoryManager.updateCategoryKeywords(categoryId, keywords);
-                
-                this.showToast(`Catégorie "${name}" mise à jour`, 'success');
-                this.closeModal('editCategoryModal');
-                this.refreshCurrentTab();
-                
-                console.log('[CategoriesPage] Catégorie mise à jour:', categoryId);
-            } else {
-                throw new Error('CategoryManager non disponible');
-            }
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur mise à jour catégorie:', error);
-            this.showToast(`Erreur: ${error.message}`, 'error');
-        }
-    }
-
-    deleteCustomCategory(categoryId) {
-        if (!window.categoryManager) {
-            this.showToast('CategoryManager non disponible', 'error');
-            return;
-        }
-        
-        const category = window.categoryManager.getCategory(categoryId);
-        if (!category || !category.isCustom) {
-            this.showToast('Catégorie personnalisée non trouvée', 'error');
-            return;
-        }
-        
-        if (confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ?\n\nCette action est irréversible.`)) {
-            try {
-                window.categoryManager.deleteCustomCategory(categoryId);
-                
-                this.showToast(`Catégorie "${category.name}" supprimée`, 'success');
-                this.refreshCurrentTab();
-                
-                console.log('[CategoriesPage] Catégorie supprimée:', categoryId);
-            } catch (error) {
-                console.error('[CategoriesPage] Erreur suppression catégorie:', error);
-                this.showToast(`Erreur: ${error.message}`, 'error');
-            }
-        }
-    }
-
-    // ================================================
     // INITIALISATION DES ÉVÉNEMENTS CORRIGÉE - SÉCURISÉE
     // ================================================
     initializeEventListeners() {
@@ -1230,16 +888,21 @@ class CategoriesPage {
             // CORRECTION: Catégories pré-sélectionnées pour les tâches
             // Utiliser la classe spécifique au lieu du sélecteur générique
             const categoryCheckboxes = document.querySelectorAll('.category-preselect-checkbox');
-            console.log(`[CategoriesPage] Initialisation ${categoryCheckboxes.length} checkboxes de pré-sélection`);
+            console.log(`[CategoriesPage] 🎯 Initialisation ${categoryCheckboxes.length} checkboxes de pré-sélection`);
             
             categoryCheckboxes.forEach((checkbox, index) => {
-                console.log(`[CategoriesPage] Checkbox ${index}: value=${checkbox.value}, checked=${checkbox.checked}`);
+                console.log(`[CategoriesPage] 📋 Checkbox ${index}: value=${checkbox.value}, checked=${checkbox.checked}, name=${checkbox.dataset.categoryName}`);
                 
                 // Retirer l'ancien listener s'il existe
                 checkbox.removeEventListener('change', this.updateTaskPreselectedCategories);
                 
-                // Ajouter le nouveau listener
-                checkbox.addEventListener('change', this.updateTaskPreselectedCategories);
+                // Ajouter le nouveau listener avec vérification
+                const wrappedHandler = (event) => {
+                    console.log(`[CategoriesPage] 🔔 Changement détecté sur checkbox: ${event.target.value}, checked: ${event.target.checked}`);
+                    this.updateTaskPreselectedCategories();
+                };
+                
+                checkbox.addEventListener('change', wrappedHandler);
             });
 
             // Ajout rapide d'exclusions
@@ -1255,7 +918,7 @@ class CategoriesPage {
             }
 
             this.eventListenersSetup = true;
-            console.log('[CategoriesPage] Événements initialisés avec correction des checkboxes');
+            console.log('[CategoriesPage] ✅ Événements initialisés avec correction des checkboxes');
         } catch (error) {
             console.error('[CategoriesPage] Erreur initialisation événements:', error);
         }
@@ -1279,7 +942,7 @@ class CategoriesPage {
             settings.preferences = preferences;
             this.saveSettings(settings);
             
-            console.log('[CategoriesPage] Préférences sauvegardées:', preferences);
+            console.log('[CategoriesPage] 💾 Préférences sauvegardées:', preferences);
             this.notifySettingsChange('preferences', preferences);
             
             this.showToast('Préférences sauvegardées', 'success');
@@ -1303,7 +966,7 @@ class CategoriesPage {
             settings.scanSettings = scanSettings;
             this.saveSettings(settings);
             
-            console.log('[CategoriesPage] Paramètres de scan sauvegardés:', scanSettings);
+            console.log('[CategoriesPage] 💾 Paramètres de scan sauvegardés:', scanSettings);
             this.notifySettingsChange('scanSettings', scanSettings);
             
             this.showToast('Paramètres de scan sauvegardés', 'success');
@@ -1327,7 +990,7 @@ class CategoriesPage {
             settings.automationSettings = automationSettings;
             this.saveSettings(settings);
             
-            console.log('[CategoriesPage] Paramètres automatisation sauvegardés:', automationSettings);
+            console.log('[CategoriesPage] 💾 Paramètres automatisation sauvegardés:', automationSettings);
             this.notifySettingsChange('automationSettings', automationSettings);
             
             this.showToast('Paramètres d\'automatisation sauvegardés', 'success');
@@ -1338,6 +1001,9 @@ class CategoriesPage {
         }
     }
 
+    // ================================================
+    // MISE À JOUR DES CATÉGORIES PRÉ-SÉLECTIONNÉES - FIXÉE
+    // ================================================
     updateTaskPreselectedCategories() {
         try {
             console.log('[CategoriesPage] === DÉBUT updateTaskPreselectedCategories ===');
@@ -1345,24 +1011,30 @@ class CategoriesPage {
             const settings = this.loadSettings();
             const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
             
-            console.log(`[CategoriesPage] Trouvé ${checkboxes.length} checkboxes avec classe .category-preselect-checkbox`);
+            console.log(`[CategoriesPage] 🔍 Trouvé ${checkboxes.length} checkboxes avec classe .category-preselect-checkbox`);
             
             const selectedCategories = [];
             checkboxes.forEach((checkbox, index) => {
-                console.log(`[CategoriesPage] Checkbox ${index}:`);
+                console.log(`[CategoriesPage] 📋 Checkbox ${index}:`);
                 console.log(`  - Value: "${checkbox.value}"`);
                 console.log(`  - Checked: ${checkbox.checked}`);
                 console.log(`  - Data name: "${checkbox.dataset.categoryName}"`);
                 
                 if (checkbox.checked && checkbox.value) {
                     selectedCategories.push(checkbox.value);
+                    console.log(`  - ✅ AJOUTÉ à la sélection: ${checkbox.value}`);
+                } else {
+                    console.log(`  - ❌ PAS sélectionné`);
                 }
             });
             
-            console.log('[CategoriesPage] Nouvelles catégories sélectionnées:', selectedCategories);
+            console.log('[CategoriesPage] 🎯 Nouvelles catégories sélectionnées:', selectedCategories);
+            console.log('[CategoriesPage] 📊 Anciennes catégories:', settings.taskPreselectedCategories);
             
             settings.taskPreselectedCategories = selectedCategories;
             this.saveSettings(settings);
+            
+            console.log('[CategoriesPage] 💾 Paramètres sauvegardés avec nouvelles catégories');
             
             this.notifySettingsChange('taskPreselectedCategories', selectedCategories);
             
@@ -1372,7 +1044,7 @@ class CategoriesPage {
             console.log('[CategoriesPage] === FIN updateTaskPreselectedCategories ===');
             
         } catch (error) {
-            console.error('[CategoriesPage] Erreur updateTaskPreselectedCategories:', error);
+            console.error('[CategoriesPage] ❌ Erreur updateTaskPreselectedCategories:', error);
             this.showToast('Erreur de mise à jour', 'error');
         }
     }
@@ -1530,7 +1202,6 @@ class CategoriesPage {
         } else {
             // Fallback simple
             console.log(`[Toast ${type.toUpperCase()}] ${message}`);
-            alert(`${type.toUpperCase()}: ${message}`);
         }
     }
 
@@ -1546,6 +1217,14 @@ class CategoriesPage {
         console.log('Status des modules:', moduleStatus);
         console.log('CategoryManager settings:', window.categoryManager?.getSettings());
         console.log('EmailScanner settings:', window.emailScanner?.settings);
+        console.log('Task preselected categories:', settings.taskPreselectedCategories);
+        console.log('Checkboxes actuelles:');
+        
+        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+        checkboxes.forEach((cb, i) => {
+            console.log(`  ${i}: value=${cb.value}, checked=${cb.checked}, name=${cb.dataset.categoryName}`);
+        });
+        
         console.log('========================\n');
         
         this.showToast('Voir la console pour les détails de debug', 'info');
@@ -1602,7 +1281,7 @@ class CategoriesPage {
     }
 
     // ================================================
-    // MÉTHODES MODALES (simplifiées pour l'exemple)
+    // MÉTHODES MODALES (simplifiées)
     // ================================================
     openKeywordsModal(categoryId) {
         console.log('[CategoriesPage] Ouverture modal mots-clés pour:', categoryId);
@@ -1619,6 +1298,26 @@ class CategoriesPage {
         this.showToast('Modal exclusions (à implémenter)', 'info');
     }
 
+    showCreateCategoryModal() {
+        console.log('[CategoriesPage] Ouverture modal création catégorie');
+        this.showToast('Modal création catégorie (à implémenter)', 'info');
+    }
+
+    createNewCategory() {
+        console.log('[CategoriesPage] Création nouvelle catégorie');
+        this.showToast('Création catégorie (à implémenter)', 'info');
+    }
+
+    editCustomCategory() {
+        console.log('[CategoriesPage] Édition catégorie personnalisée');
+        this.showToast('Édition catégorie (à implémenter)', 'info');
+    }
+
+    deleteCustomCategory() {
+        console.log('[CategoriesPage] Suppression catégorie personnalisée');
+        this.showToast('Suppression catégorie (à implémenter)', 'info');
+    }
+
     // ================================================
     // IMPORT/EXPORT - SÉCURISÉ
     // ================================================
@@ -1630,7 +1329,7 @@ class CategoriesPage {
             const weightedKeywords = window.categoryManager?.weightedKeywords || {};
             
             const exportData = {
-                version: '8.2',
+                version: '8.3',
                 exportDate: new Date().toISOString(),
                 settings: settings,
                 categories: categories,
@@ -1714,7 +1413,8 @@ class CategoriesPage {
     }
     
     getTaskPreselectedCategories() {
-        return this.loadSettings().taskPreselectedCategories || [];
+        const settings = this.loadSettings();
+        return settings.taskPreselectedCategories || [];
     }
     
     shouldExcludeSpam() {
@@ -1758,7 +1458,7 @@ class CategoriesPage {
     }
 
     // ================================================
-    // STYLES CSS ÉTENDUS - AVEC STATUS BADGES
+    // STYLES CSS ÉTENDUS - AVEC INDICATOR SÉLECTIONNÉ
     // ================================================
     addStyles() {
         if (document.getElementById('categoriesPageStyles')) return;
@@ -1821,6 +1521,7 @@ class CategoriesPage {
             
             .page-header-compact {
                 margin-bottom: 20px;
+                flex-shrink: 0;
             }
             
             .page-header-compact h1 {
@@ -1838,6 +1539,7 @@ class CategoriesPage {
                 padding: 4px;
                 border-radius: 10px;
                 margin-bottom: 20px;
+                flex-shrink: 0;
             }
             
             .tab-button-compact {
@@ -1901,6 +1603,7 @@ class CategoriesPage {
                 box-shadow: var(--shadow-base);
                 display: flex;
                 flex-direction: column;
+                flex-shrink: 0;
             }
             
             .settings-card-compact.full-width {
@@ -2132,6 +1835,7 @@ class CategoriesPage {
             
             .category-checkbox-item-enhanced input[type="checkbox"]:checked + .category-checkbox-content-enhanced {
                 background: #667eea10;
+                border-color: #667eea;
             }
             
             .category-checkbox-item-enhanced input[type="checkbox"]:checked + .category-checkbox-content-enhanced::before {
@@ -2186,10 +1890,22 @@ class CategoriesPage {
                 color: #374151;
                 font-weight: 600;
                 line-height: 1.2;
+                flex: 1;
             }
 
             .custom-badge {
                 background: #10b981;
+                color: white;
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 4px;
+                margin-left: 8px;
+                font-weight: 600;
+            }
+
+            /* NOUVEAU: Indicateur de sélection */
+            .selected-indicator {
+                background: #667eea;
                 color: white;
                 font-size: 10px;
                 padding: 2px 6px;
@@ -2612,251 +2328,6 @@ class CategoriesPage {
                 margin-top: auto;
             }
 
-            /* Modal Styles */
-            .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.75);
-                z-index: 99999999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-                backdrop-filter: blur(4px);
-            }
-
-            .modal-container-large {
-                background: white;
-                border-radius: 16px;
-                max-width: 800px;
-                width: 100%;
-                max-height: 90vh;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            }
-
-            .modal-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 24px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-
-            .modal-header h2 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 700;
-                color: #1f2937;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .modal-close {
-                background: none;
-                border: none;
-                font-size: 20px;
-                cursor: pointer;
-                color: #6b7280;
-                width: 32px;
-                height: 32px;
-                border-radius: 6px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all var(--transition-speed) ease;
-            }
-
-            .modal-close:hover {
-                background: #f3f4f6;
-                color: #374151;
-            }
-
-            .modal-content {
-                padding: 24px;
-                overflow-y: auto;
-                flex: 1;
-            }
-
-            .modal-footer {
-                display: flex;
-                justify-content: flex-end;
-                gap: 12px;
-                padding: 24px;
-                border-top: 1px solid #e5e7eb;
-            }
-
-            /* Form Styles */
-            .form-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                margin-bottom: 24px;
-            }
-
-            .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .form-group.full-width {
-                grid-column: 1 / -1;
-            }
-
-            .form-group label {
-                font-size: 14px;
-                font-weight: 600;
-                color: #374151;
-            }
-
-            .form-group input,
-            .form-group textarea,
-            .form-group select {
-                padding: 12px 16px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                transition: border-color 0.2s;
-                font-family: inherit;
-            }
-
-            .form-group input:focus,
-            .form-group textarea:focus,
-            .form-group select:focus {
-                outline: none;
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-
-            /* Icon Selector */
-            .icon-selector {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .icon-selector input {
-                width: 60px;
-                text-align: center;
-                font-size: 18px;
-            }
-
-            .icon-suggestions {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 4px;
-            }
-
-            .icon-option {
-                background: #f3f4f6;
-                border: 1px solid #e5e7eb;
-                border-radius: 6px;
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                font-size: 16px;
-            }
-
-            .icon-option:hover {
-                background: #667eea;
-                color: white;
-                transform: translateY(-1px);
-            }
-
-            /* Color Selector */
-            .color-selector {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .color-selector input[type="color"] {
-                width: 60px;
-                height: 44px;
-                border: none;
-                border-radius: 8px;
-                cursor: pointer;
-            }
-
-            .color-presets {
-                display: flex;
-                gap: 4px;
-                flex-wrap: wrap;
-            }
-
-            .color-preset {
-                width: 24px;
-                height: 24px;
-                border: 2px solid #e5e7eb;
-                border-radius: 50%;
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-            }
-
-            .color-preset:hover {
-                transform: scale(1.1);
-                border-color: #667eea;
-            }
-
-            /* Keywords Section */
-            .keywords-section {
-                margin-top: 24px;
-                padding-top: 24px;
-                border-top: 1px solid #e5e7eb;
-            }
-
-            .keywords-section h4 {
-                margin: 0 0 16px 0;
-                font-size: 16px;
-                font-weight: 600;
-                color: #374151;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .keywords-help {
-                margin: 0 0 20px 0;
-                font-size: 14px;
-                color: #6b7280;
-                line-height: 1.5;
-            }
-
-            .keywords-input-group {
-                margin-bottom: 16px;
-            }
-
-            .keywords-input-group label {
-                font-size: 13px;
-                font-weight: 600;
-                color: #374151;
-                margin-bottom: 4px;
-                display: block;
-            }
-
-            .keywords-input-group textarea {
-                width: 100%;
-                resize: vertical;
-                font-family: inherit;
-            }
-
-            .keywords-input-group small {
-                font-size: 12px;
-                color: #6b7280;
-                margin-top: 4px;
-                display: block;
-            }
-
             /* Exclusions */
             .exclusions-optimized {
                 margin-top: 16px;
@@ -3028,6 +2499,18 @@ class CategoriesPage {
                 font-size: 11px;
             }
 
+            /* Debug Info */
+            .debug-info {
+                background: #f0f9ff;
+                border: 1px solid #0ea5e9;
+                border-radius: 8px;
+                padding: 12px;
+                margin: 16px 0;
+                font-size: 12px;
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                color: #0c4a6e;
+            }
+
             /* Error Display */
             .error-display {
                 background: #fee2e2;
@@ -3056,10 +2539,6 @@ class CategoriesPage {
 
                 .categories-grid-minimal {
                     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                }
-
-                .form-grid {
-                    grid-template-columns: 1fr;
                 }
             }
             
@@ -3111,16 +2590,6 @@ class CategoriesPage {
                 .categories-stats-bar {
                     justify-content: space-around;
                 }
-
-                .modal-container-large {
-                    max-width: 95vw;
-                    margin: 10px;
-                }
-
-                .form-grid {
-                    grid-template-columns: 1fr;
-                    gap: 16px;
-                }
             }
         `;
         
@@ -3152,7 +2621,7 @@ try {
             }
         };
         
-        console.log('✅ CategoriesPage v8.2 intégrée au PageManager');
+        console.log('✅ CategoriesPage v8.3 intégrée au PageManager');
     } else {
         console.warn('⚠️ PageManager non prêt, retry...');
         setTimeout(() => {
@@ -3169,7 +2638,7 @@ try {
                     }
                 };
                 
-                console.log('✅ CategoriesPage v8.2 intégrée au PageManager (delayed)');
+                console.log('✅ CategoriesPage v8.3 intégrée au PageManager (delayed)');
             }
         }, 1000);
     }
@@ -3201,4 +2670,4 @@ try {
     };
 }
 
-console.log('✅ CategoriesPage v8.2 loaded - Intégral avec fixes synchronisation');
+console.log('✅ CategoriesPage v8.3 loaded - Synchronisation fixée');
