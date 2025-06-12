@@ -1,4 +1,4 @@
-// StartScan.js - Version 8.2 - Intégration complète avec paramètres - CORRIGÉ
+// StartScan.js - Version 8.2 - Simplifié et corrigé
 
 console.log('[StartScan] 🚀 Loading StartScan.js v8.2...');
 
@@ -10,11 +10,10 @@ class MinimalScanModule {
         this.stylesAdded = false;
         this.scanStartTime = null;
         
-        // NOUVEAU: Intégration avec les paramètres
+        // Intégration avec les paramètres
         this.settings = {};
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
-        this.settingsCheckInterval = null;
         
         console.log('[MinimalScan] Scanner ultra-minimaliste v8.2 initialized avec intégration paramètres - CORRIGÉ');
         this.loadSettingsFromCategoryManager();
@@ -22,7 +21,7 @@ class MinimalScanModule {
     }
 
     // ================================================
-    // INTÉGRATION AVEC LES PARAMÈTRES - CORRIGÉE
+    // INTÉGRATION AVEC LES PARAMÈTRES
     // ================================================
     loadSettingsFromCategoryManager() {
         try {
@@ -30,9 +29,7 @@ class MinimalScanModule {
                 this.settings = window.categoryManager.getSettings();
                 this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
                 console.log('[MinimalScan] ✅ Paramètres chargés depuis CategoryManager');
-                console.log('[MinimalScan] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
                 
-                // Utiliser les paramètres pour la période par défaut
                 if (this.settings.scanSettings?.defaultPeriod) {
                     this.selectedDays = this.settings.scanSettings.defaultPeriod;
                     console.log('[MinimalScan] 📅 Période par défaut mise à jour:', this.selectedDays);
@@ -45,7 +42,6 @@ class MinimalScanModule {
                 }
                 console.log('[MinimalScan] ✅ Paramètres chargés depuis CategoriesPage');
             } else {
-                // Fallback localStorage
                 try {
                     const saved = localStorage.getItem('categorySettings');
                     if (saved) {
@@ -61,7 +57,6 @@ class MinimalScanModule {
                 }
             }
             
-            // Si aucun paramètre n'a été trouvé, utiliser les valeurs par défaut
             if (!this.settings || Object.keys(this.settings).length === 0) {
                 this.settings = this.getDefaultSettings();
                 this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
@@ -94,67 +89,8 @@ class MinimalScanModule {
     }
 
     // ================================================
-    // VÉRIFICATION PÉRIODIQUE DES PARAMÈTRES
+    // STYLES
     // ================================================
-    checkSettingsUpdate() {
-        const now = Date.now();
-        if (now - this.lastSettingsSync < 5000) return; // Vérifier toutes les 5 secondes max
-        
-        try {
-            const oldTaskCategories = [...this.taskPreselectedCategories];
-            const oldSelectedDays = this.selectedDays;
-            
-            this.loadSettingsFromCategoryManager();
-            
-            // Si les paramètres ont changé, mettre à jour l'interface
-            const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort());
-            const daysChanged = oldSelectedDays !== this.selectedDays;
-            
-            if (categoriesChanged || daysChanged) {
-                console.log('[MinimalScan] 🔄 Paramètres mis à jour détectés');
-                console.log('  - Anciennes catégories:', oldTaskCategories);
-                console.log('  - Nouvelles catégories:', this.taskPreselectedCategories);
-                console.log('  - Ancienne période:', oldSelectedDays);
-                console.log('  - Nouvelle période:', this.selectedDays);
-                
-                this.updateUIWithNewSettings();
-            }
-        } catch (error) {
-            console.error('[MinimalScan] Erreur vérification paramètres:', error);
-        }
-    }
-
-    updateUIWithNewSettings() {
-        // Mettre à jour la sélection de durée si l'interface est visible
-        const durationOptions = document.querySelectorAll('.duration-option');
-        durationOptions.forEach(option => {
-            option.classList.remove('selected');
-            if (parseInt(option.dataset.days) === this.selectedDays) {
-                option.classList.add('selected');
-            }
-        });
-        
-        // Mettre à jour l'affichage des catégories pré-sélectionnées si présent
-        this.updatePreselectedCategoriesDisplay();
-    }
-
-    updatePreselectedCategoriesDisplay() {
-        const preselectedDisplay = document.getElementById('preselected-categories-display');
-        if (preselectedDisplay && this.taskPreselectedCategories.length > 0) {
-            const categoryNames = this.taskPreselectedCategories.map(catId => {
-                const category = window.categoryManager?.getCategory(catId);
-                return category ? `${category.icon} ${category.name}` : catId;
-            });
-            
-            preselectedDisplay.innerHTML = `
-                <div class="preselected-info">
-                    <i class="fas fa-star"></i>
-                    <span>Catégories pré-sélectionnées pour tâches: ${categoryNames.join(', ')}</span>
-                </div>
-            `;
-        }
-    }
-
     addMinimalStyles() {
         if (this.stylesAdded || document.getElementById('minimal-scan-styles')) {
             console.log('[MinimalScan] Styles already added, skipping...');
@@ -164,7 +100,6 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v8.2 avec intégration paramètres - CORRIGÉ */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -226,7 +161,6 @@ class MinimalScanModule {
                 margin-bottom: 35px;
             }
             
-            /* NOUVEAU: Affichage des catégories pré-sélectionnées - AMÉLIORÉ */
             .preselected-info {
                 background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
                 border: 2px solid #3b82f6;
@@ -266,7 +200,6 @@ class MinimalScanModule {
                 50% { transform: scale(1.1); }
             }
             
-            /* Étapes visuelles */
             .steps-container {
                 display: flex;
                 justify-content: space-between;
@@ -328,7 +261,6 @@ class MinimalScanModule {
                 font-weight: 600;
             }
             
-            /* Sélecteur de durée */
             .duration-section {
                 margin-bottom: 35px;
             }
@@ -374,7 +306,6 @@ class MinimalScanModule {
                 transform: translateY(-1px);
             }
             
-            /* NOUVEAU: Indicateur pour option recommandée */
             .duration-option.recommended::after {
                 content: '⭐ Recommandé';
                 position: absolute;
@@ -388,7 +319,6 @@ class MinimalScanModule {
                 font-weight: 600;
             }
             
-            /* Bouton de scan */
             .scan-button-minimal {
                 width: 100%;
                 height: 60px;
@@ -420,7 +350,6 @@ class MinimalScanModule {
                 transform: none;
             }
             
-            /* NOUVEAU: Effet brillant sur le bouton */
             .scan-button-minimal::before {
                 content: '';
                 position: absolute;
@@ -436,7 +365,6 @@ class MinimalScanModule {
                 left: 100%;
             }
             
-            /* Section de progression */
             .progress-section-minimal {
                 opacity: 0;
                 transition: opacity 0.3s ease;
@@ -475,7 +403,6 @@ class MinimalScanModule {
                 color: #9ca3af;
             }
             
-            /* Info badge avec catégories */
             .scan-info {
                 background: rgba(102, 126, 234, 0.1);
                 border-radius: 10px;
@@ -503,7 +430,6 @@ class MinimalScanModule {
                 text-align: center;
             }
             
-            /* Responsive mobile */
             @media (max-width: 480px) {
                 .scanner-card-minimal {
                     width: 95%;
@@ -553,7 +479,6 @@ class MinimalScanModule {
                 }
             }
             
-            /* Mode sombre */
             @media (prefers-color-scheme: dark) {
                 .scanner-card-minimal {
                     background: rgba(30, 30, 46, 0.95);
@@ -594,26 +519,23 @@ class MinimalScanModule {
         console.log('[MinimalScan] ✅ Styles minimalistes ajoutés avec intégration paramètres - CORRIGÉ');
     }
 
+    // ================================================
+    // RENDU PRINCIPAL
+    // ================================================
     async render(container) {
         console.log('[MinimalScan] 🎯 Rendu du scanner minimaliste avec paramètres...');
         
         try {
-            // S'assurer que les styles sont ajoutés
             this.addMinimalStyles();
+            this.loadSettingsFromCategoryManager();
             
-            // Vérifier et charger les paramètres
-            this.checkSettingsUpdate();
-            
-            // Vérifier l'authentification
             if (!window.authService?.isAuthenticated()) {
                 container.innerHTML = this.renderNotAuthenticated();
                 return;
             }
 
-            // Vérifier les services
             await this.checkServices();
             
-            // Rendu de l'interface
             container.innerHTML = this.renderMinimalScanner();
             this.initializeEvents();
             this.isInitialized = true;
@@ -627,10 +549,7 @@ class MinimalScanModule {
     }
 
     renderMinimalScanner() {
-        // Déterminer l'option recommandée basée sur les paramètres
         const recommendedPeriod = this.selectedDays;
-        
-        // Créer l'affichage des catégories pré-sélectionnées
         const preselectedDisplay = this.taskPreselectedCategories.length > 0 ? 
             this.renderPreselectedCategoriesInfo() : '';
         
@@ -704,7 +623,7 @@ class MinimalScanModule {
         
         return options.map(option => {
             const isSelected = option.value === this.selectedDays;
-            const isRecommended = option.value === recommendedPeriod && recommendedPeriod !== 7; // 7 est la valeur par défaut
+            const isRecommended = option.value === recommendedPeriod && recommendedPeriod !== 7;
             
             return `
                 <button class="duration-option ${isSelected ? 'selected' : ''} ${isRecommended ? 'recommended' : ''}" 
@@ -722,7 +641,7 @@ class MinimalScanModule {
         const categoryNames = this.taskPreselectedCategories.map(catId => {
             const category = window.categoryManager?.getCategory(catId);
             return category ? `${category.icon} ${category.name}` : catId;
-        }).slice(0, 3); // Afficher max 3 catégories
+        }).slice(0, 3);
         
         const moreCount = this.taskPreselectedCategories.length - 3;
         const displayText = categoryNames.join(', ') + (moreCount > 0 ? ` et ${moreCount} autre${moreCount > 1 ? 's' : ''}` : '');
@@ -797,6 +716,9 @@ class MinimalScanModule {
         `;
     }
 
+    // ================================================
+    // VÉRIFICATIONS
+    // ================================================
     async checkServices() {
         if (!window.authService?.isAuthenticated()) {
             throw new Error('Authentification requise');
@@ -809,21 +731,14 @@ class MinimalScanModule {
 
     initializeEvents() {
         console.log('[MinimalScan] ✅ Événements initialisés avec intégration paramètres');
-        
-        // Démarrer la vérification périodique des paramètres
-        if (this.settingsCheckInterval) {
-            clearInterval(this.settingsCheckInterval);
-        }
-        
-        this.settingsCheckInterval = setInterval(() => {
-            this.checkSettingsUpdate();
-        }, 10000); // Vérifier toutes les 10 secondes
     }
 
+    // ================================================
+    // ACTIONS UTILISATEUR
+    // ================================================
     selectDuration(days) {
         this.selectedDays = days;
         
-        // Mettre à jour l'UI
         document.querySelectorAll('.duration-option').forEach(btn => {
             btn.classList.remove('selected');
         });
@@ -835,13 +750,11 @@ class MinimalScanModule {
         
         console.log(`[MinimalScan] ✅ Durée sélectionnée: ${days} jours`);
         
-        // NOUVEAU: Sauvegarder la préférence si différente du défaut
         if (this.settings.scanSettings && this.settings.scanSettings.defaultPeriod !== days) {
             try {
                 if (window.categoryManager && typeof window.categoryManager.updateScanSetting === 'function') {
                     window.categoryManager.updateScanSetting('defaultPeriod', days);
                 } else {
-                    // Fallback localStorage
                     this.settings.scanSettings.defaultPeriod = days;
                     localStorage.setItem('categorySettings', JSON.stringify(this.settings));
                 }
@@ -865,10 +778,8 @@ class MinimalScanModule {
             this.scanInProgress = true;
             this.scanStartTime = Date.now();
             
-            // Passer à l'étape 2
             this.setActiveStep(2);
             
-            // Afficher la progression
             const progressSection = document.getElementById('progressSection');
             if (progressSection) {
                 progressSection.classList.add('visible');
@@ -880,16 +791,10 @@ class MinimalScanModule {
                 scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Analyse en cours...</span>';
             }
             
-            // NOUVEAU: Préparer les options de scan avec les paramètres
             const scanOptions = this.prepareScanOptions();
-            
-            // Exécuter le scan
             await this.executeScan(scanOptions);
             
-            // Passer à l'étape 3
             this.setActiveStep(3);
-            
-            // Finaliser
             this.completeScan();
             
         } catch (error) {
@@ -899,7 +804,6 @@ class MinimalScanModule {
     }
 
     prepareScanOptions() {
-        // Fusionner les paramètres utilisateur avec les options de scan
         const baseOptions = {
             days: this.selectedDays,
             folder: this.settings.scanSettings?.defaultFolder || 'inbox',
@@ -909,7 +813,6 @@ class MinimalScanModule {
             detectCC: this.settings.preferences?.detectCC !== false
         };
         
-        // Ajouter les catégories pré-sélectionnées si disponibles
         if (this.taskPreselectedCategories.length > 0) {
             baseOptions.taskPreselectedCategories = [...this.taskPreselectedCategories];
         }
@@ -930,33 +833,28 @@ class MinimalScanModule {
         ];
 
         try {
-            // Vérifier si le scanner EmailScanner est disponible
             if (window.emailScanner && typeof window.emailScanner.scan === 'function') {
                 console.log('[MinimalScan] 🔄 Utilisation du vrai scanner avec paramètres');
                 
-                // Utiliser les options préparées avec les paramètres
                 const results = await window.emailScanner.scan(scanOptions);
                 this.scanResults = results;
                 
                 console.log('[MinimalScan] ✅ Scan réel terminé avec paramètres:', results);
                 
-                // Log spécial pour les catégories pré-sélectionnées
                 if (results.stats?.preselectedForTasks > 0) {
                     console.log(`[MinimalScan] ⭐ ${results.stats.preselectedForTasks} emails identifiés pour création de tâches automatique`);
                 }
                 
             } else {
                 console.log('[MinimalScan] 🎭 Mode simulation avec paramètres');
-                // Simulation enrichie avec les paramètres
                 for (const step of steps) {
                     this.updateProgress(step.progress, step.text, step.status);
                     await new Promise(resolve => setTimeout(resolve, 600));
                 }
                 
-                // Générer des résultats réalistes basés sur les paramètres
                 const baseEmails = Math.floor(Math.random() * 200) + 50;
                 const preselectedCount = this.taskPreselectedCategories.length > 0 ? 
-                    Math.floor(baseEmails * 0.15) : 0; // 15% des emails dans les catégories pré-sélectionnées
+                    Math.floor(baseEmails * 0.15) : 0;
                 
                 this.scanResults = {
                     success: true,
@@ -975,7 +873,6 @@ class MinimalScanModule {
             }
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du scan:', error);
-            // Continuer avec simulation en cas d'erreur
             for (const step of steps) {
                 this.updateProgress(step.progress, step.text, step.status);
                 await new Promise(resolve => setTimeout(resolve, 400));
@@ -1016,7 +913,6 @@ class MinimalScanModule {
         setTimeout(() => {
             const scanBtn = document.getElementById('minimalScanBtn');
             if (scanBtn) {
-                // Bouton de succès avec information sur les tâches pré-sélectionnées
                 const preselectedCount = this.scanResults?.stats?.preselectedForTasks || 0;
                 const buttonText = preselectedCount > 0 ? 
                     `Scan terminé ! ${preselectedCount} emails pour tâches` : 
@@ -1025,7 +921,6 @@ class MinimalScanModule {
                 scanBtn.innerHTML = `<i class="fas fa-check"></i> <span>${buttonText}</span>`;
                 scanBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                 
-                // Ajouter un badge si des emails pré-sélectionnés ont été trouvés
                 if (preselectedCount > 0) {
                     scanBtn.style.position = 'relative';
                     scanBtn.insertAdjacentHTML('beforeend', `
@@ -1037,7 +932,6 @@ class MinimalScanModule {
                 }
             }
             
-            // Préparer la redirection
             setTimeout(() => {
                 this.redirectToResults();
             }, 1500);
@@ -1047,7 +941,6 @@ class MinimalScanModule {
     redirectToResults() {
         this.scanInProgress = false;
         
-        // Stocker les résultats enrichis avec les paramètres
         const essentialResults = {
             success: this.scanResults?.success || true,
             total: this.scanResults?.total || 0,
@@ -1069,7 +962,6 @@ class MinimalScanModule {
             console.warn('[MinimalScan] ⚠️ Erreur de stockage:', error);
         }
         
-        // Notification de succès enrichie
         if (window.uiManager?.showToast) {
             const totalEmails = essentialResults.total;
             const preselectedCount = essentialResults.preselectedForTasks;
@@ -1082,16 +974,9 @@ class MinimalScanModule {
             window.uiManager.showToast(message, 'success', 4000);
         }
         
-        // Redirection vers les emails avec paramètres synchronisés
         setTimeout(() => {
             if (window.pageManager && typeof window.pageManager.loadPage === 'function') {
                 console.log('[MinimalScan] 🔄 Redirection vers la page emails avec paramètres synchronisés');
-                
-                // NOUVEAU: Forcer la synchronisation avant la redirection
-                if (window.pageManager.forceSynchronization) {
-                    window.pageManager.forceSynchronization();
-                }
-                
                 window.pageManager.loadPage('emails');
             } else {
                 console.log('[MinimalScan] ⚠️ PageManager non disponible');
@@ -1134,22 +1019,18 @@ class MinimalScanModule {
             scanBtn.innerHTML = '<i class="fas fa-play"></i> <span>Démarrer l\'analyse intelligente</span>';
             scanBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
             
-            // Retirer le badge s'il existe
             const badge = scanBtn.querySelector('span[style*="position: absolute"]');
             if (badge) badge.remove();
         }
         
         this.updateProgress(0, 'Initialisation...', 'Préparation du scan');
-        
-        // Recharger les paramètres au reset
         this.loadSettingsFromCategoryManager();
-        this.updatePreselectedCategoriesDisplay();
         
         console.log('[MinimalScan] 🔄 Scanner réinitialisé avec paramètres mis à jour');
     }
 
     // ================================================
-    // MÉTHODES DE SYNCHRONISATION ET NETTOYAGE
+    // MÉTHODES UTILITAIRES
     // ================================================
     updateSettings(newSettings) {
         console.log('[MinimalScan] 📝 Mise à jour des paramètres:', newSettings);
@@ -1162,14 +1043,8 @@ class MinimalScanModule {
         if (newSettings.scanSettings?.defaultPeriod) {
             this.selectedDays = newSettings.scanSettings.defaultPeriod;
         }
-        
-        // Mettre à jour l'interface si elle est visible
-        this.updateUIWithNewSettings();
     }
 
-    // ================================================
-    // DEBUG ET UTILITAIRES
-    // ================================================
     getDebugInfo() {
         return {
             isInitialized: this.isInitialized,
@@ -1179,25 +1054,13 @@ class MinimalScanModule {
             settings: this.settings,
             lastSettingsSync: this.lastSettingsSync,
             scanResults: this.scanResults,
-            settingsCheckInterval: !!this.settingsCheckInterval,
             stylesAdded: this.stylesAdded
         };
     }
 
-    cleanup() {
-        if (this.settingsCheckInterval) {
-            clearInterval(this.settingsCheckInterval);
-            this.settingsCheckInterval = null;
-        }
-        
+    destroy() {
         this.scanInProgress = false;
         this.isInitialized = false;
-        
-        console.log('[MinimalScan] 🧹 Nettoyage terminé');
-    }
-
-    destroy() {
-        this.cleanup();
         this.settings = {};
         this.taskPreselectedCategories = [];
         console.log('[MinimalScan] Instance détruite');
@@ -1207,22 +1070,20 @@ class MinimalScanModule {
 // ===== CRÉATION DES INSTANCES GLOBALES =====
 console.log('[StartScan] 🔧 Création des instances globales...');
 
-// Nettoyer l'ancienne instance si elle existe
 if (window.minimalScanModule) {
     window.minimalScanModule.destroy?.();
 }
 
-// Créer l'instance principale
 window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
-window.scanStartModule = window.minimalScanModule; // Alias pour compatibilité
+window.scanStartModule = window.minimalScanModule;
 
 console.log('[StartScan] ✅ Instances créées:');
 console.log('- window.MinimalScanModule:', !!window.MinimalScanModule);
 console.log('- window.minimalScanModule:', !!window.minimalScanModule);
 console.log('- window.scanStartModule:', !!window.scanStartModule);
 
-// ===== MÉTHODES UTILITAIRES GLOBALES POUR DEBUG =====
+// ===== MÉTHODES UTILITAIRES GLOBALES =====
 window.testScannerSettings = function() {
     console.group('🧪 TEST Scanner Settings');
     
@@ -1237,10 +1098,6 @@ window.testScannerSettings = function() {
         console.log('CategoryManager settings:', window.categoryManager.getSettings());
     }
     
-    if (window.categoriesPage) {
-        console.log('CategoriesPage taskPreselectedCategories:', window.categoriesPage.getTaskPreselectedCategories());
-    }
-    
     console.groupEnd();
     return debugInfo;
 };
@@ -1248,7 +1105,6 @@ window.testScannerSettings = function() {
 window.forceScannerSync = function() {
     console.log('[StartScan] 🔄 Forçage synchronisation scanner...');
     window.minimalScanModule.loadSettingsFromCategoryManager();
-    window.minimalScanModule.updateUIWithNewSettings();
     console.log('[StartScan] ✅ Synchronisation forcée terminée');
     return window.minimalScanModule.getDebugInfo();
 };
