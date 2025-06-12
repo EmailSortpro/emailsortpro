@@ -2355,7 +2355,475 @@ class ModernDomainOrganizer {
             return false;
         }
     }
+// AJOUTEZ CES FONCTIONS À VOTRE CLASSE ModernDomainOrganizer
 
+createFolderSelectModal(domain, emailId, currentFolder) {
+    try {
+        console.log('[ModernDomainOrganizer] 🎯 Ouverture modal sélection dossier pour:', emailId);
+        
+        // Créer le modal s'il n'existe pas
+        let modal = document.getElementById('folderSelectModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'folderSelectModal';
+            modal.className = 'folder-select-modal hidden';
+            document.body.appendChild(modal);
+        }
+        
+        const folders = Array.from(this.allFolders.values());
+        console.log('[ModernDomainOrganizer] 📁 Dossiers disponibles:', folders.length);
+        
+        modal.innerHTML = `
+            <div class="folder-modal-content">
+                <div class="folder-modal-header">
+                    <h3>📁 Sélectionner un dossier</h3>
+                    <button class="modal-close" onclick="window.modernDomainOrganizer.closeFolderModal()">×</button>
+                </div>
+                
+                <div class="folder-modal-body">
+                    <div class="folder-search-section">
+                        <div class="search-container">
+                            <input type="text" 
+                                   id="folderSearchInput" 
+                                   placeholder="🔍 Rechercher un dossier..." 
+                                   class="folder-search-input"
+                                   oninput="window.modernDomainOrganizer.filterFolders(this.value)">
+                            <button class="search-clear" onclick="window.modernDomainOrganizer.clearFolderSearch()">×</button>
+                        </div>
+                        
+                        <div class="search-stats" id="searchStats">
+                            ${folders.length} dossiers disponibles
+                        </div>
+                    </div>
+                    
+                    <div class="folder-options-section">
+                        <div class="special-options">
+                            <div class="folder-option special-option" data-action="default">
+                                <span class="folder-icon">📁</span>
+                                <span class="folder-name">Utiliser le dossier par défaut</span>
+                                <span class="folder-path">${this.organizationPlan.get(domain)?.targetFolder || domain}</span>
+                            </div>
+                            
+                            <div class="folder-option special-option" data-action="new">
+                                <span class="folder-icon">✨</span>
+                                <span class="folder-name">Créer un nouveau dossier</span>
+                                <span class="folder-path">Saisir un nom personnalisé</span>
+                            </div>
+                        </div>
+                        
+                        <div class="folder-separator">
+                            <span>Dossiers existants</span>
+                        </div>
+                        
+                        <div class="folder-tree" id="folderTree">
+                            ${this.generateSimpleFolderList(folders, currentFolder)}
+                        </div>
+                    </div>
+                    
+                    <div class="custom-folder-section hidden" id="customFolderSection">
+                        <div class="custom-folder-input-group">
+                            <label>Nom du nouveau dossier :</label>
+                            <input type="text" 
+                                   id="customFolderNameInput" 
+                                   placeholder="Saisir le nom du dossier..."
+                                   class="custom-folder-name-input">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="folder-modal-footer">
+                    <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.closeFolderModal()">
+                        Annuler
+                    </button>
+                    <button class="btn btn-primary" id="confirmFolderBtn" onclick="window.modernDomainOrganizer.confirmFolderSelection('${domain}', '${emailId}')">
+                        Confirmer
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter les event listeners
+        this.setupFolderModalEvents(domain, emailId);
+        
+        // Afficher le modal
+        modal.classList.remove('hidden');
+        console.log('[ModernDomainOrganizer] ✅ Modal affiché');
+        
+        // Focus sur la recherche
+        setTimeout(() => {
+            const searchInput = document.getElementById('folderSearchInput');
+            if (searchInput) searchInput.focus();
+        }, 100);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur création modal dossier:', error);
+        this.showError('Erreur lors de l\'ouverture du sélecteur de dossier');
+    }
+}
+
+generateSimpleFolderList(folders, currentFolder) {
+    try {
+        let html = '';
+        
+        // Trier les dossiers par nom
+        const sortedFolders = folders.sort((a, b) => a.displayName.localeCompare(b.displayName));
+        
+        sortedFolders.forEach(folder => {
+            const isSelected = currentFolder === folder.displayName;
+            const folderIcon = this.getFolderIcon(folder.displayName);
+            const itemCount = folder.totalItemCount > 0 ? `(${folder.totalItemCount})` : '';
+            
+            html += `
+                <div class="folder-option ${isSelected ? 'selected' : ''}" 
+                     data-folder-id="${folder.id}" 
+                     data-folder-name="${folder.displayName}"
+                     title="${folder.displayName}">
+                    
+                    <div class="folder-content">
+                        <span class="folder-spacer"></span>
+                        <span class="folder-icon">${folderIcon}</span>
+                        
+                        <div class="folder-details">
+                            <span class="folder-name">${folder.displayName}</span>
+                            ${itemCount ? `<span class="folder-count">${itemCount}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        return html || '<div class="no-folders">Aucun dossier trouvé</div>';
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur génération liste dossiers:', error);
+        return '<div class="error-folders">Erreur lors du chargement des dossiers</div>';
+    }
+}
+
+setupFolderModalEvents(domain, emailId) {
+    try {
+        console.log('[ModernDomainOrganizer] 🔧 Setup événements modal');
+        
+        // Gestion de la sélection des dossiers
+        setTimeout(() => {
+            document.querySelectorAll('.folder-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    
+                    console.log('[ModernDomainOrganizer] 📁 Dossier sélectionné:', option.dataset.folderName || option.dataset.action);
+                    
+                    // Désélectionner tous les autres
+                    document.querySelectorAll('.folder-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    
+                    // Sélectionner le dossier cliqué
+                    option.classList.add('selected');
+                    
+                    const action = option.dataset.action;
+                    const folderId = option.dataset.folderId;
+                    const folderName = option.dataset.folderName;
+                    
+                    // Gérer les options spéciales
+                    if (action === 'new') {
+                        this.showCustomFolderInput();
+                    } else {
+                        this.hideCustomFolderInput();
+                    }
+                    
+                    // Stocker la sélection
+                    this.selectedFolderData = {
+                        action: action || 'existing',
+                        folderId: folderId,
+                        folderName: folderName
+                    };
+                    
+                    console.log('[ModernDomainOrganizer] 💾 Sélection stockée:', this.selectedFolderData);
+                });
+            });
+        }, 100);
+        
+        // Gestion du champ de saisie personnalisé
+        setTimeout(() => {
+            const customInput = document.getElementById('customFolderNameInput');
+            if (customInput) {
+                customInput.addEventListener('input', (e) => {
+                    if (this.selectedFolderData && this.selectedFolderData.action === 'new') {
+                        this.selectedFolderData.folderName = e.target.value;
+                    }
+                });
+                
+                customInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.confirmFolderSelection(domain, emailId);
+                    }
+                });
+            }
+        }, 100);
+        
+        // Fermeture sur Escape
+        this.modalKeydownHandler = (e) => {
+            if (e.key === 'Escape') {
+                this.closeFolderModal();
+            }
+        };
+        document.addEventListener('keydown', this.modalKeydownHandler);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur setup événements modal:', error);
+    }
+}
+
+showCustomFolderInput() {
+    try {
+        const section = document.getElementById('customFolderSection');
+        const input = document.getElementById('customFolderNameInput');
+        
+        if (section) {
+            section.classList.remove('hidden');
+            if (input) {
+                input.focus();
+                input.value = '';
+            }
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur affichage input personnalisé:', error);
+    }
+}
+
+hideCustomFolderInput() {
+    try {
+        const section = document.getElementById('customFolderSection');
+        if (section) {
+            section.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur masquage input personnalisé:', error);
+    }
+}
+
+filterFolders(searchTerm) {
+    try {
+        const term = searchTerm.toLowerCase().trim();
+        const folderOptions = document.querySelectorAll('.folder-option:not(.special-option)');
+        const stats = document.getElementById('searchStats');
+        
+        let visibleCount = 0;
+        
+        folderOptions.forEach(option => {
+            const folderName = option.dataset.folderName?.toLowerCase() || '';
+            const isMatch = !term || folderName.includes(term);
+            
+            if (isMatch) {
+                option.style.display = 'block';
+                visibleCount++;
+                
+                // Highlight du terme recherché
+                if (term) {
+                    this.highlightSearchTerm(option, term);
+                } else {
+                    this.removeHighlight(option);
+                }
+            } else {
+                option.style.display = 'none';
+                this.removeHighlight(option);
+            }
+        });
+        
+        // Mettre à jour les statistiques
+        if (stats) {
+            if (term) {
+                stats.textContent = `${visibleCount} dossier(s) trouvé(s) pour "${term}"`;
+            } else {
+                stats.textContent = `${folderOptions.length} dossiers disponibles`;
+            }
+        }
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur filtrage dossiers:', error);
+    }
+}
+
+highlightSearchTerm(option, term) {
+    try {
+        const nameElement = option.querySelector('.folder-name');
+        if (!nameElement) return;
+        
+        const originalText = nameElement.dataset.originalText || nameElement.textContent;
+        nameElement.dataset.originalText = originalText;
+        
+        const regex = new RegExp(`(${term})`, 'gi');
+        const highlightedText = originalText.replace(regex, '<mark>$1</mark>');
+        nameElement.innerHTML = highlightedText;
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur highlight:', error);
+    }
+}
+
+removeHighlight(option) {
+    try {
+        const nameElement = option.querySelector('.folder-name');
+        if (!nameElement) return;
+        
+        const originalText = nameElement.dataset.originalText;
+        if (originalText) {
+            nameElement.textContent = originalText;
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur suppression highlight:', error);
+    }
+}
+
+clearFolderSearch() {
+    try {
+        const searchInput = document.getElementById('folderSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            this.filterFolders('');
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur clear recherche:', error);
+    }
+}
+
+confirmFolderSelection(domain, emailId) {
+    try {
+        console.log('[ModernDomainOrganizer] ✅ Confirmation sélection pour:', emailId, this.selectedFolderData);
+        
+        if (!this.selectedFolderData) {
+            this.showWarning('Veuillez sélectionner un dossier');
+            return;
+        }
+        
+        const { action, folderId, folderName } = this.selectedFolderData;
+        
+        // Validation pour nouveau dossier
+        if (action === 'new') {
+            const customName = document.getElementById('customFolderNameInput')?.value?.trim();
+            if (!customName) {
+                this.showWarning('Veuillez saisir un nom pour le nouveau dossier');
+                return;
+            }
+            this.selectedFolderData.folderName = customName;
+        }
+        
+        // Appliquer la sélection
+        this.applyFolderSelection(domain, emailId, this.selectedFolderData);
+        
+        // Fermer le modal
+        this.closeFolderModal();
+        
+        console.log('[ModernDomainOrganizer] ✅ Sélection confirmée');
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur confirmation sélection:', error);
+        this.showError('Erreur lors de la confirmation de la sélection');
+    }
+}
+
+applyFolderSelection(domain, emailId, folderData) {
+    try {
+        const plan = this.organizationPlan.get(domain);
+        if (!plan) return;
+        
+        const email = plan.emails.find(e => e.id === emailId);
+        if (!email) return;
+        
+        console.log('[ModernDomainOrganizer] 📝 Application sélection:', folderData);
+        
+        // Réinitialiser les propriétés personnalisées
+        delete email.customFolder;
+        delete email.customFolderId;
+        
+        switch (folderData.action) {
+            case 'default':
+                // Utiliser le dossier par défaut - rien à faire
+                console.log('[ModernDomainOrganizer] 📁 Utilisation dossier par défaut');
+                break;
+                
+            case 'new':
+                // Nouveau dossier personnalisé
+                email.customFolder = folderData.folderName;
+                email.customFolderId = null;
+                console.log('[ModernDomainOrganizer] ✨ Nouveau dossier:', folderData.folderName);
+                break;
+                
+            case 'existing':
+                // Dossier existant
+                email.customFolder = folderData.folderName;
+                email.customFolderId = folderData.folderId;
+                console.log('[ModernDomainOrganizer] 📂 Dossier existant:', folderData.folderName);
+                break;
+        }
+        
+        // Mettre à jour l'affichage
+        this.updateEmailFolderDisplay(domain, emailId);
+        this.updateTotalEmailsCount();
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur application sélection:', error);
+    }
+}
+
+closeFolderModal() {
+    try {
+        const modal = document.getElementById('folderSelectModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        
+        // Nettoyer les données de sélection
+        this.selectedFolderData = null;
+        
+        // Supprimer le listener de clavier
+        if (this.modalKeydownHandler) {
+            document.removeEventListener('keydown', this.modalKeydownHandler);
+            this.modalKeydownHandler = null;
+        }
+        
+        console.log('[ModernDomainOrganizer] ✅ Modal fermé');
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur fermeture modal:', error);
+    }
+}
+
+getFolderIcon(folderName) {
+    try {
+        const name = folderName.toLowerCase();
+        
+        // Français
+        if (name.includes('boîte de réception') || name.includes('réception')) return '📥';
+        if (name.includes('envoyé') || name.includes('éléments envoyés')) return '📤';
+        if (name.includes('brouillon')) return '📝';
+        if (name.includes('supprimé') || name.includes('corbeille')) return '🗑️';
+        if (name.includes('indésirable') || name.includes('spam')) return '🚫';
+        if (name.includes('archive')) return '📦';
+        if (name.includes('important')) return '⭐';
+        
+        // Anglais
+        if (name.includes('inbox')) return '📥';
+        if (name.includes('sent')) return '📤';
+        if (name.includes('draft')) return '📝';
+        if (name.includes('deleted') || name.includes('trash')) return '🗑️';
+        if (name.includes('junk')) return '🚫';
+        
+        // Dossiers personnalisés
+        if (name.includes('amazon')) return '🛒';
+        if (name.includes('paypal') || name.includes('payment')) return '💳';
+        if (name.includes('social') || name.includes('facebook') || name.includes('instagram')) return '👥';
+        if (name.includes('news') || name.includes('newsletter')) return '📰';
+        if (name.includes('work') || name.includes('travail')) return '💼';
+        if (name.includes('bank') || name.includes('banque')) return '🏦';
+        
+        return '📁';
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur détermination icône:', error);
+        return '📁';
+    }
+}
     setupEventListeners() {
         try {
             // Event listeners pour les boutons principaux
