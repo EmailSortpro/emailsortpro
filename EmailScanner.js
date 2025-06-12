@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 5.0 - CENTRALISATEUR D'ACTIONS SCAN & CATÉGORISATION
+// EmailScanner.js - Version 5.1 - CENTRALISATEUR D'ACTIONS SCAN & CATÉGORISATION - CORRIGÉ
 
 class EmailScanner {
     constructor() {
@@ -14,7 +14,7 @@ class EmailScanner {
         this.initializeSettings();
         this.setupEventListeners();
         
-        console.log('[EmailScanner] ✅ Version 5.0 - Centralisateur d\'actions scan & catégorisation');
+        console.log('[EmailScanner] ✅ Version 5.1 - Centralisateur d\'actions scan & catégorisation - CORRIGÉ');
     }
 
     // ================================================
@@ -22,35 +22,49 @@ class EmailScanner {
     // ================================================
     initializeSettings() {
         try {
-            // Charger les paramètres depuis CategoriesPage
-            if (window.categoriesPage) {
-                this.scanSettings = window.categoriesPage.getScanSettings();
-                this.preselectedCategories = window.categoriesPage.getTaskPreselectedCategories();
-                console.log('[EmailScanner] Paramètres chargés depuis CategoriesPage:', {
+            // Charger les paramètres depuis CategoryManager
+            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
+                const settings = window.categoryManager.getSettings();
+                this.scanSettings = settings.scanSettings || this.getDefaultScanSettings();
+                this.preselectedCategories = settings.taskPreselectedCategories || [];
+                console.log('[EmailScanner] Paramètres chargés depuis CategoryManager:', {
                     scanSettings: this.scanSettings,
                     preselectedCategories: this.preselectedCategories
                 });
             } else {
-                // Paramètres par défaut
-                this.scanSettings = {
-                    defaultPeriod: 7,
-                    defaultFolder: 'inbox',
-                    autoAnalyze: true,
-                    autoCategrize: true
-                };
-                this.preselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
-                console.log('[EmailScanner] Paramètres par défaut utilisés');
+                // Fallback: essayer localStorage
+                try {
+                    const saved = localStorage.getItem('categorySettings');
+                    if (saved) {
+                        const settings = JSON.parse(saved);
+                        this.scanSettings = settings.scanSettings || this.getDefaultScanSettings();
+                        this.preselectedCategories = settings.taskPreselectedCategories || [];
+                        console.log('[EmailScanner] Paramètres chargés depuis localStorage');
+                    } else {
+                        this.scanSettings = this.getDefaultScanSettings();
+                        this.preselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+                        console.log('[EmailScanner] Paramètres par défaut utilisés');
+                    }
+                } catch (error) {
+                    console.warn('[EmailScanner] Erreur chargement localStorage:', error);
+                    this.scanSettings = this.getDefaultScanSettings();
+                    this.preselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+                }
             }
         } catch (error) {
             console.error('[EmailScanner] Erreur initialisation paramètres:', error);
-            this.scanSettings = {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            };
+            this.scanSettings = this.getDefaultScanSettings();
             this.preselectedCategories = [];
         }
+    }
+
+    getDefaultScanSettings() {
+        return {
+            defaultPeriod: 7,
+            defaultFolder: 'inbox',
+            autoAnalyze: true,
+            autoCategrize: true
+        };
     }
 
     // ================================================
@@ -82,7 +96,38 @@ class EmailScanner {
             this.handleScanRequest(options);
         });
 
+        // Écouter les changements depuis CategoryManager
+        window.addEventListener('categorySettingsChanged', (event) => {
+            console.log('[EmailScanner] Changements CategoryManager reçus:', event.detail);
+            if (event.detail.settings) {
+                this.syncWithCategoryManager(event.detail.settings);
+            }
+        });
+
         console.log('[EmailScanner] Event listeners configurés');
+    }
+
+    // ================================================
+    // SYNCHRONISATION AVEC CATEGORYMANAGER
+    // ================================================
+    syncWithCategoryManager(settings) {
+        try {
+            console.log('[EmailScanner] 🔄 Synchronisation avec CategoryManager');
+            
+            if (settings.scanSettings) {
+                this.scanSettings = { ...this.scanSettings, ...settings.scanSettings };
+                console.log('[EmailScanner] Paramètres de scan mis à jour:', this.scanSettings);
+            }
+            
+            if (settings.taskPreselectedCategories) {
+                this.preselectedCategories = [...settings.taskPreselectedCategories];
+                console.log('[EmailScanner] Catégories pré-sélectionnées mises à jour:', this.preselectedCategories);
+            }
+            
+            this.notifyPreselectionChange();
+        } catch (error) {
+            console.error('[EmailScanner] Erreur synchronisation CategoryManager:', error);
+        }
     }
 
     // ================================================
@@ -105,8 +150,8 @@ class EmailScanner {
         console.log('[EmailScanner] Préférences utilisateur mises à jour:', preferences);
         
         // Mettre à jour CategoryManager si nécessaire
-        if (window.categoryManager) {
-            window.categoryManager.updateSettings(preferences);
+        if (window.categoryManager && typeof window.categoryManager.updatePreferences === 'function') {
+            window.categoryManager.updatePreferences(preferences);
         }
     }
 
@@ -159,7 +204,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // MÉTHODE PRINCIPALE DE SCAN (INCHANGÉE)
+    // MÉTHODE PRINCIPALE DE SCAN
     // ================================================
     async scan(options = {}) {
         const {
@@ -184,7 +229,8 @@ class EmailScanner {
                 days,
                 folder,
                 maxEmails,
-                includeSpam
+                includeSpam,
+                preselectedCategories: this.preselectedCategories
             });
 
             // Étape 1: Vérifier les services requis
@@ -230,7 +276,8 @@ class EmailScanner {
                     breakdown: {},
                     stats: { processed: 0, errors: 0 },
                     emails: [],
-                    preselectedCategories: this.preselectedCategories
+                    preselectedCategories: this.preselectedCategories,
+                    preselectedStats: this.getPreselectedStats()
                 };
             }
 
@@ -277,7 +324,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // RÉINITIALISATION COMPLÈTE (INCHANGÉE)
+    // RÉINITIALISATION COMPLÈTE
     // ================================================
     reset() {
         console.log('[EmailScanner] 🔄 Resetting scanner...');
@@ -590,7 +637,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // MÉTHODES D'ACCÈS (INCHANGÉES)
+    // MÉTHODES D'ACCÈS
     // ================================================
     getAllEmails() {
         return this.emails;
@@ -601,7 +648,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES (INCHANGÉES)
+    // MÉTHODES UTILITAIRES
     // ================================================
     logTopPatterns() {
         const patternFrequency = {};
@@ -681,12 +728,6 @@ class EmailScanner {
     }
 
     // ================================================
-    // MÉTHODES D'EXPORT ET ACTIONS EN BATCH (INCHANGÉES - VOIR FICHIER ORIGINAL)
-    // ================================================
-    
-    // ... (toutes les autres méthodes restent identiques)
-    
-    // ================================================
     // MÉTHODES DE DEBUG
     // ================================================
     getDebugInfo() {
@@ -752,6 +793,14 @@ class EmailScanner {
     getCurrentPreselectedCategories() {
         return [...this.preselectedCategories];
     }
+
+    /**
+     * Forcer la synchronisation avec CategoryManager
+     */
+    forceSettingsReload() {
+        console.log('[EmailScanner] 🔄 Force reload des paramètres');
+        this.initializeSettings();
+    }
 }
 
 // Créer l'instance globale
@@ -759,7 +808,7 @@ window.emailScanner = new EmailScanner();
 
 // Méthodes de test global
 window.testEmailScanner = function() {
-    console.group('🧪 TEST EmailScanner v5.0');
+    console.group('🧪 TEST EmailScanner v5.1');
     
     const debugInfo = window.emailScanner.getDebugInfo();
     console.log('Debug Info:', debugInfo);
@@ -780,4 +829,4 @@ window.testEmailScanner = function() {
     return debugInfo;
 };
 
-console.log('✅ EmailScanner v5.0 loaded - Centralisateur d\'actions scan & catégorisation');
+console.log('✅ EmailScanner v5.1 loaded - Centralisateur d\'actions scan & catégorisation - CORRIGÉ');
