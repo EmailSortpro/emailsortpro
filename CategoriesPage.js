@@ -1,5 +1,5 @@
-// CategoriesPage.js - Gestion avec synchronisation complète
-// Version 7.3 - CORRECTION TOTALE DES FONCTIONS DYNAMIQUES - SANS ERREUR
+// CategoriesPage.js - Version 7.4 - SYNCHRONISATION COMPLÈTE CORRIGÉE
+// Correction totale des problèmes de synchronisation des options
 
 class CategoriesPage {
     constructor() {
@@ -11,7 +11,7 @@ class CategoriesPage {
         // Bind toutes les méthodes pour éviter les problèmes de contexte
         this.bindMethods();
         
-        console.log('[CategoriesPage] Version 7.3 - Synchronisation complète initialisée');
+        console.log('[CategoriesPage] Version 7.4 - Synchronisation complète corrigée');
     }
 
     // =====================================
@@ -92,7 +92,7 @@ class CategoriesPage {
     }
 
     // =====================================
-    // INITIALISATION DES ÉVÉNEMENTS
+    // INITIALISATION DES ÉVÉNEMENTS - CORRIGÉE
     // =====================================
     initializeEventListeners() {
         try {
@@ -101,7 +101,14 @@ class CategoriesPage {
             preferences.forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
-                    element.addEventListener('change', () => this.savePreferences());
+                    // Supprimer les anciens listeners
+                    element.removeEventListener('change', this.savePreferences);
+                    // Ajouter le nouveau listener
+                    element.addEventListener('change', this.savePreferences);
+                    
+                    if (this.debugMode) {
+                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${element.checked}`);
+                    }
                 }
             });
 
@@ -110,7 +117,13 @@ class CategoriesPage {
             scanSettings.forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
-                    element.addEventListener('change', () => this.saveScanSettings());
+                    element.removeEventListener('change', this.saveScanSettings);
+                    element.addEventListener('change', this.saveScanSettings);
+                    
+                    if (this.debugMode) {
+                        const value = element.type === 'checkbox' ? element.checked : element.value;
+                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${value}`);
+                    }
                 }
             });
 
@@ -119,36 +132,52 @@ class CategoriesPage {
             automationSettings.forEach(id => {
                 const element = document.getElementById(id);
                 if (element) {
-                    element.addEventListener('change', () => this.saveAutomationSettings());
+                    element.removeEventListener('change', this.saveAutomationSettings);
+                    element.addEventListener('change', this.saveAutomationSettings);
+                    
+                    if (this.debugMode) {
+                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${element.checked}`);
+                    }
                 }
             });
 
-            // Catégories pré-sélectionnées pour les tâches
+            // Catégories pré-sélectionnées pour les tâches - CORRIGÉ
             const categoryCheckboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
             categoryCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', () => this.updateTaskPreselectedCategories());
+                checkbox.removeEventListener('change', this.updateTaskPreselectedCategories);
+                checkbox.addEventListener('change', (e) => {
+                    console.log(`[CategoriesPage] Catégorie ${e.target.value} ${e.target.checked ? 'sélectionnée' : 'désélectionnée'}`);
+                    this.updateTaskPreselectedCategories();
+                });
             });
 
-            // Catégories actives/inactives
+            // Catégories actives/inactives - CORRIGÉ
             const categoryToggles = document.querySelectorAll('.toggle-minimal input');
             categoryToggles.forEach(toggle => {
-                const categoryId = toggle.closest('[data-category]')?.dataset.category;
+                const categoryCard = toggle.closest('[data-category]');
+                const categoryId = categoryCard?.dataset.category;
                 if (categoryId) {
-                    toggle.addEventListener('change', (e) => this.toggleCategory(categoryId, e.target.checked));
+                    toggle.removeEventListener('change', this.handleToggleCategory);
+                    toggle.addEventListener('change', (e) => {
+                        console.log(`[CategoriesPage] Toggle catégorie ${categoryId}: ${e.target.checked}`);
+                        this.toggleCategory(categoryId, e.target.checked);
+                    });
                 }
             });
 
             // Ajout rapide d'exclusions
             const quickInput = document.getElementById('quick-exclusion-input');
             if (quickInput) {
+                quickInput.removeEventListener('keypress', this.handleQuickExclusionKeypress);
                 quickInput.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
+                        e.preventDefault();
                         this.addQuickExclusion();
                     }
                 });
             }
 
-            console.log('[CategoriesPage] Événements initialisés');
+            console.log('[CategoriesPage] Événements initialisés avec succès');
         } catch (error) {
             console.error('[CategoriesPage] Erreur lors de l\'initialisation des événements:', error);
         }
@@ -427,11 +456,12 @@ class CategoriesPage {
     }
 
     // =====================================
-    // ONGLET AUTOMATISATION
+    // ONGLET AUTOMATISATION - CORRIGÉ
     // =====================================
     renderAutomationTab(settings) {
         try {
             const categories = window.categoryManager?.getCategories() || {};
+            const preselectedCategories = settings.taskPreselectedCategories || [];
             
             return `
                 <div class="automation-focused-layout">
@@ -442,12 +472,12 @@ class CategoriesPage {
                         </div>
                         <p>Sélectionnez les catégories d'emails qui seront automatiquement proposées pour la création de tâches et configurez le comportement de l'automatisation.</p>
                         
-                        <!-- Sélection des catégories -->
+                        <!-- Sélection des catégories - CORRIGÉ -->
                         <div class="task-automation-section">
                             <h4><i class="fas fa-tags"></i> Catégories pré-sélectionnées</h4>
                             <div class="categories-selection-grid-automation">
                                 ${Object.entries(categories).map(([id, category]) => {
-                                    const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
+                                    const isPreselected = preselectedCategories.includes(id);
                                     return `
                                         <label class="category-checkbox-item-enhanced">
                                             <input type="checkbox" 
@@ -465,7 +495,7 @@ class CategoriesPage {
                             </div>
                         </div>
                         
-                        <!-- Options d'automatisation -->
+                        <!-- Options d'automatisation - CORRIGÉ -->
                         <div class="automation-options-enhanced">
                             <h4><i class="fas fa-cog"></i> Options d'automatisation</h4>
                             <div class="automation-options-grid">
@@ -512,7 +542,7 @@ class CategoriesPage {
                             <h4><i class="fas fa-chart-bar"></i> Statistiques</h4>
                             <div class="stats-grid">
                                 <div class="stat-item">
-                                    <span class="stat-number">${settings.taskPreselectedCategories?.length || 0}</span>
+                                    <span class="stat-number">${preselectedCategories.length}</span>
                                     <span class="stat-label">Catégories actives</span>
                                 </div>
                                 <div class="stat-item">
@@ -591,7 +621,7 @@ class CategoriesPage {
     }
 
     // =====================================
-    // MÉTHODES DE SAUVEGARDE
+    // MÉTHODES DE SAUVEGARDE - CORRIGÉES
     // =====================================
     savePreferences() {
         try {
@@ -606,6 +636,7 @@ class CategoriesPage {
             };
             
             this.saveSettings(settings);
+            console.log('[CategoriesPage] Préférences sauvegardées:', settings.preferences);
             window.uiManager?.showToast('Préférences sauvegardées', 'success');
         } catch (error) {
             console.error('[CategoriesPage] Erreur savePreferences:', error);
@@ -617,15 +648,24 @@ class CategoriesPage {
         try {
             const settings = this.loadSettings();
             
-            settings.scanSettings = {
+            const scanSettings = {
                 defaultPeriod: parseInt(document.getElementById('defaultScanPeriod')?.value || 7),
                 defaultFolder: document.getElementById('defaultFolder')?.value || 'inbox',
                 autoAnalyze: document.getElementById('autoAnalyze')?.checked !== false,
                 autoCategrize: document.getElementById('autoCategrize')?.checked !== false
             };
             
+            settings.scanSettings = scanSettings;
             this.saveSettings(settings);
+            
+            console.log('[CategoriesPage] Paramètres de scan sauvegardés:', scanSettings);
             window.uiManager?.showToast('Paramètres de scan sauvegardés', 'success');
+            
+            // Synchroniser avec EmailScanner s'il existe
+            if (window.emailScanner && typeof window.emailScanner.updateSettings === 'function') {
+                window.emailScanner.updateSettings(scanSettings);
+                console.log('[CategoriesPage] Paramètres synchronisés avec EmailScanner');
+            }
         } catch (error) {
             console.error('[CategoriesPage] Erreur saveScanSettings:', error);
             window.uiManager?.showToast('Erreur de sauvegarde', 'error');
@@ -636,14 +676,17 @@ class CategoriesPage {
         try {
             const settings = this.loadSettings();
             
-            settings.automationSettings = {
+            const automationSettings = {
                 autoCreateTasks: document.getElementById('autoCreateTasks')?.checked || false,
                 groupTasksByDomain: document.getElementById('groupTasksByDomain')?.checked || false,
                 skipDuplicates: document.getElementById('skipDuplicates')?.checked !== false,
                 autoAssignPriority: document.getElementById('autoAssignPriority')?.checked || false
             };
             
+            settings.automationSettings = automationSettings;
             this.saveSettings(settings);
+            
+            console.log('[CategoriesPage] Paramètres d\'automatisation sauvegardés:', automationSettings);
             window.uiManager?.showToast('Paramètres d\'automatisation sauvegardés', 'success');
             
             this.updateAutomationStats();
@@ -658,15 +701,19 @@ class CategoriesPage {
             const settings = this.loadSettings();
             const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
             
-            settings.taskPreselectedCategories = [];
+            const selectedCategories = [];
             checkboxes.forEach(checkbox => {
                 if (checkbox.checked) {
-                    settings.taskPreselectedCategories.push(checkbox.value);
+                    selectedCategories.push(checkbox.value);
+                    console.log(`[CategoriesPage] Catégorie sélectionnée: ${checkbox.value}`);
                 }
             });
             
+            settings.taskPreselectedCategories = selectedCategories;
             this.saveSettings(settings);
-            window.uiManager?.showToast('Catégories pré-sélectionnées mises à jour', 'success');
+            
+            console.log('[CategoriesPage] Catégories pré-sélectionnées mises à jour:', selectedCategories);
+            window.uiManager?.showToast(`${selectedCategories.length} catégorie(s) sélectionnée(s)`, 'success');
             
             this.updateAutomationStats();
         } catch (error) {
@@ -757,6 +804,7 @@ class CategoriesPage {
             }
             
             this.saveSettings(settings);
+            console.log(`[CategoriesPage] Catégorie ${categoryId} ${isActive ? 'activée' : 'désactivée'}`);
             window.uiManager?.showToast(`Catégorie ${isActive ? 'activée' : 'désactivée'}`, 'success', 2000);
         } catch (error) {
             console.error('[CategoriesPage] Erreur toggleCategory:', error);
@@ -783,6 +831,55 @@ class CategoriesPage {
         } catch (error) {
             console.error('[CategoriesPage] Erreur refreshCurrentTab:', error);
         }
+    }
+
+    // =====================================
+    // MÉTHODES PUBLIQUES POUR INTÉGRATION
+    // =====================================
+    
+    // Récupérer les paramètres de scan pour EmailScanner
+    getScanSettings() {
+        const settings = this.loadSettings();
+        return settings.scanSettings || {
+            defaultPeriod: 7,
+            defaultFolder: 'inbox',
+            autoAnalyze: true,
+            autoCategrize: true
+        };
+    }
+    
+    // Récupérer les paramètres d'automatisation pour TaskCreator
+    getAutomationSettings() {
+        const settings = this.loadSettings();
+        return settings.automationSettings || {
+            autoCreateTasks: false,
+            groupTasksByDomain: false,
+            skipDuplicates: true,
+            autoAssignPriority: false
+        };
+    }
+    
+    // Récupérer les catégories pré-sélectionnées pour les tâches
+    getTaskPreselectedCategories() {
+        try {
+            const settings = this.loadSettings();
+            return settings.taskPreselectedCategories || [];
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur getTaskPreselectedCategories:', error);
+            return [];
+        }
+    }
+    
+    // Vérifier si les courriers indésirables doivent être exclus
+    shouldExcludeSpam() {
+        const settings = this.loadSettings();
+        return settings.preferences?.excludeSpam !== false;
+    }
+    
+    // Vérifier si la détection CC est activée
+    shouldDetectCC() {
+        const settings = this.loadSettings();
+        return settings.preferences?.detectCC !== false;
     }
 
     // =====================================
@@ -925,7 +1022,7 @@ class CategoriesPage {
             const categories = window.categoryManager?.getCategories() || {};
             
             const exportData = {
-                version: '7.3',
+                version: '7.4',
                 exportDate: new Date().toISOString(),
                 settings: settings,
                 categories: categories,
@@ -1078,23 +1175,20 @@ class CategoriesPage {
     saveSettings(settings) {
         try {
             localStorage.setItem('categorySettings', JSON.stringify(settings));
+            console.log('[CategoriesPage] Paramètres sauvegardés:', settings);
         } catch (error) {
             console.error('[CategoriesPage] Erreur saveSettings:', error);
         }
     }
 
-    getTaskPreselectedCategories() {
-        try {
-            const settings = this.loadSettings();
-            return settings.taskPreselectedCategories || [];
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur getTaskPreselectedCategories:', error);
-            return [];
-        }
+    // Activer le mode debug
+    setDebugMode(enabled) {
+        this.debugMode = enabled;
+        console.log(`[CategoriesPage] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
     }
 
     // =====================================
-    // STYLES CSS
+    // STYLES CSS - IDENTIQUES
     // =====================================
     addStyles() {
         if (document.getElementById('categoriesPageStyles')) return;
@@ -2089,7 +2183,7 @@ try {
             }
         }, 100);
         
-        console.log('✅ CategoriesPage v7.3 loaded - Version sans erreur avec gestion d\'erreurs complète');
+        console.log('✅ CategoriesPage v7.4 loaded - Version avec synchronisation complète corrigée');
     } else {
         console.warn('⚠️ PageManager not ready, retrying...');
         setTimeout(() => {
@@ -2119,7 +2213,7 @@ try {
                     categoriesNavButton.style.display = 'none';
                 }
                 
-                console.log('✅ CategoriesPage v7.3 loaded - Version sans erreur avec gestion d\'erreurs complète (delayed)');
+                console.log('✅ CategoriesPage v7.4 loaded - Version avec synchronisation complète corrigée (delayed)');
             }
         }, 1000);
     }
@@ -2138,6 +2232,21 @@ try {
                     </button>
                 </div>
             `;
-        }
+        },
+        getScanSettings: () => ({
+            defaultPeriod: 7,
+            defaultFolder: 'inbox',
+            autoAnalyze: true,
+            autoCategrize: true
+        }),
+        getAutomationSettings: () => ({
+            autoCreateTasks: false,
+            groupTasksByDomain: false,
+            skipDuplicates: true,
+            autoAssignPriority: false
+        }),
+        getTaskPreselectedCategories: () => [],
+        shouldExcludeSpam: () => true,
+        shouldDetectCC: () => true
     };
 }
