@@ -373,8 +373,64 @@ class ModernDomainOrganizer {
     box-sizing: border-box;
 }
 
-/* AJOUTEZ CE CSS À VOTRE SECTION <style> */
+/* Styles pour l'arborescence hiérarchique */
+.folder-separator {
+    padding: 8px 24px;
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    border-top: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f3f4f6;
+    margin: 4px 0;
+}
 
+.folder-path {
+    font-size: 10px;
+    color: #9ca3af;
+    font-style: italic;
+    display: block;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.folder-option {
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.folder-option:hover {
+    border-left-color: #3b82f6;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+}
+
+.folder-option.selected {
+    border-left-color: #1d4ed8;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Indentation visuelle pour la hiérarchie */
+.folder-option[style*="padding-left"] {
+    position: relative;
+}
+
+.folder-option[style*="padding-left"]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent 0%, #e5e7eb 20%, #e5e7eb 80%, transparent 100%);
+}
+    
 /* Modal de sélection de dossiers */
 .folder-select-modal {
     position: fixed;
@@ -3012,7 +3068,7 @@ class ModernDomainOrganizer {
 
 async loadAllFolders() {
     try {
-        console.log('[ModernDomainOrganizer] 🚀 Test simple - Chargement dossiers...');
+        console.log('[ModernDomainOrganizer] 🚀 Chargement COMPLET de tous les dossiers...');
         
         if (!window.authService?.isAuthenticated()) {
             throw new Error('Non authentifié');
@@ -3021,37 +3077,8 @@ async loadAllFolders() {
         const accessToken = await window.authService.getAccessToken();
         this.allFolders.clear();
         
-        // Test 1: Requête la plus simple possible
-        console.log('[ModernDomainOrganizer] 📁 Test requête basique...');
-        const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[ModernDomainOrganizer] ❌ Erreur détaillée:', errorText);
-            throw new Error(`Erreur API: ${response.status} - ${errorText}`);
-        }
-        
-        const data = await response.json();
-        console.log(`[ModernDomainOrganizer] ✅ ${data.value.length} dossiers récupérés`);
-        console.log('[ModernDomainOrganizer] 📋 Liste des dossiers:', data.value.map(f => f.displayName));
-        
-        // Ajouter tous les dossiers
-        data.value.forEach(folder => {
-            const folderKey = folder.displayName.toLowerCase().trim();
-            this.allFolders.set(folderKey, {
-                id: folder.id,
-                displayName: folder.displayName,
-                totalItemCount: folder.totalItemCount || 0,
-                parentFolderId: folder.parentFolderId,
-                childFolderCount: folder.childFolderCount || 0
-            });
-            console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}"`);
-        });
+        // Charger tous les dossiers récursivement
+        await this.loadFoldersRecursively(accessToken);
         
         console.log(`[ModernDomainOrganizer] 🎉 Total chargé: ${this.allFolders.size} dossiers`);
         this.updateStat('existingFolders', this.allFolders.size);
@@ -3064,7 +3091,91 @@ async loadAllFolders() {
     }
 }
 
+async loadFoldersRecursively(accessToken, parentId = null, depth = 0) {
+    try {
+        if (depth > 10) {
+            console.warn('[ModernDomainOrganizer] ⚠️ Profondeur maximale atteinte, arrêt récursion');
+            return;
+        }
+        
+        const url = parentId 
+            ? `https://graph.microsoft.com/v1.0/me/mailFolders/${parentId}/childFolders`
+            : 'https://graph.microsoft.com/v1.0/me/mailFolders';
+        
+        console.log(`[ModernDomainOrganizer] 📁 Chargement niveau ${depth}:`, parentId || 'racine');
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[ModernDomainOrganizer] ❌ Erreur API:', errorText);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log(`[ModernDomainOrganizer] ✅ ${data.value.length} dossiers trouvés au niveau ${depth}`);
+        
+        // Ajouter tous les dossiers de ce niveau
+        for (const folder of data.value) {
+            const folderKey = folder.displayName.toLowerCase().trim();
+            
+            // Éviter les doublons en utilisant l'ID comme clé de sécurité
+            const uniqueKey = this.allFolders.has(folderKey) 
+                ? `${folderKey}_${folder.id.slice(-8)}`
+                : folderKey;
+            
+            this.allFolders.set(uniqueKey, {
+                id: folder.id,
+                displayName: folder.displayName,
+                totalItemCount: folder.totalItemCount || 0,
+                parentFolderId: folder.parentFolderId || parentId,
+                childFolderCount: folder.childFolderCount || 0,
+                wellKnownName: folder.wellKnownName,
+                depth: depth,
+                fullPath: this.buildFolderPath(folder.displayName, parentId)
+            });
+            
+            console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}" (niveau ${depth})`);
+            
+            // Charger récursivement les sous-dossiers si ils existent
+            if (folder.childFolderCount > 0) {
+                console.log(`[ModernDomainOrganizer] 📂 Chargement ${folder.childFolderCount} sous-dossiers de "${folder.displayName}"`);
+                await this.loadFoldersRecursively(accessToken, folder.id, depth + 1);
+                
+                // Petite pause pour éviter le rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+    } catch (error) {
+        console.error(`[ModernDomainOrganizer] ❌ Erreur chargement niveau ${depth}:`, error);
+    }
+}
 
+buildFolderPath(folderName, parentId) {
+    try {
+        if (!parentId) {
+            return folderName;
+        }
+        
+        // Trouver le parent dans les dossiers déjà chargés
+        const parent = Array.from(this.allFolders.values()).find(f => f.id === parentId);
+        if (parent) {
+            return `${parent.fullPath || parent.displayName} > ${folderName}`;
+        }
+        
+        return folderName;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur construction chemin:', error);
+        return folderName;
+    }
+}
 addFolderToCache(folder) {
     try {
         if (!folder || !folder.id || !folder.displayName) {
@@ -3793,7 +3904,7 @@ createFolderSelectModal(domain, emailId, currentFolder) {
 
 generateSimpleFolderList(folders, currentFolder) {
     try {
-        console.log('[ModernDomainOrganizer] 🎨 Génération liste simple des dossiers');
+        console.log('[ModernDomainOrganizer] 🎨 Génération liste hiérarchique des dossiers');
         
         if (!folders || folders.length === 0) {
             return '<div class="no-folders">Aucun dossier trouvé</div>';
@@ -3801,61 +3912,93 @@ generateSimpleFolderList(folders, currentFolder) {
         
         let html = '';
         
-        // Trier les dossiers par nom
-        const sortedFolders = [...folders].sort((a, b) => {
-            // Prioriser les dossiers système
-            const systemOrder = {
-                'Boîte de réception': 0, 'Inbox': 0,
-                'Éléments envoyés': 1, 'Sent Items': 1,
-                'Brouillons': 2, 'Drafts': 2,
-                'Éléments supprimés': 3, 'Deleted Items': 3,
-                'Courrier indésirable': 4, 'Junk Email': 4
-            };
+        // Grouper les dossiers par niveau de profondeur
+        const foldersByDepth = new Map();
+        folders.forEach(folder => {
+            const depth = folder.depth || 0;
+            if (!foldersByDepth.has(depth)) {
+                foldersByDepth.set(depth, []);
+            }
+            foldersByDepth.get(depth).push(folder);
+        });
+        
+        // Trier chaque niveau
+        foldersByDepth.forEach((levelFolders, depth) => {
+            levelFolders.sort((a, b) => {
+                // Prioriser les dossiers système au niveau 0
+                if (depth === 0) {
+                    const systemOrder = {
+                        'Boîte de réception': 0, 'Inbox': 0,
+                        'Éléments envoyés': 1, 'Sent Items': 1,
+                        'Brouillons': 2, 'Drafts': 2,
+                        'Éléments supprimés': 3, 'Deleted Items': 3,
+                        'Courrier indésirable': 4, 'Junk Email': 4
+                    };
+                    
+                    const aOrder = systemOrder[a.displayName] ?? 100;
+                    const bOrder = systemOrder[b.displayName] ?? 100;
+                    
+                    if (aOrder !== bOrder) {
+                        return aOrder - bOrder;
+                    }
+                }
+                
+                return a.displayName.localeCompare(b.displayName);
+            });
+        });
+        
+        // Générer le HTML niveau par niveau
+        const maxDepth = Math.max(...foldersByDepth.keys());
+        for (let depth = 0; depth <= maxDepth; depth++) {
+            const levelFolders = foldersByDepth.get(depth) || [];
             
-            const aOrder = systemOrder[a.displayName] ?? 100;
-            const bOrder = systemOrder[b.displayName] ?? 100;
-            
-            if (aOrder !== bOrder) {
-                return aOrder - bOrder;
+            if (depth > 0 && levelFolders.length > 0) {
+                html += `<div class="folder-separator">Niveau ${depth}</div>`;
             }
             
-            return a.displayName.localeCompare(b.displayName);
-        });
-        
-        sortedFolders.forEach(folder => {
-            const isSelected = currentFolder === folder.displayName;
-            const folderIcon = this.getFolderIcon(folder.displayName);
-            const itemCount = folder.totalItemCount > 0 ? `(${folder.totalItemCount})` : '';
-            
-            html += `
-                <div class="folder-option ${isSelected ? 'selected' : ''}" 
-                     data-folder-id="${folder.id}" 
-                     data-folder-name="${folder.displayName}"
-                     title="${folder.displayName}"
-                     onclick="window.modernDomainOrganizer.selectFolderOption(this)">
-                    
-                    <div class="folder-content">
-                        <span class="folder-spacer"></span>
-                        <span class="folder-icon">${folderIcon}</span>
+            levelFolders.forEach(folder => {
+                const isSelected = currentFolder === folder.displayName;
+                const folderIcon = this.getFolderIcon(folder.displayName);
+                const itemCount = folder.totalItemCount > 0 ? `(${folder.totalItemCount})` : '';
+                const indent = depth * 20;
+                
+                // Indicateur de sous-dossiers
+                const hasChildren = folder.childFolderCount > 0;
+                const childrenIndicator = hasChildren ? ' 📂' : '';
+                
+                html += `
+                    <div class="folder-option ${isSelected ? 'selected' : ''}" 
+                         data-folder-id="${folder.id}" 
+                         data-folder-name="${folder.displayName}"
+                         data-folder-path="${folder.fullPath || folder.displayName}"
+                         title="${folder.fullPath || folder.displayName}"
+                         style="padding-left: ${indent + 12}px"
+                         onclick="window.modernDomainOrganizer.selectFolderOption(this)">
                         
-                        <div class="folder-details">
-                            <span class="folder-name">${folder.displayName}</span>
-                            ${itemCount ? `<span class="folder-count">${itemCount}</span>` : ''}
+                        <div class="folder-content">
+                            <span class="folder-spacer" style="width: ${Math.max(0, indent)}px"></span>
+                            <span class="folder-icon">${folderIcon}</span>
+                            
+                            <div class="folder-details">
+                                <span class="folder-name">${folder.displayName}${childrenIndicator}</span>
+                                ${folder.fullPath && folder.fullPath !== folder.displayName ? 
+                                    `<span class="folder-path">${folder.fullPath}</span>` : ''}
+                                ${itemCount ? `<span class="folder-count">${itemCount}</span>` : ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
         
-        console.log(`[ModernDomainOrganizer] ✅ Liste générée: ${sortedFolders.length} dossiers`);
+        console.log(`[ModernDomainOrganizer] ✅ Liste hiérarchique générée: ${folders.length} dossiers sur ${maxDepth + 1} niveaux`);
         return html;
         
     } catch (error) {
-        console.error('[ModernDomainOrganizer] ❌ Erreur génération liste dossiers:', error);
-        return '<div class="error-folders">Erreur lors du chargement des dossiers</div>';
+        console.error('[ModernDomainOrganizer] ❌ Erreur génération liste hiérarchique:', error);
+        return '<div class="error-folders">Erreur lors du chargement de l\'arborescence des dossiers</div>';
     }
 }
-
 selectFolderOption(optionElement) {
     try {
         console.log('[ModernDomainOrganizer] 🎯 Option sélectionnée:', optionElement.dataset);
@@ -4234,10 +4377,15 @@ filterFolders(searchTerm) {
         
         folderOptions.forEach(option => {
             const folderName = option.dataset.folderName?.toLowerCase() || '';
-            const isMatch = !term || folderName.includes(term);
+            const folderPath = option.dataset.folderPath?.toLowerCase() || '';
+            
+            // Recherche dans le nom ET le chemin complet
+            const isMatch = !term || 
+                           folderName.includes(term) || 
+                           folderPath.includes(term);
             
             if (isMatch) {
-                option.style.display = 'block';
+                option.style.display = 'flex';
                 visibleCount++;
                 
                 // Highlight du terme recherché
@@ -4246,9 +4394,6 @@ filterFolders(searchTerm) {
                 } else {
                     this.removeHighlight(option);
                 }
-                
-                // Montrer les parents si un enfant match
-                this.showParentFolders(option);
             } else {
                 option.style.display = 'none';
                 this.removeHighlight(option);
@@ -4264,13 +4409,10 @@ filterFolders(searchTerm) {
             }
         }
         
-        // Auto-expansion des résultats
-        if (term && visibleCount <= 10) {
-            this.expandAllVisibleFolders();
-        }
+        console.log(`[ModernDomainOrganizer] 🔍 Filtrage: ${visibleCount}/${folderOptions.length} dossiers visibles`);
         
     } catch (error) {
-        console.error('[ModernDomainOrganizer] Erreur filtrage dossiers:', error);
+        console.error('[ModernDomainOrganizer] ❌ Erreur filtrage dossiers:', error);
     }
 }
 
