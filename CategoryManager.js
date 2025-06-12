@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 17.3 - Réparation synchronisation paramètres
+// CategoryManager.js - Version 17.4 - Synchronisation paramètres réparée et stable
 
 class CategoryManager {
     constructor() {
@@ -10,23 +10,54 @@ class CategoryManager {
         this.debugMode = false;
         this.eventListenersSetup = false;
         
-        // NOUVEAU: Système de synchronisation renforcé
+        // NOUVEAU: Système de synchronisation renforcé et stable
         this.syncInProgress = false;
         this.lastSyncTime = 0;
         this.syncCallbacks = new Set();
+        this.taskPreselectedCategories = [];
         
         this.initializeCategories();
         this.loadCustomCategories();
         this.initializeWeightedDetection();
         this.setupEventListeners();
         
-        console.log('[CategoryManager] ✅ Version 17.3 - Réparation synchronisation paramètres');
+        // NOUVEAU: Initialiser les catégories pré-sélectionnées
+        this.initializeTaskPreselectedCategories();
+        
+        console.log('[CategoryManager] ✅ Version 17.4 - Synchronisation paramètres réparée et stable');
         console.log('[CategoryManager] 📊 Paramètres initiaux:', this.settings);
-        console.log('[CategoryManager] 📋 Catégories pré-sélectionnées:', this.settings.taskPreselectedCategories);
+        console.log('[CategoryManager] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
     }
 
     // ================================================
-    // GESTION DES PARAMÈTRES CENTRALISÉE - RÉPARÉE
+    // INITIALISATION DES CATÉGORIES PRÉ-SÉLECTIONNÉES - NOUVEAU
+    // ================================================
+    initializeTaskPreselectedCategories() {
+        try {
+            // Charger depuis les settings avec validation
+            if (this.settings && Array.isArray(this.settings.taskPreselectedCategories)) {
+                this.taskPreselectedCategories = [...this.settings.taskPreselectedCategories];
+            } else {
+                // Utiliser les valeurs par défaut
+                this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+                
+                // Mettre à jour les settings
+                if (!this.settings) this.settings = {};
+                this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
+                
+                // Sauvegarder immédiatement
+                this.saveSettings();
+            }
+            
+            console.log('[CategoryManager] ✅ Catégories pré-sélectionnées initialisées:', this.taskPreselectedCategories);
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur initialisation catégories pré-sélectionnées:', error);
+            this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+        }
+    }
+
+    // ================================================
+    // GESTION DES PARAMÈTRES CENTRALISÉE - RÉPARÉE ET STABLE
     // ================================================
     loadSettings() {
         try {
@@ -36,6 +67,12 @@ class CategoryManager {
             if (saved) {
                 const parsedSettings = JSON.parse(saved);
                 const mergedSettings = { ...defaultSettings, ...parsedSettings };
+                
+                // NOUVEAU: Validation stricte des catégories pré-sélectionnées
+                if (!Array.isArray(mergedSettings.taskPreselectedCategories)) {
+                    console.warn('[CategoryManager] ⚠️ taskPreselectedCategories invalide, correction');
+                    mergedSettings.taskPreselectedCategories = defaultSettings.taskPreselectedCategories;
+                }
                 
                 console.log('[CategoryManager] 📥 Paramètres chargés depuis localStorage');
                 console.log('[CategoryManager] 🔧 Paramètres par défaut:', defaultSettings);
@@ -58,7 +95,7 @@ class CategoryManager {
     saveSettings(newSettings = null) {
         try {
             if (this.syncInProgress) {
-                console.log('[CategoryManager] ⏳ Sync en cours, ajout en queue');
+                console.log('[CategoryManager] ⏳ Sync en cours, programmation différée');
                 setTimeout(() => this.saveSettings(newSettings), 100);
                 return;
             }
@@ -68,6 +105,12 @@ class CategoryManager {
             if (newSettings) {
                 console.log('[CategoryManager] 📝 Mise à jour settings avec:', newSettings);
                 this.settings = { ...this.settings, ...newSettings };
+                
+                // NOUVEAU: Synchroniser les catégories pré-sélectionnées locales
+                if (newSettings.taskPreselectedCategories) {
+                    this.taskPreselectedCategories = [...newSettings.taskPreselectedCategories];
+                    console.log('[CategoryManager] 📋 Catégories locales synchronisées:', this.taskPreselectedCategories);
+                }
             }
             
             // Vérifier l'intégrité des paramètres
@@ -84,7 +127,8 @@ class CategoryManager {
                 this.dispatchEvent('categorySettingsChanged', {
                     settings: this.settings,
                     source: 'CategoryManager',
-                    timestamp: this.lastSyncTime
+                    timestamp: this.lastSyncTime,
+                    taskPreselectedCategories: [...this.taskPreselectedCategories]
                 });
                 
                 // Notifier les callbacks enregistrés
@@ -106,10 +150,17 @@ class CategoryManager {
     }
 
     validateSettings() {
-        // S'assurer que taskPreselectedCategories est un array
+        // S'assurer que taskPreselectedCategories est un array valide
         if (!Array.isArray(this.settings.taskPreselectedCategories)) {
             console.warn('[CategoryManager] ⚠️ taskPreselectedCategories n\'est pas un array, correction');
             this.settings.taskPreselectedCategories = this.getDefaultSettings().taskPreselectedCategories;
+            this.taskPreselectedCategories = [...this.settings.taskPreselectedCategories];
+        }
+        
+        // Synchroniser les catégories locales avec les settings
+        if (JSON.stringify(this.taskPreselectedCategories.sort()) !== JSON.stringify([...this.settings.taskPreselectedCategories].sort())) {
+            console.log('[CategoryManager] 🔄 Synchronisation catégories locales avec settings');
+            this.taskPreselectedCategories = [...this.settings.taskPreselectedCategories];
         }
         
         // S'assurer que les objets nécessaires existent
@@ -125,7 +176,7 @@ class CategoryManager {
             this.settings.automationSettings = this.getDefaultSettings().automationSettings;
         }
         
-        console.log('[CategoryManager] ✅ Paramètres validés');
+        console.log('[CategoryManager] ✅ Paramètres validés et synchronisés');
     }
 
     getDefaultSettings() {
@@ -161,38 +212,59 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES - RÉPARÉES
+    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES - RÉPARÉES ET STABLES
     // ================================================
     getSettings() {
+        // NOUVEAU: Toujours s'assurer que les catégories locales sont synchronisées
+        if (this.settings && this.settings.taskPreselectedCategories) {
+            this.taskPreselectedCategories = [...this.settings.taskPreselectedCategories];
+        }
+        
         console.log('[CategoryManager] 📤 getSettings appelé, retour:', this.settings);
+        console.log('[CategoryManager] 📋 Catégories pré-sélectionnées actuelles:', this.taskPreselectedCategories);
         return { ...this.settings };
     }
 
     updateSettings(newSettings) {
-        console.log('[CategoryManager] 📥 updateSettings appelé avec:', newSettings);
+        console.log('[CategoryManager] 📥 === updateSettings appelé ===');
+        console.log('[CategoryManager] 📊 Nouveaux settings:', newSettings);
+        console.log('[CategoryManager] 📊 Settings actuels avant:', this.settings);
+        
         this.saveSettings(newSettings);
+        
+        console.log('[CategoryManager] 📊 Settings actuels après:', this.settings);
+        console.log('[CategoryManager] 📋 Catégories pré-sélectionnées après:', this.taskPreselectedCategories);
     }
 
     getTaskPreselectedCategories() {
-        const categories = this.settings.taskPreselectedCategories || [];
+        // NOUVEAU: Toujours retourner les catégories locales synchronisées
+        const categories = [...this.taskPreselectedCategories];
         console.log('[CategoryManager] 📋 getTaskPreselectedCategories retourne:', categories);
-        return [...categories];
+        console.log('[CategoryManager] 📊 Comparaison avec settings:', this.settings?.taskPreselectedCategories);
+        return categories;
     }
 
     updateTaskPreselectedCategories(categories) {
-        console.log('[CategoryManager] 🎯 updateTaskPreselectedCategories appelé avec:', categories);
+        console.log('[CategoryManager] 🎯 === updateTaskPreselectedCategories appelé ===');
+        console.log('[CategoryManager] 📥 Nouvelles catégories reçues:', categories);
+        console.log('[CategoryManager] 📊 Catégories actuelles:', this.taskPreselectedCategories);
         
         if (!Array.isArray(categories)) {
             console.error('[CategoryManager] ❌ categories doit être un array');
             return false;
         }
         
-        const oldCategories = [...(this.settings.taskPreselectedCategories || [])];
-        this.settings.taskPreselectedCategories = [...categories];
+        const oldCategories = [...this.taskPreselectedCategories];
+        this.taskPreselectedCategories = [...categories];
+        
+        // NOUVEAU: Mettre à jour immédiatement les settings
+        if (!this.settings) this.settings = {};
+        this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
         
         console.log('[CategoryManager] 📊 Changement catégories:');
         console.log('  - Anciennes:', oldCategories);
-        console.log('  - Nouvelles:', this.settings.taskPreselectedCategories);
+        console.log('  - Nouvelles (locales):', this.taskPreselectedCategories);
+        console.log('  - Nouvelles (settings):', this.settings.taskPreselectedCategories);
         
         this.saveSettings();
         
@@ -200,11 +272,13 @@ class CategoryManager {
         setTimeout(() => {
             this.dispatchEvent('taskPreselectedCategoriesChanged', {
                 oldCategories,
-                newCategories: [...this.settings.taskPreselectedCategories],
-                source: 'CategoryManager'
+                newCategories: [...this.taskPreselectedCategories],
+                source: 'CategoryManager',
+                timestamp: Date.now()
             });
         }, 10);
         
+        console.log('[CategoryManager] ✅ updateTaskPreselectedCategories terminé');
         return true;
     }
 
@@ -218,10 +292,10 @@ class CategoryManager {
     }
 
     // ================================================
-    // FORCE SYNCHRONISATION - NOUVELLE MÉTHODE
+    // FORCE SYNCHRONISATION - AMÉLIORÉE
     // ================================================
     forceSynchronization() {
-        console.log('[CategoryManager] 🚀 Force synchronisation démarrée');
+        console.log('[CategoryManager] 🚀 === Force synchronisation démarrée ===');
         
         // Recharger depuis localStorage pour éviter les désynchronisations
         const saved = localStorage.getItem('categorySettings');
@@ -229,17 +303,27 @@ class CategoryManager {
             try {
                 const parsed = JSON.parse(saved);
                 this.settings = { ...this.getDefaultSettings(), ...parsed };
+                
+                // NOUVEAU: Synchroniser les catégories pré-sélectionnées locales
+                if (Array.isArray(this.settings.taskPreselectedCategories)) {
+                    this.taskPreselectedCategories = [...this.settings.taskPreselectedCategories];
+                } else {
+                    this.taskPreselectedCategories = this.getDefaultSettings().taskPreselectedCategories;
+                    this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
+                }
+                
                 this.validateSettings();
                 
                 console.log('[CategoryManager] 🔄 Settings rechargés:', this.settings);
-                console.log('[CategoryManager] 📋 Catégories pré-sélectionnées rechargées:', this.settings.taskPreselectedCategories);
+                console.log('[CategoryManager] 📋 Catégories pré-sélectionnées rechargées:', this.taskPreselectedCategories);
                 
                 // Notifier tous les modules
                 setTimeout(() => {
                     this.dispatchEvent('forceSynchronization', {
                         settings: this.settings,
                         source: 'CategoryManager',
-                        timestamp: Date.now()
+                        timestamp: Date.now(),
+                        taskPreselectedCategories: [...this.taskPreselectedCategories]
                     });
                 }, 10);
                 
@@ -895,6 +979,78 @@ class CategoryManager {
     }
 
     // ================================================
+    // GESTION DES CATÉGORIES PERSONNALISÉES
+    // ================================================
+    loadCustomCategories() {
+        try {
+            const saved = localStorage.getItem('customCategories');
+            if (saved) {
+                this.customCategories = JSON.parse(saved);
+                
+                // Ajouter les catégories personnalisées aux catégories principales
+                Object.entries(this.customCategories).forEach(([id, category]) => {
+                    this.categories[id] = { ...category, isCustom: true };
+                });
+                
+                console.log('[CategoryManager] ✅ Catégories personnalisées chargées:', Object.keys(this.customCategories));
+            }
+        } catch (error) {
+            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
+            this.customCategories = {};
+        }
+    }
+
+    saveCustomCategories() {
+        try {
+            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
+            console.log('[CategoryManager] ✅ Catégories personnalisées sauvegardées');
+        } catch (error) {
+            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
+        }
+    }
+
+    createCustomCategory(categoryData) {
+        const id = `custom_${Date.now()}`;
+        const category = {
+            ...categoryData,
+            id,
+            isCustom: true,
+            createdAt: new Date().toISOString()
+        };
+        
+        this.customCategories[id] = category;
+        this.categories[id] = category;
+        this.saveCustomCategories();
+        
+        console.log('[CategoryManager] ✅ Catégorie personnalisée créée:', category);
+        return category;
+    }
+
+    updateCustomCategory(categoryId, updates) {
+        if (this.customCategories[categoryId]) {
+            this.customCategories[categoryId] = { ...this.customCategories[categoryId], ...updates };
+            this.categories[categoryId] = this.customCategories[categoryId];
+            this.saveCustomCategories();
+            
+            console.log('[CategoryManager] ✅ Catégorie personnalisée mise à jour:', categoryId);
+            return true;
+        }
+        return false;
+    }
+
+    deleteCustomCategory(categoryId) {
+        if (this.customCategories[categoryId]) {
+            delete this.customCategories[categoryId];
+            delete this.categories[categoryId];
+            this.saveCustomCategories();
+            
+            console.log('[CategoryManager] ✅ Catégorie personnalisée supprimée:', categoryId);
+            return true;
+        }
+        return false;
+    }
+
+    // ================================================
     // GESTION DES ÉVÉNEMENTS
     // ================================================
     setupEventListeners() {
@@ -925,10 +1081,21 @@ class CategoryManager {
             }
         };
 
+        // NOUVEAU: Handler pour la synchronisation forcée
+        this.forceSyncHandler = (event) => {
+            console.log(`[CategoryManager] 🚀 Synchronisation forcée reçue:`, event.detail);
+            
+            if (event.detail.source !== 'CategoryManager') {
+                // Éviter les boucles - on ne synchronise que si ça vient d'ailleurs
+                this.forceSynchronization();
+            }
+        };
+
         window.addEventListener('settingsChanged', this.settingsChangeHandler);
+        window.addEventListener('forceSynchronization', this.forceSyncHandler);
         this.eventListenersSetup = true;
         
-        console.log('[CategoryManager] ✅ Event listeners configurés');
+        console.log('[CategoryManager] ✅ Event listeners configurés avec gestion sync forcée');
     }
 
     dispatchEvent(eventName, detail) {
@@ -942,6 +1109,57 @@ class CategoryManager {
     }
 
     // ================================================
+    // STATISTIQUES ET MÉTRIQUES
+    // ================================================
+    getCategoryStats() {
+        return {
+            totalCategories: Object.keys(this.categories).length,
+            customCategories: Object.keys(this.customCategories).length,
+            taskPreselectedCategories: this.taskPreselectedCategories.length,
+            activeCategories: this.getActiveCategories().length,
+            lastSyncTime: this.lastSyncTime,
+            isInitialized: this.isInitialized
+        };
+    }
+
+    getCategoryUsageStats(emails) {
+        const stats = {};
+        const categories = this.getCategories();
+        
+        // Initialiser les stats
+        Object.keys(categories).forEach(catId => {
+            stats[catId] = {
+                count: 0,
+                percentage: 0,
+                confidence: 0,
+                isPreselected: this.taskPreselectedCategories.includes(catId)
+            };
+        });
+        stats.other = { count: 0, percentage: 0, confidence: 0, isPreselected: false };
+        
+        if (!emails || emails.length === 0) return stats;
+        
+        // Compter les emails par catégorie
+        emails.forEach(email => {
+            const category = email.category || 'other';
+            if (stats[category]) {
+                stats[category].count++;
+                stats[category].confidence += (email.categoryConfidence || 0);
+            }
+        });
+        
+        // Calculer les pourcentages et moyennes
+        Object.keys(stats).forEach(catId => {
+            const stat = stats[catId];
+            stat.percentage = Math.round((stat.count / emails.length) * 100);
+            stat.confidence = stat.count > 0 ? 
+                Math.round((stat.confidence / stat.count) * 100) / 100 : 0;
+        });
+        
+        return stats;
+    }
+
+    // ================================================
     // DEBUG
     // ================================================
     setDebugMode(enabled) {
@@ -952,14 +1170,82 @@ class CategoryManager {
     getDebugInfo() {
         return {
             settings: this.settings,
-            taskPreselectedCategories: this.getTaskPreselectedCategories(),
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            settingsTaskPreselectedCategories: this.settings?.taskPreselectedCategories,
             isInitialized: this.isInitialized,
             syncInProgress: this.syncInProgress,
             lastSyncTime: this.lastSyncTime,
             eventListenersSetup: this.eventListenersSetup,
             categoriesCount: Object.keys(this.categories).length,
-            syncCallbacksCount: this.syncCallbacks.size
+            customCategoriesCount: Object.keys(this.customCategories).length,
+            syncCallbacksCount: this.syncCallbacks.size,
+            activeCategories: this.getActiveCategories(),
+            stats: this.getCategoryStats()
         };
+    }
+
+    testCategorization(email) {
+        console.log('[CategoryManager] 🧪 === TEST CATEGORISATION ===');
+        
+        const result = this.analyzeEmail(email);
+        const category = this.getCategory(result.category);
+        
+        console.log('Email:', email.subject);
+        console.log('Résultat:', result.category);
+        console.log('Catégorie:', category?.name);
+        console.log('Score:', result.score);
+        console.log('Confiance:', Math.round(result.confidence * 100) + '%');
+        console.log('Patterns:', result.matchedPatterns);
+        console.log('Match absolu:', result.hasAbsolute ? '✅ OUI' : '❌ NON');
+        console.log('Pré-sélectionné pour tâche:', this.taskPreselectedCategories.includes(result.category) ? '⭐ OUI' : '❌ NON');
+        console.log('============================');
+        
+        return result;
+    }
+
+    validateConfiguration() {
+        const issues = [];
+        
+        // Vérifier les catégories pré-sélectionnées
+        if (!Array.isArray(this.taskPreselectedCategories)) {
+            issues.push('taskPreselectedCategories n\'est pas un array');
+        } else {
+            this.taskPreselectedCategories.forEach(catId => {
+                if (!this.categories[catId]) {
+                    issues.push(`Catégorie pré-sélectionnée inconnue: ${catId}`);
+                }
+            });
+        }
+        
+        // Vérifier la cohérence entre settings et propriétés locales
+        if (this.settings?.taskPreselectedCategories) {
+            const settingsStr = JSON.stringify([...this.settings.taskPreselectedCategories].sort());
+            const localStr = JSON.stringify([...this.taskPreselectedCategories].sort());
+            if (settingsStr !== localStr) {
+                issues.push('Désynchronisation entre settings et catégories locales');
+            }
+        }
+        
+        // Vérifier l'intégrité des paramètres
+        if (!this.settings.preferences) {
+            issues.push('Préférences manquantes');
+        }
+        if (!this.settings.scanSettings) {
+            issues.push('Paramètres de scan manquants');
+        }
+        if (!this.settings.automationSettings) {
+            issues.push('Paramètres d\'automatisation manquants');
+        }
+        
+        console.log('[CategoryManager] 🔍 Validation configuration:');
+        if (issues.length === 0) {
+            console.log('  ✅ Configuration valide');
+        } else {
+            console.log('  ❌ Problèmes détectés:');
+            issues.forEach(issue => console.log(`    - ${issue}`));
+        }
+        
+        return { valid: issues.length === 0, issues };
     }
 
     // ================================================
@@ -969,8 +1255,14 @@ class CategoryManager {
         if (this.settingsChangeHandler) {
             window.removeEventListener('settingsChanged', this.settingsChangeHandler);
         }
+        if (this.forceSyncHandler) {
+            window.removeEventListener('forceSynchronization', this.forceSyncHandler);
+        }
         this.eventListenersSetup = false;
         this.syncCallbacks.clear();
+        this.syncInProgress = false;
+        
+        console.log('[CategoryManager] 🧹 Nettoyage terminé');
     }
 
     destroy() {
@@ -979,6 +1271,7 @@ class CategoryManager {
         this.weightedKeywords = {};
         this.customCategories = {};
         this.settings = {};
+        this.taskPreselectedCategories = [];
         console.log('[CategoryManager] Instance détruite');
     }
 }
@@ -990,4 +1283,4 @@ if (window.categoryManager) {
 
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v17.3 loaded - Réparation synchronisation paramètres');
+console.log('✅ CategoryManager v17.4 loaded - Synchronisation paramètres réparée et stable');
