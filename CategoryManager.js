@@ -1,18 +1,171 @@
-// CategoryManager.js - Version 17.0 - Système unifié et synchronisé
+// CategoryManager.js - Version 17.1 - Patterns étendus et catégories personnalisées
 
 class CategoryManager {
     constructor() {
         this.categories = {};
         this.weightedKeywords = {};
+        this.customCategories = {}; // Nouvelles catégories personnalisées
         this.settings = this.loadSettings();
         this.isInitialized = false;
         this.debugMode = false;
         
         this.initializeCategories();
+        this.loadCustomCategories();
         this.initializeWeightedDetection();
         this.setupEventListeners();
         
-        console.log('[CategoryManager] ✅ Version 17.0 - Système unifié initialisé');
+        console.log('[CategoryManager] ✅ Version 17.1 - Patterns étendus et catégories personnalisées');
+    }
+
+    // ================================================
+    // GESTION DES CATÉGORIES PERSONNALISÉES
+    // ================================================
+    loadCustomCategories() {
+        try {
+            const saved = localStorage.getItem('customCategories');
+            this.customCategories = saved ? JSON.parse(saved) : {};
+            
+            // Intégrer les catégories personnalisées dans les catégories principales
+            Object.entries(this.customCategories).forEach(([id, category]) => {
+                this.categories[id] = {
+                    ...category,
+                    isCustom: true,
+                    priority: category.priority || 30 // Priorité moyenne par défaut
+                };
+            });
+            
+            console.log('[CategoryManager] Catégories personnalisées chargées:', Object.keys(this.customCategories));
+        } catch (error) {
+            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
+            this.customCategories = {};
+        }
+    }
+
+    saveCustomCategories() {
+        try {
+            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
+            console.log('[CategoryManager] Catégories personnalisées sauvegardées');
+        } catch (error) {
+            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
+        }
+    }
+
+    createCustomCategory(categoryData) {
+        const id = this.generateCategoryId(categoryData.name);
+        
+        const category = {
+            id: id,
+            name: categoryData.name,
+            icon: categoryData.icon || '📂',
+            color: categoryData.color || '#6366f1',
+            description: categoryData.description || '',
+            priority: categoryData.priority || 30,
+            createdAt: new Date().toISOString(),
+            isCustom: true
+        };
+
+        // Ajouter aux catégories personnalisées
+        this.customCategories[id] = category;
+        
+        // Ajouter aux catégories principales
+        this.categories[id] = category;
+        
+        // Initialiser les mots-clés vides
+        this.weightedKeywords[id] = {
+            absolute: categoryData.keywords?.absolute || [],
+            strong: categoryData.keywords?.strong || [],
+            weak: categoryData.keywords?.weak || [],
+            exclusions: categoryData.keywords?.exclusions || []
+        };
+
+        this.saveCustomCategories();
+        
+        // Notifier les autres modules
+        window.dispatchEvent(new CustomEvent('categoryCreated', {
+            detail: { categoryId: id, category: category }
+        }));
+
+        console.log('[CategoryManager] Catégorie personnalisée créée:', category);
+        return category;
+    }
+
+    updateCustomCategory(categoryId, updates) {
+        if (!this.customCategories[categoryId]) {
+            throw new Error('Catégorie personnalisée non trouvée');
+        }
+
+        this.customCategories[categoryId] = {
+            ...this.customCategories[categoryId],
+            ...updates,
+            updatedAt: new Date().toISOString()
+        };
+
+        // Mettre à jour aussi dans les catégories principales
+        this.categories[categoryId] = {
+            ...this.categories[categoryId],
+            ...updates
+        };
+
+        this.saveCustomCategories();
+        
+        // Notifier les autres modules
+        window.dispatchEvent(new CustomEvent('categoryUpdated', {
+            detail: { categoryId, category: this.categories[categoryId] }
+        }));
+
+        console.log('[CategoryManager] Catégorie personnalisée mise à jour:', categoryId);
+        return this.categories[categoryId];
+    }
+
+    deleteCustomCategory(categoryId) {
+        if (!this.customCategories[categoryId]) {
+            throw new Error('Catégorie personnalisée non trouvée');
+        }
+
+        // Supprimer des catégories personnalisées
+        delete this.customCategories[categoryId];
+        
+        // Supprimer des catégories principales
+        delete this.categories[categoryId];
+        
+        // Supprimer les mots-clés
+        delete this.weightedKeywords[categoryId];
+
+        this.saveCustomCategories();
+        
+        // Notifier les autres modules
+        window.dispatchEvent(new CustomEvent('categoryDeleted', {
+            detail: { categoryId }
+        }));
+
+        console.log('[CategoryManager] Catégorie personnalisée supprimée:', categoryId);
+    }
+
+    generateCategoryId(name) {
+        const base = name.toLowerCase()
+            .replace(/[àâä]/g, 'a')
+            .replace(/[éèêë]/g, 'e')
+            .replace(/[îï]/g, 'i')
+            .replace(/[ôö]/g, 'o')
+            .replace(/[ùûü]/g, 'u')
+            .replace(/[ç]/g, 'c')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+        
+        let id = 'custom_' + base;
+        let counter = 1;
+        
+        while (this.categories[id] || this.customCategories[id]) {
+            id = `custom_${base}_${counter}`;
+            counter++;
+        }
+        
+        return id;
+    }
+
+    getCustomCategories() {
+        return { ...this.customCategories };
     }
 
     // ================================================
@@ -288,24 +441,31 @@ class CategoryManager {
     }
 
     // ================================================
-    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS
+    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS ÉTENDUS
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // MARKETING & NEWS - PRIORITÉ MAXIMALE
+            // MARKETING & NEWS - PRIORITÉ MAXIMALE - PATTERNS ÉTENDUS
             marketing_news: {
                 absolute: [
                     // DÉSINSCRIPTION - CRITÈRE CLÉ
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
                     'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                    'gérer vos préférences', 'gérer la réception',
-                    'email preferences', 'préférences email',
-                    'ne plus recevoir', 'stop emails',
+                    'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
+                    'email preferences', 'préférences email', 'preferences email',
+                    'ne plus recevoir', 'stop emails', 'arreter les emails',
+                    
+                    // NOUVEAU PATTERN INTÉGRÉ
+                    'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
+                    'paramétrez vos choix', 'parametrez vos choix',
+                    'si vous ne souhaitez plus', 'ne plus recevoir de communications',
+                    'communications de notre part', 'de notre part',
                     
                     // NEWSLETTERS EXPLICITES
                     'newsletter', 'mailing list', 'mailing',
                     'this email was sent to', 'you are receiving this',
                     'cet email vous est envoyé', 'vous recevez cet email',
+                    'abonnement newsletter', 'inscription newsletter',
                     
                     // MARKETING CLAIR
                     'limited offer', 'offre limitée', 'special offer',
@@ -320,7 +480,11 @@ class CategoryManager {
                     // E-COMMERCE
                     'shop now', 'acheter maintenant', 'buy now',
                     'add to cart', 'ajouter au panier',
-                    'new collection', 'nouvelle collection'
+                    'new collection', 'nouvelle collection',
+                    
+                    // CAMPAGNES MARKETING
+                    'campagne marketing', 'marketing campaign',
+                    'envoi marketing', 'communication marketing'
                 ],
                 
                 strong: [
@@ -328,10 +492,11 @@ class CategoryManager {
                     'newsletter', 'mailing', 'campaign', 'marketing',
                     'abonné', 'subscriber', 'désinscription',
                     'exclusive', 'special', 'limited', 'new',
-                    'collection', 'shop', 'store'
+                    'collection', 'shop', 'store', 'communications',
+                    'préférences', 'souhaitez', 'paramétrez'
                 ],
                 
-                weak: ['update', 'discover', 'new'],
+                weak: ['update', 'discover', 'new', 'choix'],
                 exclusions: []
             },
 
@@ -556,6 +721,18 @@ class CategoryManager {
                 exclusions: []
             }
         };
+
+        // Ajouter les mots-clés des catégories personnalisées s'ils existent
+        Object.keys(this.customCategories).forEach(categoryId => {
+            if (!this.weightedKeywords[categoryId]) {
+                this.weightedKeywords[categoryId] = {
+                    absolute: [],
+                    strong: [],
+                    weak: [],
+                    exclusions: []
+                };
+            }
+        });
     }
 
     // ================================================
@@ -960,6 +1137,7 @@ class CategoryManager {
     getCategoryStats() {
         const stats = {
             totalCategories: Object.keys(this.categories).length,
+            customCategories: Object.keys(this.customCategories).length,
             totalKeywords: 0,
             absoluteKeywords: 0,
             strongKeywords: 0,
@@ -1009,9 +1187,51 @@ class CategoryManager {
         
         return result;
     }
+
+    // ================================================
+    // MÉTHODES POUR GESTION DES MOTS-CLÉS
+    // ================================================
+    updateCategoryKeywords(categoryId, keywords) {
+        if (!this.categories[categoryId]) {
+            throw new Error('Catégorie non trouvée');
+        }
+
+        this.weightedKeywords[categoryId] = {
+            absolute: keywords.absolute || [],
+            strong: keywords.strong || [],
+            weak: keywords.weak || [],
+            exclusions: keywords.exclusions || []
+        };
+
+        // Si c'est une catégorie personnalisée, sauvegarder
+        if (this.customCategories[categoryId]) {
+            this.customCategories[categoryId].keywords = keywords;
+            this.saveCustomCategories();
+        }
+
+        console.log(`[CategoryManager] Mots-clés mis à jour pour ${categoryId}`);
+        
+        // Notifier les autres modules
+        window.dispatchEvent(new CustomEvent('keywordsUpdated', {
+            detail: { categoryId, keywords }
+        }));
+    }
+
+    getCategoryKeywords(categoryId) {
+        return this.weightedKeywords[categoryId] || {
+            absolute: [],
+            strong: [],
+            weak: [],
+            exclusions: []
+        };
+    }
+
+    getAllKeywords() {
+        return { ...this.weightedKeywords };
+    }
 }
 
 // Créer l'instance globale
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v17.0 loaded - Système unifié et synchronisé');
+console.log('✅ CategoryManager v17.1 loaded - Patterns étendus et catégories personnalisées');
