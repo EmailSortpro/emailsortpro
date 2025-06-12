@@ -1,1197 +1,1155 @@
-// CategoryManager.js - Version 17.0 - Système unifié et synchronisé
+// PageManager.js - Version 12.0 - Synchronisé avec EmailScanner centralisé
 
-class CategoryManager {
+class PageManager {
     constructor() {
-        this.categories = {};
-        this.weightedKeywords = {};
-        this.settings = this.loadSettings();
-        this.isInitialized = false;
-        this.debugMode = false;
+        // Core state
+        this.currentPage = null;
+        this.selectedEmails = new Set();
+        this.aiAnalysisResults = new Map();
+        this.createdTasks = new Map();
+        this.autoAnalyzeEnabled = true;
+        this.searchTerm = '';
+        this.lastScanData = null;
+        this.hideExplanation = localStorage.getItem('hideEmailExplanation') === 'true';
         
-        this.initializeCategories();
-        this.initializeWeightedDetection();
-        this.setupEventListeners();
+        // Vue modes pour les emails
+        this.currentViewMode = 'grouped-domain';
+        this.currentCategory = null;
         
-        console.log('[CategoryManager] ✅ Version 17.0 - Système unifié initialisé');
-    }
-
-    // ================================================
-    // GESTION DES PARAMÈTRES CENTRALISÉE
-    // ================================================
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            const defaultSettings = {
-                activeCategories: null, // null = toutes actives par défaut
-                excludedDomains: [],
-                excludedKeywords: [],
-                taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-                categoryExclusions: {
-                    domains: [],
-                    emails: []
-                },
-                scanSettings: {
-                    defaultPeriod: 7,
-                    defaultFolder: 'inbox',
-                    autoAnalyze: true,
-                    autoCategrize: true
-                },
-                automationSettings: {
-                    autoCreateTasks: false,
-                    groupTasksByDomain: false,
-                    skipDuplicates: true,
-                    autoAssignPriority: false
-                },
-                preferences: {
-                    darkMode: false,
-                    compactView: false,
-                    showNotifications: true,
-                    excludeSpam: true,
-                    detectCC: true
-                }
-            };
-            
-            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur chargement paramètres:', error);
-            return this.getDefaultSettings();
-        }
-    }
-
-    saveSettings(newSettings = null) {
-        try {
-            if (newSettings) {
-                this.settings = { ...this.settings, ...newSettings };
-            }
-            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
-            
-            // Notifier les autres modules
-            window.dispatchEvent(new CustomEvent('categorySettingsChanged', {
-                detail: { settings: this.settings }
-            }));
-            
-            console.log('[CategoryManager] Paramètres sauvegardés:', this.settings);
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde paramètres:', error);
-        }
-    }
-
-    getDefaultSettings() {
-        return {
-            activeCategories: null,
-            excludedDomains: [],
-            excludedKeywords: [],
-            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-            categoryExclusions: { domains: [], emails: [] },
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            automationSettings: {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            },
-            preferences: {
-                darkMode: false,
-                compactView: false,
-                showNotifications: true,
-                excludeSpam: true,
-                detectCC: true
-            }
+        // Page renderers - DASHBOARD SUPPRIMÉ
+        this.pages = {
+            // dashboard: supprimé - géré par index.html
+            scanner: (container) => this.renderScanner(container),
+            emails: (container) => this.renderEmails(container),
+            tasks: (container) => this.renderTasks(container),
+            categories: (container) => this.renderCategories(container),
+            settings: (container) => this.renderSettings(container),
+            ranger: (container) => this.renderRanger(container)
         };
+        
+        this.setupEventListeners();
+        this.init();
+    }
+
+    init() {
+        console.log('[PageManager] ✅ Version 12.0 - Synchronisé avec EmailScanner centralisé');
     }
 
     // ================================================
-    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES
-    // ================================================
-    getSettings() {
-        return { ...this.settings };
-    }
-
-    updateSettings(newSettings) {
-        this.saveSettings(newSettings);
-    }
-
-    getScanSettings() {
-        return this.settings.scanSettings;
-    }
-
-    getAutomationSettings() {
-        return this.settings.automationSettings;
-    }
-
-    getTaskPreselectedCategories() {
-        return this.settings.taskPreselectedCategories || [];
-    }
-
-    shouldExcludeSpam() {
-        return this.settings.preferences?.excludeSpam !== false;
-    }
-
-    shouldDetectCC() {
-        return this.settings.preferences?.detectCC !== false;
-    }
-
-    getActiveCategories() {
-        if (!this.settings.activeCategories) {
-            return Object.keys(this.categories);
-        }
-        return this.settings.activeCategories;
-    }
-
-    // ================================================
-    // LISTENER POUR ÉVÉNEMENTS
+    // ÉVÉNEMENTS GLOBAUX
     // ================================================
     setupEventListeners() {
-        window.addEventListener('settingsChanged', (event) => {
-            const { type, value } = event.detail;
-            console.log(`[CategoryManager] Reçu changement: ${type}`, value);
-            
-            switch (type) {
-                case 'preferences':
-                    this.updateSettings({ preferences: { ...this.settings.preferences, ...value } });
-                    break;
-                case 'scanSettings':
-                    this.updateSettings({ scanSettings: { ...this.settings.scanSettings, ...value } });
-                    break;
-                case 'automationSettings':
-                    this.updateSettings({ automationSettings: { ...this.settings.automationSettings, ...value } });
-                    break;
-                case 'taskPreselectedCategories':
-                    this.updateSettings({ taskPreselectedCategories: value });
-                    break;
-                case 'activeCategories':
-                    this.updateSettings({ activeCategories: value });
-                    break;
+        // Écouter les changements de paramètres
+        window.addEventListener('categorySettingsChanged', (event) => {
+            console.log('[PageManager] Paramètres changés, mise à jour interface');
+            if (this.currentPage === 'emails') {
+                this.refreshEmailsView();
+            }
+        });
+
+        // Écouter la recatégorisation des emails
+        window.addEventListener('emailsRecategorized', (event) => {
+            console.log('[PageManager] Emails recatégorisés, mise à jour interface');
+            if (this.currentPage === 'emails') {
+                setTimeout(() => {
+                    this.refreshEmailsView();
+                }, 100);
+            }
+        });
+
+        // Écouter les fins de scan
+        window.addEventListener('scanCompleted', (event) => {
+            console.log('[PageManager] Scan terminé, données mises à jour');
+            this.lastScanData = event.detail;
+            if (this.currentPage === 'emails') {
+                this.loadPage('emails');
             }
         });
     }
 
-    // ================================================
-    // INITIALISATION DES CATÉGORIES
-    // ================================================
-    initializeCategories() {
-        this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS (détecté en premier)
-            marketing_news: {
-                name: 'Marketing & News',
-                icon: '📰',
-                color: '#8b5cf6',
-                description: 'Newsletters et promotions',
-                priority: 100
-            },
+    // =====================================
+    // PAGE LOADING - DASHBOARD IGNORÉ
+    // =====================================
+    async loadPage(pageName) {
+        console.log(`[PageManager] Chargement page: ${pageName}`);
+
+        // IGNORER complètement le dashboard
+        if (pageName === 'dashboard') {
+            console.log('[PageManager] Dashboard ignoré - géré par index.html');
+            this.updateNavigation(pageName);
             
-            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE
-            cc: {
-                name: 'En Copie',
-                icon: '📋',
-                color: '#64748b',
-                description: 'Emails où vous êtes en copie',
-                priority: 90
-            },
-            
-            // PRIORITÉ NORMALE POUR LES AUTRES
-            security: {
-                name: 'Sécurité',
-                icon: '🔒',
-                color: '#991b1b',
-                description: 'Alertes de sécurité, connexions et authentification',
-                priority: 50
-            },
-            
-            finance: {
-                name: 'Finance',
-                icon: '💰',
-                color: '#dc2626',
-                description: 'Factures et paiements',
-                priority: 50
-            },
-            
-            tasks: {
-                name: 'Actions Requises',
-                icon: '✅',
-                color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
-                priority: 50
-            },
-            
-            commercial: {
-                name: 'Commercial',
-                icon: '💼',
-                color: '#059669',
-                description: 'Opportunités, devis et contrats',
-                priority: 50
-            },
-            
-            meetings: {
-                name: 'Réunions',
-                icon: '📅',
-                color: '#f59e0b',
-                description: 'Invitations et demandes de réunion',
-                priority: 50
-            },
-            
-            support: {
-                name: 'Support',
-                icon: '🛠️',
-                color: '#f59e0b',
-                description: 'Tickets et assistance',
-                priority: 50
-            },
-            
-            reminders: {
-                name: 'Relances',
-                icon: '🔄',
-                color: '#10b981',
-                description: 'Rappels et suivis',
-                priority: 50
-            },
-            
-            project: {
-                name: 'Projets',
-                icon: '📊',
-                color: '#3b82f6',
-                description: 'Gestion de projet',
-                priority: 50
-            },
-            
-            hr: {
-                name: 'RH',
-                icon: '👥',
-                color: '#10b981',
-                description: 'Ressources humaines',
-                priority: 50
-            },
-            
-            internal: {
-                name: 'Communication Interne',
-                icon: '📢',
-                color: '#0ea5e9',
-                description: 'Annonces internes',
-                priority: 50
-            },
-            
-            notifications: {
-                name: 'Notifications',
-                icon: '🔔',
-                color: '#94a3b8',
-                description: 'Notifications automatiques',
-                priority: 50
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContent.style.display = 'block';
+                pageContent.style.opacity = '1';
             }
+            return;
+        }
+
+        const pageContent = document.getElementById('pageContent');
+        if (!pageContent) {
+            console.error('[PageManager] Container de contenu non trouvé');
+            return;
+        }
+
+        this.updateNavigation(pageName);
+        window.uiManager?.showLoading(`Chargement ${pageName}...`);
+
+        try {
+            pageContent.innerHTML = '';
+            
+            if (this.pages[pageName]) {
+                await this.pages[pageName](pageContent);
+                this.currentPage = pageName;
+            } else {
+                throw new Error(`Page ${pageName} non trouvée`);
+            }
+
+            window.uiManager?.hideLoading();
+
+        } catch (error) {
+            console.error(`[PageManager] Erreur chargement page:`, error);
+            window.uiManager?.hideLoading();
+            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+            
+            pageContent.innerHTML = this.renderErrorPage(error);
+        }
+    }
+
+    renderErrorPage(error) {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="empty-state-title">Erreur de chargement</h3>
+                <p class="empty-state-text">${error.message}</p>
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('dashboard')">
+                    Retour au tableau de bord
+                </button>
+            </div>
+        `;
+    }
+
+    updateNavigation(activePage) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.dataset.page === activePage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    // =====================================
+    // EMAILS PAGE - SYNCHRONISÉE AVEC EMAILSCANNER
+    // =====================================
+    async renderEmails(container) {
+        // Récupérer les emails depuis EmailScanner centralisé
+        const emails = window.emailScanner?.getAllEmails() || [];
+        const categories = window.categoryManager?.getCategories() || {};
+        
+        console.log(`[PageManager] Rendu page emails avec ${emails.length} emails`);
+        
+        if (emails.length === 0) {
+            container.innerHTML = this.renderEmptyEmailsState();
+            return;
+        }
+
+        const renderEmailsPage = () => {
+            const categoryCounts = this.calculateCategoryCounts(emails);
+            const totalEmails = emails.length;
+            const selectedCount = this.selectedEmails.size;
+            const visibleEmails = this.getVisibleEmails();
+            const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+            
+            container.innerHTML = `
+                <div class="tasks-page-modern">
+                    <!-- Texte explicatif avec possibilité de fermer -->
+                    ${!this.hideExplanation ? `
+                        <div class="explanation-text-harmonized">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                            <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    ` : ''}
+
+                    <!-- Barre de contrôles -->
+                    <div class="controls-bar-harmonized">
+                        <!-- Section recherche -->
+                        <div class="search-section-harmonized">
+                            <div class="search-box-harmonized">
+                                <i class="fas fa-search search-icon-harmonized"></i>
+                                <input type="text" 
+                                       class="search-input-harmonized" 
+                                       id="emailSearchInput"
+                                       placeholder="Rechercher emails..." 
+                                       value="${this.searchTerm}">
+                                ${this.searchTerm ? `
+                                    <button class="search-clear-harmonized" onclick="window.pageManager.clearSearch()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        <!-- Modes de vue -->
+                        <div class="view-modes-harmonized">
+                            <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                    title="Par domaine">
+                                <i class="fas fa-globe"></i>
+                                <span>Domaine</span>
+                            </button>
+                            <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                    title="Par expéditeur">
+                                <i class="fas fa-user"></i>
+                                <span>Expéditeur</span>
+                            </button>
+                            <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('flat')"
+                                    title="Liste complète">
+                                <i class="fas fa-list"></i>
+                                <span>Liste</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Actions principales -->
+                        <div class="action-buttons-harmonized">
+                            <!-- Bouton Sélectionner tout / Désélectionner -->
+                            <button class="btn-harmonized btn-selection-toggle" 
+                                    onclick="window.pageManager.toggleAllSelection()"
+                                    title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
+                                <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
+                                <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
+                                ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
+                            </button>
+                            
+                            <!-- Informations de sélection et actions -->
+                            ${selectedCount > 0 ? `
+                                <div class="selection-info-harmonized">
+                                    <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
+                                    <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Actions groupées -->
+                                <button class="btn-harmonized btn-primary" onclick="window.pageManager.createTasksFromSelection()">
+                                    <i class="fas fa-tasks"></i>
+                                    <span>Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</span>
+                                    <span class="count-badge-harmonized">${selectedCount}</span>
+                                </button>
+                                
+                                <div class="dropdown-action-harmonized">
+                                    <button class="btn-harmonized btn-secondary dropdown-toggle" onclick="window.pageManager.toggleBulkActions(event)">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                        <span>Actions</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
+                                            <i class="fas fa-eye"></i>
+                                            <span>Marquer comme lu</span>
+                                        </button>
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkArchive()">
+                                            <i class="fas fa-archive"></i>
+                                            <span>Archiver</span>
+                                        </button>
+                                        <button class="dropdown-item-harmonized danger" onclick="window.pageManager.bulkDelete()">
+                                            <i class="fas fa-trash"></i>
+                                            <span>Supprimer</span>
+                                        </button>
+                                        <div class="dropdown-divider"></div>
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkExport()">
+                                            <i class="fas fa-download"></i>
+                                            <span>Exporter</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Actualiser</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filtres de catégories -->
+                    <div class="status-filters-harmonized-twolines">
+                        ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
+                    </div>
+
+                    <!-- CONTENU DES EMAILS -->
+                    <div class="tasks-container-harmonized">
+                        ${this.renderEmailsList()}
+                    </div>
+                </div>
+            `;
+
+            this.addHarmonizedEmailStyles();
+            this.setupEmailsEventListeners();
         };
+
+        renderEmailsPage();
         
-        this.isInitialized = true;
-    }
-
-    // ================================================
-    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS
-    // ================================================
-    initializeWeightedDetection() {
-        this.weightedKeywords = {
-            // MARKETING & NEWS - PRIORITÉ MAXIMALE
-            marketing_news: {
-                absolute: [
-                    // DÉSINSCRIPTION - CRITÈRE CLÉ
-                    'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
-                    'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                    'gérer vos préférences', 'gérer la réception',
-                    'email preferences', 'préférences email',
-                    'ne plus recevoir', 'stop emails',
-                    
-                    // NEWSLETTERS EXPLICITES
-                    'newsletter', 'mailing list', 'mailing',
-                    'this email was sent to', 'you are receiving this',
-                    'cet email vous est envoyé', 'vous recevez cet email',
-                    
-                    // MARKETING CLAIR
-                    'limited offer', 'offre limitée', 'special offer',
-                    'promotion', 'promo', 'soldes', 'vente privée',
-                    'offre spéciale', 'réduction', '% de réduction',
-                    '% off', 'promo code', 'code promo',
-                    'flash sale', 'vente flash', 'black friday',
-                    'discount', 'remise', 'prix réduit',
-                    'exclusive offer', 'offre exclusive',
-                    'limited time', 'temps limité',
-                    
-                    // E-COMMERCE
-                    'shop now', 'acheter maintenant', 'buy now',
-                    'add to cart', 'ajouter au panier',
-                    'new collection', 'nouvelle collection'
-                ],
-                
-                strong: [
-                    // Français
-                    'promo', 'promotion', 'soldes', 'réduction', 'remise',
-                    'newsletter', 'mailing', 'campagne', 'marketing',
-                    'abonné', 'abonnement', 'désinscription', 'désabonner',
-                    'exclusif', 'exclusivité', 'spécial', 'limitée', 'nouveau',
-                    'collection', 'boutique', 'magasin', 'acheter',
-                    'découvrir', 'explorer', 'parcourir',
-                    
-                    // Anglais
-                    'deal', 'offer', 'sale', 'discount', 'save',
-                    'campaign', 'subscriber', 'unsubscribe', 'opt-out',
-                    'exclusive', 'special', 'limited', 'new', 'fresh',
-                    'shop', 'store', 'buy', 'purchase', 'order',
-                    'discover', 'explore', 'browse', 'view'
-                ],
-                
-                weak: [
-                    'update', 'news', 'info', 'information',
-                    'discover', 'new', 'latest', 'recent'
-                ],
-                exclusions: []
-            },
-
-            // SÉCURITÉ - PATTERNS STRICTS (Français + Anglais)
-            security: {
-                absolute: [
-                    // ALERTES DE CONNEXION (Français)
-                    'alerte de connexion', 'alert connexion', 'nouvelle connexion',
-                    'quelqu\'un s\'est connecté', 'connexion à votre compte',
-                    'tentative de connexion', 'connexion suspecte', 'connexion inhabituelle',
-                    'activité suspecte', 'activité inhabituelle', 'activité de connexion',
-                    'connexion détectée', 'accès à votre compte', 'accès détecté',
-                    'nouvelle session', 'session ouverte', 'ouverture de session',
-                    
-                    // ALERTES DE CONNEXION (Anglais)
-                    'suspicious activity', 'login alert', 'sign-in alert',
-                    'new sign-in', 'sign in detected', 'login detected',
-                    'connection detected', 'unusual activity', 'suspicious login',
-                    'account accessed', 'new login', 'recent login',
-                    'login attempt', 'sign-in attempt', 'access attempt',
-                    'session started', 'new session', 'account activity',
-                    
-                    // CODES ET AUTHENTIFICATION (Français)
-                    'code de vérification', 'code de sécurité', 'code d\'authentification',
-                    'code d\'accès', 'code temporaire', 'code à usage unique',
-                    'double authentification', 'authentification à deux facteurs',
-                    'vérification en deux étapes', 'validation en deux étapes',
-                    'authentification forte', 'sécurité renforcée',
-                    
-                    // CODES ET AUTHENTIFICATION (Anglais)
-                    'verification code', 'security code', 'authentication code',
-                    'two-factor', '2fa', 'two-step verification', 'two-step authentication',
-                    'multi-factor authentication', 'mfa', 'one-time password', 'otp',
-                    'access code', 'temporary code', 'verification pin',
-                    
-                    // RÉINITIALISATION (Français)
-                    'réinitialisation mot de passe', 'réinitialisation du mot de passe',
-                    'changer votre mot de passe', 'modifier votre mot de passe',
-                    'nouveau mot de passe', 'mot de passe oublié',
-                    'récupération de compte', 'récupération du compte',
-                    
-                    // RÉINITIALISATION (Anglais)
-                    'password reset', 'reset your password', 'change your password',
-                    'update your password', 'forgot password', 'forgotten password',
-                    'account recovery', 'recover your account', 'password recovery'
-                ],
-                
-                strong: [
-                    // Français
-                    'sécurité', 'vérification', 'authentification', 'connexion',
-                    'mot de passe', 'compte', 'accès', 'session',
-                    
-                    // Anglais
-                    'security', 'verify', 'authentication', 'login',
-                    'password', 'account', 'access', 'session'
-                ],
-                
-                weak: [
-                    'compte', 'account', 'accès', 'access', 'code'
-                ],
-                exclusions: ['newsletter', 'unsubscribe', 'promotion']
-            },
-
-            // TÂCHES - PATTERNS STRICTS (Français + Anglais)
-            tasks: {
-                absolute: [
-                    // ACTION REQUISE (Français)
-                    'action requise', 'action nécessaire', 'action à mener',
-                    'intervention requise', 'intervention nécessaire',
-                    'veuillez compléter', 'merci de compléter', 'à compléter',
-                    'merci de faire', 'pouvez-vous faire', 'pourriez-vous faire',
-                    'demande d\'action', 'nécessite votre action', 'votre action est requise',
-                    'en attente de votre action', 'dans l\'attente de votre action',
-                    'à faire', 'à traiter', 'à valider', 'validation requise',
-                    'confirmation requise', 'approbation requise', 'approbation nécessaire',
-                    'répondre avant', 'réponse attendue', 'réponse nécessaire',
-                    'merci de répondre', 'veuillez répondre', 'prière de répondre',
-                    
-                    // ACTION REQUISE (Anglais)
-                    'action required', 'action needed', 'action requested',
-                    'please complete', 'please review', 'please confirm',
-                    'please approve', 'approval needed', 'approval required',
-                    'confirmation required', 'confirmation needed', 'please validate',
-                    'validation required', 'response needed', 'response required',
-                    'please respond', 'reply required', 'reply needed',
-                    'waiting for your action', 'awaiting your response',
-                    'your attention required', 'requires your attention',
-                    'follow up required', 'follow-up needed',
-                    
-                    // URGENCE ET DEADLINE (Français)
-                    'urgence', 'urgent', 'très urgent', 'extrêmement urgent',
-                    'priorité', 'prioritaire', 'haute priorité', 'priorité élevée',
-                    'échéance', 'date limite', 'deadline', 'avant le',
-                    'livrable', 'à livrer', 'livraison attendue',
-                    'tâche assignée', 'tâche attribuée', 'assigné à',
-                    'doit être fait', 'doit être terminé', 'à terminer',
-                    
-                    // URGENCE ET DEADLINE (Anglais)
-                    'urgent', 'asap', 'as soon as possible', 'immediately',
-                    'priority', 'high priority', 'critical', 'important',
-                    'deadline', 'due date', 'due by', 'expires',
-                    'task assigned', 'assigned to you', 'deliverable',
-                    'must be completed', 'needs to be done', 'to do',
-                    'time sensitive', 'overdue', 'past due'
-                ],
-                
-                strong: [
-                    // Français
-                    'urgent', 'priorité', 'compléter', 'action', 'faire',
-                    'échéance', 'deadline', 'livrable', 'tâche',
-                    
-                    // Anglais
-                    'urgent', 'asap', 'priority', 'complete', 'action',
-                    'deadline', 'task', 'assigned', 'due'
-                ],
-                
-                weak: [
-                    'demande', 'request', 'besoin', 'need', 'attente', 'waiting'
-                ],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-
-            // RÉUNIONS - PATTERNS STRICTS (Français + Anglais)
-            meetings: {
-                absolute: [
-                    // DEMANDES DE RÉUNION (Français)
-                    'demande de réunion', 'demande de rendez-vous', 'demande de rdv',
-                    'invitation à une réunion', 'invitation réunion', 'invitation rdv',
-                    'planifier une réunion', 'programmer une réunion', 'organiser une réunion',
-                    'réunion prévue', 'réunion programmée', 'réunion planifiée',
-                    'rendez-vous prévu', 'rdv prévu', 'entretien prévu',
-                    'prise de rendez-vous', 'réserver un créneau', 'créneaux disponibles',
-                    'disponibilités pour une réunion', 'proposer un créneau',
-                    
-                    // DEMANDES DE RÉUNION (Anglais)
-                    'meeting request', 'meeting invitation', 'invite to meeting',
-                    'schedule a meeting', 'book a meeting', 'arrange a meeting',
-                    'plan a meeting', 'organize a meeting', 'set up a meeting',
-                    'meeting scheduled', 'meeting planned', 'appointment scheduled',
-                    'calendar invitation', 'calendar invite', 'meeting invite',
-                    'time slot available', 'availability request', 'when are you available',
-                    
-                    // PLATEFORMES ET OUTILS (Français)
-                    'réunion teams', 'teams meeting', 'réunion zoom', 'zoom meeting',
-                    'réunion skype', 'skype meeting', 'google meet', 'réunion google',
-                    'visioconférence', 'vidéoconférence', 'conférence téléphonique',
-                    'appel vidéo', 'appel audio', 'conference call',
-                    'webinar', 'webinaire', 'séminaire en ligne',
-                    
-                    // PLATEFORMES ET OUTILS (Anglais)
-                    'teams meeting', 'zoom meeting', 'google meet', 'skype meeting',
-                    'video conference', 'video call', 'conference call',
-                    'online meeting', 'virtual meeting', 'webinar',
-                    'screen sharing', 'join meeting', 'meeting link'
-                ],
-                
-                strong: [
-                    // Français
-                    'réunion', 'rendez-vous', 'rdv', 'planifier', 'programmer',
-                    'calendrier', 'agenda', 'entretien', 'visio',
-                    
-                    // Anglais
-                    'meeting', 'appointment', 'schedule', 'calendar',
-                    'conference', 'call', 'video', 'invite'
-                ],
-                
-                weak: [
-                    'présentation', 'agenda', 'planning', 'schedule'
-                ],
-                exclusions: ['newsletter', 'promotion']
-            },
-
-            // COMMERCIAL - PATTERNS STRICTS
-            commercial: {
-                absolute: [
-                    'devis', 'quotation', 'proposal', 'proposition',
-                    'contrat', 'contract', 'bon de commande',
-                    'purchase order', 'offre commerciale',
-                    'proposition commerciale', 'business proposal',
-                    'opportunité commerciale', 'nouveau client'
-                ],
-                
-                strong: [
-                    'client', 'customer', 'prospect', 'opportunity',
-                    'commercial', 'business', 'marché', 'deal'
-                ],
-                
-                weak: ['offre', 'négociation'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-
-            // FINANCE - PATTERNS STRICTS
-            finance: {
-                absolute: [
-                    'facture', 'invoice', 'payment', 'paiement',
-                    'virement', 'transfer', 'remboursement',
-                    'relevé bancaire', 'bank statement',
-                    'déclaration fiscale', 'tax declaration',
-                    'impôts', 'taxes', 'fiscal',
-                    'comptabilité', 'accounting', 'bilan'
-                ],
-                
-                strong: [
-                    'montant', 'amount', 'total', 'facture',
-                    'fiscal', 'bancaire', 'bank', 'finance',
-                    'paiement', 'payment'
-                ],
-                
-                weak: ['euro', 'dollar', 'prix'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            // RELANCES - PATTERNS STRICTS
-            reminders: {
-                absolute: [
-                    'reminder:', 'rappel:', 'follow up', 'relance',
-                    'gentle reminder', 'rappel amical', 'following up',
-                    'je reviens vers vous', 'circling back',
-                    'comme convenu', 'suite à notre', 'faisant suite'
-                ],
-                
-                strong: [
-                    'reminder', 'rappel', 'follow', 'relance',
-                    'suite', 'convenu'
-                ],
-                
-                weak: ['previous', 'discussed'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            // SUPPORT - PATTERNS STRICTS
-            support: {
-                absolute: [
-                    'ticket #', 'ticket number', 'numéro de ticket',
-                    'case #', 'case number', 'incident #',
-                    'problème résolu', 'issue resolved',
-                    'support ticket', 'ticket de support', 'help desk'
-                ],
-                
-                strong: [
-                    'support', 'assistance', 'help desk',
-                    'technical support', 'ticket'
-                ],
-                
-                weak: ['help', 'aide', 'issue'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            // PROJETS
-            project: {
-                absolute: [
-                    'projet xx', 'project update', 'milestone',
-                    'sprint', 'livrable projet', 'gantt',
-                    'avancement projet', 'project status',
-                    'kickoff', 'kick off'
-                ],
-                
-                strong: [
-                    'projet', 'project', 'milestone', 'sprint',
-                    'agile', 'scrum'
-                ],
-                
-                weak: ['development', 'phase'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            // RH
-            hr: {
-                absolute: [
-                    'bulletin de paie', 'payslip', 'contrat de travail',
-                    'congés', 'leave request', 'onboarding',
-                    'entretien annuel', 'performance review',
-                    'recrutement', 'recruitment'
-                ],
-                
-                strong: [
-                    'rh', 'hr', 'salaire', 'salary',
-                    'ressources humaines', 'human resources'
-                ],
-                
-                weak: ['employee', 'staff'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            // INTERNE
-            internal: {
-                absolute: [
-                    'all staff', 'tout le personnel', 'annonce interne',
-                    'company announcement', 'memo interne',
-                    'communication interne', 'note de service'
-                ],
-                
-                strong: [
-                    'internal', 'interne', 'company wide',
-                    'personnel', 'staff'
-                ],
-                
-                weak: ['annonce', 'announcement'],
-                exclusions: ['newsletter', 'marketing', 'external']
-            },
-
-            // NOTIFICATIONS
-            notifications: {
-                absolute: [
-                    'do not reply', 'ne pas répondre', 'noreply@',
-                    'automated message', 'notification automatique',
-                    'system notification', 'ceci est un message automatique'
-                ],
-                
-                strong: [
-                    'automated', 'automatic', 'system',
-                    'notification', 'automatique'
-                ],
-                
-                weak: ['notification', 'alert'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            // CC - détection spéciale
-            cc: {
-                absolute: [
-                    'copie pour information', 'for your information', 'fyi',
-                    'en copie', 'in copy', 'cc:', 'courtesy copy'
-                ],
-                
-                strong: ['information', 'copie', 'copy'],
-                weak: ['fyi', 'info'],
-                exclusions: []
-            }
-        };
-    }
-
-    // ================================================
-    // ANALYSE PRINCIPALE D'EMAIL
-    // ================================================
-    analyzeEmail(email) {
-        if (!email) return { category: 'other', score: 0, confidence: 0 };
-        
-        // Filtrer les courriers indésirables si activé
-        if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
-            return { category: 'spam', score: 0, confidence: 0, isSpam: true };
+        // Auto-analyze si activé
+        if (this.autoAnalyzeEnabled && emails.length > 0) {
+            setTimeout(() => {
+                this.analyzeFirstEmails(emails.slice(0, 5));
+            }, 1000);
         }
-        
-        const content = this.extractCompleteContent(email);
-        
-        // Vérification CC en priorité si activé
-        if (this.shouldDetectCC() && this.isInCC(email)) {
-            // Vérifier si ce n'est pas du marketing malgré le CC
-            const marketingCheck = this.analyzeCategory(content, this.weightedKeywords.marketing_news);
-            if (marketingCheck.score >= 80) {
-                return {
-                    category: 'marketing_news',
-                    score: marketingCheck.total,
-                    confidence: this.calculateConfidence(marketingCheck),
-                    matchedPatterns: marketingCheck.matches,
-                    hasAbsolute: marketingCheck.hasAbsolute,
-                    originallyCC: true
-                };
-            }
-            
-            return {
-                category: 'cc',
-                score: 100,
-                confidence: 0.95,
-                matchedPatterns: [{ keyword: 'email_in_cc', type: 'detected', score: 100 }],
-                hasAbsolute: true,
-                isCC: true
-            };
-        }
-        
-        // Analyse normale
-        const allResults = this.analyzeAllCategories(content);
-        return this.selectByPriorityWithThreshold(allResults);
+    }
+
+    renderEmptyEmailsState() {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">Aucun email trouvé</h3>
+                <p class="empty-state-text">
+                    Utilisez le scanner pour récupérer et analyser vos emails.
+                </p>
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <i class="fas fa-search"></i>
+                    Aller au scanner
+                </button>
+            </div>
+        `;
     }
 
     // ================================================
-    // ANALYSE DE TOUTES LES CATÉGORIES
+    // MÉTHODES DE SÉLECTION
     // ================================================
-    analyzeAllCategories(content) {
-        const results = {};
-        const activeCategories = this.getActiveCategories();
+    toggleAllSelection() {
+        const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
         
-        for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
-            // Ignorer les catégories inactives (sauf marketing_news et cc qui ont priorité)
-            if (!activeCategories.includes(categoryId) && 
-                categoryId !== 'marketing_news' && 
-                categoryId !== 'cc') {
-                continue;
-            }
-            
-            const score = this.calculateScore(content, keywords, categoryId);
-            
-            results[categoryId] = {
-                category: categoryId,
-                score: score.total,
-                hasAbsolute: score.hasAbsolute,
-                matches: score.matches,
-                confidence: this.calculateConfidence(score),
-                priority: this.categories[categoryId]?.priority || 50
-            };
-        }
-        
-        return results;
-    }
-
-    // ================================================
-    // SÉLECTION PAR PRIORITÉ AVEC SEUIL
-    // ================================================
-    selectByPriorityWithThreshold(results) {
-        const MIN_SCORE_THRESHOLD = 30;
-        const MIN_CONFIDENCE_THRESHOLD = 0.5;
-        
-        // Trier par priorité puis par score
-        const sortedResults = Object.values(results)
-            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
-            .sort((a, b) => {
-                if (a.priority !== b.priority) {
-                    return b.priority - a.priority;
-                }
-                return b.score - a.score;
+        if (allSelected) {
+            visibleEmails.forEach(email => {
+                this.selectedEmails.delete(email.id);
             });
+            window.uiManager?.showToast('Emails désélectionnés', 'info');
+        } else {
+            visibleEmails.forEach(email => {
+                this.selectedEmails.add(email.id);
+            });
+            window.uiManager?.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
+        }
         
-        if (this.debugMode) {
-            console.log('[CategoryManager] Scores par catégorie:');
-            sortedResults.forEach(r => {
-                console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
+        this.refreshEmailsView();
+    }
+
+    toggleEmailSelection(emailId) {
+        if (this.selectedEmails.has(emailId)) {
+            this.selectedEmails.delete(emailId);
+        } else {
+            this.selectedEmails.add(emailId);
+        }
+        this.refreshEmailsView();
+    }
+
+    clearSelection() {
+        this.selectedEmails.clear();
+        this.refreshEmailsView();
+        window.uiManager?.showToast('Sélection effacée', 'info');
+    }
+
+    refreshEmailsView() {
+        const emailsContainer = document.querySelector('.tasks-container-harmonized');
+        if (emailsContainer) {
+            emailsContainer.innerHTML = this.renderEmailsList();
+        }
+        
+        this.updateControlsBar();
+    }
+
+    updateControlsBar() {
+        const container = document.getElementById('pageContent');
+        if (container && this.currentPage === 'emails') {
+            // Sauvegarder l'état de recherche
+            const searchInput = document.getElementById('emailSearchInput');
+            const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
+            
+            // Re-render
+            this.renderEmails(container);
+            
+            // Restaurer la recherche
+            setTimeout(() => {
+                const newSearchInput = document.getElementById('emailSearchInput');
+                if (newSearchInput && currentSearchValue) {
+                    newSearchInput.value = currentSearchValue;
+                }
+            }, 100);
+        }
+    }
+
+    // ================================================
+    // FILTRES DE CATÉGORIES
+    // ================================================
+    buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
+        const tabs = [
+            { id: 'all', name: 'Tous', icon: '📧', count: totalEmails }
+        ];
+        
+        Object.entries(categories).forEach(([catId, category]) => {
+            const count = categoryCounts[catId] || 0;
+            if (count > 0) {
+                tabs.push({
+                    id: catId,
+                    name: category.name,
+                    icon: category.icon,
+                    count: count
+                });
+            }
+        });
+        
+        const otherCount = categoryCounts.other || 0;
+        if (otherCount > 0) {
+            tabs.push({
+                id: 'other',
+                name: 'Autre',
+                icon: '📌',
+                count: otherCount
             });
         }
         
-        const bestResult = sortedResults[0];
-        
-        if (bestResult) {
-            return {
-                category: bestResult.category,
-                score: bestResult.score,
-                confidence: bestResult.confidence,
-                matchedPatterns: bestResult.matches,
-                hasAbsolute: bestResult.hasAbsolute
-            };
-        }
-        
-        return {
-            category: 'other',
-            score: 0,
-            confidence: 0,
-            matchedPatterns: [],
-            hasAbsolute: false
-        };
+        return tabs.map(tab => {
+            return `
+                <button class="status-pill-harmonized-twolines ${this.currentCategory === tab.id ? 'active' : ''}" 
+                        onclick="window.pageManager.filterByCategory('${tab.id}')">
+                    <div class="pill-content-twolines">
+                        <div class="pill-first-line-twolines">
+                            <span class="pill-icon-twolines">${tab.icon}</span>
+                            <span class="pill-count-twolines">${tab.count}</span>
+                        </div>
+                        <div class="pill-second-line-twolines">
+                            <span class="pill-text-twolines">${tab.name}</span>
+                        </div>
+                    </div>
+                </button>
+            `;
+        }).join('');
+    }
+
+    filterByCategory(categoryId) {
+        this.currentCategory = categoryId;
+        this.refreshEmailsView();
     }
 
     // ================================================
-    // CALCUL DU SCORE
+    // RENDU DES EMAILS
     // ================================================
-    calculateScore(content, keywords, categoryId) {
-        let totalScore = 0;
-        let hasAbsolute = false;
-        const matches = [];
-        const text = content.text;
+    renderEmailsList() {
+        const emails = window.emailScanner?.getAllEmails() || [];
+        let filteredEmails = emails;
         
-        // Vérifier les exclusions d'abord
-        if (keywords.exclusions) {
-            for (const exclusion of keywords.exclusions) {
-                if (this.findInText(text, exclusion)) {
-                    if (categoryId === 'marketing_news') {
-                        totalScore -= 20; // Réduction pour marketing
-                    } else {
-                        totalScore -= 100; // Forte réduction pour autres
-                    }
-                }
-            }
+        // Appliquer les filtres
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
         }
         
-        // Mots absolus (100 points)
-        if (keywords.absolute) {
-            for (const keyword of keywords.absolute) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 100;
-                    hasAbsolute = true;
-                    matches.push({ keyword, type: 'absolute', score: 100 });
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
+        
+        if (filteredEmails.length === 0) {
+            return this.renderEmptyState();
+        }
+
+        switch (this.currentViewMode) {
+            case 'flat':
+                return this.renderFlatView(filteredEmails);
+            case 'grouped-domain':
+            case 'grouped-sender':
+                return this.renderGroupedView(filteredEmails, this.currentViewMode);
+            default:
+                return this.renderFlatView(filteredEmails);
+        }
+    }
+
+    renderEmptyState() {
+        return `
+            <div class="empty-state-harmonized">
+                <div class="empty-state-icon-harmonized">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
+                <p class="empty-state-text-harmonized">
+                    ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
+                </p>
+                ${this.searchTerm ? `
+                    <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
+                        <i class="fas fa-undo"></i>
+                        <span>Effacer la recherche</span>
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    renderFlatView(emails) {
+        return `
+            <div class="tasks-harmonized-list">
+                ${emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+            </div>
+        `;
+    }
+
+    renderHarmonizedEmailRow(email) {
+        const isSelected = this.selectedEmails.has(email.id);
+        const hasTask = this.createdTasks.has(email.id);
+        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        
+        return `
+            <div class="task-harmonized-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''}" 
+                 data-email-id="${email.id}"
+                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
+                
+                <!-- Checkbox de sélection -->
+                <input type="checkbox" 
+                       class="task-checkbox-harmonized" 
+                       ${isSelected ? 'checked' : ''}
+                       onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                
+                <!-- Indicateur de priorité -->
+                <div class="priority-bar-harmonized" style="background-color: ${this.getEmailPriorityColor(email)}"></div>
+                
+                <!-- Contenu principal -->
+                <div class="task-main-content-harmonized">
+                    <div class="task-header-harmonized">
+                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                        <div class="task-meta-harmonized">
+                            <span class="task-type-badge-harmonized">📧 Email</span>
+                            <span class="deadline-badge-harmonized">
+                                📅 ${this.formatEmailDate(email.receivedDateTime)}
+                            </span>
+                            ${email.categoryScore ? `
+                                <span class="confidence-badge-harmonized">
+                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
                     
-                    // Bonus si dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 50;
-                        matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
-                    }
-                }
-            }
-        }
-        
-        // Mots forts (30 points)
-        if (keywords.strong && matches.length < 5) {
-            for (const keyword of keywords.strong) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 30;
-                    matches.push({ keyword, type: 'strong', score: 30 });
-                }
-            }
-        }
-        
-        // Mots faibles (10 points) - seulement si pas de mots absolus
-        if (keywords.weak && !hasAbsolute) {
-            for (const keyword of keywords.weak) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 10;
-                    matches.push({ keyword, type: 'weak', score: 10 });
-                }
-            }
-        }
-        
-        // Bonus de domaine
-        this.applyDomainBonus(content, categoryId, matches, totalScore);
-        
-        return { total: Math.max(0, totalScore), hasAbsolute, matches };
+                    <div class="task-recipient-harmonized">
+                        <i class="fas fa-envelope"></i>
+                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
+                        ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
+                        ${email.category && email.category !== 'other' ? `
+                            <span class="category-indicator-harmonized" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}">
+                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Actions rapides -->
+                <div class="task-actions-harmonized">
+                    ${this.renderHarmonizedEmailActions(email)}
+                </div>
+            </div>
+        `;
     }
 
-    applyDomainBonus(content, categoryId, matches, totalScore) {
-        const domainBonuses = {
-            security: ['microsoft', 'google', 'apple', 'security'],
-            finance: ['gouv.fr', 'impots', 'bank', 'paypal'],
-            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing'],
-            notifications: ['noreply', 'notification', 'donotreply']
-        };
+    renderHarmonizedEmailActions(email) {
+        const hasTask = this.createdTasks.has(email.id);
+        const actions = [];
         
-        if (domainBonuses[categoryId]) {
-            for (const domainKeyword of domainBonuses[categoryId]) {
-                if (content.domain.includes(domainKeyword)) {
-                    const bonus = categoryId === 'marketing_news' ? 30 : 50;
-                    totalScore += bonus;
-                    matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
-                    break;
-                }
+        if (!hasTask) {
+            actions.push(`
+                <button class="action-btn-harmonized create-task" 
+                        onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
+                        title="Créer une tâche">
+                    <i class="fas fa-tasks"></i>
+                </button>
+            `);
+        } else {
+            actions.push(`
+                <button class="action-btn-harmonized view-task" 
+                        onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
+                        title="Voir la tâche">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+            `);
+        }
+        
+        actions.push(`
+            <button class="action-btn-harmonized details" 
+                    onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
+                    title="Voir l'email">
+                <i class="fas fa-eye"></i>
+            </button>
+        `);
+        
+        return actions.join('');
+    }
+
+    renderGroupedView(emails, groupMode) {
+        const groups = this.createEmailGroups(emails, groupMode);
+        
+        return `
+            <div class="tasks-grouped-harmonized">
+                ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
+            </div>
+        `;
+    }
+
+    renderEmailGroup(group, groupType) {
+        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+        const avatarColor = this.generateAvatarColor(group.name);
+        
+        return `
+            <div class="task-group-harmonized" data-group-key="${group.key}">
+                <div class="group-header-harmonized" onclick="window.pageManager.toggleGroup('${group.key}')">
+                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+                        ${groupType === 'grouped-domain' ? 
+                            '<i class="fas fa-globe"></i>' : 
+                            group.name.charAt(0).toUpperCase()
+                        }
+                    </div>
+                    <div class="group-info-harmonized">
+                        <div class="group-name-harmonized">${displayName}</div>
+                        <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
+                    </div>
+                    <div class="group-expand-harmonized">
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                
+                <div class="group-content-harmonized" style="display: none;">
+                    ${group.emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // ================================================
+    // ÉVÉNEMENTS ET HANDLERS
+    // ================================================
+    handleEmailClick(event, emailId) {
+        if (event.target.type === 'checkbox') return;
+        if (event.target.closest('.task-actions-harmonized')) return;
+        this.showEmailModal(emailId);
+    }
+
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
+        this.refreshEmailsView();
+    }
+
+    hideExplanationMessage() {
+        this.hideExplanation = true;
+        localStorage.setItem('hideEmailExplanation', 'true');
+        this.refreshEmailsView();
+    }
+
+    toggleGroup(groupKey) {
+        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+        if (!group) return;
+        
+        const content = group.querySelector('.group-content-harmonized');
+        const icon = group.querySelector('.group-expand-harmonized i');
+        const header = group.querySelector('.group-header-harmonized');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            group.classList.add('expanded');
+            header.classList.add('expanded-header');
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+            group.classList.remove('expanded');
+            header.classList.remove('expanded-header');
+        }
+    }
+
+    setupEmailsEventListeners() {
+        const searchInput = document.getElementById('emailSearchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
+    }
+
+    handleSearch(term) {
+        this.searchTerm = term.trim();
+        this.refreshEmailsView();
+    }
+
+    clearSearch() {
+        this.searchTerm = '';
+        const searchInput = document.getElementById('emailSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        this.refreshEmailsView();
+    }
+
+    // ================================================
+    // ACTIONS GROUPÉES
+    // ================================================
+    toggleBulkActions(event) {
+        event.stopPropagation();
+        const menu = document.getElementById('bulkActionsMenu');
+        if (menu) {
+            menu.classList.toggle('show');
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropdown-action-harmonized')) {
+                menu?.classList.remove('show');
             }
+        }, { once: true });
+    }
+
+    async bulkMarkAsRead() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (window.emailScanner) {
+            await window.emailScanner.performBatchAction(selectedEmails, 'markAsRead');
+        } else {
+            window.uiManager?.showToast(`${selectedEmails.length} emails marqués comme lus`, 'success');
+        }
+        this.clearSelection();
+    }
+
+    async bulkArchive() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (confirm(`Archiver ${selectedEmails.length} email(s) ?`)) {
+            window.uiManager?.showToast(`${selectedEmails.length} emails archivés`, 'success');
+            this.clearSelection();
+        }
+    }
+
+    async bulkDelete() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (confirm(`Supprimer définitivement ${selectedEmails.length} email(s) ?\n\nCette action est irréversible.`)) {
+            if (window.emailScanner) {
+                await window.emailScanner.performBatchAction(selectedEmails, 'delete');
+            } else {
+                window.uiManager?.showToast(`${selectedEmails.length} emails supprimés`, 'success');
+            }
+            this.clearSelection();
+            this.refreshEmailsView();
+        }
+    }
+
+    async bulkExport() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (window.emailScanner) {
+            window.emailScanner.exportResults('csv');
+        } else {
+            const emails = selectedEmails.map(id => this.getEmailById(id)).filter(Boolean);
+            
+            const csvContent = [
+                ['De', 'Sujet', 'Date', 'Catégorie', 'Contenu'].join(','),
+                ...emails.map(email => [
+                    `"${email.from?.emailAddress?.name || email.from?.emailAddress?.address || ''}"`,
+                    `"${email.subject || ''}"`,
+                    email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleDateString('fr-FR') : '',
+                    `"${this.getCategoryName(email.category)}"`,
+                    `"${(email.bodyPreview || '').substring(0, 100)}"`
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            window.uiManager?.showToast('Export terminé', 'success');
+        }
+        this.clearSelection();
+    }
+
+    // ================================================
+    // AUTRES PAGES (Scanner, Tasks, Categories, Settings, Ranger)
+    // ================================================
+    
+    async renderScanner(container) {
+        console.log('[PageManager] Rendu page scanner...');
+        
+        if (window.scanStartModule && 
+            typeof window.scanStartModule.render === 'function' && 
+            window.scanStartModule.stylesAdded) {
+            
+            try {
+                console.log('[PageManager] Utilisation ScanStartModule moderne');
+                await window.scanStartModule.render(container);
+                return;
+            } catch (error) {
+                console.error('[PageManager] Erreur ScanStartModule, fallback:', error);
+            }
+        }
+        
+        console.log('[PageManager] Utilisation interface scanner fallback');
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 class="empty-title">Scanner d'emails</h3>
+                <p class="empty-text">Module de scan en cours de chargement...</p>
+            </div>
+        `;
+    }
+
+    async renderTasks(container) {
+        if (window.tasksView && window.tasksView.render) {
+            window.tasksView.render(container);
+        } else {
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Tâches</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="empty-title">Aucune tâche</h3>
+                    <p class="empty-text">Créez des tâches à partir de vos emails</p>
+                </div>
+            `;
+        }
+    }
+
+    async renderCategories(container) {
+        const categories = window.categoryManager?.getCategories() || {};
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <h1>Catégories</h1>
+            </div>
+            
+            <div class="categories-grid">
+                ${Object.entries(categories).map(([id, cat]) => `
+                    <div class="category-card">
+                        <div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">
+                            ${cat.icon}
+                        </div>
+                        <h3>${cat.name}</h3>
+                        <p>${cat.description || ''}</p>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    async renderSettings(container) {
+        if (window.categoriesPage) {
+            window.categoriesPage.renderSettings(container);
+        } else {
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Paramètres</h1>
+                </div>
+                
+                <div class="settings-card">
+                    <h3>Configuration IA</h3>
+                    <button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
+                        <i class="fas fa-cog"></i> Configurer Claude AI
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    async renderRanger(container) {
+        if (window.domainOrganizer && window.domainOrganizer.showPage) {
+            window.domainOrganizer.showPage(container);
+        } else {
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Ranger par domaine</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-folder-tree"></i>
+                    </div>
+                    <h3 class="empty-title">Module de rangement</h3>
+                    <p class="empty-text">Module de rangement en cours de chargement...</p>
+                </div>
+            `;
         }
     }
 
     // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
-    analyzeCategory(content, keywords) {
-        return this.calculateScore(content, keywords, 'single');
-    }
-
-    extractCompleteContent(email) {
-        let allText = '';
-        let subject = '';
+    async refreshEmails() {
+        window.uiManager?.showLoading('Actualisation...');
         
-        // Sujet (répété pour augmenter le poids)
-        if (email.subject) {
-            subject = email.subject;
-            allText += (email.subject + ' ').repeat(5);
-        }
-        
-        // Expéditeur
-        if (email.from?.emailAddress?.address) {
-            allText += email.from.emailAddress.address + ' ';
-        }
-        if (email.from?.emailAddress?.name) {
-            allText += email.from.emailAddress.name + ' ';
-        }
-        
-        // Destinataires
-        if (email.toRecipients && Array.isArray(email.toRecipients)) {
-            email.toRecipients.forEach(recipient => {
-                if (recipient.emailAddress?.address) {
-                    allText += recipient.emailAddress.address + ' ';
-                }
-                if (recipient.emailAddress?.name) {
-                    allText += recipient.emailAddress.name + ' ';
-                }
-            });
-        }
-        
-        // CC
-        if (email.ccRecipients && Array.isArray(email.ccRecipients)) {
-            email.ccRecipients.forEach(recipient => {
-                if (recipient.emailAddress?.address) {
-                    allText += recipient.emailAddress.address + ' ';
-                }
-                if (recipient.emailAddress?.name) {
-                    allText += recipient.emailAddress.name + ' ';
-                }
-            });
-        }
-        
-        // Corps
-        if (email.bodyPreview) {
-            allText += email.bodyPreview + ' ';
-        }
-        if (email.body?.content) {
-            allText += this.cleanHtml(email.body.content) + ' ';
-        }
-        
-        return {
-            text: allText.toLowerCase().trim(),
-            subject: subject.toLowerCase(),
-            domain: this.extractDomain(email.from?.emailAddress?.address),
-            hasHtml: !!(email.body?.content && email.body.content.includes('<')),
-            length: allText.length
-        };
-    }
-
-    cleanHtml(html) {
-        if (!html) return '';
-        return html
-            .replace(/<a[^>]*>(.*?)<\/a>/gi, ' $1 ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/&[^;]+;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    extractDomain(email) {
-        if (!email || !email.includes('@')) return 'unknown';
-        return email.split('@')[1]?.toLowerCase() || 'unknown';
-    }
-
-    findInText(text, keyword) {
-        if (!text || !keyword) return false;
-        
-        const normalizedText = text.toLowerCase()
-            .replace(/[éèêë]/g, 'e')
-            .replace(/[àâä]/g, 'a')
-            .replace(/[ùûü]/g, 'u')
-            .replace(/[ç]/g, 'c')
-            .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/'/g, '\'')
-            .replace(/-/g, ' ')
-            .replace(/\s+/g, ' ');
-        
-        const normalizedKeyword = keyword.toLowerCase()
-            .replace(/[éèêë]/g, 'e')
-            .replace(/[àâä]/g, 'a')
-            .replace(/[ùûü]/g, 'u')
-            .replace(/[ç]/g, 'c')
-            .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/'/g, '\'')
-            .replace(/-/g, ' ')
-            .replace(/\s+/g, ' ');
-        
-        return normalizedText.includes(normalizedKeyword);
-    }
-
-    calculateConfidence(score) {
-        if (score.hasAbsolute) return 0.95;
-        if (score.total >= 200) return 0.90;
-        if (score.total >= 150) return 0.85;
-        if (score.total >= 100) return 0.80;
-        if (score.total >= 80) return 0.75;
-        if (score.total >= 60) return 0.70;
-        if (score.total >= 40) return 0.60;
-        if (score.total >= 30) return 0.55;
-        return 0.40;
-    }
-
-    // ================================================
-    // DÉTECTION SPAM ET CC
-    // ================================================
-    isSpamEmail(email) {
-        if (email.parentFolderId) {
-            const folderInfo = email.parentFolderId.toLowerCase();
-            if (folderInfo.includes('junk') || 
-                folderInfo.includes('spam') || 
-                folderInfo.includes('unwanted') ||
-                folderInfo.includes('indésirable')) {
-                return true;
-            }
-        }
-        
-        if (email.categories && Array.isArray(email.categories)) {
-            const hasSpamCategory = email.categories.some(cat => 
-                cat.toLowerCase().includes('spam') ||
-                cat.toLowerCase().includes('junk') ||
-                cat.toLowerCase().includes('indésirable')
-            );
-            if (hasSpamCategory) return true;
-        }
-        
-        return false;
-    }
-
-    isInCC(email) {
-        if (!email.ccRecipients || !Array.isArray(email.ccRecipients)) {
-            return false;
-        }
-        
-        const currentUserEmail = this.getCurrentUserEmail();
-        if (!currentUserEmail) {
-            return email.ccRecipients.length > 0;
-        }
-        
-        return email.ccRecipients.some(recipient => {
-            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-            return recipientEmail === currentUserEmail.toLowerCase();
-        });
-    }
-
-    getCurrentUserEmail() {
         try {
-            const userInfo = localStorage.getItem('currentUserInfo');
-            if (userInfo) {
-                const parsed = JSON.parse(userInfo);
-                return parsed.email || parsed.userPrincipalName;
+            // Recatégoriser les emails existants
+            if (window.emailScanner && window.emailScanner.emails.length > 0) {
+                await window.emailScanner.recategorizeEmails();
             }
-        } catch (e) {
-            console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur');
+            
+            await this.loadPage('emails');
+            window.uiManager?.showToast('Emails actualisés', 'success');
+            
+        } catch (error) {
+            window.uiManager?.hideLoading();
+            window.uiManager?.showToast('Erreur d\'actualisation', 'error');
         }
-        return null;
     }
 
-    // ================================================
-    // MÉTHODES PUBLIQUES
-    // ================================================
-    getCategories() {
-        return this.categories;
-    }
-    
-    getCategory(categoryId) {
-        if (categoryId === 'all') {
-            return { id: 'all', name: 'Tous', icon: '📧', color: '#1e293b' };
-        }
-        if (categoryId === 'other') {
-            return { id: 'other', name: 'Non classé', icon: '❓', color: '#64748b' };
-        }
-        if (categoryId === 'spam') {
-            return { id: 'spam', name: 'Spam', icon: '🚫', color: '#dc2626' };
-        }
-        return this.categories[categoryId] || null;
-    }
-    
-    getCategoryStats() {
-        const stats = {
-            totalCategories: Object.keys(this.categories).length,
-            totalKeywords: 0,
-            absoluteKeywords: 0,
-            strongKeywords: 0,
-            weakKeywords: 0
-        };
+    openCreatedTask(emailId) {
+        const taskId = this.createdTasks.get(emailId);
+        if (!taskId) return;
         
-        for (const keywords of Object.values(this.weightedKeywords)) {
-            if (keywords.absolute) stats.absoluteKeywords += keywords.absolute.length;
-            if (keywords.strong) stats.strongKeywords += keywords.strong.length;
-            if (keywords.weak) stats.weakKeywords += keywords.weak.length;
-        }
-        
-        stats.totalKeywords = stats.absoluteKeywords + stats.strongKeywords + stats.weakKeywords;
-        return stats;
-    }
-    
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-        console.log(`[CategoryManager] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
-    }
-    
-    // ================================================
-    // TEST AVEC NOUVEAUX PATTERNS MULTILINGUES
-    // ================================================
-    testEmail(subject, expectedCategory = null) {
-        const testEmail = {
-            subject: subject,
-            body: { content: 'Test content' },
-            from: { emailAddress: { address: 'test@example.com' } },
-            toRecipients: [{ emailAddress: { address: 'user@example.com' } }]
-        };
-        
-        const result = this.analyzeEmail(testEmail);
-        
-        console.log('\n[CategoryManager] TEST RESULT:');
-        console.log(`Subject: "${subject}"`);
-        console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
-        console.log(`Score: ${result.score}pts`);
-        console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
-        console.log(`Matches:`, result.matchedPatterns);
-        
-        if (expectedCategory && result.category !== expectedCategory) {
-            console.log(`❌ FAILED - Expected ${expectedCategory}, got ${result.category}`);
-        } else {
-            console.log('✅ SUCCESS');
-        }
-        
-        return result;
+        this.loadPage('tasks').then(() => {
+            setTimeout(() => {
+                if (window.tasksView?.showTaskDetails) {
+                    window.tasksView.showTaskDetails(taskId);
+                }
+            }, 100);
+        });
     }
 
-    // Test des nouveaux patterns multilingues
-    testMultilingualPatterns() {
-        console.log('\n[CategoryManager] === TEST PATTERNS MULTILINGUES ===');
+    getEmailById(emailId) {
+        return window.emailScanner?.getEmailById(emailId) || null;
+    }
+
+    getVisibleEmails() {
+        const emails = window.emailScanner?.getAllEmails() || [];
+        let filteredEmails = emails;
         
-        const tests = [
-            // Marketing français
-            ['Newsletter - Si vous ne souhaitez plus recevoir de communication de notre part, paramétrez vos choix ici', 'marketing_news'],
-            ['Promotion spéciale - Désabonnez-vous facilement', 'marketing_news'],
-            ['Offre limitée - Gérer vos préférences de communication', 'marketing_news'],
-            
-            // Marketing anglais
-            ['Weekly Newsletter - Unsubscribe here if you no longer wish to receive', 'marketing_news'],
-            ['Special Offer - Update your email preferences', 'marketing_news'],
-            ['Flash Sale - Opt out anytime', 'marketing_news'],
-            
-            // Sécurité français
-            ['Alerte de connexion - Nouvelle session détectée', 'security'],
-            ['Code de vérification - Authentification à deux facteurs', 'security'],
-            ['Réinitialisation de votre mot de passe', 'security'],
-            
-            // Sécurité anglais
-            ['Security Alert - Suspicious login attempt detected', 'security'],
-            ['Verification Code - Two-factor authentication', 'security'],
-            ['Password Reset - Account Recovery', 'security'],
-            
-            // Tâches français
-            ['Action requise - Validation nécessaire avant le 15/12', 'tasks'],
-            ['Urgent - Votre approbation est nécessaire', 'tasks'],
-            ['Livrable en attente - Merci de compléter', 'tasks'],
-            
-            // Tâches anglais
-            ['Action Required - Please approve by Friday', 'tasks'],
-            ['URGENT - Your response needed ASAP', 'tasks'],
-            ['Task Assigned - Deliverable due tomorrow', 'tasks'],
-            
-            // Réunions français
-            ['Demande de réunion - Teams meeting proposé', 'meetings'],
-            ['Invitation réunion - Créneaux disponibles', 'meetings'],
-            ['RDV programmé - Visioconférence Zoom', 'meetings'],
-            
-            // Réunions anglais
-            ['Meeting Request - Schedule a call this week', 'meetings'],
-            ['Calendar Invitation - Google Meet conference', 'meetings'],
-            ['Appointment Scheduled - Video call tomorrow', 'meetings']
-        ];
+        if (this.currentCategory && this.currentCategory !== 'all') {
+            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+        }
         
-        let passed = 0;
-        let total = tests.length;
+        if (this.searchTerm) {
+            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        }
         
-        tests.forEach(([subject, expected]) => {
-            const result = this.testEmail(subject, expected);
-            if (result.category === expected) {
-                passed++;
+        return filteredEmails;
+    }
+
+    matchesSearch(email, searchTerm) {
+        if (!searchTerm) return true;
+        
+        const search = searchTerm.toLowerCase();
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
+        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
+        const preview = (email.bodyPreview || '').toLowerCase();
+        
+        return subject.includes(search) || 
+               sender.includes(search) || 
+               senderEmail.includes(search) || 
+               preview.includes(search);
+    }
+
+    calculateCategoryCounts(emails) {
+        const counts = {};
+        emails.forEach(email => {
+            const cat = email.category || 'other';
+            counts[cat] = (counts[cat] || 0) + 1;
+        });
+        return counts;
+    }
+
+    createEmailGroups(emails, groupMode) {
+        const groups = {};
+        
+        emails.forEach(email => {
+            let groupKey, groupName;
+            
+            if (groupMode === 'grouped-domain') {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                groupKey = domain;
+                groupName = domain;
+            } else {
+                const senderEmail = email.from?.emailAddress?.address || 'unknown';
+                const senderName = email.from?.emailAddress?.name || senderEmail;
+                groupKey = senderEmail;
+                groupName = senderName;
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    key: groupKey,
+                    name: groupName,
+                    emails: [],
+                    count: 0,
+                    latestDate: null
+                };
+            }
+            
+            groups[groupKey].emails.push(email);
+            groups[groupKey].count++;
+            
+            const emailDate = new Date(email.receivedDateTime);
+            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
+                groups[groupKey].latestDate = emailDate;
             }
         });
         
-        console.log(`\n[CategoryManager] RÉSULTATS: ${passed}/${total} tests réussis (${Math.round(passed/total*100)}%)`);
-        console.log('===========================================\n');
+        return Object.values(groups).sort((a, b) => {
+            if (!a.latestDate && !b.latestDate) return 0;
+            if (!a.latestDate) return 1;
+            if (!b.latestDate) return -1;
+            return b.latestDate - a.latestDate;
+        });
+    }
+
+    generateAvatarColor(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
         
-        return { passed, total, percentage: Math.round(passed/total*100) };
+        const hue = Math.abs(hash) % 360;
+        const saturation = 65 + (Math.abs(hash) % 20);
+        const lightness = 45 + (Math.abs(hash) % 15);
+        
+        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
+    }
+
+    getEmailPriorityColor(email) {
+        if (email.importance === 'high') return '#ef4444';
+        if (email.hasAttachments) return '#f97316';
+        if (email.categoryScore >= 80) return '#10b981';
+        return '#3b82f6';
+    }
+
+    formatEmailDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 3600000) {
+            return `${Math.floor(diff / 60000)}m`;
+        } else if (diff < 86400000) {
+            return `${Math.floor(diff / 3600000)}h`;
+        } else if (diff < 604800000) {
+            return `${Math.floor(diff / 86400000)}j`;
+        } else {
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    getEmailContent(email) {
+        if (email.body?.content) {
+            return email.body.content;
+        }
+        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
+    }
+
+    getCategoryColor(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        return category?.color || '#64748b';
+    }
+
+    getCategoryIcon(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        return category?.icon || '📌';
+    }
+
+    getCategoryName(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        return category?.name || categoryId || 'Autre';
+    }
+
+    async analyzeFirstEmails(emails) {
+        if (!window.aiTaskAnalyzer) return;
+        
+        for (const email of emails) {
+            if (!this.aiAnalysisResults.has(email.id)) {
+                try {
+                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                    this.aiAnalysisResults.set(email.id, analysis);
+                } catch (error) {
+                    console.error('[PageManager] Erreur analyse email:', error);
+                }
+            }
+        }
+    }
+
+    // ================================================
+    // MÉTHODES SIMPLIFIÉES POUR ÉVITER LA DUPLICATION
+    // ================================================
+    
+    // Toutes les autres méthodes (création de tâches, modales, etc.) 
+    // sont incluses mais simplifiées pour éviter les erreurs de syntaxe
+    
+    async createTasksFromSelection() {
+        window.uiManager?.showToast('Fonction de création de tâches en développement', 'info');
+        this.clearSelection();
+    }
+
+    async showTaskCreationModal(emailId) {
+        window.uiManager?.showToast('Modal de création de tâche en développement', 'info');
+    }
+
+    showEmailModal(emailId) {
+        window.uiManager?.showToast('Modal d\'affichage email en développement', 'info');
+    }
+
+    // Styles harmonisés - version simplifiée pour éviter les erreurs
+    addHarmonizedEmailStyles() {
+        if (document.getElementById('harmonizedEmailStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'harmonizedEmailStyles';
+        styles.textContent = `
+            /* Styles de base pour éviter les erreurs de chargement */
+            .tasks-page-modern { font-family: system-ui, sans-serif; padding: 20px; }
+            .controls-bar-harmonized { display: flex; gap: 16px; margin-bottom: 20px; padding: 16px; background: white; border-radius: 12px; }
+            .btn-harmonized { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; }
+            .btn-primary { background: #3b82f6; color: white; border-color: #3b82f6; }
+            .task-harmonized-card { display: flex; align-items: center; padding: 16px; background: white; border: 1px solid #e5e7eb; margin-bottom: 1px; }
+            .task-harmonized-card:hover { background: #f9fafb; }
+            .task-harmonized-card.selected { background: #eff6ff; border-color: #3b82f6; }
+        `;
+        
+        document.head.appendChild(styles);
     }
 }
 
 // Créer l'instance globale
-window.categoryManager = new CategoryManager();
+window.pageManager = new PageManager();
 
-console.log('✅ CategoryManager v17.0 loaded - Système unifié et synchronisé');
+// Bind des méthodes pour préserver le contexte
+Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
+    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
+        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+    }
+});
+
+console.log('✅ PageManager v12.0 loaded - Synchronisé avec EmailScanner centralisé');
