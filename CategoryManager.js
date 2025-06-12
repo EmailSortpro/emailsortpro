@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 18.0 - CRUD complet des catégories personnalisées
+// CategoryManager.js - Version 19.0 - Correction complète des erreurs
 
 class CategoryManager {
     constructor() {
@@ -10,777 +10,40 @@ class CategoryManager {
         this.debugMode = false;
         this.eventListenersSetup = false;
         
-        // Système de synchronisation renforcé et stable
+        // Système de synchronisation renforcé
         this.syncInProgress = false;
         this.lastSyncTime = 0;
         this.syncCallbacks = new Set();
         this.taskPreselectedCategories = [];
         
-        this.initializeCategories();
-        this.loadCustomCategories();
-        this.initializeWeightedDetection();
-        this.setupEventListeners();
+        console.log('[CategoryManager] ✅ Version 19.0 - Correction complète des erreurs');
         
-        // Initialiser les catégories pré-sélectionnées
-        this.initializeTaskPreselectedCategories();
-        
-        console.log('[CategoryManager] ✅ Version 18.0 - CRUD complet des catégories personnalisées');
-        console.log('[CategoryManager] 📊 Paramètres initiaux:', this.settings);
-        console.log('[CategoryManager] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        // Initialisation complète
+        this.initialize();
     }
 
     // ================================================
-    // GESTION DES CATÉGORIES PERSONNALISÉES - CRUD COMPLET
+    // INITIALISATION COMPLÈTE
     // ================================================
-    
-    loadCustomCategories() {
+    initialize() {
         try {
-            const saved = localStorage.getItem('customCategories');
-            if (saved) {
-                this.customCategories = JSON.parse(saved);
-                
-                // Ajouter les catégories personnalisées aux catégories principales
-                Object.entries(this.customCategories).forEach(([id, category]) => {
-                    this.categories[id] = { ...category, isCustom: true };
-                    
-                    // Ajouter les mots-clés personnalisés si définis
-                    if (category.keywords) {
-                        this.weightedKeywords[id] = { ...category.keywords };
-                    }
-                });
-                
-                console.log('[CategoryManager] ✅ Catégories personnalisées chargées:', Object.keys(this.customCategories));
-            }
-        } catch (error) {
-            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
-            this.customCategories = {};
-        }
-    }
-
-    saveCustomCategories() {
-        try {
-            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
-            console.log('[CategoryManager] ✅ Catégories personnalisées sauvegardées');
+            console.log('[CategoryManager] 🚀 Début initialisation...');
             
-            // Dispatcher un événement pour notifier les autres modules
-            this.dispatchEvent('customCategoriesChanged', {
-                customCategories: { ...this.customCategories },
-                allCategories: { ...this.categories },
-                source: 'CategoryManager'
-            });
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
-        }
-    }
-
-    createCustomCategory(categoryData) {
-        try {
-            // Validation des données
-            const validationResult = this.validateCategoryData(categoryData);
-            if (!validationResult.isValid) {
-                throw new Error(validationResult.error);
-            }
+            this.initializeCategories();
+            this.loadCustomCategories();
+            this.initializeWeightedDetection();
+            this.setupEventListeners();
+            this.initializeTaskPreselectedCategories();
             
-            // Générer un ID unique
-            const id = this.generateCategoryId(categoryData.name);
-            
-            // Vérifier que l'ID n'existe pas déjà
-            if (this.categories[id]) {
-                throw new Error('Une catégorie avec ce nom existe déjà');
-            }
-            
-            // Créer la catégorie
-            const category = {
-                id,
-                name: categoryData.name,
-                icon: categoryData.icon,
-                color: categoryData.color,
-                description: categoryData.description || '',
-                priority: categoryData.priority || 50,
-                isCustom: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            // Ajouter aux collections
-            this.customCategories[id] = category;
-            this.categories[id] = category;
-            
-            // Ajouter les mots-clés si fournis
-            if (categoryData.keywords) {
-                this.weightedKeywords[id] = this.processKeywords(categoryData.keywords);
-            }
-            
-            // Sauvegarder
-            this.saveCustomCategories();
-            
-            console.log('[CategoryManager] ✅ Catégorie personnalisée créée:', category);
-            
-            // Notifier la création
-            this.dispatchEvent('categoryCreated', {
-                category,
-                source: 'CategoryManager'
-            });
-            
-            return category;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur création catégorie:', error);
-            throw error;
-        }
-    }
-
-    updateCustomCategory(categoryId, updates) {
-        try {
-            if (!this.customCategories[categoryId]) {
-                throw new Error('Catégorie personnalisée non trouvée');
-            }
-            
-            // Validation des mises à jour
-            const validationResult = this.validateCategoryData(updates, categoryId);
-            if (!validationResult.isValid) {
-                throw new Error(validationResult.error);
-            }
-            
-            // Mettre à jour la catégorie
-            const updatedCategory = {
-                ...this.customCategories[categoryId],
-                ...updates,
-                id: categoryId, // Préserver l'ID
-                isCustom: true, // Préserver le statut personnalisé
-                updatedAt: new Date().toISOString()
-            };
-            
-            // Mettre à jour dans les collections
-            this.customCategories[categoryId] = updatedCategory;
-            this.categories[categoryId] = updatedCategory;
-            
-            // Mettre à jour les mots-clés si fournis
-            if (updates.keywords) {
-                this.weightedKeywords[categoryId] = this.processKeywords(updates.keywords);
-            }
-            
-            // Sauvegarder
-            this.saveCustomCategories();
-            
-            console.log('[CategoryManager] ✅ Catégorie personnalisée mise à jour:', updatedCategory);
-            
-            // Notifier la mise à jour
-            this.dispatchEvent('categoryUpdated', {
-                category: updatedCategory,
-                source: 'CategoryManager'
-            });
-            
-            return true;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur mise à jour catégorie:', error);
-            throw error;
-        }
-    }
-
-    deleteCustomCategory(categoryId) {
-        try {
-            if (!this.customCategories[categoryId]) {
-                throw new Error('Catégorie personnalisée non trouvée');
-            }
-            
-            const category = this.customCategories[categoryId];
-            
-            // Supprimer de toutes les collections
-            delete this.customCategories[categoryId];
-            delete this.categories[categoryId];
-            delete this.weightedKeywords[categoryId];
-            
-            // Retirer des catégories pré-sélectionnées si présente
-            const wasPeselected = this.taskPreselectedCategories.includes(categoryId);
-            if (wasPeselected) {
-                this.taskPreselectedCategories = this.taskPreselectedCategories.filter(id => id !== categoryId);
-                this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
-                this.saveSettings();
-            }
-            
-            // Sauvegarder
-            this.saveCustomCategories();
-            
-            console.log('[CategoryManager] ✅ Catégorie personnalisée supprimée:', category.name);
-            
-            // Notifier la suppression
-            this.dispatchEvent('categoryDeleted', {
-                categoryId,
-                category,
-                wasPreselected: wasPeselected,
-                source: 'CategoryManager'
-            });
-            
-            return true;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur suppression catégorie:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // VALIDATION ET UTILITAIRES
-    // ================================================
-    
-    validateCategoryData(data, excludeId = null) {
-        // Vérifications de base
-        if (!data.name || typeof data.name !== 'string' || data.name.trim().length < 2) {
-            return { isValid: false, error: 'Le nom doit contenir au moins 2 caractères' };
-        }
-        
-        if (data.name.trim().length > 50) {
-            return { isValid: false, error: 'Le nom ne peut pas dépasser 50 caractères' };
-        }
-        
-        if (!data.icon || typeof data.icon !== 'string' || data.icon.trim().length === 0) {
-            return { isValid: false, error: 'Une icône est requise' };
-        }
-        
-        if (!data.color || !this.isValidColor(data.color)) {
-            return { isValid: false, error: 'Une couleur valide est requise' };
-        }
-        
-        if (data.priority !== undefined && (typeof data.priority !== 'number' || data.priority < 0 || data.priority > 100)) {
-            return { isValid: false, error: 'La priorité doit être un nombre entre 0 et 100' };
-        }
-        
-        if (data.description && typeof data.description !== 'string') {
-            return { isValid: false, error: 'La description doit être une chaîne de caractères' };
-        }
-        
-        if (data.description && data.description.length > 200) {
-            return { isValid: false, error: 'La description ne peut pas dépasser 200 caractères' };
-        }
-        
-        // Vérifier l'unicité du nom
-        const nameExists = Object.entries(this.categories).some(([id, cat]) => 
-            id !== excludeId && 
-            cat.name.toLowerCase().trim() === data.name.toLowerCase().trim()
-        );
-        
-        if (nameExists) {
-            return { isValid: false, error: 'Une catégorie avec ce nom existe déjà' };
-        }
-        
-        // Valider les mots-clés si fournis
-        if (data.keywords) {
-            const keywordsValidation = this.validateKeywords(data.keywords);
-            if (!keywordsValidation.isValid) {
-                return keywordsValidation;
-            }
-        }
-        
-        return { isValid: true };
-    }
-    
-    validateKeywords(keywords) {
-        const allowedTypes = ['absolute', 'strong', 'weak', 'exclusions'];
-        
-        for (const [type, keywordsList] of Object.entries(keywords)) {
-            if (!allowedTypes.includes(type)) {
-                return { isValid: false, error: `Type de mot-clé invalide: ${type}` };
-            }
-            
-            if (!Array.isArray(keywordsList)) {
-                return { isValid: false, error: `Les mots-clés ${type} doivent être un tableau` };
-            }
-            
-            for (const keyword of keywordsList) {
-                if (typeof keyword !== 'string' || keyword.trim().length === 0) {
-                    return { isValid: false, error: `Mot-clé invalide dans ${type}` };
-                }
-                
-                if (keyword.length > 100) {
-                    return { isValid: false, error: `Mot-clé trop long dans ${type}: ${keyword}` };
-                }
-            }
-        }
-        
-        return { isValid: true };
-    }
-    
-    isValidColor(color) {
-        // Vérifier les formats de couleur CSS valides
-        const colorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-        return colorRegex.test(color);
-    }
-    
-    generateCategoryId(name) {
-        // Générer un ID basé sur le nom
-        const baseName = name.toLowerCase()
-            .replace(/[^a-z0-9]/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '');
-        
-        let id = `custom_${baseName}`;
-        let counter = 1;
-        
-        // S'assurer de l'unicité
-        while (this.categories[id]) {
-            id = `custom_${baseName}_${counter}`;
-            counter++;
-        }
-        
-        return id;
-    }
-    
-    processKeywords(rawKeywords) {
-        const processed = {};
-        
-        for (const [type, keywordsList] of Object.entries(rawKeywords)) {
-            if (Array.isArray(keywordsList)) {
-                processed[type] = keywordsList
-                    .map(kw => kw.trim().toLowerCase())
-                    .filter(kw => kw.length > 0)
-                    .filter((kw, index, arr) => arr.indexOf(kw) === index); // Supprimer les doublons
-            }
-        }
-        
-        return processed;
-    }
-
-    // ================================================
-    // MÉTHODES D'ACCÈS ENRICHIES
-    // ================================================
-    
-    getCustomCategories() {
-        return { ...this.customCategories };
-    }
-    
-    getCustomCategoryById(categoryId) {
-        return this.customCategories[categoryId] || null;
-    }
-    
-    getSystemCategories() {
-        const systemCategories = {};
-        Object.entries(this.categories).forEach(([id, category]) => {
-            if (!category.isCustom) {
-                systemCategories[id] = category;
-            }
-        });
-        return systemCategories;
-    }
-    
-    getCategoriesCount() {
-        const customCount = Object.keys(this.customCategories).length;
-        const systemCount = Object.keys(this.categories).length - customCount;
-        
-        return {
-            total: Object.keys(this.categories).length,
-            custom: customCount,
-            system: systemCount
-        };
-    }
-    
-    getCategoryKeywords(categoryId) {
-        return this.weightedKeywords[categoryId] || null;
-    }
-    
-    searchCategories(query) {
-        if (!query || query.trim().length === 0) {
-            return Object.entries(this.categories);
-        }
-        
-        const searchTerm = query.toLowerCase().trim();
-        const results = [];
-        
-        Object.entries(this.categories).forEach(([id, category]) => {
-            let score = 0;
-            
-            // Recherche dans le nom (poids élevé)
-            if (category.name.toLowerCase().includes(searchTerm)) {
-                score += 10;
-            }
-            
-            // Recherche dans la description (poids moyen)
-            if (category.description && category.description.toLowerCase().includes(searchTerm)) {
-                score += 5;
-            }
-            
-            // Recherche dans les mots-clés (poids faible)
-            const keywords = this.weightedKeywords[id];
-            if (keywords) {
-                Object.values(keywords).forEach(keywordsList => {
-                    if (Array.isArray(keywordsList)) {
-                        keywordsList.forEach(keyword => {
-                            if (keyword.includes(searchTerm)) {
-                                score += 1;
-                            }
-                        });
-                    }
-                });
-            }
-            
-            if (score > 0) {
-                results.push([id, category, score]);
-            }
-        });
-        
-        // Trier par score décroissant
-        return results
-            .sort((a, b) => b[2] - a[2])
-            .map(([id, category]) => [id, category]);
-    }
-
-    // ================================================
-    // EXPORT/IMPORT DES CATÉGORIES PERSONNALISÉES
-    // ================================================
-    
-    exportCustomCategories() {
-        try {
-            const exportData = {
-                categories: { ...this.customCategories },
-                keywords: {},
-                metadata: {
-                    exportDate: new Date().toISOString(),
-                    version: '1.0',
-                    source: 'CategoryManager',
-                    totalCategories: Object.keys(this.customCategories).length
-                }
-            };
-            
-            // Ajouter les mots-clés des catégories personnalisées
-            Object.keys(this.customCategories).forEach(categoryId => {
-                if (this.weightedKeywords[categoryId]) {
-                    exportData.keywords[categoryId] = { ...this.weightedKeywords[categoryId] };
-                }
-            });
-            
-            return exportData;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur export catégories:', error);
-            throw error;
-        }
-    }
-    
-    importCustomCategories(importData, options = {}) {
-        try {
-            const {
-                overwriteExisting = false,
-                validateBeforeImport = true
-            } = options;
-            
-            if (!importData || !importData.categories) {
-                throw new Error('Données d\'import invalides');
-            }
-            
-            const results = {
-                imported: 0,
-                skipped: 0,
-                errors: 0,
-                details: []
-            };
-            
-            Object.entries(importData.categories).forEach(([originalId, categoryData]) => {
-                try {
-                    // Validation
-                    if (validateBeforeImport) {
-                        const validation = this.validateCategoryData(categoryData);
-                        if (!validation.isValid) {
-                            results.errors++;
-                            results.details.push(`Erreur ${categoryData.name}: ${validation.error}`);
-                            return;
-                        }
-                    }
-                    
-                    // Générer un nouvel ID pour éviter les conflits
-                    const newId = this.generateCategoryId(categoryData.name);
-                    
-                    // Vérifier si la catégorie existe déjà
-                    if (this.categories[newId] && !overwriteExisting) {
-                        results.skipped++;
-                        results.details.push(`Ignoré ${categoryData.name}: existe déjà`);
-                        return;
-                    }
-                    
-                    // Créer la catégorie
-                    const categoryToCreate = {
-                        ...categoryData,
-                        isCustom: true,
-                        createdAt: categoryData.createdAt || new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    };
-                    
-                    // Ajouter les mots-clés si disponibles
-                    if (importData.keywords && importData.keywords[originalId]) {
-                        categoryToCreate.keywords = importData.keywords[originalId];
-                    }
-                    
-                    // Utiliser la méthode de création pour la validation complète
-                    this.createCustomCategory(categoryToCreate);
-                    
-                    results.imported++;
-                    results.details.push(`Importé ${categoryData.name} avec succès`);
-                    
-                } catch (error) {
-                    results.errors++;
-                    results.details.push(`Erreur ${categoryData.name}: ${error.message}`);
-                }
-            });
-            
-            console.log('[CategoryManager] Import terminé:', results);
-            return results;
+            this.isInitialized = true;
+            console.log('[CategoryManager] ✅ Initialisation terminée');
+            console.log('[CategoryManager] 📊 Paramètres:', this.settings);
+            console.log('[CategoryManager] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
             
         } catch (error) {
-            console.error('[CategoryManager] Erreur import catégories:', error);
-            throw error;
+            console.error('[CategoryManager] ❌ Erreur initialisation:', error);
+            this.loadDefaultSettings();
         }
-    }
-
-    // ================================================
-    // RÉINITIALISATION ET MAINTENANCE
-    // ================================================
-    
-    resetCustomCategories() {
-        try {
-            const customCategoryIds = Object.keys(this.customCategories);
-            
-            // Supprimer toutes les catégories personnalisées
-            customCategoryIds.forEach(id => {
-                delete this.categories[id];
-                delete this.weightedKeywords[id];
-            });
-            
-            // Nettoyer les catégories pré-sélectionnées
-            this.taskPreselectedCategories = this.taskPreselectedCategories.filter(id => 
-                !customCategoryIds.includes(id)
-            );
-            
-            // Vider la collection
-            this.customCategories = {};
-            
-            // Sauvegarder
-            this.saveCustomCategories();
-            this.saveSettings();
-            
-            console.log('[CategoryManager] ✅ Catégories personnalisées réinitialisées');
-            
-            // Notifier la réinitialisation
-            this.dispatchEvent('customCategoriesReset', {
-                deletedCount: customCategoryIds.length,
-                source: 'CategoryManager'
-            });
-            
-            return customCategoryIds.length;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur réinitialisation catégories:', error);
-            throw error;
-        }
-    }
-    
-    cleanupOrphanedKeywords() {
-        try {
-            const orphanedKeywords = [];
-            
-            Object.keys(this.weightedKeywords).forEach(categoryId => {
-                if (!this.categories[categoryId]) {
-                    orphanedKeywords.push(categoryId);
-                    delete this.weightedKeywords[categoryId];
-                }
-            });
-            
-            if (orphanedKeywords.length > 0) {
-                console.log('[CategoryManager] ✅ Mots-clés orphelins nettoyés:', orphanedKeywords);
-            }
-            
-            return orphanedKeywords.length;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur nettoyage mots-clés:', error);
-            return 0;
-        }
-    }
-    
-    validateCategoriesIntegrity() {
-        const issues = [];
-        
-        try {
-            // Vérifier la cohérence entre categories et customCategories
-            Object.keys(this.customCategories).forEach(id => {
-                if (!this.categories[id]) {
-                    issues.push(`Catégorie personnalisée ${id} manquante dans categories`);
-                } else if (!this.categories[id].isCustom) {
-                    issues.push(`Catégorie ${id} devrait être marquée comme personnalisée`);
-                }
-            });
-            
-            // Vérifier les catégories marquées comme personnalisées
-            Object.entries(this.categories).forEach(([id, category]) => {
-                if (category.isCustom && !this.customCategories[id]) {
-                    issues.push(`Catégorie ${id} marquée personnalisée mais absente de customCategories`);
-                }
-            });
-            
-            // Vérifier les catégories pré-sélectionnées
-            this.taskPreselectedCategories.forEach(id => {
-                if (!this.categories[id]) {
-                    issues.push(`Catégorie pré-sélectionnée ${id} n'existe pas`);
-                }
-            });
-            
-            // Vérifier les mots-clés orphelins
-            Object.keys(this.weightedKeywords).forEach(id => {
-                if (!this.categories[id]) {
-                    issues.push(`Mots-clés orphelins pour catégorie ${id}`);
-                }
-            });
-            
-            if (issues.length === 0) {
-                console.log('[CategoryManager] ✅ Intégrité des catégories validée');
-            } else {
-                console.warn('[CategoryManager] ⚠️ Problèmes d\'intégrité détectés:', issues);
-            }
-            
-            return {
-                isValid: issues.length === 0,
-                issues
-            };
-        } catch (error) {
-            console.error('[CategoryManager] Erreur validation intégrité:', error);
-            return {
-                isValid: false,
-                issues: ['Erreur lors de la validation: ' + error.message]
-            };
-        }
-    }
-
-    // ================================================
-    // TOUTES LES AUTRES MÉTHODES DE LA VERSION ORIGINALE
-    // ================================================
-    
-    // [Ici on garde toutes les méthodes existantes de la version 17.4]
-    // Pour la brièveté, je liste les signatures principales:
-    
-    initializeTaskPreselectedCategories() {
-        // Code existant...
-        try {
-            if (this.settings && Array.isArray(this.settings.taskPreselectedCategories)) {
-                this.taskPreselectedCategories = [...this.settings.taskPreselectedCategories];
-            } else {
-                this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
-                if (!this.settings) this.settings = {};
-                this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
-                this.saveSettings();
-            }
-            console.log('[CategoryManager] ✅ Catégories pré-sélectionnées initialisées:', this.taskPreselectedCategories);
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur initialisation catégories pré-sélectionnées:', error);
-            this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
-        }
-    }
-
-    loadSettings() {
-        // Code existant de la version 17.4...
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            const defaultSettings = this.getDefaultSettings();
-            
-            if (saved) {
-                const parsedSettings = JSON.parse(saved);
-                const mergedSettings = { ...defaultSettings, ...parsedSettings };
-                
-                if (!Array.isArray(mergedSettings.taskPreselectedCategories)) {
-                    console.warn('[CategoryManager] ⚠️ taskPreselectedCategories invalide, correction');
-                    mergedSettings.taskPreselectedCategories = defaultSettings.taskPreselectedCategories;
-                }
-                
-                console.log('[CategoryManager] 📥 Paramètres chargés depuis localStorage');
-                return mergedSettings;
-            } else {
-                console.log('[CategoryManager] 🆕 Utilisation paramètres par défaut');
-                return defaultSettings;
-            }
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur chargement paramètres:', error);
-            return this.getDefaultSettings();
-        }
-    }
-
-    saveSettings(newSettings = null) {
-        // Code existant avec gestion des catégories personnalisées...
-        try {
-            if (this.syncInProgress) {
-                console.log('[CategoryManager] ⏳ Sync en cours, programmation différée');
-                setTimeout(() => this.saveSettings(newSettings), 100);
-                return;
-            }
-            
-            this.syncInProgress = true;
-            
-            if (newSettings) {
-                console.log('[CategoryManager] 📝 Mise à jour settings avec:', newSettings);
-                this.settings = { ...this.settings, ...newSettings };
-                
-                if (newSettings.taskPreselectedCategories) {
-                    this.taskPreselectedCategories = [...newSettings.taskPreselectedCategories];
-                    console.log('[CategoryManager] 📋 Catégories locales synchronisées:', this.taskPreselectedCategories);
-                }
-            }
-            
-            this.validateSettings();
-            
-            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
-            this.lastSyncTime = Date.now();
-            
-            console.log('[CategoryManager] 💾 Paramètres sauvegardés:', this.settings);
-            
-            setTimeout(() => {
-                this.dispatchEvent('categorySettingsChanged', {
-                    settings: this.settings,
-                    source: 'CategoryManager',
-                    timestamp: this.lastSyncTime,
-                    taskPreselectedCategories: [...this.taskPreselectedCategories]
-                });
-                
-                this.syncCallbacks.forEach(callback => {
-                    try {
-                        callback(this.settings);
-                    } catch (error) {
-                        console.warn('[CategoryManager] Erreur callback sync:', error);
-                    }
-                });
-                
-                this.syncInProgress = false;
-            }, 10);
-            
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
-            this.syncInProgress = false;
-        }
-    }
-
-    // [Continuer avec toutes les autres méthodes de la version 17.4...]
-    // getDefaultSettings, validateSettings, getSettings, updateSettings, etc.
-    
-    getDefaultSettings() {
-        return {
-            activeCategories: null,
-            excludedDomains: [],
-            excludedKeywords: [],
-            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-            categoryExclusions: {
-                domains: [],
-                emails: []
-            },
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            automationSettings: {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            },
-            preferences: {
-                darkMode: false,
-                compactView: false,
-                showNotifications: true,
-                excludeSpam: true,
-                detectCC: true
-            }
-        };
     }
 
     initializeCategories() {
@@ -824,7 +87,6 @@ class CategoryManager {
                 name: 'Actions Requises',
                 icon: '✅',
                 color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
                 priority: 50
             },
             
@@ -893,75 +155,721 @@ class CategoryManager {
             }
         };
         
-        this.isInitialized = true;
         console.log('[CategoryManager] ✅ Catégories initialisées:', Object.keys(this.categories));
     }
 
     initializeWeightedDetection() {
-        // Code existant complet de la version 17.4...
         this.weightedKeywords = {
-            // Tous les mots-clés existants de la version 17.4
             marketing_news: {
                 absolute: [
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
                     'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                    // ... etc tous les mots-clés existants
+                    'newsletter', 'infolettre', 'bulletin', 'actualités', 'news',
+                    'promotion', 'offre spéciale', 'soldes', 'réduction', 'promo',
+                    'marketing', 'publicité', 'pub', 'annonce'
                 ],
-                strong: ['promo', 'deal', 'offer', 'sale', 'discount'],
-                weak: ['update', 'discover', 'new'],
+                strong: ['promo', 'deal', 'offer', 'sale', 'discount', 'nouveauté', 'lancement'],
+                weak: ['update', 'discover', 'new', 'découvrir', 'nouveau'],
+                exclusions: ['facture', 'invoice', 'payment', 'paiement', 'urgent']
+            },
+            
+            cc: {
+                absolute: [],
+                strong: ['cc:', 'copie', 'en copie', 'forwarded', 'transféré', 'fwd:'],
+                weak: ['info', 'information', 'fyi', 'pour info'],
                 exclusions: []
             },
-            // ... toutes les autres catégories avec leurs mots-clés
+            
+            security: {
+                absolute: [
+                    'alerte sécurité', 'security alert', 'connexion détectée', 'login detected',
+                    'mot de passe', 'password', 'authentification', 'authentication',
+                    'code de vérification', 'verification code', '2fa', 'double authentification'
+                ],
+                strong: ['sécurité', 'security', 'connexion', 'login', 'authentification'],
+                weak: ['compte', 'account', 'accès', 'access'],
+                exclusions: []
+            },
+            
+            finance: {
+                absolute: [
+                    'facture', 'invoice', 'paiement', 'payment', 'échéance', 'due date',
+                    'montant dû', 'amount due', 'règlement', 'settlement'
+                ],
+                strong: ['facture', 'invoice', 'paiement', 'payment', 'devis', 'quote'],
+                weak: ['€', ', 'euro', 'dollar', 'prix', 'price', 'coût', 'cost'],
+                exclusions: ['gratuit', 'free', 'offert']
+            },
+            
+            tasks: {
+                absolute: [
+                    'action requise', 'action required', 'à faire', 'todo', 'urgent',
+                    'deadline', 'échéance', 'priorité', 'priority', 'important'
+                ],
+                strong: ['urgent', 'important', 'priorité', 'deadline', 'action', 'tâche'],
+                weak: ['merci de', 'please', 'pouvez-vous', 'can you', 'demande'],
+                exclusions: ['information', 'info', 'fyi']
+            },
+            
+            commercial: {
+                absolute: [
+                    'devis', 'quote', 'proposition', 'proposal', 'contrat', 'contract',
+                    'opportunité', 'opportunity', 'vente', 'sale'
+                ],
+                strong: ['devis', 'proposition', 'contrat', 'vente', 'commercial'],
+                weak: ['client', 'customer', 'prospect', 'offre', 'offer'],
+                exclusions: []
+            },
+            
+            meetings: {
+                absolute: [
+                    'invitation', 'meeting', 'réunion', 'rendez-vous', 'appointment',
+                    'calendrier', 'calendar', 'planning'
+                ],
+                strong: ['réunion', 'meeting', 'rendez-vous', 'invitation', 'calendar'],
+                weak: ['planning', 'agenda', 'disponibilité', 'availability'],
+                exclusions: []
+            },
+            
+            support: {
+                absolute: [
+                    'ticket', 'support', 'assistance', 'help', 'aide', 'problème',
+                    'problem', 'bug', 'erreur', 'error'
+                ],
+                strong: ['support', 'assistance', 'ticket', 'help', 'problème'],
+                weak: ['question', 'demande', 'request'],
+                exclusions: []
+            },
+            
+            reminders: {
+                absolute: [
+                    'rappel', 'reminder', 'relance', 'follow up', 'n\'oubliez pas',
+                    'don\'t forget', 'échéance', 'expiration'
+                ],
+                strong: ['rappel', 'reminder', 'relance', 'follow', 'échéance'],
+                weak: ['bientôt', 'soon', 'prochainement'],
+                exclusions: []
+            }
+        };
+        
+        console.log('[CategoryManager] ✅ Mots-clés initialisés');
+    }
+
+    loadCustomCategories() {
+        try {
+            const saved = localStorage.getItem('customCategories');
+            if (saved) {
+                this.customCategories = JSON.parse(saved);
+                
+                Object.entries(this.customCategories).forEach(([id, category]) => {
+                    this.categories[id] = { ...category, isCustom: true };
+                    
+                    if (category.keywords) {
+                        this.weightedKeywords[id] = { ...category.keywords };
+                    }
+                });
+                
+                console.log('[CategoryManager] ✅ Catégories personnalisées chargées:', Object.keys(this.customCategories));
+            }
+        } catch (error) {
+            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
+            this.customCategories = {};
+        }
+    }
+
+    setupEventListeners() {
+        if (this.eventListenersSetup) return;
+
+        try {
+            this.settingsChangeHandler = (event) => {
+                console.log('[CategoryManager] 📨 Changement paramètres reçu:', event.detail);
+                this.handleSettingsChanged(event.detail);
+            };
+
+            this.forceSyncHandler = (event) => {
+                console.log('[CategoryManager] 🚀 Synchronisation forcée reçue:', event.detail);
+                this.handleForcedSync(event.detail);
+            };
+
+            window.addEventListener('settingsChanged', this.settingsChangeHandler);
+            window.addEventListener('forceSynchronization', this.forceSyncHandler);
+
+            this.eventListenersSetup = true;
+            console.log('[CategoryManager] ✅ Event listeners configurés');
+            
+        } catch (error) {
+            console.error('[CategoryManager] Erreur setup event listeners:', error);
+        }
+    }
+
+    handleSettingsChanged(settingsData) {
+        if (settingsData.settings) {
+            this.updateSettings(settingsData.settings);
+        }
+    }
+
+    handleForcedSync(syncData) {
+        if (syncData.settings) {
+            this.updateSettings(syncData.settings);
+        }
+        this.forceSynchronization();
+    }
+
+    initializeTaskPreselectedCategories() {
+        try {
+            if (this.settings && Array.isArray(this.settings.taskPreselectedCategories)) {
+                this.taskPreselectedCategories = [...this.settings.taskPreselectedCategories];
+            } else {
+                this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+                if (!this.settings) this.settings = {};
+                this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
+                this.saveSettings();
+            }
+            console.log('[CategoryManager] ✅ Catégories pré-sélectionnées initialisées:', this.taskPreselectedCategories);
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur initialisation catégories pré-sélectionnées:', error);
+            this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+        }
+    }
+
+    // ================================================
+    // GESTION DES PARAMÈTRES
+    // ================================================
+    loadSettings() {
+        try {
+            const saved = localStorage.getItem('categorySettings');
+            const defaultSettings = this.getDefaultSettings();
+            
+            if (saved) {
+                const parsedSettings = JSON.parse(saved);
+                const mergedSettings = { ...defaultSettings, ...parsedSettings };
+                
+                if (!Array.isArray(mergedSettings.taskPreselectedCategories)) {
+                    console.warn('[CategoryManager] ⚠️ taskPreselectedCategories invalide, correction');
+                    mergedSettings.taskPreselectedCategories = defaultSettings.taskPreselectedCategories;
+                }
+                
+                console.log('[CategoryManager] 📥 Paramètres chargés depuis localStorage');
+                return mergedSettings;
+            } else {
+                console.log('[CategoryManager] 🆕 Utilisation paramètres par défaut');
+                return defaultSettings;
+            }
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur chargement paramètres:', error);
+            return this.getDefaultSettings();
+        }
+    }
+
+    saveSettings(newSettings = null) {
+        try {
+            if (this.syncInProgress) {
+                console.log('[CategoryManager] ⏳ Sync en cours, programmation différée');
+                setTimeout(() => this.saveSettings(newSettings), 100);
+                return;
+            }
+            
+            this.syncInProgress = true;
+            
+            if (newSettings) {
+                console.log('[CategoryManager] 📝 Mise à jour settings avec:', newSettings);
+                this.settings = { ...this.settings, ...newSettings };
+                
+                if (newSettings.taskPreselectedCategories) {
+                    this.taskPreselectedCategories = [...newSettings.taskPreselectedCategories];
+                    console.log('[CategoryManager] 📋 Catégories locales synchronisées:', this.taskPreselectedCategories);
+                }
+            }
+            
+            this.validateSettings();
+            
+            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
+            this.lastSyncTime = Date.now();
+            
+            console.log('[CategoryManager] 💾 Paramètres sauvegardés:', this.settings);
+            
+            setTimeout(() => {
+                this.dispatchEvent('categorySettingsChanged', {
+                    settings: this.settings,
+                    source: 'CategoryManager',
+                    timestamp: this.lastSyncTime,
+                    taskPreselectedCategories: [...this.taskPreselectedCategories]
+                });
+                
+                this.syncCallbacks.forEach(callback => {
+                    try {
+                        callback(this.settings);
+                    } catch (error) {
+                        console.warn('[CategoryManager] Erreur callback sync:', error);
+                    }
+                });
+                
+                this.syncInProgress = false;
+            }, 10);
+            
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
+            this.syncInProgress = false;
+        }
+    }
+
+    validateSettings() {
+        if (!this.settings) {
+            this.settings = this.getDefaultSettings();
+            return;
+        }
+
+        if (!Array.isArray(this.settings.taskPreselectedCategories)) {
+            this.settings.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+        }
+
+        if (!this.settings.scanSettings) {
+            this.settings.scanSettings = this.getDefaultSettings().scanSettings;
+        }
+
+        if (!this.settings.preferences) {
+            this.settings.preferences = this.getDefaultSettings().preferences;
+        }
+
+        if (!this.settings.automationSettings) {
+            this.settings.automationSettings = this.getDefaultSettings().automationSettings;
+        }
+    }
+
+    getDefaultSettings() {
+        return {
+            activeCategories: null,
+            excludedDomains: [],
+            excludedKeywords: [],
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
+            categoryExclusions: {
+                domains: [],
+                emails: []
+            },
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            automationSettings: {
+                autoCreateTasks: false,
+                groupTasksByDomain: false,
+                skipDuplicates: true,
+                autoAssignPriority: false
+            },
+            preferences: {
+                darkMode: false,
+                compactView: false,
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
+            }
         };
     }
 
-    // Toutes les autres méthodes de l'analyse des emails, etc.
-    analyzeEmail(email) { /* Code existant */ }
-    getCategories() { return this.categories; }
-    getCategory(categoryId) { /* Code existant */ }
-    // etc.
+    getSettings() {
+        return { ...this.settings };
+    }
+
+    updateSettings(newSettings) {
+        console.log('[CategoryManager] 📝 updateSettings appelé avec:', newSettings);
+        
+        if (!newSettings || typeof newSettings !== 'object') {
+            console.warn('[CategoryManager] ⚠️ Settings invalides fournis');
+            return;
+        }
+        
+        this.saveSettings(newSettings);
+    }
 
     // ================================================
-    // DEBUG ET MAINTENANCE AMÉLIORÉS
+    // MÉTHODES D'ACCÈS AUX DONNÉES
     // ================================================
-    
+    getCategories() {
+        return { ...this.categories };
+    }
+
+    getCategory(categoryId) {
+        return this.categories[categoryId] || null;
+    }
+
+    getTaskPreselectedCategories() {
+        console.log('[CategoryManager] 📋 getTaskPreselectedCategories retourne:', this.taskPreselectedCategories);
+        return [...this.taskPreselectedCategories];
+    }
+
+    updateTaskPreselectedCategories(categories) {
+        console.log('[CategoryManager] 📋 updateTaskPreselectedCategories appelé avec:', categories);
+        
+        if (!Array.isArray(categories)) {
+            console.warn('[CategoryManager] ⚠️ Categories doit être un array');
+            return false;
+        }
+        
+        this.taskPreselectedCategories = [...categories];
+        this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
+        
+        this.saveSettings();
+        
+        console.log('[CategoryManager] ✅ Catégories pré-sélectionnées mises à jour:', this.taskPreselectedCategories);
+        return true;
+    }
+
+    // ================================================
+    // ANALYSE DES EMAILS
+    // ================================================
+    analyzeEmail(email) {
+        if (!email) {
+            return { category: 'other', score: 0, confidence: 0 };
+        }
+
+        try {
+            const analysis = this.performCategoryAnalysis(email);
+            
+            return {
+                category: analysis.bestCategory || 'other',
+                score: analysis.bestScore || 0,
+                confidence: this.calculateConfidence(analysis.bestScore),
+                matchedPatterns: analysis.matchedPatterns || [],
+                hasAbsolute: analysis.hasAbsolute || false,
+                isSpam: this.detectSpam(email),
+                isCC: this.detectCC(email)
+            };
+        } catch (error) {
+            console.error('[CategoryManager] Erreur analyse email:', error);
+            return { category: 'other', score: 0, confidence: 0, error: error.message };
+        }
+    }
+
+    performCategoryAnalysis(email) {
+        const text = this.extractEmailText(email);
+        const results = {};
+        let bestCategory = null;
+        let bestScore = 0;
+        let hasAbsolute = false;
+        const matchedPatterns = [];
+
+        Object.entries(this.weightedKeywords).forEach(([categoryId, keywords]) => {
+            if (!this.categories[categoryId]) return;
+
+            const categoryScore = this.calculateCategoryScore(text, keywords, email);
+            results[categoryId] = categoryScore;
+
+            if (categoryScore.hasAbsolute) {
+                hasAbsolute = true;
+            }
+
+            if (categoryScore.patterns) {
+                matchedPatterns.push(...categoryScore.patterns);
+            }
+
+            if (categoryScore.totalScore > bestScore) {
+                bestScore = categoryScore.totalScore;
+                bestCategory = categoryId;
+            }
+        });
+
+        return {
+            results,
+            bestCategory,
+            bestScore,
+            hasAbsolute,
+            matchedPatterns
+        };
+    }
+
+    calculateCategoryScore(text, keywords, email) {
+        let totalScore = 0;
+        let hasAbsolute = false;
+        const patterns = [];
+
+        // Mots-clés absolus (100 points)
+        if (keywords.absolute) {
+            keywords.absolute.forEach(keyword => {
+                if (text.includes(keyword.toLowerCase())) {
+                    totalScore += 100;
+                    hasAbsolute = true;
+                    patterns.push({ type: 'absolute', keyword, points: 100 });
+                }
+            });
+        }
+
+        // Mots-clés forts (30 points)
+        if (keywords.strong) {
+            keywords.strong.forEach(keyword => {
+                if (text.includes(keyword.toLowerCase())) {
+                    totalScore += 30;
+                    patterns.push({ type: 'strong', keyword, points: 30 });
+                }
+            });
+        }
+
+        // Mots-clés faibles (10 points)
+        if (keywords.weak) {
+            keywords.weak.forEach(keyword => {
+                if (text.includes(keyword.toLowerCase())) {
+                    totalScore += 10;
+                    patterns.push({ type: 'weak', keyword, points: 10 });
+                }
+            });
+        }
+
+        // Exclusions (score divisé par 2)
+        if (keywords.exclusions) {
+            keywords.exclusions.forEach(keyword => {
+                if (text.includes(keyword.toLowerCase())) {
+                    totalScore = Math.floor(totalScore / 2);
+                    patterns.push({ type: 'exclusion', keyword, points: -totalScore });
+                }
+            });
+        }
+
+        return {
+            totalScore,
+            hasAbsolute,
+            patterns
+        };
+    }
+
+    extractEmailText(email) {
+        let text = '';
+        
+        if (email.subject) {
+            text += email.subject.toLowerCase() + ' ';
+        }
+        
+        if (email.bodyPreview) {
+            text += email.bodyPreview.toLowerCase() + ' ';
+        }
+        
+        if (email.from?.emailAddress?.address) {
+            text += email.from.emailAddress.address.toLowerCase() + ' ';
+        }
+        
+        if (email.from?.emailAddress?.name) {
+            text += email.from.emailAddress.name.toLowerCase() + ' ';
+        }
+        
+        return text;
+    }
+
+    calculateConfidence(score) {
+        if (score >= 100) return 1.0;
+        if (score >= 50) return 0.8;
+        if (score >= 30) return 0.6;
+        if (score >= 10) return 0.4;
+        return 0.2;
+    }
+
+    detectSpam(email) {
+        if (!this.settings.preferences?.excludeSpam) return false;
+        
+        const spamKeywords = ['spam', 'viagra', 'casino', 'lottery', 'winner', 'congratulations'];
+        const text = this.extractEmailText(email);
+        
+        return spamKeywords.some(keyword => text.includes(keyword));
+    }
+
+    detectCC(email) {
+        if (!this.settings.preferences?.detectCC) return false;
+        
+        if (email.ccRecipients && email.ccRecipients.length > 0) return true;
+        if (email.bccRecipients && email.bccRecipients.length > 0) return true;
+        
+        const text = this.extractEmailText(email);
+        return text.includes('cc:') || text.includes('copie');
+    }
+
+    // ================================================
+    // SYNCHRONISATION
+    // ================================================
+    forceSynchronization() {
+        console.log('[CategoryManager] 🚀 Synchronisation forcée');
+        
+        setTimeout(() => {
+            this.dispatchEvent('forceSynchronization', {
+                settings: this.settings,
+                source: 'CategoryManager',
+                timestamp: Date.now()
+            });
+        }, 10);
+    }
+
+    // ================================================
+    // CATÉGORIES PERSONNALISÉES - CRUD
+    // ================================================
+    createCustomCategory(categoryData) {
+        try {
+            const id = this.generateCategoryId(categoryData.name);
+            
+            if (this.categories[id]) {
+                throw new Error('Une catégorie avec ce nom existe déjà');
+            }
+            
+            const category = {
+                id,
+                name: categoryData.name,
+                icon: categoryData.icon,
+                color: categoryData.color,
+                description: categoryData.description || '',
+                priority: categoryData.priority || 50,
+                isCustom: true,
+                createdAt: new Date().toISOString()
+            };
+            
+            this.customCategories[id] = category;
+            this.categories[id] = category;
+            
+            if (categoryData.keywords) {
+                this.weightedKeywords[id] = this.processKeywords(categoryData.keywords);
+            }
+            
+            this.saveCustomCategories();
+            
+            console.log('[CategoryManager] ✅ Catégorie personnalisée créée:', category);
+            return category;
+        } catch (error) {
+            console.error('[CategoryManager] Erreur création catégorie:', error);
+            throw error;
+        }
+    }
+
+    updateCustomCategory(categoryId, updates) {
+        try {
+            if (!this.customCategories[categoryId]) {
+                throw new Error('Catégorie personnalisée non trouvée');
+            }
+            
+            const updatedCategory = {
+                ...this.customCategories[categoryId],
+                ...updates,
+                id: categoryId,
+                isCustom: true,
+                updatedAt: new Date().toISOString()
+            };
+            
+            this.customCategories[categoryId] = updatedCategory;
+            this.categories[categoryId] = updatedCategory;
+            
+            if (updates.keywords) {
+                this.weightedKeywords[categoryId] = this.processKeywords(updates.keywords);
+            }
+            
+            this.saveCustomCategories();
+            
+            console.log('[CategoryManager] ✅ Catégorie personnalisée mise à jour:', updatedCategory);
+            return true;
+        } catch (error) {
+            console.error('[CategoryManager] Erreur mise à jour catégorie:', error);
+            throw error;
+        }
+    }
+
+    deleteCustomCategory(categoryId) {
+        try {
+            if (!this.customCategories[categoryId]) {
+                throw new Error('Catégorie personnalisée non trouvée');
+            }
+            
+            const category = this.customCategories[categoryId];
+            
+            delete this.customCategories[categoryId];
+            delete this.categories[categoryId];
+            delete this.weightedKeywords[categoryId];
+            
+            // Retirer des catégories pré-sélectionnées
+            if (this.taskPreselectedCategories.includes(categoryId)) {
+                this.taskPreselectedCategories = this.taskPreselectedCategories.filter(id => id !== categoryId);
+                this.settings.taskPreselectedCategories = [...this.taskPreselectedCategories];
+                this.saveSettings();
+            }
+            
+            this.saveCustomCategories();
+            
+            console.log('[CategoryManager] ✅ Catégorie personnalisée supprimée:', category.name);
+            return true;
+        } catch (error) {
+            console.error('[CategoryManager] Erreur suppression catégorie:', error);
+            throw error;
+        }
+    }
+
+    saveCustomCategories() {
+        try {
+            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
+            console.log('[CategoryManager] ✅ Catégories personnalisées sauvegardées');
+            
+            this.dispatchEvent('customCategoriesChanged', {
+                customCategories: { ...this.customCategories },
+                allCategories: { ...this.categories },
+                source: 'CategoryManager'
+            });
+        } catch (error) {
+            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
+        }
+    }
+
+    generateCategoryId(name) {
+        const baseName = name.toLowerCase()
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+        
+        let id = `custom_${baseName}`;
+        let counter = 1;
+        
+        while (this.categories[id]) {
+            id = `custom_${baseName}_${counter}`;
+            counter++;
+        }
+        
+        return id;
+    }
+
+    processKeywords(rawKeywords) {
+        const processed = {};
+        
+        for (const [type, keywordsList] of Object.entries(rawKeywords)) {
+            if (Array.isArray(keywordsList)) {
+                processed[type] = keywordsList
+                    .map(kw => kw.trim().toLowerCase())
+                    .filter(kw => kw.length > 0)
+                    .filter((kw, index, arr) => arr.indexOf(kw) === index);
+            }
+        }
+        
+        return processed;
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    dispatchEvent(eventName, detail) {
+        try {
+            window.dispatchEvent(new CustomEvent(eventName, { detail }));
+        } catch (error) {
+            console.error(`[CategoryManager] Erreur dispatch ${eventName}:`, error);
+        }
+    }
+
     getDebugInfo() {
-        const baseInfo = {
-            version: '18.0',
+        return {
+            version: '19.0',
             isInitialized: this.isInitialized,
             totalCategories: Object.keys(this.categories).length,
             customCategories: Object.keys(this.customCategories).length,
-            systemCategories: Object.keys(this.categories).length - Object.keys(this.customCategories).length,
             taskPreselectedCategories: [...this.taskPreselectedCategories],
             settings: this.settings,
             lastSyncTime: this.lastSyncTime,
             syncInProgress: this.syncInProgress,
             eventListenersSetup: this.eventListenersSetup
         };
-
-        // Ajouter les détails des catégories personnalisées
-        const customCategoriesDetails = {};
-        Object.entries(this.customCategories).forEach(([id, category]) => {
-            customCategoriesDetails[id] = {
-                name: category.name,
-                hasKeywords: !!this.weightedKeywords[id],
-                priority: category.priority,
-                createdAt: category.createdAt,
-                updatedAt: category.updatedAt
-            };
-        });
-
-        return {
-            ...baseInfo,
-            customCategoriesDetails,
-            integrityCheck: this.validateCategoriesIntegrity()
-        };
     }
 
     // ================================================
-    // NETTOYAGE AMÉLIORÉ
+    // NETTOYAGE
     // ================================================
-    
     cleanup() {
         if (this.settingsChangeHandler) {
             window.removeEventListener('settingsChanged', this.settingsChangeHandler);
@@ -994,4 +902,4 @@ if (window.categoryManager) {
 
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v18.0 loaded - CRUD complet des catégories personnalisées');
+console.log('✅ CategoryManager v19.0 loaded - Correction complète des erreurs');
