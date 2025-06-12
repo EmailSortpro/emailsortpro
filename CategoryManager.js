@@ -5,16 +5,87 @@ class CategoryManager {
         this.categories = {};
         this.weightedKeywords = {};
         this.customCategories = {}; // Nouvelles catégories personnalisées
-        this.settings = this.loadSettings();
         this.isInitialized = false;
         this.debugMode = false;
+        
+        // CORRECTION: Charger et corriger les paramètres en premier
+        this.settings = this.loadAndFixSettings();
         
         this.initializeCategories();
         this.loadCustomCategories();
         this.initializeWeightedDetection();
         this.setupEventListeners();
         
-        console.log('[CategoryManager] ✅ Version 17.1 - Patterns étendus et catégories personnalisées');
+        console.log('[CategoryManager] ✅ Version 17.1 - Patterns étendus et catégories personnalisées avec corrections intégrées');
+    }
+
+    // ================================================
+    // CHARGEMENT ET CORRECTION AUTOMATIQUE DES PARAMÈTRES
+    // ================================================
+    loadAndFixSettings() {
+        try {
+            const defaultSettings = this.getDefaultSettings();
+            let settings = defaultSettings;
+            
+            // Tenter de charger les paramètres existants
+            const saved = localStorage.getItem('categorySettings');
+            if (saved) {
+                try {
+                    const parsedSettings = JSON.parse(saved);
+                    
+                    // Merge intelligent pour préserver les paramètres existants tout en ajoutant les nouveaux défauts
+                    settings = {
+                        ...defaultSettings,
+                        ...parsedSettings,
+                        // S'assurer que les sous-objets sont bien mergés
+                        scanSettings: { ...defaultSettings.scanSettings, ...(parsedSettings.scanSettings || {}) },
+                        automationSettings: { ...defaultSettings.automationSettings, ...(parsedSettings.automationSettings || {}) },
+                        preferences: { ...defaultSettings.preferences, ...(parsedSettings.preferences || {}) },
+                        categoryExclusions: { ...defaultSettings.categoryExclusions, ...(parsedSettings.categoryExclusions || {}) }
+                    };
+                    
+                    console.log('[CategoryManager] 📋 Paramètres existants chargés et mergés');
+                } catch (parseError) {
+                    console.warn('[CategoryManager] ⚠️ Paramètres corrompus, utilisation des défauts:', parseError);
+                }
+            } else {
+                console.log('[CategoryManager] 🆕 Aucun paramètre existant, création des défauts');
+            }
+            
+            // CORRECTION CRITIQUE: Vérifier et corriger taskPreselectedCategories
+            let needsSave = false;
+            
+            if (!settings.taskPreselectedCategories || !Array.isArray(settings.taskPreselectedCategories) || settings.taskPreselectedCategories.length === 0) {
+                settings.taskPreselectedCategories = defaultSettings.taskPreselectedCategories;
+                needsSave = true;
+                console.log('[CategoryManager] 🔧 Correction taskPreselectedCategories appliquée:', defaultSettings.taskPreselectedCategories);
+            }
+            
+            // Vérifier que toutes les propriétés critiques existent
+            const criticalProps = ['activeCategories', 'scanSettings', 'automationSettings', 'preferences', 'categoryExclusions'];
+            criticalProps.forEach(prop => {
+                if (!settings[prop]) {
+                    settings[prop] = defaultSettings[prop];
+                    needsSave = true;
+                    console.log(`[CategoryManager] 🔧 Propriété manquante ${prop} ajoutée`);
+                }
+            });
+            
+            // Sauvegarder immédiatement si des corrections ont été appliquées
+            if (needsSave || !saved) {
+                this.saveSettingsImmediate(settings);
+                console.log('[CategoryManager] 💾 Paramètres corrigés sauvegardés');
+            }
+            
+            console.log('[CategoryManager] ✅ Paramètres finaux avec taskPreselectedCategories:', settings.taskPreselectedCategories);
+            return settings;
+            
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur critique lors du chargement, utilisation des défauts:', error);
+            const defaultSettings = this.getDefaultSettings();
+            this.saveSettingsImmediate(defaultSettings);
+            return defaultSettings;
+        }
     }
 
     // ================================================
@@ -171,22 +242,7 @@ class CategoryManager {
     // ================================================
     // GESTION DES PARAMÈTRES CENTRALISÉE
     // ================================================
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            const defaultSettings = {
-                activeCategories: null, // null = toutes actives par défaut
-                excludedDomains: [],
-                excludedKeywords: [],
-                taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-                categoryExclusions: {
-                    domains: [],
-                    emails: []
-                },
-                scanSettings: {
-                    defaultPeriod: 7,
-                    defaultFolder: 'inbox',
-                    autoAnalyze: true,
+
                     autoCategrize: true
                 },
                 automationSettings: {
@@ -234,7 +290,7 @@ class CategoryManager {
             activeCategories: null,
             excludedDomains: [],
             excludedKeywords: [],
-            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'], // CORRECTION: Par défaut
             categoryExclusions: { domains: [], emails: [] },
             scanSettings: {
                 defaultPeriod: 7,
@@ -277,8 +333,56 @@ class CategoryManager {
         return this.settings.automationSettings;
     }
 
+    saveSettingsImmediate(settings) {
+        try {
+            localStorage.setItem('categorySettings', JSON.stringify(settings));
+            console.log('[CategoryManager] 💾 Paramètres sauvegardés immédiatement');
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur sauvegarde immédiate:', error);
+        }
+    }
+
+    // ================================================
+    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES - AVEC CORRECTIONS
+    // ================================================
+    getSettings() {
+        // CORRECTION: S'assurer que les paramètres sont toujours valides
+        if (!this.settings.taskPreselectedCategories || this.settings.taskPreselectedCategories.length === 0) {
+            console.log('[CategoryManager] 🔧 Correction taskPreselectedCategories dans getSettings');
+            this.settings.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+            this.saveSettingsImmediate(this.settings);
+        }
+        return { ...this.settings };
+    }
+
+    updateSettings(newSettings) {
+        this.saveSettings(newSettings);
+    }
+
+    getScanSettings() {
+        return this.settings.scanSettings || this.getDefaultSettings().scanSettings;
+    }
+
+    getAutomationSettings() {
+        return this.settings.automationSettings || this.getDefaultSettings().automationSettings;
+    }
+
     getTaskPreselectedCategories() {
-        return this.settings.taskPreselectedCategories || [];
+        const preselected = this.settings.taskPreselectedCategories;
+        
+        // CORRECTION: S'assurer qu'il y a toujours des catégories par défaut
+        if (!preselected || !Array.isArray(preselected) || preselected.length === 0) {
+            const defaultCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+            console.log('[CategoryManager] 🔧 Aucune catégorie pré-sélectionnée, application des défauts:', defaultCategories);
+            
+            // Mettre à jour les paramètres immédiatement
+            this.settings.taskPreselectedCategories = defaultCategories;
+            this.saveSettingsImmediate(this.settings);
+            return defaultCategories;
+        }
+        
+        console.log('[CategoryManager] ✅ Catégories pré-sélectionnées valides:', preselected);
+        return preselected;
     }
 
     shouldExcludeSpam() {
