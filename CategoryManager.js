@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 17.1 - Patterns étendus et catégories personnalisées
+// CategoryManager.js - Version 17.2 - Intégral avec fixes synchronisation
 
 class CategoryManager {
     constructor() {
@@ -8,13 +8,14 @@ class CategoryManager {
         this.settings = this.loadSettings();
         this.isInitialized = false;
         this.debugMode = false;
+        this.eventListenersSetup = false; // Éviter les doublons
         
         this.initializeCategories();
         this.loadCustomCategories();
         this.initializeWeightedDetection();
         this.setupEventListeners();
         
-        console.log('[CategoryManager] ✅ Version 17.1 - Patterns étendus et catégories personnalisées');
+        console.log('[CategoryManager] ✅ Version 17.2 - Intégral avec fixes synchronisation');
     }
 
     // ================================================
@@ -80,10 +81,13 @@ class CategoryManager {
 
         this.saveCustomCategories();
         
-        // Notifier les autres modules
-        window.dispatchEvent(new CustomEvent('categoryCreated', {
-            detail: { categoryId: id, category: category }
-        }));
+        // Notifier les autres modules avec délai pour éviter les conflits
+        setTimeout(() => {
+            this.dispatchEvent('categoryCreated', {
+                categoryId: id, 
+                category: category
+            });
+        }, 10);
 
         console.log('[CategoryManager] Catégorie personnalisée créée:', category);
         return category;
@@ -109,9 +113,12 @@ class CategoryManager {
         this.saveCustomCategories();
         
         // Notifier les autres modules
-        window.dispatchEvent(new CustomEvent('categoryUpdated', {
-            detail: { categoryId, category: this.categories[categoryId] }
-        }));
+        setTimeout(() => {
+            this.dispatchEvent('categoryUpdated', {
+                categoryId, 
+                category: this.categories[categoryId]
+            });
+        }, 10);
 
         console.log('[CategoryManager] Catégorie personnalisée mise à jour:', categoryId);
         return this.categories[categoryId];
@@ -134,9 +141,9 @@ class CategoryManager {
         this.saveCustomCategories();
         
         // Notifier les autres modules
-        window.dispatchEvent(new CustomEvent('categoryDeleted', {
-            detail: { categoryId }
-        }));
+        setTimeout(() => {
+            this.dispatchEvent('categoryDeleted', { categoryId });
+        }, 10);
 
         console.log('[CategoryManager] Catégorie personnalisée supprimée:', categoryId);
     }
@@ -169,40 +176,12 @@ class CategoryManager {
     }
 
     // ================================================
-    // GESTION DES PARAMÈTRES CENTRALISÉE
+    // GESTION DES PARAMÈTRES CENTRALISÉE - AMÉLIORÉE
     // ================================================
     loadSettings() {
         try {
             const saved = localStorage.getItem('categorySettings');
-            const defaultSettings = {
-                activeCategories: null, // null = toutes actives par défaut
-                excludedDomains: [],
-                excludedKeywords: [],
-                taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-                categoryExclusions: {
-                    domains: [],
-                    emails: []
-                },
-                scanSettings: {
-                    defaultPeriod: 7,
-                    defaultFolder: 'inbox',
-                    autoAnalyze: true,
-                    autoCategrize: true
-                },
-                automationSettings: {
-                    autoCreateTasks: false,
-                    groupTasksByDomain: false,
-                    skipDuplicates: true,
-                    autoAssignPriority: false
-                },
-                preferences: {
-                    darkMode: false,
-                    compactView: false,
-                    showNotifications: true,
-                    excludeSpam: true,
-                    detectCC: true
-                }
-            };
+            const defaultSettings = this.getDefaultSettings();
             
             return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
         } catch (error) {
@@ -218,10 +197,12 @@ class CategoryManager {
             }
             localStorage.setItem('categorySettings', JSON.stringify(this.settings));
             
-            // Notifier les autres modules
-            window.dispatchEvent(new CustomEvent('categorySettingsChanged', {
-                detail: { settings: this.settings }
-            }));
+            // Notifier les autres modules avec délai pour éviter les conflits
+            setTimeout(() => {
+                this.dispatchEvent('categorySettingsChanged', {
+                    settings: this.settings
+                });
+            }, 10);
             
             console.log('[CategoryManager] Paramètres sauvegardés:', this.settings);
         } catch (error) {
@@ -231,11 +212,14 @@ class CategoryManager {
 
     getDefaultSettings() {
         return {
-            activeCategories: null,
+            activeCategories: null, // null = toutes actives par défaut
             excludedDomains: [],
             excludedKeywords: [],
             taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-            categoryExclusions: { domains: [], emails: [] },
+            categoryExclusions: {
+                domains: [],
+                emails: []
+            },
             scanSettings: {
                 defaultPeriod: 7,
                 defaultFolder: 'inbox',
@@ -297,10 +281,15 @@ class CategoryManager {
     }
 
     // ================================================
-    // LISTENER POUR ÉVÉNEMENTS
+    // LISTENER POUR ÉVÉNEMENTS - AMÉLIORÉ
     // ================================================
     setupEventListeners() {
-        window.addEventListener('settingsChanged', (event) => {
+        if (this.eventListenersSetup) {
+            return; // Éviter les doublons
+        }
+
+        // Handler pour éviter les fuites mémoire
+        this.settingsChangeHandler = (event) => {
             const { type, value } = event.detail;
             console.log(`[CategoryManager] Reçu changement: ${type}`, value);
             
@@ -321,7 +310,29 @@ class CategoryManager {
                     this.updateSettings({ activeCategories: value });
                     break;
             }
-        });
+        };
+
+        window.addEventListener('settingsChanged', this.settingsChangeHandler);
+        this.eventListenersSetup = true;
+        
+        console.log('[CategoryManager] Event listeners configurés');
+    }
+
+    // Méthode pour nettoyer les event listeners
+    cleanup() {
+        if (this.settingsChangeHandler) {
+            window.removeEventListener('settingsChanged', this.settingsChangeHandler);
+        }
+        this.eventListenersSetup = false;
+    }
+
+    // Méthode utilitaire pour dispatcher des événements
+    dispatchEvent(eventName, detail) {
+        try {
+            window.dispatchEvent(new CustomEvent(eventName, { detail }));
+        } catch (error) {
+            console.error(`[CategoryManager] Erreur dispatch ${eventName}:`, error);
+        }
     }
 
     // ================================================
@@ -736,7 +747,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // ANALYSE PRINCIPALE D'EMAIL
+    // ANALYSE PRINCIPALE D'EMAIL - OPTIMISÉE
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -854,7 +865,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // CALCUL DU SCORE
+    // CALCUL DU SCORE - OPTIMISÉ
     // ================================================
     calculateScore(content, keywords, categoryId) {
         let totalScore = 0;
@@ -939,7 +950,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES
+    // MÉTHODES UTILITAIRES - OPTIMISÉES
     // ================================================
     analyzeCategory(content, keywords) {
         return this.calculateScore(content, keywords, 'single');
@@ -1212,9 +1223,12 @@ class CategoryManager {
         console.log(`[CategoryManager] Mots-clés mis à jour pour ${categoryId}`);
         
         // Notifier les autres modules
-        window.dispatchEvent(new CustomEvent('keywordsUpdated', {
-            detail: { categoryId, keywords }
-        }));
+        setTimeout(() => {
+            this.dispatchEvent('keywordsUpdated', {
+                categoryId, 
+                keywords
+            });
+        }, 10);
     }
 
     getCategoryKeywords(categoryId) {
@@ -1229,9 +1243,25 @@ class CategoryManager {
     getAllKeywords() {
         return { ...this.weightedKeywords };
     }
+
+    // ================================================
+    // NETTOYAGE ET DESTRUCTION
+    // ================================================
+    destroy() {
+        this.cleanup();
+        this.categories = {};
+        this.weightedKeywords = {};
+        this.customCategories = {};
+        this.settings = {};
+        console.log('[CategoryManager] Instance détruite');
+    }
 }
 
-// Créer l'instance globale
+// Créer l'instance globale avec nettoyage préalable
+if (window.categoryManager) {
+    window.categoryManager.destroy?.();
+}
+
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v17.1 loaded - Patterns étendus et catégories personnalisées');
+console.log('✅ CategoryManager v17.2 loaded - Intégral avec fixes synchronisation');
