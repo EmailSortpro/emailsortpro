@@ -2589,7 +2589,7 @@ class ModernDomainOrganizer {
 
 async loadAllFolders() {
     try {
-        console.log('[ModernDomainOrganizer] 🚀 Chargement de TOUS les dossiers (version corrigée)...');
+        console.log('[ModernDomainOrganizer] 🚀 Test simple - Chargement dossiers...');
         
         if (!window.authService?.isAuthenticated()) {
             throw new Error('Non authentifié');
@@ -2598,129 +2598,39 @@ async loadAllFolders() {
         const accessToken = await window.authService.getAccessToken();
         this.allFolders.clear();
         
-        // 1. Récupérer les dossiers racine avec plus de détails
-        console.log('[ModernDomainOrganizer] 📁 Récupération des dossiers racine...');
-        const rootResponse = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders?$top=200&$select=id,displayName,parentFolderId,totalItemCount,childFolderCount,wellKnownName', {
+        // Test 1: Requête la plus simple possible
+        console.log('[ModernDomainOrganizer] 📁 Test requête basique...');
+        const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json'
             }
         });
         
-        if (!rootResponse.ok) {
-            throw new Error(`Erreur API: ${rootResponse.status} ${rootResponse.statusText}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[ModernDomainOrganizer] ❌ Erreur détaillée:', errorText);
+            throw new Error(`Erreur API: ${response.status} - ${errorText}`);
         }
         
-        const rootData = await rootResponse.json();
-        console.log(`[ModernDomainOrganizer] ✅ ${rootData.value.length} dossiers racine récupérés`);
+        const data = await response.json();
+        console.log(`[ModernDomainOrganizer] ✅ ${data.value.length} dossiers récupérés`);
+        console.log('[ModernDomainOrganizer] 📋 Liste des dossiers:', data.value.map(f => f.displayName));
         
-        // Ajouter les dossiers racine
-        rootData.value.forEach(folder => {
-            this.addFolderToCache(folder);
+        // Ajouter tous les dossiers
+        data.value.forEach(folder => {
+            const folderKey = folder.displayName.toLowerCase().trim();
+            this.allFolders.set(folderKey, {
+                id: folder.id,
+                displayName: folder.displayName,
+                totalItemCount: folder.totalItemCount || 0,
+                parentFolderId: folder.parentFolderId,
+                childFolderCount: folder.childFolderCount || 0
+            });
+            console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}"`);
         });
         
-        // 2. Récupérer TOUS les sous-dossiers récursivement
-        const foldersToProcess = [...rootData.value];
-        const processedIds = new Set();
-        
-        while (foldersToProcess.length > 0) {
-            const currentFolder = foldersToProcess.shift();
-            
-            if (processedIds.has(currentFolder.id)) {
-                continue;
-            }
-            processedIds.add(currentFolder.id);
-            
-            // Si le dossier a des enfants, les récupérer
-            if (currentFolder.childFolderCount > 0) {
-                try {
-                    console.log(`[ModernDomainOrganizer] 📂 Récupération des sous-dossiers de "${currentFolder.displayName}"`);
-                    
-                    const childResponse = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${currentFolder.id}/childFolders?$top=200&$select=id,displayName,parentFolderId,totalItemCount,childFolderCount,wellKnownName`, {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    if (childResponse.ok) {
-                        const childData = await childResponse.json();
-                        console.log(`[ModernDomainOrganizer] ✅ ${childData.value.length} sous-dossiers trouvés dans "${currentFolder.displayName}"`);
-                        
-                        childData.value.forEach(childFolder => {
-                            this.addFolderToCache(childFolder);
-                            
-                            // Ajouter à la queue pour traitement ultérieur
-                            if (childFolder.childFolderCount > 0) {
-                                foldersToProcess.push(childFolder);
-                            }
-                        });
-                    }
-                    
-                    // Pause pour éviter les rate limits
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                } catch (childError) {
-                    console.warn(`[ModernDomainOrganizer] ⚠️ Erreur récupération enfants de "${currentFolder.displayName}":`, childError);
-                }
-            }
-        }
-        
-        // 3. Récupérer les dossiers spéciaux par nom bien connu
-        const wellKnownFolders = [
-            'inbox', 'sentitems', 'deleteditems', 'drafts', 
-            'junkemail', 'outbox', 'archive', 'notes'
-        ];
-        
-        for (const folderName of wellKnownFolders) {
-            try {
-                console.log(`[ModernDomainOrganizer] 🔍 Vérification dossier spécial: ${folderName}`);
-                
-                const specialResponse = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${folderName}?$select=id,displayName,parentFolderId,totalItemCount,childFolderCount,wellKnownName`, {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (specialResponse.ok) {
-                    const specialFolder = await specialResponse.json();
-                    this.addFolderToCache(specialFolder);
-                    console.log(`[ModernDomainOrganizer] ✅ Dossier spécial ajouté: "${specialFolder.displayName}"`);
-                }
-                
-                await new Promise(resolve => setTimeout(resolve, 50));
-                
-            } catch (specialError) {
-                console.log(`[ModernDomainOrganizer] ℹ️ Dossier spécial "${folderName}" non accessible:`, specialError.message);
-            }
-        }
-        
-        // 4. Afficher le résumé final
-        console.log(`[ModernDomainOrganizer] 🎉 RÉCAPITULATIF FINAL:`);
-        console.log(`[ModernDomainOrganizer] ✅ Total des dossiers chargés: ${this.allFolders.size}`);
-        
-        // Grouper par type pour un meilleur aperçu
-        const foldersByType = {
-            system: [],
-            custom: [],
-            root: []
-        };
-        
-        this.allFolders.forEach(folder => {
-            if (folder.wellKnownName) {
-                foldersByType.system.push(folder.displayName);
-            } else if (!folder.parentFolderId) {
-                foldersByType.root.push(folder.displayName);
-            } else {
-                foldersByType.custom.push(folder.displayName);
-            }
-        });
-        
-        console.log(`[ModernDomainOrganizer] 📁 Dossiers système (${foldersByType.system.length}):`, foldersByType.system);
-        console.log(`[ModernDomainOrganizer] 📂 Dossiers racine (${foldersByType.root.length}):`, foldersByType.root);
-        console.log(`[ModernDomainOrganizer] 📁 Dossiers personnalisés (${foldersByType.custom.length}):`, foldersByType.custom);
-        
+        console.log(`[ModernDomainOrganizer] 🎉 Total chargé: ${this.allFolders.size} dossiers`);
         this.updateStat('existingFolders', this.allFolders.size);
         
         return Array.from(this.allFolders.values());
