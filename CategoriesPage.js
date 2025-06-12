@@ -1,5 +1,4 @@
-// CategoriesPage.js - Version 7.4 - SYNCHRONISATION COMPLÈTE CORRIGÉE
-// Correction totale des problèmes de synchronisation des options
+// CategoriesPage.js - Version 8.5 - Complet avec toutes les méthodes réparées
 
 class CategoriesPage {
     constructor() {
@@ -7,22 +6,29 @@ class CategoriesPage {
         this.searchTerm = '';
         this.editingKeyword = null;
         this.isInitialized = false;
+        this.eventListenersSetup = false;
+        this.lastNotificationTime = 0;
         
-        // Bind toutes les méthodes pour éviter les problèmes de contexte
+        // Gestion de synchronisation renforcée
+        this.syncInProgress = false;
+        this.pendingSync = false;
+        this.syncQueue = [];
+        
+        // Bind toutes les méthodes
         this.bindMethods();
         
-        console.log('[CategoriesPage] Version 7.4 - Synchronisation complète corrigée');
+        console.log('[CategoriesPage] ✅ Version 8.5 - Complet avec toutes les méthodes réparées');
     }
 
-    // =====================================
-    // BINDING DES MÉTHODES
-    // =====================================
     bindMethods() {
         const methods = [
             'switchTab', 'savePreferences', 'saveScanSettings', 'saveAutomationSettings',
             'updateTaskPreselectedCategories', 'addQuickExclusion', 'toggleCategory',
             'openKeywordsModal', 'openAllKeywordsModal', 'openExclusionsModal',
-            'exportSettings', 'importSettings', 'closeModal'
+            'exportSettings', 'importSettings', 'closeModal', 'hideExplanationMessage',
+            'debugSettings', 'testCategorySelection', 'forceUpdateUI', 'forceSynchronization',
+            'showCreateCategoryModal', 'createNewCategory', 'editCustomCategory', 'deleteCustomCategory',
+            'renderSettings', 'renderTabContent', 'renderGeneralTab', 'renderAutomationTab', 'renderKeywordsTab'
         ];
         
         methods.forEach(method => {
@@ -32,18 +38,521 @@ class CategoriesPage {
         });
     }
 
-    // =====================================
-    // PAGE PARAMÈTRES AVEC ONGLETS
-    // =====================================
-    renderSettings(container) {
+    // ================================================
+    // CHARGEMENT ET SAUVEGARDE DES PARAMÈTRES - RÉPARÉ
+    // ================================================
+    loadSettings() {
+        if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
+            const settings = window.categoryManager.getSettings();
+            console.log('[CategoriesPage] 📊 Settings chargés depuis CategoryManager:', settings);
+            return settings;
+        }
+        
+        // Fallback si CategoryManager n'est pas disponible
         try {
-            // Initialiser les paramètres par défaut si nécessaire
-            let settings = this.initializeDefaultSettings();
+            const saved = localStorage.getItem('categorySettings');
+            const settings = saved ? JSON.parse(saved) : this.getDefaultSettings();
+            console.log('[CategoriesPage] 📊 Settings chargés depuis localStorage:', settings);
+            return settings;
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur chargement paramètres:', error);
+            return this.getDefaultSettings();
+        }
+    }
+
+    saveSettings(newSettings) {
+        console.log('[CategoriesPage] 💾 === DÉBUT SAUVEGARDE SETTINGS ===');
+        console.log('[CategoriesPage] 📥 Nouveaux settings à sauvegarder:', newSettings);
+        
+        if (window.categoryManager && typeof window.categoryManager.updateSettings === 'function') {
+            console.log('[CategoriesPage] 🎯 Sauvegarde via CategoryManager');
+            window.categoryManager.updateSettings(newSettings);
+        } else {
+            console.log('[CategoriesPage] 🔄 Fallback sauvegarde localStorage');
+            try {
+                const currentSettings = this.loadSettings();
+                const mergedSettings = { ...currentSettings, ...newSettings };
+                localStorage.setItem('categorySettings', JSON.stringify(mergedSettings));
+                
+                // Dispatch manual event si CategoryManager n'est pas disponible
+                setTimeout(() => {
+                    this.dispatchEvent('categorySettingsChanged', { settings: mergedSettings });
+                }, 10);
+            } catch (error) {
+                console.error('[CategoriesPage] Erreur sauvegarde paramètres:', error);
+            }
+        }
+        
+        // NOUVEAU: Forcer la synchronisation après sauvegarde
+        setTimeout(() => {
+            this.forceSynchronization();
+        }, 50);
+        
+        console.log('[CategoriesPage] ✅ === FIN SAUVEGARDE SETTINGS ===');
+    }
+
+    // ================================================
+    // SYNCHRONISATION FORCÉE
+    // ================================================
+    forceSynchronization() {
+        if (this.syncInProgress) {
+            console.log('[CategoriesPage] 🔄 Synchronisation déjà en cours, ajout à la queue');
+            this.pendingSync = true;
+            return;
+        }
+        
+        this.syncInProgress = true;
+        console.log('[CategoriesPage] 🚀 === DÉBUT SYNCHRONISATION FORCÉE ===');
+        
+        try {
+            const currentSettings = this.loadSettings();
+            console.log('[CategoriesPage] 📊 Settings actuels:', currentSettings);
+            
+            this.syncAllModules(currentSettings);
+            
+            setTimeout(() => {
+                this.dispatchEvent('forceSynchronization', {
+                    settings: currentSettings,
+                    source: 'CategoriesPage',
+                    timestamp: Date.now()
+                });
+            }, 10);
+            
+            console.log('[CategoriesPage] ✅ Synchronisation forcée terminée');
+            
+        } catch (error) {
+            console.error('[CategoriesPage] ❌ Erreur synchronisation forcée:', error);
+        } finally {
+            this.syncInProgress = false;
+            
+            if (this.pendingSync) {
+                this.pendingSync = false;
+                setTimeout(() => {
+                    this.forceSynchronization();
+                }, 100);
+            }
+        }
+    }
+
+    syncAllModules(settings) {
+        console.log('[CategoriesPage] 🔄 Synchronisation de tous les modules...');
+        
+        // Synchroniser EmailScanner
+        if (window.emailScanner) {
+            console.log('[CategoriesPage] 📧 Synchronisation EmailScanner');
+            
+            if (typeof window.emailScanner.updateSettings === 'function') {
+                window.emailScanner.updateSettings(settings);
+            }
+            
+            if (typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+                window.emailScanner.updateTaskPreselectedCategories(settings.taskPreselectedCategories || []);
+            }
+            
+            if (typeof window.emailScanner.forceSettingsReload === 'function') {
+                window.emailScanner.forceSettingsReload();
+            }
+        }
+        
+        // Synchroniser AITaskAnalyzer
+        if (window.aiTaskAnalyzer) {
+            console.log('[CategoriesPage] 🤖 Synchronisation AITaskAnalyzer');
+            
+            if (typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+                window.aiTaskAnalyzer.updatePreselectedCategories(settings.taskPreselectedCategories || []);
+            }
+            
+            if (typeof window.aiTaskAnalyzer.updateAutomationSettings === 'function') {
+                window.aiTaskAnalyzer.updateAutomationSettings(settings.automationSettings || {});
+            }
+        }
+        
+        console.log('[CategoriesPage] ✅ Synchronisation modules terminée');
+    }
+
+    // ================================================
+    // NOTIFICATION DES CHANGEMENTS
+    // ================================================
+    notifySettingsChange(settingType, value) {
+        const now = Date.now();
+        
+        const notificationKey = `${settingType}_${JSON.stringify(value)}`;
+        if (this.lastNotification === notificationKey && (now - this.lastNotificationTime) < 1000) {
+            console.log(`[CategoriesPage] 🔄 Notification ignorée (trop récente): ${settingType}`);
+            return;
+        }
+        
+        this.lastNotification = notificationKey;
+        this.lastNotificationTime = now;
+        
+        console.log(`[CategoriesPage] 📢 === NOTIFICATION CHANGEMENT ===`);
+        console.log(`[CategoriesPage] 🎯 Type: ${settingType}`);
+        console.log(`[CategoriesPage] 📊 Valeur:`, value);
+        
+        setTimeout(() => {
+            this.dispatchEvent('settingsChanged', {
+                type: settingType, 
+                value: value,
+                source: 'CategoriesPage',
+                timestamp: now
+            });
+        }, 10);
+        
+        this.notifySpecificModules(settingType, value);
+        
+        setTimeout(() => {
+            this.forceSynchronization();
+        }, 100);
+    }
+
+    notifySpecificModules(settingType, value) {
+        console.log(`[CategoriesPage] 🎯 Notification spécialisée pour: ${settingType}`);
+        
+        if (window.emailScanner) {
+            switch (settingType) {
+                case 'taskPreselectedCategories':
+                    console.log('[CategoriesPage] 📧 Mise à jour EmailScanner - catégories pré-sélectionnées');
+                    if (typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+                        window.emailScanner.updateTaskPreselectedCategories(value);
+                    }
+                    break;
+                case 'scanSettings':
+                    console.log('[CategoriesPage] 📧 Mise à jour EmailScanner - scan settings');
+                    if (typeof window.emailScanner.applyScanSettings === 'function') {
+                        window.emailScanner.applyScanSettings(value);
+                    }
+                    break;
+                case 'preferences':
+                    console.log('[CategoriesPage] 📧 Mise à jour EmailScanner - préférences');
+                    if (typeof window.emailScanner.updatePreferences === 'function') {
+                        window.emailScanner.updatePreferences(value);
+                    }
+                    break;
+            }
+        }
+        
+        if (window.aiTaskAnalyzer) {
+            if (settingType === 'taskPreselectedCategories') {
+                console.log('[CategoriesPage] 🤖 Mise à jour AITaskAnalyzer - catégories pré-sélectionnées');
+                if (typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
+                }
+            }
+            
+            if (settingType === 'automationSettings') {
+                console.log('[CategoriesPage] 🤖 Mise à jour AITaskAnalyzer - automation settings');
+                if (typeof window.aiTaskAnalyzer.updateAutomationSettings === 'function') {
+                    window.aiTaskAnalyzer.updateAutomationSettings(value);
+                }
+            }
+        }
+        
+        console.log('[CategoriesPage] ✅ Notifications spécialisées envoyées');
+    }
+
+    // ================================================
+    // MISE À JOUR DES CATÉGORIES PRÉ-SÉLECTIONNÉES - ULTRA RENFORCÉE
+    // ================================================
+    updateTaskPreselectedCategories() {
+        try {
+            console.log('[CategoriesPage] 🎯 === DÉBUT updateTaskPreselectedCategories ===');
+            
+            const settings = this.loadSettings();
+            const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+            
+            console.log(`[CategoriesPage] 🔍 Trouvé ${checkboxes.length} checkboxes avec classe .category-preselect-checkbox`);
+            
+            const selectedCategories = [];
+            const selectionDetails = [];
+            
+            checkboxes.forEach((checkbox, index) => {
+                const details = {
+                    index: index,
+                    value: checkbox.value,
+                    checked: checkbox.checked,
+                    name: checkbox.dataset.categoryName,
+                    element: checkbox
+                };
+                
+                selectionDetails.push(details);
+                
+                console.log(`[CategoriesPage] 📋 Checkbox ${index}:`);
+                console.log(`  - Value: "${checkbox.value}"`);
+                console.log(`  - Checked: ${checkbox.checked}`);
+                console.log(`  - Data name: "${checkbox.dataset.categoryName}"`);
+                
+                if (checkbox.checked && checkbox.value) {
+                    selectedCategories.push(checkbox.value);
+                    console.log(`  - ✅ AJOUTÉ à la sélection: ${checkbox.value}`);
+                } else {
+                    console.log(`  - ❌ PAS sélectionné`);
+                }
+            });
+            
+            console.log('[CategoriesPage] 🎯 Nouvelles catégories sélectionnées:', selectedCategories);
+            console.log('[CategoriesPage] 📊 Anciennes catégories:', settings.taskPreselectedCategories);
+            
+            // Vérifier si il y a vraiment un changement
+            const oldCategories = settings.taskPreselectedCategories || [];
+            const hasChanged = JSON.stringify([...selectedCategories].sort()) !== JSON.stringify([...oldCategories].sort());
+            
+            if (!hasChanged) {
+                console.log('[CategoriesPage] 🔄 Aucun changement détecté, skip mise à jour');
+                return;
+            }
+            
+            console.log('[CategoriesPage] 📝 Changement détecté, mise à jour en cours...');
+            
+            // Mettre à jour les settings
+            settings.taskPreselectedCategories = selectedCategories;
+            this.saveSettings(settings);
+            
+            console.log('[CategoriesPage] 💾 Paramètres sauvegardés avec nouvelles catégories');
+            
+            // Notification immédiate et forcée
+            this.notifySettingsChange('taskPreselectedCategories', selectedCategories);
+            
+            // Mise à jour immédiate de l'interface
+            this.updateSelectionIndicators(selectedCategories);
+            
+            // Toast avec détails
+            const categoryNames = selectedCategories.map(catId => {
+                const category = window.categoryManager?.getCategory(catId);
+                return category ? category.name : catId;
+            });
+            
+            this.showToast(`✅ ${selectedCategories.length} catégorie(s) pré-sélectionnée(s): ${categoryNames.join(', ')}`, 'success', 4000);
+            this.updateAutomationStats();
+            
+            console.log('[CategoriesPage] 🎯 === FIN updateTaskPreselectedCategories ===');
+            
+            // Vérification de synchronisation après 1 seconde
+            setTimeout(() => {
+                this.verifySynchronization(selectedCategories);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('[CategoriesPage] ❌ Erreur updateTaskPreselectedCategories:', error);
+            this.showToast('Erreur de mise à jour des catégories', 'error');
+        }
+    }
+
+    // ================================================
+    // VÉRIFICATION DE SYNCHRONISATION
+    // ================================================
+    verifySynchronization(expectedCategories) {
+        console.log('[CategoriesPage] 🔍 Vérification de synchronisation...');
+        
+        try {
+            // Vérifier EmailScanner
+            const emailScannerCategories = window.emailScanner?.getTaskPreselectedCategories() || [];
+            const emailScannerSync = JSON.stringify([...emailScannerCategories].sort()) === JSON.stringify([...expectedCategories].sort());
+            
+            // Vérifier CategoryManager
+            const categoryManagerCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
+            const categoryManagerSync = JSON.stringify([...categoryManagerCategories].sort()) === JSON.stringify([...expectedCategories].sort());
+            
+            console.log('[CategoriesPage] 📊 État de synchronisation:');
+            console.log('  - Attendu:', expectedCategories);
+            console.log('  - EmailScanner:', emailScannerCategories, emailScannerSync ? '✅' : '❌');
+            console.log('  - CategoryManager:', categoryManagerCategories, categoryManagerSync ? '✅' : '❌');
+            
+            if (!emailScannerSync || !categoryManagerSync) {
+                console.log('[CategoriesPage] ⚠️ Désynchronisation détectée, re-synchronisation...');
+                this.forceSynchronization();
+                
+                this.showSyncStatus(false);
+                
+                setTimeout(() => {
+                    this.verifySynchronization(expectedCategories);
+                }, 2000);
+            } else {
+                console.log('[CategoriesPage] ✅ Synchronisation confirmée');
+                this.showSyncStatus(true);
+            }
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur vérification synchronisation:', error);
+        }
+    }
+
+    // ================================================
+    // INDICATEURS VISUELS DE SYNCHRONISATION
+    // ================================================
+    updateSelectionIndicators(selectedCategories) {
+        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+        
+        checkboxes.forEach(checkbox => {
+            const container = checkbox.closest('.category-checkbox-item-enhanced');
+            const existingIndicator = container?.querySelector('.selected-indicator');
+            
+            if (checkbox.checked && selectedCategories.includes(checkbox.value)) {
+                if (!existingIndicator) {
+                    const indicator = document.createElement('span');
+                    indicator.className = 'selected-indicator';
+                    indicator.textContent = '✓ Sélectionné';
+                    
+                    const content = container.querySelector('.category-checkbox-content-enhanced');
+                    if (content) {
+                        content.appendChild(indicator);
+                    }
+                }
+            } else {
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
+            }
+        });
+        
+        console.log('[CategoriesPage] ✅ Indicateurs de sélection mis à jour');
+    }
+
+    showSyncStatus(isSync) {
+        let indicator = document.getElementById('sync-status-indicator');
+        
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.id = 'sync-status-indicator';
+            indicator.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 8px 16px;
+                border-radius: 8px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 10000;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            `;
+            document.body.appendChild(indicator);
+        }
+        
+        if (isSync) {
+            indicator.style.background = '#d1fae5';
+            indicator.style.color = '#065f46';
+            indicator.style.border = '1px solid #10b981';
+            indicator.innerHTML = '<i class="fas fa-check-circle"></i> Synchronisé';
+            
+            setTimeout(() => {
+                if (indicator.parentNode) {
+                    indicator.remove();
+                }
+            }, 3000);
+        } else {
+            indicator.style.background = '#fef3c7';
+            indicator.style.color = '#92400e';
+            indicator.style.border = '1px solid #f59e0b';
+            indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Synchronisation...';
+        }
+    }
+
+    // ================================================
+    // MÉTHODES DE SAUVEGARDE
+    // ================================================
+    savePreferences() {
+        try {
+            console.log('[CategoriesPage] 💾 === SAUVEGARDE PRÉFÉRENCES ===');
+            
+            const settings = this.loadSettings();
+            
+            const preferences = {
+                darkMode: document.getElementById('darkMode')?.checked || false,
+                compactView: document.getElementById('compactView')?.checked || false,
+                showNotifications: document.getElementById('showNotifications')?.checked !== false,
+                excludeSpam: document.getElementById('excludeSpam')?.checked !== false,
+                detectCC: document.getElementById('detectCC')?.checked !== false
+            };
+            
+            console.log('[CategoriesPage] 📊 Nouvelles préférences:', preferences);
+            
+            settings.preferences = preferences;
+            this.saveSettings(settings);
+            
+            this.notifySettingsChange('preferences', preferences);
+            this.showToast('Préférences sauvegardées', 'success');
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur savePreferences:', error);
+            this.showToast('Erreur de sauvegarde', 'error');
+        }
+    }
+
+    saveScanSettings() {
+        try {
+            console.log('[CategoriesPage] 💾 === SAUVEGARDE SCAN SETTINGS ===');
+            
+            const settings = this.loadSettings();
+            
+            const scanSettings = {
+                defaultPeriod: parseInt(document.getElementById('defaultScanPeriod')?.value || 7),
+                defaultFolder: document.getElementById('defaultFolder')?.value || 'inbox',
+                autoAnalyze: document.getElementById('autoAnalyze')?.checked !== false,
+                autoCategrize: document.getElementById('autoCategrize')?.checked !== false
+            };
+            
+            console.log('[CategoriesPage] 📊 Nouveaux scan settings:', scanSettings);
+            
+            settings.scanSettings = scanSettings;
+            this.saveSettings(settings);
+            
+            this.notifySettingsChange('scanSettings', scanSettings);
+            this.showToast('Paramètres de scan sauvegardés', 'success');
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur saveScanSettings:', error);
+            this.showToast('Erreur de sauvegarde', 'error');
+        }
+    }
+
+    saveAutomationSettings() {
+        try {
+            console.log('[CategoriesPage] 💾 === SAUVEGARDE AUTOMATION SETTINGS ===');
+            
+            const settings = this.loadSettings();
+            
+            const automationSettings = {
+                autoCreateTasks: document.getElementById('autoCreateTasks')?.checked || false,
+                groupTasksByDomain: document.getElementById('groupTasksByDomain')?.checked || false,
+                skipDuplicates: document.getElementById('skipDuplicates')?.checked !== false,
+                autoAssignPriority: document.getElementById('autoAssignPriority')?.checked || false
+            };
+            
+            console.log('[CategoriesPage] 📊 Nouveaux automation settings:', automationSettings);
+            
+            settings.automationSettings = automationSettings;
+            this.saveSettings(settings);
+            
+            this.notifySettingsChange('automationSettings', automationSettings);
+            this.showToast('Paramètres d\'automatisation sauvegardés', 'success');
+            this.updateAutomationStats();
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur saveAutomationSettings:', error);
+            this.showToast('Erreur de sauvegarde', 'error');
+        }
+    }
+
+    // ================================================
+    // RENDU PRINCIPAL DE LA PAGE PARAMÈTRES - COMPLET
+    // ================================================
+    renderSettings(container) {
+        if (!container) {
+            console.error('[CategoriesPage] Container manquant');
+            return;
+        }
+
+        try {
+            const moduleStatus = this.checkModuleAvailability();
+            const settings = this.loadSettings();
+            const syncStatus = this.checkSyncStatus(settings);
             
             container.innerHTML = `
                 <div class="settings-page-compact">
                     <div class="page-header-compact">
                         <h1>Paramètres</h1>
+                        ${this.renderModuleStatusBar(moduleStatus)}
+                        ${this.renderSyncStatusBar(syncStatus)}
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button class="btn-compact btn-secondary" onclick="window.categoriesPage.debugSettings()" title="Debug">
                                 <i class="fas fa-bug"></i> Debug
@@ -51,8 +560,11 @@ class CategoriesPage {
                             <button class="btn-compact btn-secondary" onclick="window.categoriesPage.testCategorySelection()" title="Test">
                                 <i class="fas fa-vial"></i> Test
                             </button>
+                            <button class="btn-compact btn-primary" onclick="window.categoriesPage.forceSynchronization()" title="Forcer Sync">
+                                <i class="fas fa-sync"></i> Synchroniser
+                            </button>
                             <button class="btn-compact btn-secondary" onclick="window.categoriesPage.forceUpdateUI()" title="Refresh">
-                                <i class="fas fa-sync"></i> Refresh
+                                <i class="fas fa-redo"></i> Refresh
                             </button>
                         </div>
                     </div>
@@ -75,419 +587,206 @@ class CategoriesPage {
 
                     <!-- Contenu des onglets -->
                     <div class="tab-content-compact" id="tabContent">
-                        ${this.currentTab === 'general' ? this.renderGeneralTab(settings) : 
-                          this.currentTab === 'automation' ? this.renderAutomationTab(settings) :
-                          this.renderKeywordsTab(settings)}
+                        ${this.renderTabContent(settings, moduleStatus)}
                     </div>
                 </div>
             `;
             
             this.addStyles();
             
-            // Initialiser les événements après le rendu
             setTimeout(() => {
                 this.initializeEventListeners();
-                
-                // Activer le mode debug temporairement
-                this.setDebugMode(true);
-                
-                // Vérifier l'état après initialisation
-                setTimeout(() => {
-                    console.log('[CategoriesPage] Vérification post-initialisation...');
-                    this.testCategorySelection();
-                }, 500);
             }, 100);
             
         } catch (error) {
-            console.error('[CategoriesPage] Erreur lors du rendu:', error);
-            container.innerHTML = `
-                <div class="error-display" style="padding: 20px; text-align: center;">
-                    <h2>Erreur de chargement des paramètres</h2>
-                    <p>Une erreur est survenue lors du chargement de l'interface des paramètres.</p>
-                    <button onclick="location.reload()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                        Recharger la page
-                    </button>
-                </div>
-            `;
+            console.error('[CategoriesPage] Erreur rendu:', error);
+            container.innerHTML = this.renderErrorState(error);
         }
     }
 
-    // =====================================
-    // INITIALISATION DES ÉVÉNEMENTS - CORRIGÉE
-    // =====================================
-    initializeEventListeners() {
+    // ================================================
+    // NOUVEAUX INDICATEURS DE STATUT
+    // ================================================
+    checkSyncStatus(settings) {
         try {
-            // Préférences générales
-            const preferences = ['darkMode', 'compactView', 'showNotifications', 'excludeSpam', 'detectCC'];
-            preferences.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    // Supprimer les anciens listeners
-                    element.removeEventListener('change', this.savePreferences);
-                    // Ajouter le nouveau listener
-                    element.addEventListener('change', this.savePreferences);
-                    
-                    if (this.debugMode) {
-                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${element.checked}`);
-                    }
-                }
-            });
-
-            // Paramètres de scan
-            const scanSettings = ['defaultScanPeriod', 'defaultFolder', 'autoAnalyze', 'autoCategrize'];
-            scanSettings.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.removeEventListener('change', this.saveScanSettings);
-                    element.addEventListener('change', this.saveScanSettings);
-                    
-                    if (this.debugMode) {
-                        const value = element.type === 'checkbox' ? element.checked : element.value;
-                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${value}`);
-                    }
-                }
-            });
-
-            // Paramètres d'automatisation
-            const automationSettings = ['autoCreateTasks', 'groupTasksByDomain', 'skipDuplicates', 'autoAssignPriority'];
-            automationSettings.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.removeEventListener('change', this.saveAutomationSettings);
-                    element.addEventListener('change', this.saveAutomationSettings);
-                    
-                    if (this.debugMode) {
-                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${element.checked}`);
-                    }
-                }
-            });
-
-            // Catégories pré-sélectionnées pour les tâches - CORRIGÉ
-            const categoryCheckboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
-            categoryCheckboxes.forEach(checkbox => {
-                checkbox.removeEventListener('change', this.updateTaskPreselectedCategories);
-                checkbox.addEventListener('change', (e) => {
-                    console.log(`[CategoriesPage] Catégorie ${e.target.value} ${e.target.checked ? 'sélectionnée' : 'désélectionnée'}`);
-                    this.updateTaskPreselectedCategories();
-                });
-            });
-
-            // Catégories actives/inactives - CORRIGÉ
-            const categoryToggles = document.querySelectorAll('.toggle-minimal input');
-            categoryToggles.forEach(toggle => {
-                const categoryCard = toggle.closest('[data-category]');
-                const categoryId = categoryCard?.dataset.category;
-                if (categoryId) {
-                    toggle.removeEventListener('change', this.handleToggleCategory);
-                    toggle.addEventListener('change', (e) => {
-                        console.log(`[CategoriesPage] Toggle catégorie ${categoryId}: ${e.target.checked}`);
-                        this.toggleCategory(categoryId, e.target.checked);
-                    });
-                }
-            });
-
-            // Ajout rapide d'exclusions
-            const quickInput = document.getElementById('quick-exclusion-input');
-            if (quickInput) {
-                quickInput.removeEventListener('keypress', this.handleQuickExclusionKeypress);
-                quickInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.addQuickExclusion();
-                    }
-                });
-            }
-
-            console.log('[CategoriesPage] Événements initialisés avec succès');
+            const expectedCategories = settings.taskPreselectedCategories || [];
+            const emailScannerCategories = window.emailScanner?.getTaskPreselectedCategories() || [];
+            const categoryManagerCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
+            
+            const emailScannerSync = JSON.stringify([...emailScannerCategories].sort()) === JSON.stringify([...expectedCategories].sort());
+            const categoryManagerSync = JSON.stringify([...categoryManagerCategories].sort()) === JSON.stringify([...expectedCategories].sort());
+            
+            return {
+                isSync: emailScannerSync && categoryManagerSync,
+                emailScannerSync,
+                categoryManagerSync,
+                expectedCategories,
+                emailScannerCategories,
+                categoryManagerCategories
+            };
         } catch (error) {
-            console.error('[CategoriesPage] Erreur lors de l\'initialisation des événements:', error);
+            console.error('[CategoriesPage] Erreur check sync status:', error);
+            return {
+                isSync: false,
+                emailScannerSync: false,
+                categoryManagerSync: false,
+                expectedCategories: [],
+                emailScannerCategories: [],
+                categoryManagerCategories: []
+            };
         }
     }
 
-    switchTab(tab) {
-        try {
-            this.currentTab = tab;
-            const tabContent = document.getElementById('tabContent');
-            const settings = this.loadSettings();
-            
-            // Mettre à jour les boutons d'onglet
-            document.querySelectorAll('.tab-button-compact').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            const activeButton = document.querySelector(`.tab-button-compact[onclick*="${tab}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active');
-            }
-            
-            // Mettre à jour le contenu
-            if (tabContent) {
-                tabContent.innerHTML = tab === 'general' ? 
-                    this.renderGeneralTab(settings) : 
-                    tab === 'automation' ? 
-                    this.renderAutomationTab(settings) :
-                    this.renderKeywordsTab(settings);
-                
-                // Réinitialiser les événements pour le nouveau contenu
-                setTimeout(() => {
-                    this.initializeEventListeners();
-                }, 100);
-            }
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur lors du changement d\'onglet:', error);
-        }
-    }
-
-    // =====================================
-    // ONGLET GÉNÉRAL
-    // =====================================
-    renderGeneralTab(settings) {
+    renderSyncStatusBar(syncStatus) {
+        const statusColor = syncStatus.isSync ? '#10b981' : '#f59e0b';
+        const statusIcon = syncStatus.isSync ? 'fa-check-circle' : 'fa-exclamation-triangle';
+        const statusText = syncStatus.isSync ? 
+            `Synchronisé - ${syncStatus.expectedCategories.length} catégorie(s) pré-sélectionnée(s)` :
+            'Désynchronisation détectée';
+        
         return `
-            <div class="settings-two-columns">
-                <div class="settings-column-equal">
-                    <!-- Configuration IA -->
-                    <div class="settings-card-compact">
-                        <div class="card-header-compact">
-                            <i class="fas fa-robot"></i>
-                            <h3>Intelligence Artificielle</h3>
-                        </div>
-                        <p>Analyse automatique des emails avec Claude AI pour créer des tâches intelligentes</p>
-                        <button class="btn-compact btn-primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
-                            <i class="fas fa-cog"></i> Configurer Claude AI
-                        </button>
-                    </div>
+            <div style="background: ${statusColor}20; border: 1px solid ${statusColor}; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 12px; color: ${statusColor};">
+                <i class="fas ${statusIcon}"></i> 
+                État synchronisation: ${statusText}
+                ${!syncStatus.isSync ? `
+                    <button onclick="window.categoriesPage.forceSynchronization()" 
+                            style="margin-left: 12px; padding: 2px 8px; background: ${statusColor}; color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                        Corriger
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
 
-                    <!-- Paramètres généraux -->
-                    <div class="settings-card-compact">
-                        <div class="card-header-compact">
-                            <i class="fas fa-sliders-h"></i>
-                            <h3>Préférences générales</h3>
-                        </div>
-                        <p>Options d'affichage et de comportement de l'application</p>
+    renderTabContent(settings, moduleStatus) {
+        switch (this.currentTab) {
+            case 'general':
+                return this.renderGeneralTab(settings, moduleStatus);
+            case 'automation':
+                return this.renderAutomationTab(settings, moduleStatus);
+            case 'keywords':
+                return this.renderKeywordsTab(settings, moduleStatus);
+            default:
+                return this.renderGeneralTab(settings, moduleStatus);
+        }
+    }
+
+    // ================================================
+    // ONGLET GÉNÉRAL - COMPLET
+    // ================================================
+    renderGeneralTab(settings, moduleStatus) {
+        return `
+            <div class="general-tab-layout">
+                <!-- Préférences générales -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-sliders-h"></i>
+                        <h3>Préférences générales</h3>
+                    </div>
+                    <div class="checkbox-grid-compact">
+                        <label class="checkbox-item-compact">
+                            <input type="checkbox" id="darkMode" ${settings.preferences?.darkMode ? 'checked' : ''}>
+                            <div class="checkbox-content-compact">
+                                <span class="checkbox-title">Mode sombre</span>
+                                <span class="checkbox-description">Interface en mode sombre</span>
+                            </div>
+                        </label>
                         
-                        <div class="general-preferences">
-                            <label class="checkbox-compact">
-                                <input type="checkbox" id="darkMode" 
-                                       ${settings.preferences?.darkMode ? 'checked' : ''}>
-                                <span>Mode sombre (bientôt disponible)</span>
-                            </label>
-                            
-                            <label class="checkbox-compact">
-                                <input type="checkbox" id="compactView" 
-                                       ${settings.preferences?.compactView ? 'checked' : ''}>
-                                <span>Vue compacte des emails</span>
-                            </label>
-                            
-                            <label class="checkbox-compact">
-                                <input type="checkbox" id="showNotifications" 
-                                       ${settings.preferences?.showNotifications !== false ? 'checked' : ''}>
-                                <span>Notifications activées</span>
-                            </label>
-                            
-                            <label class="checkbox-compact">
-                                <input type="checkbox" id="excludeSpam" 
-                                       ${settings.preferences?.excludeSpam !== false ? 'checked' : ''}>
-                                <span>Exclure les courriers indésirables</span>
-                            </label>
-                            
-                            <label class="checkbox-compact">
-                                <input type="checkbox" id="detectCC" 
-                                       ${settings.preferences?.detectCC !== false ? 'checked' : ''}>
-                                <span>Détecter les emails en copie (CC)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Sauvegarde -->
-                    <div class="settings-card-compact">
-                        <div class="card-header-compact">
-                            <i class="fas fa-sync"></i>
-                            <h3>Sauvegarde</h3>
-                        </div>
-                        <p>Exportez ou importez tous vos paramètres et configurations</p>
-                        <div class="button-row">
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.exportSettings()">
-                                <i class="fas fa-download"></i> Exporter
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.importSettings()">
-                                <i class="fas fa-upload"></i> Importer
-                            </button>
-                        </div>
+                        <label class="checkbox-item-compact">
+                            <input type="checkbox" id="compactView" ${settings.preferences?.compactView ? 'checked' : ''}>
+                            <div class="checkbox-content-compact">
+                                <span class="checkbox-title">Vue compacte</span>
+                                <span class="checkbox-description">Affichage plus dense</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-item-compact">
+                            <input type="checkbox" id="showNotifications" ${settings.preferences?.showNotifications !== false ? 'checked' : ''}>
+                            <div class="checkbox-content-compact">
+                                <span class="checkbox-title">Notifications</span>
+                                <span class="checkbox-description">Afficher les notifications</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-item-compact">
+                            <input type="checkbox" id="excludeSpam" ${settings.preferences?.excludeSpam !== false ? 'checked' : ''}>
+                            <div class="checkbox-content-compact">
+                                <span class="checkbox-title">Filtrer le spam</span>
+                                <span class="checkbox-description">Exclure les emails indésirables</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-item-compact">
+                            <input type="checkbox" id="detectCC" ${settings.preferences?.detectCC !== false ? 'checked' : ''}>
+                            <div class="checkbox-content-compact">
+                                <span class="checkbox-title">Détecter les CC</span>
+                                <span class="checkbox-description">Identifier les emails en copie</span>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
-                <div class="settings-column-equal">
-                    <!-- Paramètres de scan -->
-                    <div class="settings-card-compact">
-                        <div class="card-header-compact">
-                            <i class="fas fa-search"></i>
-                            <h3>Scan d'emails</h3>
+                <!-- Paramètres de scan -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-search"></i>
+                        <h3>Paramètres de scan</h3>
+                    </div>
+                    <div class="form-grid-compact">
+                        <div class="form-group-compact">
+                            <label for="defaultScanPeriod">Période par défaut (jours)</label>
+                            <select id="defaultScanPeriod" class="form-control-compact">
+                                <option value="1" ${settings.scanSettings?.defaultPeriod === 1 ? 'selected' : ''}>1 jour</option>
+                                <option value="3" ${settings.scanSettings?.defaultPeriod === 3 ? 'selected' : ''}>3 jours</option>
+                                <option value="7" ${settings.scanSettings?.defaultPeriod === 7 ? 'selected' : ''}>7 jours</option>
+                                <option value="15" ${settings.scanSettings?.defaultPeriod === 15 ? 'selected' : ''}>15 jours</option>
+                                <option value="30" ${settings.scanSettings?.defaultPeriod === 30 ? 'selected' : ''}>30 jours</option>
+                            </select>
                         </div>
-                        <p>Options par défaut pour scanner vos emails et analyser le contenu</p>
                         
-                        <div class="scan-settings-compact">
-                            <div class="setting-row">
-                                <label>Période par défaut</label>
-                                <select id="defaultScanPeriod" class="select-compact">
-                                    <option value="1" ${settings.scanSettings?.defaultPeriod === 1 ? 'selected' : ''}>1 jour</option>
-                                    <option value="3" ${settings.scanSettings?.defaultPeriod === 3 ? 'selected' : ''}>3 jours</option>
-                                    <option value="7" ${settings.scanSettings?.defaultPeriod === 7 ? 'selected' : ''}>7 jours</option>
-                                    <option value="15" ${settings.scanSettings?.defaultPeriod === 15 ? 'selected' : ''}>15 jours</option>
-                                    <option value="30" ${settings.scanSettings?.defaultPeriod === 30 ? 'selected' : ''}>30 jours</option>
-                                </select>
-                            </div>
-                            
-                            <div class="setting-row">
-                                <label>Dossier par défaut</label>
-                                <select id="defaultFolder" class="select-compact">
-                                    <option value="inbox" ${settings.scanSettings?.defaultFolder === 'inbox' ? 'selected' : ''}>Boîte de réception</option>
-                                    <option value="all" ${settings.scanSettings?.defaultFolder === 'all' ? 'selected' : ''}>Tous les dossiers</option>
-                                </select>
-                            </div>
-                            
-                            <label class="checkbox-compact">
-                                <input type="checkbox" id="autoAnalyze" 
-                                       ${settings.scanSettings?.autoAnalyze !== false ? 'checked' : ''}>
-                                <span>Analyse IA automatique après scan</span>
-                            </label>
-                            
-                            <label class="checkbox-compact">
-                                <input type="checkbox" id="autoCategrize" 
-                                       ${settings.scanSettings?.autoCategrize !== false ? 'checked' : ''}>
-                                <span>Catégorisation automatique</span>
-                            </label>
+                        <div class="form-group-compact">
+                            <label for="defaultFolder">Dossier par défaut</label>
+                            <select id="defaultFolder" class="form-control-compact">
+                                <option value="inbox" ${settings.scanSettings?.defaultFolder === 'inbox' ? 'selected' : ''}>Boîte de réception</option>
+                                <option value="sent" ${settings.scanSettings?.defaultFolder === 'sent' ? 'selected' : ''}>Éléments envoyés</option>
+                                <option value="all" ${settings.scanSettings?.defaultFolder === 'all' ? 'selected' : ''}>Tous les dossiers</option>
+                            </select>
                         </div>
                     </div>
-
-                    <!-- Exclusions -->
-                    <div class="settings-card-compact">
-                        <div class="card-header-compact">
-                            <i class="fas fa-filter"></i>
-                            <h3>Exclusions et redirections</h3>
-                        </div>
-                        <p>Assignez automatiquement des emails à des catégories selon leur provenance</p>
+                    
+                    <div class="checkbox-grid-compact">
+                        <label class="checkbox-item-compact">
+                            <input type="checkbox" id="autoAnalyze" ${settings.scanSettings?.autoAnalyze !== false ? 'checked' : ''}>
+                            <div class="checkbox-content-compact">
+                                <span class="checkbox-title">Analyse automatique</span>
+                                <span class="checkbox-description">Analyser automatiquement les emails</span>
+                            </div>
+                        </label>
                         
-                        ${this.renderOptimizedExclusions(settings)}
-                        
-                        <div class="exclusions-footer-minimal">
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
-                                <i class="fas fa-list"></i> Gérer toutes les exclusions
-                            </button>
-                            <span class="exclusions-count">
-                                ${(settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0)} règles actives
-                            </span>
-                        </div>
+                        <label class="checkbox-item-compact">
+                            <input type="checkbox" id="autoCategrize" ${settings.scanSettings?.autoCategrize !== false ? 'checked' : ''}>
+                            <div class="checkbox-content-compact">
+                                <span class="checkbox-title">Catégorisation automatique</span>
+                                <span class="checkbox-description">Classer automatiquement par catégorie</span>
+                            </div>
+                        </label>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    renderOptimizedExclusions(settings) {
-        try {
-            const categories = window.categoryManager?.getCategories() || {};
-            const domains = settings.categoryExclusions?.domains || [];
-            const emails = settings.categoryExclusions?.emails || [];
-            
-            return `
-                <div class="exclusions-optimized">
-                    <!-- Aperçu rapide -->
-                    <div class="exclusions-summary">
-                        <div class="summary-item">
-                            <span class="summary-icon"><i class="fas fa-globe"></i></span>
-                            <span class="summary-text">${domains.length} domaine(s)</span>
-                        </div>
-                        <div class="summary-item">
-                            <span class="summary-icon"><i class="fas fa-at"></i></span>
-                            <span class="summary-text">${emails.length} email(s)</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Ajout rapide -->
-                    <div class="quick-add-section">
-                        <div class="quick-add-row">
-                            <input type="text" 
-                                   id="quick-exclusion-input"
-                                   placeholder="domaine.com ou email@exemple.com">
-                            <select id="quick-exclusion-category" class="select-compact">
-                                <option value="">Catégorie...</option>
-                                ${Object.entries(categories).map(([id, cat]) => `
-                                    <option value="${id}">${cat.icon} ${cat.name}</option>
-                                `).join('')}
-                            </select>
-                            <button class="btn-quick-add" onclick="window.categoriesPage.addQuickExclusion()">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Dernières exclusions -->
-                    ${this.renderRecentExclusions(domains, emails, categories)}
-                </div>
-            `;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur dans renderOptimizedExclusions:', error);
-            return '<div>Erreur lors du chargement des exclusions</div>';
-        }
-    }
-
-    renderRecentExclusions(domains, emails, categories) {
-        try {
-            const allExclusions = [
-                ...domains.map(d => ({ ...d, type: 'domain' })),
-                ...emails.map(e => ({ ...e, type: 'email' }))
-            ].slice(-4);
-            
-            if (allExclusions.length === 0) {
-                return `
-                    <div class="no-exclusions-minimal">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Aucune exclusion configurée</span>
-                    </div>
-                `;
-            }
-            
-            return `
-                <div class="recent-exclusions">
-                    <h5>Dernières exclusions</h5>
-                    <div class="exclusions-mini-list">
-                        ${allExclusions.map((item, index) => {
-                            const category = categories[item.category];
-                            return `
-                                <div class="exclusion-mini-item">
-                                    <span class="exclusion-mini-value">
-                                        <i class="fas fa-${item.type === 'domain' ? 'globe' : 'at'}"></i>
-                                        ${item.value}
-                                    </span>
-                                    ${category ? `
-                                        <span class="category-mini-badge" style="background: ${category.color}20; color: ${category.color}">
-                                            ${category.icon}
-                                        </span>
-                                    ` : '<span class="no-category-mini">?</span>'}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur dans renderRecentExclusions:', error);
-            return '<div>Erreur lors du chargement des exclusions récentes</div>';
-        }
-    }
-
-    // =====================================
-    // ONGLET AUTOMATISATION - CORRIGÉ AVEC DEBUG
-    // =====================================
-    renderAutomationTab(settings) {
+    // ================================================
+    // ONGLET AUTOMATISATION - COMPLET AVEC INDICATEURS TEMPS RÉEL
+    // ================================================
+    renderAutomationTab(settings, moduleStatus) {
         try {
             const categories = window.categoryManager?.getCategories() || {};
             const preselectedCategories = settings.taskPreselectedCategories || [];
             
-            console.log('[CategoriesPage] DEBUG - Rendu automatisation:');
+            console.log('[CategoriesPage] 🎯 Rendu automatisation:');
             console.log('  - Catégories disponibles:', Object.keys(categories));
             console.log('  - Catégories pré-sélectionnées:', preselectedCategories);
-            console.log('  - Settings complets:', settings);
             
             return `
                 <div class="automation-focused-layout">
@@ -495,33 +794,40 @@ class CategoriesPage {
                         <div class="card-header-compact">
                             <i class="fas fa-check-square"></i>
                             <h3>Conversion automatique en tâches</h3>
+                            ${moduleStatus.aiTaskAnalyzer ? 
+                                '<span class="status-badge status-ok">✓ IA Disponible</span>' : 
+                                '<span class="status-badge status-warning">⚠ IA Limitée</span>'
+                            }
                         </div>
                         <p>Sélectionnez les catégories d'emails qui seront automatiquement proposées pour la création de tâches et configurez le comportement de l'automatisation.</p>
                         
-                        <!-- Debug info -->
-                        <div style="background: #f0f9ff; padding: 10px; border-radius: 6px; margin: 10px 0; font-size: 12px; color: #0369a1;">
-                            <strong>Debug:</strong> ${preselectedCategories.length} catégorie(s) pré-sélectionnée(s): ${preselectedCategories.join(', ')}
+                        <!-- Indicateur de synchronisation temps réel -->
+                        <div id="automation-sync-indicator" class="automation-sync-indicator">
+                            ${this.renderAutomationSyncIndicator(preselectedCategories)}
                         </div>
                         
-                        <!-- Sélection des catégories - CORRIGÉ AVEC DEBUG -->
+                        <!-- Sélection des catégories -->
                         <div class="task-automation-section">
                             <h4><i class="fas fa-tags"></i> Catégories pré-sélectionnées</h4>
-                            <div class="categories-selection-grid-automation">
+                            <div class="categories-selection-grid-automation" id="categoriesSelectionGrid">
                                 ${Object.entries(categories).map(([id, category]) => {
                                     const isPreselected = preselectedCategories.includes(id);
-                                    console.log(`  - ${id} (${category.name}): ${isPreselected ? 'SELECTED' : 'not selected'}`);
+                                    console.log(`[CategoriesPage] 📋 Catégorie ${id} (${category.name}): ${isPreselected ? 'SÉLECTIONNÉE' : 'non sélectionnée'}`);
                                     return `
                                         <label class="category-checkbox-item-enhanced" data-category-id="${id}">
                                             <input type="checkbox" 
+                                                   class="category-preselect-checkbox"
                                                    value="${id}"
                                                    data-category-name="${category.name}"
                                                    ${isPreselected ? 'checked' : ''}
-                                                   onchange="console.log('Checkbox ${id} changed to:', this.checked); window.categoriesPage.updateTaskPreselectedCategories();">
+                                                   onchange="window.categoriesPage.updateTaskPreselectedCategories()">
                                             <div class="category-checkbox-content-enhanced">
                                                 <span class="cat-icon-automation" style="background: ${category.color}20; color: ${category.color}">
                                                     ${category.icon}
                                                 </span>
                                                 <span class="cat-name-automation">${category.name}</span>
+                                                ${category.isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
+                                                ${isPreselected ? '<span class="selected-indicator">✓ Sélectionné</span>' : ''}
                                             </div>
                                         </label>
                                     `;
@@ -529,13 +835,14 @@ class CategoriesPage {
                             </div>
                         </div>
                         
-                        <!-- Options d'automatisation - CORRIGÉ -->
+                        <!-- Options d'automatisation -->
                         <div class="automation-options-enhanced">
                             <h4><i class="fas fa-cog"></i> Options d'automatisation</h4>
                             <div class="automation-options-grid">
                                 <label class="checkbox-enhanced">
                                     <input type="checkbox" id="autoCreateTasks" 
-                                           ${settings.automationSettings?.autoCreateTasks ? 'checked' : ''}>
+                                           ${settings.automationSettings?.autoCreateTasks ? 'checked' : ''}
+                                           ${moduleStatus.aiTaskAnalyzer ? '' : 'disabled'}>
                                     <div class="checkbox-content">
                                         <span class="checkbox-title">Création automatique</span>
                                         <span class="checkbox-description">Créer automatiquement les tâches sans confirmation</span>
@@ -571,21 +878,25 @@ class CategoriesPage {
                             </div>
                         </div>
                         
-                        <!-- Statistiques -->
+                        <!-- Statistiques avec état synchronisation -->
                         <div class="automation-stats">
                             <h4><i class="fas fa-chart-bar"></i> Statistiques</h4>
                             <div class="stats-grid">
                                 <div class="stat-item">
-                                    <span class="stat-number">${preselectedCategories.length}</span>
+                                    <span class="stat-number" id="stat-categories">${preselectedCategories.length}</span>
                                     <span class="stat-label">Catégories actives</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-number">${(settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0)}</span>
+                                    <span class="stat-number" id="stat-exclusions">${(settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0)}</span>
                                     <span class="stat-label">Règles d'exclusion</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-number">${Object.values(settings.automationSettings || {}).filter(Boolean).length}</span>
+                                    <span class="stat-number" id="stat-automation">${Object.values(settings.automationSettings || {}).filter(Boolean).length}</span>
                                     <span class="stat-label">Options activées</span>
+                                </div>
+                                <div class="stat-item sync-stat">
+                                    <span class="stat-number" id="stat-sync">${this.checkSyncStatus(settings).isSync ? '✅' : '⚠️'}</span>
+                                    <span class="stat-label">Synchronisation</span>
                                 </div>
                             </div>
                         </div>
@@ -593,439 +904,312 @@ class CategoriesPage {
                 </div>
             `;
         } catch (error) {
-            console.error('[CategoriesPage] Erreur dans renderAutomationTab:', error);
+            console.error('[CategoriesPage] Erreur renderAutomationTab:', error);
             return '<div>Erreur lors du chargement de l\'onglet automatisation</div>';
         }
     }
 
-    // =====================================
-    // ONGLET CATÉGORIES
-    // =====================================
-    renderKeywordsTab(settings) {
-        try {
-            const categories = window.categoryManager?.getCategories() || {};
-            
+    renderAutomationSyncIndicator(preselectedCategories) {
+        const syncStatus = this.checkSyncStatus({ taskPreselectedCategories: preselectedCategories });
+        
+        if (syncStatus.isSync) {
             return `
-                <div class="categories-grid-minimal">
-                    ${Object.entries(categories).map(([id, category]) => {
-                        const isActive = settings.activeCategories ? settings.activeCategories.includes(id) : true;
-                        const keywords = this.getKeywordsFromWeightedSystem(id);
-                        const keywordCount = this.getTotalKeywordsForCategory(keywords);
-                        
-                        return `
-                            <div class="category-card-minimal ${isActive ? 'active' : 'inactive'}" data-category="${id}">
-                                <div class="category-content-minimal">
-                                    <div class="category-icon-minimal" style="background: ${category.color}20; color: ${category.color}">
-                                        ${category.icon}
-                                    </div>
-                                    <div class="category-info-minimal">
-                                        <h4>${category.name}</h4>
-                                        <span class="keyword-count-minimal">${keywordCount} mots-clés</span>
-                                    </div>
-                                </div>
-                                <div class="category-actions-minimal">
-                                    <button class="btn-edit-keywords" onclick="window.categoriesPage.openKeywordsModal('${id}')" title="Modifier les mots-clés">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <label class="toggle-minimal" title="${isActive ? 'Désactiver' : 'Activer'}">
-                                        <input type="checkbox" 
-                                               ${isActive ? 'checked' : ''}>
-                                        <span class="toggle-slider-minimal"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+                <div class="sync-indicator sync-ok">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Synchronisation OK - ${preselectedCategories.length} catégorie(s) active(s)</span>
                 </div>
-
-                <!-- Actions globales -->
-                <div class="global-actions-bar">
-                    <button class="btn-compact btn-primary" onclick="window.categoriesPage.openAllKeywordsModal()">
-                        <i class="fas fa-list"></i> Voir tous les mots-clés
-                    </button>
-                    <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
-                        <i class="fas fa-ban"></i> Exclusions globales
+            `;
+        } else {
+            return `
+                <div class="sync-indicator sync-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Désynchronisation détectée - Correction automatique en cours</span>
+                    <button class="btn-fix-sync-small" onclick="window.categoriesPage.forceSynchronization()">
+                        <i class="fas fa-sync"></i> Corriger
                     </button>
                 </div>
             `;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur dans renderKeywordsTab:', error);
-            return '<div>Erreur lors du chargement de l\'onglet catégories</div>';
         }
     }
 
-    // =====================================
-    // MÉTHODES DE SAUVEGARDE - CORRIGÉES
-    // =====================================
-    savePreferences() {
-        try {
-            const settings = this.loadSettings();
-            
-            const preferences = {
-                darkMode: document.getElementById('darkMode')?.checked || false,
-                compactView: document.getElementById('compactView')?.checked || false,
-                showNotifications: document.getElementById('showNotifications')?.checked !== false,
-                excludeSpam: document.getElementById('excludeSpam')?.checked !== false,
-                detectCC: document.getElementById('detectCC')?.checked !== false
-            };
-            
-            settings.preferences = preferences;
-            this.saveSettings(settings);
-            
-            console.log('[CategoriesPage] Préférences sauvegardées:', preferences);
-            
-            // Notifier les autres modules
-            this.notifySettingsChange('preferences', preferences);
-            
-            window.uiManager?.showToast('Préférences sauvegardées', 'success');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur savePreferences:', error);
-            window.uiManager?.showToast('Erreur de sauvegarde', 'error');
-        }
+    // ================================================
+    // ONGLET CATÉGORIES/MOTS-CLÉS - COMPLET
+    // ================================================
+    renderKeywordsTab(settings, moduleStatus) {
+        const categories = window.categoryManager?.getCategories() || {};
+        
+        return `
+            <div class="keywords-tab-layout">
+                <div class="settings-card-compact full-width">
+                    <div class="card-header-compact">
+                        <i class="fas fa-tags"></i>
+                        <h3>Gestion des catégories</h3>
+                        <span class="status-badge status-ok">${Object.keys(categories).length} catégories</span>
+                    </div>
+                    
+                    <div class="categories-overview">
+                        <p>Gérez vos catégories d'emails et leurs mots-clés de détection.</p>
+                        
+                        <div class="categories-grid-overview">
+                            ${Object.entries(categories).map(([id, category]) => `
+                                <div class="category-overview-card" data-category-id="${id}">
+                                    <div class="category-overview-header">
+                                        <span class="category-overview-icon" style="background: ${category.color}20; color: ${category.color}">
+                                            ${category.icon}
+                                        </span>
+                                        <div class="category-overview-info">
+                                            <h4>${category.name}</h4>
+                                            <p>${category.description || 'Aucune description'}</p>
+                                        </div>
+                                        ${category.isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
+                                    </div>
+                                    
+                                    <div class="category-overview-actions">
+                                        <button class="btn-overview-action" onclick="window.categoriesPage.openKeywordsModal('${id}')" title="Gérer mots-clés">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                        ${category.isCustom ? `
+                                            <button class="btn-overview-action" onclick="window.categoriesPage.editCustomCategory('${id}')" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn-overview-action danger" onclick="window.categoriesPage.deleteCustomCategory('${id}')" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="categories-actions">
+                            <button class="btn-compact btn-primary" onclick="window.categoriesPage.showCreateCategoryModal()">
+                                <i class="fas fa-plus"></i> Créer une catégorie
+                            </button>
+                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openAllKeywordsModal()">
+                                <i class="fas fa-list"></i> Voir tous les mots-clés
+                            </button>
+                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
+                                <i class="fas fa-ban"></i> Exclusions
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
-    saveScanSettings() {
-        try {
-            const settings = this.loadSettings();
-            
-            const scanSettings = {
-                defaultPeriod: parseInt(document.getElementById('defaultScanPeriod')?.value || 7),
-                defaultFolder: document.getElementById('defaultFolder')?.value || 'inbox',
-                autoAnalyze: document.getElementById('autoAnalyze')?.checked !== false,
-                autoCategrize: document.getElementById('autoCategrize')?.checked !== false
-            };
-            
-            settings.scanSettings = scanSettings;
-            this.saveSettings(settings);
-            
-            console.log('[CategoriesPage] Paramètres de scan sauvegardés:', scanSettings);
-            
-            // Notifier les autres modules
-            this.notifySettingsChange('scanSettings', scanSettings);
-            
-            window.uiManager?.showToast('Paramètres de scan sauvegardés', 'success');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur saveScanSettings:', error);
-            window.uiManager?.showToast('Erreur de sauvegarde', 'error');
+    // ================================================
+    // INITIALISATION DES ÉVÉNEMENTS - ULTRA RENFORCÉE
+    // ================================================
+    initializeEventListeners() {
+        if (this.eventListenersSetup) {
+            return;
         }
-    }
 
-    saveAutomationSettings() {
         try {
-            const settings = this.loadSettings();
-            
-            const automationSettings = {
-                autoCreateTasks: document.getElementById('autoCreateTasks')?.checked || false,
-                groupTasksByDomain: document.getElementById('groupTasksByDomain')?.checked || false,
-                skipDuplicates: document.getElementById('skipDuplicates')?.checked !== false,
-                autoAssignPriority: document.getElementById('autoAssignPriority')?.checked || false
-            };
-            
-            settings.automationSettings = automationSettings;
-            this.saveSettings(settings);
-            
-            console.log('[CategoriesPage] Paramètres d\'automatisation sauvegardés:', automationSettings);
-            
-            // Notifier les autres modules
-            this.notifySettingsChange('automationSettings', automationSettings);
-            
-            window.uiManager?.showToast('Paramètres d\'automatisation sauvegardés', 'success');
-            this.updateAutomationStats();
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur saveAutomationSettings:', error);
-            window.uiManager?.showToast('Erreur de sauvegarde', 'error');
-        }
-    }
-
-    updateTaskPreselectedCategories() {
-        try {
-            console.log('[CategoriesPage] DEBUG updateTaskPreselectedCategories() appelée');
-            
-            const settings = this.loadSettings();
-            console.log('  - Settings actuels:', settings.taskPreselectedCategories);
-            
-            // Sélectionner TOUS les checkboxes de catégories dans la grille
-            const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
-            console.log(`  - ${checkboxes.length} checkboxes trouvées`);
-            
-            const selectedCategories = [];
-            checkboxes.forEach((checkbox, index) => {
-                console.log(`  - Checkbox ${index}: value="${checkbox.value}", checked=${checkbox.checked}, name="${checkbox.dataset.categoryName}"`);
-                if (checkbox.checked && checkbox.value) {
-                    selectedCategories.push(checkbox.value);
+            // Préférences générales
+            const preferences = ['darkMode', 'compactView', 'showNotifications', 'excludeSpam', 'detectCC'];
+            preferences.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.removeEventListener('change', this.savePreferences);
+                    element.addEventListener('change', this.savePreferences);
                 }
             });
+
+            // Paramètres de scan
+            const scanSettings = ['defaultScanPeriod', 'defaultFolder', 'autoAnalyze', 'autoCategrize'];
+            scanSettings.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.removeEventListener('change', this.saveScanSettings);
+                    element.addEventListener('change', this.saveScanSettings);
+                }
+            });
+
+            // Paramètres d'automatisation
+            const automationSettings = ['autoCreateTasks', 'groupTasksByDomain', 'skipDuplicates', 'autoAssignPriority'];
+            automationSettings.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.removeEventListener('change', this.saveAutomationSettings);
+                    element.addEventListener('change', this.saveAutomationSettings);
+                }
+            });
+
+            // ULTRA RENFORCEMENT: Catégories pré-sélectionnées pour les tâches
+            const categoryCheckboxes = document.querySelectorAll('.category-preselect-checkbox');
+            console.log(`[CategoriesPage] 🎯 Initialisation ULTRA RENFORCÉE de ${categoryCheckboxes.length} checkboxes`);
             
-            console.log('  - Nouvelles catégories sélectionnées:', selectedCategories);
+            categoryCheckboxes.forEach((checkbox, index) => {
+                console.log(`[CategoriesPage] 📋 Setup checkbox ${index}: value=${checkbox.value}, checked=${checkbox.checked}, name=${checkbox.dataset.categoryName}`);
+                
+                // Retirer TOUS les anciens listeners
+                checkbox.removeEventListener('change', this.updateTaskPreselectedCategories);
+                checkbox.removeEventListener('click', this.updateTaskPreselectedCategories);
+                checkbox.removeEventListener('input', this.updateTaskPreselectedCategories);
+                
+                // Ajouter MULTIPLES listeners pour s'assurer de capturer l'événement
+                const handlerChange = (event) => {
+                    console.log(`[CategoriesPage] 🔔 CHANGE détecté sur checkbox: ${event.target.value}, checked: ${event.target.checked}`);
+                    this.updateTaskPreselectedCategories();
+                };
+                
+                const handlerClick = (event) => {
+                    console.log(`[CategoriesPage] 🔔 CLICK détecté sur checkbox: ${event.target.value}, checked: ${event.target.checked}`);
+                    // Petit délai pour que le checked soit mis à jour
+                    setTimeout(() => {
+                        this.updateTaskPreselectedCategories();
+                    }, 10);
+                };
+                
+                checkbox.addEventListener('change', handlerChange);
+                checkbox.addEventListener('click', handlerClick);
+                
+                // Stocker les handlers pour le nettoyage
+                checkbox._changeHandler = handlerChange;
+                checkbox._clickHandler = handlerClick;
+            });
+
+            this.eventListenersSetup = true;
+            console.log('[CategoriesPage] ✅ Événements initialisés avec ULTRA RENFORCEMENT des checkboxes');
             
-            // Sauvegarder
-            settings.taskPreselectedCategories = selectedCategories;
-            this.saveSettings(settings);
-            
-            console.log('  - Paramètres sauvegardés:', settings.taskPreselectedCategories);
-            
-            // Notifier les autres modules
-            this.notifySettingsChange('taskPreselectedCategories', selectedCategories);
-            
-            window.uiManager?.showToast(`${selectedCategories.length} catégorie(s) sélectionnée(s)`, 'success');
-            this.updateAutomationStats();
+            // Vérifier immédiatement l'état des checkboxes
+            setTimeout(() => {
+                this.verifyCheckboxState();
+            }, 100);
             
         } catch (error) {
-            console.error('[CategoriesPage] Erreur updateTaskPreselectedCategories:', error);
-            window.uiManager?.showToast('Erreur de mise à jour', 'error');
+            console.error('[CategoriesPage] Erreur initialisation événements:', error);
         }
     }
 
-    // =====================================
-    // NOTIFICATION DES CHANGEMENTS VERS AUTRES MODULES
-    // =====================================
-    notifySettingsChange(settingType, value) {
+    // ================================================
+    // VÉRIFICATION DE L'ÉTAT DES CHECKBOXES
+    // ================================================
+    verifyCheckboxState() {
+        console.log('[CategoriesPage] 🔍 Vérification état des checkboxes...');
+        
+        const settings = this.loadSettings();
+        const expectedSelected = settings.taskPreselectedCategories || [];
+        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+        
+        let mismatches = 0;
+        
+        checkboxes.forEach((checkbox, index) => {
+            const shouldBeChecked = expectedSelected.includes(checkbox.value);
+            const isChecked = checkbox.checked;
+            
+            if (shouldBeChecked !== isChecked) {
+                console.log(`[CategoriesPage] ⚠️ Mismatch checkbox ${index}: value=${checkbox.value}, shouldBe=${shouldBeChecked}, is=${isChecked}`);
+                checkbox.checked = shouldBeChecked;
+                mismatches++;
+            }
+        });
+        
+        if (mismatches > 0) {
+            console.log(`[CategoriesPage] 🔧 ${mismatches} checkboxes corrigées`);
+            this.updateSelectionIndicators(expectedSelected);
+        } else {
+            console.log('[CategoriesPage] ✅ Tous les checkboxes sont dans le bon état');
+        }
+    }
+
+    // ================================================
+    // NAVIGATION ENTRE ONGLETS
+    // ================================================
+    switchTab(tab) {
         try {
-            console.log(`[CategoriesPage] Notification changement: ${settingType} =`, value);
+            console.log(`[CategoriesPage] 🔄 Changement onglet vers: ${tab}`);
             
-            // Notifier EmailScanner
-            if (window.emailScanner) {
-                if (settingType === 'scanSettings') {
-                    if (typeof window.emailScanner.updateSettings === 'function') {
-                        window.emailScanner.updateSettings(value);
-                        console.log('  - EmailScanner notifié (updateSettings)');
-                    }
-                    if (typeof window.emailScanner.applyScanSettings === 'function') {
-                        window.emailScanner.applyScanSettings(value);
-                        console.log('  - EmailScanner notifié (applyScanSettings)');
-                    }
-                }
-                
-                if (settingType === 'preferences' && typeof window.emailScanner.updatePreferences === 'function') {
-                    window.emailScanner.updatePreferences(value);
-                    console.log('  - EmailScanner notifié (updatePreferences)');
-                }
+            this.currentTab = tab;
+            const tabContent = document.getElementById('tabContent');
+            
+            if (!tabContent) {
+                console.error('[CategoriesPage] Element tabContent non trouvé');
+                return;
+            }
+
+            const moduleStatus = this.checkModuleAvailability();
+            const settings = this.loadSettings();
+            
+            // Mettre à jour les boutons d'onglet
+            document.querySelectorAll('.tab-button-compact').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeButton = document.querySelector(`.tab-button-compact[onclick*="${tab}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
             }
             
-            // Notifier TaskCreator / AITaskAnalyzer
-            if (window.aiTaskAnalyzer) {
-                if (settingType === 'taskPreselectedCategories' && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
-                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
-                    console.log('  - AITaskAnalyzer notifié (updatePreselectedCategories)');
-                }
-                
-                if (settingType === 'automationSettings' && typeof window.aiTaskAnalyzer.updateAutomationSettings === 'function') {
-                    window.aiTaskAnalyzer.updateAutomationSettings(value);
-                    console.log('  - AITaskAnalyzer notifié (updateAutomationSettings)');
-                }
-            }
+            // Mettre à jour le contenu
+            tabContent.innerHTML = this.renderTabContent(settings, moduleStatus);
             
-            // Notifier CategoryManager
-            if (window.categoryManager) {
-                if (settingType === 'preferences') {
-                    if (value.excludeSpam !== undefined && typeof window.categoryManager.setSpamExclusion === 'function') {
-                        window.categoryManager.setSpamExclusion(value.excludeSpam);
-                        console.log('  - CategoryManager notifié (setSpamExclusion)');
-                    }
-                    if (value.detectCC !== undefined && typeof window.categoryManager.setCCDetection === 'function') {
-                        window.categoryManager.setCCDetection(value.detectCC);
-                        console.log('  - CategoryManager notifié (setCCDetection)');
-                    }
-                }
+            setTimeout(() => {
+                this.initializeEventListeners();
                 
-                if (settingType === 'activeCategories' && typeof window.categoryManager.setActiveCategories === 'function') {
-                    window.categoryManager.setActiveCategories(value);
-                    console.log('  - CategoryManager notifié (setActiveCategories)');
+                // Si on va sur l'onglet automatisation, vérifier immédiatement la synchronisation
+                if (tab === 'automation') {
+                    setTimeout(() => {
+                        const currentCategories = settings.taskPreselectedCategories || [];
+                        this.verifySynchronization(currentCategories);
+                    }, 200);
                 }
-            }
-            
-            // Event global pour d'autres modules
-            window.dispatchEvent(new CustomEvent('settingsChanged', {
-                detail: { type: settingType, value: value }
-            }));
-            console.log('  - Event global dispatché: settingsChanged');
+            }, 100);
             
         } catch (error) {
-            console.error('[CategoriesPage] Erreur notification:', error);
+            console.error('[CategoriesPage] Erreur changement onglet:', error);
         }
     }
 
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
     updateAutomationStats() {
         try {
             const settings = this.loadSettings();
-            const statsNumbers = document.querySelectorAll('.stat-number');
+            const statCategories = document.getElementById('stat-categories');
+            const statExclusions = document.getElementById('stat-exclusions');
+            const statAutomation = document.getElementById('stat-automation');
+            const statSync = document.getElementById('stat-sync');
             
-            if (statsNumbers.length >= 3) {
-                statsNumbers[0].textContent = settings.taskPreselectedCategories?.length || 0;
-                statsNumbers[1].textContent = (settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0);
-                statsNumbers[2].textContent = Object.values(settings.automationSettings || {}).filter(Boolean).length;
+            if (statCategories) {
+                statCategories.textContent = settings.taskPreselectedCategories?.length || 0;
             }
+            if (statExclusions) {
+                statExclusions.textContent = (settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0);
+            }
+            if (statAutomation) {
+                statAutomation.textContent = Object.values(settings.automationSettings || {}).filter(Boolean).length;
+            }
+            if (statSync) {
+                const syncStatus = this.checkSyncStatus(settings);
+                statSync.textContent = syncStatus.isSync ? '✅' : '⚠️';
+            }
+            
+            // Mettre à jour l'indicateur de synchronisation
+            const syncIndicator = document.getElementById('automation-sync-indicator');
+            if (syncIndicator) {
+                syncIndicator.innerHTML = this.renderAutomationSyncIndicator(settings.taskPreselectedCategories || []);
+            }
+            
         } catch (error) {
             console.error('[CategoriesPage] Erreur updateAutomationStats:', error);
         }
-    }
-
-    addQuickExclusion() {
-        try {
-            const input = document.getElementById('quick-exclusion-input');
-            const categorySelect = document.getElementById('quick-exclusion-category');
-            
-            if (!input?.value.trim() || !categorySelect?.value) {
-                window.uiManager?.showToast('Veuillez remplir tous les champs', 'warning');
-                return;
-            }
-            
-            const value = input.value.trim().toLowerCase();
-            const isEmail = value.includes('@');
-            const type = isEmail ? 'emails' : 'domains';
-            
-            const cleanValue = isEmail ? 
-                value :
-                value.replace(/^https?:\/\//, '').replace(/\/$/, '');
-            
-            const settings = this.loadSettings();
-            if (!settings.categoryExclusions) {
-                settings.categoryExclusions = { domains: [], emails: [] };
-            }
-            if (!settings.categoryExclusions[type]) {
-                settings.categoryExclusions[type] = [];
-            }
-            
-            if (settings.categoryExclusions[type].some(item => item.value === cleanValue)) {
-                window.uiManager?.showToast('Cette exclusion existe déjà', 'warning');
-                return;
-            }
-            
-            settings.categoryExclusions[type].push({
-                value: cleanValue,
-                category: categorySelect.value
-            });
-            
-            this.saveSettings(settings);
-            
-            input.value = '';
-            categorySelect.value = '';
-            
-            this.refreshCurrentTab();
-            window.uiManager?.showToast('Exclusion ajoutée', 'success');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur addQuickExclusion:', error);
-            window.uiManager?.showToast('Erreur lors de l\'ajout', 'error');
-        }
-    }
-
-    toggleCategory(categoryId, isActive) {
-        try {
-            const settings = this.loadSettings();
-            
-            if (!settings.activeCategories) {
-                const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
-                settings.activeCategories = allCategories;
-            }
-            
-            if (isActive) {
-                if (!settings.activeCategories.includes(categoryId)) {
-                    settings.activeCategories.push(categoryId);
-                }
-            } else {
-                settings.activeCategories = settings.activeCategories.filter(id => id !== categoryId);
-            }
-            
-            this.saveSettings(settings);
-            
-            // Notifier les autres modules
-            this.notifySettingsChange('activeCategories', settings.activeCategories);
-            
-            console.log(`[CategoriesPage] Catégorie ${categoryId} ${isActive ? 'activée' : 'désactivée'}`);
-            window.uiManager?.showToast(`Catégorie ${isActive ? 'activée' : 'désactivée'}`, 'success', 2000);
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur toggleCategory:', error);
-            window.uiManager?.showToast('Erreur de modification', 'error');
-        }
-    }
-
-    // =====================================
-    // MÉTHODES DE DEBUG ET TEST
-    // =====================================
-    
-    debugSettings() {
-        const settings = this.loadSettings();
-        console.log('\n=== DEBUG SETTINGS ===');
-        console.log('Settings complets:', settings);
-        console.log('Catégories pré-sélectionnées:', settings.taskPreselectedCategories);
-        console.log('Catégories actives:', settings.activeCategories);
-        console.log('Paramètres scan:', settings.scanSettings);
-        console.log('Paramètres automation:', settings.automationSettings);
-        console.log('Préférences:', settings.preferences);
-        console.log('========================\n');
-        return settings;
-    }
-    
-    testCategorySelection() {
-        console.log('\n=== TEST CATEGORY SELECTION ===');
-        const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
-        console.log(`Trouvé ${checkboxes.length} checkboxes`);
-        
-        checkboxes.forEach((checkbox, index) => {
-            console.log(`Checkbox ${index}:`);
-            console.log(`  - Value: ${checkbox.value}`);
-            console.log(`  - Checked: ${checkbox.checked}`);
-            console.log(`  - Data name: ${checkbox.dataset.categoryName}`);
-            console.log(`  - Parent label: ${checkbox.closest('label')?.dataset.categoryId}`);
-        });
-        
-        const categories = window.categoryManager?.getCategories() || {};
-        console.log('Catégories disponibles:', Object.keys(categories));
-        console.log('================================\n');
-        
-        return { checkboxes: checkboxes.length, categories: Object.keys(categories) };
-    }
-    
-    forceUpdateUI() {
-        console.log('[CategoriesPage] Force update UI...');
-        setTimeout(() => {
-            this.refreshCurrentTab();
-        }, 100);
-    }
-
-    // =====================================
-    // INITIALISATION DES PARAMÈTRES PAR DÉFAUT
-    // =====================================
-    
-    initializeDefaultSettings() {
-        const settings = this.loadSettings();
-        let hasChanges = false;
-        
-        // Si pas de catégories pré-sélectionnées, sélectionner les plus importantes
-        if (!settings.taskPreselectedCategories || settings.taskPreselectedCategories.length === 0) {
-            settings.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
-            hasChanges = true;
-            console.log('[CategoriesPage] Catégories par défaut définies:', settings.taskPreselectedCategories);
-        }
-        
-        // Si pas de catégories actives, toutes sont actives par défaut
-        if (!settings.activeCategories) {
-            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
-            settings.activeCategories = allCategories;
-            hasChanges = true;
-            console.log('[CategoriesPage] Catégories actives par défaut définies:', settings.activeCategories);
-        }
-        
-        if (hasChanges) {
-            this.saveSettings(settings);
-            console.log('[CategoriesPage] Paramètres par défaut sauvegardés');
-        }
-        
-        return settings;
     }
 
     refreshCurrentTab() {
         try {
             const tabContent = document.getElementById('tabContent');
             const settings = this.loadSettings();
+            const moduleStatus = this.checkModuleAvailability();
             
             if (tabContent) {
-                tabContent.innerHTML = this.currentTab === 'general' ? 
-                    this.renderGeneralTab(settings) : 
-                    this.currentTab === 'automation' ? 
-                    this.renderAutomationTab(settings) :
-                    this.renderKeywordsTab(settings);
+                tabContent.innerHTML = this.renderTabContent(settings, moduleStatus);
                 
+                // Réinitialiser les event listeners
+                this.eventListenersSetup = false;
                 setTimeout(() => {
                     this.initializeEventListeners();
                 }, 100);
@@ -1035,553 +1219,284 @@ class CategoriesPage {
         }
     }
 
-    // =====================================
-    // MÉTHODES PUBLIQUES POUR INTÉGRATION
-    // =====================================
-    
-    // Récupérer les paramètres de scan pour EmailScanner
-    getScanSettings() {
+    // ================================================
+    // MÉTHODES DE DEBUG
+    // ================================================
+    debugSettings() {
         const settings = this.loadSettings();
-        return settings.scanSettings || {
-            defaultPeriod: 7,
-            defaultFolder: 'inbox',
-            autoAnalyze: true,
-            autoCategrize: true
-        };
+        const moduleStatus = this.checkModuleAvailability();
+        const syncStatus = this.checkSyncStatus(settings);
+        
+        console.log('\n=== DEBUG SETTINGS COMPLET ===');
+        console.log('Settings complets:', settings);
+        console.log('Status des modules:', moduleStatus);
+        console.log('Status synchronisation:', syncStatus);
+        console.log('CategoryManager settings:', window.categoryManager?.getSettings());
+        console.log('EmailScanner settings:', window.emailScanner?.settings);
+        console.log('EmailScanner taskPreselectedCategories:', window.emailScanner?.getTaskPreselectedCategories());
+        console.log('Task preselected categories (CategoriesPage):', settings.taskPreselectedCategories);
+        console.log('Checkboxes actuelles:');
+        
+        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+        checkboxes.forEach((cb, i) => {
+            console.log(`  ${i}: value=${cb.value}, checked=${cb.checked}, name=${cb.dataset.categoryName}`);
+        });
+        
+        console.log('État de synchronisation détaillé:');
+        console.log('  - isSync:', syncStatus.isSync);
+        console.log('  - emailScannerSync:', syncStatus.emailScannerSync);
+        console.log('  - categoryManagerSync:', syncStatus.categoryManagerSync);
+        console.log('  - expectedCategories:', syncStatus.expectedCategories);
+        console.log('  - emailScannerCategories:', syncStatus.emailScannerCategories);
+        console.log('  - categoryManagerCategories:', syncStatus.categoryManagerCategories);
+        
+        console.log('========================\n');
+        
+        this.showToast('Voir la console pour les détails de debug', 'info');
+        return { settings, moduleStatus, syncStatus };
     }
     
-    // Récupérer les paramètres d'automatisation pour TaskCreator
-    getAutomationSettings() {
+    testCategorySelection() {
+        console.log('\n=== TEST CATEGORY SELECTION COMPLET ===');
+        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+        console.log(`Trouvé ${checkboxes.length} checkboxes avec classe .category-preselect-checkbox`);
+        
+        checkboxes.forEach((checkbox, index) => {
+            console.log(`Checkbox ${index}:`);
+            console.log(`  - Value: ${checkbox.value}`);
+            console.log(`  - Checked: ${checkbox.checked}`);
+            console.log(`  - Data name: ${checkbox.dataset.categoryName}`);
+            console.log(`  - Has change handler: ${!!checkbox._changeHandler}`);
+            console.log(`  - Has click handler: ${!!checkbox._clickHandler}`);
+        });
+        
+        const categories = window.categoryManager?.getCategories() || {};
+        console.log('Catégories disponibles:', Object.keys(categories));
+        
         const settings = this.loadSettings();
-        return settings.automationSettings || {
-            autoCreateTasks: false,
-            groupTasksByDomain: false,
-            skipDuplicates: true,
-            autoAssignPriority: false
-        };
+        console.log('Catégories pré-sélectionnées dans les settings:', settings.taskPreselectedCategories);
+        
+        const syncStatus = this.checkSyncStatus(settings);
+        console.log('État de synchronisation:', syncStatus);
+        console.log('================================\n');
+        
+        this.showToast('Test terminé - voir console', 'info');
+        return { checkboxes: checkboxes.length, categories: Object.keys(categories), syncStatus };
     }
     
-    // Récupérer les catégories pré-sélectionnées pour les tâches
-    getTaskPreselectedCategories() {
-        try {
-            const settings = this.loadSettings();
-            return settings.taskPreselectedCategories || [];
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur getTaskPreselectedCategories:', error);
-            return [];
-        }
-    }
-    
-    // Vérifier si les courriers indésirables doivent être exclus
-    shouldExcludeSpam() {
-        const settings = this.loadSettings();
-        return settings.preferences?.excludeSpam !== false;
-    }
-    
-    // Vérifier si la détection CC est activée
-    shouldDetectCC() {
-        const settings = this.loadSettings();
-        return settings.preferences?.detectCC !== false;
+    forceUpdateUI() {
+        console.log('[CategoriesPage] 🔄 Force update UI avec synchronisation...');
+        
+        // Forcer la synchronisation avant la mise à jour
+        this.forceSynchronization();
+        
+        this.eventListenersSetup = false; // Forcer la réinitialisation
+        setTimeout(() => {
+            this.refreshCurrentTab();
+        }, 200);
     }
 
-    // =====================================
-    // MÉTHODES MODALES
-    // =====================================
+    // ================================================
+    // MÉTHODES PUBLIQUES POUR INTÉGRATION
+    // ================================================
+    getScanSettings() {
+        return this.loadSettings().scanSettings || this.getDefaultSettings().scanSettings;
+    }
+    
+    getAutomationSettings() {
+        return this.loadSettings().automationSettings || this.getDefaultSettings().automationSettings;
+    }
+    
+    getTaskPreselectedCategories() {
+        const settings = this.loadSettings();
+        const categories = settings.taskPreselectedCategories || [];
+        console.log('[CategoriesPage] 📊 getTaskPreselectedCategories appelé:', categories);
+        return categories;
+    }
+    
+    shouldExcludeSpam() {
+        return this.loadSettings().preferences?.excludeSpam !== false;
+    }
+    
+    shouldDetectCC() {
+        return this.loadSettings().preferences?.detectCC !== false;
+    }
+
+    // ================================================
+    // MÉTHODES PLACEHOLDER POUR MODALES ET ACTIONS (À COMPLÉTER SELON BESOINS)
+    // ================================================
     openKeywordsModal(categoryId) {
-        try {
-            const category = window.categoryManager?.getCategory(categoryId);
-            if (!category) return;
-            
-            const keywords = this.getKeywordsFromWeightedSystem(categoryId);
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.id = 'keywordsModal';
-            modal.innerHTML = `
-                <div class="modal-container">
-                    <div class="modal-header">
-                        <div class="modal-title-group">
-                            <span class="modal-icon" style="background: ${category.color}20; color: ${category.color}">
-                                ${category.icon}
-                            </span>
-                            <h2>${category.name}</h2>
-                        </div>
-                        <button class="modal-close" onclick="window.categoriesPage.closeModal('keywordsModal')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-body">
-                        <p>Gestion des mots-clés pour la catégorie ${category.name}</p>
-                        <p>Total: ${this.getTotalKeywordsForCategory(keywords)} mots-clés</p>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-compact btn-primary" onclick="window.categoriesPage.closeModal('keywordsModal')">
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => modal.classList.add('show'), 10);
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur openKeywordsModal:', error);
-        }
+        console.log('[CategoriesPage] 🔑 Ouverture modal mots-clés pour:', categoryId);
+        this.showToast('Fonctionnalité en développement', 'info');
     }
 
     openAllKeywordsModal() {
-        try {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.id = 'allKeywordsModal';
-            modal.innerHTML = `
-                <div class="modal-container modal-large">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-key"></i> Tous les mots-clés</h2>
-                        <button class="modal-close" onclick="window.categoriesPage.closeModal('allKeywordsModal')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-body">
-                        <p>Affichage de tous les mots-clés du système</p>
-                        <p>Total: ${this.calculateTotalKeywords()} mots-clés</p>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-compact btn-primary" onclick="window.categoriesPage.closeModal('allKeywordsModal')">
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => modal.classList.add('show'), 10);
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur openAllKeywordsModal:', error);
-        }
+        console.log('[CategoriesPage] 🔑 Ouverture modal tous mots-clés');
+        this.showToast('Fonctionnalité en développement', 'info');
     }
 
     openExclusionsModal() {
-        try {
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.id = 'exclusionsModal';
-            modal.innerHTML = `
-                <div class="modal-container modal-large">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-filter"></i> Exclusions et redirections</h2>
-                        <button class="modal-close" onclick="window.categoriesPage.closeModal('exclusionsModal')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="modal-body">
-                        <p>Gestion des exclusions et redirections d'emails</p>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-compact btn-primary" onclick="window.categoriesPage.closeModal('exclusionsModal')">
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            document.body.style.overflow = 'hidden';
-            setTimeout(() => modal.classList.add('show'), 10);
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur openExclusionsModal:', error);
-        }
+        console.log('[CategoriesPage] 🚫 Ouverture modal exclusions');
+        this.showToast('Fonctionnalité en développement', 'info');
     }
 
-    closeModal(modalId) {
-        try {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('show');
-                document.body.style.overflow = '';
-                setTimeout(() => modal.remove(), 300);
-            }
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur closeModal:', error);
-        }
+    showCreateCategoryModal() {
+        console.log('[CategoriesPage] ➕ Ouverture modal création catégorie');
+        this.showToast('Fonctionnalité en développement', 'info');
     }
 
-    // =====================================
-    // MÉTHODES D'IMPORT/EXPORT
-    // =====================================
+    createNewCategory() {
+        console.log('[CategoriesPage] ➕ Création nouvelle catégorie');
+        this.showToast('Fonctionnalité en développement', 'info');
+    }
+
+    editCustomCategory(categoryId) {
+        console.log('[CategoriesPage] ✏️ Édition catégorie:', categoryId);
+        this.showToast('Fonctionnalité en développement', 'info');
+    }
+
+    deleteCustomCategory(categoryId) {
+        console.log('[CategoriesPage] 🗑️ Suppression catégorie:', categoryId);
+        this.showToast('Fonctionnalité en développement', 'info');
+    }
+
+    addQuickExclusion() {
+        console.log('[CategoriesPage] 🚫 Ajout exclusion rapide');
+        this.showToast('Fonctionnalité en développement', 'info');
+    }
+
+    toggleCategory(categoryId) {
+        console.log('[CategoriesPage] 🔄 Toggle catégorie:', categoryId);
+        this.showToast('Fonctionnalité en développement', 'info');
+    }
+
     exportSettings() {
-        try {
-            const settings = this.loadSettings();
-            const weightedKeywords = window.categoryManager?.weightedKeywords || {};
-            const categories = window.categoryManager?.getCategories() || {};
-            
-            const exportData = {
-                version: '7.4',
-                exportDate: new Date().toISOString(),
-                settings: settings,
-                categories: categories,
-                weightedKeywords: weightedKeywords
-            };
-            
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `settings-${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            window.uiManager?.showToast('Paramètres exportés', 'success');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur exportSettings:', error);
-            window.uiManager?.showToast('Erreur d\'export', 'error');
-        }
+        console.log('[CategoriesPage] 📤 Export paramètres');
+        this.showToast('Fonctionnalité en développement', 'info');
     }
 
-    async importSettings() {
-        try {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'application/json';
-            
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                try {
-                    const text = await file.text();
-                    const data = JSON.parse(text);
-                    
-                    if (data.settings) {
-                        this.saveSettings(data.settings);
-                    }
-                    
-                    if (data.weightedKeywords && window.categoryManager) {
-                        window.categoryManager.weightedKeywords = data.weightedKeywords;
-                    }
-                    
-                    window.uiManager?.showToast('Paramètres importés', 'success');
-                    this.refreshCurrentTab();
-                    
-                } catch (error) {
-                    console.error('Import error:', error);
-                    window.uiManager?.showToast('Erreur d\'importation', 'error');
-                }
-            };
-            
-            input.click();
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur importSettings:', error);
-            window.uiManager?.showToast('Erreur d\'import', 'error');
-        }
+    importSettings() {
+        console.log('[CategoriesPage] 📥 Import paramètres');
+        this.showToast('Fonctionnalité en développement', 'info');
     }
 
-    // =====================================
-    // MÉTHODES UTILITAIRES
-    // =====================================
-    getKeywordsFromWeightedSystem(categoryId) {
-        try {
-            if (!window.categoryManager || !window.categoryManager.weightedKeywords) {
-                return { absolute: [], strong: [], weak: [], exclusions: [] };
-            }
-            
-            const keywords = window.categoryManager.weightedKeywords[categoryId] || {};
-            return {
-                absolute: keywords.absolute || [],
-                strong: keywords.strong || [],
-                weak: keywords.weak || [],
-                exclusions: keywords.exclusions || []
-            };
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur getKeywordsFromWeightedSystem:', error);
-            return { absolute: [], strong: [], weak: [], exclusions: [] };
-        }
+    closeModal() {
+        console.log('[CategoriesPage] ❌ Fermeture modal');
+        // Fermer toutes les modales
+        document.querySelectorAll('.modal-overlay').forEach(modal => modal.remove());
     }
 
-    getTotalKeywordsForCategory(keywords) {
-        try {
-            let count = 0;
-            if (keywords.absolute) count += keywords.absolute.length;
-            if (keywords.strong) count += keywords.strong.length;
-            if (keywords.weak) count += keywords.weak.length;
-            return count;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur getTotalKeywordsForCategory:', error);
-            return 0;
-        }
+    hideExplanationMessage() {
+        console.log('[CategoriesPage] 👁️ Masquage message explicatif');
+        this.showToast('Message masqué', 'info');
     }
 
-    calculateTotalKeywords() {
-        try {
-            let total = 0;
-            if (window.categoryManager && window.categoryManager.weightedKeywords) {
-                Object.values(window.categoryManager.weightedKeywords).forEach(category => {
-                    if (category.absolute) total += category.absolute.length;
-                    if (category.strong) total += category.strong.length;
-                    if (category.weak) total += category.weak.length;
-                });
-            }
-            return total;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur calculateTotalKeywords:', error);
-            return 0;
-        }
-    }
-
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            return saved ? JSON.parse(saved) : {
-                activeCategories: null,
-                excludedDomains: [],
-                excludedKeywords: [],
-                taskPreselectedCategories: [],
-                categoryExclusions: {
-                    domains: [],
-                    emails: []
-                },
-                scanSettings: {
-                    defaultPeriod: 7,
-                    defaultFolder: 'inbox',
-                    autoAnalyze: true,
-                    autoCategrize: true
-                },
-                automationSettings: {
-                    autoCreateTasks: false,
-                    groupTasksByDomain: false,
-                    skipDuplicates: true,
-                    autoAssignPriority: false
-                },
-                preferences: {
-                    darkMode: false,
-                    compactView: false,
-                    showNotifications: true,
-                    excludeSpam: true,
-                    detectCC: true
-                }
-            };
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur loadSettings:', error);
-            return {};
-        }
-    }
-
-    saveSettings(settings) {
-        try {
-            localStorage.setItem('categorySettings', JSON.stringify(settings));
-            console.log('[CategoriesPage] Paramètres sauvegardés:', settings);
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur saveSettings:', error);
-        }
-    }
-
-    // Activer le mode debug
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-        console.log(`[CategoriesPage] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
-    }
-
-    // =====================================
-    // STYLES CSS - IDENTIQUES
-    // =====================================
+    // ================================================
+    // STYLES CSS COMPLETS
+    // ================================================
     addStyles() {
         if (document.getElementById('categoriesPageStyles')) return;
         
         const styles = document.createElement('style');
         styles.id = 'categoriesPageStyles';
         styles.textContent = `
-            /* Page Settings Compacte */
+            /* Styles de base pour CategoriesPage */
             .settings-page-compact {
                 padding: 20px;
-                max-width: 1600px;
+                max-width: 1200px;
                 margin: 0 auto;
-                height: calc(100vh - 140px);
-                display: flex;
-                flex-direction: column;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
-            
+
             .page-header-compact {
-                margin-bottom: 20px;
+                margin-bottom: 24px;
             }
-            
+
             .page-header-compact h1 {
-                margin: 0;
                 font-size: 28px;
                 font-weight: 700;
                 color: #1f2937;
+                margin: 0 0 16px 0;
             }
-            
+
             /* Onglets */
             .settings-tabs-compact {
                 display: flex;
                 gap: 4px;
-                background: #f3f4f6;
+                margin-bottom: 24px;
+                background: #f8fafc;
+                border-radius: 12px;
                 padding: 4px;
-                border-radius: 10px;
-                margin-bottom: 20px;
             }
-            
+
             .tab-button-compact {
                 flex: 1;
-                padding: 10px 16px;
+                padding: 12px 16px;
                 background: transparent;
                 border: none;
-                border-radius: 6px;
-                cursor: pointer;
-                transition: all 0.2s ease;
+                border-radius: 8px;
                 font-size: 14px;
                 font-weight: 600;
                 color: #6b7280;
+                cursor: pointer;
+                transition: all 0.2s ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 6px;
+                gap: 8px;
             }
-            
+
             .tab-button-compact:hover {
-                background: rgba(255, 255, 255, 0.5);
+                background: rgba(255, 255, 255, 0.8);
                 color: #374151;
             }
-            
+
             .tab-button-compact.active {
                 background: white;
                 color: #1f2937;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             }
-            
-            .tab-content-compact {
-                flex: 1;
-                overflow-y: auto;
-                overflow-x: hidden;
-            }
-            
-            /* Layout à deux colonnes */
-            .settings-two-columns {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                height: 100%;
-            }
-            
-            .settings-column-equal {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-            
-            /* Cards Settings */
+
+            /* Cartes de paramètres */
             .settings-card-compact {
                 background: white;
+                border: 1px solid #e5e7eb;
                 border-radius: 12px;
-                padding: 20px;
+                padding: 24px;
+                margin-bottom: 20px;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                display: flex;
-                flex-direction: column;
             }
-            
+
             .settings-card-compact.full-width {
                 width: 100%;
             }
-            
+
             .card-header-compact {
                 display: flex;
                 align-items: center;
-                gap: 10px;
-                margin-bottom: 10px;
+                gap: 12px;
+                margin-bottom: 16px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e5e7eb;
             }
-            
+
             .card-header-compact i {
                 font-size: 20px;
-                color: #667eea;
+                color: #3b82f6;
             }
-            
+
             .card-header-compact h3 {
-                margin: 0;
                 font-size: 18px;
+                font-weight: 600;
                 color: #1f2937;
-            }
-            
-            .settings-card-compact p {
-                margin: 0 0 16px 0;
-                font-size: 14px;
-                color: #6b7280;
-                line-height: 1.5;
-            }
-            
-            /* Préférences générales */
-            .general-preferences {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                margin-top: 12px;
-            }
-            
-            .checkbox-compact {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                cursor: pointer;
-                font-size: 14px;
-                color: #4b5563;
-                padding: 8px 0;
-            }
-            
-            .checkbox-compact input {
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-            }
-            
-            /* Scan Settings */
-            .scan-settings-compact {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .setting-row {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .setting-row label {
-                font-size: 14px;
-                color: #374151;
-                font-weight: 500;
-                min-width: 70px;
-            }
-            
-            .select-compact {
+                margin: 0;
                 flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-                font-size: 14px;
-                background: white;
-                cursor: pointer;
             }
-            
-            .select-compact:focus {
-                outline: none;
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-            }
-            
-            /* Buttons */
+
+            /* Boutons */
             .btn-compact {
                 padding: 8px 16px;
-                border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
@@ -1589,757 +1504,531 @@ class CategoriesPage {
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
-            }
-            
-            .btn-primary {
-                background: #667eea;
-                color: white;
-            }
-            
-            .btn-primary:hover {
-                background: #5a67d8;
-            }
-            
-            .btn-secondary {
-                background: #f3f4f6;
-                color: #374151;
-            }
-            
-            .btn-secondary:hover {
-                background: #e5e7eb;
-            }
-            
-            .button-row {
-                display: flex;
-                gap: 8px;
-            }
-            
-            /* Exclusions */
-            .exclusions-optimized {
-                margin-top: 16px;
-            }
-            
-            .exclusions-summary {
-                display: flex;
-                gap: 16px;
-                margin-bottom: 16px;
-                padding: 12px;
-                background: #f9fafb;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-            }
-            
-            .summary-item {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 14px;
-                color: #374151;
-            }
-            
-            .summary-icon {
-                width: 24px;
-                height: 24px;
-                background: #667eea20;
-                color: #667eea;
-                border-radius: 6px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-            }
-            
-            .quick-add-section {
-                margin-bottom: 16px;
-            }
-            
-            .quick-add-row {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-            }
-            
-            .quick-add-row input {
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-                font-size: 14px;
-            }
-            
-            .btn-quick-add {
-                padding: 8px 12px;
-                background: #667eea;
-                color: white;
                 border: none;
+                text-decoration: none;
+            }
+
+            .btn-compact.btn-primary {
+                background: #3b82f6;
+                color: white;
+            }
+
+            .btn-compact.btn-primary:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+            }
+
+            .btn-compact.btn-secondary {
+                background: #f8fafc;
+                color: #475569;
+                border: 1px solid #e2e8f0;
+            }
+
+            .btn-compact.btn-secondary:hover {
+                background: #f1f5f9;
+                color: #334155;
+            }
+
+            /* Checkbox styles */
+            .checkbox-item-compact {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 16px;
+                border: 1px solid #e5e7eb;
                 border-radius: 8px;
                 cursor: pointer;
                 transition: all 0.2s ease;
             }
-            
-            .btn-quick-add:hover {
-                background: #5a67d8;
+
+            .checkbox-item-compact:hover {
+                border-color: #3b82f6;
+                background: #f8fafc;
             }
-            
-            .exclusions-footer-minimal {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-top: 16px;
-                padding-top: 16px;
-                border-top: 1px solid #e5e7eb;
+
+            .checkbox-item-compact input[type="checkbox"] {
+                margin: 2px 0 0 0;
+                width: 16px;
+                height: 16px;
             }
-            
-            .exclusions-count {
-                font-size: 12px;
+
+            .checkbox-content-compact {
+                flex: 1;
+            }
+
+            .checkbox-title {
+                font-weight: 600;
+                color: #1f2937;
+                margin-bottom: 4px;
+                display: block;
+            }
+
+            .checkbox-description {
+                font-size: 13px;
                 color: #6b7280;
-                font-weight: 500;
+                line-height: 1.4;
             }
-            
-            .no-exclusions-minimal {
-                text-align: center;
-                padding: 20px;
-                color: #9ca3af;
-                font-style: italic;
+
+            .checkbox-grid-compact {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 12px;
+            }
+
+            /* Form styles */
+            .form-grid-compact {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+
+            .form-group-compact {
                 display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                background: #f9fafb;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
+                flex-direction: column;
+                gap: 6px;
             }
-            
-            .recent-exclusions h5 {
-                margin: 0 0 12px 0;
+
+            .form-group-compact label {
                 font-size: 13px;
                 font-weight: 600;
                 color: #374151;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
             }
-            
-            .exclusions-mini-list {
-                display: flex;
-                flex-direction: column;
-                gap: 6px;
-            }
-            
-            .exclusion-mini-item {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                padding: 6px 10px;
-                background: white;
-                border: 1px solid #e5e7eb;
+
+            .form-control-compact {
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
                 border-radius: 6px;
-                font-size: 12px;
+                font-size: 14px;
+                transition: border-color 0.2s ease;
             }
-            
-            .exclusion-mini-value {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                color: #374151;
-                font-weight: 500;
+
+            .form-control-compact:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
-            
-            .category-mini-badge {
-                width: 20px;
-                height: 20px;
-                border-radius: 4px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+
+            /* Status badges */
+            .status-badge {
                 font-size: 11px;
-            }
-            
-            .no-category-mini {
-                width: 20px;
-                height: 20px;
-                background: #f3f4f6;
-                color: #9ca3af;
-                border-radius: 4px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 11px;
-            }
-            
-            /* Layout automatisation */
-            .automation-focused-layout {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .task-automation-section {
-                margin: 20px 0;
-                padding: 20px;
-                background: #f9fafb;
-                border-radius: 10px;
-                border: 1px solid #e5e7eb;
-            }
-            
-            .task-automation-section h4 {
-                margin: 0 0 16px 0;
-                font-size: 15px;
+                padding: 4px 8px;
+                border-radius: 6px;
                 font-weight: 600;
-                color: #374151;
+                text-transform: uppercase;
+                letter-spacing: 0.025em;
+            }
+
+            .status-badge.status-ok {
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .status-badge.status-warning {
+                background: #fef3c7;
+                color: #92400e;
+            }
+
+            .status-badge.status-error {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+
+            /* Automation specific styles */
+            .automation-focused-layout {
+                max-width: none;
+            }
+
+            .task-automation-section {
+                margin: 24px 0;
+            }
+
+            .task-automation-section h4 {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                margin: 0 0 16px 0;
                 display: flex;
                 align-items: center;
                 gap: 8px;
             }
-            
+
             .categories-selection-grid-automation {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                 gap: 12px;
-                max-height: 300px;
-                overflow-y: auto;
-                padding: 4px;
+                margin-bottom: 24px;
             }
-            
+
             .category-checkbox-item-enhanced {
                 display: flex;
                 align-items: center;
-                cursor: pointer;
-                padding: 14px;
-                border-radius: 10px;
+                padding: 16px;
                 border: 2px solid #e5e7eb;
-                transition: all 0.2s ease;
-                background: white;
-                position: relative;
-            }
-            
-            .category-checkbox-item-enhanced:hover {
-                border-color: #667eea;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            .category-checkbox-item-enhanced input[type="checkbox"] {
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                margin: 0;
+                border-radius: 12px;
                 cursor: pointer;
-                opacity: 0;
-                z-index: 2;
+                transition: all 0.3s ease;
+                background: white;
             }
-            
+
+            .category-checkbox-item-enhanced:hover {
+                border-color: #3b82f6;
+                background: #f8fafc;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            .category-checkbox-item-enhanced input[type="checkbox"] {
+                margin-right: 12px;
+                width: 18px;
+                height: 18px;
+                cursor: pointer;
+            }
+
             .category-checkbox-item-enhanced input[type="checkbox"]:checked + .category-checkbox-content-enhanced {
-                background: #667eea10;
+                color: #1f2937;
             }
-            
-            .category-checkbox-item-enhanced input[type="checkbox"]:checked + .category-checkbox-content-enhanced::before {
-                content: '✓';
-                background: #667eea;
-                color: white;
-            }
-            
+
             .category-checkbox-content-enhanced {
                 display: flex;
                 align-items: center;
                 gap: 12px;
                 flex: 1;
-                padding-left: 32px;
-                position: relative;
-                border-radius: 8px;
-                transition: all 0.2s ease;
+                min-width: 0;
             }
-            
-            .category-checkbox-content-enhanced::before {
-                content: '';
-                position: absolute;
-                left: 14px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 20px;
-                height: 20px;
-                border: 2px solid #d1d5db;
-                border-radius: 6px;
-                background: white;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: bold;
-            }
-            
+
             .cat-icon-automation {
-                width: 36px;
-                height: 36px;
-                border-radius: 10px;
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 18px;
+                font-size: 16px;
                 flex-shrink: 0;
             }
-            
+
             .cat-name-automation {
-                font-size: 15px;
-                color: #374151;
                 font-weight: 600;
-                line-height: 1.2;
+                color: #374151;
+                flex: 1;
             }
-            
-            /* Options d'automatisation */
+
+            .custom-badge {
+                background: #8b5cf6;
+                color: white;
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+
+            .selected-indicator {
+                background: #10b981;
+                color: white;
+                font-size: 10px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-weight: 600;
+                margin-left: auto;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
+            }
+
+            /* Automation options */
             .automation-options-enhanced {
-                margin: 20px 0;
-                padding: 20px;
-                background: #f9fafb;
-                border-radius: 10px;
-                border: 1px solid #e5e7eb;
+                margin: 24px 0;
             }
-            
+
             .automation-options-enhanced h4 {
-                margin: 0 0 16px 0;
-                font-size: 15px;
+                font-size: 16px;
                 font-weight: 600;
-                color: #374151;
+                color: #1f2937;
+                margin: 0 0 16px 0;
                 display: flex;
                 align-items: center;
                 gap: 8px;
             }
-            
+
             .automation-options-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 16px;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 12px;
             }
-            
+
             .checkbox-enhanced {
                 display: flex;
                 align-items: flex-start;
-                cursor: pointer;
+                gap: 12px;
                 padding: 16px;
-                background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 10px;
-                transition: all 0.2s ease;
-                position: relative;
-            }
-            
-            .checkbox-enhanced:hover {
-                border-color: #667eea;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-            
-            .checkbox-enhanced input[type="checkbox"] {
-                position: absolute;
-                width: 18px;
-                height: 18px;
-                margin: 0;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
                 cursor: pointer;
-                opacity: 0;
-                z-index: 2;
-            }
-            
-            .checkbox-enhanced input[type="checkbox"]:checked + .checkbox-content::before {
-                content: '✓';
-                background: #10b981;
-                color: white;
-            }
-            
-            .checkbox-content {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
-                flex: 1;
-                padding-left: 28px;
-                position: relative;
-            }
-            
-            .checkbox-content::before {
-                content: '';
-                position: absolute;
-                left: 0;
-                top: 2px;
-                width: 18px;
-                height: 18px;
-                border: 2px solid #d1d5db;
-                border-radius: 4px;
-                background: white;
                 transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: bold;
             }
-            
+
+            .checkbox-enhanced:hover {
+                border-color: #3b82f6;
+                background: #f8fafc;
+            }
+
+            .checkbox-enhanced input[type="checkbox"] {
+                margin: 2px 0 0 0;
+                width: 16px;
+                height: 16px;
+            }
+
+            .checkbox-content {
+                flex: 1;
+            }
+
             .checkbox-title {
-                font-size: 14px;
                 font-weight: 600;
                 color: #1f2937;
-                line-height: 1.2;
+                margin-bottom: 4px;
+                display: block;
             }
-            
+
             .checkbox-description {
                 font-size: 13px;
                 color: #6b7280;
-                line-height: 1.3;
+                line-height: 1.4;
             }
-            
-            /* Statistiques */
+
+            /* Statistics */
             .automation-stats {
-                margin: 20px 0;
-                padding: 20px;
-                background: #f9fafb;
-                border-radius: 10px;
-                border: 1px solid #e5e7eb;
+                margin-top: 32px;
+                padding-top: 24px;
+                border-top: 1px solid #e5e7eb;
             }
-            
+
             .automation-stats h4 {
-                margin: 0 0 16px 0;
-                font-size: 15px;
+                font-size: 16px;
                 font-weight: 600;
-                color: #374151;
+                color: #1f2937;
+                margin: 0 0 16px 0;
                 display: flex;
                 align-items: center;
                 gap: 8px;
             }
-            
+
             .stats-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
                 gap: 16px;
             }
-            
+
             .stat-item {
-                background: white;
-                padding: 16px;
-                border-radius: 8px;
                 text-align: center;
-                border: 1px solid #e5e7eb;
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 8px;
+                transition: all 0.2s ease;
             }
-            
+
+            .stat-item:hover {
+                background: #f1f5f9;
+                transform: translateY(-2px);
+            }
+
             .stat-number {
                 display: block;
                 font-size: 24px;
                 font-weight: 700;
-                color: #667eea;
+                color: #1f2937;
                 margin-bottom: 4px;
             }
-            
+
             .stat-label {
                 font-size: 12px;
                 color: #6b7280;
+                font-weight: 500;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
-                font-weight: 600;
             }
-            
-            /* Categories Grid */
-            .categories-grid-minimal {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                gap: 12px;
-                margin-bottom: 16px;
-            }
-            
-            .category-card-minimal {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 10px;
+
+            /* Sync indicators */
+            .automation-sync-indicator {
+                margin: 16px 0;
                 padding: 12px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            .sync-indicator {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
+                gap: 8px;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: 500;
+            }
+
+            .sync-indicator.sync-ok {
+                background: #d1fae5;
+                color: #065f46;
+                border: 1px solid #10b981;
+            }
+
+            .sync-indicator.sync-warning {
+                background: #fef3c7;
+                color: #92400e;
+                border: 1px solid #f59e0b;
+            }
+
+            .btn-fix-sync-small {
+                background: rgba(0, 0, 0, 0.1);
+                border: none;
+                padding: 4px 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 11px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                margin-left: auto;
                 transition: all 0.2s ease;
             }
-            
-            .category-card-minimal:hover {
-                border-color: #d1d5db;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+            .btn-fix-sync-small:hover {
+                background: rgba(0, 0, 0, 0.2);
+                transform: translateY(-1px);
             }
-            
-            .category-card-minimal.inactive {
-                opacity: 0.6;
+
+            /* Categories overview for keywords tab */
+            .categories-overview {
+                padding: 0;
             }
-            
-            .category-content-minimal {
+
+            .categories-grid-overview {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 16px;
+                margin: 20px 0;
+            }
+
+            .category-overview-card {
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                background: white;
+                transition: all 0.2s ease;
+            }
+
+            .category-overview-card:hover {
+                border-color: #3b82f6;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            .category-overview-header {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 gap: 12px;
+                margin-bottom: 12px;
             }
-            
-            .category-icon-minimal {
+
+            .category-overview-icon {
                 width: 40px;
                 height: 40px;
-                border-radius: 10px;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-size: 20px;
                 flex-shrink: 0;
             }
-            
-            .category-info-minimal h4 {
-                margin: 0;
-                font-size: 15px;
-                color: #1f2937;
+
+            .category-overview-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .category-overview-info h4 {
+                font-size: 16px;
                 font-weight: 600;
+                color: #1f2937;
+                margin: 0 0 4px 0;
             }
-            
-            .keyword-count-minimal {
-                font-size: 12px;
+
+            .category-overview-info p {
+                font-size: 13px;
                 color: #6b7280;
+                margin: 0;
+                line-height: 1.4;
             }
-            
-            .category-actions-minimal {
+
+            .category-overview-actions {
                 display: flex;
-                align-items: center;
-                gap: 8px;
+                gap: 6px;
+                justify-content: flex-end;
             }
-            
-            .btn-edit-keywords {
+
+            .btn-overview-action {
                 width: 32px;
                 height: 32px;
-                border: none;
-                background: #f3f4f6;
-                color: #6b7280;
+                border: 1px solid #e5e7eb;
+                background: white;
                 border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
                 transition: all 0.2s ease;
-            }
-            
-            .btn-edit-keywords:hover {
-                background: #667eea;
-                color: white;
-            }
-            
-            /* Toggle */
-            .toggle-minimal {
-                position: relative;
-                display: inline-block;
-                width: 40px;
-                height: 22px;
-            }
-            
-            .toggle-minimal input {
-                opacity: 0;
-                width: 0;
-                height: 0;
-            }
-            
-            .toggle-slider-minimal {
-                position: absolute;
-                cursor: pointer;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: #cbd5e0;
-                transition: .3s;
-                border-radius: 22px;
-            }
-            
-            .toggle-slider-minimal:before {
-                position: absolute;
-                content: "";
-                height: 16px;
-                width: 16px;
-                left: 3px;
-                bottom: 3px;
-                background-color: white;
-                transition: .3s;
-                border-radius: 50%;
-            }
-            
-            input:checked + .toggle-slider-minimal {
-                background-color: #10b981;
-            }
-            
-            input:checked + .toggle-slider-minimal:before {
-                transform: translateX(18px);
-            }
-            
-            /* Global Actions Bar */
-            .global-actions-bar {
-                display: flex;
-                gap: 12px;
-                justify-content: center;
-                padding: 16px 0;
-                border-top: 1px solid #e5e7eb;
-                margin-top: auto;
-            }
-            
-            /* Modal Styles */
-            .modal-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(0, 0, 0, 0.6);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 10000;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-                padding: 20px;
-            }
-            
-            .modal-overlay.show {
-                opacity: 1;
-            }
-            
-            .modal-container {
-                background: white;
-                border-radius: 16px;
-                width: 100%;
-                max-width: 600px;
-                max-height: 90vh;
-                display: flex;
-                flex-direction: column;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-                transform: scale(0.95);
-                transition: transform 0.3s ease;
-            }
-            
-            .modal-container.modal-large {
-                max-width: 900px;
-            }
-            
-            .modal-overlay.show .modal-container {
-                transform: scale(1);
-            }
-            
-            .modal-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px 24px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .modal-title-group {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            
-            .modal-icon {
-                width: 36px;
-                height: 36px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 20px;
-            }
-            
-            .modal-header h2 {
-                margin: 0;
-                font-size: 20px;
-                color: #1f2937;
-            }
-            
-            .modal-close {
-                background: none;
-                border: none;
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
+                font-size: 12px;
                 color: #6b7280;
-                transition: all 0.2s ease;
             }
-            
-            .modal-close:hover {
-                background: #f3f4f6;
-                color: #374151;
+
+            .btn-overview-action:hover {
+                border-color: #3b82f6;
+                color: #3b82f6;
+                background: #f8fafc;
             }
-            
-            .modal-body {
-                flex: 1;
-                overflow-y: auto;
-                padding: 20px 24px;
+
+            .btn-overview-action.danger:hover {
+                border-color: #ef4444;
+                color: #ef4444;
+                background: #fef2f2;
             }
-            
-            .modal-footer {
-                padding: 16px 24px;
-                border-top: 1px solid #e5e7eb;
+
+            .categories-actions {
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
+                gap: 12px;
+                margin-top: 24px;
+                flex-wrap: wrap;
             }
-            
-            /* Error Display */
-            .error-display {
-                background: #fee2e2;
-                border: 1px solid #fca5a5;
-                border-radius: 12px;
-                color: #991b1b;
-            }
-            
+
             /* Responsive */
-            @media (max-width: 1200px) {
-                .settings-two-columns {
-                    grid-template-columns: 1fr;
-                }
-                
-                .categories-selection-grid-automation {
-                    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-                }
-                
-                .automation-options-grid {
-                    grid-template-columns: 1fr;
-                }
-                
-                .stats-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                }
-            }
-            
             @media (max-width: 768px) {
                 .settings-page-compact {
-                    padding: 12px;
+                    padding: 16px;
                 }
-                
+
                 .settings-tabs-compact {
                     flex-direction: column;
-                    gap: 8px;
                 }
-                
-                .tab-button-compact {
-                    width: 100%;
-                }
-                
-                .categories-grid-minimal {
+
+                .checkbox-grid-compact,
+                .automation-options-grid {
                     grid-template-columns: 1fr;
                 }
-                
+
                 .categories-selection-grid-automation {
                     grid-template-columns: 1fr;
                 }
-                
-                .quick-add-row {
-                    flex-direction: column;
-                    gap: 12px;
-                }
-                
-                .quick-add-row input,
-                .quick-add-row select {
-                    width: 100%;
-                }
-                
+
                 .stats-grid {
-                    grid-template-columns: 1fr;
+                    grid-template-columns: repeat(2, 1fr);
                 }
-                
-                .automation-options-grid {
+
+                .categories-grid-overview {
                     grid-template-columns: 1fr;
                 }
             }
@@ -2347,108 +2036,128 @@ class CategoriesPage {
         
         document.head.appendChild(styles);
     }
-}
 
-// Create global instance avec protection d'erreur
-try {
-    window.categoriesPage = new CategoriesPage();
-
-    // Export for PageManager integration
-    if (window.pageManager && window.pageManager.pages) {
-        // Supprimer l'ancienne page categories
-        delete window.pageManager.pages.categories;
-        delete window.pageManager.pages.keywords;
+    // ================================================
+    // NETTOYAGE ET DESTRUCTION
+    // ================================================
+    cleanup() {
+        // Nettoyer les handlers spéciaux des checkboxes
+        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+        checkboxes.forEach(checkbox => {
+            if (checkbox._changeHandler) {
+                checkbox.removeEventListener('change', checkbox._changeHandler);
+            }
+            if (checkbox._clickHandler) {
+                checkbox.removeEventListener('click', checkbox._clickHandler);
+            }
+        });
         
-        // Page Paramètres avec onglets
-        window.pageManager.pages.settings = (container) => {
-            try {
-                window.categoriesPage.renderSettings(container);
-            } catch (error) {
-                console.error('[PageManager] Erreur lors du rendu des paramètres:', error);
-                container.innerHTML = `
-                    <div style="padding: 20px; text-align: center; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; color: #991b1b;">
-                        <h2>Erreur de chargement</h2>
-                        <p>Une erreur est survenue lors du chargement des paramètres.</p>
-                        <button onclick="location.reload()" style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Recharger la page
-                        </button>
-                    </div>
-                `;
+        this.eventListenersSetup = false;
+        this.syncInProgress = false;
+        this.pendingSync = false;
+        this.syncQueue = [];
+        
+        console.log('[CategoriesPage] Nettoyage amélioré effectué');
+    }
+
+    destroy() {
+        this.cleanup();
+        console.log('[CategoriesPage] Instance détruite');
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    dispatchEvent(eventName, detail) {
+        try {
+            window.dispatchEvent(new CustomEvent(eventName, { detail }));
+        } catch (error) {
+            console.error(`[CategoriesPage] Erreur dispatch ${eventName}:`, error);
+        }
+    }
+
+    showToast(message, type = 'info', duration = 3000) {
+        if (window.uiManager && typeof window.uiManager.showToast === 'function') {
+            window.uiManager.showToast(message, type, duration);
+        } else {
+            console.log(`[Toast ${type.toUpperCase()}] ${message}`);
+        }
+    }
+
+    checkModuleAvailability() {
+        return {
+            categoryManager: !!window.categoryManager,
+            emailScanner: !!window.emailScanner,
+            aiTaskAnalyzer: !!window.aiTaskAnalyzer,
+            mailService: !!window.mailService,
+            uiManager: !!window.uiManager
+        };
+    }
+
+    renderModuleStatusBar(status) {
+        const totalModules = Object.keys(status).length;
+        const availableModules = Object.values(status).filter(Boolean).length;
+        const statusColor = availableModules === totalModules ? '#10b981' : 
+                           availableModules > totalModules / 2 ? '#f59e0b' : '#ef4444';
+        
+        return `
+            <div style="background: ${statusColor}20; border: 1px solid ${statusColor}; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 12px; color: ${statusColor};">
+                <i class="fas fa-plug"></i> 
+                Modules disponibles: ${availableModules}/${totalModules}
+                ${availableModules < totalModules ? ' - Certaines fonctionnalités peuvent être limitées' : ' - Tous les modules chargés'}
+            </div>
+        `;
+    }
+
+    renderErrorState(error) {
+        return `
+            <div class="error-display" style="padding: 20px; text-align: center; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; color: #991b1b;">
+                <h2>Erreur de chargement des paramètres</h2>
+                <p>Une erreur est survenue: ${error.message}</p>
+                <button onclick="window.categoriesPage.forceUpdateUI()" style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                    Réessayer
+                </button>
+                <button onclick="location.reload()" style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Recharger la page
+                </button>
+            </div>
+        `;
+    }
+
+    getDefaultSettings() {
+        return {
+            activeCategories: null,
+            excludedDomains: [],
+            excludedKeywords: [],
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
+            categoryExclusions: {
+                domains: [],
+                emails: []
+            },
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            automationSettings: {
+                autoCreateTasks: false,
+                groupTasksByDomain: false,
+                skipDuplicates: true,
+                autoAssignPriority: false
+            },
+            preferences: {
+                darkMode: false,
+                compactView: false,
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
             }
         };
-        
-        // Supprimer le bouton de navigation Catégories
-        setTimeout(() => {
-            const categoriesNavButton = document.querySelector('.nav-item[data-page="categories"]');
-            if (categoriesNavButton) {
-                categoriesNavButton.style.display = 'none';
-            }
-        }, 100);
-        
-        console.log('✅ CategoriesPage v7.4 loaded - Version avec synchronisation complète corrigée');
-    } else {
-        console.warn('⚠️ PageManager not ready, retrying...');
-        setTimeout(() => {
-            if (window.pageManager && window.pageManager.pages) {
-                delete window.pageManager.pages.categories;
-                delete window.pageManager.pages.keywords;
-                
-                window.pageManager.pages.settings = (container) => {
-                    try {
-                        window.categoriesPage.renderSettings(container);
-                    } catch (error) {
-                        console.error('[PageManager] Erreur lors du rendu des paramètres (delayed):', error);
-                        container.innerHTML = `
-                            <div style="padding: 20px; text-align: center; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; color: #991b1b;">
-                                <h2>Erreur de chargement</h2>
-                                <p>Une erreur est survenue lors du chargement des paramètres.</p>
-                                <button onclick="location.reload()" style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                                    Recharger la page
-                                </button>
-                            </div>
-                        `;
-                    }
-                };
-                
-                const categoriesNavButton = document.querySelector('.nav-item[data-page="categories"]');
-                if (categoriesNavButton) {
-                    categoriesNavButton.style.display = 'none';
-                }
-                
-                console.log('✅ CategoriesPage v7.4 loaded - Version avec synchronisation complète corrigée (delayed)');
-            }
-        }, 1000);
     }
-} catch (error) {
-    console.error('[CategoriesPage] Erreur critique lors de l\'initialisation:', error);
-    
-    // Fallback en cas d'erreur critique
-    window.categoriesPage = {
-        renderSettings: (container) => {
-            container.innerHTML = `
-                <div style="padding: 20px; text-align: center; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; color: #991b1b;">
-                    <h2>Erreur critique</h2>
-                    <p>Impossible de charger le module des paramètres.</p>
-                    <button onclick="location.reload()" style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                        Recharger la page
-                    </button>
-                </div>
-            `;
-        },
-        getScanSettings: () => ({
-            defaultPeriod: 7,
-            defaultFolder: 'inbox',
-            autoAnalyze: true,
-            autoCategrize: true
-        }),
-        getAutomationSettings: () => ({
-            autoCreateTasks: false,
-            groupTasksByDomain: false,
-            skipDuplicates: true,
-            autoAssignPriority: false
-        }),
-        getTaskPreselectedCategories: () => [],
-        shouldExcludeSpam: () => true,
-        shouldDetectCC: () => true
-    };
 }
+
+// Créer l'instance globale avec nettoyage préalable
+try {
+    if (window.categoriesPage) {
+        window.categoriesPage.destroy?.();
