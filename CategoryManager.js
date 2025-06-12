@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 16.1 - Correction CC et exclusion spam
+// CategoryManager.js - Version 16.2 - Synchronisation avec CategoriesPage
 
 class CategoryManager {
     constructor() {
@@ -6,9 +6,73 @@ class CategoryManager {
         this.isInitialized = false;
         this.debugMode = false;
         this.weightedKeywords = {};
+        this.currentSettings = {};
         this.initializeCategories();
         this.initializeWeightedDetection();
-        console.log('[CategoryManager] ✅ Version 16.1 - Correction CC et exclusion spam');
+        this.loadSettingsFromCategoriesPage();
+        console.log('[CategoryManager] ✅ Version 16.2 - Synchronisation avec CategoriesPage');
+    }
+
+    // ================================================
+    // CHARGEMENT DES PARAMÈTRES DEPUIS CATEGORIESPAGE
+    // ================================================
+    loadSettingsFromCategoriesPage() {
+        try {
+            if (window.categoriesPage) {
+                this.currentSettings = {
+                    excludeSpam: window.categoriesPage.shouldExcludeSpam(),
+                    detectCC: window.categoriesPage.shouldDetectCC(),
+                    activeCategories: window.categoriesPage.loadSettings().activeCategories
+                };
+                console.log('[CategoryManager] Paramètres chargés depuis CategoriesPage:', this.currentSettings);
+            } else {
+                // Valeurs par défaut
+                this.currentSettings = {
+                    excludeSpam: true,
+                    detectCC: true,
+                    activeCategories: null
+                };
+                console.log('[CategoryManager] CategoriesPage non disponible, paramètres par défaut utilisés');
+            }
+        } catch (error) {
+            console.error('[CategoryManager] Erreur chargement paramètres:', error);
+            this.currentSettings = {
+                excludeSpam: true,
+                detectCC: true,
+                activeCategories: null
+            };
+        }
+    }
+
+    // ================================================
+    // MÉTHODES POUR RECEVOIR LES NOTIFICATIONS DE CATEGORIESPAGE
+    // ================================================
+    setSpamExclusion(enabled) {
+        this.currentSettings.excludeSpam = enabled;
+        console.log(`[CategoryManager] Exclusion spam ${enabled ? 'activée' : 'désactivée'}`);
+    }
+
+    setCCDetection(enabled) {
+        this.currentSettings.detectCC = enabled;
+        console.log(`[CategoryManager] Détection CC ${enabled ? 'activée' : 'désactivée'}`);
+    }
+
+    setActiveCategories(activeCategories) {
+        this.currentSettings.activeCategories = activeCategories;
+        console.log('[CategoryManager] Catégories actives mises à jour:', activeCategories);
+    }
+
+    updateSettings(settings) {
+        if (settings.excludeSpam !== undefined) {
+            this.setSpamExclusion(settings.excludeSpam);
+        }
+        if (settings.detectCC !== undefined) {
+            this.setCCDetection(settings.detectCC);
+        }
+        if (settings.activeCategories !== undefined) {
+            this.setActiveCategories(settings.activeCategories);
+        }
+        console.log('[CategoryManager] Paramètres mis à jour:', this.currentSettings);
     }
 
     // ================================================
@@ -471,8 +535,8 @@ class CategoryManager {
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
         
-        // Filtrer les courriers indésirables en priorité
-        if (this.isSpamEmail(email)) {
+        // Filtrer les courriers indésirables en priorité SEULEMENT SI ACTIVÉ
+        if (this.currentSettings.excludeSpam && this.isSpamEmail(email)) {
             if (this.debugMode) {
                 console.log('[CategoryManager] Email spam détecté, ignoré:', email.subject);
             }
@@ -481,8 +545,8 @@ class CategoryManager {
         
         const content = this.extractCompleteContent(email);
         
-        // Vérification CC AVANT toute autre analyse
-        if (this.isInCC(email)) {
+        // Vérification CC AVANT toute autre analyse SEULEMENT SI ACTIVÉ
+        if (this.currentSettings.detectCC && this.isInCC(email)) {
             if (this.debugMode) {
                 console.log('[CategoryManager] Email en CC détecté:', email.subject);
             }
@@ -534,6 +598,71 @@ class CategoryManager {
         // Analyse normale pour les autres emails
         const allResults = this.analyzeAllCategories(content);
         return this.selectByPriorityWithThreshold(allResults);
+    }
+
+    // ================================================
+    // SÉLECTION PAR PRIORITÉ AVEC FILTRE CATÉGORIES ACTIVES
+    // ================================================
+    selectByPriorityWithThreshold(results) {
+        const MIN_SCORE_THRESHOLD = 30; // Score minimum requis pour la catégorisation
+        const MIN_CONFIDENCE_THRESHOLD = 0.5; // Confiance minimum requise
+        
+        // Filtrer selon les catégories actives
+        let filteredResults = Object.values(results);
+        
+        if (this.currentSettings.activeCategories && this.currentSettings.activeCategories.length > 0) {
+            filteredResults = filteredResults.filter(r => 
+                this.currentSettings.activeCategories.includes(r.category) ||
+                r.category === 'marketing_news' || // Toujours garder marketing pour filtrage
+                r.category === 'cc' // Toujours garder CC pour filtrage
+            );
+            
+            if (this.debugMode) {
+                console.log('[CategoryManager] Filtrage par catégories actives:', this.currentSettings.activeCategories);
+                console.log('Résultats après filtrage:', filteredResults.map(r => r.category));
+            }
+        }
+        
+        // Trier par priorité décroissante puis par score
+        const sortedResults = filteredResults
+            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
+            .sort((a, b) => {
+                // D'abord par priorité
+                if (a.priority !== b.priority) {
+                    return b.priority - a.priority;
+                }
+                // Ensuite par score
+                return b.score - a.score;
+            });
+        
+        if (this.debugMode) {
+            console.log('[CategoryManager] Scores par catégorie (avec seuil et filtrage):');
+            sortedResults.forEach(r => {
+                console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
+            });
+        }
+        
+        // Prendre le premier résultat qui passe le seuil
+        const bestResult = sortedResults[0];
+        
+        if (bestResult) {
+            return {
+                category: bestResult.category,
+                score: bestResult.score,
+                confidence: bestResult.confidence,
+                matchedPatterns: bestResult.matches,
+                hasAbsolute: bestResult.hasAbsolute
+            };
+        }
+        
+        // Si aucune catégorie ne passe le seuil, retourner 'other'
+        return {
+            category: 'other',
+            score: 0,
+            confidence: 0,
+            matchedPatterns: [],
+            hasAbsolute: false
+        };
     }
 
     // ================================================
@@ -680,55 +809,6 @@ class CategoryManager {
         }
         
         return null;
-    }
-
-    // ================================================
-    // SÉLECTION PAR PRIORITÉ AVEC SEUIL MINIMUM
-    // ================================================
-    selectByPriorityWithThreshold(results) {
-        const MIN_SCORE_THRESHOLD = 30; // Score minimum requis pour la catégorisation
-        const MIN_CONFIDENCE_THRESHOLD = 0.5; // Confiance minimum requise
-        
-        // Trier par priorité décroissante puis par score
-        const sortedResults = Object.values(results)
-            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
-            .sort((a, b) => {
-                // D'abord par priorité
-                if (a.priority !== b.priority) {
-                    return b.priority - a.priority;
-                }
-                // Ensuite par score
-                return b.score - a.score;
-            });
-        
-        if (this.debugMode) {
-            console.log('[CategoryManager] Scores par catégorie (avec seuil):');
-            sortedResults.forEach(r => {
-                console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
-            });
-        }
-        
-        // Prendre le premier résultat qui passe le seuil
-        const bestResult = sortedResults[0];
-        
-        if (bestResult) {
-            return {
-                category: bestResult.category,
-                score: bestResult.score,
-                confidence: bestResult.confidence,
-                matchedPatterns: bestResult.matches,
-                hasAbsolute: bestResult.hasAbsolute
-            };
-        }
-        
-        // Si aucune catégorie ne passe le seuil, retourner 'other'
-        return {
-            category: 'other',
-            score: 0,
-            confidence: 0,
-            matchedPatterns: [],
-            hasAbsolute: false
-        };
     }
 
     // ================================================
@@ -1129,9 +1209,37 @@ class CategoryManager {
             }
         }
     }
+
+    // ================================================
+    // LISTENER POUR LES CHANGEMENTS DE PARAMÈTRES
+    // ================================================
+    setupSettingsListener() {
+        window.addEventListener('settingsChanged', (event) => {
+            const { type, value } = event.detail;
+            console.log(`[CategoryManager] Reçu changement de paramètres: ${type}`, value);
+            
+            switch (type) {
+                case 'preferences':
+                    this.updateSettings(value);
+                    break;
+                case 'activeCategories':
+                    this.setActiveCategories(value);
+                    break;
+                default:
+                    console.log(`[CategoryManager] Type de paramètre non géré: ${type}`);
+            }
+        });
+        
+        console.log('[CategoryManager] Listener pour changements de paramètres configuré');
+    }
 }
 
-// Créer l'instance globale
+// Créer l'instance globale avec setup du listener
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v16.1 loaded - Correction CC et exclusion spam');
+// Setup du listener après initialisation
+if (window.categoryManager && typeof window.categoryManager.setupSettingsListener === 'function') {
+    window.categoryManager.setupSettingsListener();
+}
+
+console.log('✅ CategoryManager v16.2 loaded - Synchronisation avec CategoriesPage');
