@@ -171,7 +171,22 @@ class CategoryManager {
     // ================================================
     // GESTION DES PARAMÈTRES CENTRALISÉE
     // ================================================
-
+    loadSettings() {
+        try {
+            const saved = localStorage.getItem('categorySettings');
+            const defaultSettings = {
+                activeCategories: null, // null = toutes actives par défaut
+                excludedDomains: [],
+                excludedKeywords: [],
+                taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
+                categoryExclusions: {
+                    domains: [],
+                    emails: []
+                },
+                scanSettings: {
+                    defaultPeriod: 7,
+                    defaultFolder: 'inbox',
+                    autoAnalyze: true,
                     autoCategrize: true
                 },
                 automationSettings: {
@@ -219,7 +234,7 @@ class CategoryManager {
             activeCategories: null,
             excludedDomains: [],
             excludedKeywords: [],
-            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'], // CORRECTION: Par défaut
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
             categoryExclusions: { domains: [], emails: [] },
             scanSettings: {
                 defaultPeriod: 7,
@@ -263,21 +278,7 @@ class CategoryManager {
     }
 
     getTaskPreselectedCategories() {
-        const settings = this.settings;
-        const preselected = settings.taskPreselectedCategories;
-        
-        // CORRECTION: S'assurer qu'il y a toujours des catégories par défaut
-        if (!preselected || preselected.length === 0) {
-            const defaultCategories = ['tasks', 'commercial', 'finance', 'meetings'];
-            console.log('[CategoryManager] 🔧 Aucune catégorie pré-sélectionnée, application des défauts:', defaultCategories);
-            
-            // Mettre à jour les paramètres
-            this.updateSettings({ taskPreselectedCategories: defaultCategories });
-            return defaultCategories;
-        }
-        
-        console.log('[CategoryManager] ✅ Catégories pré-sélectionnées:', preselected);
-        return preselected;
+        return this.settings.taskPreselectedCategories || [];
     }
 
     shouldExcludeSpam() {
