@@ -1,4 +1,4 @@
-// PageManager.js - Version 12.1 - Synchronisation fixée avec paramètres
+// PageManager.js - Version 12.2 - Synchronisation emails fixée avec pré-sélection
 
 class PageManager {
     constructor() {
@@ -16,6 +16,12 @@ class PageManager {
         this.currentViewMode = 'grouped-domain';
         this.currentCategory = null;
         
+        // NOUVEAU: Gestion de la synchronisation
+        this.lastSettingsSync = 0;
+        this.syncInProgress = false;
+        this.taskPreselectedCategories = [];
+        this.autoPreselectionEnabled = true;
+        
         // Page renderers - DASHBOARD SUPPRIMÉ
         this.pages = {
             scanner: (container) => this.renderScanner(container),
@@ -27,11 +33,49 @@ class PageManager {
         };
         
         this.setupEventListeners();
+        this.loadCurrentParameters();
         this.init();
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 12.1 - Synchronisation fixée avec paramètres');
+        console.log('[PageManager] ✅ Version 12.2 - Synchronisation emails fixée avec pré-sélection');
+    }
+
+    // ================================================
+    // CHARGEMENT DES PARAMÈTRES ACTUELS - NOUVEAU
+    // ================================================
+    loadCurrentParameters() {
+        console.log('[PageManager] 📥 === CHARGEMENT PARAMÈTRES ACTUELS ===');
+        
+        try {
+            // Priorité 1: CategoryManager
+            if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
+                this.taskPreselectedCategories = window.categoryManager.getTaskPreselectedCategories();
+                console.log('[PageManager] ✅ Paramètres chargés depuis CategoryManager:', this.taskPreselectedCategories);
+                
+            } else if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
+                this.taskPreselectedCategories = window.categoriesPage.getTaskPreselectedCategories();
+                console.log('[PageManager] ✅ Paramètres chargés depuis CategoriesPage:', this.taskPreselectedCategories);
+                
+            } else {
+                // Fallback localStorage
+                try {
+                    const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
+                    this.taskPreselectedCategories = settings.taskPreselectedCategories || [];
+                    console.log('[PageManager] ✅ Paramètres chargés depuis localStorage:', this.taskPreselectedCategories);
+                } catch (error) {
+                    console.warn('[PageManager] ⚠️ Erreur localStorage, paramètres par défaut');
+                    this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+                }
+            }
+            
+            this.lastSettingsSync = Date.now();
+            console.log('[PageManager] 📊 Catégories pré-sélectionnées actuelles:', this.taskPreselectedCategories);
+            
+        } catch (error) {
+            console.error('[PageManager] ❌ Erreur chargement paramètres:', error);
+            this.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
+        }
     }
 
     // ================================================
@@ -48,6 +92,12 @@ class PageManager {
         window.addEventListener('settingsChanged', (event) => {
             console.log('[PageManager] 📨 Changement générique reçu:', event.detail);
             this.handleGenericSettingsChanged(event.detail);
+        });
+
+        // NOUVEAU: Écouter la synchronisation forcée
+        window.addEventListener('forceSynchronization', (event) => {
+            console.log('[PageManager] 🔄 Synchronisation forcée reçue:', event.detail);
+            this.handleForcedSynchronization(event.detail);
         });
 
         // Écouter la recatégorisation des emails
@@ -71,43 +121,70 @@ class PageManager {
     }
 
     // ================================================
-    // GESTION DES CHANGEMENTS DE PARAMÈTRES - NOUVELLE
+    // GESTION DES CHANGEMENTS DE PARAMÈTRES - RÉPARÉE
     // ================================================
     handleSettingsChanged(settingsData) {
-        console.log('[PageManager] 🔧 Traitement changement paramètres:', settingsData);
+        console.log('[PageManager] 🔧 === TRAITEMENT CHANGEMENT PARAMÈTRES ===');
+        console.log('[PageManager] 📊 Données reçues:', settingsData);
+        
+        // Mise à jour des paramètres locaux
+        if (settingsData.settings?.taskPreselectedCategories) {
+            const oldCategories = [...this.taskPreselectedCategories];
+            this.taskPreselectedCategories = [...settingsData.settings.taskPreselectedCategories];
+            
+            console.log('[PageManager] 📋 Catégories pré-sélectionnées mises à jour:');
+            console.log('  - Anciennes:', oldCategories);
+            console.log('  - Nouvelles:', this.taskPreselectedCategories);
+            
+            // Mise à jour immédiate de la pré-sélection si on est sur la page emails
+            if (this.currentPage === 'emails') {
+                setTimeout(() => {
+                    this.updateEmailPreselection();
+                    this.refreshEmailsView();
+                }, 100);
+            }
+        }
         
         // Si c'est un changement de catégories pré-sélectionnées, forcer la re-catégorisation
         if (settingsData.settings?.taskPreselectedCategories) {
-            console.log('[PageManager] 📋 Catégories pré-sélectionnées changées:', settingsData.settings.taskPreselectedCategories);
-            
             // Déclencher la re-catégorisation si des emails existent
             if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
                 console.log('[PageManager] 🔄 Déclenchement re-catégorisation...');
                 setTimeout(() => {
                     window.emailScanner.recategorizeEmails?.();
-                }, 100);
+                }, 150);
             }
-        }
-        
-        // Mettre à jour l'affichage si on est sur la page emails
-        if (this.currentPage === 'emails') {
-            setTimeout(() => {
-                this.refreshEmailsView();
-            }, 200);
         }
     }
 
     handleGenericSettingsChanged(changeData) {
-        console.log('[PageManager] 🔧 Traitement changement générique:', changeData);
+        console.log('[PageManager] 🔧 === TRAITEMENT CHANGEMENT GÉNÉRIQUE ===');
+        console.log('[PageManager] 📊 Données:', changeData);
         
         const { type, value } = changeData;
         
         switch (type) {
             case 'taskPreselectedCategories':
                 console.log('[PageManager] 📋 Catégories pour tâches changées:', value);
+                
+                const oldCategories = [...this.taskPreselectedCategories];
+                this.taskPreselectedCategories = Array.isArray(value) ? [...value] : [];
+                
+                console.log('[PageManager] 📊 Mise à jour catégories:');
+                console.log('  - Anciennes:', oldCategories);
+                console.log('  - Nouvelles:', this.taskPreselectedCategories);
+                
                 // Mettre à jour le auto-analyzer si disponible
                 if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
                     window.aiTaskAnalyzer.updatePreselectedCategories(value);
+                }
+                
+                // NOUVEAU: Mise à jour immédiate de la pré-sélection
+                if (this.currentPage === 'emails') {
+                    setTimeout(() => {
+                        this.updateEmailPreselection();
+                        this.refreshEmailsView();
+                    }, 100);
                 }
                 break;
                 
@@ -130,6 +207,75 @@ class PageManager {
                     }, 100);
                 }
                 break;
+        }
+    }
+
+    handleForcedSynchronization(syncData) {
+        console.log('[PageManager] 🚀 === SYNCHRONISATION FORCÉE ===');
+        console.log('[PageManager] 📊 Données sync:', syncData);
+        
+        // Recharger tous les paramètres
+        this.loadCurrentParameters();
+        
+        // Si on est sur la page emails, mise à jour immédiate
+        if (this.currentPage === 'emails') {
+            setTimeout(() => {
+                this.updateEmailPreselection();
+                this.refreshEmailsView();
+            }, 100);
+        }
+    }
+
+    // ================================================
+    // MISE À JOUR PRÉ-SÉLECTION EMAILS - NOUVELLE
+    // ================================================
+    updateEmailPreselection() {
+        console.log('[PageManager] ⭐ === MISE À JOUR PRÉ-SÉLECTION EMAILS ===');
+        console.log('[PageManager] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        
+        if (!this.autoPreselectionEnabled || this.taskPreselectedCategories.length === 0) {
+            console.log('[PageManager] ℹ️ Pré-sélection automatique désactivée ou aucune catégorie');
+            return;
+        }
+        
+        try {
+            const emails = window.emailScanner?.getAllEmails() || [];
+            console.log('[PageManager] 📧 Total emails disponibles:', emails.length);
+            
+            // Vider la sélection actuelle
+            this.selectedEmails.clear();
+            
+            // Sélectionner les emails des catégories pré-sélectionnées
+            let preselectedCount = 0;
+            emails.forEach(email => {
+                if (email.category && this.taskPreselectedCategories.includes(email.category)) {
+                    this.selectedEmails.add(email.id);
+                    preselectedCount++;
+                    
+                    console.log(`[PageManager] ⭐ Email pré-sélectionné: ${email.subject?.substring(0, 50)} (${email.category})`);
+                }
+            });
+            
+            console.log('[PageManager] ✅ Pré-sélection terminée:');
+            console.log(`  - Emails pré-sélectionnés: ${preselectedCount}`);
+            console.log(`  - Total sélectionnés: ${this.selectedEmails.size}`);
+            
+            // Afficher une notification si des emails ont été pré-sélectionnés
+            if (preselectedCount > 0 && window.uiManager?.showToast) {
+                const categoryNames = this.taskPreselectedCategories.map(catId => {
+                    const category = window.categoryManager?.getCategory(catId);
+                    return category ? category.name : catId;
+                });
+                
+                window.uiManager.showToast(
+                    `⭐ ${preselectedCount} email(s) pré-sélectionné(s) pour: ${categoryNames.join(', ')}`, 
+                    'info', 
+                    4000
+                );
+            }
+            
+        } catch (error) {
+            console.error('[PageManager] ❌ Erreur mise à jour pré-sélection:', error);
         }
     }
 
@@ -167,6 +313,13 @@ class PageManager {
             if (this.pages[pageName]) {
                 await this.pages[pageName](pageContent);
                 this.currentPage = pageName;
+                
+                // NOUVEAU: Si c'est la page emails, appliquer la pré-sélection
+                if (pageName === 'emails') {
+                    setTimeout(() => {
+                        this.updateEmailPreselection();
+                    }, 200);
+                }
             } else {
                 throw new Error(`Page ${pageName} non trouvée`);
             }
@@ -211,11 +364,17 @@ class PageManager {
     // EMAILS PAGE - SYNCHRONISÉE AVEC PARAMÈTRES
     // =====================================
     async renderEmails(container) {
+        // NOUVEAU: Recharger les paramètres avant le rendu
+        this.loadCurrentParameters();
+        
         // Récupérer les emails depuis EmailScanner centralisé
         const emails = window.emailScanner?.getAllEmails() || [];
         const categories = window.categoryManager?.getCategories() || {};
         
-        console.log(`[PageManager] Rendu page emails avec ${emails.length} emails`);
+        console.log(`[PageManager] === RENDU PAGE EMAILS ===`);
+        console.log(`[PageManager] 📧 Total emails: ${emails.length}`);
+        console.log(`[PageManager] 📋 Catégories pré-sélectionnées: ${this.taskPreselectedCategories.join(', ')}`);
+        console.log(`[PageManager] ⭐ Emails actuellement sélectionnés: ${this.selectedEmails.size}`);
         
         if (emails.length === 0) {
             container.innerHTML = this.renderEmptyEmailsState();
@@ -229,16 +388,50 @@ class PageManager {
             const visibleEmails = this.getVisibleEmails();
             const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
             
+            // NOUVEAU: Calculer les emails pré-sélectionnés pour affichage
+            const preselectedEmails = emails.filter(email => 
+                email.category && this.taskPreselectedCategories.includes(email.category)
+            );
+            
             container.innerHTML = `
                 <div class="tasks-page-modern">
                     <!-- Texte explicatif avec possibilité de fermer -->
                     ${!this.hideExplanation ? `
                         <div class="explanation-text-harmonized">
                             <i class="fas fa-info-circle"></i>
-                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                            <span>
+                                Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. 
+                                ${this.taskPreselectedCategories.length > 0 ? 
+                                    `<strong>${preselectedEmails.length} email(s) sont automatiquement pré-sélectionné(s)</strong> selon vos préférences.` : 
+                                    'Vous pouvez également filtrer par catégorie ci-dessous.'
+                                }
+                            </span>
                             <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
                                 <i class="fas fa-times"></i>
                             </button>
+                        </div>
+                    ` : ''}
+
+                    ${this.taskPreselectedCategories.length > 0 && preselectedEmails.length > 0 ? `
+                        <div class="preselection-info-bar">
+                            <i class="fas fa-star"></i>
+                            <span>
+                                <strong>${preselectedEmails.length} email(s) pré-sélectionné(s)</strong> 
+                                selon vos catégories favorites: ${this.taskPreselectedCategories.map(catId => {
+                                    const cat = window.categoryManager?.getCategory(catId);
+                                    return cat ? `${cat.icon} ${cat.name}` : catId;
+                                }).join(', ')}
+                            </span>
+                            <div class="preselection-actions">
+                                <button class="btn-preselection-toggle" onclick="window.pageManager.toggleAutoPreselection()">
+                                    <i class="fas ${this.autoPreselectionEnabled ? 'fa-toggle-on' : 'fa-toggle-off'}"></i>
+                                    Auto-sélection ${this.autoPreselectionEnabled ? 'ON' : 'OFF'}
+                                </button>
+                                <button class="btn-preselection-apply" onclick="window.pageManager.applyPreselection()">
+                                    <i class="fas fa-magic"></i>
+                                    Appliquer maintenant
+                                </button>
+                            </div>
                         </div>
                     ` : ''}
 
@@ -386,23 +579,61 @@ class PageManager {
     }
 
     // ================================================
+    // NOUVELLES MÉTHODES DE PRÉ-SÉLECTION
+    // ================================================
+    toggleAutoPreselection() {
+        this.autoPreselectionEnabled = !this.autoPreselectionEnabled;
+        console.log('[PageManager] 🔄 Auto-préselection:', this.autoPreselectionEnabled ? 'activée' : 'désactivée');
+        
+        if (this.autoPreselectionEnabled) {
+            this.updateEmailPreselection();
+        } else {
+            this.selectedEmails.clear();
+        }
+        
+        this.refreshEmailsView();
+        
+        window.uiManager?.showToast(
+            `Auto-sélection ${this.autoPreselectionEnabled ? 'activée' : 'désactivée'}`, 
+            'info'
+        );
+    }
+
+    applyPreselection() {
+        console.log('[PageManager] ⭐ Application manuelle de la pré-sélection');
+        this.updateEmailPreselection();
+        this.refreshEmailsView();
+    }
+
+    // ================================================
     // MÉTHODE POUR RÉCUPÉRER LES CATÉGORIES PRÉ-SÉLECTIONNÉES
     // ================================================
     getTaskPreselectedCategories() {
+        // Priorité aux paramètres locaux synchronisés
+        if (this.taskPreselectedCategories && this.taskPreselectedCategories.length > 0) {
+            return [...this.taskPreselectedCategories];
+        }
+        
         // Essayer depuis CategoryManager en priorité
         if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
-            return window.categoryManager.getTaskPreselectedCategories();
+            const categories = window.categoryManager.getTaskPreselectedCategories();
+            this.taskPreselectedCategories = [...categories]; // Synchroniser
+            return categories;
         }
         
         // Sinon depuis CategoriesPage
         if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
-            return window.categoriesPage.getTaskPreselectedCategories();
+            const categories = window.categoriesPage.getTaskPreselectedCategories();
+            this.taskPreselectedCategories = [...categories]; // Synchroniser
+            return categories;
         }
         
         // Fallback sur localStorage
         try {
             const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
-            return settings.taskPreselectedCategories || [];
+            const categories = settings.taskPreselectedCategories || [];
+            this.taskPreselectedCategories = [...categories]; // Synchroniser
+            return categories;
         } catch (error) {
             console.error('[PageManager] Erreur récupération catégories pré-sélectionnées:', error);
             return [];
@@ -428,7 +659,7 @@ class PageManager {
     }
 
     // ================================================
-    // MÉTHODES DE SÉLECTION
+    // MÉTHODES DE SÉLECTION - AMÉLIORÉES
     // ================================================
     toggleAllSelection() {
         const visibleEmails = this.getVisibleEmails();
@@ -501,6 +732,7 @@ class PageManager {
             { id: 'all', name: 'Tous', icon: '📧', count: totalEmails }
         ];
         
+        // Ajouter les catégories avec leurs comptes, en mettant en évidence les pré-sélectionnées
         Object.entries(categories).forEach(([catId, category]) => {
             const count = categoryCounts[catId] || 0;
             if (count > 0) {
@@ -508,7 +740,8 @@ class PageManager {
                     id: catId,
                     name: category.name,
                     icon: category.icon,
-                    count: count
+                    count: count,
+                    isPreselected: this.taskPreselectedCategories.includes(catId)
                 });
             }
         });
@@ -519,18 +752,23 @@ class PageManager {
                 id: 'other',
                 name: 'Autre',
                 icon: '📌',
-                count: otherCount
+                count: otherCount,
+                isPreselected: false
             });
         }
         
         return tabs.map(tab => {
+            const preselectedClass = tab.isPreselected ? 'preselected-category' : '';
+            const preselectedIcon = tab.isPreselected ? '<i class="fas fa-star preselected-star"></i>' : '';
+            
             return `
-                <button class="status-pill-harmonized-twolines ${this.currentCategory === tab.id ? 'active' : ''}" 
+                <button class="status-pill-harmonized-twolines ${this.currentCategory === tab.id ? 'active' : ''} ${preselectedClass}" 
                         onclick="window.pageManager.filterByCategory('${tab.id}')">
                     <div class="pill-content-twolines">
                         <div class="pill-first-line-twolines">
                             <span class="pill-icon-twolines">${tab.icon}</span>
                             <span class="pill-count-twolines">${tab.count}</span>
+                            ${preselectedIcon}
                         </div>
                         <div class="pill-second-line-twolines">
                             <span class="pill-text-twolines">${tab.name}</span>
@@ -612,11 +850,14 @@ class PageManager {
         const senderEmail = email.from?.emailAddress?.address || '';
         
         // Vérifier si l'email est dans une catégorie pré-sélectionnée pour les tâches
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        const isPreselectedForTasks = preselectedCategories.includes(email.category);
+        const isPreselectedForTasks = this.taskPreselectedCategories.includes(email.category);
+        
+        // NOUVEAU: Indiquer pourquoi l'email est sélectionné
+        const selectionReason = isSelected && isPreselectedForTasks ? 'auto-selected' : 
+                               isSelected ? 'manual-selected' : '';
         
         return `
-            <div class="task-harmonized-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselectedForTasks ? 'preselected-task' : ''}" 
+            <div class="task-harmonized-card ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselectedForTasks ? 'preselected-task' : ''} ${selectionReason}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
@@ -646,6 +887,11 @@ class PageManager {
                             ${isPreselectedForTasks ? `
                                 <span class="preselected-badge-harmonized">
                                     ⭐ Pré-sélectionné
+                                </span>
+                            ` : ''}
+                            ${isSelected && isPreselectedForTasks ? `
+                                <span class="auto-selected-badge-harmonized">
+                                    🤖 Auto-sélectionné
                                 </span>
                             ` : ''}
                         </div>
@@ -979,7 +1225,7 @@ class PageManager {
     }
 
     // ================================================
-    // MODALES
+    // MODALES ET DÉTAILS
     // ================================================
     async showTaskCreationModal(emailId) {
         const email = this.getEmailById(emailId);
@@ -1277,6 +1523,9 @@ class PageManager {
         window.uiManager?.showLoading('Actualisation...');
         
         try {
+            // Recharger les paramètres
+            this.loadCurrentParameters();
+            
             // Recatégoriser les emails existants
             if (window.emailScanner && window.emailScanner.emails.length > 0) {
                 await window.emailScanner.recategorizeEmails();
@@ -1584,7 +1833,7 @@ class PageManager {
     }
 
     // ================================================
-    // STYLES HARMONISÉS AVEC BADGE PRÉ-SÉLECTIONNÉ
+    // STYLES HARMONISÉS AVEC PRÉ-SÉLECTION
     // ================================================
     addHarmonizedEmailStyles() {
         if (document.getElementById('harmonizedEmailStyles')) return;
@@ -1664,6 +1913,72 @@ class PageManager {
             .explanation-close-btn:hover {
                 background: rgba(59, 130, 246, 0.2);
                 transform: scale(1.1);
+            }
+
+            /* NOUVEAU: Barre d'information pré-sélection */
+            .preselection-info-bar {
+                background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+                color: white;
+                border-radius: var(--card-border-radius);
+                padding: 12px 16px;
+                margin-bottom: var(--gap-medium);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: var(--gap-medium);
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .preselection-info-bar::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+                animation: shimmer 3s infinite;
+            }
+
+            @keyframes shimmer {
+                0% { left: -100%; }
+                100% { left: 100%; }
+            }
+
+            .preselection-info-bar i {
+                color: #fbbf24;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+
+            .preselection-actions {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .btn-preselection-toggle,
+            .btn-preselection-apply {
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                color: white;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .btn-preselection-toggle:hover,
+            .btn-preselection-apply:hover {
+                background: rgba(255, 255, 255, 0.3);
+                transform: translateY(-1px);
             }
             
             /* Barre de contrôles */
@@ -1972,7 +2287,7 @@ class PageManager {
                 margin: 8px 0;
             }
             
-            /* Filtres de catégories 2 lignes */
+            /* Filtres de catégories 2 lignes avec pré-sélection */
             .status-filters-harmonized-twolines {
                 display: flex;
                 gap: var(--gap-small);
@@ -2000,6 +2315,34 @@ class PageManager {
                 color: #374151;
                 border: 1px solid #e5e7eb;
                 cursor: pointer;
+                position: relative;
+            }
+
+            /* NOUVEAU: Style pour catégories pré-sélectionnées */
+            .status-pill-harmonized-twolines.preselected-category {
+                background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+                border-color: #8b5cf6;
+                color: #6b21a8;
+            }
+
+            .status-pill-harmonized-twolines.preselected-category .pill-count-twolines {
+                background: rgba(139, 92, 246, 0.2);
+                color: #6b21a8;
+            }
+
+            .preselected-star {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                color: #fbbf24;
+                font-size: 10px;
+                background: rgba(255, 255, 255, 0.9);
+                border-radius: 50%;
+                width: 16px;
+                height: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .pill-content-twolines {
@@ -2016,6 +2359,7 @@ class PageManager {
                 align-items: center;
                 gap: 4px;
                 margin-bottom: 4px;
+                position: relative;
             }
             
             .pill-icon-twolines {
@@ -2044,6 +2388,13 @@ class PageManager {
                 background: #f0f9ff;
                 transform: translateY(-2px);
                 box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+            }
+
+            .status-pill-harmonized-twolines.preselected-category:hover {
+                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+                border-color: #7c3aed;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(139, 92, 246, 0.25);
             }
             
             .status-pill-harmonized-twolines.active {
@@ -2131,6 +2482,13 @@ class PageManager {
                 border-left: 4px solid #8b5cf6;
                 box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
             }
+
+            /* NOUVEAU: Style pour emails auto-sélectionnés */
+            .task-harmonized-card.auto-selected {
+                background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%);
+                border-left: 4px solid #f59e0b;
+                box-shadow: 0 6px 20px rgba(245, 158, 11, 0.15);
+            }
             
             .task-checkbox-harmonized {
                 margin-right: var(--gap-medium);
@@ -2211,7 +2569,8 @@ class PageManager {
             .task-type-badge-harmonized,
             .deadline-badge-harmonized,
             .confidence-badge-harmonized,
-            .preselected-badge-harmonized {
+            .preselected-badge-harmonized,
+            .auto-selected-badge-harmonized {
                 display: flex;
                 align-items: center;
                 gap: 3px;
@@ -2236,6 +2595,19 @@ class PageManager {
                 background: #fdf4ff;
                 color: #8b5cf6;
                 border-color: #e9d5ff;
+            }
+
+            /* NOUVEAU: Badge auto-sélectionné */
+            .auto-selected-badge-harmonized {
+                background: #fefce8;
+                color: #f59e0b;
+                border-color: #fde68a;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.7; }
             }
             
             .task-recipient-harmonized {
@@ -2592,6 +2964,16 @@ class PageManager {
                     max-width: 140px;
                     height: 52px;
                 }
+
+                .preselection-info-bar {
+                    flex-direction: column;
+                    gap: 8px;
+                    text-align: center;
+                }
+
+                .preselection-actions {
+                    justify-content: center;
+                }
             }
             
             @media (max-width: 768px) {
@@ -2617,6 +2999,17 @@ class PageManager {
                 
                 .dropdown-menu-harmonized {
                     min-width: 150px;
+                }
+
+                .preselection-actions {
+                    flex-direction: column;
+                    width: 100%;
+                }
+
+                .btn-preselection-toggle,
+                .btn-preselection-apply {
+                    justify-content: center;
+                    width: 100%;
                 }
             }
             
@@ -2652,6 +3045,11 @@ class PageManager {
                     font-size: 12px;
                     padding: var(--gap-small);
                 }
+
+                .preselection-info-bar {
+                    font-size: 12px;
+                    padding: 8px 12px;
+                }
             }
         `;
         
@@ -2669,4 +3067,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v12.1 loaded - Synchronisation fixée avec paramètres');
+console.log('✅ PageManager v12.2 loaded - Synchronisation emails fixée avec pré-sélection');
