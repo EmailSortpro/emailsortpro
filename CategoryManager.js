@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 18.1 - Réécriture complète avec synchronisation parfaite - CORRIGÉE
+// CategoryManager.js - Version 18.1 - Simplifié et corrigé
 
 class CategoryManager {
     constructor() {
@@ -8,16 +8,6 @@ class CategoryManager {
         this.settings = {};
         this.isInitialized = false;
         this.debugMode = false;
-        this.eventListenersSetup = false;
-        
-        // NOUVEAU: Système de synchronisation ultra-robuste
-        this.syncState = {
-            lastUpdate: 0,
-            syncInProgress: false,
-            pendingUpdates: [],
-            watchers: new Set(),
-            lockVersion: 0
-        };
         
         this.init();
         console.log('[CategoryManager] ✅ Version 18.1 - Réécriture complète avec synchronisation parfaite - CORRIGÉE');
@@ -25,11 +15,11 @@ class CategoryManager {
 
     async init() {
         try {
-            // 1. Charger les paramètres en premier
-            await this.loadSettings();
-            
-            // 2. Initialiser les catégories
+            // 1. Initialiser les catégories
             this.initializeCategories();
+            
+            // 2. Charger les paramètres
+            await this.loadSettings();
             
             // 3. Charger les catégories personnalisées
             this.loadCustomCategories();
@@ -37,31 +27,24 @@ class CategoryManager {
             // 4. Initialiser la détection par mots-clés
             this.initializeWeightedDetection();
             
-            // 5. Configurer la synchronisation
-            this.setupSynchronization();
-            
-            // 6. Marquer comme initialisé
+            // 5. Marquer comme initialisé
             this.isInitialized = true;
             
             console.log('[CategoryManager] 🎯 Initialisation complète terminée');
             
-            // 7. Démarrer la surveillance
-            this.startSyncWatcher();
-            
         } catch (error) {
             console.error('[CategoryManager] ❌ Erreur d\'initialisation:', error);
-            throw error;
+            this.isInitialized = true; // Continuer même en cas d'erreur
         }
     }
 
     // ================================================
-    // SYSTÈME DE SYNCHRONISATION ULTRA-ROBUSTE
+    // GESTION DES PARAMÈTRES
     // ================================================
     async loadSettings() {
         console.log('[CategoryManager] 📚 Chargement des paramètres...');
         
         try {
-            // Essayer localStorage d'abord
             const saved = localStorage.getItem('categorySettings');
             if (saved) {
                 this.settings = { ...this.getDefaultSettings(), ...JSON.parse(saved) };
@@ -69,12 +52,9 @@ class CategoryManager {
             } else {
                 this.settings = this.getDefaultSettings();
                 console.log('[CategoryManager] 📝 Paramètres par défaut utilisés');
-                
-                // Sauvegarder immédiatement les paramètres par défaut
                 await this.saveSettings();
             }
             
-            this.syncState.lastUpdate = Date.now();
             return this.settings;
             
         } catch (error) {
@@ -85,63 +65,36 @@ class CategoryManager {
     }
 
     async saveSettings(newSettings = null) {
-        return new Promise((resolve) => {
-            if (this.syncState.syncInProgress) {
-                console.log('[CategoryManager] ⏳ Sauvegarde en attente...');
-                this.syncState.pendingUpdates.push({ newSettings, resolve });
-                return;
+        try {
+            if (newSettings) {
+                this.settings = { ...this.settings, ...newSettings };
             }
             
-            this.syncState.syncInProgress = true;
-            this.syncState.lockVersion++;
+            // Valider les paramètres
+            this.validateSettings();
             
-            try {
-                console.log('[CategoryManager] 💾 === SAUVEGARDE SÉCURISÉE ===');
-                
-                if (newSettings) {
-                    this.settings = { ...this.settings, ...newSettings };
-                }
-                
-                // Valider les paramètres avant sauvegarde
-                this.validateSettings();
-                
-                // Sauvegarder dans localStorage
-                localStorage.setItem('categorySettings', JSON.stringify(this.settings));
-                
-                // Mettre à jour l'état de synchronisation
-                this.syncState.lastUpdate = Date.now();
-                
-                console.log('[CategoryManager] 💾 Paramètres sauvegardés:', this.settings);
-                
-                // Notifier TOUS les watchers
-                this.notifyAllWatchers();
-                
-                // Dispatcher l'événement global
-                setTimeout(() => {
-                    this.dispatchEvent('categorySettingsChanged', {
-                        settings: { ...this.settings },
-                        timestamp: this.syncState.lastUpdate,
-                        lockVersion: this.syncState.lockVersion,
-                        source: 'CategoryManager'
-                    });
-                }, 10);
-                
-                resolve(this.settings);
-                
-            } catch (error) {
-                console.error('[CategoryManager] ❌ Erreur sauvegarde:', error);
-                resolve(null);
-            } finally {
-                this.syncState.syncInProgress = false;
-                
-                // Traiter les sauvegardes en attente
-                this.processPendingUpdates();
-            }
-        });
+            // Sauvegarder
+            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
+            console.log('[CategoryManager] 💾 Paramètres sauvegardés');
+            
+            // Notifier les changements
+            setTimeout(() => {
+                this.dispatchEvent('categorySettingsChanged', {
+                    settings: { ...this.settings },
+                    timestamp: Date.now(),
+                    source: 'CategoryManager'
+                });
+            }, 10);
+            
+            return this.settings;
+            
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur sauvegarde:', error);
+            return null;
+        }
     }
 
     validateSettings() {
-        // Valider la structure des paramètres
         if (!this.settings.taskPreselectedCategories) {
             this.settings.taskPreselectedCategories = [];
         }
@@ -161,110 +114,56 @@ class CategoryManager {
         if (!this.settings.automationSettings) {
             this.settings.automationSettings = this.getDefaultSettings().automationSettings;
         }
-        
-        console.log('[CategoryManager] ✅ Paramètres validés');
     }
 
-    processPendingUpdates() {
-        if (this.syncState.pendingUpdates.length > 0) {
-            const pending = this.syncState.pendingUpdates.shift();
-            console.log('[CategoryManager] 🔄 Traitement sauvegarde en attente...');
-            
-            setTimeout(() => {
-                this.saveSettings(pending.newSettings).then(pending.resolve);
-            }, 50);
-        }
-    }
-
-    // ================================================
-    // SURVEILLANCE CONTINUE
-    // ================================================
-    startSyncWatcher() {
-        // Surveiller les changements toutes les 2 secondes
-        setInterval(() => {
-            this.checkExternalChanges();
-        }, 2000);
-        
-        console.log('[CategoryManager] 👁️ Surveillance démarrée');
-    }
-
-    checkExternalChanges() {
-        try {
-            const stored = localStorage.getItem('categorySettings');
-            if (!stored) return;
-            
-            const storedSettings = JSON.parse(stored);
-            const storedTime = storedSettings._lastModified || 0;
-            
-            // Si les paramètres stockés sont plus récents que les nôtres
-            if (storedTime > this.syncState.lastUpdate) {
-                console.log('[CategoryManager] 🔄 Changements externes détectés, resynchronisation...');
-                this.loadSettings();
-                this.notifyAllWatchers();
+    getDefaultSettings() {
+        return {
+            activeCategories: null,
+            excludedDomains: [],
+            excludedKeywords: [],
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
+            categoryExclusions: {
+                domains: [],
+                emails: []
+            },
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            automationSettings: {
+                autoCreateTasks: false,
+                groupTasksByDomain: false,
+                skipDuplicates: true,
+                autoAssignPriority: false
+            },
+            preferences: {
+                darkMode: false,
+                compactView: false,
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
             }
-            
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur vérification changements:', error);
-        }
+        };
     }
 
     // ================================================
-    // SYSTÈME DE WATCHERS
-    // ================================================
-    addWatcher(callback) {
-        this.syncState.watchers.add(callback);
-        console.log(`[CategoryManager] 👁️ Watcher ajouté (total: ${this.syncState.watchers.size})`);
-        
-        // Appeler immédiatement le callback avec l'état actuel
-        try {
-            callback(this.settings);
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur callback watcher:', error);
-        }
-    }
-
-    removeWatcher(callback) {
-        this.syncState.watchers.delete(callback);
-        console.log(`[CategoryManager] 👁️ Watcher supprimé (total: ${this.syncState.watchers.size})`);
-    }
-
-    notifyAllWatchers() {
-        console.log(`[CategoryManager] 📢 Notification de ${this.syncState.watchers.size} watchers`);
-        
-        this.syncState.watchers.forEach(callback => {
-            try {
-                callback({ ...this.settings });
-            } catch (error) {
-                console.error('[CategoryManager] ❌ Erreur notification watcher:', error);
-            }
-        });
-    }
-
-    // ================================================
-    // MÉTHODES PUBLIQUES SYNCHRONISÉES
+    // MÉTHODES PUBLIQUES SIMPLIFIÉES
     // ================================================
     getSettings() {
-        // Toujours retourner une copie pour éviter les modifications directes
         return JSON.parse(JSON.stringify(this.settings));
     }
 
     async updateSettings(newSettings) {
         console.log('[CategoryManager] 🔄 Mise à jour des paramètres:', newSettings);
         
-        // Ajouter un timestamp de modification
         const timestampedSettings = {
             ...newSettings,
             _lastModified: Date.now()
         };
         
-        const result = await this.saveSettings(timestampedSettings);
-        
-        // Forcer la synchronisation de tous les modules
-        setTimeout(() => {
-            this.forceSyncAllModules();
-        }, 100);
-        
-        return result;
+        return await this.saveSettings(timestampedSettings);
     }
 
     getTaskPreselectedCategories() {
@@ -329,131 +228,10 @@ class CategoryManager {
     }
 
     // ================================================
-    // SYNCHRONISATION FORCÉE DE TOUS LES MODULES
-    // ================================================
-    forceSyncAllModules() {
-        console.log('[CategoryManager] 🚀 === SYNCHRONISATION FORCÉE TOUS MODULES ===');
-        
-        const currentSettings = this.getSettings();
-        const modules = this.getAllModules();
-        
-        modules.forEach(module => {
-            try {
-                this.syncModule(module, currentSettings);
-            } catch (error) {
-                console.error(`[CategoryManager] ❌ Erreur sync ${module.name}:`, error);
-            }
-        });
-        
-        // Dispatcher un événement global de synchronisation
-        setTimeout(() => {
-            this.dispatchEvent('categoryManagerFullSync', {
-                settings: currentSettings,
-                timestamp: Date.now(),
-                modulesSynced: modules.length
-            });
-        }, 50);
-        
-        console.log('[CategoryManager] ✅ === SYNCHRONISATION FORCÉE TERMINÉE ===');
-    }
-
-    getAllModules() {
-        return [
-            {
-                name: 'EmailScanner',
-                instance: window.emailScanner,
-                syncMethods: ['updateSettings', 'updateTaskPreselectedCategories', 'forceSettingsReload']
-            },
-            {
-                name: 'CategoriesPage',
-                instance: window.categoriesPage,
-                syncMethods: ['forceSynchronization']
-            },
-            {
-                name: 'MinimalScanModule',
-                instance: window.minimalScanModule,
-                syncMethods: ['updateSettings']
-            },
-            {
-                name: 'PageManager',
-                instance: window.pageManager,
-                syncMethods: ['forceSynchronization']
-            },
-            {
-                name: 'AITaskAnalyzer',
-                instance: window.aiTaskAnalyzer,
-                syncMethods: ['updatePreselectedCategories', 'updateAutomationSettings']
-            }
-        ].filter(module => module.instance); // Seulement les modules disponibles
-    }
-
-    syncModule(module, settings) {
-        console.log(`[CategoryManager] 🔄 Synchronisation ${module.name}...`);
-        
-        module.syncMethods.forEach(methodName => {
-            if (typeof module.instance[methodName] === 'function') {
-                try {
-                    // Appeler la méthode appropriée avec les bons paramètres
-                    if (methodName === 'updateTaskPreselectedCategories' || methodName === 'updatePreselectedCategories') {
-                        module.instance[methodName](settings.taskPreselectedCategories || []);
-                    } else if (methodName === 'updateAutomationSettings') {
-                        module.instance[methodName](settings.automationSettings || {});
-                    } else if (methodName === 'updateSettings') {
-                        module.instance[methodName](settings);
-                    } else {
-                        module.instance[methodName]();
-                    }
-                    
-                    console.log(`[CategoryManager] ✅ ${module.name}.${methodName} exécuté`);
-                } catch (error) {
-                    console.error(`[CategoryManager] ❌ Erreur ${module.name}.${methodName}:`, error);
-                }
-            } else {
-                console.log(`[CategoryManager] ⚠️ ${module.name}.${methodName} non disponible`);
-            }
-        });
-    }
-
-    // ================================================
-    // CONFIGURATION DE LA SYNCHRONISATION
-    // ================================================
-    setupSynchronization() {
-        if (this.eventListenersSetup) return;
-        
-        // Listener pour les changements externes
-        this.settingsChangeHandler = (event) => {
-            if (event.detail?.source === 'CategoryManager') return; // Éviter les boucles
-            
-            console.log('[CategoryManager] 📨 Changement externe reçu:', event.detail);
-            
-            // Recharger les paramètres si nécessaire
-            if (event.detail?.settings) {
-                const externalTimestamp = event.detail.timestamp || 0;
-                if (externalTimestamp > this.syncState.lastUpdate) {
-                    console.log('[CategoryManager] 🔄 Mise à jour depuis source externe');
-                    this.settings = { ...this.settings, ...event.detail.settings };
-                    this.syncState.lastUpdate = externalTimestamp;
-                    this.notifyAllWatchers();
-                }
-            }
-        };
-        
-        window.addEventListener('settingsChanged', this.settingsChangeHandler);
-        window.addEventListener('forceSynchronization', () => {
-            console.log('[CategoryManager] 🚀 Synchronisation forcée demandée');
-            this.forceSyncAllModules();
-        });
-        
-        this.eventListenersSetup = true;
-        console.log('[CategoryManager] 🎧 Listeners de synchronisation configurés');
-    }
-
-    // ================================================
     // INITIALISATION DES CATÉGORIES
     // ================================================
     initializeCategories() {
         this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS
             marketing_news: {
                 name: 'Marketing & News',
                 icon: '📰',
@@ -462,7 +240,6 @@ class CategoryManager {
                 priority: 100
             },
             
-            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE
             cc: {
                 name: 'En Copie',
                 icon: '📋',
@@ -471,12 +248,11 @@ class CategoryManager {
                 priority: 90
             },
             
-            // PRIORITÉ NORMALE POUR LES AUTRES
             security: {
                 name: 'Sécurité',
                 icon: '🔒',
                 color: '#991b1b',
-                description: 'Alertes de sécurité, connexions et authentification',
+                description: 'Alertes de sécurité, connexions',
                 priority: 50
             },
             
@@ -492,7 +268,7 @@ class CategoryManager {
                 name: 'Actions Requises',
                 icon: '✅',
                 color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
+                description: 'Tâches à faire',
                 priority: 50
             },
             
@@ -500,7 +276,7 @@ class CategoryManager {
                 name: 'Commercial',
                 icon: '💼',
                 color: '#059669',
-                description: 'Opportunités, devis et contrats',
+                description: 'Opportunités, devis',
                 priority: 50
             },
             
@@ -572,7 +348,6 @@ class CategoryManager {
             const saved = localStorage.getItem('customCategories');
             this.customCategories = saved ? JSON.parse(saved) : {};
             
-            // Intégrer les catégories personnalisées dans les catégories principales
             Object.entries(this.customCategories).forEach(([id, category]) => {
                 this.categories[id] = {
                     ...category,
@@ -606,21 +381,13 @@ class CategoryManager {
                 absolute: [
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
                     'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                    'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
-                    'email preferences', 'préférences email', 'preferences email',
-                    'ne plus recevoir', 'stop emails', 'arreter les emails',
-                    'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
-                    'paramétrez vos choix', 'parametrez vos choix',
                     'newsletter', 'mailing list', 'mailing',
                     'this email was sent to', 'you are receiving this',
-                    'cet email vous est envoyé', 'vous recevez cet email',
-                    'limited offer', 'offre limitée', 'special offer',
                     'promotion', 'promo', 'soldes', 'vente privée'
                 ],
                 strong: [
                     'promo', 'deal', 'offer', 'sale', 'discount',
-                    'newsletter', 'mailing', 'campaign', 'marketing',
-                    'abonné', 'subscriber', 'désinscription'
+                    'newsletter', 'mailing', 'campaign', 'marketing'
                 ],
                 weak: ['update', 'discover', 'new', 'choix'],
                 exclusions: []
@@ -631,9 +398,7 @@ class CategoryManager {
                     'alerte de connexion', 'alert connexion', 'nouvelle connexion',
                     'quelqu\'un s\'est connecté', 'connexion à votre compte',
                     'activité suspecte', 'suspicious activity', 'login alert',
-                    'new sign-in', 'sign in detected', 'connexion détectée',
                     'code de vérification', 'verification code', 'security code',
-                    'two-factor', '2fa', 'authentification', 'authentication',
                     'password reset', 'réinitialisation mot de passe'
                 ],
                 strong: [
@@ -649,16 +414,12 @@ class CategoryManager {
                     'action required', 'action requise', 'action needed',
                     'please complete', 'veuillez compléter', 'to do',
                     'task assigned', 'tâche assignée', 'deadline',
-                    'due date', 'échéance', 'livrable',
                     'urgence', 'urgent', 'très urgent',
-                    'merci de faire', 'pouvez-vous faire', 'pourriez-vous faire',
-                    'action à mener', 'à faire', 'à traiter',
-                    'confirmation requise', 'approval needed'
+                    'merci de faire', 'pouvez-vous faire', 'pourriez-vous faire'
                 ],
                 strong: [
                     'urgent', 'asap', 'priority', 'priorité',
-                    'complete', 'compléter', 'action', 'faire',
-                    'deadline', 'échéance'
+                    'complete', 'compléter', 'action', 'faire'
                 ],
                 weak: ['demande', 'besoin', 'attente'],
                 exclusions: ['newsletter', 'marketing', 'promotion']
@@ -669,8 +430,7 @@ class CategoryManager {
                     'demande de réunion', 'meeting request', 'réunion',
                     'schedule a meeting', 'planifier une réunion',
                     'invitation réunion', 'meeting invitation',
-                    'teams meeting', 'zoom meeting', 'google meet',
-                    'conference call', 'rendez-vous', 'rdv'
+                    'teams meeting', 'zoom meeting', 'google meet'
                 ],
                 strong: [
                     'meeting', 'réunion', 'schedule', 'planifier',
@@ -684,13 +444,11 @@ class CategoryManager {
                 absolute: [
                     'devis', 'quotation', 'proposal', 'proposition',
                     'contrat', 'contract', 'bon de commande',
-                    'purchase order', 'offre commerciale',
-                    'proposition commerciale', 'business proposal',
-                    'opportunité commerciale', 'nouveau client'
+                    'purchase order', 'offre commerciale'
                 ],
                 strong: [
                     'client', 'customer', 'prospect', 'opportunity',
-                    'commercial', 'business', 'marché', 'deal'
+                    'commercial', 'business'
                 ],
                 weak: ['offre', 'négociation'],
                 exclusions: ['newsletter', 'marketing', 'promotion']
@@ -701,14 +459,11 @@ class CategoryManager {
                     'facture', 'invoice', 'payment', 'paiement',
                     'virement', 'transfer', 'remboursement',
                     'relevé bancaire', 'bank statement',
-                    'déclaration fiscale', 'tax declaration',
-                    'impôts', 'taxes', 'fiscal',
-                    'comptabilité', 'accounting', 'bilan'
+                    'impôts', 'taxes', 'fiscal'
                 ],
                 strong: [
                     'montant', 'amount', 'total', 'facture',
-                    'fiscal', 'bancaire', 'bank', 'finance',
-                    'paiement', 'payment'
+                    'fiscal', 'bancaire', 'bank', 'finance'
                 ],
                 weak: ['euro', 'dollar', 'prix'],
                 exclusions: ['newsletter', 'marketing']
@@ -718,8 +473,7 @@ class CategoryManager {
                 absolute: [
                     'reminder:', 'rappel:', 'follow up', 'relance',
                     'gentle reminder', 'rappel amical', 'following up',
-                    'je reviens vers vous', 'circling back',
-                    'comme convenu', 'suite à notre', 'faisant suite'
+                    'je reviens vers vous', 'circling back'
                 ],
                 strong: [
                     'reminder', 'rappel', 'follow', 'relance',
@@ -733,8 +487,7 @@ class CategoryManager {
                 absolute: [
                     'ticket #', 'ticket number', 'numéro de ticket',
                     'case #', 'case number', 'incident #',
-                    'problème résolu', 'issue resolved',
-                    'support ticket', 'ticket de support', 'help desk'
+                    'support ticket', 'ticket de support'
                 ],
                 strong: [
                     'support', 'assistance', 'help desk',
@@ -747,9 +500,7 @@ class CategoryManager {
             project: {
                 absolute: [
                     'projet xx', 'project update', 'milestone',
-                    'sprint', 'livrable projet', 'gantt',
-                    'avancement projet', 'project status',
-                    'kickoff', 'kick off'
+                    'sprint', 'livrable projet', 'gantt'
                 ],
                 strong: [
                     'projet', 'project', 'milestone', 'sprint',
@@ -762,9 +513,7 @@ class CategoryManager {
             hr: {
                 absolute: [
                     'bulletin de paie', 'payslip', 'contrat de travail',
-                    'congés', 'leave request', 'onboarding',
-                    'entretien annuel', 'performance review',
-                    'recrutement', 'recruitment'
+                    'congés', 'leave request', 'onboarding'
                 ],
                 strong: [
                     'rh', 'hr', 'salaire', 'salary',
@@ -777,8 +526,7 @@ class CategoryManager {
             internal: {
                 absolute: [
                     'all staff', 'tout le personnel', 'annonce interne',
-                    'company announcement', 'memo interne',
-                    'communication interne', 'note de service'
+                    'company announcement', 'memo interne'
                 ],
                 strong: [
                     'internal', 'interne', 'company wide',
@@ -791,8 +539,7 @@ class CategoryManager {
             notifications: {
                 absolute: [
                     'do not reply', 'ne pas répondre', 'noreply@',
-                    'automated message', 'notification automatique',
-                    'system notification', 'ceci est un message automatique'
+                    'automated message', 'notification automatique'
                 ],
                 strong: [
                     'automated', 'automatic', 'system',
@@ -805,7 +552,7 @@ class CategoryManager {
             cc: {
                 absolute: [
                     'copie pour information', 'for your information', 'fyi',
-                    'en copie', 'in copy', 'cc:', 'courtesy copy'
+                    'en copie', 'in copy', 'cc:'
                 ],
                 strong: ['information', 'copie', 'copy'],
                 weak: ['fyi', 'info'],
@@ -929,38 +676,6 @@ class CategoryManager {
     // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
-    getDefaultSettings() {
-        return {
-            activeCategories: null,
-            excludedDomains: [],
-            excludedKeywords: [],
-            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-            categoryExclusions: {
-                domains: [],
-                emails: []
-            },
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            automationSettings: {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            },
-            preferences: {
-                darkMode: false,
-                compactView: false,
-                showNotifications: true,
-                excludeSpam: true,
-                detectCC: true
-            }
-        };
-    }
-
     getCategories() {
         return { ...this.categories };
     }
@@ -1101,29 +816,7 @@ class CategoryManager {
             }
         }
         
-        this.applyDomainBonus(content, categoryId, matches, totalScore);
-        
         return { total: Math.max(0, totalScore), hasAbsolute, matches };
-    }
-
-    applyDomainBonus(content, categoryId, matches, totalScore) {
-        const domainBonuses = {
-            security: ['microsoft', 'google', 'apple', 'security'],
-            finance: ['gouv.fr', 'impots', 'bank', 'paypal'],
-            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing'],
-            notifications: ['noreply', 'notification', 'donotreply']
-        };
-        
-        if (domainBonuses[categoryId]) {
-            for (const domainKeyword of domainBonuses[categoryId]) {
-                if (content.domain.includes(domainKeyword)) {
-                    const bonus = categoryId === 'marketing_news' ? 30 : 50;
-                    totalScore += bonus;
-                    matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
-                    break;
-                }
-            }
-        }
     }
 
     analyzeCategory(content, keywords) {
@@ -1254,18 +947,9 @@ class CategoryManager {
     }
 
     // ================================================
-    // NETTOYAGE ET DESTRUCTION
+    // NETTOYAGE
     // ================================================
-    cleanup() {
-        if (this.settingsChangeHandler) {
-            window.removeEventListener('settingsChanged', this.settingsChangeHandler);
-        }
-        this.eventListenersSetup = false;
-        this.syncState.watchers.clear();
-    }
-
     destroy() {
-        this.cleanup();
         this.categories = {};
         this.weightedKeywords = {};
         this.customCategories = {};
