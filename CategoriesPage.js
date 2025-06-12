@@ -1,4 +1,4 @@
-// CategoriesPage.js - Version 8.4 - Synchronisation forcée optimisée
+// CategoriesPage.js - Version 8.4 - CORRIGÉ avec toutes les méthodes manquantes
 
 class CategoriesPage {
     constructor() {
@@ -17,7 +17,7 @@ class CategoriesPage {
         // Bind toutes les méthodes
         this.bindMethods();
         
-        console.log('[CategoriesPage] ✅ Version 8.4 - Synchronisation forcée optimisée');
+        console.log('[CategoriesPage] ✅ Version 8.4 - CORRIGÉ avec toutes les méthodes');
     }
 
     bindMethods() {
@@ -683,6 +683,162 @@ class CategoriesPage {
     }
 
     // ================================================
+    // RENDU DES ONGLETS - MÉTHODES MANQUANTES AJOUTÉES
+    // ================================================
+    renderTabContent(settings, moduleStatus) {
+        switch (this.currentTab) {
+            case 'general':
+                return this.renderGeneralTab(settings, moduleStatus);
+            case 'automation':
+                return this.renderAutomationTab(settings, moduleStatus);
+            case 'keywords':
+                return this.renderKeywordsTab(settings, moduleStatus);
+            default:
+                return this.renderGeneralTab(settings, moduleStatus);
+        }
+    }
+
+    // ================================================
+    // ONGLET GÉNÉRAL - MÉTHODE MANQUANTE AJOUTÉE
+    // ================================================
+    renderGeneralTab(settings, moduleStatus) {
+        return `
+            <div class="general-tab-layout">
+                <!-- Préférences générales -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-sliders-h"></i>
+                        <h3>Préférences générales</h3>
+                    </div>
+                    <div class="preferences-grid">
+                        <label class="checkbox-enhanced">
+                            <input type="checkbox" id="darkMode" 
+                                   ${settings.preferences?.darkMode ? 'checked' : ''}>
+                            <div class="checkbox-content">
+                                <span class="checkbox-title">Mode sombre</span>
+                                <span class="checkbox-description">Interface sombre pour les environnements peu éclairés</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-enhanced">
+                            <input type="checkbox" id="compactView" 
+                                   ${settings.preferences?.compactView ? 'checked' : ''}>
+                            <div class="checkbox-content">
+                                <span class="checkbox-title">Vue compacte</span>
+                                <span class="checkbox-description">Affichage plus dense pour économiser l'espace</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-enhanced">
+                            <input type="checkbox" id="showNotifications" 
+                                   ${settings.preferences?.showNotifications !== false ? 'checked' : ''}>
+                            <div class="checkbox-content">
+                                <span class="checkbox-title">Notifications</span>
+                                <span class="checkbox-description">Afficher les notifications système</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-enhanced">
+                            <input type="checkbox" id="excludeSpam" 
+                                   ${settings.preferences?.excludeSpam !== false ? 'checked' : ''}>
+                            <div class="checkbox-content">
+                                <span class="checkbox-title">Exclure les spams</span>
+                                <span class="checkbox-description">Ne pas analyser les emails marqués comme spam</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-enhanced">
+                            <input type="checkbox" id="detectCC" 
+                                   ${settings.preferences?.detectCC !== false ? 'checked' : ''}>
+                            <div class="checkbox-content">
+                                <span class="checkbox-title">Détecter les CC/BCC</span>
+                                <span class="checkbox-description">Prendre en compte les emails en copie</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Paramètres de scan -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-search"></i>
+                        <h3>Paramètres de scan</h3>
+                        ${moduleStatus.emailScanner ? 
+                            '<span class="status-badge status-ok">✓ Scanner Disponible</span>' : 
+                            '<span class="status-badge status-warning">⚠ Scanner Indisponible</span>'
+                        }
+                    </div>
+                    <div class="scan-settings-grid">
+                        <div class="form-group">
+                            <label for="defaultScanPeriod">Période par défaut (jours)</label>
+                            <select id="defaultScanPeriod">
+                                <option value="1" ${settings.scanSettings?.defaultPeriod === 1 ? 'selected' : ''}>1 jour</option>
+                                <option value="3" ${settings.scanSettings?.defaultPeriod === 3 ? 'selected' : ''}>3 jours</option>
+                                <option value="7" ${settings.scanSettings?.defaultPeriod === 7 ? 'selected' : ''}>7 jours</option>
+                                <option value="14" ${settings.scanSettings?.defaultPeriod === 14 ? 'selected' : ''}>14 jours</option>
+                                <option value="30" ${settings.scanSettings?.defaultPeriod === 30 ? 'selected' : ''}>30 jours</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="defaultFolder">Dossier par défaut</label>
+                            <select id="defaultFolder">
+                                <option value="inbox" ${settings.scanSettings?.defaultFolder === 'inbox' ? 'selected' : ''}>Boîte de réception</option>
+                                <option value="sent" ${settings.scanSettings?.defaultFolder === 'sent' ? 'selected' : ''}>Éléments envoyés</option>
+                                <option value="all" ${settings.scanSettings?.defaultFolder === 'all' ? 'selected' : ''}>Tous les dossiers</option>
+                            </select>
+                        </div>
+                        
+                        <label class="checkbox-enhanced">
+                            <input type="checkbox" id="autoAnalyze" 
+                                   ${settings.scanSettings?.autoAnalyze !== false ? 'checked' : ''}>
+                            <div class="checkbox-content">
+                                <span class="checkbox-title">Analyse automatique</span>
+                                <span class="checkbox-description">Analyser automatiquement les nouveaux emails</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-enhanced">
+                            <input type="checkbox" id="autoCategrize" 
+                                   ${settings.scanSettings?.autoCategrize !== false ? 'checked' : ''}>
+                            <div class="checkbox-content">
+                                <span class="checkbox-title">Catégorisation automatique</span>
+                                <span class="checkbox-description">Catégoriser automatiquement selon les règles</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Actions rapides -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-tools"></i>
+                        <h3>Actions rapides</h3>
+                    </div>
+                    <div class="quick-actions-grid">
+                        <button class="btn-action" onclick="window.categoriesPage.exportSettings()">
+                            <i class="fas fa-download"></i>
+                            <span>Exporter paramètres</span>
+                        </button>
+                        <button class="btn-action" onclick="window.categoriesPage.importSettings()">
+                            <i class="fas fa-upload"></i>
+                            <span>Importer paramètres</span>
+                        </button>
+                        <button class="btn-action" onclick="window.categoriesPage.resetSettings()">
+                            <i class="fas fa-undo"></i>
+                            <span>Réinitialiser</span>
+                        </button>
+                        <button class="btn-action" onclick="window.categoriesPage.debugSettings()">
+                            <i class="fas fa-bug"></i>
+                            <span>Debug</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ================================================
     // ONGLET AUTOMATISATION - AVEC INDICATEURS TEMPS RÉEL
     // ================================================
     renderAutomationTab(settings, moduleStatus) {
@@ -835,6 +991,225 @@ class CategoriesPage {
                     </button>
                 </div>
             `;
+        }
+    }
+
+    // ================================================
+    // ONGLET CATÉGORIES - MÉTHODE MANQUANTE AJOUTÉE
+    // ================================================
+    renderKeywordsTab(settings, moduleStatus) {
+        const categories = window.categoryManager?.getCategories() || {};
+        
+        return `
+            <div class="keywords-tab-layout">
+                <!-- Gestion des catégories -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-tags"></i>
+                        <h3>Gestion des catégories</h3>
+                        ${moduleStatus.categoryManager ? 
+                            '<span class="status-badge status-ok">✓ Manager Disponible</span>' : 
+                            '<span class="status-badge status-error">❌ Manager Indisponible</span>'
+                        }
+                    </div>
+                    
+                    <div class="categories-management">
+                        <div class="categories-list">
+                            ${Object.entries(categories).map(([id, category]) => `
+                                <div class="category-item-manage" data-category-id="${id}">
+                                    <div class="category-info">
+                                        <span class="category-icon" style="background: ${category.color}20; color: ${category.color}">
+                                            ${category.icon}
+                                        </span>
+                                        <div class="category-details">
+                                            <span class="category-name">${category.name}</span>
+                                            <span class="category-description">${category.description || 'Aucune description'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="category-actions">
+                                        ${category.isCustom ? `
+                                            <button class="btn-icon edit" onclick="window.categoriesPage.editCustomCategory('${id}')" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn-icon delete" onclick="window.categoriesPage.deleteCustomCategory('${id}')" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        ` : `
+                                            <span class="system-badge">Système</span>
+                                        `}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="add-category-section">
+                            <button class="btn-add-category" onclick="window.categoriesPage.showCreateCategoryModal()">
+                                <i class="fas fa-plus"></i>
+                                <span>Créer une nouvelle catégorie</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Règles d'exclusion -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-ban"></i>
+                        <h3>Règles d'exclusion</h3>
+                    </div>
+                    
+                    <div class="exclusions-management">
+                        <div class="quick-exclusion">
+                            <input type="text" id="quick-exclusion-input" placeholder="Ajouter un domaine ou email à exclure">
+                            <button onclick="window.categoriesPage.addQuickExclusion()">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="exclusions-lists">
+                            <div class="exclusion-list">
+                                <h5>Domaines exclus</h5>
+                                <div class="exclusion-items">
+                                    ${(settings.categoryExclusions?.domains || []).map(domain => `
+                                        <span class="exclusion-tag">
+                                            ${domain}
+                                            <button onclick="window.categoriesPage.removeExclusion('domain', '${domain}')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="exclusion-list">
+                                <h5>Emails exclus</h5>
+                                <div class="exclusion-items">
+                                    ${(settings.categoryExclusions?.emails || []).map(email => `
+                                        <span class="exclusion-tag">
+                                            ${email}
+                                            <button onclick="window.categoriesPage.removeExclusion('email', '${email}')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // ================================================
+    // MÉTHODES MANQUANTES POUR LES EXCLUSIONS ET CATÉGORIES
+    // ================================================
+    addQuickExclusion() {
+        const input = document.getElementById('quick-exclusion-input');
+        if (!input || !input.value.trim()) return;
+        
+        const value = input.value.trim().toLowerCase();
+        const settings = this.loadSettings();
+        
+        if (!settings.categoryExclusions) {
+            settings.categoryExclusions = { domains: [], emails: [] };
+        }
+        
+        if (value.includes('@')) {
+            // C'est un email
+            if (!settings.categoryExclusions.emails.includes(value)) {
+                settings.categoryExclusions.emails.push(value);
+                this.saveSettings(settings);
+                this.showToast(`Email "${value}" ajouté aux exclusions`, 'success');
+                this.refreshCurrentTab();
+            }
+        } else {
+            // C'est un domaine
+            const domain = value.replace(/^@/, '');
+            if (!settings.categoryExclusions.domains.includes(domain)) {
+                settings.categoryExclusions.domains.push(domain);
+                this.saveSettings(settings);
+                this.showToast(`Domaine "${domain}" ajouté aux exclusions`, 'success');
+                this.refreshCurrentTab();
+            }
+        }
+        
+        input.value = '';
+    }
+
+    removeExclusion(type, value) {
+        const settings = this.loadSettings();
+        
+        if (!settings.categoryExclusions) return;
+        
+        if (type === 'domain') {
+            settings.categoryExclusions.domains = settings.categoryExclusions.domains.filter(d => d !== value);
+        } else if (type === 'email') {
+            settings.categoryExclusions.emails = settings.categoryExclusions.emails.filter(e => e !== value);
+        }
+        
+        this.saveSettings(settings);
+        this.showToast(`Exclusion "${value}" supprimée`, 'success');
+        this.refreshCurrentTab();
+    }
+
+    showCreateCategoryModal() {
+        this.showToast('Fonction de création de catégorie en cours de développement', 'info');
+    }
+
+    editCustomCategory(categoryId) {
+        this.showToast(`Édition de la catégorie ${categoryId} en cours de développement`, 'info');
+    }
+
+    deleteCustomCategory(categoryId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie personnalisée ?')) {
+            this.showToast(`Suppression de la catégorie ${categoryId} en cours de développement`, 'info');
+        }
+    }
+
+    exportSettings() {
+        const settings = this.loadSettings();
+        const dataStr = JSON.stringify(settings, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `email-assistant-settings-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        this.showToast('Paramètres exportés', 'success');
+    }
+
+    importSettings() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const settings = JSON.parse(e.target.result);
+                    this.saveSettings(settings);
+                    this.showToast('Paramètres importés avec succès', 'success');
+                    this.refreshCurrentTab();
+                } catch (error) {
+                    this.showToast('Erreur lors de l\'importation', 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    resetSettings() {
+        if (confirm('Êtes-vous sûr de vouloir réinitialiser tous les paramètres ?')) {
+            const defaultSettings = this.getDefaultSettings();
+            this.saveSettings(defaultSettings);
+            this.showToast('Paramètres réinitialisés', 'success');
+            this.refreshCurrentTab();
         }
     }
 
@@ -1183,8 +1558,482 @@ class CategoriesPage {
         const styles = document.createElement('style');
         styles.id = 'categoriesPageStyles';
         styles.textContent = `
-            /* Styles existants... */
-            
+            /* Variables CSS pour les paramètres */
+            :root {
+                --settings-primary: #3b82f6;
+                --settings-secondary: #8b5cf6;
+                --settings-success: #10b981;
+                --settings-warning: #f59e0b;
+                --settings-error: #ef4444;
+                --settings-bg: #f8fafc;
+                --settings-card-bg: #ffffff;
+                --settings-border: #e2e8f0;
+                --settings-text: #374151;
+                --settings-text-light: #6b7280;
+                --settings-radius: 12px;
+                --settings-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+
+            .settings-page-compact {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 24px;
+                background: var(--settings-bg);
+                min-height: 100vh;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+
+            .page-header-compact {
+                margin-bottom: 24px;
+                padding: 24px;
+                background: var(--settings-card-bg);
+                border-radius: var(--settings-radius);
+                box-shadow: var(--settings-shadow);
+                border: 1px solid var(--settings-border);
+            }
+
+            .page-header-compact h1 {
+                margin: 0 0 16px 0;
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--settings-text);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .page-header-compact h1::before {
+                content: '⚙️';
+                font-size: 32px;
+            }
+
+            .settings-tabs-compact {
+                display: flex;
+                gap: 4px;
+                margin-bottom: 24px;
+                background: var(--settings-card-bg);
+                padding: 8px;
+                border-radius: var(--settings-radius);
+                box-shadow: var(--settings-shadow);
+                border: 1px solid var(--settings-border);
+            }
+
+            .tab-button-compact {
+                flex: 1;
+                padding: 12px 20px;
+                background: transparent;
+                border: none;
+                border-radius: calc(var(--settings-radius) - 4px);
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--settings-text-light);
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .tab-button-compact:hover {
+                background: rgba(59, 130, 246, 0.1);
+                color: var(--settings-primary);
+            }
+
+            .tab-button-compact.active {
+                background: var(--settings-primary);
+                color: white;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+
+            .tab-content-compact {
+                background: transparent;
+            }
+
+            .settings-card-compact {
+                background: var(--settings-card-bg);
+                border-radius: var(--settings-radius);
+                padding: 24px;
+                margin-bottom: 24px;
+                box-shadow: var(--settings-shadow);
+                border: 1px solid var(--settings-border);
+            }
+
+            .card-header-compact {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 20px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid var(--settings-border);
+            }
+
+            .card-header-compact i {
+                font-size: 20px;
+                color: var(--settings-primary);
+            }
+
+            .card-header-compact h3 {
+                margin: 0;
+                font-size: 20px;
+                font-weight: 600;
+                color: var(--settings-text);
+                flex: 1;
+            }
+
+            .preferences-grid {
+                display: grid;
+                gap: 16px;
+            }
+
+            .checkbox-enhanced {
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                padding: 16px;
+                background: #f8fafc;
+                border: 2px solid transparent;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .checkbox-enhanced:hover {
+                background: #f1f5f9;
+                border-color: var(--settings-primary);
+            }
+
+            .checkbox-enhanced input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                border: 2px solid #d1d5db;
+                background: white;
+                cursor: pointer;
+                margin: 0;
+                flex-shrink: 0;
+                appearance: none;
+                position: relative;
+                transition: all 0.2s ease;
+            }
+
+            .checkbox-enhanced input[type="checkbox"]:checked {
+                background: var(--settings-primary);
+                border-color: var(--settings-primary);
+            }
+
+            .checkbox-enhanced input[type="checkbox"]:checked::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .checkbox-content {
+                flex: 1;
+            }
+
+            .checkbox-title {
+                display: block;
+                font-weight: 600;
+                color: var(--settings-text);
+                margin-bottom: 4px;
+                font-size: 15px;
+            }
+
+            .checkbox-description {
+                display: block;
+                color: var(--settings-text-light);
+                font-size: 13px;
+                line-height: 1.4;
+            }
+
+            .scan-settings-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .form-group label {
+                font-weight: 600;
+                color: var(--settings-text);
+                font-size: 14px;
+            }
+
+            .form-group select {
+                padding: 12px 16px;
+                border: 2px solid var(--settings-border);
+                border-radius: 8px;
+                background: white;
+                font-size: 14px;
+                color: var(--settings-text);
+                transition: border-color 0.2s ease;
+            }
+
+            .form-group select:focus {
+                outline: none;
+                border-color: var(--settings-primary);
+            }
+
+            .quick-actions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+            }
+
+            .btn-action {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 16px 20px;
+                background: var(--settings-bg);
+                border: 2px solid var(--settings-border);
+                border-radius: 10px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--settings-text);
+                transition: all 0.3s ease;
+                text-decoration: none;
+            }
+
+            .btn-action:hover {
+                background: white;
+                border-color: var(--settings-primary);
+                color: var(--settings-primary);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+            }
+
+            .btn-compact {
+                padding: 8px 16px;
+                background: white;
+                border: 1px solid var(--settings-border);
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--settings-text);
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            .btn-compact:hover {
+                background: var(--settings-bg);
+                border-color: var(--settings-primary);
+                color: var(--settings-primary);
+            }
+
+            .btn-compact.btn-primary {
+                background: var(--settings-primary);
+                color: white;
+                border-color: var(--settings-primary);
+            }
+
+            .btn-compact.btn-primary:hover {
+                background: #2563eb;
+                border-color: #2563eb;
+            }
+
+            .btn-compact.btn-secondary {
+                background: var(--settings-bg);
+                color: var(--settings-text-light);
+            }
+
+            /* Automatisation */
+            .automation-focused-layout {
+                max-width: 100%;
+            }
+
+            .full-width {
+                width: 100%;
+            }
+
+            .task-automation-section {
+                margin: 24px 0;
+            }
+
+            .task-automation-section h4 {
+                margin: 0 0 16px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--settings-text);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .categories-selection-grid-automation {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 12px;
+                margin-bottom: 24px;
+            }
+
+            .category-checkbox-item-enhanced {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 16px;
+                background: white;
+                border: 2px solid var(--settings-border);
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .category-checkbox-item-enhanced:hover {
+                border-color: var(--settings-primary);
+                background: #f8fafc;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            }
+
+            .category-checkbox-item-enhanced input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                border: 2px solid #d1d5db;
+                background: white;
+                cursor: pointer;
+                margin: 0;
+                flex-shrink: 0;
+                appearance: none;
+                position: relative;
+                transition: all 0.2s ease;
+            }
+
+            .category-checkbox-item-enhanced input[type="checkbox"]:checked {
+                background: var(--settings-success);
+                border-color: var(--settings-success);
+            }
+
+            .category-checkbox-item-enhanced input[type="checkbox"]:checked::after {
+                content: '✓';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 12px;
+                font-weight: 700;
+            }
+
+            .category-checkbox-content-enhanced {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .cat-icon-automation {
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+
+            .cat-name-automation {
+                font-weight: 600;
+                color: var(--settings-text);
+                font-size: 14px;
+                flex: 1;
+            }
+
+            .custom-badge {
+                background: var(--settings-secondary);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+            }
+
+            .selected-indicator {
+                background: var(--settings-success);
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+                animation: pulseSelection 2s infinite;
+            }
+
+            @keyframes pulseSelection {
+                0%, 100% { opacity: 1; transform: scale(1); }
+                50% { opacity: 0.8; transform: scale(1.05); }
+            }
+
+            .automation-options-enhanced {
+                margin: 24px 0;
+            }
+
+            .automation-options-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 16px;
+            }
+
+            .automation-stats {
+                margin: 24px 0;
+            }
+
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 16px;
+            }
+
+            .stat-item {
+                text-align: center;
+                padding: 20px;
+                background: var(--settings-bg);
+                border-radius: 10px;
+                border: 2px solid var(--settings-border);
+                transition: all 0.3s ease;
+            }
+
+            .stat-item:hover {
+                border-color: var(--settings-primary);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            }
+
+            .stat-number {
+                display: block;
+                font-size: 28px;
+                font-weight: 700;
+                color: var(--settings-primary);
+                margin-bottom: 8px;
+            }
+
+            .stat-label {
+                display: block;
+                font-size: 13px;
+                font-weight: 600;
+                color: var(--settings-text-light);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
             /* Indicateurs de synchronisation */
             .automation-sync-indicator {
                 margin: 16px 0;
@@ -1193,7 +2042,7 @@ class CategoriesPage {
                 font-size: 14px;
                 font-weight: 500;
             }
-            
+
             .sync-indicator {
                 display: flex;
                 align-items: center;
@@ -1203,19 +2052,19 @@ class CategoriesPage {
                 font-size: 13px;
                 font-weight: 500;
             }
-            
+
             .sync-indicator.sync-ok {
                 background: #d1fae5;
                 color: #065f46;
                 border: 1px solid #10b981;
             }
-            
+
             .sync-indicator.sync-warning {
                 background: #fef3c7;
                 color: #92400e;
                 border: 1px solid #f59e0b;
             }
-            
+
             .btn-fix-sync-small {
                 background: rgba(0, 0, 0, 0.1);
                 border: none;
@@ -1230,58 +2079,13 @@ class CategoriesPage {
                 margin-left: auto;
                 transition: all 0.2s ease;
             }
-            
+
             .btn-fix-sync-small:hover {
                 background: rgba(0, 0, 0, 0.2);
                 transform: translateY(-1px);
             }
-            
-            /* Stat de synchronisation */
-            .stat-item.sync-stat {
-                border: 2px solid transparent;
-                transition: all 0.3s ease;
-            }
-            
-            .stat-item.sync-stat:hover {
-                border-color: #3b82f6;
-            }
-            
-            /* Animation pour les indicateurs sélectionnés */
-            .selected-indicator {
-                background: #667eea !important;
-                color: white !important;
-                border-color: #e9d5ff !important;
-                animation: pulseSelection 2s infinite;
-                font-size: 10px !important;
-                padding: 2px 6px !important;
-                border-radius: 4px !important;
-                margin-left: 8px !important;
-                font-weight: 600 !important;
-            }
-            
-            @keyframes pulseSelection {
-                0%, 100% { opacity: 1; transform: scale(1); }
-                50% { opacity: 0.8; transform: scale(1.05); }
-            }
-            
-            /* Amélioration des checkboxes */
-            .category-checkbox-item-enhanced {
-                position: relative;
-                transition: all 0.3s ease;
-            }
-            
-            .category-checkbox-item-enhanced:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
-            
-            .category-checkbox-item-enhanced input[type="checkbox"]:checked + .category-checkbox-content-enhanced {
-                background: #667eea15 !important;
-                border-color: #667eea !important;
-                transform: scale(1.02);
-            }
-            
-            /* Styles pour les indicateurs de statut */
+
+            /* Status badges */
             .status-badge {
                 font-size: 10px;
                 padding: 2px 6px;
@@ -1304,40 +2108,261 @@ class CategoriesPage {
                 background: #fee2e2;
                 color: #991b1b;
             }
-            
-            /* Tous les autres styles CSS existants... */
-            /* (J'omets la répétition complète pour la brevité) */
+
+            /* Catégories management */
+            .categories-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+
+            .category-item-manage {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px;
+                background: white;
+                border: 1px solid var(--settings-border);
+                border-radius: 10px;
+                transition: all 0.2s ease;
+            }
+
+            .category-item-manage:hover {
+                border-color: var(--settings-primary);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+
+            .category-info {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
+            }
+
+            .category-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+                font-weight: 600;
+            }
+
+            .category-details {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .category-name {
+                font-weight: 600;
+                color: var(--settings-text);
+                font-size: 15px;
+            }
+
+            .category-description {
+                color: var(--settings-text-light);
+                font-size: 13px;
+            }
+
+            .category-actions {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .btn-icon {
+                width: 32px;
+                height: 32px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                transition: all 0.2s ease;
+            }
+
+            .btn-icon.edit {
+                background: #dbeafe;
+                color: #2563eb;
+            }
+
+            .btn-icon.edit:hover {
+                background: #3b82f6;
+                color: white;
+            }
+
+            .btn-icon.delete {
+                background: #fecaca;
+                color: #dc2626;
+            }
+
+            .btn-icon.delete:hover {
+                background: #ef4444;
+                color: white;
+            }
+
+            .system-badge {
+                background: var(--settings-bg);
+                color: var(--settings-text-light);
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+
+            .btn-add-category {
+                width: 100%;
+                padding: 16px;
+                background: var(--settings-primary);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.3s ease;
+            }
+
+            .btn-add-category:hover {
+                background: #2563eb;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+
+            /* Exclusions */
+            .quick-exclusion {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+
+            .quick-exclusion input {
+                flex: 1;
+                padding: 12px 16px;
+                border: 2px solid var(--settings-border);
+                border-radius: 8px;
+                font-size: 14px;
+                transition: border-color 0.2s ease;
+            }
+
+            .quick-exclusion input:focus {
+                outline: none;
+                border-color: var(--settings-primary);
+            }
+
+            .quick-exclusion button {
+                padding: 12px 16px;
+                background: var(--settings-primary);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s ease;
+            }
+
+            .quick-exclusion button:hover {
+                background: #2563eb;
+            }
+
+            .exclusions-lists {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
+
+            .exclusion-list h5 {
+                margin: 0 0 12px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--settings-text);
+            }
+
+            .exclusion-items {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .exclusion-tag {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 10px;
+                background: var(--settings-error);
+                color: white;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            .exclusion-tag button {
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+                padding: 0;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                transition: all 0.2s ease;
+            }
+
+            .exclusion-tag button:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+
+            /* Responsive */
+            @media (max-width: 1024px) {
+                .settings-page-compact {
+                    padding: 16px;
+                }
+
+                .categories-selection-grid-automation {
+                    grid-template-columns: 1fr;
+                }
+
+                .scan-settings-grid,
+                .automation-options-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .stats-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+                }
+            }
+
+            @media (max-width: 768px) {
+                .settings-tabs-compact {
+                    flex-direction: column;
+                    gap: 4px;
+                }
+
+                .quick-actions-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .exclusions-lists {
+                    grid-template-columns: 1fr;
+                }
+            }
         `;
         
         document.head.appendChild(styles);
-    }
-
-    // ================================================
-    // NETTOYAGE AMÉLIORÉ
-    // ================================================
-    cleanup() {
-        // Nettoyer les handlers spéciaux des checkboxes
-        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
-        checkboxes.forEach(checkbox => {
-            if (checkbox._changeHandler) {
-                checkbox.removeEventListener('change', checkbox._changeHandler);
-            }
-            if (checkbox._clickHandler) {
-                checkbox.removeEventListener('click', checkbox._clickHandler);
-            }
-        });
-        
-        this.eventListenersSetup = false;
-        this.syncInProgress = false;
-        this.pendingSync = false;
-        this.syncQueue = [];
-        
-        console.log('[CategoriesPage] Nettoyage amélioré effectué');
-    }
-
-    destroy() {
-        this.cleanup();
-        console.log('[CategoriesPage] Instance détruite');
     }
 
     // ================================================
@@ -1387,7 +2412,7 @@ class CategoriesPage {
 
     renderErrorState(error) {
         return `
-            <div class="error-display" style="padding: 20px; text-align: center; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; color: #991b1b;">
+            <div class="error-display" style="padding: 20px; text-align: center; background: #fee2e2; border: 1px solid #fca5a5; border-radius: 12px; color: #991b1c;">
                 <h2>Erreur de chargement des paramètres</h2>
                 <p>Une erreur est survenue: ${error.message}</p>
                 <button onclick="window.categoriesPage.forceUpdateUI()" style="padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
@@ -1432,23 +2457,38 @@ class CategoriesPage {
         };
     }
 
-    // Méthodes héritées restantes pour la compatibilité...
-    renderTabContent(settings, moduleStatus) {
-        switch (this.currentTab) {
-            case 'general':
-                return this.renderGeneralTab(settings, moduleStatus);
-            case 'automation':
-                return this.renderAutomationTab(settings, moduleStatus);
-            case 'keywords':
-                return this.renderKeywordsTab(settings, moduleStatus);
-            default:
-                return this.renderGeneralTab(settings, moduleStatus);
-        }
+    // ================================================
+    // NETTOYAGE AMÉLIORÉ
+    // ================================================
+    cleanup() {
+        // Nettoyer les handlers spéciaux des checkboxes
+        const checkboxes = document.querySelectorAll('.category-preselect-checkbox');
+        checkboxes.forEach(checkbox => {
+            if (checkbox._changeHandler) {
+                checkbox.removeEventListener('change', checkbox._changeHandler);
+            }
+            if (checkbox._clickHandler) {
+                checkbox.removeEventListener('click', checkbox._clickHandler);
+            }
+        });
+        
+        this.eventListenersSetup = false;
+        this.syncInProgress = false;
+        this.pendingSync = false;
+        this.syncQueue = [];
+        
+        console.log('[CategoriesPage] Nettoyage amélioré effectué');
     }
 
-    // [Toutes les autres méthodes renderGeneralTab, renderKeywordsTab, etc. restent identiques]
-    // Je les omets pour la brevité mais elles doivent être incluses dans la version finale
+    destroy() {
+        this.cleanup();
+        console.log('[CategoriesPage] Instance détruite');
+    }
 }
+
+// ================================================
+// CRÉATION INSTANCE GLOBALE ET INTÉGRATION PAGEMANAGER
+// ================================================
 
 // Créer l'instance globale avec nettoyage préalable
 try {
@@ -1472,10 +2512,10 @@ try {
             }
         };
         
-        console.log('✅ CategoriesPage v8.4 intégrée au PageManager');
+        console.log('✅ CategoriesPage v8.4 CORRIGÉ intégré au PageManager');
     }
 } catch (error) {
     console.error('[CategoriesPage] Erreur critique initialisation:', error);
 }
 
-console.log('✅ CategoriesPage v8.4 loaded - Synchronisation forcée optimisée');
+console.log('✅ CategoriesPage v8.4 CORRIGÉ loaded - Toutes les méthodes manquantes ajoutées');
