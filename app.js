@@ -96,132 +96,229 @@ class App {
     initializeScrollManager() {
         console.log('[App] Initializing scroll manager...');
         
-        // Fonction pour vérifier si le scroll est nécessaire - ÉVITER LES BOUCLES
+        // Variables pour éviter les boucles infinies
         let scrollCheckInProgress = false;
+        let lastScrollState = null;
+        let lastContentHeight = 0;
+        let lastViewportHeight = 0;
+        
+        // Fonction pour vérifier si le scroll est nécessaire - AVEC PROTECTION CONTRE LES BOUCLES
         this.checkScrollNeeded = () => {
-            if (scrollCheckInProgress) return;
+            if (scrollCheckInProgress) {
+                console.log('[SCROLL_MANAGER] Check already in progress, skipping...');
+                return;
+            }
+            
             scrollCheckInProgress = true;
             
+            // Délai pour permettre aux modifications DOM de se stabiliser
             setTimeout(() => {
-                const body = document.body;
-                const contentHeight = document.documentElement.scrollHeight;
-                const viewportHeight = window.innerHeight;
-                
-                // Obtenir la page actuelle
-                const currentPage = this.currentPage || 'dashboard';
-                
-                console.log('[SCROLL_MANAGER]', {
-                    currentPage,
-                    contentHeight,
-                    viewportHeight,
-                    bodyScrollHeight: body.scrollHeight,
-                    needsScroll: contentHeight > viewportHeight
-                });
-                
-                // Dashboard: JAMAIS de scroll
-                if (currentPage === 'dashboard') {
-                    body.classList.remove('needs-scroll');
-                    body.style.overflow = 'hidden';
-                    body.style.overflowY = 'hidden';
-                    body.style.overflowX = 'hidden';
-                    console.log('[SCROLL_MANAGER] Dashboard - scroll forcé à hidden');
+                try {
+                    const body = document.body;
+                    const contentHeight = document.documentElement.scrollHeight;
+                    const viewportHeight = window.innerHeight;
+                    const currentPage = this.currentPage || 'dashboard';
+                    
+                    // Vérifier si les dimensions ont réellement changé
+                    const dimensionsChanged = 
+                        Math.abs(contentHeight - lastContentHeight) > 10 || 
+                        Math.abs(viewportHeight - lastViewportHeight) > 10;
+                    
+                    lastContentHeight = contentHeight;
+                    lastViewportHeight = viewportHeight;
+                    
+                    console.log('[SCROLL_MANAGER]', {
+                        currentPage,
+                        contentHeight,
+                        viewportHeight,
+                        dimensionsChanged,
+                        needsScroll: contentHeight > viewportHeight + 100
+                    });
+                    
+                    // Dashboard: JAMAIS de scroll
+                    if (currentPage === 'dashboard') {
+                        const newState = 'dashboard-no-scroll';
+                        if (lastScrollState !== newState) {
+                            body.classList.remove('needs-scroll');
+                            body.style.overflow = 'hidden';
+                            body.style.overflowY = 'hidden';
+                            body.style.overflowX = 'hidden';
+                            lastScrollState = newState;
+                            console.log('[SCROLL_MANAGER] Dashboard - scroll disabled');
+                        }
+                        scrollCheckInProgress = false;
+                        return;
+                    }
+                    
+                    // Autres pages: scroll seulement si vraiment nécessaire
+                    const threshold = 100;
+                    const needsScroll = contentHeight > viewportHeight + threshold;
+                    const newState = needsScroll ? 'scroll-enabled' : 'scroll-disabled';
+                    
+                    // Ne modifier le DOM que si l'état change réellement
+                    if (lastScrollState !== newState || dimensionsChanged) {
+                        if (needsScroll) {
+                            body.classList.add('needs-scroll');
+                            body.style.overflow = '';
+                            body.style.overflowY = '';
+                            body.style.overflowX = '';
+                            console.log('[SCROLL_MANAGER] Scroll enabled for', currentPage);
+                        } else {
+                            body.classList.remove('needs-scroll');
+                            body.style.overflow = 'hidden';
+                            body.style.overflowY = 'hidden';
+                            body.style.overflowX = 'hidden';
+                            console.log('[SCROLL_MANAGER] Scroll disabled for', currentPage);
+                        }
+                        lastScrollState = newState;
+                    } else {
+                        console.log('[SCROLL_MANAGER] No state change needed for', currentPage);
+                    }
+                    
+                } catch (error) {
+                    console.error('[SCROLL_MANAGER] Error checking scroll:', error);
+                } finally {
                     scrollCheckInProgress = false;
-                    return;
                 }
-                
-                // Autres pages: scroll seulement si vraiment nécessaire avec seuil plus élevé
-                const threshold = 100;
-                if (contentHeight > viewportHeight + threshold) {
-                    body.classList.add('needs-scroll');
-                    console.log('[SCROLL_MANAGER] Long content detected - scroll enabled for', currentPage);
-                } else {
-                    body.classList.remove('needs-scroll');
-                    body.style.overflow = 'hidden';
-                    body.style.overflowY = 'hidden';
-                    body.style.overflowX = 'hidden';
-                    console.log('[SCROLL_MANAGER] Short content detected - scroll hidden for', currentPage);
-                }
-                
-                scrollCheckInProgress = false;
-            }, 100);
+            }, 150); // Délai augmenté pour plus de stabilité
         };
 
-        // Fonction pour définir le mode de page - CORRIGÉE POUR DASHBOARD
+        // Fonction pour définir le mode de page - OPTIMISÉE
         window.setPageMode = (pageName) => {
-            if (!pageName) return;
+            if (!pageName || this.currentPage === pageName) {
+                console.log('[PAGE_MODE] Same page or invalid page name, skipping...');
+                return;
+            }
             
             const body = document.body;
             
             // Mettre à jour la page actuelle
+            const previousPage = this.currentPage;
             this.currentPage = pageName;
             
+            console.log(`[PAGE_MODE] Switching from ${previousPage} to ${pageName}`);
+            
             // Nettoyer les anciennes classes de page
-            body.classList.remove('page-dashboard', 'page-scanner', 'page-emails', 'page-tasks', 'page-ranger', 'page-settings', 'needs-scroll', 'login-mode');
+            body.classList.remove(
+                'page-dashboard', 'page-scanner', 'page-emails', 
+                'page-tasks', 'page-ranger', 'page-settings', 
+                'needs-scroll', 'login-mode'
+            );
             
             // Ajouter la nouvelle classe de page
             body.classList.add(`page-${pageName}`);
-            console.log(`[PAGE_MODE] Mode ${pageName} activé`);
             
-            // Dashboard: forcer immédiatement pas de scroll
+            // Réinitialiser l'état du scroll
+            lastScrollState = null;
+            lastContentHeight = 0;
+            lastViewportHeight = 0;
+            
+            // Dashboard: configuration immédiate
             if (pageName === 'dashboard') {
                 body.style.overflow = 'hidden';
                 body.style.overflowY = 'hidden';
                 body.style.overflowX = 'hidden';
-                console.log('[PAGE_MODE] Dashboard - scroll immédiatement masqué');
+                lastScrollState = 'dashboard-no-scroll';
+                console.log('[PAGE_MODE] Dashboard - scroll immediately disabled');
                 return;
             }
             
-            // Autres pages: vérifier après un délai
+            // Autres pages: vérifier après stabilisation du contenu
             setTimeout(() => {
-                if (this.currentPage === pageName) { // S'assurer qu'on est toujours sur la même page
+                if (this.currentPage === pageName) { // Vérifier qu'on est toujours sur la même page
                     this.checkScrollNeeded();
                 }
             }, 300);
         };
 
-        // Observer pour les changements de contenu - OPTIMISÉ
+        // Observer optimisé pour les changements de contenu
         if (window.MutationObserver) {
-            let scrollCheckTimeout;
+            let observerTimeout;
+            let pendingMutations = false;
+            
             const contentObserver = new MutationObserver((mutations) => {
-                const hasContentChanges = mutations.some(mutation => 
-                    mutation.type === 'childList' || 
-                    (mutation.type === 'attributes' && ['style', 'class'].includes(mutation.attributeName))
-                );
+                // Ignorer pour le dashboard
+                if (this.currentPage === 'dashboard') {
+                    return;
+                }
                 
-                if (hasContentChanges && this.currentPage !== 'dashboard') {
-                    clearTimeout(scrollCheckTimeout);
-                    scrollCheckTimeout = setTimeout(() => {
-                        if (this.currentPage !== 'dashboard') {
+                // Filtrer les mutations importantes
+                const significantChanges = mutations.some(mutation => {
+                    // Ignorer les changements de style/classe liés au scroll
+                    if (mutation.type === 'attributes') {
+                        const attrName = mutation.attributeName;
+                        const target = mutation.target;
+                        
+                        if (attrName === 'style' && target === document.body) {
+                            return false; // Ignorer les changements de style sur body
+                        }
+                        if (attrName === 'class' && target === document.body) {
+                            return false; // Ignorer les changements de classe sur body
+                        }
+                    }
+                    
+                    // Considérer les ajouts/suppressions d'éléments
+                    if (mutation.type === 'childList') {
+                        return mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0;
+                    }
+                    
+                    return false;
+                });
+                
+                if (significantChanges && !pendingMutations) {
+                    pendingMutations = true;
+                    clearTimeout(observerTimeout);
+                    
+                    observerTimeout = setTimeout(() => {
+                        if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
+                            console.log('[SCROLL_MANAGER] Significant content change detected');
                             this.checkScrollNeeded();
                         }
-                    }, 200);
+                        pendingMutations = false;
+                    }, 250);
                 }
             });
 
+            // Observer avec configuration optimisée
             contentObserver.observe(document.body, {
                 childList: true,
                 subtree: true,
                 attributes: true,
-                attributeFilter: ['style', 'class']
+                attributeFilter: ['style', 'class'],
+                attributeOldValue: false
             });
 
-            console.log('[SCROLL_MANAGER] Enhanced content observer initialized');
+            console.log('[SCROLL_MANAGER] Optimized content observer initialized');
         }
 
-        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        // Gestionnaire de redimensionnement optimisé
         let resizeTimeout;
+        let lastWindowSize = { width: window.innerWidth, height: window.innerHeight };
+        
         window.addEventListener('resize', () => {
-            if (this.currentPage === 'dashboard') return; // Ignorer pour dashboard
+            const currentSize = { width: window.innerWidth, height: window.innerHeight };
+            
+            // Vérifier si la taille a réellement changé de manière significative
+            const sizeChanged = 
+                Math.abs(currentSize.width - lastWindowSize.width) > 10 ||
+                Math.abs(currentSize.height - lastWindowSize.height) > 10;
+            
+            if (!sizeChanged || this.currentPage === 'dashboard') {
+                return;
+            }
+            
+            lastWindowSize = currentSize;
             
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                if (this.currentPage !== 'dashboard') {
+                if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
+                    console.log('[SCROLL_MANAGER] Window resized significantly');
                     this.checkScrollNeeded();
                 }
-            }, 250);
+            }, 300);
         });
 
-        console.log('[App] ✅ Scroll manager initialized');
+        console.log('[App] ✅ Optimized scroll manager initialized');
     }
 
     async ensureTaskManagerReady() {
