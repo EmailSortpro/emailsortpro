@@ -1,4 +1,4 @@
-// CategoriesPage.js - Version 8.1 - GESTION COMPLÈTE DES MOTS-CLÉS PAR CATÉGORIE - CORRIGÉ
+// CategoriesPage.js - Version 8.1 - CORRIGÉE COMPLÈTEMENT
 
 class CategoriesPage {
     constructor() {
@@ -7,33 +7,24 @@ class CategoriesPage {
         this.editingKeyword = null;
         this.isInitialized = false;
         this.debugMode = false;
-        
-        // NOUVEAU : État pour la gestion des mots-clés
         this.editingCategory = null;
         this.keywordSearchTerm = '';
         this.selectedKeywordType = 'all';
         
         this.bindMethods();
-        
-        console.log('[CategoriesPage] Version 8.1 - Gestion complète des mots-clés par catégorie - CORRIGÉ');
+        console.log('[CategoriesPage] Version 8.1 - Gestion complète des mots-clés par catégorie - CORRIGÉE');
     }
 
-    // =====================================
-    // BINDING DES MÉTHODES
-    // =====================================
     bindMethods() {
         const methods = [
             'switchTab', 'savePreferences', 'saveScanSettings', 'saveAutomationSettings',
             'updateTaskPreselectedCategories', 'addQuickExclusion', 'toggleCategory',
             'openKeywordsModal', 'openAllKeywordsModal', 'openExclusionsModal',
             'exportSettings', 'importSettings', 'closeModal',
-            // NOUVEAUX : Gestion des mots-clés
             'openCategoryKeywordsModal', 'addKeywordToCategory', 'removeKeywordFromCategory',
-            'editKeywordInCategory', 'moveKeywordType', 'searchKeywords', 'filterKeywordsByType',
-            'saveCategoryKeywords', 'resetCategoryKeywords', 'importKeywordsFromFile',
-            // MÉTHODES MANQUANTES AJOUTÉES
-            'initializeDefaultSettings', 'loadSettings', 'saveSettings', 'notifySettingsChange',
-            'initializeEventListeners', 'refreshCurrentTab', 'renderGeneralTab', 'renderAutomationTab',
+            'editKeywordInCategory', 'renderSettings', 'initializeDefaultSettings',
+            'loadSettings', 'saveSettings', 'notifySettingsChange', 'initializeEventListeners',
+            'refreshCurrentTab', 'renderGeneralTab', 'renderAutomationTab', 'renderKeywordsTab',
             'renderOptimizedExclusions', 'updateAutomationStats', 'renderErrorState',
             'debugSettings', 'testCategorySelection', 'forceUpdateUI'
         ];
@@ -46,31 +37,25 @@ class CategoriesPage {
     }
 
     // =====================================
-    // MÉTHODES MANQUANTES AJOUTÉES - CORRECTIF PRINCIPAL
+    // INITIALISATION
     // =====================================
-    
     initializeDefaultSettings() {
         const settings = this.loadSettings();
         let hasChanges = false;
         
-        // Si pas de catégories pré-sélectionnées, sélectionner les plus importantes
         if (!settings.taskPreselectedCategories || settings.taskPreselectedCategories.length === 0) {
             settings.taskPreselectedCategories = ['tasks', 'commercial', 'finance', 'meetings'];
             hasChanges = true;
-            console.log('[CategoriesPage] Catégories par défaut définies:', settings.taskPreselectedCategories);
         }
         
-        // Si pas de catégories actives, toutes sont actives par défaut
         if (!settings.activeCategories) {
             const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
             settings.activeCategories = allCategories;
             hasChanges = true;
-            console.log('[CategoriesPage] Catégories actives par défaut définies:', settings.activeCategories);
         }
         
         if (hasChanges) {
             this.saveSettings(settings);
-            console.log('[CategoriesPage] Paramètres par défaut sauvegardés');
         }
         
         return settings;
@@ -84,10 +69,7 @@ class CategoriesPage {
                 excludedDomains: [],
                 excludedKeywords: [],
                 taskPreselectedCategories: [],
-                categoryExclusions: {
-                    domains: [],
-                    emails: []
-                },
+                categoryExclusions: { domains: [], emails: [] },
                 scanSettings: {
                     defaultPeriod: 7,
                     defaultFolder: 'inbox',
@@ -110,14 +92,43 @@ class CategoriesPage {
             };
         } catch (error) {
             console.error('[CategoriesPage] Erreur loadSettings:', error);
-            return {};
+            return this.getDefaultSettings();
         }
+    }
+
+    getDefaultSettings() {
+        return {
+            activeCategories: null,
+            excludedDomains: [],
+            excludedKeywords: [],
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
+            categoryExclusions: { domains: [], emails: [] },
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            automationSettings: {
+                autoCreateTasks: false,
+                groupTasksByDomain: false,
+                skipDuplicates: true,
+                autoAssignPriority: false
+            },
+            preferences: {
+                darkMode: false,
+                compactView: false,
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
+            }
+        };
     }
 
     saveSettings(settings) {
         try {
             localStorage.setItem('categorySettings', JSON.stringify(settings));
-            console.log('[CategoriesPage] Paramètres sauvegardés:', settings);
+            console.log('[CategoriesPage] Paramètres sauvegardés');
         } catch (error) {
             console.error('[CategoriesPage] Erreur saveSettings:', error);
         }
@@ -125,61 +136,16 @@ class CategoriesPage {
 
     notifySettingsChange(settingType, value) {
         try {
-            console.log(`[CategoriesPage] Notification changement: ${settingType} =`, value);
-            
-            if (window.emailScanner) {
-                if (settingType === 'scanSettings') {
-                    if (typeof window.emailScanner.updateScanSettings === 'function') {
-                        window.emailScanner.updateScanSettings(value);
-                        console.log('  - EmailScanner notifié (updateScanSettings)');
-                    }
-                }
-                
-                if (settingType === 'taskPreselectedCategories') {
-                    if (typeof window.emailScanner.updatePreselectedCategories === 'function') {
-                        window.emailScanner.updatePreselectedCategories(value);
-                        console.log('  - EmailScanner notifié (updatePreselectedCategories)');
-                    }
-                }
-
-                if (settingType === 'preferences') {
-                    if (typeof window.emailScanner.updateUserPreferences === 'function') {
-                        window.emailScanner.updateUserPreferences(value);
-                        console.log('  - EmailScanner notifié (updateUserPreferences)');
-                    }
-                }
-            }
-            
-            if (window.categoryManager) {
-                if (settingType === 'preferences') {
-                    if (value.excludeSpam !== undefined && typeof window.categoryManager.setSpamExclusion === 'function') {
-                        window.categoryManager.setSpamExclusion(value.excludeSpam);
-                        console.log('  - CategoryManager notifié (setSpamExclusion)');
-                    }
-                    if (value.detectCC !== undefined && typeof window.categoryManager.setCCDetection === 'function') {
-                        window.categoryManager.setCCDetection(value.detectCC);
-                        console.log('  - CategoryManager notifié (setCCDetection)');
-                    }
-                }
-                
-                if (settingType === 'activeCategories' && typeof window.categoryManager.setActiveCategories === 'function') {
-                    window.categoryManager.setActiveCategories(value);
-                    console.log('  - CategoryManager notifié (setActiveCategories)');
-                }
-            }
-            
             window.dispatchEvent(new CustomEvent('settingsChanged', {
                 detail: { type: settingType, value: value }
             }));
-            console.log('  - Event global dispatché: settingsChanged');
-            
         } catch (error) {
             console.error('[CategoriesPage] Erreur notification:', error);
         }
     }
 
     // =====================================
-    // PAGE PARAMÈTRES AVEC ONGLETS
+    // RENDU PRINCIPAL
     // =====================================
     renderSettings(container) {
         try {
@@ -189,20 +155,8 @@ class CategoriesPage {
                 <div class="settings-page-compact">
                     <div class="page-header-compact">
                         <h1>Paramètres</h1>
-                        <div style="display: flex; gap: 10px; margin-top: 10px;">
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.debugSettings()" title="Debug">
-                                <i class="fas fa-bug"></i> Debug
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.testCategorySelection()" title="Test">
-                                <i class="fas fa-vial"></i> Test
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.forceUpdateUI()" title="Refresh">
-                                <i class="fas fa-sync"></i> Refresh
-                            </button>
-                        </div>
                     </div>
 
-                    <!-- Onglets -->
                     <div class="settings-tabs-compact">
                         <button class="tab-button-compact ${this.currentTab === 'general' ? 'active' : ''}" 
                                 onclick="window.categoriesPage.switchTab('general')">
@@ -218,231 +172,93 @@ class CategoriesPage {
                         </button>
                     </div>
 
-                    <!-- Contenu des onglets -->
                     <div class="tab-content-compact" id="tabContent">
-                        ${this.currentTab === 'general' ? this.renderGeneralTab(settings) : 
-                          this.currentTab === 'automation' ? this.renderAutomationTab(settings) :
-                          this.renderKeywordsTab(settings)}
+                        ${this.renderCurrentTab(settings)}
                     </div>
                 </div>
             `;
             
             this.addStyles();
-            
-            setTimeout(() => {
-                this.initializeEventListeners();
-                this.setDebugMode(true);
-                
-                setTimeout(() => {
-                    console.log('[CategoriesPage] Vérification post-initialisation...');
-                    this.testCategorySelection();
-                }, 500);
-            }, 100);
+            setTimeout(() => this.initializeEventListeners(), 100);
             
         } catch (error) {
-            console.error('[CategoriesPage] Erreur lors du rendu:', error);
+            console.error('[CategoriesPage] Erreur rendu:', error);
             container.innerHTML = this.renderErrorState(error);
         }
     }
 
-    // =====================================
-    // INITIALISATION ET ÉVÉNEMENTS
-    // =====================================
-    initializeEventListeners() {
-        try {
-            // Préférences générales
-            const preferences = ['darkMode', 'compactView', 'showNotifications', 'excludeSpam', 'detectCC'];
-            preferences.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.removeEventListener('change', this.savePreferences);
-                    element.addEventListener('change', this.savePreferences);
-                    
-                    if (this.debugMode) {
-                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${element.checked}`);
-                    }
-                }
-            });
-
-            // Paramètres de scan
-            const scanSettings = ['defaultScanPeriod', 'defaultFolder', 'autoAnalyze', 'autoCategrize'];
-            scanSettings.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.removeEventListener('change', this.saveScanSettings);
-                    element.addEventListener('change', this.saveScanSettings);
-                    
-                    if (this.debugMode) {
-                        const value = element.type === 'checkbox' ? element.checked : element.value;
-                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${value}`);
-                    }
-                }
-            });
-
-            // Paramètres d'automatisation
-            const automationSettings = ['autoCreateTasks', 'groupTasksByDomain', 'skipDuplicates', 'autoAssignPriority'];
-            automationSettings.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.removeEventListener('change', this.saveAutomationSettings);
-                    element.addEventListener('change', this.saveAutomationSettings);
-                    
-                    if (this.debugMode) {
-                        console.log(`[CategoriesPage] Event listener ajouté pour ${id}, valeur: ${element.checked}`);
-                    }
-                }
-            });
-
-            // Catégories pré-sélectionnées pour les tâches
-            const categoryCheckboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
-            categoryCheckboxes.forEach(checkbox => {
-                checkbox.removeEventListener('change', this.updateTaskPreselectedCategories);
-                checkbox.addEventListener('change', (e) => {
-                    console.log(`[CategoriesPage] Catégorie ${e.target.value} ${e.target.checked ? 'sélectionnée' : 'désélectionnée'}`);
-                    this.updateTaskPreselectedCategories();
-                });
-            });
-
-            // Catégories actives/inactives
-            const categoryToggles = document.querySelectorAll('.toggle-enhanced input');
-            categoryToggles.forEach(toggle => {
-                const categoryCard = toggle.closest('[data-category]');
-                const categoryId = categoryCard?.dataset.category;
-                if (categoryId) {
-                    toggle.removeEventListener('change', this.handleToggleCategory);
-                    toggle.addEventListener('change', (e) => {
-                        console.log(`[CategoriesPage] Toggle catégorie ${categoryId}: ${e.target.checked}`);
-                        this.toggleCategory(categoryId, e.target.checked);
-                    });
-                }
-            });
-
-            console.log('[CategoriesPage] Événements initialisés avec succès');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur lors de l\'initialisation des événements:', error);
-        }
-    }
-
-    switchTab(tab) {
-        try {
-            this.currentTab = tab;
-            const tabContent = document.getElementById('tabContent');
-            const settings = this.loadSettings();
-            
-            // Mettre à jour les boutons d'onglet
-            document.querySelectorAll('.tab-button-compact').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            const activeButton = document.querySelector(`.tab-button-compact[onclick*="${tab}"]`);
-            if (activeButton) {
-                activeButton.classList.add('active');
-            }
-            
-            // Mettre à jour le contenu
-            if (tabContent) {
-                tabContent.innerHTML = tab === 'general' ? 
-                    this.renderGeneralTab(settings) : 
-                    tab === 'automation' ? 
-                    this.renderAutomationTab(settings) :
-                    this.renderKeywordsTab(settings);
-                
-                // Réinitialiser les événements pour le nouveau contenu
-                setTimeout(() => {
-                    this.initializeEventListeners();
-                }, 100);
-            }
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur lors du changement d\'onglet:', error);
+    renderCurrentTab(settings) {
+        switch (this.currentTab) {
+            case 'general':
+                return this.renderGeneralTab(settings);
+            case 'automation':
+                return this.renderAutomationTab(settings);
+            case 'keywords':
+                return this.renderKeywordsTab(settings);
+            default:
+                return this.renderGeneralTab(settings);
         }
     }
 
     // =====================================
-    // ONGLETS GÉNÉRAUX ET AUTOMATISATION
+    // ONGLETS
     // =====================================
     renderGeneralTab(settings) {
         return `
             <div class="settings-two-columns">
                 <div class="settings-column-equal">
-                    <!-- Configuration IA -->
                     <div class="settings-card-compact">
                         <div class="card-header-compact">
                             <i class="fas fa-robot"></i>
                             <h3>Intelligence Artificielle</h3>
                         </div>
-                        <p>Analyse automatique des emails avec Claude AI pour créer des tâches intelligentes</p>
+                        <p>Analyse automatique des emails avec Claude AI</p>
                         <button class="btn-compact btn-primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
                             <i class="fas fa-cog"></i> Configurer Claude AI
                         </button>
                     </div>
 
-                    <!-- Paramètres généraux -->
                     <div class="settings-card-compact">
                         <div class="card-header-compact">
                             <i class="fas fa-sliders-h"></i>
                             <h3>Préférences générales</h3>
                         </div>
-                        <p>Options d'affichage et de comportement de l'application</p>
                         
                         <div class="general-preferences">
                             <label class="checkbox-compact">
-                                <input type="checkbox" id="darkMode" 
-                                       ${settings.preferences?.darkMode ? 'checked' : ''}>
-                                <span>Mode sombre (bientôt disponible)</span>
+                                <input type="checkbox" id="darkMode" ${settings.preferences?.darkMode ? 'checked' : ''}>
+                                <span>Mode sombre</span>
                             </label>
                             
                             <label class="checkbox-compact">
-                                <input type="checkbox" id="compactView" 
-                                       ${settings.preferences?.compactView ? 'checked' : ''}>
-                                <span>Vue compacte des emails</span>
+                                <input type="checkbox" id="compactView" ${settings.preferences?.compactView ? 'checked' : ''}>
+                                <span>Vue compacte</span>
                             </label>
                             
                             <label class="checkbox-compact">
-                                <input type="checkbox" id="showNotifications" 
-                                       ${settings.preferences?.showNotifications !== false ? 'checked' : ''}>
-                                <span>Notifications activées</span>
+                                <input type="checkbox" id="showNotifications" ${settings.preferences?.showNotifications !== false ? 'checked' : ''}>
+                                <span>Notifications</span>
                             </label>
                             
                             <label class="checkbox-compact">
-                                <input type="checkbox" id="excludeSpam" 
-                                       ${settings.preferences?.excludeSpam !== false ? 'checked' : ''}>
-                                <span>Exclure les courriers indésirables</span>
+                                <input type="checkbox" id="excludeSpam" ${settings.preferences?.excludeSpam !== false ? 'checked' : ''}>
+                                <span>Exclure spam</span>
                             </label>
                             
                             <label class="checkbox-compact">
-                                <input type="checkbox" id="detectCC" 
-                                       ${settings.preferences?.detectCC !== false ? 'checked' : ''}>
-                                <span>Détecter les emails en copie (CC)</span>
+                                <input type="checkbox" id="detectCC" ${settings.preferences?.detectCC !== false ? 'checked' : ''}>
+                                <span>Détecter CC</span>
                             </label>
-                        </div>
-                    </div>
-
-                    <!-- Sauvegarde -->
-                    <div class="settings-card-compact">
-                        <div class="card-header-compact">
-                            <i class="fas fa-sync"></i>
-                            <h3>Sauvegarde</h3>
-                        </div>
-                        <p>Exportez ou importez tous vos paramètres et configurations</p>
-                        <div class="button-row">
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.exportSettings()">
-                                <i class="fas fa-download"></i> Exporter
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.importSettings()">
-                                <i class="fas fa-upload"></i> Importer
-                            </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="settings-column-equal">
-                    <!-- Paramètres de scan -->
                     <div class="settings-card-compact">
                         <div class="card-header-compact">
                             <i class="fas fa-search"></i>
                             <h3>Scan d'emails</h3>
                         </div>
-                        <p>Options par défaut pour scanner vos emails et analyser le contenu</p>
                         
                         <div class="scan-settings-compact">
                             <div class="setting-row">
@@ -465,37 +281,23 @@ class CategoriesPage {
                             </div>
                             
                             <label class="checkbox-compact">
-                                <input type="checkbox" id="autoAnalyze" 
-                                       ${settings.scanSettings?.autoAnalyze !== false ? 'checked' : ''}>
-                                <span>Analyse IA automatique après scan</span>
+                                <input type="checkbox" id="autoAnalyze" ${settings.scanSettings?.autoAnalyze !== false ? 'checked' : ''}>
+                                <span>Analyse IA automatique</span>
                             </label>
                             
                             <label class="checkbox-compact">
-                                <input type="checkbox" id="autoCategrize" 
-                                       ${settings.scanSettings?.autoCategrize !== false ? 'checked' : ''}>
+                                <input type="checkbox" id="autoCategrize" ${settings.scanSettings?.autoCategrize !== false ? 'checked' : ''}>
                                 <span>Catégorisation automatique</span>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Exclusions -->
                     <div class="settings-card-compact">
                         <div class="card-header-compact">
                             <i class="fas fa-filter"></i>
-                            <h3>Exclusions et redirections</h3>
+                            <h3>Exclusions</h3>
                         </div>
-                        <p>Assignez automatiquement des emails à des catégories selon leur provenance</p>
-                        
                         ${this.renderOptimizedExclusions(settings)}
-                        
-                        <div class="exclusions-footer-minimal">
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
-                                <i class="fas fa-list"></i> Gérer toutes les exclusions
-                            </button>
-                            <span class="exclusions-count">
-                                ${(settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0)} règles actives
-                            </span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -507,11 +309,6 @@ class CategoriesPage {
             const categories = window.categoryManager?.getCategories() || {};
             const preselectedCategories = settings.taskPreselectedCategories || [];
             
-            console.log('[CategoriesPage] DEBUG - Rendu automatisation:');
-            console.log('  - Catégories disponibles:', Object.keys(categories));
-            console.log('  - Catégories pré-sélectionnées:', preselectedCategories);
-            console.log('  - Settings complets:', settings);
-            
             return `
                 <div class="automation-focused-layout">
                     <div class="settings-card-compact full-width">
@@ -519,30 +316,25 @@ class CategoriesPage {
                             <i class="fas fa-check-square"></i>
                             <h3>Conversion automatique en tâches</h3>
                         </div>
-                        <p>Sélectionnez les catégories d'emails qui seront automatiquement proposées pour la création de tâches et configurez le comportement de l'automatisation.</p>
                         
-                        <!-- Sélection des catégories MISE EN ÉVIDENCE -->
                         <div class="task-automation-section">
                             <h4><i class="fas fa-tags"></i> Catégories pré-sélectionnées</h4>
                             <div class="categories-selection-grid-automation-enhanced">
                                 ${Object.entries(categories).map(([id, category]) => {
                                     const isPreselected = preselectedCategories.includes(id);
-                                    console.log(`  - ${id} (${category.name}): ${isPreselected ? 'SELECTED' : 'not selected'}`);
                                     return `
-                                        <div class="category-checkbox-card-enhanced ${isPreselected ? 'selected-highlighted' : ''}" data-category-id="${id}">
+                                        <div class="category-checkbox-card-enhanced ${isPreselected ? 'selected-highlighted' : ''}">
                                             <label class="category-checkbox-item-enhanced">
                                                 <input type="checkbox" 
                                                        value="${id}"
-                                                       data-category-name="${category.name}"
-                                                       ${isPreselected ? 'checked' : ''}
-                                                       onchange="console.log('Checkbox ${id} changed to:', this.checked); window.categoriesPage.updateTaskPreselectedCategories();">
+                                                       ${isPreselected ? 'checked' : ''}>
                                                 <div class="category-checkbox-content-enhanced">
                                                     <span class="cat-icon-automation" style="background: ${category.color}20; color: ${category.color}">
                                                         ${category.icon}
                                                     </span>
                                                     <div class="category-info-automation">
                                                         <span class="cat-name-automation">${category.name}</span>
-                                                        <span class="cat-description-automation">${category.description || 'Catégorie automatique'}</span>
+                                                        <span class="cat-description-automation">${category.description || ''}</span>
                                                     </div>
                                                     ${isPreselected ? '<div class="selected-indicator"><i class="fas fa-check-circle"></i></div>' : ''}
                                                 </div>
@@ -553,229 +345,122 @@ class CategoriesPage {
                             </div>
                         </div>
                         
-                        <!-- Options d'automatisation -->
                         <div class="automation-options-enhanced">
                             <h4><i class="fas fa-cog"></i> Options d'automatisation</h4>
                             <div class="automation-options-grid">
                                 <label class="checkbox-enhanced">
-                                    <input type="checkbox" id="autoCreateTasks" 
-                                           ${settings.automationSettings?.autoCreateTasks ? 'checked' : ''}>
+                                    <input type="checkbox" id="autoCreateTasks" ${settings.automationSettings?.autoCreateTasks ? 'checked' : ''}>
                                     <div class="checkbox-content">
                                         <span class="checkbox-title">Création automatique</span>
-                                        <span class="checkbox-description">Créer automatiquement les tâches sans confirmation</span>
+                                        <span class="checkbox-description">Créer automatiquement les tâches</span>
                                     </div>
                                 </label>
                                 
                                 <label class="checkbox-enhanced">
-                                    <input type="checkbox" id="groupTasksByDomain" 
-                                           ${settings.automationSettings?.groupTasksByDomain ? 'checked' : ''}>
+                                    <input type="checkbox" id="groupTasksByDomain" ${settings.automationSettings?.groupTasksByDomain ? 'checked' : ''}>
                                     <div class="checkbox-content">
                                         <span class="checkbox-title">Regroupement par domaine</span>
-                                        <span class="checkbox-description">Regrouper les tâches par domaine d'expéditeur</span>
+                                        <span class="checkbox-description">Regrouper par expéditeur</span>
                                     </div>
                                 </label>
                                 
                                 <label class="checkbox-enhanced">
-                                    <input type="checkbox" id="skipDuplicates" 
-                                           ${settings.automationSettings?.skipDuplicates !== false ? 'checked' : ''}>
+                                    <input type="checkbox" id="skipDuplicates" ${settings.automationSettings?.skipDuplicates !== false ? 'checked' : ''}>
                                     <div class="checkbox-content">
                                         <span class="checkbox-title">Ignorer les doublons</span>
-                                        <span class="checkbox-description">Éviter de créer des tâches en double</span>
+                                        <span class="checkbox-description">Éviter les doublons</span>
                                     </div>
                                 </label>
                                 
                                 <label class="checkbox-enhanced">
-                                    <input type="checkbox" id="autoAssignPriority" 
-                                           ${settings.automationSettings?.autoAssignPriority ? 'checked' : ''}>
+                                    <input type="checkbox" id="autoAssignPriority" ${settings.automationSettings?.autoAssignPriority ? 'checked' : ''}>
                                     <div class="checkbox-content">
                                         <span class="checkbox-title">Priorité automatique</span>
-                                        <span class="checkbox-description">Assigner automatiquement la priorité selon l'expéditeur</span>
+                                        <span class="checkbox-description">Assigner la priorité</span>
                                     </div>
                                 </label>
-                            </div>
-                        </div>
-                        
-                        <!-- Statistiques -->
-                        <div class="automation-stats">
-                            <h4><i class="fas fa-chart-bar"></i> Statistiques</h4>
-                            <div class="stats-grid">
-                                <div class="stat-item">
-                                    <span class="stat-number">${preselectedCategories.length}</span>
-                                    <span class="stat-label">Catégories actives</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-number">${(settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0)}</span>
-                                    <span class="stat-label">Règles d'exclusion</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-number">${Object.values(settings.automationSettings || {}).filter(Boolean).length}</span>
-                                    <span class="stat-label">Options activées</span>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
         } catch (error) {
-            console.error('[CategoriesPage] Erreur dans renderAutomationTab:', error);
-            return '<div>Erreur lors du chargement de l\'onglet automatisation</div>';
+            console.error('[CategoriesPage] Erreur renderAutomationTab:', error);
+            return '<div>Erreur lors du chargement</div>';
         }
     }
 
-    // =====================================
-    // MÉTHODES DE SAUVEGARDE
-    // =====================================
-    savePreferences() {
+    renderKeywordsTab(settings) {
         try {
-            const settings = this.loadSettings();
+            const categories = window.categoryManager?.getCategories() || {};
             
-            const preferences = {
-                darkMode: document.getElementById('darkMode')?.checked || false,
-                compactView: document.getElementById('compactView')?.checked || false,
-                showNotifications: document.getElementById('showNotifications')?.checked !== false,
-                excludeSpam: document.getElementById('excludeSpam')?.checked !== false,
-                detectCC: document.getElementById('detectCC')?.checked !== false
-            };
-            
-            settings.preferences = preferences;
-            this.saveSettings(settings);
-            
-            console.log('[CategoriesPage] Préférences sauvegardées:', preferences);
-            this.notifySettingsChange('preferences', preferences);
-            window.uiManager?.showToast('Préférences sauvegardées', 'success');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur savePreferences:', error);
-            window.uiManager?.showToast('Erreur de sauvegarde', 'error');
-        }
-    }
+            return `
+                <div class="categories-keywords-manager">
+                    <div class="keywords-header">
+                        <div class="keywords-header-info">
+                            <h3><i class="fas fa-tags"></i> Gestion des catégories</h3>
+                            <p>Configurez les catégories et leurs mots-clés</p>
+                        </div>
+                        <div class="keywords-header-actions">
+                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openAllKeywordsModal()">
+                                <i class="fas fa-list"></i> Tous les mots-clés
+                            </button>
+                        </div>
+                    </div>
 
-    saveScanSettings() {
-        try {
-            const settings = this.loadSettings();
-            
-            const scanSettings = {
-                defaultPeriod: parseInt(document.getElementById('defaultScanPeriod')?.value || 7),
-                defaultFolder: document.getElementById('defaultFolder')?.value || 'inbox',
-                autoAnalyze: document.getElementById('autoAnalyze')?.checked !== false,
-                autoCategrize: document.getElementById('autoCategrize')?.checked !== false
-            };
-            
-            settings.scanSettings = scanSettings;
-            this.saveSettings(settings);
-            
-            console.log('[CategoriesPage] Paramètres de scan sauvegardés:', scanSettings);
-            this.notifySettingsChange('scanSettings', scanSettings);
-            window.uiManager?.showToast('Paramètres de scan sauvegardés', 'success');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur saveScanSettings:', error);
-            window.uiManager?.showToast('Erreur de sauvegarde', 'error');
-        }
-    }
+                    <div class="categories-grid-enhanced">
+                        ${Object.entries(categories).map(([id, category]) => {
+                            const isActive = settings.activeCategories ? settings.activeCategories.includes(id) : true;
+                            const isPreselected = (settings.taskPreselectedCategories || []).includes(id);
+                            
+                            return `
+                                <div class="category-card-enhanced ${isActive ? 'active' : 'inactive'} ${isPreselected ? 'preselected' : ''}" 
+                                     data-category="${id}">
+                                    
+                                    <div class="category-header-enhanced">
+                                        <div class="category-icon-enhanced" style="background: ${category.color}20; color: ${category.color}">
+                                            ${category.icon}
+                                        </div>
+                                        <div class="category-info-enhanced">
+                                            <h4>${category.name}</h4>
+                                            <div class="category-stats">
+                                                <span class="keyword-count">0 mots-clés</span>
+                                                ${isPreselected ? '<span class="preselected-badge-small">🎯 Auto</span>' : ''}
+                                            </div>
+                                        </div>
+                                    </div>
 
-    saveAutomationSettings() {
-        try {
-            const settings = this.loadSettings();
-            
-            const automationSettings = {
-                autoCreateTasks: document.getElementById('autoCreateTasks')?.checked || false,
-                groupTasksByDomain: document.getElementById('groupTasksByDomain')?.checked || false,
-                skipDuplicates: document.getElementById('skipDuplicates')?.checked !== false,
-                autoAssignPriority: document.getElementById('autoAssignPriority')?.checked || false
-            };
-            
-            settings.automationSettings = automationSettings;
-            this.saveSettings(settings);
-            
-            console.log('[CategoriesPage] Paramètres d\'automatisation sauvegardés:', automationSettings);
-            this.notifySettingsChange('automationSettings', automationSettings);
-            window.uiManager?.showToast('Paramètres d\'automatisation sauvegardés', 'success');
-            this.updateAutomationStats();
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur saveAutomationSettings:', error);
-            window.uiManager?.showToast('Erreur de sauvegarde', 'error');
-        }
-    }
+                                    <div class="keywords-preview">
+                                        <div class="no-keywords-preview">
+                                            <i class="fas fa-plus-circle"></i>
+                                            <span>Aucun mot-clé configuré</span>
+                                        </div>
+                                    </div>
 
-    updateTaskPreselectedCategories() {
-        try {
-            console.log('[CategoriesPage] DEBUG updateTaskPreselectedCategories() appelée');
-            
-            const settings = this.loadSettings();
-            console.log('  - Settings actuels:', settings.taskPreselectedCategories);
-            
-            const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
-            console.log(`  - ${checkboxes.length} checkboxes trouvées`);
-            
-            const selectedCategories = [];
-            checkboxes.forEach((checkbox, index) => {
-                console.log(`  - Checkbox ${index}: value="${checkbox.value}", checked=${checkbox.checked}, name="${checkbox.dataset.categoryName}"`);
-                if (checkbox.checked && checkbox.value) {
-                    selectedCategories.push(checkbox.value);
-                }
-            });
-            
-            console.log('  - Nouvelles catégories sélectionnées:', selectedCategories);
-            
-            // NOUVEAU: Mise à jour visuelle immédiate des cartes
-            checkboxes.forEach(checkbox => {
-                const card = checkbox.closest('.category-checkbox-card-enhanced');
-                if (card) {
-                    if (checkbox.checked) {
-                        card.classList.add('selected-highlighted');
-                        // Ajouter l'indicateur de sélection s'il n'existe pas
-                        if (!card.querySelector('.selected-indicator')) {
-                            const indicator = document.createElement('div');
-                            indicator.className = 'selected-indicator';
-                            indicator.innerHTML = '<i class="fas fa-check-circle"></i>';
-                            card.querySelector('.category-checkbox-content-enhanced').appendChild(indicator);
-                        }
-                    } else {
-                        card.classList.remove('selected-highlighted');
-                        // Retirer l'indicateur de sélection
-                        const indicator = card.querySelector('.selected-indicator');
-                        if (indicator) {
-                            indicator.remove();
-                        }
-                    }
-                }
-            });
-            
-            settings.taskPreselectedCategories = selectedCategories;
-            this.saveSettings(settings);
-            
-            console.log('  - Paramètres sauvegardés:', settings.taskPreselectedCategories);
-            
-            this.notifySettingsChange('taskPreselectedCategories', selectedCategories);
-            window.uiManager?.showToast(`${selectedCategories.length} catégorie(s) sélectionnée(s)`, 'success');
-            this.updateAutomationStats();
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur updateTaskPreselectedCategories:', error);
-            window.uiManager?.showToast('Erreur de mise à jour', 'error');
-        }
-    }
+                                    <div class="category-actions-enhanced">
+                                        <button class="btn-edit-keywords-enhanced" 
+                                                onclick="window.categoriesPage.openCategoryKeywordsModal('${id}')">
+                                            <i class="fas fa-edit"></i>
+                                            <span>Gérer</span>
+                                        </button>
+                                        
+                                        <label class="toggle-enhanced">
+                                            <input type="checkbox" ${isActive ? 'checked' : ''}>
+                                            <span class="toggle-slider-enhanced"></span>
+                                        </label>
+                                    </div>
 
-    // =====================================
-    // MÉTHODES UTILITAIRES
-    // =====================================
-    refreshCurrentTab() {
-        try {
-            const tabContent = document.getElementById('tabContent');
-            const settings = this.loadSettings();
-            
-            if (tabContent) {
-                tabContent.innerHTML = this.currentTab === 'general' ? 
-                    this.renderGeneralTab(settings) : 
-                    this.currentTab === 'automation' ? 
-                    this.renderAutomationTab(settings) :
-                    this.renderKeywordsTab(settings);
-                
-                setTimeout(() => {
-                    this.initializeEventListeners();
-                }, 100);
-            }
+                                    <div class="priority-indicator" style="background: ${category.color}"></div>
+                                    ${isPreselected ? '<div class="preselected-indicator-small"><i class="fas fa-star"></i></div>' : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
         } catch (error) {
-            console.error('[CategoriesPage] Erreur refreshCurrentTab:', error);
+            console.error('[CategoriesPage] Erreur renderKeywordsTab:', error);
+            return '<div>Erreur lors du chargement</div>';
         }
     }
 
@@ -794,77 +479,211 @@ class CategoriesPage {
         `;
     }
 
-    updateAutomationStats() {
-        // Mettre à jour les statistiques si l'onglet automatisation est visible
-        try {
-            const statItems = document.querySelectorAll('.automation-stats .stat-number');
-            if (statItems.length > 0) {
-                const settings = this.loadSettings();
-                const preselectedCount = settings.taskPreselectedCategories?.length || 0;
-                const exclusionsCount = (settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0);
-                const optionsCount = Object.values(settings.automationSettings || {}).filter(Boolean).length;
-                
-                if (statItems[0]) statItems[0].textContent = preselectedCount;
-                if (statItems[1]) statItems[1].textContent = exclusionsCount;
-                if (statItems[2]) statItems[2].textContent = optionsCount;
-            }
-        } catch (error) {
-            console.warn('[CategoriesPage] Erreur updateAutomationStats:', error);
-        }
-    }
-
     renderErrorState(error) {
         return `
             <div class="error-display" style="padding: 20px; text-align: center;">
-                <h2>Erreur de chargement des paramètres</h2>
-                <p>Une erreur est survenue lors du chargement de l'interface des paramètres.</p>
-                <p><strong>Erreur:</strong> ${error.message}</p>
-                <button onclick="location.reload()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    Recharger la page
+                <h2>Erreur de chargement</h2>
+                <p>${error.message}</p>
+                <button onclick="location.reload()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px;">
+                    Recharger
                 </button>
             </div>
         `;
     }
 
     // =====================================
-    // MÉTHODES DE DEBUG ET TEST
+    // ÉVÉNEMENTS
     // =====================================
-    debugSettings() {
-        console.group('[CategoriesPage] 🐛 DEBUG SETTINGS');
-        
-        const settings = this.loadSettings();
-        console.log('Settings:', settings);
-        console.log('Current tab:', this.currentTab);
-        console.log('Initialized:', this.isInitialized);
-        
-        if (window.categoryManager) {
-            console.log('CategoryManager categories:', window.categoryManager.getCategories());
+    initializeEventListeners() {
+        try {
+            // Préférences générales
+            ['darkMode', 'compactView', 'showNotifications', 'excludeSpam', 'detectCC'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', this.savePreferences);
+                }
+            });
+
+            // Paramètres de scan
+            ['defaultScanPeriod', 'defaultFolder', 'autoAnalyze', 'autoCategrize'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', this.saveScanSettings);
+                }
+            });
+
+            // Automatisation
+            ['autoCreateTasks', 'groupTasksByDomain', 'skipDuplicates', 'autoAssignPriority'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', this.saveAutomationSettings);
+                }
+            });
+
+            // Catégories pré-sélectionnées
+            const categoryCheckboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
+            categoryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', this.updateTaskPreselectedCategories);
+            });
+
+            console.log('[CategoriesPage] Événements initialisés');
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur événements:', error);
         }
-        
-        if (window.emailScanner) {
-            console.log('EmailScanner debug:', window.emailScanner.getDebugInfo?.() || 'No debug info');
-        }
-        
-        console.groupEnd();
     }
 
-    testCategorySelection() {
-        console.log('[CategoriesPage] 🧪 Test de sélection des catégories');
-        
-        const settings = this.loadSettings();
-        console.log('Catégories pré-sélectionnées:', settings.taskPreselectedCategories);
-        
-        const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
-        console.log(`${checkboxes.length} checkboxes trouvées`);
-        
-        checkboxes.forEach((checkbox, index) => {
-            console.log(`Checkbox ${index}: ${checkbox.value} = ${checkbox.checked}`);
-        });
+    switchTab(tab) {
+        try {
+            this.currentTab = tab;
+            const tabContent = document.getElementById('tabContent');
+            const settings = this.loadSettings();
+            
+            document.querySelectorAll('.tab-button-compact').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeButton = document.querySelector(`.tab-button-compact[onclick*="${tab}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+            
+            if (tabContent) {
+                tabContent.innerHTML = this.renderCurrentTab(settings);
+                setTimeout(() => this.initializeEventListeners(), 100);
+            }
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur switchTab:', error);
+        }
     }
 
-    forceUpdateUI() {
-        console.log('[CategoriesPage] 🔄 Force update UI');
-        this.refreshCurrentTab();
+    // =====================================
+    // SAUVEGARDE
+    // =====================================
+    savePreferences() {
+        try {
+            const settings = this.loadSettings();
+            
+            settings.preferences = {
+                darkMode: document.getElementById('darkMode')?.checked || false,
+                compactView: document.getElementById('compactView')?.checked || false,
+                showNotifications: document.getElementById('showNotifications')?.checked !== false,
+                excludeSpam: document.getElementById('excludeSpam')?.checked !== false,
+                detectCC: document.getElementById('detectCC')?.checked !== false
+            };
+            
+            this.saveSettings(settings);
+            this.notifySettingsChange('preferences', settings.preferences);
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast('Préférences sauvegardées', 'success');
+            }
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur savePreferences:', error);
+        }
+    }
+
+    saveScanSettings() {
+        try {
+            const settings = this.loadSettings();
+            
+            settings.scanSettings = {
+                defaultPeriod: parseInt(document.getElementById('defaultScanPeriod')?.value || 7),
+                defaultFolder: document.getElementById('defaultFolder')?.value || 'inbox',
+                autoAnalyze: document.getElementById('autoAnalyze')?.checked !== false,
+                autoCategrize: document.getElementById('autoCategrize')?.checked !== false
+            };
+            
+            this.saveSettings(settings);
+            this.notifySettingsChange('scanSettings', settings.scanSettings);
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast('Paramètres de scan sauvegardés', 'success');
+            }
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur saveScanSettings:', error);
+        }
+    }
+
+    saveAutomationSettings() {
+        try {
+            const settings = this.loadSettings();
+            
+            settings.automationSettings = {
+                autoCreateTasks: document.getElementById('autoCreateTasks')?.checked || false,
+                groupTasksByDomain: document.getElementById('groupTasksByDomain')?.checked || false,
+                skipDuplicates: document.getElementById('skipDuplicates')?.checked !== false,
+                autoAssignPriority: document.getElementById('autoAssignPriority')?.checked || false
+            };
+            
+            this.saveSettings(settings);
+            this.notifySettingsChange('automationSettings', settings.automationSettings);
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast('Paramètres d\'automatisation sauvegardés', 'success');
+            }
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur saveAutomationSettings:', error);
+        }
+    }
+
+    updateTaskPreselectedCategories() {
+        try {
+            const settings = this.loadSettings();
+            const checkboxes = document.querySelectorAll('.category-checkbox-item-enhanced input[type="checkbox"]');
+            
+            const selectedCategories = [];
+            checkboxes.forEach(checkbox => {
+                if (checkbox.checked && checkbox.value) {
+                    selectedCategories.push(checkbox.value);
+                }
+            });
+            
+            settings.taskPreselectedCategories = selectedCategories;
+            this.saveSettings(settings);
+            this.notifySettingsChange('taskPreselectedCategories', selectedCategories);
+            
+            // Mise à jour visuelle
+            checkboxes.forEach(checkbox => {
+                const card = checkbox.closest('.category-checkbox-card-enhanced');
+                if (card) {
+                    if (checkbox.checked) {
+                        card.classList.add('selected-highlighted');
+                        if (!card.querySelector('.selected-indicator')) {
+                            const indicator = document.createElement('div');
+                            indicator.className = 'selected-indicator';
+                            indicator.innerHTML = '<i class="fas fa-check-circle"></i>';
+                            card.querySelector('.category-checkbox-content-enhanced').appendChild(indicator);
+                        }
+                    } else {
+                        card.classList.remove('selected-highlighted');
+                        const indicator = card.querySelector('.selected-indicator');
+                        if (indicator) indicator.remove();
+                    }
+                }
+            });
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast(`${selectedCategories.length} catégorie(s) sélectionnée(s)`, 'success');
+            }
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur updateTaskPreselectedCategories:', error);
+        }
+    }
+
+    // =====================================
+    // MÉTHODES UTILITAIRES
+    // =====================================
+    refreshCurrentTab() {
+        const tabContent = document.getElementById('tabContent');
+        if (tabContent) {
+            const settings = this.loadSettings();
+            tabContent.innerHTML = this.renderCurrentTab(settings);
+            setTimeout(() => this.initializeEventListeners(), 100);
+        }
+    }
+
+    updateAutomationStats() {
+        // Mise à jour des statistiques si nécessaire
     }
 
     // =====================================
@@ -891,255 +710,24 @@ class CategoriesPage {
     }
     
     getTaskPreselectedCategories() {
-        try {
-            const settings = this.loadSettings();
-            return settings.taskPreselectedCategories || [];
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur getTaskPreselectedCategories:', error);
-            return [];
-        }
-    }
-
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-        console.log(`[CategoriesPage] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
+        const settings = this.loadSettings();
+        return settings.taskPreselectedCategories || [];
     }
 
     // =====================================
-    // ONGLET CATÉGORIES AVEC GESTION MOTS-CLÉS COMPLÈTE
+    // MÉTHODES STUB (à implémenter)
     // =====================================
-    renderKeywordsTab(settings) {
-        try {
-            const categories = window.categoryManager?.getCategories() || {};
-            
-            return `
-                <div class="categories-keywords-manager">
-                    <!-- Header avec actions globales -->
-                    <div class="keywords-header">
-                        <div class="keywords-header-info">
-                            <h3><i class="fas fa-tags"></i> Gestion des catégories et mots-clés</h3>
-                            <p>Configurez les mots-clés pour améliorer la précision de la catégorisation automatique.</p>
-                        </div>
-                        <div class="keywords-header-actions">
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openAllKeywordsModal()">
-                                <i class="fas fa-list"></i> Tous les mots-clés
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.importKeywordsFromFile()">
-                                <i class="fas fa-upload"></i> Importer
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.exportKeywordsToFile()">
-                                <i class="fas fa-download"></i> Exporter
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Grille des catégories avec mots-clés -->
-                    <div class="categories-grid-enhanced">
-                        ${Object.entries(categories).map(([id, category]) => {
-                            const isActive = settings.activeCategories ? settings.activeCategories.includes(id) : true;
-                            const keywords = this.getKeywordsFromWeightedSystem(id);
-                            const keywordCount = this.getTotalKeywordsForCategory(keywords);
-                            const isPreselected = (settings.taskPreselectedCategories || []).includes(id);
-                            
-                            return `
-                                <div class="category-card-enhanced ${isActive ? 'active' : 'inactive'} ${isPreselected ? 'preselected' : ''}" 
-                                     data-category="${id}">
-                                    
-                                    <!-- Header de la catégorie -->
-                                    <div class="category-header-enhanced">
-                                        <div class="category-icon-enhanced" style="background: ${category.color}20; color: ${category.color}">
-                                            ${category.icon}
-                                        </div>
-                                        <div class="category-info-enhanced">
-                                            <h4>${category.name}</h4>
-                                            <div class="category-stats">
-                                                <span class="keyword-count">${keywordCount} mots-clés</span>
-                                                ${isPreselected ? '<span class="preselected-badge-small">🎯 Auto</span>' : ''}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Aperçu des mots-clés -->
-                                    <div class="keywords-preview">
-                                        ${this.renderKeywordsPreview(keywords, id)}
-                                    </div>
-
-                                    <!-- Actions de la catégorie -->
-                                    <div class="category-actions-enhanced">
-                                        <button class="btn-edit-keywords-enhanced" 
-                                                onclick="window.categoriesPage.openCategoryKeywordsModal('${id}')" 
-                                                title="Gérer les mots-clés">
-                                            <i class="fas fa-edit"></i>
-                                            <span>Gérer</span>
-                                        </button>
-                                        
-                                        <label class="toggle-enhanced" title="${isActive ? 'Désactiver' : 'Activer'}">
-                                            <input type="checkbox" ${isActive ? 'checked' : ''}>
-                                            <span class="toggle-slider-enhanced"></span>
-                                        </label>
-                                    </div>
-
-                                    <!-- Indicateur de priorité -->
-                                    <div class="priority-indicator" style="background: ${category.color}"></div>
-                                    
-                                    <!-- Indicateur pré-sélection -->
-                                    ${isPreselected ? '<div class="preselected-indicator-small"><i class="fas fa-star"></i></div>' : ''}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-
-                    <!-- Actions globales -->
-                    <div class="global-actions-enhanced">
-                        <div class="actions-left">
-                            <button class="btn-compact btn-primary" onclick="window.categoriesPage.optimizeAllKeywords()">
-                                <i class="fas fa-magic"></i> Optimiser tout
-                            </button>
-                            <button class="btn-compact btn-secondary" onclick="window.categoriesPage.resetAllKeywords()">
-                                <i class="fas fa-undo"></i> Réinitialiser
-                            </button>
-                        </div>
-                        
-                        <div class="actions-right">
-                            <div class="keywords-stats">
-                                <span class="stat-item">
-                                    <i class="fas fa-tags"></i>
-                                    ${Object.keys(categories).length} catégories
-                                </span>
-                                <span class="stat-item">
-                                    <i class="fas fa-key"></i>
-                                    ${this.calculateTotalKeywords()} mots-clés
-                                </span>
-                                <span class="stat-item">
-                                    <i class="fas fa-bullseye"></i>
-                                    ${(settings.taskPreselectedCategories || []).length} pré-sélectionnées
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur dans renderKeywordsTab:', error);
-            return '<div>Erreur lors du chargement de l\'onglet catégories</div>';
-        }
-    }
-
-    // =====================================
-    // MÉTHODES UTILITAIRES POUR MOTS-CLÉS (STUBS)
-    // =====================================
-    getKeywordsFromWeightedSystem(categoryId) {
-        try {
-            if (!window.categoryManager || !window.categoryManager.weightedKeywords) {
-                return { absolute: [], strong: [], weak: [], exclusions: [] };
-            }
-            
-            const keywords = window.categoryManager.weightedKeywords[categoryId] || {};
-            return {
-                absolute: keywords.absolute || [],
-                strong: keywords.strong || [],
-                weak: keywords.weak || [],
-                exclusions: keywords.exclusions || []
-            };
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur getKeywordsFromWeightedSystem:', error);
-            return { absolute: [], strong: [], weak: [], exclusions: [] };
-        }
-    }
-
-    getTotalKeywordsForCategory(keywords) {
-        try {
-            let count = 0;
-            if (keywords.absolute) count += keywords.absolute.length;
-            if (keywords.strong) count += keywords.strong.length;
-            if (keywords.weak) count += keywords.weak.length;
-            if (keywords.exclusions) count += keywords.exclusions.length;
-            return count;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur getTotalKeywordsForCategory:', error);
-            return 0;
-        }
-    }
-
-    calculateTotalKeywords() {
-        try {
-            let total = 0;
-            if (window.categoryManager && window.categoryManager.weightedKeywords) {
-                Object.values(window.categoryManager.weightedKeywords).forEach(category => {
-                    if (category.absolute) total += category.absolute.length;
-                    if (category.strong) total += category.strong.length;
-                    if (category.weak) total += category.weak.length;
-                    if (category.exclusions) total += category.exclusions.length;
-                });
-            }
-            return total;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur calculateTotalKeywords:', error);
-            return 0;
-        }
-    }
-
-    renderKeywordsPreview(keywords, categoryId) {
-        const preview = [];
-        
-        // Mots absolus (priorité)
-        if (keywords.absolute && keywords.absolute.length > 0) {
-            preview.push(`
-                <div class="keyword-type-preview absolute">
-                    <span class="type-label">Absolus:</span>
-                    <div class="keywords-list-preview">
-                        ${keywords.absolute.slice(0, 3).map(k => `<span class="keyword-chip absolute">${k}</span>`).join('')}
-                        ${keywords.absolute.length > 3 ? `<span class="more-count">+${keywords.absolute.length - 3}</span>` : ''}
-                    </div>
-                </div>
-            `);
-        }
-        
-        // Mots forts
-        if (keywords.strong && keywords.strong.length > 0) {
-            preview.push(`
-                <div class="keyword-type-preview strong">
-                    <span class="type-label">Forts:</span>
-                    <div class="keywords-list-preview">
-                        ${keywords.strong.slice(0, 2).map(k => `<span class="keyword-chip strong">${k}</span>`).join('')}
-                        ${keywords.strong.length > 2 ? `<span class="more-count">+${keywords.strong.length - 2}</span>` : ''}
-                    </div>
-                </div>
-            `);
-        }
-        
-        // Mots faibles
-        if (keywords.weak && keywords.weak.length > 0) {
-            preview.push(`
-                <div class="keyword-type-preview weak">
-                    <span class="type-label">Faibles:</span>
-                    <div class="keywords-list-preview">
-                        ${keywords.weak.slice(0, 2).map(k => `<span class="keyword-chip weak">${k}</span>`).join('')}
-                        ${keywords.weak.length > 2 ? `<span class="more-count">+${keywords.weak.length - 2}</span>` : ''}
-                    </div>
-                </div>
-            `);
-        }
-        
-        if (preview.length === 0) {
-            return `
-                <div class="no-keywords-preview">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>Aucun mot-clé configuré</span>
-                </div>
-            `;
-        }
-        
-        return preview.join('');
-    }
-
-    // STUBS pour les méthodes de gestion des mots-clés
+    addQuickExclusion() { console.log('addQuickExclusion - à implémenter'); }
+    toggleCategory(categoryId, isActive) { console.log('toggleCategory:', categoryId, isActive); }
+    openKeywordsModal() { console.log('openKeywordsModal - à implémenter'); }
+    openAllKeywordsModal() { console.log('openAllKeywordsModal - à implémenter'); }
+    openExclusionsModal() { console.log('openExclusionsModal - à implémenter'); }
+    exportSettings() { console.log('exportSettings - à implémenter'); }
+    importSettings() { console.log('importSettings - à implémenter'); }
     openCategoryKeywordsModal(categoryId) { console.log('openCategoryKeywordsModal:', categoryId); }
-    openAllKeywordsModal() { console.log('openAllKeywordsModal'); }
-    importKeywordsFromFile() { console.log('importKeywordsFromFile'); }
-    exportKeywordsToFile() { console.log('exportKeywordsToFile'); }
-    optimizeAllKeywords() { console.log('optimizeAllKeywords'); }
-    resetAllKeywords() { console.log('resetAllKeywords'); }
+    addKeywordToCategory(categoryId) { console.log('addKeywordToCategory:', categoryId); }
+    removeKeywordFromCategory(categoryId, type, index) { console.log('removeKeywordFromCategory:', categoryId, type, index); }
+    editKeywordInCategory(categoryId, type, index) { console.log('editKeywordInCategory:', categoryId, type, index); }
     closeModal(modalId) { 
         const modal = document.getElementById(modalId);
         if (modal) {
@@ -1147,17 +735,27 @@ class CategoriesPage {
             document.body.style.overflow = 'auto';
         }
     }
-    
-    // STUBS pour méthodes manquantes
-    addQuickExclusion() { console.log('addQuickExclusion'); }
-    toggleCategory(categoryId, isActive) { console.log('toggleCategory:', categoryId, isActive); }
-    openKeywordsModal() { console.log('openKeywordsModal'); }
-    openExclusionsModal() { console.log('openExclusionsModal'); }
-    exportSettings() { console.log('exportSettings'); }
-    importSettings() { console.log('importSettings'); }
 
     // =====================================
-    // STYLES AJOUTÉS POUR LA GESTION DES MOTS-CLÉS ET MISE EN ÉVIDENCE
+    // DEBUG
+    // =====================================
+    debugSettings() {
+        console.log('[CategoriesPage] Debug Settings:', this.loadSettings());
+    }
+
+    testCategorySelection() {
+        console.log('[CategoriesPage] Test Category Selection');
+        const settings = this.loadSettings();
+        console.log('Categories:', settings.taskPreselectedCategories);
+    }
+
+    forceUpdateUI() {
+        console.log('[CategoriesPage] Force Update UI');
+        this.refreshCurrentTab();
+    }
+
+    // =====================================
+    // STYLES
     // =====================================
     addStyles() {
         if (document.getElementById('categoriesPageStyles')) return;
@@ -1165,7 +763,6 @@ class CategoriesPage {
         const styles = document.createElement('style');
         styles.id = 'categoriesPageStyles';
         styles.textContent = `
-            /* Styles de base pour la page des paramètres */
             .settings-page-compact {
                 max-width: 1400px;
                 margin: 0 auto;
@@ -1173,15 +770,11 @@ class CategoriesPage {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
             
-            .page-header-compact {
-                margin-bottom: 30px;
-            }
-            
             .page-header-compact h1 {
                 font-size: 28px;
                 font-weight: 700;
                 color: #1f2937;
-                margin: 0 0 10px 0;
+                margin: 0 0 30px 0;
             }
             
             .settings-tabs-compact {
@@ -1215,10 +808,6 @@ class CategoriesPage {
                 background: #3b82f6;
                 color: white;
                 font-weight: 600;
-            }
-            
-            .tab-content-compact {
-                min-height: 400px;
             }
             
             .settings-two-columns {
@@ -1300,11 +889,61 @@ class CategoriesPage {
                 cursor: pointer;
             }
             
-            .checkbox-compact input {
-                margin: 0;
+            .general-preferences {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
             }
             
-            /* MISE EN ÉVIDENCE DES CATÉGORIES PRÉ-SÉLECTIONNÉES */
+            .scan-settings-compact {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .setting-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 16px;
+            }
+            
+            .setting-row label {
+                font-size: 14px;
+                font-weight: 500;
+                color: #374151;
+            }
+            
+            .select-compact {
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 14px;
+                background: white;
+                cursor: pointer;
+                min-width: 120px;
+            }
+            
+            .exclusions-preview {
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 16px 0;
+            }
+            
+            .exclusion-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 0;
+                font-size: 14px;
+            }
+            
+            .exclusion-item:not(:last-child) {
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
             .automation-focused-layout {
                 max-width: 100%;
             }
@@ -1313,11 +952,24 @@ class CategoriesPage {
                 grid-column: 1 / -1;
             }
             
+            .task-automation-section {
+                margin: 20px 0;
+            }
+            
+            .task-automation-section h4 {
+                margin: 0 0 16px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
             .categories-selection-grid-automation-enhanced {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
                 gap: 16px;
-                margin: 20px 0;
             }
             
             .category-checkbox-card-enhanced {
@@ -1337,7 +989,6 @@ class CategoriesPage {
                 transform: translateY(-2px);
             }
             
-            /* CATÉGORIE SÉLECTIONNÉE - MISE EN ÉVIDENCE FORTE */
             .category-checkbox-card-enhanced.selected-highlighted {
                 border-color: #4f46e5;
                 background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -1417,7 +1068,6 @@ class CategoriesPage {
                 line-height: 1.4;
             }
             
-            /* INDICATEUR DE SÉLECTION */
             .selected-indicator {
                 position: absolute;
                 top: 16px;
@@ -1437,20 +1087,11 @@ class CategoriesPage {
             }
             
             @keyframes selectedPulse {
-                0% {
-                    transform: scale(0);
-                    opacity: 0;
-                }
-                50% {
-                    transform: scale(1.2);
-                }
-                100% {
-                    transform: scale(1);
-                    opacity: 1;
-                }
+                0% { transform: scale(0); opacity: 0; }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); opacity: 1; }
             }
             
-            /* Options d'automatisation */
             .automation-options-enhanced {
                 margin: 30px 0;
             }
@@ -1511,130 +1152,6 @@ class CategoriesPage {
                 line-height: 1.4;
             }
             
-            /* Statistiques */
-            .automation-stats {
-                margin-top: 30px;
-                padding: 20px;
-                background: #f8fafc;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-            }
-            
-            .automation-stats h4 {
-                margin: 0 0 16px 0;
-                font-size: 16px;
-                font-weight: 600;
-                color: #1f2937;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .stats-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-                gap: 16px;
-            }
-            
-            .stat-item {
-                text-align: center;
-                padding: 12px;
-                background: white;
-                border-radius: 8px;
-                border: 1px solid #e5e7eb;
-            }
-            
-            .stat-number {
-                display: block;
-                font-size: 24px;
-                font-weight: 700;
-                color: #3b82f6;
-                margin-bottom: 4px;
-            }
-            
-            .stat-label {
-                display: block;
-                font-size: 12px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            /* Styles pour les paramètres de scan */
-            .scan-settings-compact {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-            }
-            
-            .setting-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 16px;
-            }
-            
-            .setting-row label {
-                font-size: 14px;
-                font-weight: 500;
-                color: #374151;
-            }
-            
-            .select-compact {
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
-                font-size: 14px;
-                background: white;
-                cursor: pointer;
-                min-width: 120px;
-            }
-            
-            .general-preferences {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .button-row {
-                display: flex;
-                gap: 8px;
-            }
-            
-            /* Exclusions */
-            .exclusions-preview {
-                background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
-                margin: 16px 0;
-            }
-            
-            .exclusion-item {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px 0;
-                font-size: 14px;
-            }
-            
-            .exclusion-item:not(:last-child) {
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .exclusions-footer-minimal {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-top: 16px;
-            }
-            
-            .exclusions-count {
-                font-size: 12px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            /* Gestion des catégories et mots-clés */
             .categories-keywords-manager {
                 padding: 0;
                 height: 100%;
@@ -1671,7 +1188,6 @@ class CategoriesPage {
                 gap: 8px;
             }
             
-            /* Grille des catégories améliorée */
             .categories-grid-enhanced {
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -1756,72 +1272,10 @@ class CategoriesPage {
                 font-weight: 600;
             }
             
-            /* Aperçu des mots-clés */
             .keywords-preview {
                 flex: 1;
                 margin-bottom: 12px;
                 overflow: hidden;
-            }
-            
-            .keyword-type-preview {
-                margin-bottom: 8px;
-            }
-            
-            .type-label {
-                font-size: 11px;
-                font-weight: 600;
-                color: #6b7280;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                margin-bottom: 4px;
-                display: block;
-            }
-            
-            .keywords-list-preview {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 4px;
-                align-items: center;
-            }
-            
-            .keyword-chip {
-                background: #f3f4f6;
-                color: #374151;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 500;
-                max-width: 80px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .keyword-chip.absolute {
-                background: #fef3c7;
-                color: #92400e;
-                border: 1px solid #fcd34d;
-            }
-            
-            .keyword-chip.strong {
-                background: #dbeafe;
-                color: #1e40af;
-                border: 1px solid #93c5fd;
-            }
-            
-            .keyword-chip.weak {
-                background: #f3f4f6;
-                color: #6b7280;
-                border: 1px solid #d1d5db;
-            }
-            
-            .more-count {
-                background: #6b7280;
-                color: white;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
             }
             
             .no-keywords-preview {
@@ -1841,7 +1295,6 @@ class CategoriesPage {
                 color: #d1d5db;
             }
             
-            /* Actions des catégories */
             .category-actions-enhanced {
                 display: flex;
                 justify-content: space-between;
@@ -1869,7 +1322,6 @@ class CategoriesPage {
                 transform: translateY(-1px);
             }
             
-            /* Toggle amélioré */
             .toggle-enhanced {
                 position: relative;
                 display: inline-block;
@@ -1916,7 +1368,6 @@ class CategoriesPage {
                 transform: translateX(20px);
             }
             
-            /* Indicateurs */
             .priority-indicator {
                 position: absolute;
                 top: 0;
@@ -1943,42 +1394,6 @@ class CategoriesPage {
                 font-weight: 700;
             }
             
-            /* Actions globales */
-            .global-actions-enhanced {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding-top: 20px;
-                border-top: 1px solid #e5e7eb;
-                margin-top: auto;
-            }
-            
-            .actions-left {
-                display: flex;
-                gap: 8px;
-            }
-            
-            .keywords-stats {
-                display: flex;
-                gap: 16px;
-                align-items: center;
-            }
-            
-            .keywords-stats .stat-item {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                font-size: 12px;
-                color: #6b7280;
-                font-weight: 500;
-            }
-            
-            .keywords-stats .stat-item i {
-                color: #9ca3af;
-                font-size: 12px;
-            }
-            
-            /* Responsive */
             @media (max-width: 768px) {
                 .settings-two-columns {
                     grid-template-columns: 1fr;
@@ -1996,46 +1411,31 @@ class CategoriesPage {
                 .automation-options-grid {
                     grid-template-columns: 1fr;
                 }
-                
-                .stats-grid {
-                    grid-template-columns: repeat(3, 1fr);
-                }
             }
         `;
         
         document.head.appendChild(styles);
-        this.stylesAdded = true;
-        console.log('[CategoriesPage] ✅ Styles complets ajoutés avec mise en évidence des catégories');
+        console.log('[CategoriesPage] Styles ajoutés');
     }
 }
 
-// Create global instance avec protection d'erreur
+// Créer l'instance globale
 try {
     window.categoriesPage = new CategoriesPage();
 
-    // Export for PageManager integration
+    // Intégration avec PageManager
     if (window.pageManager && window.pageManager.pages) {
-        delete window.pageManager.pages.categories;
-        delete window.pageManager.pages.keywords;
-        
         window.pageManager.pages.settings = (container) => {
             try {
                 window.categoriesPage.renderSettings(container);
             } catch (error) {
-                console.error('[PageManager] Erreur lors du rendu des paramètres:', error);
+                console.error('[PageManager] Erreur rendu paramètres:', error);
                 container.innerHTML = window.categoriesPage.renderErrorState(error);
             }
         };
         
-        setTimeout(() => {
-            const categoriesNavButton = document.querySelector('.nav-item[data-page="categories"]');
-            if (categoriesNavButton) {
-                categoriesNavButton.style.display = 'none';
-            }
-        }, 100);
-        
-        console.log('✅ CategoriesPage v8.1 loaded - Gestion complète avec mise en évidence des catégories sélectionnées');
+        console.log('✅ CategoriesPage v8.1 loaded - Gestion complète corrigée');
     }
 } catch (error) {
-    console.error('[CategoriesPage] Erreur critique lors de l\'initialisation:', error);
+    console.error('[CategoriesPage] Erreur critique initialisation:', error);
 }
