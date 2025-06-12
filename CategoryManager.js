@@ -1,218 +1,136 @@
-// CategoryManager.js - Version 17.2 - Intégral avec fixes synchronisation
+// CategoryManager.js - Version 17.3 - Réparation synchronisation paramètres
 
 class CategoryManager {
     constructor() {
         this.categories = {};
         this.weightedKeywords = {};
-        this.customCategories = {}; // Nouvelles catégories personnalisées
+        this.customCategories = {};
         this.settings = this.loadSettings();
         this.isInitialized = false;
         this.debugMode = false;
-        this.eventListenersSetup = false; // Éviter les doublons
+        this.eventListenersSetup = false;
+        
+        // NOUVEAU: Système de synchronisation renforcé
+        this.syncInProgress = false;
+        this.lastSyncTime = 0;
+        this.syncCallbacks = new Set();
         
         this.initializeCategories();
         this.loadCustomCategories();
         this.initializeWeightedDetection();
         this.setupEventListeners();
         
-        console.log('[CategoryManager] ✅ Version 17.2 - Intégral avec fixes synchronisation');
+        console.log('[CategoryManager] ✅ Version 17.3 - Réparation synchronisation paramètres');
+        console.log('[CategoryManager] 📊 Paramètres initiaux:', this.settings);
+        console.log('[CategoryManager] 📋 Catégories pré-sélectionnées:', this.settings.taskPreselectedCategories);
     }
 
     // ================================================
-    // GESTION DES CATÉGORIES PERSONNALISÉES
-    // ================================================
-    loadCustomCategories() {
-        try {
-            const saved = localStorage.getItem('customCategories');
-            this.customCategories = saved ? JSON.parse(saved) : {};
-            
-            // Intégrer les catégories personnalisées dans les catégories principales
-            Object.entries(this.customCategories).forEach(([id, category]) => {
-                this.categories[id] = {
-                    ...category,
-                    isCustom: true,
-                    priority: category.priority || 30 // Priorité moyenne par défaut
-                };
-            });
-            
-            console.log('[CategoryManager] Catégories personnalisées chargées:', Object.keys(this.customCategories));
-        } catch (error) {
-            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
-            this.customCategories = {};
-        }
-    }
-
-    saveCustomCategories() {
-        try {
-            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
-            console.log('[CategoryManager] Catégories personnalisées sauvegardées');
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
-        }
-    }
-
-    createCustomCategory(categoryData) {
-        const id = this.generateCategoryId(categoryData.name);
-        
-        const category = {
-            id: id,
-            name: categoryData.name,
-            icon: categoryData.icon || '📂',
-            color: categoryData.color || '#6366f1',
-            description: categoryData.description || '',
-            priority: categoryData.priority || 30,
-            createdAt: new Date().toISOString(),
-            isCustom: true
-        };
-
-        // Ajouter aux catégories personnalisées
-        this.customCategories[id] = category;
-        
-        // Ajouter aux catégories principales
-        this.categories[id] = category;
-        
-        // Initialiser les mots-clés vides
-        this.weightedKeywords[id] = {
-            absolute: categoryData.keywords?.absolute || [],
-            strong: categoryData.keywords?.strong || [],
-            weak: categoryData.keywords?.weak || [],
-            exclusions: categoryData.keywords?.exclusions || []
-        };
-
-        this.saveCustomCategories();
-        
-        // Notifier les autres modules avec délai pour éviter les conflits
-        setTimeout(() => {
-            this.dispatchEvent('categoryCreated', {
-                categoryId: id, 
-                category: category
-            });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie personnalisée créée:', category);
-        return category;
-    }
-
-    updateCustomCategory(categoryId, updates) {
-        if (!this.customCategories[categoryId]) {
-            throw new Error('Catégorie personnalisée non trouvée');
-        }
-
-        this.customCategories[categoryId] = {
-            ...this.customCategories[categoryId],
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
-
-        // Mettre à jour aussi dans les catégories principales
-        this.categories[categoryId] = {
-            ...this.categories[categoryId],
-            ...updates
-        };
-
-        this.saveCustomCategories();
-        
-        // Notifier les autres modules
-        setTimeout(() => {
-            this.dispatchEvent('categoryUpdated', {
-                categoryId, 
-                category: this.categories[categoryId]
-            });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie personnalisée mise à jour:', categoryId);
-        return this.categories[categoryId];
-    }
-
-    deleteCustomCategory(categoryId) {
-        if (!this.customCategories[categoryId]) {
-            throw new Error('Catégorie personnalisée non trouvée');
-        }
-
-        // Supprimer des catégories personnalisées
-        delete this.customCategories[categoryId];
-        
-        // Supprimer des catégories principales
-        delete this.categories[categoryId];
-        
-        // Supprimer les mots-clés
-        delete this.weightedKeywords[categoryId];
-
-        this.saveCustomCategories();
-        
-        // Notifier les autres modules
-        setTimeout(() => {
-            this.dispatchEvent('categoryDeleted', { categoryId });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie personnalisée supprimée:', categoryId);
-    }
-
-    generateCategoryId(name) {
-        const base = name.toLowerCase()
-            .replace(/[àâä]/g, 'a')
-            .replace(/[éèêë]/g, 'e')
-            .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/[ùûü]/g, 'u')
-            .replace(/[ç]/g, 'c')
-            .replace(/[^a-z0-9]/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '');
-        
-        let id = 'custom_' + base;
-        let counter = 1;
-        
-        while (this.categories[id] || this.customCategories[id]) {
-            id = `custom_${base}_${counter}`;
-            counter++;
-        }
-        
-        return id;
-    }
-
-    getCustomCategories() {
-        return { ...this.customCategories };
-    }
-
-    // ================================================
-    // GESTION DES PARAMÈTRES CENTRALISÉE - AMÉLIORÉE
+    // GESTION DES PARAMÈTRES CENTRALISÉE - RÉPARÉE
     // ================================================
     loadSettings() {
         try {
             const saved = localStorage.getItem('categorySettings');
             const defaultSettings = this.getDefaultSettings();
             
-            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+            if (saved) {
+                const parsedSettings = JSON.parse(saved);
+                const mergedSettings = { ...defaultSettings, ...parsedSettings };
+                
+                console.log('[CategoryManager] 📥 Paramètres chargés depuis localStorage');
+                console.log('[CategoryManager] 🔧 Paramètres par défaut:', defaultSettings);
+                console.log('[CategoryManager] 💾 Paramètres sauvegardés:', parsedSettings);
+                console.log('[CategoryManager] 🔄 Paramètres fusionnés:', mergedSettings);
+                
+                return mergedSettings;
+            } else {
+                console.log('[CategoryManager] 🆕 Utilisation paramètres par défaut');
+                return defaultSettings;
+            }
         } catch (error) {
-            console.error('[CategoryManager] Erreur chargement paramètres:', error);
-            return this.getDefaultSettings();
+            console.error('[CategoryManager] ❌ Erreur chargement paramètres:', error);
+            const defaults = this.getDefaultSettings();
+            console.log('[CategoryManager] 🔄 Fallback vers paramètres par défaut:', defaults);
+            return defaults;
         }
     }
 
     saveSettings(newSettings = null) {
         try {
+            if (this.syncInProgress) {
+                console.log('[CategoryManager] ⏳ Sync en cours, ajout en queue');
+                setTimeout(() => this.saveSettings(newSettings), 100);
+                return;
+            }
+            
+            this.syncInProgress = true;
+            
             if (newSettings) {
+                console.log('[CategoryManager] 📝 Mise à jour settings avec:', newSettings);
                 this.settings = { ...this.settings, ...newSettings };
             }
-            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
             
-            // Notifier les autres modules avec délai pour éviter les conflits
+            // Vérifier l'intégrité des paramètres
+            this.validateSettings();
+            
+            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
+            this.lastSyncTime = Date.now();
+            
+            console.log('[CategoryManager] 💾 Paramètres sauvegardés:', this.settings);
+            console.log('[CategoryManager] 📋 Catégories pré-sélectionnées sauvées:', this.settings.taskPreselectedCategories);
+            
+            // Notifier tous les modules avec délai pour éviter les conflits
             setTimeout(() => {
                 this.dispatchEvent('categorySettingsChanged', {
-                    settings: this.settings
+                    settings: this.settings,
+                    source: 'CategoryManager',
+                    timestamp: this.lastSyncTime
                 });
+                
+                // Notifier les callbacks enregistrés
+                this.syncCallbacks.forEach(callback => {
+                    try {
+                        callback(this.settings);
+                    } catch (error) {
+                        console.warn('[CategoryManager] Erreur callback sync:', error);
+                    }
+                });
+                
+                this.syncInProgress = false;
             }, 10);
             
-            console.log('[CategoryManager] Paramètres sauvegardés:', this.settings);
         } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde paramètres:', error);
+            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
+            this.syncInProgress = false;
         }
+    }
+
+    validateSettings() {
+        // S'assurer que taskPreselectedCategories est un array
+        if (!Array.isArray(this.settings.taskPreselectedCategories)) {
+            console.warn('[CategoryManager] ⚠️ taskPreselectedCategories n\'est pas un array, correction');
+            this.settings.taskPreselectedCategories = this.getDefaultSettings().taskPreselectedCategories;
+        }
+        
+        // S'assurer que les objets nécessaires existent
+        if (!this.settings.scanSettings) {
+            this.settings.scanSettings = this.getDefaultSettings().scanSettings;
+        }
+        
+        if (!this.settings.preferences) {
+            this.settings.preferences = this.getDefaultSettings().preferences;
+        }
+        
+        if (!this.settings.automationSettings) {
+            this.settings.automationSettings = this.getDefaultSettings().automationSettings;
+        }
+        
+        console.log('[CategoryManager] ✅ Paramètres validés');
     }
 
     getDefaultSettings() {
         return {
-            activeCategories: null, // null = toutes actives par défaut
+            activeCategories: null,
             excludedDomains: [],
             excludedKeywords: [],
             taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
@@ -243,96 +161,96 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES
+    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES - RÉPARÉES
     // ================================================
     getSettings() {
+        console.log('[CategoryManager] 📤 getSettings appelé, retour:', this.settings);
         return { ...this.settings };
     }
 
     updateSettings(newSettings) {
+        console.log('[CategoryManager] 📥 updateSettings appelé avec:', newSettings);
         this.saveSettings(newSettings);
     }
 
-    getScanSettings() {
-        return this.settings.scanSettings;
-    }
-
-    getAutomationSettings() {
-        return this.settings.automationSettings;
-    }
-
     getTaskPreselectedCategories() {
-        return this.settings.taskPreselectedCategories || [];
+        const categories = this.settings.taskPreselectedCategories || [];
+        console.log('[CategoryManager] 📋 getTaskPreselectedCategories retourne:', categories);
+        return [...categories];
     }
 
-    shouldExcludeSpam() {
-        return this.settings.preferences?.excludeSpam !== false;
-    }
-
-    shouldDetectCC() {
-        return this.settings.preferences?.detectCC !== false;
-    }
-
-    getActiveCategories() {
-        if (!this.settings.activeCategories) {
-            return Object.keys(this.categories);
-        }
-        return this.settings.activeCategories;
-    }
-
-    // ================================================
-    // LISTENER POUR ÉVÉNEMENTS - AMÉLIORÉ
-    // ================================================
-    setupEventListeners() {
-        if (this.eventListenersSetup) {
-            return; // Éviter les doublons
-        }
-
-        // Handler pour éviter les fuites mémoire
-        this.settingsChangeHandler = (event) => {
-            const { type, value } = event.detail;
-            console.log(`[CategoryManager] Reçu changement: ${type}`, value);
-            
-            switch (type) {
-                case 'preferences':
-                    this.updateSettings({ preferences: { ...this.settings.preferences, ...value } });
-                    break;
-                case 'scanSettings':
-                    this.updateSettings({ scanSettings: { ...this.settings.scanSettings, ...value } });
-                    break;
-                case 'automationSettings':
-                    this.updateSettings({ automationSettings: { ...this.settings.automationSettings, ...value } });
-                    break;
-                case 'taskPreselectedCategories':
-                    this.updateSettings({ taskPreselectedCategories: value });
-                    break;
-                case 'activeCategories':
-                    this.updateSettings({ activeCategories: value });
-                    break;
-            }
-        };
-
-        window.addEventListener('settingsChanged', this.settingsChangeHandler);
-        this.eventListenersSetup = true;
+    updateTaskPreselectedCategories(categories) {
+        console.log('[CategoryManager] 🎯 updateTaskPreselectedCategories appelé avec:', categories);
         
-        console.log('[CategoryManager] Event listeners configurés');
+        if (!Array.isArray(categories)) {
+            console.error('[CategoryManager] ❌ categories doit être un array');
+            return false;
+        }
+        
+        const oldCategories = [...(this.settings.taskPreselectedCategories || [])];
+        this.settings.taskPreselectedCategories = [...categories];
+        
+        console.log('[CategoryManager] 📊 Changement catégories:');
+        console.log('  - Anciennes:', oldCategories);
+        console.log('  - Nouvelles:', this.settings.taskPreselectedCategories);
+        
+        this.saveSettings();
+        
+        // Notification spéciale pour ce changement critique
+        setTimeout(() => {
+            this.dispatchEvent('taskPreselectedCategoriesChanged', {
+                oldCategories,
+                newCategories: [...this.settings.taskPreselectedCategories],
+                source: 'CategoryManager'
+            });
+        }, 10);
+        
+        return true;
     }
 
-    // Méthode pour nettoyer les event listeners
-    cleanup() {
-        if (this.settingsChangeHandler) {
-            window.removeEventListener('settingsChanged', this.settingsChangeHandler);
-        }
-        this.eventListenersSetup = false;
+    // ================================================
+    // SYSTÈME DE CALLBACKS POUR SYNCHRONISATION
+    // ================================================
+    onSettingsChange(callback) {
+        this.syncCallbacks.add(callback);
+        console.log('[CategoryManager] 📞 Callback sync enregistré');
+        return () => this.syncCallbacks.delete(callback);
     }
 
-    // Méthode utilitaire pour dispatcher des événements
-    dispatchEvent(eventName, detail) {
-        try {
-            window.dispatchEvent(new CustomEvent(eventName, { detail }));
-        } catch (error) {
-            console.error(`[CategoryManager] Erreur dispatch ${eventName}:`, error);
+    // ================================================
+    // FORCE SYNCHRONISATION - NOUVELLE MÉTHODE
+    // ================================================
+    forceSynchronization() {
+        console.log('[CategoryManager] 🚀 Force synchronisation démarrée');
+        
+        // Recharger depuis localStorage pour éviter les désynchronisations
+        const saved = localStorage.getItem('categorySettings');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                this.settings = { ...this.getDefaultSettings(), ...parsed };
+                this.validateSettings();
+                
+                console.log('[CategoryManager] 🔄 Settings rechargés:', this.settings);
+                console.log('[CategoryManager] 📋 Catégories pré-sélectionnées rechargées:', this.settings.taskPreselectedCategories);
+                
+                // Notifier tous les modules
+                setTimeout(() => {
+                    this.dispatchEvent('forceSynchronization', {
+                        settings: this.settings,
+                        source: 'CategoryManager',
+                        timestamp: Date.now()
+                    });
+                }, 10);
+                
+                return true;
+            } catch (error) {
+                console.error('[CategoryManager] ❌ Erreur force sync:', error);
+                return false;
+            }
         }
+        
+        return false;
     }
 
     // ================================================
@@ -340,7 +258,7 @@ class CategoryManager {
     // ================================================
     initializeCategories() {
         this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS (détecté en premier)
+            // PRIORITÉ MAXIMALE - MARKETING & NEWS
             marketing_news: {
                 name: 'Marketing & News',
                 icon: '📰',
@@ -449,69 +367,38 @@ class CategoryManager {
         };
         
         this.isInitialized = true;
+        console.log('[CategoryManager] ✅ Catégories initialisées:', Object.keys(this.categories));
     }
 
     // ================================================
-    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS ÉTENDUS
+    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
-            // MARKETING & NEWS - PRIORITÉ MAXIMALE - PATTERNS ÉTENDUS
+            // MARKETING & NEWS - PRIORITÉ MAXIMALE
             marketing_news: {
                 absolute: [
-                    // DÉSINSCRIPTION - CRITÈRE CLÉ
                     'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
                     'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
                     'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
                     'email preferences', 'préférences email', 'preferences email',
                     'ne plus recevoir', 'stop emails', 'arreter les emails',
-                    
-                    // NOUVEAU PATTERN INTÉGRÉ
-                    'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
-                    'paramétrez vos choix', 'parametrez vos choix',
-                    'si vous ne souhaitez plus', 'ne plus recevoir de communications',
-                    'communications de notre part', 'de notre part',
-                    
-                    // NEWSLETTERS EXPLICITES
                     'newsletter', 'mailing list', 'mailing',
                     'this email was sent to', 'you are receiving this',
                     'cet email vous est envoyé', 'vous recevez cet email',
-                    'abonnement newsletter', 'inscription newsletter',
-                    
-                    // MARKETING CLAIR
                     'limited offer', 'offre limitée', 'special offer',
-                    'promotion', 'promo', 'soldes', 'vente privée',
-                    'offre spéciale', 'réduction', '% de réduction',
-                    '% off', 'promo code', 'code promo',
-                    'flash sale', 'vente flash', 'black friday',
-                    'discount', 'remise', 'prix réduit',
-                    'exclusive offer', 'offre exclusive',
-                    'limited time', 'temps limité',
-                    
-                    // E-COMMERCE
-                    'shop now', 'acheter maintenant', 'buy now',
-                    'add to cart', 'ajouter au panier',
-                    'new collection', 'nouvelle collection',
-                    
-                    // CAMPAGNES MARKETING
-                    'campagne marketing', 'marketing campaign',
-                    'envoi marketing', 'communication marketing'
+                    'promotion', 'promo', 'soldes', 'vente privée'
                 ],
-                
                 strong: [
                     'promo', 'deal', 'offer', 'sale', 'discount',
                     'newsletter', 'mailing', 'campaign', 'marketing',
-                    'abonné', 'subscriber', 'désinscription',
-                    'exclusive', 'special', 'limited', 'new',
-                    'collection', 'shop', 'store', 'communications',
-                    'préférences', 'souhaitez', 'paramétrez'
+                    'abonné', 'subscriber', 'désinscription'
                 ],
-                
-                weak: ['update', 'discover', 'new', 'choix'],
+                weak: ['update', 'discover', 'new'],
                 exclusions: []
             },
 
-            // SÉCURITÉ - PATTERNS STRICTS
+            // SÉCURITÉ
             security: {
                 absolute: [
                     'alerte de connexion', 'alert connexion', 'nouvelle connexion',
@@ -522,17 +409,15 @@ class CategoryManager {
                     'two-factor', '2fa', 'authentification', 'authentication',
                     'password reset', 'réinitialisation mot de passe'
                 ],
-                
                 strong: [
                     'sécurité', 'security', 'vérification', 'verify',
                     'authentification', 'password', 'mot de passe'
                 ],
-                
                 weak: ['compte', 'account', 'accès'],
                 exclusions: ['newsletter', 'unsubscribe', 'promotion']
             },
 
-            // TÂCHES - PATTERNS STRICTS
+            // TÂCHES
             tasks: {
                 absolute: [
                     'action required', 'action requise', 'action needed',
@@ -544,18 +429,16 @@ class CategoryManager {
                     'action à mener', 'à faire', 'à traiter',
                     'confirmation requise', 'approval needed'
                 ],
-                
                 strong: [
                     'urgent', 'asap', 'priority', 'priorité',
                     'complete', 'compléter', 'action', 'faire',
                     'deadline', 'échéance'
                 ],
-                
                 weak: ['demande', 'besoin', 'attente'],
                 exclusions: ['newsletter', 'marketing', 'promotion']
             },
 
-            // RÉUNIONS - PATTERNS STRICTS
+            // RÉUNIONS
             meetings: {
                 absolute: [
                     'demande de réunion', 'meeting request', 'réunion',
@@ -564,17 +447,15 @@ class CategoryManager {
                     'teams meeting', 'zoom meeting', 'google meet',
                     'conference call', 'rendez-vous', 'rdv'
                 ],
-                
                 strong: [
                     'meeting', 'réunion', 'schedule', 'planifier',
                     'calendar', 'calendrier', 'appointment'
                 ],
-                
                 weak: ['présentation', 'agenda'],
                 exclusions: ['newsletter', 'promotion']
             },
 
-            // COMMERCIAL - PATTERNS STRICTS
+            // COMMERCIAL
             commercial: {
                 absolute: [
                     'devis', 'quotation', 'proposal', 'proposition',
@@ -583,17 +464,15 @@ class CategoryManager {
                     'proposition commerciale', 'business proposal',
                     'opportunité commerciale', 'nouveau client'
                 ],
-                
                 strong: [
                     'client', 'customer', 'prospect', 'opportunity',
                     'commercial', 'business', 'marché', 'deal'
                 ],
-                
                 weak: ['offre', 'négociation'],
                 exclusions: ['newsletter', 'marketing', 'promotion']
             },
 
-            // FINANCE - PATTERNS STRICTS
+            // FINANCE
             finance: {
                 absolute: [
                     'facture', 'invoice', 'payment', 'paiement',
@@ -603,18 +482,16 @@ class CategoryManager {
                     'impôts', 'taxes', 'fiscal',
                     'comptabilité', 'accounting', 'bilan'
                 ],
-                
                 strong: [
                     'montant', 'amount', 'total', 'facture',
                     'fiscal', 'bancaire', 'bank', 'finance',
                     'paiement', 'payment'
                 ],
-                
                 weak: ['euro', 'dollar', 'prix'],
                 exclusions: ['newsletter', 'marketing']
             },
 
-            // RELANCES - PATTERNS STRICTS
+            // RELANCES
             reminders: {
                 absolute: [
                     'reminder:', 'rappel:', 'follow up', 'relance',
@@ -622,17 +499,15 @@ class CategoryManager {
                     'je reviens vers vous', 'circling back',
                     'comme convenu', 'suite à notre', 'faisant suite'
                 ],
-                
                 strong: [
                     'reminder', 'rappel', 'follow', 'relance',
                     'suite', 'convenu'
                 ],
-                
                 weak: ['previous', 'discussed'],
                 exclusions: ['newsletter', 'marketing']
             },
 
-            // SUPPORT - PATTERNS STRICTS
+            // SUPPORT
             support: {
                 absolute: [
                     'ticket #', 'ticket number', 'numéro de ticket',
@@ -640,12 +515,10 @@ class CategoryManager {
                     'problème résolu', 'issue resolved',
                     'support ticket', 'ticket de support', 'help desk'
                 ],
-                
                 strong: [
                     'support', 'assistance', 'help desk',
                     'technical support', 'ticket'
                 ],
-                
                 weak: ['help', 'aide', 'issue'],
                 exclusions: ['newsletter', 'marketing']
             },
@@ -658,12 +531,10 @@ class CategoryManager {
                     'avancement projet', 'project status',
                     'kickoff', 'kick off'
                 ],
-                
                 strong: [
                     'projet', 'project', 'milestone', 'sprint',
                     'agile', 'scrum'
                 ],
-                
                 weak: ['development', 'phase'],
                 exclusions: ['newsletter', 'marketing']
             },
@@ -676,12 +547,10 @@ class CategoryManager {
                     'entretien annuel', 'performance review',
                     'recrutement', 'recruitment'
                 ],
-                
                 strong: [
                     'rh', 'hr', 'salaire', 'salary',
                     'ressources humaines', 'human resources'
                 ],
-                
                 weak: ['employee', 'staff'],
                 exclusions: ['newsletter', 'marketing']
             },
@@ -693,12 +562,10 @@ class CategoryManager {
                     'company announcement', 'memo interne',
                     'communication interne', 'note de service'
                 ],
-                
                 strong: [
                     'internal', 'interne', 'company wide',
                     'personnel', 'staff'
                 ],
-                
                 weak: ['annonce', 'announcement'],
                 exclusions: ['newsletter', 'marketing', 'external']
             },
@@ -710,44 +577,29 @@ class CategoryManager {
                     'automated message', 'notification automatique',
                     'system notification', 'ceci est un message automatique'
                 ],
-                
                 strong: [
                     'automated', 'automatic', 'system',
                     'notification', 'automatique'
                 ],
-                
                 weak: ['notification', 'alert'],
                 exclusions: ['newsletter', 'marketing']
             },
 
-            // CC - détection spéciale
+            // CC
             cc: {
                 absolute: [
                     'copie pour information', 'for your information', 'fyi',
                     'en copie', 'in copy', 'cc:', 'courtesy copy'
                 ],
-                
                 strong: ['information', 'copie', 'copy'],
                 weak: ['fyi', 'info'],
                 exclusions: []
             }
         };
-
-        // Ajouter les mots-clés des catégories personnalisées s'ils existent
-        Object.keys(this.customCategories).forEach(categoryId => {
-            if (!this.weightedKeywords[categoryId]) {
-                this.weightedKeywords[categoryId] = {
-                    absolute: [],
-                    strong: [],
-                    weak: [],
-                    exclusions: []
-                };
-            }
-        });
     }
 
     // ================================================
-    // ANALYSE PRINCIPALE D'EMAIL - OPTIMISÉE
+    // ANALYSE PRINCIPALE D'EMAIL
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -789,15 +641,11 @@ class CategoryManager {
         return this.selectByPriorityWithThreshold(allResults);
     }
 
-    // ================================================
-    // ANALYSE DE TOUTES LES CATÉGORIES
-    // ================================================
     analyzeAllCategories(content) {
         const results = {};
         const activeCategories = this.getActiveCategories();
         
         for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
-            // Ignorer les catégories inactives (sauf marketing_news et cc qui ont priorité)
             if (!activeCategories.includes(categoryId) && 
                 categoryId !== 'marketing_news' && 
                 categoryId !== 'cc') {
@@ -819,14 +667,10 @@ class CategoryManager {
         return results;
     }
 
-    // ================================================
-    // SÉLECTION PAR PRIORITÉ AVEC SEUIL
-    // ================================================
     selectByPriorityWithThreshold(results) {
         const MIN_SCORE_THRESHOLD = 30;
         const MIN_CONFIDENCE_THRESHOLD = 0.5;
         
-        // Trier par priorité puis par score
         const sortedResults = Object.values(results)
             .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
             .sort((a, b) => {
@@ -835,13 +679,6 @@ class CategoryManager {
                 }
                 return b.score - a.score;
             });
-        
-        if (this.debugMode) {
-            console.log('[CategoryManager] Scores par catégorie:');
-            sortedResults.forEach(r => {
-                console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
-            });
-        }
         
         const bestResult = sortedResults[0];
         
@@ -865,26 +702,13 @@ class CategoryManager {
     }
 
     // ================================================
-    // CALCUL DU SCORE - OPTIMISÉ
+    // MÉTHODES UTILITAIRES
     // ================================================
     calculateScore(content, keywords, categoryId) {
         let totalScore = 0;
         let hasAbsolute = false;
         const matches = [];
         const text = content.text;
-        
-        // Vérifier les exclusions d'abord
-        if (keywords.exclusions) {
-            for (const exclusion of keywords.exclusions) {
-                if (this.findInText(text, exclusion)) {
-                    if (categoryId === 'marketing_news') {
-                        totalScore -= 20; // Réduction pour marketing
-                    } else {
-                        totalScore -= 100; // Forte réduction pour autres
-                    }
-                }
-            }
-        }
         
         // Mots absolus (100 points)
         if (keywords.absolute) {
@@ -893,12 +717,6 @@ class CategoryManager {
                     totalScore += 100;
                     hasAbsolute = true;
                     matches.push({ keyword, type: 'absolute', score: 100 });
-                    
-                    // Bonus si dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 50;
-                        matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
-                    }
                 }
             }
         }
@@ -923,50 +741,18 @@ class CategoryManager {
             }
         }
         
-        // Bonus de domaine
-        this.applyDomainBonus(content, categoryId, matches, totalScore);
-        
         return { total: Math.max(0, totalScore), hasAbsolute, matches };
-    }
-
-    applyDomainBonus(content, categoryId, matches, totalScore) {
-        const domainBonuses = {
-            security: ['microsoft', 'google', 'apple', 'security'],
-            finance: ['gouv.fr', 'impots', 'bank', 'paypal'],
-            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing'],
-            notifications: ['noreply', 'notification', 'donotreply']
-        };
-        
-        if (domainBonuses[categoryId]) {
-            for (const domainKeyword of domainBonuses[categoryId]) {
-                if (content.domain.includes(domainKeyword)) {
-                    const bonus = categoryId === 'marketing_news' ? 30 : 50;
-                    totalScore += bonus;
-                    matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
-                    break;
-                }
-            }
-        }
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES - OPTIMISÉES
-    // ================================================
-    analyzeCategory(content, keywords) {
-        return this.calculateScore(content, keywords, 'single');
     }
 
     extractCompleteContent(email) {
         let allText = '';
         let subject = '';
         
-        // Sujet (répété pour augmenter le poids)
         if (email.subject) {
             subject = email.subject;
             allText += (email.subject + ' ').repeat(5);
         }
         
-        // Expéditeur
         if (email.from?.emailAddress?.address) {
             allText += email.from.emailAddress.address + ' ';
         }
@@ -974,31 +760,6 @@ class CategoryManager {
             allText += email.from.emailAddress.name + ' ';
         }
         
-        // Destinataires
-        if (email.toRecipients && Array.isArray(email.toRecipients)) {
-            email.toRecipients.forEach(recipient => {
-                if (recipient.emailAddress?.address) {
-                    allText += recipient.emailAddress.address + ' ';
-                }
-                if (recipient.emailAddress?.name) {
-                    allText += recipient.emailAddress.name + ' ';
-                }
-            });
-        }
-        
-        // CC
-        if (email.ccRecipients && Array.isArray(email.ccRecipients)) {
-            email.ccRecipients.forEach(recipient => {
-                if (recipient.emailAddress?.address) {
-                    allText += recipient.emailAddress.address + ' ';
-                }
-                if (recipient.emailAddress?.name) {
-                    allText += recipient.emailAddress.name + ' ';
-                }
-            });
-        }
-        
-        // Corps
         if (email.bodyPreview) {
             allText += email.bodyPreview + ' ';
         }
@@ -1015,21 +776,6 @@ class CategoryManager {
         };
     }
 
-    cleanHtml(html) {
-        if (!html) return '';
-        return html
-            .replace(/<a[^>]*>(.*?)<\/a>/gi, ' $1 ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/&[^;]+;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    extractDomain(email) {
-        if (!email || !email.includes('@')) return 'unknown';
-        return email.split('@')[1]?.toLowerCase() || 'unknown';
-    }
-
     findInText(text, keyword) {
         if (!text || !keyword) return false;
         
@@ -1039,10 +785,7 @@ class CategoryManager {
             .replace(/[ùûü]/g, 'u')
             .replace(/[ç]/g, 'c')
             .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/'/g, '\'')
-            .replace(/-/g, ' ')
-            .replace(/\s+/g, ' ');
+            .replace(/[ôö]/g, 'o');
         
         const normalizedKeyword = keyword.toLowerCase()
             .replace(/[éèêë]/g, 'e')
@@ -1050,10 +793,7 @@ class CategoryManager {
             .replace(/[ùûü]/g, 'u')
             .replace(/[ç]/g, 'c')
             .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/'/g, '\'')
-            .replace(/-/g, ' ')
-            .replace(/\s+/g, ' ');
+            .replace(/[ôö]/g, 'o');
         
         return normalizedText.includes(normalizedKeyword);
     }
@@ -1070,6 +810,20 @@ class CategoryManager {
         return 0.40;
     }
 
+    cleanHtml(html) {
+        if (!html) return '';
+        return html
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&[^;]+;/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    extractDomain(email) {
+        if (!email || !email.includes('@')) return 'unknown';
+        return email.split('@')[1]?.toLowerCase() || 'unknown';
+    }
+
     // ================================================
     // DÉTECTION SPAM ET CC
     // ================================================
@@ -1083,16 +837,6 @@ class CategoryManager {
                 return true;
             }
         }
-        
-        if (email.categories && Array.isArray(email.categories)) {
-            const hasSpamCategory = email.categories.some(cat => 
-                cat.toLowerCase().includes('spam') ||
-                cat.toLowerCase().includes('junk') ||
-                cat.toLowerCase().includes('indésirable')
-            );
-            if (hasSpamCategory) return true;
-        }
-        
         return false;
     }
 
@@ -1100,29 +844,7 @@ class CategoryManager {
         if (!email.ccRecipients || !Array.isArray(email.ccRecipients)) {
             return false;
         }
-        
-        const currentUserEmail = this.getCurrentUserEmail();
-        if (!currentUserEmail) {
-            return email.ccRecipients.length > 0;
-        }
-        
-        return email.ccRecipients.some(recipient => {
-            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-            return recipientEmail === currentUserEmail.toLowerCase();
-        });
-    }
-
-    getCurrentUserEmail() {
-        try {
-            const userInfo = localStorage.getItem('currentUserInfo');
-            if (userInfo) {
-                const parsed = JSON.parse(userInfo);
-                return parsed.email || parsed.userPrincipalName;
-            }
-        } catch (e) {
-            console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur');
-        }
-        return null;
+        return email.ccRecipients.length > 0;
     }
 
     // ================================================
@@ -1144,109 +866,113 @@ class CategoryManager {
         }
         return this.categories[categoryId] || null;
     }
-    
-    getCategoryStats() {
-        const stats = {
-            totalCategories: Object.keys(this.categories).length,
-            customCategories: Object.keys(this.customCategories).length,
-            totalKeywords: 0,
-            absoluteKeywords: 0,
-            strongKeywords: 0,
-            weakKeywords: 0
-        };
-        
-        for (const keywords of Object.values(this.weightedKeywords)) {
-            if (keywords.absolute) stats.absoluteKeywords += keywords.absolute.length;
-            if (keywords.strong) stats.strongKeywords += keywords.strong.length;
-            if (keywords.weak) stats.weakKeywords += keywords.weak.length;
-        }
-        
-        stats.totalKeywords = stats.absoluteKeywords + stats.strongKeywords + stats.weakKeywords;
-        return stats;
+
+    analyzeCategory(content, keywords) {
+        return this.calculateScore(content, keywords, 'single');
     }
-    
+
+    getScanSettings() {
+        return this.settings.scanSettings;
+    }
+
+    getAutomationSettings() {
+        return this.settings.automationSettings;
+    }
+
+    shouldExcludeSpam() {
+        return this.settings.preferences?.excludeSpam !== false;
+    }
+
+    shouldDetectCC() {
+        return this.settings.preferences?.detectCC !== false;
+    }
+
+    getActiveCategories() {
+        if (!this.settings.activeCategories) {
+            return Object.keys(this.categories);
+        }
+        return this.settings.activeCategories;
+    }
+
+    // ================================================
+    // GESTION DES ÉVÉNEMENTS
+    // ================================================
+    setupEventListeners() {
+        if (this.eventListenersSetup) {
+            return;
+        }
+
+        this.settingsChangeHandler = (event) => {
+            const { type, value } = event.detail;
+            console.log(`[CategoryManager] 📥 Reçu changement: ${type}`, value);
+            
+            switch (type) {
+                case 'preferences':
+                    this.updateSettings({ preferences: { ...this.settings.preferences, ...value } });
+                    break;
+                case 'scanSettings':
+                    this.updateSettings({ scanSettings: { ...this.settings.scanSettings, ...value } });
+                    break;
+                case 'automationSettings':
+                    this.updateSettings({ automationSettings: { ...this.settings.automationSettings, ...value } });
+                    break;
+                case 'taskPreselectedCategories':
+                    this.updateTaskPreselectedCategories(value);
+                    break;
+                case 'activeCategories':
+                    this.updateSettings({ activeCategories: value });
+                    break;
+            }
+        };
+
+        window.addEventListener('settingsChanged', this.settingsChangeHandler);
+        this.eventListenersSetup = true;
+        
+        console.log('[CategoryManager] ✅ Event listeners configurés');
+    }
+
+    dispatchEvent(eventName, detail) {
+        try {
+            const event = new CustomEvent(eventName, { detail });
+            window.dispatchEvent(event);
+            console.log(`[CategoryManager] 📤 Événement dispatché: ${eventName}`, detail);
+        } catch (error) {
+            console.error(`[CategoryManager] ❌ Erreur dispatch ${eventName}:`, error);
+        }
+    }
+
+    // ================================================
+    // DEBUG
+    // ================================================
     setDebugMode(enabled) {
         this.debugMode = enabled;
         console.log(`[CategoryManager] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
     }
-    
-    // ================================================
-    // TEST
-    // ================================================
-    testEmail(subject, expectedCategory = null) {
-        const testEmail = {
-            subject: subject,
-            body: { content: 'Test content' },
-            from: { emailAddress: { address: 'test@example.com' } },
-            toRecipients: [{ emailAddress: { address: 'user@example.com' } }]
-        };
-        
-        const result = this.analyzeEmail(testEmail);
-        
-        console.log('\n[CategoryManager] TEST RESULT:');
-        console.log(`Subject: "${subject}"`);
-        console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
-        console.log(`Score: ${result.score}pts`);
-        console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
-        console.log(`Matches:`, result.matchedPatterns);
-        
-        if (expectedCategory && result.category !== expectedCategory) {
-            console.log(`❌ FAILED - Expected ${expectedCategory}, got ${result.category}`);
-        } else {
-            console.log('✅ SUCCESS');
-        }
-        
-        return result;
-    }
 
-    // ================================================
-    // MÉTHODES POUR GESTION DES MOTS-CLÉS
-    // ================================================
-    updateCategoryKeywords(categoryId, keywords) {
-        if (!this.categories[categoryId]) {
-            throw new Error('Catégorie non trouvée');
-        }
-
-        this.weightedKeywords[categoryId] = {
-            absolute: keywords.absolute || [],
-            strong: keywords.strong || [],
-            weak: keywords.weak || [],
-            exclusions: keywords.exclusions || []
-        };
-
-        // Si c'est une catégorie personnalisée, sauvegarder
-        if (this.customCategories[categoryId]) {
-            this.customCategories[categoryId].keywords = keywords;
-            this.saveCustomCategories();
-        }
-
-        console.log(`[CategoryManager] Mots-clés mis à jour pour ${categoryId}`);
-        
-        // Notifier les autres modules
-        setTimeout(() => {
-            this.dispatchEvent('keywordsUpdated', {
-                categoryId, 
-                keywords
-            });
-        }, 10);
-    }
-
-    getCategoryKeywords(categoryId) {
-        return this.weightedKeywords[categoryId] || {
-            absolute: [],
-            strong: [],
-            weak: [],
-            exclusions: []
+    getDebugInfo() {
+        return {
+            settings: this.settings,
+            taskPreselectedCategories: this.getTaskPreselectedCategories(),
+            isInitialized: this.isInitialized,
+            syncInProgress: this.syncInProgress,
+            lastSyncTime: this.lastSyncTime,
+            eventListenersSetup: this.eventListenersSetup,
+            categoriesCount: Object.keys(this.categories).length,
+            syncCallbacksCount: this.syncCallbacks.size
         };
     }
 
-    getAllKeywords() {
-        return { ...this.weightedKeywords };
+    // ================================================
+    // NETTOYAGE
+    // ================================================
+    cleanup() {
+        if (this.settingsChangeHandler) {
+            window.removeEventListener('settingsChanged', this.settingsChangeHandler);
+        }
+        this.eventListenersSetup = false;
+        this.syncCallbacks.clear();
     }
 
-    // ================================================
-    // NETTOYAGE ET DESTRUCTION
-    // ================================================
     destroy() {
         this.cleanup();
         this.categories = {};
@@ -1264,4 +990,4 @@ if (window.categoryManager) {
 
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v17.2 loaded - Intégral avec fixes synchronisation');
+console.log('✅ CategoryManager v17.3 loaded - Réparation synchronisation paramètres');
