@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 18.0 - Réécriture complète avec synchronisation parfaite
+// CategoryManager.js - Version 18.1 - Réécriture complète avec synchronisation parfaite - CORRIGÉE
 
 class CategoryManager {
     constructor() {
@@ -20,7 +20,7 @@ class CategoryManager {
         };
         
         this.init();
-        console.log('[CategoryManager] ✅ Version 18.0 - Réécriture complète avec synchronisation parfaite');
+        console.log('[CategoryManager] ✅ Version 18.1 - Réécriture complète avec synchronisation parfaite - CORRIGÉE');
     }
 
     async init() {
@@ -1281,4 +1281,4 @@ if (window.categoryManager) {
 
 window.categoryManager = new CategoryManager();
 
-console.log('✅ CategoryManager v18.0 loaded - Réécriture complète avec synchronisation parfaite');
+console.log('✅ CategoryManager v18.1 loaded - Réécriture complète avec synchronisation parfaite - CORRIGÉE');
