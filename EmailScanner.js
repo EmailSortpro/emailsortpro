@@ -1,4 +1,4 @@
-// EmailScanner.js - Version 5.3 - Réparation synchronisation complète
+// EmailScanner.js - Version 5.2 - Synchronisation temps réel fixée
 
 class EmailScanner {
     constructor() {
@@ -9,155 +9,27 @@ class EmailScanner {
         this.settings = {};
         this.eventListenersSetup = false;
         
-        // RÉPARATION: Gestion synchronisation renforcée
+        // NOUVEAU: Gestion de la synchronisation temps réel
         this.lastSettingsSync = 0;
         this.syncInterval = null;
         this.taskPreselectedCategories = [];
-        this.syncInProgress = false;
-        this.syncCallbacks = new Set();
         
         // Initialiser avec les paramètres du CategoryManager
         this.loadSettingsFromCategoryManager();
         this.setupEventListeners();
         this.startSyncMonitoring();
         
-        console.log('[EmailScanner] ✅ Version 5.3 - Réparation synchronisation complète');
-        console.log('[EmailScanner] 📋 Catégories pré-sélectionnées initialisées:', this.taskPreselectedCategories);
+        console.log('[EmailScanner] ✅ Version 5.2 - Synchronisation temps réel fixée');
     }
 
     // ================================================
-    // CHARGEMENT DES PARAMÈTRES - RÉPARÉ ET RENFORCÉ
-    // ================================================
-    loadSettingsFromCategoryManager() {
-        console.log('[EmailScanner] 🔄 === CHARGEMENT PARAMÈTRES ===');
-        
-        try {
-            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
-                this.settings = window.categoryManager.getSettings();
-                this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-                
-                console.log('[EmailScanner] ✅ Paramètres chargés depuis CategoryManager');
-                console.log('[EmailScanner] 📊 Settings:', this.settings);
-                console.log('[EmailScanner] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-                
-            } else if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
-                this.taskPreselectedCategories = window.categoriesPage.getTaskPreselectedCategories();
-                const scanSettings = window.categoriesPage.getScanSettings();
-                this.settings = {
-                    taskPreselectedCategories: this.taskPreselectedCategories,
-                    scanSettings: scanSettings || this.getDefaultSettings().scanSettings
-                };
-                
-                console.log('[EmailScanner] ✅ Paramètres chargés depuis CategoriesPage');
-                console.log('[EmailScanner] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-                
-            } else {
-                // Fallback localStorage avec validation
-                try {
-                    const saved = localStorage.getItem('categorySettings');
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        this.settings = { ...this.getDefaultSettings(), ...parsed };
-                        this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-                        
-                        console.log('[EmailScanner] ✅ Paramètres chargés depuis localStorage');
-                        console.log('[EmailScanner] 📋 Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-                    } else {
-                        throw new Error('Aucun paramètre sauvegardé');
-                    }
-                } catch (storageError) {
-                    console.warn('[EmailScanner] ⚠️ Fallback vers paramètres par défaut:', storageError.message);
-                    this.settings = this.getDefaultSettings();
-                    this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-                }
-            }
-            
-            // Validation des paramètres chargés
-            this.validateLoadedSettings();
-            
-            this.lastSettingsSync = Date.now();
-            console.log('[EmailScanner] ✅ === PARAMÈTRES CHARGÉS AVEC SUCCÈS ===');
-            
-        } catch (error) {
-            console.error('[EmailScanner] ❌ Erreur critique chargement paramètres:', error);
-            this.settings = this.getDefaultSettings();
-            this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
-            console.log('[EmailScanner] 🔄 Utilisation paramètres par défaut suite à l\'erreur');
-        }
-    }
-
-    validateLoadedSettings() {
-        // S'assurer que taskPreselectedCategories est un array valide
-        if (!Array.isArray(this.taskPreselectedCategories)) {
-            console.warn('[EmailScanner] ⚠️ taskPreselectedCategories n\'est pas un array, correction...');
-            this.taskPreselectedCategories = this.getDefaultSettings().taskPreselectedCategories;
-            this.settings.taskPreselectedCategories = this.taskPreselectedCategories;
-        }
-        
-        // Vérifier que les catégories existent
-        if (window.categoryManager) {
-            const availableCategories = Object.keys(window.categoryManager.getCategories());
-            const validCategories = this.taskPreselectedCategories.filter(cat => 
-                availableCategories.includes(cat)
-            );
-            
-            if (validCategories.length !== this.taskPreselectedCategories.length) {
-                console.warn('[EmailScanner] ⚠️ Certaines catégories pré-sélectionnées n\'existent plus, nettoyage...');
-                this.taskPreselectedCategories = validCategories;
-                this.settings.taskPreselectedCategories = validCategories;
-            }
-        }
-        
-        console.log('[EmailScanner] ✅ Paramètres validés');
-    }
-
-    getDefaultSettings() {
-        return {
-            activeCategories: null,
-            excludedDomains: [],
-            excludedKeywords: [],
-            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
-            categoryExclusions: {
-                domains: [],
-                emails: []
-            },
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            automationSettings: {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            },
-            preferences: {
-                darkMode: false,
-                compactView: false,
-                showNotifications: true,
-                excludeSpam: true,
-                detectCC: true
-            }
-        };
-    }
-
-    // ================================================
-    // SURVEILLANCE DE SYNCHRONISATION - AMÉLIORÉE
+    // SURVEILLANCE DE SYNCHRONISATION - NOUVEAU
     // ================================================
     startSyncMonitoring() {
-        // Arrêter l'ancien interval s'il existe
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-        }
-        
         // Vérifier la synchronisation toutes les 3 secondes
         this.syncInterval = setInterval(() => {
             this.checkSettingsSync();
         }, 3000);
-        
-        console.log('[EmailScanner] 🔄 Monitoring de synchronisation démarré');
     }
 
     checkSettingsSync() {
@@ -181,26 +53,13 @@ class EmailScanner {
     }
 
     getCurrentSettingsFromSource() {
-        // Priorité 1: CategoryManager
         if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
-            const settings = window.categoryManager.getSettings();
-            console.log('[EmailScanner] 📥 Paramètres récupérés depuis CategoryManager:', settings);
-            return settings;
-        }
-        
-        // Priorité 2: CategoriesPage
-        if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
-            return {
-                taskPreselectedCategories: window.categoriesPage.getTaskPreselectedCategories(),
-                scanSettings: window.categoriesPage.getScanSettings(),
-                automationSettings: window.categoriesPage.getAutomationSettings()
-            };
+            return window.categoryManager.getSettings();
         }
         
         // Fallback localStorage
         try {
-            const saved = localStorage.getItem('categorySettings');
-            return saved ? JSON.parse(saved) : this.getDefaultSettings();
+            return JSON.parse(localStorage.getItem('categorySettings') || '{}');
         } catch (error) {
             console.error('[EmailScanner] Erreur lecture settings:', error);
             return this.getDefaultSettings();
@@ -237,81 +96,67 @@ class EmailScanner {
     }
 
     synchronizeSettings(newSettings) {
-        if (this.syncInProgress) {
-            console.log('[EmailScanner] ⏳ Sync déjà en cours, ajout en queue');
-            setTimeout(() => this.synchronizeSettings(newSettings), 100);
-            return;
-        }
-        
-        this.syncInProgress = true;
-        
         console.log('[EmailScanner] 🚀 === SYNCHRONISATION PARAMÈTRES ===');
         
         // Sauvegarder les anciens paramètres pour comparaison
         const oldTaskPreselected = [...(this.taskPreselectedCategories || [])];
-        const oldSettings = { ...this.settings };
         
         // Mettre à jour les paramètres
         this.settings = { ...this.settings, ...newSettings };
         this.taskPreselectedCategories = newSettings.taskPreselectedCategories || [];
         
-        // Valider les nouveaux paramètres
-        this.validateLoadedSettings();
-        
         console.log('[EmailScanner] 📊 Paramètres synchronisés:');
         console.log('  - Anciennes catégories pré-sélectionnées:', oldTaskPreselected);
         console.log('  - Nouvelles catégories pré-sélectionnées:', this.taskPreselectedCategories);
-        console.log('  - Anciens settings:', oldSettings);
-        console.log('  - Nouveaux settings:', this.settings);
         
         // Si les catégories pré-sélectionnées ont changé et qu'on a des emails
-        const categoriesChanged = JSON.stringify(oldTaskPreselected.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort());
-        if (categoriesChanged && this.emails.length > 0) {
-            console.log('[EmailScanner] 🔄 Déclenchement re-catégorisation auto');
-            setTimeout(() => {
-                this.recategorizeEmails();
-            }, 100);
-        }
-        
-        // Notifier les callbacks enregistrés
-        this.syncCallbacks.forEach(callback => {
-            try {
-                callback(this.settings, this.taskPreselectedCategories);
-            } catch (error) {
-                console.warn('[EmailScanner] Erreur callback sync:', error);
+        if (JSON.stringify(oldTaskPreselected.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort())) {
+            if (this.emails.length > 0) {
+                console.log('[EmailScanner] 🔄 Déclenchement re-catégorisation auto');
+                setTimeout(() => {
+                    this.recategorizeEmails();
+                }, 100);
             }
-        });
+        }
         
         // Notifier les autres modules
         setTimeout(() => {
             this.dispatchEvent('emailScannerSynced', {
                 settings: this.settings,
-                taskPreselectedCategories: this.taskPreselectedCategories,
-                source: 'EmailScanner'
+                taskPreselectedCategories: this.taskPreselectedCategories
             });
         }, 10);
         
-        this.syncInProgress = false;
         console.log('[EmailScanner] ✅ Synchronisation terminée');
     }
 
     // ================================================
-    // NOUVELLES MÉTHODES DE MISE À JOUR DIRECTE - RENFORCÉES
+    // SYNCHRONISATION AVEC CATEGORYMANAGER - AMÉLIORÉE
+    // ================================================
+    loadSettingsFromCategoryManager() {
+        if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
+            this.settings = window.categoryManager.getSettings();
+            this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+            console.log('[EmailScanner] Paramètres chargés depuis CategoryManager:', this.settings);
+            console.log('[EmailScanner] Catégories pré-sélectionnées:', this.taskPreselectedCategories);
+        } else {
+            console.warn('[EmailScanner] CategoryManager non disponible, utilisation paramètres par défaut');
+            this.settings = this.getDefaultSettings();
+            this.taskPreselectedCategories = this.settings.taskPreselectedCategories || [];
+        }
+    }
+
+    // ================================================
+    // NOUVELLES MÉTHODES DE MISE À JOUR DIRECTE
     // ================================================
     updateTaskPreselectedCategories(categories) {
-        console.log('[EmailScanner] 📋 === MISE À JOUR CATÉGORIES PRÉ-SÉLECTIONNÉES ===');
-        console.log('[EmailScanner] 📥 Nouvelles catégories reçues:', categories);
-        
-        if (!Array.isArray(categories)) {
-            console.error('[EmailScanner] ❌ Les catégories doivent être un array');
-            return false;
-        }
+        console.log('[EmailScanner] 📋 Mise à jour catégories pré-sélectionnées:', categories);
         
         const oldCategories = [...(this.taskPreselectedCategories || [])];
-        this.taskPreselectedCategories = [...categories];
+        this.taskPreselectedCategories = Array.isArray(categories) ? [...categories] : [];
         
         // Mettre à jour dans les settings généraux
-        if (!this.settings) this.settings = this.getDefaultSettings();
+        if (!this.settings) this.settings = {};
         this.settings.taskPreselectedCategories = this.taskPreselectedCategories;
         
         console.log('[EmailScanner] 📊 Changement catégories:');
@@ -319,58 +164,31 @@ class EmailScanner {
         console.log('  - Nouvelles:', this.taskPreselectedCategories);
         
         // Si on a des emails et que les catégories ont changé, re-catégoriser
-        const hasChanged = JSON.stringify(oldCategories.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort());
-        if (this.emails.length > 0 && hasChanged) {
+        if (this.emails.length > 0 && JSON.stringify(oldCategories.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort())) {
             console.log('[EmailScanner] 🔄 Re-catégorisation nécessaire');
             setTimeout(() => {
                 this.recategorizeEmails();
             }, 100);
         }
         
-        // Notifier les callbacks
-        this.syncCallbacks.forEach(callback => {
-            try {
-                callback(this.settings, this.taskPreselectedCategories);
-            } catch (error) {
-                console.warn('[EmailScanner] Erreur callback updateTaskPreselectedCategories:', error);
-            }
-        });
-        
-        console.log('[EmailScanner] ✅ === CATÉGORIES PRÉ-SÉLECTIONNÉES MISES À JOUR ===');
-        return true;
+        return this.taskPreselectedCategories;
     }
 
     getTaskPreselectedCategories() {
-        const categories = [...(this.taskPreselectedCategories || [])];
-        console.log('[EmailScanner] 📤 getTaskPreselectedCategories retourne:', categories);
-        return categories;
+        return [...(this.taskPreselectedCategories || [])];
     }
 
     forceSettingsReload() {
-        console.log('[EmailScanner] 🔄 === RECHARGEMENT FORCÉ DES PARAMÈTRES ===');
-        
-        this.syncInProgress = false; // Reset du verrou
+        console.log('[EmailScanner] 🔄 Rechargement forcé des paramètres');
         this.loadSettingsFromCategoryManager();
         
         // Notifier le changement
         setTimeout(() => {
             this.dispatchEvent('emailScannerSettingsReloaded', {
                 settings: this.settings,
-                taskPreselectedCategories: this.taskPreselectedCategories,
-                source: 'EmailScanner'
+                taskPreselectedCategories: this.taskPreselectedCategories
             });
         }, 10);
-        
-        console.log('[EmailScanner] ✅ Rechargement forcé terminé');
-    }
-
-    // ================================================
-    // SYSTÈME DE CALLBACKS POUR SYNCHRONISATION
-    // ================================================
-    onSettingsChange(callback) {
-        this.syncCallbacks.add(callback);
-        console.log('[EmailScanner] 📞 Callback sync enregistré');
-        return () => this.syncCallbacks.delete(callback);
     }
 
     // ================================================
@@ -416,7 +234,7 @@ class EmailScanner {
             }
         };
 
-        // Événement pour synchronisation forcée
+        // Nouvel événement pour synchronisation forcée
         this.forceSyncHandler = (event) => {
             console.log('[EmailScanner] 🚀 Synchronisation forcée demandée');
             this.forceSettingsReload();
@@ -428,22 +246,13 @@ class EmailScanner {
             }
         };
 
-        // Écouter les changements de catégories pré-sélectionnées spécifiquement
-        this.taskPreselectedChangeHandler = (event) => {
-            console.log('[EmailScanner] 📋 Changement catégories pré-sélectionnées reçu:', event.detail);
-            if (event.detail && event.detail.newCategories) {
-                this.updateTaskPreselectedCategories(event.detail.newCategories);
-            }
-        };
-
         // Ajouter les listeners
         window.addEventListener('categorySettingsChanged', this.settingsChangeHandler);
         window.addEventListener('settingsChanged', this.generalSettingsChangeHandler);
         window.addEventListener('forceSynchronization', this.forceSyncHandler);
-        window.addEventListener('taskPreselectedCategoriesChanged', this.taskPreselectedChangeHandler);
         
         this.eventListenersSetup = true;
-        console.log('[EmailScanner] ✅ Event listeners configurés avec synchronisation temps réel');
+        console.log('[EmailScanner] Event listeners configurés avec synchronisation temps réel');
     }
 
     // ================================================
@@ -462,9 +271,7 @@ class EmailScanner {
             includeSpam: options.includeSpam !== undefined ? options.includeSpam : !this.settings.preferences?.excludeSpam,
             maxEmails: options.maxEmails || 1000,
             autoAnalyze: options.autoAnalyze !== undefined ? options.autoAnalyze : scanSettings.autoAnalyze,
-            autoCategrize: options.autoCategrize !== undefined ? options.autoCategrize : scanSettings.autoCategrize,
-            // NOUVEAU: Inclure les catégories pré-sélectionnées dans les options
-            taskPreselectedCategories: [...this.taskPreselectedCategories]
+            autoCategrize: options.autoCategrize !== undefined ? options.autoCategrize : scanSettings.autoCategrize
         };
 
         if (this.isScanning) {
@@ -535,7 +342,7 @@ class EmailScanner {
                     breakdown: {},
                     stats: { processed: 0, errors: 0 },
                     emails: [],
-                    taskPreselectedCategories: [...this.taskPreselectedCategories]
+                    taskPreselectedCategories: this.taskPreselectedCategories
                 };
             }
 
@@ -584,7 +391,7 @@ class EmailScanner {
                     results,
                     emails: this.emails,
                     breakdown: results.breakdown,
-                    taskPreselectedCategories: [...this.taskPreselectedCategories]
+                    taskPreselectedCategories: this.taskPreselectedCategories
                 });
             }, 10);
 
@@ -608,7 +415,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // CATÉGORISATION AVEC PRISE EN COMPTE PRÉ-SÉLECTION - AMÉLIORÉE
+    // CATÉGORISATION AVEC PRISE EN COMPTE PRÉ-SÉLECTION
     // ================================================
     async categorizeEmails() {
         const total = this.emails.length;
@@ -729,7 +536,7 @@ class EmailScanner {
             const otherEmails = this.emails.filter(email => 
                 !email.isPreselectedForTasks && 
                 email.categoryConfidence > 0.8 &&
-                this.taskPreselectedCategories.includes(email.category)
+                ['tasks', 'commercial', 'finance', 'meetings'].includes(email.category)
             ).slice(0, 5 - preselectedEmails.length);
             
             preselectedEmails.push(...otherEmails);
@@ -909,10 +716,6 @@ class EmailScanner {
         return this.emails.filter(email => email.isPreselectedForTasks && email.taskSuggested);
     }
 
-    getEmailById(emailId) {
-        return this.emails.find(email => email.id === emailId);
-    }
-
     // ================================================
     // RECATÉGORISATION APRÈS CHANGEMENT DE PARAMÈTRES - AMÉLIORÉE
     // ================================================
@@ -922,7 +725,7 @@ class EmailScanner {
             return;
         }
 
-        console.log('[EmailScanner] 🔄 === RECATÉGORISATION APRÈS CHANGEMENT PARAMÈTRES ===');
+        console.log('[EmailScanner] 🔄 Recatégorisation après changement de paramètres...');
         console.log('[EmailScanner] 📋 Nouvelles catégories pré-sélectionnées:', this.taskPreselectedCategories);
         
         // Vider les catégories actuelles
@@ -940,30 +743,23 @@ class EmailScanner {
             this.dispatchEvent('emailsRecategorized', {
                 emails: this.emails,
                 breakdown: this.getDetailedResults().breakdown,
-                taskPreselectedCategories: [...this.taskPreselectedCategories],
+                taskPreselectedCategories: this.taskPreselectedCategories,
                 preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length
             });
         }, 10);
     }
 
     // ================================================
-    // MÉTHODES DE MISE À JOUR DEPUIS AUTRES MODULES - RENFORCÉES
+    // MÉTHODES DE MISE À JOUR DEPUIS AUTRES MODULES
     // ================================================
     updateSettings(newSettings) {
-        console.log('[EmailScanner] 📝 === MISE À JOUR SETTINGS ===');
-        console.log('[EmailScanner] 📥 Nouveaux settings:', newSettings);
-        
-        const oldSettings = { ...this.settings };
+        console.log('[EmailScanner] 📝 Mise à jour settings:', newSettings);
         this.settings = { ...this.settings, ...newSettings };
         
         // Mettre à jour les catégories pré-sélectionnées si présentes
         if (newSettings.taskPreselectedCategories) {
             this.updateTaskPreselectedCategories(newSettings.taskPreselectedCategories);
         }
-        
-        console.log('[EmailScanner] 📊 Settings mis à jour:');
-        console.log('  - Anciens:', oldSettings);
-        console.log('  - Nouveaux:', this.settings);
     }
 
     applyScanSettings(scanSettings) {
@@ -977,7 +773,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // STATISTIQUES ET DEBUG
+    // STATISTIQUES AVEC PRÉ-SÉLECTION
     // ================================================
     getDebugInfo() {
         const preselectedCount = this.emails.filter(e => e.isPreselectedForTasks).length;
@@ -1001,10 +797,153 @@ class EmailScanner {
             mailServiceAvailable: !!window.mailService,
             aiTaskAnalyzerAvailable: !!window.aiTaskAnalyzer,
             lastSettingsSync: this.lastSettingsSync,
-            syncInterval: !!this.syncInterval,
-            syncInProgress: this.syncInProgress,
-            syncCallbacksCount: this.syncCallbacks.size
+            syncInterval: !!this.syncInterval
         };
+    }
+
+    getCategoryTrends(days = 7) {
+        const trends = {};
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - days);
+
+        this.emails.forEach(email => {
+            const emailDate = new Date(email.receivedDateTime);
+            if (emailDate >= cutoffDate) {
+                const category = email.category || 'other';
+                if (!trends[category]) {
+                    trends[category] = { 
+                        count: 0, 
+                        confidence: 0, 
+                        preselectedCount: 0,
+                        taskSuggestedCount: 0
+                    };
+                }
+                trends[category].count++;
+                trends[category].confidence += (email.categoryConfidence || 0);
+                
+                if (email.isPreselectedForTasks) {
+                    trends[category].preselectedCount++;
+                }
+                
+                if (email.taskSuggested) {
+                    trends[category].taskSuggestedCount++;
+                }
+            }
+        });
+
+        // Calculer les moyennes
+        Object.keys(trends).forEach(cat => {
+            if (trends[cat].count > 0) {
+                trends[cat].avgConfidence = trends[cat].confidence / trends[cat].count;
+                trends[cat].preselectedPercentage = Math.round((trends[cat].preselectedCount / trends[cat].count) * 100);
+                trends[cat].taskSuggestedPercentage = Math.round((trends[cat].taskSuggestedCount / trends[cat].count) * 100);
+            }
+        });
+
+        return trends;
+    }
+
+    // ================================================
+    // EXPORT AVEC DONNÉES PRÉ-SÉLECTION
+    // ================================================
+    exportToJSON() {
+        const data = {
+            scanDate: new Date().toISOString(),
+            totalEmails: this.emails.length,
+            taskPreselectedCategories: [...this.taskPreselectedCategories],
+            stats: this.getDetailedResults().stats,
+            settings: this.settings,
+            categories: {},
+            emails: []
+        };
+
+        // Ajouter le résumé par catégorie
+        Object.entries(this.categorizedEmails).forEach(([catId, emails]) => {
+            const categoryInfo = window.categoryManager?.getCategory(catId) || 
+                { name: catId, icon: '📂' };
+            
+            const preselectedInCategory = emails.filter(e => e.isPreselectedForTasks).length;
+            
+            data.categories[catId] = {
+                name: categoryInfo.name,
+                icon: categoryInfo.icon,
+                count: emails.length,
+                percentage: Math.round((emails.length / this.emails.length) * 100),
+                preselectedCount: preselectedInCategory,
+                isPreselectedCategory: this.taskPreselectedCategories.includes(catId),
+                avgScore: emails.length > 0 ? 
+                    Math.round(emails.reduce((sum, e) => sum + (e.categoryScore || 0), 0) / emails.length) : 0
+            };
+        });
+
+        // Ajouter les détails des emails
+        data.emails = this.emails.map(email => ({
+            id: email.id,
+            date: email.receivedDateTime,
+            from: {
+                name: email.from?.emailAddress?.name,
+                email: email.from?.emailAddress?.address
+            },
+            subject: email.subject,
+            category: email.category,
+            confidence: email.categoryConfidence,
+            score: email.categoryScore,
+            hasAbsolute: email.hasAbsolute,
+            taskSuggested: email.taskSuggested,
+            isPreselectedForTasks: email.isPreselectedForTasks,
+            isSpam: email.isSpam,
+            isCC: email.isCC,
+            patterns: email.matchedPatterns?.map(p => ({
+                type: p.type,
+                keyword: p.keyword,
+                score: p.score
+            })),
+            aiAnalysis: email.aiAnalysis ? {
+                summary: email.aiAnalysis.summary,
+                importance: email.aiAnalysis.importance,
+                hasTask: !!email.aiAnalysis.mainTask
+            } : null
+        }));
+
+        return JSON.stringify(data, null, 2);
+    }
+
+    // ================================================
+    // NETTOYAGE ET DESTRUCTION - AVEC ARRÊT MONITORING
+    // ================================================
+    cleanup() {
+        console.log('[EmailScanner] 🧹 Nettoyage des données...');
+        
+        // Arrêter le monitoring de synchronisation
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+        
+        // Nettoyer les event listeners
+        if (this.settingsChangeHandler) {
+            window.removeEventListener('categorySettingsChanged', this.settingsChangeHandler);
+        }
+        if (this.generalSettingsChangeHandler) {
+            window.removeEventListener('settingsChanged', this.generalSettingsChangeHandler);
+        }
+        if (this.forceSyncHandler) {
+            window.removeEventListener('forceSynchronization', this.forceSyncHandler);
+        }
+        this.eventListenersSetup = false;
+        
+        // Nettoyer les données
+        this.emails = [];
+        this.categorizedEmails = {};
+        this.taskPreselectedCategories = [];
+        this.scanProgress = null;
+        console.log('[EmailScanner] ✅ Nettoyage terminé');
+    }
+
+    destroy() {
+        this.cleanup();
+        this.settings = {};
+        console.log('[EmailScanner] Instance détruite');
     }
 
     // ================================================
@@ -1012,11 +951,9 @@ class EmailScanner {
     // ================================================
     dispatchEvent(eventName, detail) {
         try {
-            const event = new CustomEvent(eventName, { detail });
-            window.dispatchEvent(event);
-            console.log(`[EmailScanner] 📤 Événement dispatché: ${eventName}`, detail);
+            window.dispatchEvent(new CustomEvent(eventName, { detail }));
         } catch (error) {
-            console.error(`[EmailScanner] ❌ Erreur dispatch ${eventName}:`, error);
+            console.error(`[EmailScanner] Erreur dispatch ${eventName}:`, error);
         }
     }
 
@@ -1040,6 +977,39 @@ class EmailScanner {
         return Math.round(totalScore / this.emails.length);
     }
 
+    getDefaultSettings() {
+        return {
+            activeCategories: null,
+            excludedDomains: [],
+            excludedKeywords: [],
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings'],
+            categoryExclusions: {
+                domains: [],
+                emails: []
+            },
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            automationSettings: {
+                autoCreateTasks: false,
+                groupTasksByDomain: false,
+                skipDuplicates: true,
+                autoAssignPriority: false
+            },
+            preferences: {
+                darkMode: false,
+                compactView: false,
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
+            }
+        };
+    }
+
+    // Méthodes héritées existantes...
     reset() {
         console.log('[EmailScanner] 🔄 Réinitialisation...');
         this.emails = [];
@@ -1084,11 +1054,12 @@ class EmailScanner {
         }
     }
 
-    // ================================================
-    // MÉTHODES HÉRITÉES ET COMPATIBILITÉ
-    // ================================================
     getCategorizedEmails() {
-        return { ...this.categorizedEmails };
+        return { ...this.categorizedEmails }; // Retourner une copie
+    }
+
+    getEmailById(emailId) {
+        return this.emails.find(email => email.id === emailId);
     }
 
     searchEmails(query) {
@@ -1111,49 +1082,294 @@ class EmailScanner {
         });
     }
 
-    // ================================================
-    // NETTOYAGE ET DESTRUCTION - AVEC ARRÊT MONITORING
-    // ================================================
-    cleanup() {
-        console.log('[EmailScanner] 🧹 Nettoyage des données...');
-        
-        // Arrêter le monitoring de synchronisation
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
-        }
-        
-        // Nettoyer les event listeners
-        if (this.settingsChangeHandler) {
-            window.removeEventListener('categorySettingsChanged', this.settingsChangeHandler);
-        }
-        if (this.generalSettingsChangeHandler) {
-            window.removeEventListener('settingsChanged', this.generalSettingsChangeHandler);
-        }
-        if (this.forceSyncHandler) {
-            window.removeEventListener('forceSynchronization', this.forceSyncHandler);
-        }
-        if (this.taskPreselectedChangeHandler) {
-            window.removeEventListener('taskPreselectedCategoriesChanged', this.taskPreselectedChangeHandler);
-        }
-        
-        this.eventListenersSetup = false;
-        this.syncInProgress = false;
-        this.syncCallbacks.clear();
-        
-        // Nettoyer les données
-        this.emails = [];
-        this.categorizedEmails = {};
-        this.taskPreselectedCategories = [];
-        this.scanProgress = null;
-        
-        console.log('[EmailScanner] ✅ Nettoyage terminé');
+    filterEmailsByConfidence(minConfidence = 0.7) {
+        return this.emails.filter(email => 
+            (email.categoryConfidence || 0) >= minConfidence
+        );
     }
 
-    destroy() {
-        this.cleanup();
-        this.settings = {};
-        console.log('[EmailScanner] Instance détruite');
+    getEmailGroups(categoryId = null, groupBy = 'sender') {
+        const emails = categoryId ? 
+            this.getEmailsByCategory(categoryId) : 
+            this.emails;
+
+        const groups = new Map();
+
+        emails.forEach(email => {
+            let key, name;
+            
+            if (groupBy === 'domain') {
+                key = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                name = key;
+            } else {
+                key = email.from?.emailAddress?.address || 'unknown';
+                name = email.from?.emailAddress?.name || key.split('@')[0];
+            }
+
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    sender: key,
+                    name: name,
+                    emails: [],
+                    count: 0,
+                    categories: new Set(),
+                    latestDate: null,
+                    totalScore: 0,
+                    avgConfidence: 0,
+                    hasTaskSuggestions: false,
+                    preselectedCount: 0
+                });
+            }
+
+            const group = groups.get(key);
+            group.emails.push(email);
+            group.count++;
+            group.categories.add(email.category);
+            group.totalScore += (email.categoryScore || 0);
+            
+            if (email.taskSuggested) {
+                group.hasTaskSuggestions = true;
+            }
+            
+            if (email.isPreselectedForTasks) {
+                group.preselectedCount++;
+            }
+
+            const emailDate = new Date(email.receivedDateTime);
+            if (!group.latestDate || emailDate > group.latestDate) {
+                group.latestDate = emailDate;
+            }
+        });
+
+        return Array.from(groups.values())
+            .map(g => {
+                const avgScore = g.count > 0 ? Math.round(g.totalScore / g.count) : 0;
+                const avgConfidence = g.count > 0 ? 
+                    g.emails.reduce((sum, e) => sum + (e.categoryConfidence || 0), 0) / g.count : 0;
+                
+                return {
+                    ...g,
+                    categories: Array.from(g.categories),
+                    avgScore,
+                    avgConfidence: Math.round(avgConfidence * 100) / 100,
+                    preselectedPercentage: g.count > 0 ? Math.round((g.preselectedCount / g.count) * 100) : 0
+                };
+            })
+            .sort((a, b) => b.count - a.count);
+    }
+
+    exportResults(format = 'csv') {
+        console.log('[EmailScanner] 📤 Export des résultats en', format);
+        
+        if (this.emails.length === 0) {
+            if (window.uiManager) {
+                window.uiManager.showToast('Aucune donnée à exporter', 'warning');
+            }
+            return;
+        }
+
+        try {
+            let content, filename, mimeType;
+
+            if (format === 'csv') {
+                content = this.exportToCSV();
+                filename = `email_scan_${new Date().toISOString().split('T')[0]}.csv`;
+                mimeType = 'text/csv;charset=utf-8;';
+            } else {
+                content = this.exportToJSON();
+                filename = `email_scan_${new Date().toISOString().split('T')[0]}.json`;
+                mimeType = 'application/json;charset=utf-8;';
+            }
+
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(`${this.emails.length} emails exportés`, 'success');
+            }
+            
+        } catch (error) {
+            console.error('[EmailScanner] ❌ Erreur export:', error);
+            if (window.uiManager) {
+                window.uiManager.showToast('Erreur lors de l\'export', 'error');
+            }
+        }
+    }
+
+    exportToCSV() {
+        const rows = [
+            ['Date', 'De', 'Email', 'Sujet', 'Catégorie', 'Confiance', 'Score', 'Patterns', 'Absolu', 'Tâche Suggérée', 'Pré-sélectionné']
+        ];
+
+        this.emails.forEach(email => {
+            const categoryInfo = window.categoryManager?.getCategory(email.category) || 
+                { name: email.category || 'other' };
+            
+            rows.push([
+                new Date(email.receivedDateTime).toLocaleString('fr-FR'),
+                email.from?.emailAddress?.name || '',
+                email.from?.emailAddress?.address || '',
+                email.subject || 'Sans sujet',
+                categoryInfo.name,
+                Math.round((email.categoryConfidence || 0) * 100) + '%',
+                email.categoryScore || 0,
+                (email.matchedPatterns || []).length,
+                email.hasAbsolute ? 'Oui' : 'Non',
+                email.taskSuggested ? 'Oui' : 'Non',
+                email.isPreselectedForTasks ? 'Oui' : 'Non'
+            ]);
+        });
+
+        const csv = rows.map(row => 
+            row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+        ).join('\n');
+
+        // Ajouter BOM pour UTF-8
+        return '\ufeff' + csv;
+    }
+
+    async performBatchAction(emailIds, action) {
+        console.log(`[EmailScanner] 🔄 Action ${action} sur ${emailIds.length} emails`);
+
+        if (!window.mailService) {
+            console.error('[EmailScanner] MailService non disponible');
+            return;
+        }
+
+        try {
+            switch (action) {
+                case 'markAsRead':
+                    if (typeof window.mailService.markAsRead === 'function') {
+                        const promises = emailIds.map(id => window.mailService.markAsRead(id));
+                        await Promise.allSettled(promises);
+                    }
+                    break;
+
+                case 'delete':
+                    if (typeof window.mailService.deleteEmails === 'function') {
+                        await window.mailService.deleteEmails(emailIds);
+                    }
+                    break;
+
+                case 'moveToSpam':
+                    if (typeof window.mailService.moveToFolder === 'function') {
+                        const spamPromises = emailIds.map(id => 
+                            window.mailService.moveToFolder(id, 'junkemail')
+                        );
+                        await Promise.allSettled(spamPromises);
+                    }
+                    break;
+
+                default:
+                    console.warn(`[EmailScanner] Action inconnue: ${action}`);
+            }
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(`Action "${action}" effectuée sur ${emailIds.length} emails`, 'success');
+            }
+            
+        } catch (error) {
+            console.error(`[EmailScanner] Erreur action batch:`, error);
+            if (window.uiManager) {
+                window.uiManager.showToast(`Erreur: ${error.message}`, 'error');
+            }
+        }
+    }
+
+    testCategorization(emailSample) {
+        console.log('[EmailScanner] 🧪 === TEST CATEGORISATION ===');
+        
+        if (!window.categoryManager) {
+            console.error('[EmailScanner] CategoryManager non disponible');
+            return null;
+        }
+        
+        const result = window.categoryManager.analyzeEmail(emailSample);
+        console.log('Email:', emailSample.subject);
+        console.log('Résultat:', result.category);
+        console.log('Score:', result.score);
+        console.log('Confiance:', Math.round(result.confidence * 100) + '%');
+        console.log('Patterns:', result.matchedPatterns);
+        console.log('Match absolu:', result.hasAbsolute ? '✅ OUI' : '❌ NON');
+        console.log('Pré-sélectionné pour tâche:', this.taskPreselectedCategories.includes(result.category) ? '⭐ OUI' : '❌ NON');
+        console.log('============================');
+        
+        return result;
+    }
+
+    optimizeMemory() {
+        // Garder seulement les propriétés essentielles des emails
+        this.emails.forEach(email => {
+            delete email.body; // Supprimer le corps complet pour économiser la mémoire
+            delete email.aiAnalysisError;
+            delete email.categoryError;
+        });
+        
+        console.log('[EmailScanner] 🚀 Mémoire optimisée');
+    }
+
+    enableDebugMode() {
+        this.debugMode = true;
+        if (window.categoryManager) {
+            window.categoryManager.setDebugMode(true);
+        }
+        console.log('[EmailScanner] 🐛 Mode debug activé');
+    }
+
+    disableDebugMode() {
+        this.debugMode = false;
+        if (window.categoryManager) {
+            window.categoryManager.setDebugMode(false);
+        }
+        console.log('[EmailScanner] Mode debug désactivé');
+    }
+
+    getTopSenders(limit = 10) {
+        const senderCounts = {};
+        
+        this.emails.forEach(email => {
+            const senderEmail = email.from?.emailAddress?.address;
+            if (senderEmail) {
+                if (!senderCounts[senderEmail]) {
+                    senderCounts[senderEmail] = {
+                        email: senderEmail,
+                        name: email.from?.emailAddress?.name || senderEmail,
+                        count: 0,
+                        categories: new Set(),
+                        hasTaskSuggestions: false,
+                        preselectedCount: 0
+                    };
+                }
+                senderCounts[senderEmail].count++;
+                senderCounts[senderEmail].categories.add(email.category);
+                if (email.taskSuggested) {
+                    senderCounts[senderEmail].hasTaskSuggestions = true;
+                }
+                if (email.isPreselectedForTasks) {
+                    senderCounts[senderEmail].preselectedCount++;
+                }
+            }
+        });
+
+        return Object.values(senderCounts)
+            .map(sender => ({
+                ...sender,
+                categories: Array.from(sender.categories),
+                preselectedPercentage: sender.count > 0 ? Math.round((sender.preselectedCount / sender.count) * 100) : 0
+            }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, limit);
     }
 }
 
@@ -1164,4 +1380,33 @@ if (window.emailScanner) {
 
 window.emailScanner = new EmailScanner();
 
-console.log('✅ EmailScanner v5.3 loaded - Réparation synchronisation complète');
+// Méthodes utilitaires globales pour le debug
+window.testEmailScanner = function() {
+    console.group('🧪 TEST EmailScanner');
+    
+    const testEmail = {
+        subject: "Newsletter hebdomadaire - Désabonnez-vous ici",
+        from: { emailAddress: { address: "newsletter@example.com", name: "Example News" } },
+        bodyPreview: "Voici votre newsletter avec un lien pour vous désinscrire",
+        receivedDateTime: new Date().toISOString()
+    };
+    
+    const result = window.emailScanner.testCategorization(testEmail);
+    console.log('Debug Info:', window.emailScanner.getDebugInfo());
+    
+    console.groupEnd();
+    return result;
+};
+
+window.debugEmailCategories = function() {
+    console.group('📊 DEBUG Catégories');
+    console.log('Settings:', window.emailScanner.settings);
+    console.log('Task Preselected Categories:', window.emailScanner.taskPreselectedCategories);
+    console.log('Emails total:', window.emailScanner.emails.length);
+    console.log('Emails pré-sélectionnés:', window.emailScanner.getPreselectedEmails().length);
+    console.log('Breakdown:', window.emailScanner.getDetailedResults().breakdown);
+    console.log('Top senders:', window.emailScanner.getTopSenders(5));
+    console.groupEnd();
+};
+
+console.log('✅ EmailScanner v5.2 loaded - Synchronisation temps réel fixée');
