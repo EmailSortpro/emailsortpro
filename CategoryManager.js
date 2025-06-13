@@ -1100,7 +1100,7 @@ updateCategoryKeywords(categoryId, keywords) {
         console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
     }
 
-analyzeEmail(email) {
+    analyzeEmail(email) {
     if (!email) return null;
     
     const normalizedText = this.normalizeText(email);
@@ -1151,21 +1151,21 @@ analyzeEmail(email) {
         let hasAbsolute = false;
         let hasExclusion = false;
         
-        // CORRECTION: Charger les mots-clés correctement
-        const keywords = this.getCategoryKeywords(categoryId);
+        // CORRECTION: Déclarer et charger les mots-clés correctement
+        let keywords = this.getCategoryKeywords(categoryId);
         
         if (!keywords || (!keywords.absolute?.length && !keywords.strong?.length && !keywords.weak?.length)) {
             // Si pas de mots-clés, utiliser ceux du catalogue pondéré
             const weightedKw = this.weightedKeywords[categoryId];
             if (weightedKw) {
-                Object.assign(keywords, weightedKw);
+                keywords = { ...weightedKw };
             }
         }
         
         // Analyser avec les mots-clés
         if (keywords) {
             // Vérifier les exclusions
-            if (keywords.exclusions) {
+            if (keywords.exclusions && keywords.exclusions.length > 0) {
                 for (const exclusion of keywords.exclusions) {
                     if (normalizedText.includes(exclusion.toLowerCase())) {
                         hasExclusion = true;
@@ -1181,7 +1181,7 @@ analyzeEmail(email) {
             
             if (!hasExclusion) {
                 // Analyser les mots-clés absolus
-                if (keywords.absolute) {
+                if (keywords.absolute && keywords.absolute.length > 0) {
                     for (const keyword of keywords.absolute) {
                         if (normalizedText.includes(keyword.toLowerCase())) {
                             hasAbsolute = true;
@@ -1196,7 +1196,7 @@ analyzeEmail(email) {
                 }
                 
                 // Analyser les mots-clés forts
-                if (keywords.strong) {
+                if (keywords.strong && keywords.strong.length > 0) {
                     for (const keyword of keywords.strong) {
                         if (normalizedText.includes(keyword.toLowerCase())) {
                             matchedPatterns.push({
@@ -1210,7 +1210,7 @@ analyzeEmail(email) {
                 }
                 
                 // Analyser les mots-clés faibles
-                if (keywords.weak) {
+                if (keywords.weak && keywords.weak.length > 0) {
                     for (const keyword of keywords.weak) {
                         if (normalizedText.includes(keyword.toLowerCase())) {
                             matchedPatterns.push({
