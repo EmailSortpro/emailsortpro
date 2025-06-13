@@ -528,6 +528,32 @@ class CategoriesPage {
         this.setupKeywordEvents();
     }
 
+ getCategoryKeywords(categoryId) {
+    // CORRECTION: D'abord vérifier les catégories custom
+    if (this.customCategories[categoryId]) {
+        const customKeywords = this.customCategories[categoryId].keywords;
+        if (customKeywords) {
+            console.log(`[CategoryManager] 📋 Mots-clés custom pour ${categoryId}:`, customKeywords);
+            return customKeywords;
+        }
+    }
+    
+    // Ensuite vérifier le catalogue pondéré
+    if (this.weightedKeywords[categoryId]) {
+        console.log(`[CategoryManager] 📋 Mots-clés pondérés pour ${categoryId}`);
+        return this.weightedKeywords[categoryId];
+    }
+    
+    // Enfin, retourner une structure vide
+    console.log(`[CategoryManager] ⚠️ Aucun mot-clé trouvé pour ${categoryId}`);
+    return {
+        absolute: [],
+        strong: [],
+        weak: [],
+        exclusions: []
+    };
+}   
+
     renderKeywordSection(type, title, keywords, icon) {
         const typeClass = type === 'exclusions' ? 'exclusions' : type;
         
@@ -634,38 +660,51 @@ class CategoriesPage {
         }
     }
 
-    saveKeywords() {
-        if (!this.editingCategoryId) {
-            this.showToast('Erreur: catégorie non sélectionnée', 'error');
-            return;
-        }
-        
-        try {
-            const keywords = {
-                absolute: this.getKeywordsFromList('absolute'),
-                strong: this.getKeywordsFromList('strong'),
-                weak: this.getKeywordsFromList('weak'),
-                exclusions: this.getKeywordsFromList('exclusions')
-            };
-            
-            console.log('[CategoriesPage] Sauvegarde mots-clés:', keywords);
-            
-            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
-            
-            this.closeModal();
-            this.showToast('Mots-clés sauvegardés avec succès', 'success');
-            this.refreshCurrentTab();
-            
-            // Déclencher la synchronisation
-            setTimeout(() => {
-                this.forceSynchronization();
-            }, 100);
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur sauvegarde mots-clés:', error);
-            this.showToast('Erreur lors de la sauvegarde', 'error');
-        }
+saveKeywords() {
+    if (!this.editingCategoryId) {
+        this.showToast('Erreur: catégorie non sélectionnée', 'error');
+        return;
     }
+    
+    try {
+        const keywords = {
+            absolute: this.getKeywordsFromList('absolute'),
+            strong: this.getKeywordsFromList('strong'),
+            weak: this.getKeywordsFromList('weak'),
+            exclusions: this.getKeywordsFromList('exclusions')
+        };
+        
+        console.log('[CategoriesPage] Sauvegarde mots-clés:', keywords);
+        
+        // Mettre à jour dans CategoryManager
+        window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+        
+        this.closeModal();
+        this.showToast('Mots-clés sauvegardés avec succès', 'success');
+        this.refreshCurrentTab();
+        
+        // CORRECTION: Forcer la mise à jour immédiate de l'EmailScanner
+        setTimeout(() => {
+            // Notifier spécifiquement l'EmailScanner
+            window.dispatchEvent(new CustomEvent('keywordsUpdated', {
+                detail: {
+                    categoryId: this.editingCategoryId,
+                    keywords: keywords,
+                    source: 'CategoriesPage'
+                }
+            }));
+            
+            // Forcer aussi une synchronisation globale
+            this.forceSynchronization();
+        }, 100);
+        
+    } catch (error) {
+        console.error('[CategoriesPage] Erreur sauvegarde mots-clés:', error);
+        this.showToast('Erreur lors de la sauvegarde', 'error');
+    }
+}
+
+
 
     getKeywordsFromList(type) {
         const keywordTags = document.querySelectorAll(`.keywords-list[data-type="${type}"] .keyword-tag`);
