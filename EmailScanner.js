@@ -927,48 +927,56 @@ async categorizeEmails(overridePreselectedCategories = null) {
         
         return effectiveness;
     }
-
-    // ================================================
-    // RECATÉGORISATION APRÈS CHANGEMENT RENFORCÉE
-    // ================================================
-    async recategorizeEmails() {
-        if (this.emails.length === 0) {
-            console.log('[EmailScanner] Aucun email à recatégoriser');
-            return;
-        }
-
-        console.log('[EmailScanner] 🔄 === DÉBUT RE-CATÉGORISATION ===');
-        console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées actuelles:', this.taskPreselectedCategories);
-        console.log('[EmailScanner] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
-        
-        // Réinitialiser les métriques
-        this.scanMetrics.startTime = Date.now();
-        this.scanMetrics.categorizedCount = 0;
-        this.scanMetrics.keywordMatches = {};
-        this.scanMetrics.categoryDistribution = {};
-        
-        // Vider les catégories actuelles
-        Object.keys(this.categorizedEmails).forEach(cat => {
-            this.categorizedEmails[cat] = [];
-        });
-
-        // Recatégoriser tous les emails
-        await this.categorizeEmails();
-        
-        console.log('[EmailScanner] ✅ Re-catégorisation terminée');
-        
-        // Notifier les autres modules
-        setTimeout(() => {
-            this.dispatchEvent('emailsRecategorized', {
-                emails: this.emails,
-                breakdown: this.getDetailedResults().breakdown,
-                taskPreselectedCategories: this.taskPreselectedCategories,
-                preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length,
-                keywordStats: this.scanMetrics.keywordMatches
-            });
-        }, 10);
+async recategorizeEmails() {
+    if (this.emails.length === 0) {
+        console.log('[EmailScanner] Aucun email à recatégoriser');
+        return;
     }
 
+    console.log('[EmailScanner] 🔄 === DÉBUT RE-CATÉGORISATION ===');
+    console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées actuelles:', this.taskPreselectedCategories);
+    console.log('[EmailScanner] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
+    
+    // CORRECTION: Forcer le rechargement des catégories avant la recatégorisation
+    if (window.categoryManager) {
+        // Recharger toutes les catégories, y compris les custom
+        const allCategories = window.categoryManager.getCategories();
+        console.log('[EmailScanner] 📂 Catégories disponibles:', Object.keys(allCategories));
+        
+        // Vérifier si des catégories custom existent
+        const customCats = Object.entries(allCategories).filter(([id, cat]) => cat.isCustom);
+        if (customCats.length > 0) {
+            console.log('[EmailScanner] 🎨 Catégories personnalisées détectées:', customCats.map(([id, cat]) => cat.name));
+        }
+    }
+    
+    // Réinitialiser les métriques
+    this.scanMetrics.startTime = Date.now();
+    this.scanMetrics.categorizedCount = 0;
+    this.scanMetrics.keywordMatches = {};
+    this.scanMetrics.categoryDistribution = {};
+    
+    // Vider les catégories actuelles
+    Object.keys(this.categorizedEmails).forEach(cat => {
+        this.categorizedEmails[cat] = [];
+    });
+
+    // Recatégoriser tous les emails
+    await this.categorizeEmails();
+    
+    console.log('[EmailScanner] ✅ Re-catégorisation terminée');
+    
+    // Notifier les autres modules
+    setTimeout(() => {
+        this.dispatchEvent('emailsRecategorized', {
+            emails: this.emails,
+            breakdown: this.getDetailedResults().breakdown,
+            taskPreselectedCategories: this.taskPreselectedCategories,
+            preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length,
+            keywordStats: this.scanMetrics.keywordMatches
+        });
+    }, 10);
+}
     // ================================================
     // MÉTHODES D'ACCÈS AUX DONNÉES (inchangées)
     // ================================================
@@ -1326,47 +1334,63 @@ async categorizeEmails(overridePreselectedCategories = null) {
             console.error(`[EmailScanner] Erreur dispatch ${eventName}:`, error);
         }
     }
+setupEventListeners() {
+    if (this.eventListenersSetup) {
+        return;
+    }
 
-    // ================================================
-    // GESTION DES ÉVÉNEMENTS (simplifiée pour éviter conflits)
-    // ================================================
-    setupEventListeners() {
-        if (this.eventListenersSetup) {
+    // Écouter seulement les événements externes spécifiques
+    this.keywordsUpdateHandler = (event) => {
+        console.log('[EmailScanner] 🔑 Mots-clés mis à jour pour catégorie:', event.detail.categoryId);
+        if (this.emails.length > 0) {
+            setTimeout(() => {
+                this.recategorizeEmails();
+            }, 200);
+        }
+    };
+
+    this.forceSyncHandler = (event) => {
+        // Ignorer nos propres événements
+        if (event.detail?.source === 'EmailScanner') {
             return;
         }
-
-        // Écouter seulement les événements externes spécifiques
-        this.keywordsUpdateHandler = (event) => {
-            console.log('[EmailScanner] 🔑 Mots-clés mis à jour pour catégorie:', event.detail.categoryId);
+        
+        console.log('[EmailScanner] 🚀 Synchronisation forcée demandée');
+        this.forceSettingsReload();
+        
+        if (this.emails.length > 0) {
+            setTimeout(() => {
+                this.recategorizeEmails();
+            }, 100);
+        }
+    };
+    
+    // NOUVEAU: Écouter les mises à jour de catégories
+    this.categoriesUpdateHandler = (event) => {
+        console.log('[EmailScanner] 📂 Catégories mises à jour:', event.detail);
+        
+        // Recharger les catégories depuis CategoryManager
+        if (window.categoryManager) {
+            // Forcer le rechargement complet
+            this.loadSettingsFromCategoryManager();
+            
+            // Si des emails sont déjà chargés, les recatégoriser
             if (this.emails.length > 0) {
+                console.log('[EmailScanner] 🔄 Recatégorisation suite à nouvelle catégorie');
                 setTimeout(() => {
                     this.recategorizeEmails();
                 }, 200);
             }
-        };
+        }
+    };
 
-        this.forceSyncHandler = (event) => {
-            // Ignorer nos propres événements
-            if (event.detail?.source === 'EmailScanner') {
-                return;
-            }
-            
-            console.log('[EmailScanner] 🚀 Synchronisation forcée demandée');
-            this.forceSettingsReload();
-            
-            if (this.emails.length > 0) {
-                setTimeout(() => {
-                    this.recategorizeEmails();
-                }, 100);
-            }
-        };
-
-        window.addEventListener('keywordsUpdated', this.keywordsUpdateHandler);
-        window.addEventListener('forceSynchronization', this.forceSyncHandler);
-        
-        this.eventListenersSetup = true;
-        console.log('[EmailScanner] ✅ Event listeners configurés (anti-boucle)');
-    }
+    window.addEventListener('categoriesUpdated', this.categoriesUpdateHandler);
+    window.addEventListener('keywordsUpdated', this.keywordsUpdateHandler);
+    window.addEventListener('forceSynchronization', this.forceSyncHandler);
+    
+    this.eventListenersSetup = true;
+    console.log('[EmailScanner] ✅ Event listeners configurés (avec support catégories)');
+}
 
     // ================================================
     // EXPORT AVEC DONNÉES PRÉ-SÉLECTION ET MOTS-CLÉS (inchangé)
@@ -1636,42 +1660,44 @@ async categorizeEmails(overridePreselectedCategories = null) {
         console.log('[EmailScanner] Mode debug désactivé');
     }
 
-    // ================================================
-    // NETTOYAGE ET DESTRUCTION
-    // ================================================
-    cleanup() {
-        console.log('[EmailScanner] 🧹 Nettoyage des données...');
-        
-        // Arrêter le monitoring de synchronisation
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
-        }
-        
-        // Nettoyer le listener CategoryManager
-        if (this.changeListener && typeof this.changeListener === 'function') {
-            this.changeListener(); // Appeler la fonction de nettoyage retournée par addChangeListener
-            this.changeListener = null;
-        }
-        
-        // Nettoyer les event listeners
-        if (this.keywordsUpdateHandler) {
-            window.removeEventListener('keywordsUpdated', this.keywordsUpdateHandler);
-        }
-        if (this.forceSyncHandler) {
-            window.removeEventListener('forceSynchronization', this.forceSyncHandler);
-        }
-        this.eventListenersSetup = false;
-        
-        // Nettoyer les données
-        this.emails = [];
-        this.categorizedEmails = {};
-        this.taskPreselectedCategories = [];
-        this.scanProgress = null;
-        this.scanMetrics = { startTime: null, categorizedCount: 0, keywordMatches: {}, categoryDistribution: {} };
-        
-        console.log('[EmailScanner] ✅ Nettoyage terminé');
+cleanup() {
+    console.log('[EmailScanner] 🧹 Nettoyage des données...');
+    
+    // Arrêter le monitoring de synchronisation
+    if (this.syncInterval) {
+        clearInterval(this.syncInterval);
+        this.syncInterval = null;
     }
+    
+    // Nettoyer le listener CategoryManager
+    if (this.changeListener && typeof this.changeListener === 'function') {
+        this.changeListener(); // Appeler la fonction de nettoyage retournée par addChangeListener
+        this.changeListener = null;
+    }
+    
+    // Nettoyer les event listeners
+    if (this.keywordsUpdateHandler) {
+        window.removeEventListener('keywordsUpdated', this.keywordsUpdateHandler);
+    }
+    if (this.forceSyncHandler) {
+        window.removeEventListener('forceSynchronization', this.forceSyncHandler);
+    }
+    // NOUVEAU: Nettoyer le listener de catégories
+    if (this.categoriesUpdateHandler) {
+        window.removeEventListener('categoriesUpdated', this.categoriesUpdateHandler);
+    }
+    
+    this.eventListenersSetup = false;
+    
+    // Nettoyer les données
+    this.emails = [];
+    this.categorizedEmails = {};
+    this.taskPreselectedCategories = [];
+    this.scanProgress = null;
+    this.scanMetrics = { startTime: null, categorizedCount: 0, keywordMatches: {}, categoryDistribution: {} };
+    
+    console.log('[EmailScanner] ✅ Nettoyage terminé');
+}
 
     destroy() {
         this.cleanup();
