@@ -1707,7 +1707,7 @@ isInCC(email, normalizedText) {
         return email.split('@')[1]?.toLowerCase() || 'unknown';
     }
 
-    findInText(text, keyword) {
+findInText(text, keyword) {
         if (!text || !keyword) return false;
         
         const normalizedText = text.toLowerCase()
