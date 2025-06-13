@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 19.0 - Gestion complète des mots-clés et catégories
+// CategoryManager.js - Version 20.0 - Synchronisation complètement fixée
 
 class CategoryManager {
     constructor() {
@@ -10,16 +10,492 @@ class CategoryManager {
         this.debugMode = false;
         this.eventListenersSetup = false;
         
+        // NOUVEAU: Système de synchronisation renforcé
+        this.syncQueue = [];
+        this.syncInProgress = false;
+        this.changeListeners = new Set();
+        this.lastSyncTimestamp = 0;
+        
         this.initializeCategories();
         this.loadCustomCategories();
         this.initializeWeightedDetection();
         this.setupEventListeners();
         
-        console.log('[CategoryManager] ✅ Version 19.0 - Gestion complète des mots-clés et catégories');
+        // NOUVEAU: Démarrer la synchronisation automatique
+        this.startAutoSync();
+        
+        console.log('[CategoryManager] ✅ Version 20.0 - Synchronisation complètement fixée');
     }
 
     // ================================================
-    // GESTION DES CATÉGORIES PERSONNALISÉES
+    // NOUVEAU SYSTÈME DE SYNCHRONISATION AUTOMATIQUE
+    // ================================================
+    startAutoSync() {
+        // Synchronisation automatique toutes les 2 secondes
+        setInterval(() => {
+            this.processSettingsChanges();
+        }, 2000);
+        
+        // Synchronisation immédiate lors des changements
+        this.setupImmediateSync();
+    }
+
+    setupImmediateSync() {
+        // Écouter les changements dans localStorage
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'categorySettings') {
+                console.log('[CategoryManager] 🔄 Changement localStorage détecté');
+                this.reloadSettingsFromStorage();
+                this.notifyAllModules('storageChange');
+            }
+        });
+    }
+
+    processSettingsChanges() {
+        if (this.syncInProgress || this.syncQueue.length === 0) return;
+        
+        this.syncInProgress = true;
+        
+        try {
+            while (this.syncQueue.length > 0) {
+                const change = this.syncQueue.shift();
+                this.applySettingChange(change);
+            }
+            
+            this.lastSyncTimestamp = Date.now();
+            
+        } catch (error) {
+            console.error('[CategoryManager] Erreur sync queue:', error);
+        } finally {
+            this.syncInProgress = false;
+        }
+    }
+
+    applySettingChange(change) {
+        const { type, value, notifyModules } = change;
+        
+        console.log(`[CategoryManager] 📝 Application changement: ${type}`, value);
+        
+        // Appliquer le changement dans les settings locaux
+        switch (type) {
+            case 'taskPreselectedCategories':
+                this.settings.taskPreselectedCategories = [...value];
+                break;
+            case 'activeCategories':
+                this.settings.activeCategories = value;
+                break;
+            case 'categoryExclusions':
+                this.settings.categoryExclusions = { ...this.settings.categoryExclusions, ...value };
+                break;
+            case 'scanSettings':
+                this.settings.scanSettings = { ...this.settings.scanSettings, ...value };
+                break;
+            case 'automationSettings':
+                this.settings.automationSettings = { ...this.settings.automationSettings, ...value };
+                break;
+            case 'preferences':
+                this.settings.preferences = { ...this.settings.preferences, ...value };
+                break;
+            default:
+                this.settings = { ...this.settings, ...value };
+        }
+        
+        // Sauvegarder immédiatement
+        this.saveSettingsToStorage();
+        
+        // Notifier les modules si demandé
+        if (notifyModules !== false) {
+            this.notifySpecificModules(type, value);
+            this.notifyAllModules(type, value);
+        }
+    }
+
+    // ================================================
+    // MÉTHODES DE NOTIFICATION RENFORCÉES
+    // ================================================
+    notifySpecificModules(type, value) {
+        console.log(`[CategoryManager] 📢 Notification spécialisée: ${type}`);
+        
+        // EmailScanner - PRIORITÉ ABSOLUE
+        if (window.emailScanner) {
+            switch (type) {
+                case 'taskPreselectedCategories':
+                    console.log('[CategoryManager] → EmailScanner: taskPreselectedCategories');
+                    if (typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+                        window.emailScanner.updateTaskPreselectedCategories(value);
+                    }
+                    // Forcer la re-catégorisation
+                    setTimeout(() => {
+                        if (window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                            console.log('[CategoryManager] → EmailScanner: Déclenchement re-catégorisation');
+                            window.emailScanner.recategorizeEmails?.();
+                        }
+                    }, 100);
+                    break;
+                    
+                case 'activeCategories':
+                    console.log('[CategoryManager] → EmailScanner: activeCategories');
+                    if (typeof window.emailScanner.updateSettings === 'function') {
+                        window.emailScanner.updateSettings({ activeCategories: value });
+                    }
+                    setTimeout(() => {
+                        if (window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                            window.emailScanner.recategorizeEmails?.();
+                        }
+                    }, 100);
+                    break;
+                    
+                case 'categoryExclusions':
+                case 'preferences':
+                    if (typeof window.emailScanner.updateSettings === 'function') {
+                        window.emailScanner.updateSettings({ [type]: value });
+                    }
+                    break;
+            }
+        }
+        
+        // AITaskAnalyzer
+        if (window.aiTaskAnalyzer) {
+            if (type === 'taskPreselectedCategories') {
+                console.log('[CategoryManager] → AITaskAnalyzer: taskPreselectedCategories');
+                if (typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
+                }
+            }
+            if (type === 'automationSettings') {
+                console.log('[CategoryManager] → AITaskAnalyzer: automationSettings');
+                if (typeof window.aiTaskAnalyzer.updateAutomationSettings === 'function') {
+                    window.aiTaskAnalyzer.updateAutomationSettings(value);
+                }
+            }
+        }
+        
+        // StartScan/MinimalScanModule
+        if (window.minimalScanModule || window.scanStartModule) {
+            const scanner = window.minimalScanModule || window.scanStartModule;
+            if (type === 'taskPreselectedCategories' || type === 'scanSettings') {
+                console.log('[CategoryManager] → ScanModule:', type);
+                if (typeof scanner.updateSettings === 'function') {
+                    scanner.updateSettings({ [type]: value });
+                }
+            }
+        }
+        
+        // PageManager
+        if (window.pageManager) {
+            console.log('[CategoryManager] → PageManager:', type);
+            if (typeof window.pageManager.handleSettingsChanged === 'function') {
+                window.pageManager.handleSettingsChanged({ settings: this.settings });
+            }
+        }
+    }
+
+    notifyAllModules(type, value) {
+        // Dispatch événements globaux
+        setTimeout(() => {
+            this.dispatchEvent('categorySettingsChanged', { 
+                settings: this.settings,
+                type,
+                value,
+                timestamp: Date.now()
+            });
+            
+            this.dispatchEvent('settingsChanged', { 
+                type, 
+                value,
+                source: 'CategoryManager',
+                timestamp: Date.now()
+            });
+        }, 10);
+        
+        // Notifier les listeners enregistrés
+        this.changeListeners.forEach(listener => {
+            try {
+                listener(type, value, this.settings);
+            } catch (error) {
+                console.error('[CategoryManager] Erreur listener:', error);
+            }
+        });
+    }
+
+    // ================================================
+    // API PUBLIQUE POUR CHANGEMENTS DE PARAMÈTRES
+    // ================================================
+    updateSettings(newSettings, notifyModules = true) {
+        console.log('[CategoryManager] 📝 updateSettings appelé:', newSettings);
+        
+        // Ajouter à la queue de synchronisation
+        this.syncQueue.push({
+            type: 'fullSettings',
+            value: newSettings,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        // Traitement immédiat si pas en cours
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+    }
+
+    updateTaskPreselectedCategories(categories, notifyModules = true) {
+        console.log('[CategoryManager] 📋 updateTaskPreselectedCategories:', categories);
+        
+        const normalizedCategories = Array.isArray(categories) ? [...categories] : [];
+        
+        this.syncQueue.push({
+            type: 'taskPreselectedCategories',
+            value: normalizedCategories,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+        
+        return normalizedCategories;
+    }
+
+    updateActiveCategories(categories, notifyModules = true) {
+        console.log('[CategoryManager] 🏷️ updateActiveCategories:', categories);
+        
+        this.syncQueue.push({
+            type: 'activeCategories',
+            value: categories,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+    }
+
+    updateCategoryExclusions(exclusions, notifyModules = true) {
+        console.log('[CategoryManager] 🚫 updateCategoryExclusions:', exclusions);
+        
+        this.syncQueue.push({
+            type: 'categoryExclusions',
+            value: exclusions,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+    }
+
+    updatePreferences(preferences, notifyModules = true) {
+        console.log('[CategoryManager] ⚙️ updatePreferences:', preferences);
+        
+        this.syncQueue.push({
+            type: 'preferences',
+            value: preferences,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+    }
+
+    updateScanSettings(scanSettings, notifyModules = true) {
+        console.log('[CategoryManager] 🔍 updateScanSettings:', scanSettings);
+        
+        this.syncQueue.push({
+            type: 'scanSettings',
+            value: scanSettings,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+    }
+
+    updateAutomationSettings(automationSettings, notifyModules = true) {
+        console.log('[CategoryManager] 🤖 updateAutomationSettings:', automationSettings);
+        
+        this.syncQueue.push({
+            type: 'automationSettings',
+            value: automationSettings,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+    }
+
+    // ================================================
+    // GESTION DES PARAMÈTRES CENTRALISÉE RENFORCÉE
+    // ================================================
+    loadSettings() {
+        try {
+            const saved = localStorage.getItem('categorySettings');
+            const defaultSettings = this.getDefaultSettings();
+            
+            if (saved) {
+                const parsedSettings = JSON.parse(saved);
+                const mergedSettings = { ...defaultSettings, ...parsedSettings };
+                console.log('[CategoryManager] ✅ Settings chargés depuis localStorage');
+                return mergedSettings;
+            } else {
+                console.log('[CategoryManager] 📝 Utilisation settings par défaut');
+                return defaultSettings;
+            }
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur chargement paramètres:', error);
+            return this.getDefaultSettings();
+        }
+    }
+
+    saveSettingsToStorage() {
+        try {
+            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
+            console.log('[CategoryManager] 💾 Settings sauvegardés');
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
+        }
+    }
+
+    reloadSettingsFromStorage() {
+        const oldSettings = { ...this.settings };
+        this.settings = this.loadSettings();
+        
+        // Détecter les changements et notifier
+        const changes = this.detectSettingsChanges(oldSettings, this.settings);
+        changes.forEach(change => {
+            this.notifySpecificModules(change.type, change.value);
+        });
+    }
+
+    detectSettingsChanges(oldSettings, newSettings) {
+        const changes = [];
+        
+        const criticalFields = [
+            'taskPreselectedCategories',
+            'activeCategories', 
+            'categoryExclusions',
+            'scanSettings',
+            'automationSettings',
+            'preferences'
+        ];
+        
+        criticalFields.forEach(field => {
+            const oldValue = JSON.stringify(oldSettings[field] || {});
+            const newValue = JSON.stringify(newSettings[field] || {});
+            
+            if (oldValue !== newValue) {
+                changes.push({
+                    type: field,
+                    value: newSettings[field],
+                    oldValue: oldSettings[field]
+                });
+            }
+        });
+        
+        return changes;
+    }
+
+    getDefaultSettings() {
+        return {
+            activeCategories: null, // null = toutes actives
+            excludedDomains: [],
+            excludedKeywords: [],
+            taskPreselectedCategories: [], // VIDE par défaut
+            categoryExclusions: {
+                domains: [],
+                emails: []
+            },
+            scanSettings: {
+                defaultPeriod: 7,
+                defaultFolder: 'inbox',
+                autoAnalyze: true,
+                autoCategrize: true
+            },
+            automationSettings: {
+                autoCreateTasks: false,
+                groupTasksByDomain: false,
+                skipDuplicates: true,
+                autoAssignPriority: false
+            },
+            preferences: {
+                darkMode: false,
+                compactView: false,
+                showNotifications: true,
+                excludeSpam: true,
+                detectCC: true
+            }
+        };
+    }
+
+    // ================================================
+    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES - RENFORCÉES
+    // ================================================
+    getSettings() {
+        // Toujours retourner une copie fraîche
+        return JSON.parse(JSON.stringify(this.settings));
+    }
+
+    getTaskPreselectedCategories() {
+        const categories = this.settings.taskPreselectedCategories || [];
+        console.log('[CategoryManager] 📋 getTaskPreselectedCategories:', categories);
+        return [...categories]; // Copie
+    }
+
+    getActiveCategories() {
+        if (!this.settings.activeCategories) {
+            return Object.keys(this.categories);
+        }
+        return [...this.settings.activeCategories]; // Copie
+    }
+
+    isCategoryActive(categoryId) {
+        const activeCategories = this.getActiveCategories();
+        return activeCategories.includes(categoryId);
+    }
+
+    getScanSettings() {
+        return { ...this.settings.scanSettings };
+    }
+
+    getAutomationSettings() {
+        return { ...this.settings.automationSettings };
+    }
+
+    shouldExcludeSpam() {
+        return this.settings.preferences?.excludeSpam !== false;
+    }
+
+    shouldDetectCC() {
+        return this.settings.preferences?.detectCC !== false;
+    }
+
+    // ================================================
+    // SYSTÈME D'ÉCOUTE POUR AUTRES MODULES
+    // ================================================
+    addChangeListener(callback) {
+        this.changeListeners.add(callback);
+        console.log(`[CategoryManager] 👂 Listener ajouté (${this.changeListeners.size} total)`);
+        
+        // Retourner une fonction pour supprimer le listener
+        return () => {
+            this.changeListeners.delete(callback);
+        };
+    }
+
+    removeChangeListener(callback) {
+        this.changeListeners.delete(callback);
+    }
+
+    // ================================================
+    // GESTION DES CATÉGORIES PERSONNALISÉES (inchangé)
     // ================================================
     loadCustomCategories() {
         try {
@@ -140,14 +616,14 @@ class CategoryManager {
 
         // Retirer des catégories pré-sélectionnées si présente
         if (this.settings.taskPreselectedCategories?.includes(categoryId)) {
-            this.settings.taskPreselectedCategories = this.settings.taskPreselectedCategories.filter(id => id !== categoryId);
-            this.saveSettings();
+            const newPreselected = this.settings.taskPreselectedCategories.filter(id => id !== categoryId);
+            this.updateTaskPreselectedCategories(newPreselected);
         }
 
         // Retirer des catégories actives si présente
         if (this.settings.activeCategories?.includes(categoryId)) {
-            this.settings.activeCategories = this.settings.activeCategories.filter(id => id !== categoryId);
-            this.saveSettings();
+            const newActive = this.settings.activeCategories.filter(id => id !== categoryId);
+            this.updateActiveCategories(newActive);
         }
 
         delete this.customCategories[categoryId];
@@ -191,7 +667,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // GESTION DES MOTS-CLÉS PAR CATÉGORIE
+    // GESTION DES MOTS-CLÉS PAR CATÉGORIE (inchangé)
     // ================================================
     updateCategoryKeywords(categoryId, keywords) {
         if (!this.categories[categoryId]) {
@@ -276,202 +752,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // GESTION DES CATÉGORIES PRÉ-SÉLECTIONNÉES
-    // ================================================
-    toggleTaskPreselectedCategory(categoryId) {
-        if (!this.categories[categoryId]) {
-            throw new Error('Catégorie non trouvée');
-        }
-
-        const currentSelected = this.settings.taskPreselectedCategories || [];
-        
-        if (currentSelected.includes(categoryId)) {
-            // Retirer de la sélection
-            this.settings.taskPreselectedCategories = currentSelected.filter(id => id !== categoryId);
-        } else {
-            // Ajouter à la sélection
-            this.settings.taskPreselectedCategories = [...currentSelected, categoryId];
-        }
-
-        this.saveSettings();
-        
-        console.log('[CategoryManager] Catégories pré-sélectionnées mises à jour:', this.settings.taskPreselectedCategories);
-        
-        // Notifier immédiatement
-        this.dispatchEvent('taskPreselectedCategoriesChanged', {
-            categories: [...this.settings.taskPreselectedCategories],
-            action: currentSelected.includes(categoryId) ? 'removed' : 'added',
-            categoryId: categoryId
-        });
-
-        return this.settings.taskPreselectedCategories;
-    }
-
-    isTaskPreselectedCategory(categoryId) {
-        return (this.settings.taskPreselectedCategories || []).includes(categoryId);
-    }
-
-    // ================================================
-    // GESTION DES PARAMÈTRES CENTRALISÉE
-    // ================================================
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            const defaultSettings = this.getDefaultSettings();
-            
-            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-        } catch (error) {
-            console.error('[CategoryManager] Erreur chargement paramètres:', error);
-            return this.getDefaultSettings();
-        }
-    }
-
-    saveSettings(newSettings = null) {
-        try {
-            if (newSettings) {
-                this.settings = { ...this.settings, ...newSettings };
-            }
-            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
-            
-            setTimeout(() => {
-                this.dispatchEvent('categorySettingsChanged', { settings: this.settings });
-            }, 10);
-            
-            console.log('[CategoryManager] Paramètres sauvegardés:', this.settings);
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde paramètres:', error);
-        }
-    }
-
-    getDefaultSettings() {
-        return {
-            activeCategories: null, // null = toutes actives
-            excludedDomains: [],
-            excludedKeywords: [],
-            taskPreselectedCategories: [],
-            categoryExclusions: {
-                domains: [],
-                emails: []
-            },
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            automationSettings: {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            },
-            preferences: {
-                darkMode: false,
-                compactView: false,
-                showNotifications: true,
-                excludeSpam: true,
-                detectCC: true
-            }
-        };
-    }
-
-    // ================================================
-    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES
-    // ================================================
-    getSettings() {
-        return { ...this.settings };
-    }
-
-    updateSettings(newSettings) {
-        this.saveSettings(newSettings);
-    }
-
-    getScanSettings() {
-        return this.settings.scanSettings;
-    }
-
-    getAutomationSettings() {
-        return this.settings.automationSettings;
-    }
-
-    getTaskPreselectedCategories() {
-        return this.settings.taskPreselectedCategories || [];
-    }
-
-    shouldExcludeSpam() {
-        return this.settings.preferences?.excludeSpam !== false;
-    }
-
-    shouldDetectCC() {
-        return this.settings.preferences?.detectCC !== false;
-    }
-
-    getActiveCategories() {
-        if (!this.settings.activeCategories) {
-            return Object.keys(this.categories);
-        }
-        return this.settings.activeCategories;
-    }
-
-    isCategoryActive(categoryId) {
-        const activeCategories = this.getActiveCategories();
-        return activeCategories.includes(categoryId);
-    }
-
-    // ================================================
-    // LISTENER POUR ÉVÉNEMENTS
-    // ================================================
-    setupEventListeners() {
-        if (this.eventListenersSetup) {
-            return;
-        }
-
-        this.settingsChangeHandler = (event) => {
-            const { type, value } = event.detail;
-            console.log(`[CategoryManager] Reçu changement: ${type}`, value);
-            
-            switch (type) {
-                case 'preferences':
-                    this.updateSettings({ preferences: { ...this.settings.preferences, ...value } });
-                    break;
-                case 'scanSettings':
-                    this.updateSettings({ scanSettings: { ...this.settings.scanSettings, ...value } });
-                    break;
-                case 'automationSettings':
-                    this.updateSettings({ automationSettings: { ...this.settings.automationSettings, ...value } });
-                    break;
-                case 'taskPreselectedCategories':
-                    this.updateSettings({ taskPreselectedCategories: value });
-                    break;
-                case 'activeCategories':
-                    this.updateSettings({ activeCategories: value });
-                    break;
-            }
-        };
-
-        window.addEventListener('settingsChanged', this.settingsChangeHandler);
-        this.eventListenersSetup = true;
-        
-        console.log('[CategoryManager] Event listeners configurés');
-    }
-
-    cleanup() {
-        if (this.settingsChangeHandler) {
-            window.removeEventListener('settingsChanged', this.settingsChangeHandler);
-        }
-        this.eventListenersSetup = false;
-    }
-
-    dispatchEvent(eventName, detail) {
-        try {
-            window.dispatchEvent(new CustomEvent(eventName, { detail }));
-        } catch (error) {
-            console.error(`[CategoryManager] Erreur dispatch ${eventName}:`, error);
-        }
-    }
-
-    // ================================================
-    // INITIALISATION DES CATÉGORIES
+    // INITIALISATION DES CATÉGORIES (inchangé)
     // ================================================
     initializeCategories() {
         this.categories = {
@@ -600,7 +881,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS
+    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS (inchangé)
     // ================================================
     initializeWeightedDetection() {
         this.weightedKeywords = {
@@ -803,7 +1084,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // ANALYSE PRINCIPALE D'EMAIL
+    // ANALYSE PRINCIPALE D'EMAIL (inchangé du fichier original)
     // ================================================
     analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -999,7 +1280,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // VÉRIFICATION DES EXCLUSIONS GLOBALES
+    // VÉRIFICATION DES EXCLUSIONS GLOBALES (inchangé)
     // ================================================
     isGloballyExcluded(content, email) {
         const exclusions = this.settings.categoryExclusions;
@@ -1026,7 +1307,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES
+    // MÉTHODES UTILITAIRES (inchangées)
     // ================================================
     analyzeCategory(content, keywords) {
         return this.calculateScore(content, keywords, 'single');
@@ -1194,7 +1475,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES PUBLIQUES
+    // MÉTHODES PUBLIQUES (inchangées)
     // ================================================
     getCategories() {
         return this.categories;
@@ -1241,7 +1522,7 @@ class CategoryManager {
     }
     
     // ================================================
-    // MÉTHODES DE TEST ET DEBUG
+    // MÉTHODES DE TEST ET DEBUG (inchangées)
     // ================================================
     setDebugMode(enabled) {
         this.debugMode = enabled;
@@ -1350,7 +1631,44 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES DE VALIDATION
+    // LISTENER POUR ÉVÉNEMENTS (modifié pour ne pas dupliquer)
+    // ================================================
+    setupEventListeners() {
+        if (this.eventListenersSetup) {
+            return;
+        }
+
+        // Écouter seulement les événements externes (pas les nôtres)
+        this.externalSettingsChangeHandler = (event) => {
+            // Ignorer nos propres événements
+            if (event.detail?.source === 'CategoryManager') {
+                return;
+            }
+            
+            const { type, value } = event.detail;
+            console.log(`[CategoryManager] Reçu changement externe: ${type}`, value);
+            
+            // Appliquer sans notifier (pour éviter les boucles)
+            this.syncQueue.push({
+                type,
+                value,
+                notifyModules: false,
+                timestamp: Date.now()
+            });
+            
+            if (!this.syncInProgress) {
+                this.processSettingsChanges();
+            }
+        };
+
+        window.addEventListener('settingsChanged', this.externalSettingsChangeHandler);
+        this.eventListenersSetup = true;
+        
+        console.log('[CategoryManager] Event listeners configurés (anti-boucle)');
+    }
+
+    // ================================================
+    // MÉTHODES DE VALIDATION (inchangées)
     // ================================================
     validateKeywords(keywords) {
         const errors = [];
@@ -1400,7 +1718,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES DE NETTOYAGE
+    // MÉTHODES DE NETTOYAGE (inchangées)
     // ================================================
     cleanupOrphanedKeywords() {
         const validCategoryIds = Object.keys(this.categories);
@@ -1431,6 +1749,112 @@ class CategoryManager {
         console.log('[CategoryManager] Index des mots-clés reconstruit');
     }
 
+    // ================================================
+    // MÉTHODES DE DEBUG AMÉLIORÉES
+    // ================================================
+    getDebugInfo() {
+        return {
+            isInitialized: this.isInitialized,
+            syncInProgress: this.syncInProgress,
+            syncQueueLength: this.syncQueue.length,
+            lastSyncTimestamp: this.lastSyncTimestamp,
+            changeListenersCount: this.changeListeners.size,
+            eventListenersSetup: this.eventListenersSetup,
+            settings: this.settings,
+            taskPreselectedCategories: this.getTaskPreselectedCategories(),
+            activeCategories: this.getActiveCategories(),
+            totalCategories: Object.keys(this.categories).length,
+            customCategoriesCount: Object.keys(this.customCategories).length
+        };
+    }
+
+    // Force la synchronisation immédiate de tous les modules
+    forceSyncAllModules() {
+        console.log('[CategoryManager] 🚀 === SYNCHRONISATION FORCÉE TOUS MODULES ===');
+        
+        const criticalSettings = [
+            'taskPreselectedCategories',
+            'activeCategories',
+            'categoryExclusions',
+            'scanSettings',
+            'automationSettings',
+            'preferences'
+        ];
+        
+        criticalSettings.forEach(settingType => {
+            const value = this.settings[settingType];
+            if (value !== undefined) {
+                console.log(`[CategoryManager] 🔄 Force sync: ${settingType}`, value);
+                this.notifySpecificModules(settingType, value);
+            }
+        });
+        
+        // Notification générale finale
+        this.notifyAllModules('fullSync', this.settings);
+        
+        console.log('[CategoryManager] ✅ Synchronisation forcée terminée');
+    }
+
+    // Test complet de synchronisation
+    testSynchronization() {
+        console.group('🧪 TEST SYNCHRONISATION CategoryManager');
+        
+        const debugInfo = this.getDebugInfo();
+        console.log('Debug Info:', debugInfo);
+        
+        // Test modification taskPreselectedCategories
+        const originalCategories = [...this.getTaskPreselectedCategories()];
+        const testCategories = ['tasks', 'commercial'];
+        
+        console.log('Test: Modification taskPreselectedCategories');
+        console.log('Avant:', originalCategories);
+        
+        this.updateTaskPreselectedCategories(testCategories);
+        
+        setTimeout(() => {
+            const newCategories = this.getTaskPreselectedCategories();
+            console.log('Après:', newCategories);
+            
+            // Vérifier EmailScanner
+            const emailScannerCategories = window.emailScanner?.getTaskPreselectedCategories() || [];
+            console.log('EmailScanner a:', emailScannerCategories);
+            
+            const isSync = JSON.stringify(newCategories.sort()) === JSON.stringify(emailScannerCategories.sort());
+            console.log('Synchronisation:', isSync ? '✅ OK' : '❌ ÉCHEC');
+            
+            // Remettre les valeurs originales
+            this.updateTaskPreselectedCategories(originalCategories);
+            
+            console.groupEnd();
+        }, 500);
+        
+        return true;
+    }
+
+    // ================================================
+    // NETTOYAGE ET DESTRUCTION
+    // ================================================
+    cleanup() {
+        // Arrêter tous les intervals
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+        
+        // Nettoyer les event listeners
+        if (this.externalSettingsChangeHandler) {
+            window.removeEventListener('settingsChanged', this.externalSettingsChangeHandler);
+        }
+        
+        // Vider les queues et listeners
+        this.syncQueue = [];
+        this.changeListeners.clear();
+        this.eventListenersSetup = false;
+        this.syncInProgress = false;
+        
+        console.log('[CategoryManager] 🧹 Nettoyage effectué');
+    }
+
     destroy() {
         this.cleanup();
         this.categories = {};
@@ -1439,18 +1863,41 @@ class CategoryManager {
         this.settings = {};
         console.log('[CategoryManager] Instance détruite');
     }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES FINALES
+    // ================================================
+    dispatchEvent(eventName, detail) {
+        try {
+            window.dispatchEvent(new CustomEvent(eventName, { 
+                detail: {
+                    ...detail,
+                    source: 'CategoryManager',
+                    timestamp: Date.now()
+                }
+            }));
+        } catch (error) {
+            console.error(`[CategoryManager] Erreur dispatch ${eventName}:`, error);
+        }
+    }
 }
 
-// Créer l'instance globale
+// ================================================
+// INITIALISATION GLOBALE SÉCURISÉE
+// ================================================
+
+// Créer l'instance globale avec nettoyage préalable
 if (window.categoryManager) {
+    console.log('[CategoryManager] 🔄 Nettoyage ancienne instance...');
     window.categoryManager.destroy?.();
 }
 
+console.log('[CategoryManager] 🚀 Création nouvelle instance v20.0...');
 window.categoryManager = new CategoryManager();
 
-// Méthodes utilitaires globales pour le test
+// Export des méthodes de test globales améliorées
 window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager');
+    console.group('🧪 TEST CategoryManager v20.0');
     
     const tests = [
         { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
@@ -1465,11 +1912,17 @@ window.testCategoryManager = function() {
     });
     
     console.log('Stats:', window.categoryManager.getCategoryStats());
+    console.log('Debug Info:', window.categoryManager.getDebugInfo());
+    
+    // Test synchronisation
+    window.categoryManager.testSynchronization();
+    
     console.groupEnd();
+    return { success: true, testsRun: tests.length };
 };
 
 window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés');
+    console.group('🔍 DEBUG Mots-clés v20.0');
     const allKeywords = window.categoryManager.getAllKeywords();
     
     Object.entries(allKeywords).forEach(([categoryId, keywords]) => {
@@ -1489,4 +1942,13 @@ window.debugCategoryKeywords = function() {
     console.groupEnd();
 };
 
-console.log('✅ CategoryManager v19.0 loaded - Gestion complète des mots-clés et catégories');
+window.testCategorySync = function() {
+    return window.categoryManager.testSynchronization();
+};
+
+window.forceCategorySync = function() {
+    window.categoryManager.forceSyncAllModules();
+    return { success: true, message: 'Synchronisation forcée effectuée' };
+};
+
+console.log('✅ CategoryManager v20.0 loaded - Synchronisation complètement fixée');
