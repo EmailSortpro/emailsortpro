@@ -1707,7 +1707,7 @@ isInCC(email, normalizedText) {
         return email.split('@')[1]?.toLowerCase() || 'unknown';
     }
 
-    findInText(text, keyword) {
+findInText(text, keyword) {
         if (!text || !keyword) return false;
         
         const normalizedText = text.toLowerCase()
@@ -1734,6 +1734,7 @@ isInCC(email, normalizedText) {
         
         return normalizedText.includes(normalizedKeyword);
     }
+
     calculateConfidence(score) {
         if (score.hasAbsolute) return 0.95;
         if (score.total >= 200) return 0.90;
