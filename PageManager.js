@@ -1821,11 +1821,15 @@ forceUpdatePreselection() {
         return div.innerHTML;
     }
 
-    getEmailContent(email) {
+getEmailContent(email) {
         if (email.body?.content) {
-            return email.body.content;
+            // Nettoyer le contenu HTML pour éviter les erreurs de parsing
+            let content = email.body.content;
+            // Remplacer les meta tags problématiques
+            content = content.replace(/<meta[^>]*>/gi, '');
+            return content;
         }
-        return `<p>${email.bodyPreview || 'Aucun contenu disponible'}</p>`;
+        return `<p>${this.escapeHtml(email.bodyPreview || 'Aucun contenu disponible')}</p>`;
     }
 
     getCategoryColor(categoryId) {
