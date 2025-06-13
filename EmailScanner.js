@@ -935,18 +935,37 @@ async recategorizeEmails() {
 
     console.log('[EmailScanner] 🔄 === DÉBUT RE-CATÉGORISATION ===');
     console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées actuelles:', this.taskPreselectedCategories);
-    console.log('[EmailScanner] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
     
-    // CORRECTION: Forcer le rechargement des catégories avant la recatégorisation
+    // IMPORTANT: Forcer le rechargement complet des catégories et mots-clés
     if (window.categoryManager) {
-        // Recharger toutes les catégories, y compris les custom
+        // Recharger toutes les catégories
         const allCategories = window.categoryManager.getCategories();
         console.log('[EmailScanner] 📂 Catégories disponibles:', Object.keys(allCategories));
         
-        // Vérifier si des catégories custom existent
-        const customCats = Object.entries(allCategories).filter(([id, cat]) => cat.isCustom);
-        if (customCats.length > 0) {
-            console.log('[EmailScanner] 🎨 Catégories personnalisées détectées:', customCats.map(([id, cat]) => cat.name));
+        // Vérifier les catégories actives
+        const activeCategories = window.categoryManager.getActiveCategories();
+        console.log('[EmailScanner] 🎯 Catégories actives:', activeCategories);
+        
+        // Vérifier les mots-clés pour chaque catégorie
+        Object.keys(allCategories).forEach(catId => {
+            const keywords = window.categoryManager.getCategoryKeywords(catId);
+            const totalKeywords = (keywords.absolute?.length || 0) + 
+                                 (keywords.strong?.length || 0) + 
+                                 (keywords.weak?.length || 0);
+            
+            if (totalKeywords > 0) {
+                console.log(`[EmailScanner] 📋 Catégorie ${catId} (${allCategories[catId].name}): ${totalKeywords} mots-clés`);
+            }
+        });
+        
+        // Forcer la resynchronisation des mots-clés custom
+        if (window.categoryManager.customCategories) {
+            Object.entries(window.categoryManager.customCategories).forEach(([id, cat]) => {
+                console.log(`[EmailScanner] 🎨 Catégorie custom ${id}: ${cat.name}`);
+                if (cat.keywords) {
+                    window.categoryManager.weightedKeywords[id] = cat.keywords;
+                }
+            });
         }
     }
     
@@ -957,14 +976,42 @@ async recategorizeEmails() {
     this.scanMetrics.categoryDistribution = {};
     
     // Vider les catégories actuelles
-    Object.keys(this.categorizedEmails).forEach(cat => {
-        this.categorizedEmails[cat] = [];
-    });
+    this.categorizedEmails = {};
+    
+    // Initialiser toutes les catégories
+    if (window.categoryManager) {
+        const categories = window.categoryManager.getCategories();
+        Object.keys(categories).forEach(catId => {
+            this.categorizedEmails[catId] = [];
+        });
+    }
+    
+    // Ajouter les catégories spéciales
+    this.categorizedEmails.other = [];
+    this.categorizedEmails.excluded = [];
+    this.categorizedEmails.spam = [];
 
     // Recatégoriser tous les emails
-    await this.categorizeEmails();
+    console.log('[EmailScanner] 🔄 Recatégorisation de', this.emails.length, 'emails...');
+    await this.categorizeEmails(this.taskPreselectedCategories);
     
-    console.log('[EmailScanner] ✅ Re-catégorisation terminée');
+    const duration = Math.round((Date.now() - this.scanMetrics.startTime) / 1000);
+    console.log(`[EmailScanner] ✅ Re-catégorisation terminée en ${duration}s`);
+    
+    // Afficher les résultats
+    const categorized = Object.values(this.categorizedEmails)
+        .filter(emails => emails.length > 0)
+        .reduce((acc, emails) => acc + emails.length, 0);
+    
+    console.log('[EmailScanner] 📊 Résultats recatégorisation:');
+    Object.entries(this.categorizedEmails).forEach(([catId, emails]) => {
+        if (emails.length > 0) {
+            const category = window.categoryManager?.getCategory(catId);
+            const name = category ? `${category.icon} ${category.name}` : catId;
+            const isPreselected = this.taskPreselectedCategories.includes(catId);
+            console.log(`  - ${name}: ${emails.length} emails${isPreselected ? ' ⭐' : ''}`);
+        }
+    });
     
     // Notifier les autres modules
     setTimeout(() => {
@@ -973,7 +1020,7 @@ async recategorizeEmails() {
             breakdown: this.getDetailedResults().breakdown,
             taskPreselectedCategories: this.taskPreselectedCategories,
             preselectedCount: this.emails.filter(e => e.isPreselectedForTasks).length,
-            keywordStats: this.scanMetrics.keywordMatches
+            categorizedCount: categorized
         });
     }, 10);
 }
