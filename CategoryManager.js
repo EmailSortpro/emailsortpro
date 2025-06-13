@@ -324,77 +324,195 @@ class CategoryManager {
                 ],
                 
                 strong: [
-                    'promo', 'deal', 'offer', 'sale', 'discount',
-                    'newsletter', 'mailing', 'campaign', 'marketing',
-                    'abonné', 'subscriber', 'désinscription',
-                    'exclusive', 'special', 'limited', 'new',
-                    'collection', 'shop', 'store'
+                    // Français
+                    'promo', 'promotion', 'soldes', 'réduction', 'remise',
+                    'newsletter', 'mailing', 'campagne', 'marketing',
+                    'abonné', 'abonnement', 'désinscription', 'désabonner',
+                    'exclusif', 'exclusivité', 'spécial', 'limitée', 'nouveau',
+                    'collection', 'boutique', 'magasin', 'acheter',
+                    'découvrir', 'explorer', 'parcourir',
+                    
+                    // Anglais
+                    'deal', 'offer', 'sale', 'discount', 'save',
+                    'campaign', 'subscriber', 'unsubscribe', 'opt-out',
+                    'exclusive', 'special', 'limited', 'new', 'fresh',
+                    'shop', 'store', 'buy', 'purchase', 'order',
+                    'discover', 'explore', 'browse', 'view'
                 ],
                 
-                weak: ['update', 'discover', 'new'],
+                weak: [
+                    'update', 'news', 'info', 'information',
+                    'discover', 'new', 'latest', 'recent'
+                ],
                 exclusions: []
             },
 
-            // SÉCURITÉ - PATTERNS STRICTS
+            // SÉCURITÉ - PATTERNS STRICTS (Français + Anglais)
             security: {
                 absolute: [
+                    // ALERTES DE CONNEXION (Français)
                     'alerte de connexion', 'alert connexion', 'nouvelle connexion',
                     'quelqu\'un s\'est connecté', 'connexion à votre compte',
-                    'activité suspecte', 'suspicious activity', 'login alert',
-                    'new sign-in', 'sign in detected', 'connexion détectée',
-                    'code de vérification', 'verification code', 'security code',
-                    'two-factor', '2fa', 'authentification', 'authentication',
-                    'password reset', 'réinitialisation mot de passe'
+                    'tentative de connexion', 'connexion suspecte', 'connexion inhabituelle',
+                    'activité suspecte', 'activité inhabituelle', 'activité de connexion',
+                    'connexion détectée', 'accès à votre compte', 'accès détecté',
+                    'nouvelle session', 'session ouverte', 'ouverture de session',
+                    
+                    // ALERTES DE CONNEXION (Anglais)
+                    'suspicious activity', 'login alert', 'sign-in alert',
+                    'new sign-in', 'sign in detected', 'login detected',
+                    'connection detected', 'unusual activity', 'suspicious login',
+                    'account accessed', 'new login', 'recent login',
+                    'login attempt', 'sign-in attempt', 'access attempt',
+                    'session started', 'new session', 'account activity',
+                    
+                    // CODES ET AUTHENTIFICATION (Français)
+                    'code de vérification', 'code de sécurité', 'code d\'authentification',
+                    'code d\'accès', 'code temporaire', 'code à usage unique',
+                    'double authentification', 'authentification à deux facteurs',
+                    'vérification en deux étapes', 'validation en deux étapes',
+                    'authentification forte', 'sécurité renforcée',
+                    
+                    // CODES ET AUTHENTIFICATION (Anglais)
+                    'verification code', 'security code', 'authentication code',
+                    'two-factor', '2fa', 'two-step verification', 'two-step authentication',
+                    'multi-factor authentication', 'mfa', 'one-time password', 'otp',
+                    'access code', 'temporary code', 'verification pin',
+                    
+                    // RÉINITIALISATION (Français)
+                    'réinitialisation mot de passe', 'réinitialisation du mot de passe',
+                    'changer votre mot de passe', 'modifier votre mot de passe',
+                    'nouveau mot de passe', 'mot de passe oublié',
+                    'récupération de compte', 'récupération du compte',
+                    
+                    // RÉINITIALISATION (Anglais)
+                    'password reset', 'reset your password', 'change your password',
+                    'update your password', 'forgot password', 'forgotten password',
+                    'account recovery', 'recover your account', 'password recovery'
                 ],
                 
                 strong: [
-                    'sécurité', 'security', 'vérification', 'verify',
-                    'authentification', 'password', 'mot de passe'
+                    // Français
+                    'sécurité', 'vérification', 'authentification', 'connexion',
+                    'mot de passe', 'compte', 'accès', 'session',
+                    
+                    // Anglais
+                    'security', 'verify', 'authentication', 'login',
+                    'password', 'account', 'access', 'session'
                 ],
                 
-                weak: ['compte', 'account', 'accès'],
+                weak: [
+                    'compte', 'account', 'accès', 'access', 'code'
+                ],
                 exclusions: ['newsletter', 'unsubscribe', 'promotion']
             },
 
-            // TÂCHES - PATTERNS STRICTS
+            // TÂCHES - PATTERNS STRICTS (Français + Anglais)
             tasks: {
                 absolute: [
-                    'action required', 'action requise', 'action needed',
-                    'please complete', 'veuillez compléter', 'to do',
-                    'task assigned', 'tâche assignée', 'deadline',
-                    'due date', 'échéance', 'livrable',
-                    'urgence', 'urgent', 'très urgent',
+                    // ACTION REQUISE (Français)
+                    'action requise', 'action nécessaire', 'action à mener',
+                    'intervention requise', 'intervention nécessaire',
+                    'veuillez compléter', 'merci de compléter', 'à compléter',
                     'merci de faire', 'pouvez-vous faire', 'pourriez-vous faire',
-                    'action à mener', 'à faire', 'à traiter',
-                    'confirmation requise', 'approval needed'
+                    'demande d\'action', 'nécessite votre action', 'votre action est requise',
+                    'en attente de votre action', 'dans l\'attente de votre action',
+                    'à faire', 'à traiter', 'à valider', 'validation requise',
+                    'confirmation requise', 'approbation requise', 'approbation nécessaire',
+                    'répondre avant', 'réponse attendue', 'réponse nécessaire',
+                    'merci de répondre', 'veuillez répondre', 'prière de répondre',
+                    
+                    // ACTION REQUISE (Anglais)
+                    'action required', 'action needed', 'action requested',
+                    'please complete', 'please review', 'please confirm',
+                    'please approve', 'approval needed', 'approval required',
+                    'confirmation required', 'confirmation needed', 'please validate',
+                    'validation required', 'response needed', 'response required',
+                    'please respond', 'reply required', 'reply needed',
+                    'waiting for your action', 'awaiting your response',
+                    'your attention required', 'requires your attention',
+                    'follow up required', 'follow-up needed',
+                    
+                    // URGENCE ET DEADLINE (Français)
+                    'urgence', 'urgent', 'très urgent', 'extrêmement urgent',
+                    'priorité', 'prioritaire', 'haute priorité', 'priorité élevée',
+                    'échéance', 'date limite', 'deadline', 'avant le',
+                    'livrable', 'à livrer', 'livraison attendue',
+                    'tâche assignée', 'tâche attribuée', 'assigné à',
+                    'doit être fait', 'doit être terminé', 'à terminer',
+                    
+                    // URGENCE ET DEADLINE (Anglais)
+                    'urgent', 'asap', 'as soon as possible', 'immediately',
+                    'priority', 'high priority', 'critical', 'important',
+                    'deadline', 'due date', 'due by', 'expires',
+                    'task assigned', 'assigned to you', 'deliverable',
+                    'must be completed', 'needs to be done', 'to do',
+                    'time sensitive', 'overdue', 'past due'
                 ],
                 
                 strong: [
-                    'urgent', 'asap', 'priority', 'priorité',
-                    'complete', 'compléter', 'action', 'faire',
-                    'deadline', 'échéance'
+                    // Français
+                    'urgent', 'priorité', 'compléter', 'action', 'faire',
+                    'échéance', 'deadline', 'livrable', 'tâche',
+                    
+                    // Anglais
+                    'urgent', 'asap', 'priority', 'complete', 'action',
+                    'deadline', 'task', 'assigned', 'due'
                 ],
                 
-                weak: ['demande', 'besoin', 'attente'],
+                weak: [
+                    'demande', 'request', 'besoin', 'need', 'attente', 'waiting'
+                ],
                 exclusions: ['newsletter', 'marketing', 'promotion']
             },
 
-            // RÉUNIONS - PATTERNS STRICTS
+            // RÉUNIONS - PATTERNS STRICTS (Français + Anglais)
             meetings: {
                 absolute: [
-                    'demande de réunion', 'meeting request', 'réunion',
-                    'schedule a meeting', 'planifier une réunion',
-                    'invitation réunion', 'meeting invitation',
-                    'teams meeting', 'zoom meeting', 'google meet',
-                    'conference call', 'rendez-vous', 'rdv'
+                    // DEMANDES DE RÉUNION (Français)
+                    'demande de réunion', 'demande de rendez-vous', 'demande de rdv',
+                    'invitation à une réunion', 'invitation réunion', 'invitation rdv',
+                    'planifier une réunion', 'programmer une réunion', 'organiser une réunion',
+                    'réunion prévue', 'réunion programmée', 'réunion planifiée',
+                    'rendez-vous prévu', 'rdv prévu', 'entretien prévu',
+                    'prise de rendez-vous', 'réserver un créneau', 'créneaux disponibles',
+                    'disponibilités pour une réunion', 'proposer un créneau',
+                    
+                    // DEMANDES DE RÉUNION (Anglais)
+                    'meeting request', 'meeting invitation', 'invite to meeting',
+                    'schedule a meeting', 'book a meeting', 'arrange a meeting',
+                    'plan a meeting', 'organize a meeting', 'set up a meeting',
+                    'meeting scheduled', 'meeting planned', 'appointment scheduled',
+                    'calendar invitation', 'calendar invite', 'meeting invite',
+                    'time slot available', 'availability request', 'when are you available',
+                    
+                    // PLATEFORMES ET OUTILS (Français)
+                    'réunion teams', 'teams meeting', 'réunion zoom', 'zoom meeting',
+                    'réunion skype', 'skype meeting', 'google meet', 'réunion google',
+                    'visioconférence', 'vidéoconférence', 'conférence téléphonique',
+                    'appel vidéo', 'appel audio', 'conference call',
+                    'webinar', 'webinaire', 'séminaire en ligne',
+                    
+                    // PLATEFORMES ET OUTILS (Anglais)
+                    'teams meeting', 'zoom meeting', 'google meet', 'skype meeting',
+                    'video conference', 'video call', 'conference call',
+                    'online meeting', 'virtual meeting', 'webinar',
+                    'screen sharing', 'join meeting', 'meeting link'
                 ],
                 
                 strong: [
-                    'meeting', 'réunion', 'schedule', 'planifier',
-                    'calendar', 'calendrier', 'appointment'
+                    // Français
+                    'réunion', 'rendez-vous', 'rdv', 'planifier', 'programmer',
+                    'calendrier', 'agenda', 'entretien', 'visio',
+                    
+                    // Anglais
+                    'meeting', 'appointment', 'schedule', 'calendar',
+                    'conference', 'call', 'video', 'invite'
                 ],
                 
-                weak: ['présentation', 'agenda'],
+                weak: [
+                    'présentation', 'agenda', 'planning', 'schedule'
+                ],
                 exclusions: ['newsletter', 'promotion']
             },
 
@@ -982,7 +1100,7 @@ class CategoryManager {
     }
     
     // ================================================
-    // TEST
+    // TEST AVEC NOUVEAUX PATTERNS MULTILINGUES
     // ================================================
     testEmail(subject, expectedCategory = null) {
         const testEmail = {
@@ -1008,6 +1126,68 @@ class CategoryManager {
         }
         
         return result;
+    }
+
+    // Test des nouveaux patterns multilingues
+    testMultilingualPatterns() {
+        console.log('\n[CategoryManager] === TEST PATTERNS MULTILINGUES ===');
+        
+        const tests = [
+            // Marketing français
+            ['Newsletter - Si vous ne souhaitez plus recevoir de communication de notre part, paramétrez vos choix ici', 'marketing_news'],
+            ['Promotion spéciale - Désabonnez-vous facilement', 'marketing_news'],
+            ['Offre limitée - Gérer vos préférences de communication', 'marketing_news'],
+            
+            // Marketing anglais
+            ['Weekly Newsletter - Unsubscribe here if you no longer wish to receive', 'marketing_news'],
+            ['Special Offer - Update your email preferences', 'marketing_news'],
+            ['Flash Sale - Opt out anytime', 'marketing_news'],
+            
+            // Sécurité français
+            ['Alerte de connexion - Nouvelle session détectée', 'security'],
+            ['Code de vérification - Authentification à deux facteurs', 'security'],
+            ['Réinitialisation de votre mot de passe', 'security'],
+            
+            // Sécurité anglais
+            ['Security Alert - Suspicious login attempt detected', 'security'],
+            ['Verification Code - Two-factor authentication', 'security'],
+            ['Password Reset - Account Recovery', 'security'],
+            
+            // Tâches français
+            ['Action requise - Validation nécessaire avant le 15/12', 'tasks'],
+            ['Urgent - Votre approbation est nécessaire', 'tasks'],
+            ['Livrable en attente - Merci de compléter', 'tasks'],
+            
+            // Tâches anglais
+            ['Action Required - Please approve by Friday', 'tasks'],
+            ['URGENT - Your response needed ASAP', 'tasks'],
+            ['Task Assigned - Deliverable due tomorrow', 'tasks'],
+            
+            // Réunions français
+            ['Demande de réunion - Teams meeting proposé', 'meetings'],
+            ['Invitation réunion - Créneaux disponibles', 'meetings'],
+            ['RDV programmé - Visioconférence Zoom', 'meetings'],
+            
+            // Réunions anglais
+            ['Meeting Request - Schedule a call this week', 'meetings'],
+            ['Calendar Invitation - Google Meet conference', 'meetings'],
+            ['Appointment Scheduled - Video call tomorrow', 'meetings']
+        ];
+        
+        let passed = 0;
+        let total = tests.length;
+        
+        tests.forEach(([subject, expected]) => {
+            const result = this.testEmail(subject, expected);
+            if (result.category === expected) {
+                passed++;
+            }
+        });
+        
+        console.log(`\n[CategoryManager] RÉSULTATS: ${passed}/${total} tests réussis (${Math.round(passed/total*100)}%)`);
+        console.log('===========================================\n');
+        
+        return { passed, total, percentage: Math.round(passed/total*100) };
     }
 }
 
