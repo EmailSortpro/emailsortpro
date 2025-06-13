@@ -606,147 +606,175 @@ class PageManager {
     }
 
     
-renderHarmonizedEmailRow(email) {
-        const isSelected = this.selectedEmails.has(email.id);
-        const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        
-        // Vérifier si l'email est dans une catégorie pré-sélectionnée pour les tâches
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        const isPreselectedForTasks = email.isPreselectedForTasks || preselectedCategories.includes(email.category);
-        
-        // Si l'email est pré-sélectionné mais pas encore marqué, l'ajouter à la sélection
-        if (isPreselectedForTasks && !isSelected && !hasTask && this.autoSelectPreselected !== false) {
-            this.selectedEmails.add(email.id);
-        }
-        
-        return `
-            <div class="task-harmonized-card ${isSelected || (isPreselectedForTasks && !hasTask) ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselectedForTasks ? 'preselected-task' : ''}" 
-                 data-email-id="${email.id}"
-                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
-                
-                <!-- Checkbox de sélection -->
-                <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
-                       ${(isSelected || (isPreselectedForTasks && !hasTask)) ? 'checked' : ''}
-                       onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
-                
-                <!-- Indicateur de priorité -->
-                <div class="priority-bar-harmonized" style="background-color: ${this.getEmailPriorityColor(email)}"></div>
-                
-                <!-- Contenu principal -->
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">📧 Email</span>
-                            <span class="deadline-badge-harmonized">
-                                📅 ${this.formatEmailDate(email.receivedDateTime)}
-                            </span>
-                            ${email.categoryScore ? `
-                                <span class="confidence-badge-harmonized">
-                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
-                                </span>
-                            ` : ''}
-                            ${isPreselectedForTasks ? `
-                                <span class="preselected-badge-harmonized">
-                                    ⭐ Pré-sélectionné
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="task-recipient-harmonized">
-                        <i class="fas fa-envelope"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
-                        ${email.category && email.category !== 'other' ? `
-                            <span class="category-indicator-harmonized" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <!-- Actions rapides -->
-                <div class="task-actions-harmonized">
-                    ${this.renderHarmonizedEmailActions(email)}
-                </div>
-            </div>
-        `;
-    }
-renderHarmonizedEmailRow(email) {
-        const isSelected = this.selectedEmails.has(email.id);
-        const hasTask = this.createdTasks.has(email.id);
-        const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
-        const senderEmail = email.from?.emailAddress?.address || '';
-        
-        // Vérifier si l'email est dans une catégorie pré-sélectionnée pour les tâches
-        const preselectedCategories = this.getTaskPreselectedCategories();
-        const isPreselectedForTasks = email.isPreselectedForTasks || preselectedCategories.includes(email.category);
-        
-        // Si l'email est pré-sélectionné mais pas encore marqué, l'ajouter à la sélection
-        if (isPreselectedForTasks && !isSelected && !hasTask && this.autoSelectPreselected !== false) {
-            this.selectedEmails.add(email.id);
-        }
-        
-        return `
-            <div class="task-harmonized-card ${isSelected || (isPreselectedForTasks && !hasTask) ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselectedForTasks ? 'preselected-task' : ''}" 
-                 data-email-id="${email.id}"
-                 onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
-                
-                <!-- Checkbox de sélection -->
-                <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
-                       ${(isSelected || (isPreselectedForTasks && !hasTask)) ? 'checked' : ''}
-                       onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
-                
-                <!-- Indicateur de priorité -->
-                <div class="priority-bar-harmonized" style="background-color: ${this.getEmailPriorityColor(email)}"></div>
-                
-                <!-- Contenu principal -->
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">📧 Email</span>
-                            <span class="deadline-badge-harmonized">
-                                📅 ${this.formatEmailDate(email.receivedDateTime)}
-                            </span>
-                            ${email.categoryScore ? `
-                                <span class="confidence-badge-harmonized">
-                                    🎯 ${Math.round(email.categoryConfidence * 100)}%
-                                </span>
-                            ` : ''}
-                            ${isPreselectedForTasks ? `
-                                <span class="preselected-badge-harmonized">
-                                    ⭐ Pré-sélectionné
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="task-recipient-harmonized">
-                        <i class="fas fa-envelope"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
-                        ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
-                        ${email.category && email.category !== 'other' ? `
-                            <span class="category-indicator-harmonized" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}">
-                                ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <!-- Actions rapides -->
-                <div class="task-actions-harmonized">
-                    ${this.renderHarmonizedEmailActions(email)}
-                </div>
-            </div>
-        `;
-    }
+// Dans PageManager.js - Remplacer la méthode renderHarmonizedEmailRow() vers ligne 1230
 
+renderHarmonizedEmailRow(email) {
+    const isSelected = this.selectedEmails.has(email.id);
+    const hasTask = this.createdTasks.has(email.id);
+    const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+    const senderEmail = email.from?.emailAddress?.address || '';
+    
+    // Vérifier si l'email est dans une catégorie pré-sélectionnée pour les tâches
+    const preselectedCategories = this.getTaskPreselectedCategories();
+    const isPreselectedForTasks = email.isPreselectedForTasks || preselectedCategories.includes(email.category);
+    
+    // Forcer la mise à jour du flag si nécessaire
+    if (isPreselectedForTasks && !email.isPreselectedForTasks) {
+        email.isPreselectedForTasks = true;
+        console.log(`[PageManager] 📌 Email marqué comme pré-sélectionné:`, {
+            subject: email.subject?.substring(0, 50),
+            category: email.category,
+            categoryName: window.categoryManager?.getCategory(email.category)?.name
+        });
+    }
+    
+    // Si l'email est pré-sélectionné mais pas encore marqué, l'ajouter à la sélection
+    if (isPreselectedForTasks && !isSelected && !hasTask && this.autoSelectPreselected !== false) {
+        this.selectedEmails.add(email.id);
+    }
+    
+    return `
+        <div class="task-harmonized-card ${isSelected || (isPreselectedForTasks && !hasTask) ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselectedForTasks ? 'preselected-task' : ''}" 
+             data-email-id="${email.id}"
+             onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
+            
+            <!-- Checkbox de sélection -->
+            <input type="checkbox" 
+                   class="task-checkbox-harmonized" 
+                   ${(isSelected || (isPreselectedForTasks && !hasTask)) ? 'checked' : ''}
+                   onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+            
+            <!-- Indicateur de priorité -->
+            <div class="priority-bar-harmonized" style="background-color: ${this.getEmailPriorityColor(email)}"></div>
+            
+            <!-- Contenu principal -->
+            <div class="task-main-content-harmonized">
+                <div class="task-header-harmonized">
+                    <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                    <div class="task-meta-harmonized">
+                        <span class="task-type-badge-harmonized">📧 Email</span>
+                        <span class="deadline-badge-harmonized">
+                            📅 ${this.formatEmailDate(email.receivedDateTime)}
+                        </span>
+                        ${email.categoryScore ? `
+                            <span class="confidence-badge-harmonized">
+                                🎯 ${Math.round(email.categoryConfidence * 100)}%
+                            </span>
+                        ` : ''}
+                        ${isPreselectedForTasks ? `
+                            <span class="preselected-badge-harmonized">
+                                ⭐ Pré-sélectionné
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="task-recipient-harmonized">
+                    <i class="fas fa-envelope"></i>
+                    <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
+                    ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
+                    ${email.category && email.category !== 'other' ? `
+                        <span class="category-indicator-harmonized" style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}">
+                            ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Actions rapides -->
+            <div class="task-actions-harmonized">
+                ${this.renderHarmonizedEmailActions(email)}
+            </div>
+        </div>
+    `;
+}
+
+// Ajouter cette méthode dans PageManager.js après la méthode getTaskPreselectedCategories()
+
+debugPreselection() {
+    console.group('🔍 DEBUG PRÉ-SÉLECTION');
+    
+    // 1. Vérifier les catégories configurées
+    const categoriesFromManager = window.categoryManager?.getTaskPreselectedCategories() || [];
+    const categoriesFromPage = window.categoriesPage?.getTaskPreselectedCategories() || [];
+    const categoriesFromLocal = this.getTaskPreselectedCategories();
+    
+    console.log('📋 Catégories pré-sélectionnées:');
+    console.log('  - CategoryManager:', categoriesFromManager);
+    console.log('  - CategoriesPage:', categoriesFromPage);
+    console.log('  - PageManager:', categoriesFromLocal);
+    
+    // 2. Vérifier les emails
+    const emails = window.emailScanner?.getAllEmails() || [];
+    const preselectedEmails = emails.filter(e => e.isPreselectedForTasks);
+    const shouldBePreselected = emails.filter(e => categoriesFromLocal.includes(e.category));
+    
+    console.log('📧 Emails:');
+    console.log('  - Total:', emails.length);
+    console.log('  - Marqués pré-sélectionnés:', preselectedEmails.length);
+    console.log('  - Devraient être pré-sélectionnés:', shouldBePreselected.length);
+    
+    // 3. Détails par catégorie
+    console.log('📊 Détails par catégorie:');
+    categoriesFromLocal.forEach(catId => {
+        const category = window.categoryManager?.getCategory(catId);
+        const emailsInCategory = emails.filter(e => e.category === catId);
+        const markedAsPreselected = emailsInCategory.filter(e => e.isPreselectedForTasks);
+        
+        console.log(`  ${category?.icon || '📂'} ${category?.name || catId}:`, {
+            total: emailsInCategory.length,
+            marqués: markedAsPreselected.length,
+            emails: emailsInCategory.slice(0, 3).map(e => ({
+                subject: e.subject?.substring(0, 50),
+                isPreselectedForTasks: e.isPreselectedForTasks
+            }))
+        });
+    });
+    
+    // 4. Vérifier la synchronisation
+    const isSync = JSON.stringify(categoriesFromManager.sort()) === JSON.stringify(categoriesFromLocal.sort());
+    console.log('🔄 Synchronisation:', isSync ? '✅ OK' : '❌ DÉSYNCHRONISÉ');
+    
+    console.groupEnd();
+    
+    return {
+        configured: categoriesFromLocal,
+        emails: {
+            total: emails.length,
+            preselected: preselectedEmails.length,
+            shouldBePreselected: shouldBePreselected.length
+        },
+        isSync
+    };
+}
+
+// Ajouter aussi cette méthode pour forcer la mise à jour
+forceUpdatePreselection() {
+    console.log('[PageManager] 🔄 Force mise à jour pré-sélection...');
+    
+    const categories = this.getTaskPreselectedCategories();
+    const emails = window.emailScanner?.getAllEmails() || [];
+    
+    let updated = 0;
+    emails.forEach(email => {
+        const shouldBePreselected = categories.includes(email.category);
+        if (shouldBePreselected && !email.isPreselectedForTasks) {
+            email.isPreselectedForTasks = true;
+            updated++;
+        } else if (!shouldBePreselected && email.isPreselectedForTasks) {
+            email.isPreselectedForTasks = false;
+            updated++;
+        }
+    });
+    
+    console.log(`[PageManager] ✅ ${updated} emails mis à jour`);
+    
+    if (updated > 0) {
+        this.refreshEmailsView();
+    }
+    
+    return updated;
+}
 
     renderHarmonizedEmailActions(email) {
         const hasTask = this.createdTasks.has(email.id);
