@@ -674,32 +674,62 @@ saveKeywords() {
             exclusions: this.getKeywordsFromList('exclusions')
         };
         
-        console.log('[CategoriesPage] Sauvegarde mots-clés:', keywords);
+        console.log('[CategoriesPage] 💾 Sauvegarde mots-clés pour', this.editingCategoryId, ':', keywords);
         
         // Mettre à jour dans CategoryManager
-        window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+        if (window.categoryManager) {
+            // IMPORTANT: Mettre à jour directement dans weightedKeywords ET dans la catégorie
+            window.categoryManager.weightedKeywords[this.editingCategoryId] = keywords;
+            
+            // Si c'est une catégorie custom, mettre à jour aussi dans customCategories
+            if (window.categoryManager.customCategories[this.editingCategoryId]) {
+                window.categoryManager.customCategories[this.editingCategoryId].keywords = keywords;
+                window.categoryManager.saveCustomCategories();
+            }
+            
+            // Si c'est une catégorie standard, sauvegarder dans localStorage
+            else {
+                const keywordsData = localStorage.getItem('categoryKeywords') || '{}';
+                const allKeywords = JSON.parse(keywordsData);
+                allKeywords[this.editingCategoryId] = keywords;
+                localStorage.setItem('categoryKeywords', JSON.stringify(allKeywords));
+            }
+            
+            // Appeler aussi la méthode officielle
+            window.categoryManager.updateCategoryKeywords(this.editingCategoryId, keywords);
+        }
         
         this.closeModal();
         this.showToast('Mots-clés sauvegardés avec succès', 'success');
         this.refreshCurrentTab();
         
-        // CORRECTION: Forcer la mise à jour immédiate de l'EmailScanner
+        // IMPORTANT: Forcer la resynchronisation complète
+        console.log('[CategoriesPage] 🔄 Forçage resynchronisation après sauvegarde mots-clés');
+        
+        // Notifier tous les modules
         setTimeout(() => {
-            // Notifier spécifiquement l'EmailScanner
+            // Événement spécifique pour les mots-clés
             window.dispatchEvent(new CustomEvent('keywordsUpdated', {
                 detail: {
                     categoryId: this.editingCategoryId,
                     keywords: keywords,
-                    source: 'CategoriesPage'
+                    source: 'CategoriesPage',
+                    timestamp: Date.now()
                 }
             }));
             
-            // Forcer aussi une synchronisation globale
+            // Forcer la recatégorisation si des emails sont présents
+            if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                console.log('[CategoriesPage] 📧 Déclenchement recatégorisation emails...');
+                window.emailScanner.recategorizeEmails();
+            }
+            
+            // Synchronisation globale
             this.forceSynchronization();
         }, 100);
         
     } catch (error) {
-        console.error('[CategoriesPage] Erreur sauvegarde mots-clés:', error);
+        console.error('[CategoriesPage] ❌ Erreur sauvegarde mots-clés:', error);
         this.showToast('Erreur lors de la sauvegarde', 'error');
     }
 }
