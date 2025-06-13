@@ -27,6 +27,27 @@ class CategoryManager {
         console.log('[CategoryManager] ✅ Version 20.0 - Synchronisation complètement fixée');
     }
 
+    loadSavedKeywords() {
+    try {
+        // Charger les mots-clés personnalisés depuis localStorage
+        const savedKeywords = localStorage.getItem('categoryKeywords');
+        if (savedKeywords) {
+            const keywordsData = JSON.parse(savedKeywords);
+            console.log('[CategoryManager] 📂 Chargement mots-clés sauvegardés...');
+            
+            Object.entries(keywordsData).forEach(([categoryId, keywords]) => {
+                if (this.categories[categoryId] && !this.customCategories[categoryId]) {
+                    // C'est une catégorie standard avec des mots-clés personnalisés
+                    this.weightedKeywords[categoryId] = keywords;
+                    console.log(`[CategoryManager] ✅ Mots-clés chargés pour ${categoryId}`);
+                }
+            });
+        }
+    } catch (error) {
+        console.error('[CategoryManager] Erreur chargement mots-clés:', error);
+    }
+}
+
     // ================================================
     // NOUVEAU SYSTÈME DE SYNCHRONISATION AUTOMATIQUE
     // ================================================
@@ -713,24 +734,53 @@ updateCategoryKeywords(categoryId, keywords) {
     
     return true;
 }
-    getCategoryKeywords(categoryId) {
-        const keywords = this.weightedKeywords[categoryId];
-        if (!keywords) {
+getCategoryKeywords(categoryId) {
+    // IMPORTANT: D'abord vérifier les catégories custom
+    if (this.customCategories && this.customCategories[categoryId]) {
+        const customKeywords = this.customCategories[categoryId].keywords;
+        if (customKeywords) {
+            console.log(`[CategoryManager] 📋 Mots-clés custom pour ${categoryId}:`, customKeywords);
             return {
-                absolute: [],
-                strong: [],
-                weak: [],
-                exclusions: []
+                absolute: customKeywords.absolute || [],
+                strong: customKeywords.strong || [],
+                weak: customKeywords.weak || [],
+                exclusions: customKeywords.exclusions || []
             };
         }
-        
+    }
+    
+    // Ensuite vérifier le catalogue pondéré
+    if (this.weightedKeywords && this.weightedKeywords[categoryId]) {
+        console.log(`[CategoryManager] 📋 Mots-clés pondérés pour ${categoryId}`);
         return {
-            absolute: keywords.absolute || [],
-            strong: keywords.strong || [],
-            weak: keywords.weak || [],
-            exclusions: keywords.exclusions || []
+            absolute: this.weightedKeywords[categoryId].absolute || [],
+            strong: this.weightedKeywords[categoryId].strong || [],
+            weak: this.weightedKeywords[categoryId].weak || [],
+            exclusions: this.weightedKeywords[categoryId].exclusions || []
         };
     }
+    
+    // Si c'est une catégorie connue mais sans mots-clés initialisés
+    if (this.categories && this.categories[categoryId]) {
+        console.log(`[CategoryManager] ⚠️ Catégorie ${categoryId} existe mais sans mots-clés`);
+        // Initialiser avec des mots-clés vides
+        this.weightedKeywords[categoryId] = {
+            absolute: [],
+            strong: [],
+            weak: [],
+            exclusions: []
+        };
+        return this.weightedKeywords[categoryId];
+    }
+    
+    console.log(`[CategoryManager] ❌ Catégorie ${categoryId} non trouvée`);
+    return {
+        absolute: [],
+        strong: [],
+        weak: [],
+        exclusions: []
+    };
+}
 
     addKeywordToCategory(categoryId, keyword, type = 'strong') {
         if (!this.categories[categoryId]) {
@@ -1100,7 +1150,7 @@ updateCategoryKeywords(categoryId, keywords) {
         console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
     }
 
-    analyzeEmail(email) {
+analyzeEmail(email) {
     if (!email) return null;
     
     const normalizedText = this.normalizeText(email);
@@ -1136,13 +1186,19 @@ updateCategoryKeywords(categoryId, keywords) {
     
     const categoryScores = {};
     
-    // CORRECTION: S'assurer que toutes les catégories sont analysées
+    // IMPORTANT: Analyser TOUTES les catégories (y compris custom)
     const allCategories = { ...this.categories };
+    const activeCategories = this.getActiveCategories();
     
-    // Analyser pour chaque catégorie ACTIVE (y compris custom)
+    console.log(`[CategoryManager] 🔍 Analyse email: "${email.subject?.substring(0, 50)}"`);
+    console.log(`[CategoryManager] 📂 Catégories totales: ${Object.keys(allCategories).length}`);
+    console.log(`[CategoryManager] ✅ Catégories actives: ${activeCategories.length}`);
+    
+    // Analyser pour chaque catégorie ACTIVE
     Object.entries(allCategories).forEach(([categoryId, category]) => {
         // Vérifier si la catégorie est active
-        if (this.activeCategories && !this.activeCategories.includes(categoryId)) {
+        if (!activeCategories.includes(categoryId)) {
+            console.log(`[CategoryManager] ⏭️ Catégorie ${categoryId} inactive, skip`);
             return;
         }
         
@@ -1151,75 +1207,79 @@ updateCategoryKeywords(categoryId, keywords) {
         let hasAbsolute = false;
         let hasExclusion = false;
         
-        // CORRECTION: Déclarer et charger les mots-clés correctement
-        let keywords = this.getCategoryKeywords(categoryId);
+        // Récupérer les mots-clés de la catégorie
+        const keywords = this.getCategoryKeywords(categoryId);
         
         if (!keywords || (!keywords.absolute?.length && !keywords.strong?.length && !keywords.weak?.length)) {
-            // Si pas de mots-clés, utiliser ceux du catalogue pondéré
-            const weightedKw = this.weightedKeywords[categoryId];
-            if (weightedKw) {
-                keywords = { ...weightedKw };
+            console.log(`[CategoryManager] ⚠️ Catégorie ${categoryId} sans mots-clés`);
+            return;
+        }
+        
+        console.log(`[CategoryManager] 🏷️ Test catégorie ${categoryId} (${category.name}):`);
+        console.log(`  - Absolus: ${keywords.absolute?.length || 0}`);
+        console.log(`  - Forts: ${keywords.strong?.length || 0}`);
+        console.log(`  - Faibles: ${keywords.weak?.length || 0}`);
+        console.log(`  - Exclusions: ${keywords.exclusions?.length || 0}`);
+        
+        // Vérifier les exclusions
+        if (keywords.exclusions && keywords.exclusions.length > 0) {
+            for (const exclusion of keywords.exclusions) {
+                if (normalizedText.includes(exclusion.toLowerCase())) {
+                    hasExclusion = true;
+                    matchedPatterns.push({
+                        type: 'exclusion',
+                        keyword: exclusion,
+                        score: -50
+                    });
+                    categoryScore -= 50;
+                    console.log(`  ❌ Exclusion trouvée: "${exclusion}"`);
+                }
             }
         }
         
-        // Analyser avec les mots-clés
-        if (keywords) {
-            // Vérifier les exclusions
-            if (keywords.exclusions && keywords.exclusions.length > 0) {
-                for (const exclusion of keywords.exclusions) {
-                    if (normalizedText.includes(exclusion.toLowerCase())) {
-                        hasExclusion = true;
+        if (!hasExclusion) {
+            // Analyser les mots-clés absolus
+            if (keywords.absolute && keywords.absolute.length > 0) {
+                for (const keyword of keywords.absolute) {
+                    if (normalizedText.includes(keyword.toLowerCase())) {
+                        hasAbsolute = true;
                         matchedPatterns.push({
-                            type: 'exclusion',
-                            keyword: exclusion,
-                            score: -50
+                            type: 'absolute',
+                            keyword: keyword,
+                            score: 100
                         });
-                        categoryScore -= 50;
+                        categoryScore += 100;
+                        console.log(`  🎯 Absolu trouvé: "${keyword}"`);
                     }
                 }
             }
             
-            if (!hasExclusion) {
-                // Analyser les mots-clés absolus
-                if (keywords.absolute && keywords.absolute.length > 0) {
-                    for (const keyword of keywords.absolute) {
-                        if (normalizedText.includes(keyword.toLowerCase())) {
-                            hasAbsolute = true;
-                            matchedPatterns.push({
-                                type: 'absolute',
-                                keyword: keyword,
-                                score: 100
-                            });
-                            categoryScore += 100;
-                        }
+            // Analyser les mots-clés forts
+            if (keywords.strong && keywords.strong.length > 0) {
+                for (const keyword of keywords.strong) {
+                    if (normalizedText.includes(keyword.toLowerCase())) {
+                        matchedPatterns.push({
+                            type: 'strong',
+                            keyword: keyword,
+                            score: 30
+                        });
+                        categoryScore += 30;
+                        console.log(`  💪 Fort trouvé: "${keyword}"`);
                     }
                 }
-                
-                // Analyser les mots-clés forts
-                if (keywords.strong && keywords.strong.length > 0) {
-                    for (const keyword of keywords.strong) {
-                        if (normalizedText.includes(keyword.toLowerCase())) {
-                            matchedPatterns.push({
-                                type: 'strong',
-                                keyword: keyword,
-                                score: 30
-                            });
-                            categoryScore += 30;
-                        }
-                    }
-                }
-                
-                // Analyser les mots-clés faibles
-                if (keywords.weak && keywords.weak.length > 0) {
-                    for (const keyword of keywords.weak) {
-                        if (normalizedText.includes(keyword.toLowerCase())) {
-                            matchedPatterns.push({
-                                type: 'weak',
-                                keyword: keyword,
-                                score: 10
-                            });
-                            categoryScore += 10;
-                        }
+            }
+            
+            // Analyser les mots-clés faibles
+            if (keywords.weak && keywords.weak.length > 0) {
+                for (const keyword of keywords.weak) {
+                    if (normalizedText.includes(keyword.toLowerCase())) {
+                        matchedPatterns.push({
+                            type: 'weak',
+                            keyword: keyword,
+                            score: 10
+                        });
+                        categoryScore += 10;
+                        console.log(`  📝 Faible trouvé: "${keyword}"`);
                     }
                 }
             }
@@ -1250,6 +1310,7 @@ updateCategoryKeywords(categoryId, keywords) {
                 hasAbsolute: hasAbsolute,
                 priority: category.priority || 50
             };
+            console.log(`  ✅ Score final: ${categoryScore} (confiance: ${Math.round(confidence * 100)}%)`);
         }
     });
     
@@ -1287,10 +1348,7 @@ updateCategoryKeywords(categoryId, keywords) {
         }
     }
     
-    // Update pattern tracking
-    bestPatterns.forEach(pattern => {
-        this.patternMatches[pattern.keyword] = (this.patternMatches[pattern.keyword] || 0) + 1;
-    });
+    console.log(`[CategoryManager] 🏆 Catégorie finale: ${bestCategory} (score: ${bestScore})`);
     
     return {
         category: bestCategory,
@@ -1303,6 +1361,95 @@ updateCategoryKeywords(categoryId, keywords) {
         isExcluded: false,
         allScores: categoryScores
     };
+}
+
+normalizeText(email) {
+    let allText = '';
+    
+    // Sujet (le plus important)
+    if (email.subject) {
+        allText += (email.subject + ' ').repeat(3); // Répéter pour plus de poids
+    }
+    
+    // Expéditeur
+    if (email.from?.emailAddress?.address) {
+        allText += email.from.emailAddress.address + ' ';
+    }
+    if (email.from?.emailAddress?.name) {
+        allText += email.from.emailAddress.name + ' ';
+    }
+    
+    // Preview du body
+    if (email.bodyPreview) {
+        allText += email.bodyPreview + ' ';
+    }
+    
+    // Body complet si disponible
+    if (email.body?.content) {
+        const cleanedBody = this.cleanHtml(email.body.content);
+        allText += cleanedBody;
+    }
+    
+    return allText.toLowerCase()
+        .replace(/[éèêë]/g, 'e')
+        .replace(/[àâä]/g, 'a')
+        .replace(/[ùûü]/g, 'u')
+        .replace(/[ç]/g, 'c')
+        .replace(/[îï]/g, 'i')
+        .replace(/[ôö]/g, 'o')
+        .replace(/'/g, '\'')
+        .replace(/-/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+cleanHtml(html) {
+    if (!html) return '';
+    return html
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&[^;]+;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+isExcluded(email, normalizedText) {
+    const exclusions = this.settings.categoryExclusions;
+    if (!exclusions) return false;
+    
+    // Vérifier les domaines exclus
+    if (exclusions.domains && exclusions.domains.length > 0) {
+        const domain = email.from?.emailAddress?.address?.split('@')[1]?.toLowerCase();
+        if (domain && exclusions.domains.some(d => domain.includes(d.toLowerCase()))) {
+            return true;
+        }
+    }
+    
+    // Vérifier les emails exclus
+    if (exclusions.emails && exclusions.emails.length > 0) {
+        const emailAddress = email.from?.emailAddress?.address?.toLowerCase();
+        if (emailAddress && exclusions.emails.includes(emailAddress)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+isSpam(normalizedText) {
+    // Logique basique de détection spam
+    const spamKeywords = ['spam', 'junk', 'phishing', 'scam'];
+    return spamKeywords.some(keyword => normalizedText.includes(keyword));
+}
+
+isInCC(email, normalizedText) {
+    // Vérifier si l'utilisateur est en CC
+    if (email.ccRecipients && Array.isArray(email.ccRecipients) && email.ccRecipients.length > 0) {
+        return true;
+    }
+    
+    // Vérifier les mots-clés CC
+    const ccKeywords = ['en copie', 'in copy', 'cc:', 'copie pour information'];
+    return ccKeywords.some(keyword => normalizedText.includes(keyword));
 }
 
     analyzeAllCategories(content) {
