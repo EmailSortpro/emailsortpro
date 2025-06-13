@@ -528,31 +528,23 @@ class CategoriesPage {
         this.setupKeywordEvents();
     }
 
+
  getCategoryKeywords(categoryId) {
-    // CORRECTION: D'abord vérifier les catégories custom
-    if (this.customCategories[categoryId]) {
-        const customKeywords = this.customCategories[categoryId].keywords;
-        if (customKeywords) {
-            console.log(`[CategoryManager] 📋 Mots-clés custom pour ${categoryId}:`, customKeywords);
-            return customKeywords;
-        }
+    // NOTE: Cette méthode semble être une duplication erronée dans CategoriesPage
+    // Elle devrait utiliser CategoryManager directement
+    if (window.categoryManager && typeof window.categoryManager.getCategoryKeywords === 'function') {
+        return window.categoryManager.getCategoryKeywords(categoryId);
     }
     
-    // Ensuite vérifier le catalogue pondéré
-    if (this.weightedKeywords[categoryId]) {
-        console.log(`[CategoryManager] 📋 Mots-clés pondérés pour ${categoryId}`);
-        return this.weightedKeywords[categoryId];
-    }
-    
-    // Enfin, retourner une structure vide
-    console.log(`[CategoryManager] ⚠️ Aucun mot-clé trouvé pour ${categoryId}`);
+    // Fallback - ne devrait jamais être utilisé
+    console.warn(`[CategoriesPage] ⚠️ CategoryManager non disponible pour récupérer les mots-clés de ${categoryId}`);
     return {
         absolute: [],
         strong: [],
         weak: [],
         exclusions: []
     };
-}   
+}  
 
     renderKeywordSection(type, title, keywords, icon) {
         const typeClass = type === 'exclusions' ? 'exclusions' : type;
