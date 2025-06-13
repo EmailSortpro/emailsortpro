@@ -1,4 +1,4 @@
-// CategoriesPage.js - Version 8.5 - Complète avec toutes les méthodes
+// CategoriesPage.js - Version 9.0 - Gestion complète des catégories et mots-clés
 
 class CategoriesPage {
     constructor() {
@@ -14,10 +14,14 @@ class CategoriesPage {
         this.pendingSync = false;
         this.syncQueue = [];
         
+        // État des modales
+        this.currentModal = null;
+        this.editingCategoryId = null;
+        
         // Bind toutes les méthodes
         this.bindMethods();
         
-        console.log('[CategoriesPage] ✅ Version 8.5 - Complète avec toutes les méthodes');
+        console.log('[CategoriesPage] ✅ Version 9.0 - Gestion complète des catégories et mots-clés');
     }
 
     bindMethods() {
@@ -27,7 +31,8 @@ class CategoriesPage {
             'openKeywordsModal', 'openAllKeywordsModal', 'openExclusionsModal',
             'exportSettings', 'importSettings', 'closeModal', 'hideExplanationMessage',
             'debugSettings', 'testCategorySelection', 'forceUpdateUI', 'forceSynchronization',
-            'showCreateCategoryModal', 'createNewCategory', 'editCustomCategory', 'deleteCustomCategory'
+            'showCreateCategoryModal', 'createNewCategory', 'editCustomCategory', 'deleteCustomCategory',
+            'saveKeywords', 'addKeyword', 'removeKeyword', 'toggleCategoryActive'
         ];
         
         methods.forEach(method => {
@@ -115,6 +120,695 @@ class CategoriesPage {
                 detectCC: true
             }
         };
+    }
+
+    // ================================================
+    // GESTION DES CATÉGORIES
+    // ================================================
+    showCreateCategoryModal() {
+        this.closeModal();
+        
+        const modalId = 'create-category-modal';
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h2>Créer une nouvelle catégorie</h2>
+                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="form-section">
+                            <div class="form-group">
+                                <label for="category-name">Nom de la catégorie *</label>
+                                <input type="text" id="category-name" class="form-input" 
+                                       placeholder="ex: Support Client" maxlength="50">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="category-description">Description</label>
+                                <textarea id="category-description" class="form-textarea" 
+                                          placeholder="Description de la catégorie..." rows="3"></textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="category-icon">Icône</label>
+                                    <select id="category-icon" class="form-select">
+                                        <option value="📂">📂 Dossier</option>
+                                        <option value="💼">💼 Business</option>
+                                        <option value="🎯">🎯 Objectif</option>
+                                        <option value="⚡">⚡ Urgent</option>
+                                        <option value="📧">📧 Email</option>
+                                        <option value="🔔">🔔 Notification</option>
+                                        <option value="💡">💡 Idée</option>
+                                        <option value="🎨">🎨 Créatif</option>
+                                        <option value="🔧">🔧 Technique</option>
+                                        <option value="📊">📊 Analyse</option>
+                                        <option value="🎓">🎓 Formation</option>
+                                        <option value="🌟">🌟 Important</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="category-color">Couleur</label>
+                                    <div class="color-picker">
+                                        <input type="color" id="category-color" value="#6366f1">
+                                        <div class="color-presets">
+                                            ${this.renderColorPresets()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="category-priority">Priorité</label>
+                                <select id="category-priority" class="form-select">
+                                    <option value="10">Très basse (10)</option>
+                                    <option value="30" selected>Normale (30)</option>
+                                    <option value="50">Élevée (50)</option>
+                                    <option value="70">Très élevée (70)</option>
+                                    <option value="90">Critique (90)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                            Annuler
+                        </button>
+                        <button class="btn btn-primary" onclick="window.categoriesPage.createNewCategory()">
+                            <i class="fas fa-plus"></i>
+                            Créer la catégorie
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = modalId;
+        
+        // Focus sur le champ nom
+        setTimeout(() => {
+            const nameInput = document.getElementById('category-name');
+            if (nameInput) nameInput.focus();
+        }, 100);
+    }
+
+    createNewCategory() {
+        const name = document.getElementById('category-name')?.value?.trim();
+        const description = document.getElementById('category-description')?.value?.trim();
+        const icon = document.getElementById('category-icon')?.value;
+        const color = document.getElementById('category-color')?.value;
+        const priority = parseInt(document.getElementById('category-priority')?.value) || 30;
+        
+        if (!name) {
+            this.showToast('Le nom de la catégorie est requis', 'error');
+            return;
+        }
+        
+        if (name.length < 2) {
+            this.showToast('Le nom doit contenir au moins 2 caractères', 'error');
+            return;
+        }
+        
+        try {
+            const categoryData = {
+                name,
+                description,
+                icon: icon || '📂',
+                color: color || '#6366f1',
+                priority,
+                keywords: {
+                    absolute: [],
+                    strong: [],
+                    weak: [],
+                    exclusions: []
+                }
+            };
+            
+            const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+            
+            if (newCategory) {
+                this.closeModal();
+                this.showToast(`Catégorie "${name}" créée avec succès`, 'success');
+                this.refreshCurrentTab();
+                
+                // Ouvrir directement la modal de mots-clés
+                setTimeout(() => {
+                    this.openKeywordsModal(newCategory.id);
+                }, 500);
+            } else {
+                throw new Error('Erreur lors de la création');
+            }
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur création catégorie:', error);
+            this.showToast('Erreur lors de la création de la catégorie', 'error');
+        }
+    }
+
+    editCustomCategory(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category || !category.isCustom) {
+            this.showToast('Catégorie non trouvée ou non modifiable', 'error');
+            return;
+        }
+        
+        this.closeModal();
+        this.editingCategoryId = categoryId;
+        
+        const modalId = 'edit-category-modal';
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h2>Modifier la catégorie</h2>
+                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="form-section">
+                            <div class="form-group">
+                                <label for="edit-category-name">Nom de la catégorie *</label>
+                                <input type="text" id="edit-category-name" class="form-input" 
+                                       value="${category.name}" maxlength="50">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-category-description">Description</label>
+                                <textarea id="edit-category-description" class="form-textarea" 
+                                          rows="3">${category.description || ''}</textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-category-icon">Icône</label>
+                                    <select id="edit-category-icon" class="form-select">
+                                        <option value="📂" ${category.icon === '📂' ? 'selected' : ''}>📂 Dossier</option>
+                                        <option value="💼" ${category.icon === '💼' ? 'selected' : ''}>💼 Business</option>
+                                        <option value="🎯" ${category.icon === '🎯' ? 'selected' : ''}>🎯 Objectif</option>
+                                        <option value="⚡" ${category.icon === '⚡' ? 'selected' : ''}>⚡ Urgent</option>
+                                        <option value="📧" ${category.icon === '📧' ? 'selected' : ''}>📧 Email</option>
+                                        <option value="🔔" ${category.icon === '🔔' ? 'selected' : ''}>🔔 Notification</option>
+                                        <option value="💡" ${category.icon === '💡' ? 'selected' : ''}>💡 Idée</option>
+                                        <option value="🎨" ${category.icon === '🎨' ? 'selected' : ''}>🎨 Créatif</option>
+                                        <option value="🔧" ${category.icon === '🔧' ? 'selected' : ''}>🔧 Technique</option>
+                                        <option value="📊" ${category.icon === '📊' ? 'selected' : ''}>📊 Analyse</option>
+                                        <option value="🎓" ${category.icon === '🎓' ? 'selected' : ''}>🎓 Formation</option>
+                                        <option value="🌟" ${category.icon === '🌟' ? 'selected' : ''}>🌟 Important</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="edit-category-color">Couleur</label>
+                                    <div class="color-picker">
+                                        <input type="color" id="edit-category-color" value="${category.color}">
+                                        <div class="color-presets">
+                                            ${this.renderColorPresets()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="edit-category-priority">Priorité</label>
+                                <select id="edit-category-priority" class="form-select">
+                                    <option value="10" ${category.priority === 10 ? 'selected' : ''}>Très basse (10)</option>
+                                    <option value="30" ${category.priority === 30 ? 'selected' : ''}>Normale (30)</option>
+                                    <option value="50" ${category.priority === 50 ? 'selected' : ''}>Élevée (50)</option>
+                                    <option value="70" ${category.priority === 70 ? 'selected' : ''}>Très élevée (70)</option>
+                                    <option value="90" ${category.priority === 90 ? 'selected' : ''}>Critique (90)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                            Annuler
+                        </button>
+                        <button class="btn btn-primary" onclick="window.categoriesPage.saveEditedCategory()">
+                            <i class="fas fa-save"></i>
+                            Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = modalId;
+    }
+
+    saveEditedCategory() {
+        if (!this.editingCategoryId) return;
+        
+        const name = document.getElementById('edit-category-name')?.value?.trim();
+        const description = document.getElementById('edit-category-description')?.value?.trim();
+        const icon = document.getElementById('edit-category-icon')?.value;
+        const color = document.getElementById('edit-category-color')?.value;
+        const priority = parseInt(document.getElementById('edit-category-priority')?.value) || 30;
+        
+        if (!name) {
+            this.showToast('Le nom de la catégorie est requis', 'error');
+            return;
+        }
+        
+        try {
+            const updates = {
+                name,
+                description,
+                icon,
+                color,
+                priority
+            };
+            
+            window.categoryManager?.updateCustomCategory(this.editingCategoryId, updates);
+            
+            this.closeModal();
+            this.showToast('Catégorie modifiée avec succès', 'success');
+            this.refreshCurrentTab();
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur modification catégorie:', error);
+            this.showToast('Erreur lors de la modification', 'error');
+        }
+    }
+
+    deleteCustomCategory(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) {
+            this.showToast('Catégorie non trouvée', 'error');
+            return;
+        }
+        
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ?\n\nCette action est irréversible et supprimera tous les mots-clés associés.`)) {
+            return;
+        }
+        
+        try {
+            window.categoryManager?.deleteCustomCategory(categoryId);
+            this.showToast('Catégorie supprimée avec succès', 'success');
+            this.refreshCurrentTab();
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur suppression catégorie:', error);
+            this.showToast('Erreur lors de la suppression', 'error');
+        }
+    }
+
+    // ================================================
+    // GESTION DES MOTS-CLÉS
+    // ================================================
+    openKeywordsModal(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) {
+            this.showToast('Catégorie non trouvée', 'error');
+            return;
+        }
+        
+        this.closeModal();
+        this.editingCategoryId = categoryId;
+        
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+            absolute: [],
+            strong: [],
+            weak: [],
+            exclusions: []
+        };
+        
+        const modalId = 'keywords-modal';
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay">
+                <div class="modal-container large">
+                    <div class="modal-header">
+                        <div class="category-header">
+                            <div class="category-icon" style="background: ${category.color}20; color: ${category.color};">
+                                ${category.icon}
+                            </div>
+                            <div>
+                                <h2>Mots-clés - ${category.name}</h2>
+                                <p>Gérez les mots-clés pour la détection automatique</p>
+                            </div>
+                        </div>
+                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="keywords-explanation">
+                            <div class="keyword-type-info">
+                                <div class="info-item absolute">
+                                    <span class="info-label">🎯 Absolus</span>
+                                    <span class="info-desc">Mots-clés qui garantissent la catégorisation</span>
+                                </div>
+                                <div class="info-item strong">
+                                    <span class="info-label">💪 Forts</span>
+                                    <span class="info-desc">Mots-clés avec un poids élevé</span>
+                                </div>
+                                <div class="info-item weak">
+                                    <span class="info-label">📝 Faibles</span>
+                                    <span class="info-desc">Mots-clés avec un poids modéré</span>
+                                </div>
+                                <div class="info-item exclusions">
+                                    <span class="info-label">🚫 Exclusions</span>
+                                    <span class="info-desc">Mots-clés qui empêchent la catégorisation</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="keywords-sections">
+                            ${this.renderKeywordSection('absolute', 'Mots-clés absolus', keywords.absolute, '🎯')}
+                            ${this.renderKeywordSection('strong', 'Mots-clés forts', keywords.strong, '💪')}
+                            ${this.renderKeywordSection('weak', 'Mots-clés faibles', keywords.weak, '📝')}
+                            ${this.renderKeywordSection('exclusions', 'Exclusions', keywords.exclusions, '🚫')}
+                        </div>
+                        
+                        <div class="keywords-test-section">
+                            <h4><i class="fas fa-vial"></i> Test des mots-clés</h4>
+                            <div class="test-input-group">
+                                <input type="text" id="test-text" class="form-input" 
+                                       placeholder="Tapez un texte pour tester la détection...">
+                                <button class="btn btn-secondary" onclick="window.categoriesPage.testKeywords()">
+                                    <i class="fas fa-search"></i>
+                                    Tester
+                                </button>
+                            </div>
+                            <div id="test-results" class="test-results"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                            Fermer
+                        </button>
+                        <button class="btn btn-primary" onclick="window.categoriesPage.saveKeywords()">
+                            <i class="fas fa-save"></i>
+                            Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = modalId;
+        
+        this.setupKeywordEvents();
+    }
+
+    renderKeywordSection(type, title, keywords, icon) {
+        const typeClass = type === 'exclusions' ? 'exclusions' : type;
+        
+        return `
+            <div class="keyword-section ${typeClass}">
+                <div class="section-header">
+                    <h4>${icon} ${title}</h4>
+                    <span class="keyword-count">${keywords.length} mot${keywords.length > 1 ? 's' : ''}-clé${keywords.length > 1 ? 's' : ''}</span>
+                </div>
+                
+                <div class="add-keyword-form">
+                    <input type="text" class="keyword-input" data-type="${type}" 
+                           placeholder="Ajouter un mot-clé..." maxlength="100">
+                    <button class="add-keyword-btn" onclick="window.categoriesPage.addKeyword('${type}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                
+                <div class="keywords-list" data-type="${type}">
+                    ${keywords.map(keyword => this.renderKeywordTag(keyword, type)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderKeywordTag(keyword, type) {
+        return `
+            <div class="keyword-tag ${type}" data-keyword="${keyword}">
+                <span class="keyword-text">${keyword}</span>
+                <button class="remove-keyword" onclick="window.categoriesPage.removeKeyword('${type}', '${keyword}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    }
+
+    setupKeywordEvents() {
+        // Événements pour l'ajout de mots-clés avec Enter
+        document.querySelectorAll('.keyword-input').forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const type = input.dataset.type;
+                    this.addKeyword(type);
+                }
+            });
+        });
+    }
+
+    addKeyword(type) {
+        const input = document.querySelector(`.keyword-input[data-type="${type}"]`);
+        if (!input) return;
+        
+        const keyword = input.value.trim().toLowerCase();
+        if (!keyword) return;
+        
+        if (keyword.length < 2) {
+            this.showToast('Le mot-clé doit contenir au moins 2 caractères', 'error');
+            return;
+        }
+        
+        // Vérifier si le mot-clé existe déjà
+        const existingKeywords = document.querySelectorAll(`.keywords-list[data-type="${type}"] .keyword-tag`);
+        const exists = Array.from(existingKeywords).some(tag => 
+            tag.dataset.keyword.toLowerCase() === keyword
+        );
+        
+        if (exists) {
+            this.showToast('Ce mot-clé existe déjà dans cette section', 'warning');
+            return;
+        }
+        
+        // Ajouter le mot-clé à l'interface
+        const keywordsList = document.querySelector(`.keywords-list[data-type="${type}"]`);
+        if (keywordsList) {
+            const keywordTag = this.renderKeywordTag(keyword, type);
+            keywordsList.insertAdjacentHTML('beforeend', keywordTag);
+        }
+        
+        // Vider l'input
+        input.value = '';
+        
+        // Mettre à jour le compteur
+        this.updateKeywordCount(type);
+        
+        console.log(`[CategoriesPage] Mot-clé ajouté: ${keyword} (${type})`);
+    }
+
+    removeKeyword(type, keyword) {
+        const keywordTag = document.querySelector(`.keywords-list[data-type="${type}"] .keyword-tag[data-keyword="${keyword}"]`);
+        if (keywordTag) {
+            keywordTag.remove();
+            this.updateKeywordCount(type);
+            console.log(`[CategoriesPage] Mot-clé supprimé: ${keyword} (${type})`);
+        }
+    }
+
+    updateKeywordCount(type) {
+        const keywords = document.querySelectorAll(`.keywords-list[data-type="${type}"] .keyword-tag`);
+        const countElement = document.querySelector(`.keyword-section.${type} .keyword-count`);
+        if (countElement) {
+            const count = keywords.length;
+            countElement.textContent = `${count} mot${count > 1 ? 's' : ''}-clé${count > 1 ? 's' : ''}`;
+        }
+    }
+
+    saveKeywords() {
+        if (!this.editingCategoryId) {
+            this.showToast('Erreur: catégorie non sélectionnée', 'error');
+            return;
+        }
+        
+        try {
+            const keywords = {
+                absolute: this.getKeywordsFromList('absolute'),
+                strong: this.getKeywordsFromList('strong'),
+                weak: this.getKeywordsFromList('weak'),
+                exclusions: this.getKeywordsFromList('exclusions')
+            };
+            
+            console.log('[CategoriesPage] Sauvegarde mots-clés:', keywords);
+            
+            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+            
+            this.closeModal();
+            this.showToast('Mots-clés sauvegardés avec succès', 'success');
+            this.refreshCurrentTab();
+            
+            // Déclencher la synchronisation
+            setTimeout(() => {
+                this.forceSynchronization();
+            }, 100);
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur sauvegarde mots-clés:', error);
+            this.showToast('Erreur lors de la sauvegarde', 'error');
+        }
+    }
+
+    getKeywordsFromList(type) {
+        const keywordTags = document.querySelectorAll(`.keywords-list[data-type="${type}"] .keyword-tag`);
+        return Array.from(keywordTags).map(tag => tag.dataset.keyword);
+    }
+
+    testKeywords() {
+        const testText = document.getElementById('test-text')?.value?.trim();
+        if (!testText) {
+            this.showToast('Veuillez saisir un texte à tester', 'warning');
+            return;
+        }
+        
+        const keywords = {
+            absolute: this.getKeywordsFromList('absolute'),
+            strong: this.getKeywordsFromList('strong'),
+            weak: this.getKeywordsFromList('weak'),
+            exclusions: this.getKeywordsFromList('exclusions')
+        };
+        
+        const results = this.analyzeTextWithKeywords(testText, keywords);
+        this.displayTestResults(results);
+    }
+
+    analyzeTextWithKeywords(text, keywords) {
+        const normalizedText = text.toLowerCase();
+        const matches = [];
+        let totalScore = 0;
+        
+        // Test des mots-clés absolus
+        keywords.absolute.forEach(keyword => {
+            if (normalizedText.includes(keyword.toLowerCase())) {
+                matches.push({ keyword, type: 'absolute', score: 100 });
+                totalScore += 100;
+            }
+        });
+        
+        // Test des mots-clés forts
+        keywords.strong.forEach(keyword => {
+            if (normalizedText.includes(keyword.toLowerCase())) {
+                matches.push({ keyword, type: 'strong', score: 30 });
+                totalScore += 30;
+            }
+        });
+        
+        // Test des mots-clés faibles
+        keywords.weak.forEach(keyword => {
+            if (normalizedText.includes(keyword.toLowerCase())) {
+                matches.push({ keyword, type: 'weak', score: 10 });
+                totalScore += 10;
+            }
+        });
+        
+        // Test des exclusions
+        keywords.exclusions.forEach(keyword => {
+            if (normalizedText.includes(keyword.toLowerCase())) {
+                matches.push({ keyword, type: 'exclusions', score: -50 });
+                totalScore -= 50;
+            }
+        });
+        
+        return {
+            matches,
+            totalScore: Math.max(0, totalScore),
+            wouldMatch: totalScore >= 30
+        };
+    }
+
+    displayTestResults(results) {
+        const resultsContainer = document.getElementById('test-results');
+        if (!resultsContainer) return;
+        
+        const category = window.categoryManager?.getCategory(this.editingCategoryId);
+        
+        resultsContainer.innerHTML = `
+            <div class="test-result ${results.wouldMatch ? 'match' : 'no-match'}">
+                <div class="result-header">
+                    <span class="result-status">
+                        ${results.wouldMatch ? '✅ DÉTECTÉ' : '❌ NON DÉTECTÉ'}
+                    </span>
+                    <span class="result-score">Score: ${results.totalScore} points</span>
+                </div>
+                
+                ${results.wouldMatch ? `
+                    <div class="result-category">
+                        Serait catégorisé comme: 
+                        <span class="category-badge" style="background: ${category.color}20; color: ${category.color};">
+                            ${category.icon} ${category.name}
+                        </span>
+                    </div>
+                ` : ''}
+                
+                ${results.matches.length > 0 ? `
+                    <div class="result-matches">
+                        <h5>Mots-clés détectés:</h5>
+                        <div class="matches-list">
+                            ${results.matches.map(match => `
+                                <span class="match-tag ${match.type}">
+                                    ${match.keyword} 
+                                    <span class="match-score">${match.score > 0 ? '+' : ''}${match.score}</span>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : `
+                    <div class="no-matches">
+                        Aucun mot-clé détecté dans le texte.
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    // ================================================
+    // GESTION DES CATÉGORIES ACTIVES
+    // ================================================
+    toggleCategoryActive(categoryId) {
+        const settings = this.loadSettings();
+        let activeCategories = settings.activeCategories;
+        
+        if (!activeCategories) {
+            // Si null, toutes les catégories sont actives par défaut
+            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
+            activeCategories = [...allCategories];
+        }
+        
+        const isActive = activeCategories.includes(categoryId);
+        
+        if (isActive) {
+            activeCategories = activeCategories.filter(id => id !== categoryId);
+        } else {
+            activeCategories.push(categoryId);
+        }
+        
+        settings.activeCategories = activeCategories;
+        this.saveSettings(settings);
+        
+        this.showToast(
+            isActive ? 'Catégorie désactivée' : 'Catégorie activée', 
+            'success'
+        );
+        
+        this.refreshCurrentTab();
     }
 
     // ================================================
@@ -884,6 +1578,7 @@ class CategoriesPage {
         try {
             const categories = window.categoryManager?.getCategories() || {};
             const customCategories = window.categoryManager?.getCustomCategories() || {};
+            const activeCategories = settings.activeCategories;
             
             return `
                 <div class="keywords-tab-layout">
@@ -904,18 +1599,29 @@ class CategoriesPage {
                     <div class="categories-grid-enhanced">
                         ${Object.entries(categories).map(([id, category]) => {
                             const isCustom = category.isCustom || customCategories[id];
-                            const keywords = window.categoryManager?.getCategoryKeywords(id) || { absolute: [], strong: [], weak: [] };
+                            const keywords = window.categoryManager?.getCategoryKeywords(id) || { absolute: [], strong: [], weak: [], exclusions: [] };
                             const totalKeywords = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + (keywords.weak?.length || 0);
+                            const isActive = !activeCategories || activeCategories.includes(id);
                             
                             return `
-                                <div class="category-card-enhanced" data-category-id="${id}">
+                                <div class="category-card-enhanced ${!isActive ? 'inactive' : ''}" data-category-id="${id}">
                                     <div class="category-card-header">
                                         <div class="category-icon-large" style="background: ${category.color}20; color: ${category.color}">
                                             ${category.icon}
                                         </div>
                                         <div class="category-info">
-                                            <h3>${category.name}</h3>
+                                            <div class="category-title-row">
+                                                <h3>${category.name}</h3>
+                                                <div class="category-toggle">
+                                                    <label class="toggle-switch-mini">
+                                                        <input type="checkbox" ${isActive ? 'checked' : ''} 
+                                                               onchange="window.categoriesPage.toggleCategoryActive('${id}')">
+                                                        <span class="toggle-slider-mini"></span>
+                                                    </label>
+                                                </div>
+                                            </div>
                                             ${isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
+                                            ${!isActive ? '<span class="inactive-badge">Désactivée</span>' : ''}
                                         </div>
                                     </div>
                                     
@@ -929,6 +1635,7 @@ class CategoriesPage {
                                         ${keywords.absolute?.length > 0 ? `<span class="keyword-badge absolute">${keywords.absolute.length} absolus</span>` : ''}
                                         ${keywords.strong?.length > 0 ? `<span class="keyword-badge strong">${keywords.strong.length} forts</span>` : ''}
                                         ${keywords.weak?.length > 0 ? `<span class="keyword-badge weak">${keywords.weak.length} faibles</span>` : ''}
+                                        ${keywords.exclusions?.length > 0 ? `<span class="keyword-badge exclusions">${keywords.exclusions.length} exclusions</span>` : ''}
                                     </div>
                                     
                                     <div class="category-actions">
@@ -968,7 +1675,7 @@ class CategoriesPage {
                         ${settings.categoryExclusions?.domains?.length > 0 || settings.categoryExclusions?.emails?.length > 0 ? `
                             <div class="exclusions-list">
                                 <h4>Exclusions actives</h4>
-                                ${settings.categoryExclusions.domains.map(domain => `
+                                ${(settings.categoryExclusions.domains || []).map(domain => `
                                     <span class="exclusion-badge">
                                         <i class="fas fa-globe"></i> ${domain}
                                         <button onclick="window.categoriesPage.removeExclusion('domain', '${domain}')">
@@ -976,7 +1683,7 @@ class CategoriesPage {
                                         </button>
                                     </span>
                                 `).join('')}
-                                ${settings.categoryExclusions.emails.map(email => `
+                                ${(settings.categoryExclusions.emails || []).map(email => `
                                     <span class="exclusion-badge">
                                         <i class="fas fa-envelope"></i> ${email}
                                         <button onclick="window.categoriesPage.removeExclusion('email', '${email}')">
@@ -1296,46 +2003,8 @@ class CategoriesPage {
     }
 
     // ================================================
-    // MÉTHODES DE GESTION DES CATÉGORIES
+    // MÉTHODES DE GESTION DES EXCLUSIONS
     // ================================================
-    showCreateCategoryModal() {
-        // Implémenter l'affichage du modal de création
-        this.showToast('Fonctionnalité en cours de développement', 'info');
-    }
-
-    editCustomCategory(categoryId) {
-        // Implémenter l'édition
-        this.showToast('Fonctionnalité en cours de développement', 'info');
-    }
-
-    deleteCustomCategory(categoryId) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette catégorie personnalisée ?')) {
-            try {
-                window.categoryManager?.deleteCustomCategory(categoryId);
-                this.refreshCurrentTab();
-                this.showToast('Catégorie supprimée', 'success');
-            } catch (error) {
-                console.error('[CategoriesPage] Erreur suppression catégorie:', error);
-                this.showToast('Erreur lors de la suppression', 'error');
-            }
-        }
-    }
-
-    openKeywordsModal(categoryId) {
-        // Implémenter l'ouverture du modal de mots-clés
-        this.showToast('Fonctionnalité en cours de développement', 'info');
-    }
-
-    openAllKeywordsModal() {
-        // Implémenter l'affichage de tous les mots-clés
-        this.showToast('Fonctionnalité en cours de développement', 'info');
-    }
-
-    openExclusionsModal() {
-        // Implémenter la gestion des exclusions
-        this.showToast('Fonctionnalité en cours de développement', 'info');
-    }
-
     addQuickExclusion() {
         const input = document.getElementById('quick-exclusion-input');
         if (!input || !input.value.trim()) return;
@@ -1376,6 +2045,258 @@ class CategoriesPage {
         this.saveSettings(settings);
         this.refreshCurrentTab();
         this.showToast('Exclusion supprimée', 'success');
+    }
+
+    openAllKeywordsModal() {
+        this.closeModal();
+        
+        const categories = window.categoryManager?.getCategories() || {};
+        const modalId = 'all-keywords-modal';
+        
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay">
+                <div class="modal-container large">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-list"></i> Tous les mots-clés</h2>
+                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="all-keywords-content">
+                            ${Object.entries(categories).map(([id, category]) => {
+                                const keywords = window.categoryManager?.getCategoryKeywords(id) || { absolute: [], strong: [], weak: [], exclusions: [] };
+                                const totalKeywords = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
+                                
+                                if (totalKeywords === 0) return '';
+                                
+                                return `
+                                    <div class="category-keywords-summary">
+                                        <div class="category-summary-header">
+                                            <div class="category-icon" style="background: ${category.color}20; color: ${category.color};">
+                                                ${category.icon}
+                                            </div>
+                                            <h4>${category.name}</h4>
+                                            <span class="keywords-count">${totalKeywords} mots-clés</span>
+                                        </div>
+                                        
+                                        ${keywords.absolute?.length > 0 ? `
+                                            <div class="keywords-type-list">
+                                                <h5>🎯 Absolus (${keywords.absolute.length})</h5>
+                                                <div class="keywords-tags">
+                                                    ${keywords.absolute.map(kw => `<span class="keyword-tag absolute">${kw}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        
+                                        ${keywords.strong?.length > 0 ? `
+                                            <div class="keywords-type-list">
+                                                <h5>💪 Forts (${keywords.strong.length})</h5>
+                                                <div class="keywords-tags">
+                                                    ${keywords.strong.map(kw => `<span class="keyword-tag strong">${kw}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        
+                                        ${keywords.weak?.length > 0 ? `
+                                            <div class="keywords-type-list">
+                                                <h5>📝 Faibles (${keywords.weak.length})</h5>
+                                                <div class="keywords-tags">
+                                                    ${keywords.weak.map(kw => `<span class="keyword-tag weak">${kw}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                        
+                                        ${keywords.exclusions?.length > 0 ? `
+                                            <div class="keywords-type-list">
+                                                <h5>🚫 Exclusions (${keywords.exclusions.length})</h5>
+                                                <div class="keywords-tags">
+                                                    ${keywords.exclusions.map(kw => `<span class="keyword-tag exclusions">${kw}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = modalId;
+    }
+
+    openExclusionsModal() {
+        this.closeModal();
+        
+        const settings = this.loadSettings();
+        const modalId = 'exclusions-modal';
+        
+        const modalHTML = `
+            <div id="${modalId}" class="modal-overlay">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-ban"></i> Gestion des exclusions</h2>
+                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="exclusions-management">
+                            <p>Gérez les domaines et emails qui ne doivent jamais être catégorisés automatiquement.</p>
+                            
+                            <div class="exclusion-form">
+                                <h4>Ajouter une exclusion</h4>
+                                <div class="form-group">
+                                    <input type="text" id="new-exclusion-input" class="form-input" 
+                                           placeholder="Domaine (ex: newsletter.com) ou email (ex: spam@example.com)">
+                                    <button class="btn btn-primary" onclick="window.categoriesPage.addExclusionFromModal()">
+                                        <i class="fas fa-plus"></i> Ajouter
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="current-exclusions">
+                                <h4>Exclusions actuelles</h4>
+                                
+                                ${settings.categoryExclusions?.domains?.length > 0 ? `
+                                    <div class="exclusion-group">
+                                        <h5><i class="fas fa-globe"></i> Domaines</h5>
+                                        <div class="exclusions-grid">
+                                            ${settings.categoryExclusions.domains.map(domain => `
+                                                <div class="exclusion-item">
+                                                    <span>${domain}</span>
+                                                    <button class="btn-remove" onclick="window.categoriesPage.removeExclusionFromModal('domain', '${domain}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${settings.categoryExclusions?.emails?.length > 0 ? `
+                                    <div class="exclusion-group">
+                                        <h5><i class="fas fa-envelope"></i> Emails</h5>
+                                        <div class="exclusions-grid">
+                                            ${settings.categoryExclusions.emails.map(email => `
+                                                <div class="exclusion-item">
+                                                    <span>${email}</span>
+                                                    <button class="btn-remove" onclick="window.categoriesPage.removeExclusionFromModal('email', '${email}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${(!settings.categoryExclusions?.domains?.length && !settings.categoryExclusions?.emails?.length) ? `
+                                    <div class="no-exclusions">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span>Aucune exclusion configurée</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                            Fermer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = modalId;
+        
+        // Focus sur l'input
+        setTimeout(() => {
+            const input = document.getElementById('new-exclusion-input');
+            if (input) {
+                input.focus();
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.addExclusionFromModal();
+                    }
+                });
+            }
+        }, 100);
+    }
+
+    addExclusionFromModal() {
+        const input = document.getElementById('new-exclusion-input');
+        if (!input || !input.value.trim()) return;
+        
+        const value = input.value.trim().toLowerCase();
+        const settings = this.loadSettings();
+        
+        if (!settings.categoryExclusions) {
+            settings.categoryExclusions = { domains: [], emails: [] };
+        }
+        
+        let added = false;
+        
+        if (value.includes('@')) {
+            if (!settings.categoryExclusions.emails.includes(value)) {
+                settings.categoryExclusions.emails.push(value);
+                added = true;
+            }
+        } else {
+            if (!settings.categoryExclusions.domains.includes(value)) {
+                settings.categoryExclusions.domains.push(value);
+                added = true;
+            }
+        }
+        
+        if (added) {
+            this.saveSettings(settings);
+            input.value = '';
+            this.closeModal();
+            this.showToast('Exclusion ajoutée', 'success');
+            
+            // Rouvrir la modal avec les nouvelles données
+            setTimeout(() => {
+                this.openExclusionsModal();
+            }, 100);
+        } else {
+            this.showToast('Cette exclusion existe déjà', 'warning');
+        }
+    }
+
+    removeExclusionFromModal(type, value) {
+        const settings = this.loadSettings();
+        
+        if (type === 'domain') {
+            settings.categoryExclusions.domains = settings.categoryExclusions.domains.filter(d => d !== value);
+        } else {
+            settings.categoryExclusions.emails = settings.categoryExclusions.emails.filter(e => e !== value);
+        }
+        
+        this.saveSettings(settings);
+        this.closeModal();
+        this.showToast('Exclusion supprimée', 'success');
+        
+        // Rouvrir la modal avec les nouvelles données
+        setTimeout(() => {
+            this.openExclusionsModal();
+        }, 100);
     }
 
     exportSettings() {
@@ -1424,6 +2345,27 @@ class CategoriesPage {
         };
         
         input.click();
+    }
+
+    // ================================================
+    // GESTION DES MODALES
+    // ================================================
+    closeModal() {
+        if (this.currentModal) {
+            const modal = document.getElementById(this.currentModal);
+            if (modal) {
+                modal.remove();
+            }
+            this.currentModal = null;
+            this.editingCategoryId = null;
+        }
+        
+        // Fermer toutes les modales
+        document.querySelectorAll('.modal-overlay').forEach(modal => {
+            modal.remove();
+        });
+        
+        document.body.style.overflow = 'auto';
     }
 
     // ================================================
@@ -1502,6 +2444,11 @@ class CategoriesPage {
         }, 200);
     }
 
+    hideExplanationMessage() {
+        // Méthode pour masquer les messages d'explication
+        this.showToast('Message masqué', 'info');
+    }
+
     // ================================================
     // MÉTHODES PUBLIQUES POUR INTÉGRATION
     // ================================================
@@ -1526,6 +2473,24 @@ class CategoriesPage {
     
     shouldDetectCC() {
         return this.loadSettings().preferences?.detectCC !== false;
+    }
+
+    // ================================================
+    // UTILITAIRES POUR LES COULEURS
+    // ================================================
+    renderColorPresets() {
+        const presets = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308',
+            '#84cc16', '#22c55e', '#10b981', '#06b6d4',
+            '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6',
+            '#a855f7', '#d946ef', '#ec4899', '#f43f5e'
+        ];
+        
+        return presets.map(color => `
+            <button class="color-preset" 
+                    style="background: ${color}" 
+                    onclick="document.getElementById('category-color').value='${color}'; document.getElementById('edit-category-color').value='${color}'"></button>
+        `).join('');
     }
 
     // ================================================
@@ -1791,6 +2756,53 @@ class CategoriesPage {
                 font-weight: 500;
             }
             
+            /* Toggle switches mini pour catégories */
+            .toggle-switch-mini {
+                position: relative;
+                display: inline-block;
+                width: 36px;
+                height: 20px;
+                margin-left: auto;
+            }
+            
+            .toggle-switch-mini input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+            
+            .toggle-slider-mini {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #ccc;
+                transition: 0.4s;
+                border-radius: 20px;
+            }
+            
+            .toggle-slider-mini:before {
+                position: absolute;
+                content: "";
+                height: 16px;
+                width: 16px;
+                left: 2px;
+                bottom: 2px;
+                background-color: white;
+                transition: 0.4s;
+                border-radius: 50%;
+            }
+            
+            .toggle-switch-mini input:checked + .toggle-slider-mini {
+                background-color: #3b82f6;
+            }
+            
+            .toggle-switch-mini input:checked + .toggle-slider-mini:before {
+                transform: translateX(16px);
+            }
+            
             /* Indicateurs de statut */
             .status-badge {
                 font-size: 10px;
@@ -1957,6 +2969,15 @@ class CategoriesPage {
                 font-weight: 600;
             }
             
+            .inactive-badge {
+                background: #f3f4f6;
+                color: #6b7280;
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-weight: 600;
+            }
+            
             /* Grille de sélection des catégories */
             .categories-selection-grid-automation {
                 display: grid;
@@ -2097,11 +3118,21 @@ class CategoriesPage {
                 border-radius: 12px;
                 padding: 20px;
                 transition: all 0.2s ease;
+                position: relative;
             }
             
             .category-card-enhanced:hover {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            }
+            
+            .category-card-enhanced.inactive {
+                opacity: 0.6;
+                background: #f9fafb;
+            }
+            
+            .category-card-enhanced.inactive:hover {
+                opacity: 0.8;
             }
             
             .category-card-header {
@@ -2126,11 +3157,22 @@ class CategoriesPage {
                 flex: 1;
             }
             
+            .category-title-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 4px;
+            }
+            
             .category-info h3 {
                 font-size: 16px;
                 font-weight: 600;
                 color: #1f2937;
-                margin: 0 0 4px 0;
+                margin: 0;
+            }
+            
+            .category-toggle {
+                margin-left: auto;
             }
             
             .category-description {
@@ -2177,6 +3219,11 @@ class CategoriesPage {
             .keyword-badge.weak {
                 background: #e0e7ff;
                 color: #4338ca;
+            }
+            
+            .keyword-badge.exclusions {
+                background: #f3f4f6;
+                color: #6b7280;
             }
             
             .category-actions {
@@ -2238,6 +3285,661 @@ class CategoriesPage {
                 flex-wrap: wrap;
             }
             
+            /* MODALES */
+            .modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.75);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                backdrop-filter: blur(4px);
+                padding: 20px;
+            }
+            
+            .modal-container {
+                background: white;
+                border-radius: 16px;
+                max-width: 600px;
+                width: 100%;
+                max-height: 90vh;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+                overflow: hidden;
+            }
+            
+            .modal-container.large {
+                max-width: 900px;
+            }
+            
+            .modal-header {
+                padding: 24px;
+                border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+            
+            .modal-header h2 {
+                margin: 0;
+                font-size: 20px;
+                font-weight: 700;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                color: #6b7280;
+                padding: 8px;
+                border-radius: 8px;
+                transition: all 0.2s ease;
+            }
+            
+            .modal-close:hover {
+                background: #f3f4f6;
+                color: #374151;
+            }
+            
+            .modal-content {
+                padding: 24px;
+                overflow-y: auto;
+                flex: 1;
+            }
+            
+            .modal-footer {
+                padding: 24px;
+                border-top: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }
+            
+            .category-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .category-header .category-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+            }
+            
+            .category-header h2 {
+                margin: 0 0 4px 0;
+            }
+            
+            .category-header p {
+                margin: 0;
+                color: #6b7280;
+                font-size: 14px;
+            }
+            
+            /* Formulaires dans les modales */
+            .form-section {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .form-group label {
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .form-input,
+            .form-textarea,
+            .form-select {
+                padding: 12px 16px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 14px;
+                background: white;
+                transition: all 0.2s ease;
+            }
+            
+            .form-input:focus,
+            .form-textarea:focus,
+            .form-select:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+            
+            .color-picker {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .color-picker input[type="color"] {
+                width: 100%;
+                height: 40px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+            }
+            
+            .color-presets {
+                display: grid;
+                grid-template-columns: repeat(8, 1fr);
+                gap: 4px;
+            }
+            
+            .color-preset {
+                width: 24px;
+                height: 24px;
+                border: 2px solid white;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            
+            .color-preset:hover {
+                transform: scale(1.1);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            }
+            
+            /* Gestion des mots-clés */
+            .keywords-explanation {
+                margin-bottom: 24px;
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            
+            .keyword-type-info {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px;
+            }
+            
+            .info-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .info-label {
+                font-size: 13px;
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .info-desc {
+                font-size: 12px;
+                color: #6b7280;
+                line-height: 1.4;
+            }
+            
+            .keywords-sections {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 24px;
+                margin-bottom: 24px;
+            }
+            
+            .keyword-section {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
+                background: white;
+            }
+            
+            .keyword-section.absolute {
+                border-color: #fca5a5;
+                background: #fef2f2;
+            }
+            
+            .keyword-section.strong {
+                border-color: #fde68a;
+                background: #fffbeb;
+            }
+            
+            .keyword-section.weak {
+                border-color: #c7d2fe;
+                background: #f0f9ff;
+            }
+            
+            .keyword-section.exclusions {
+                border-color: #d1d5db;
+                background: #f9fafb;
+            }
+            
+            .section-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+            
+            .section-header h4 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .keyword-count {
+                font-size: 12px;
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            .add-keyword-form {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+            
+            .keyword-input {
+                flex: 1;
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            
+            .keyword-input:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+            }
+            
+            .add-keyword-btn {
+                padding: 8px 12px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-size: 12px;
+                transition: all 0.2s ease;
+            }
+            
+            .add-keyword-btn:hover {
+                background: #2563eb;
+            }
+            
+            .keywords-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                min-height: 40px;
+            }
+            
+            .keyword-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                transition: all 0.2s ease;
+            }
+            
+            .keyword-tag.absolute {
+                background: #fee2e2;
+                color: #dc2626;
+                border: 1px solid #fca5a5;
+            }
+            
+            .keyword-tag.strong {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .keyword-tag.weak {
+                background: #e0e7ff;
+                color: #4338ca;
+                border: 1px solid #c7d2fe;
+            }
+            
+            .keyword-tag.exclusions {
+                background: #f3f4f6;
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+            }
+            
+            .keyword-text {
+                flex: 1;
+            }
+            
+            .remove-keyword {
+                background: none;
+                border: none;
+                color: currentColor;
+                cursor: pointer;
+                font-size: 10px;
+                padding: 2px;
+                border-radius: 50%;
+                transition: all 0.2s ease;
+                opacity: 0.7;
+            }
+            
+            .remove-keyword:hover {
+                opacity: 1;
+                background: rgba(0, 0, 0, 0.1);
+            }
+            
+            /* Test des mots-clés */
+            .keywords-test-section {
+                margin-top: 24px;
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            
+            .keywords-test-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .test-input-group {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+            
+            .test-input-group input {
+                flex: 1;
+            }
+            
+            .test-results {
+                min-height: 40px;
+            }
+            
+            .test-result {
+                padding: 16px;
+                border-radius: 8px;
+                border: 1px solid;
+            }
+            
+            .test-result.match {
+                background: #f0fdf4;
+                border-color: #bbf7d0;
+                color: #166534;
+            }
+            
+            .test-result.no-match {
+                background: #fef2f2;
+                border-color: #fca5a5;
+                color: #991b1b;
+            }
+            
+            .result-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+                font-weight: 600;
+            }
+            
+            .result-category {
+                margin-bottom: 12px;
+                font-size: 14px;
+            }
+            
+            .category-badge {
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-left: 8px;
+            }
+            
+            .result-matches h5 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+                font-weight: 600;
+            }
+            
+            .matches-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            
+            .match-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 500;
+            }
+            
+            .match-score {
+                font-weight: 700;
+            }
+            
+            .no-matches {
+                font-style: italic;
+                color: #6b7280;
+            }
+            
+            /* Modal d'aperçu de tous les mots-clés */
+            .all-keywords-content {
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+            }
+            
+            .category-keywords-summary {
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
+                background: white;
+            }
+            
+            .category-summary-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .category-summary-header .category-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 16px;
+            }
+            
+            .category-summary-header h4 {
+                margin: 0;
+                flex: 1;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+            
+            .keywords-count {
+                font-size: 12px;
+                color: #6b7280;
+                font-weight: 500;
+                background: #f3f4f6;
+                padding: 4px 8px;
+                border-radius: 6px;
+            }
+            
+            .keywords-type-list {
+                margin-bottom: 16px;
+            }
+            
+            .keywords-type-list:last-child {
+                margin-bottom: 0;
+            }
+            
+            .keywords-type-list h5 {
+                margin: 0 0 8px 0;
+                font-size: 13px;
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .keywords-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            
+            /* Modal d'exclusions */
+            .exclusions-management {
+                display: flex;
+                flex-direction: column;
+                gap: 24px;
+            }
+            
+            .exclusion-form {
+                padding: 16px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            
+            .exclusion-form h4 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+            
+            .exclusion-form .form-group {
+                display: flex;
+                gap: 12px;
+                align-items: flex-end;
+            }
+            
+            .exclusion-form input {
+                flex: 1;
+            }
+            
+            .current-exclusions {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .current-exclusions h4 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+            
+            .exclusion-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .exclusion-group h5 {
+                margin: 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .exclusions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 8px;
+            }
+            
+            .exclusion-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px 12px;
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            
+            .exclusion-item span {
+                flex: 1;
+                font-weight: 500;
+            }
+            
+            .btn-remove {
+                background: none;
+                border: none;
+                color: #dc2626;
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+            }
+            
+            .btn-remove:hover {
+                background: #fee2e2;
+                color: #991b1b;
+            }
+            
+            .no-exclusions {
+                text-align: center;
+                padding: 24px;
+                color: #6b7280;
+                font-style: italic;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            
             /* Responsive */
             @media (max-width: 768px) {
                 .settings-grid-compact {
@@ -2258,6 +3960,33 @@ class CategoriesPage {
                 
                 .categories-grid-enhanced {
                     grid-template-columns: 1fr;
+                }
+                
+                .keywords-sections {
+                    grid-template-columns: 1fr;
+                }
+                
+                .keyword-type-info {
+                    grid-template-columns: 1fr;
+                }
+                
+                .form-row {
+                    grid-template-columns: 1fr;
+                }
+                
+                .color-presets {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+                
+                .modal-container {
+                    margin: 10px;
+                    max-height: calc(100vh - 20px);
+                }
+                
+                .modal-header,
+                .modal-content,
+                .modal-footer {
+                    padding: 16px;
                 }
             }
         `;
@@ -2343,6 +4072,8 @@ class CategoriesPage {
         this.pendingSync = false;
         this.syncQueue = [];
         
+        this.closeModal();
+        
         console.log('[CategoriesPage] Nettoyage effectué');
     }
 
@@ -2374,10 +4105,10 @@ try {
             }
         };
         
-        console.log('✅ CategoriesPage v8.5 intégrée au PageManager');
+        console.log('✅ CategoriesPage v9.0 intégrée au PageManager');
     }
 } catch (error) {
     console.error('[CategoriesPage] Erreur critique initialisation:', error);
 }
 
-console.log('✅ CategoriesPage v8.5 loaded - Complète avec toutes les méthodes');
+console.log('✅ CategoriesPage v9.0 loaded - Gestion complète des catégories et mots-clés');
