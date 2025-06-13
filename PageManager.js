@@ -1,4 +1,4 @@
-// PageManager.js - Version 2.0 - CORRIGÉE AVEC VÉRIFICATIONS DOM
+// PageManager.js - Version 2.1 - CORRECTION SCANNER/SCAN
 
 class PageManager {
     constructor() {
@@ -10,7 +10,7 @@ class PageManager {
         // Initialisation différée pour s'assurer que le DOM est prêt
         this.deferredInit();
         
-        console.log('[PageManager] ✅ Constructor v2.0 - Version corrigée avec vérifications DOM');
+        console.log('[PageManager] ✅ Constructor v2.1 - Correction scanner/scan');
     }
 
     async deferredInit() {
@@ -129,10 +129,18 @@ class PageManager {
             }
         };
 
+        // Alias pour scanner -> scan (compatibilité)
+        this.pages.scanner = this.pages.scan;
+
         // Page des emails
         this.pages.emails = (container) => {
             try {
-                container.innerHTML = this.getEmailsPageContent();
+                // Si le module emails existe, l'utiliser
+                if (window.emailModule && typeof window.emailModule.render === 'function') {
+                    window.emailModule.render(container);
+                } else {
+                    container.innerHTML = this.getEmailsPageContent();
+                }
             } catch (error) {
                 console.error('[PageManager] Erreur page emails:', error);
                 container.innerHTML = this.getErrorContent('Emails', error);
@@ -217,6 +225,12 @@ class PageManager {
                 console.warn('[PageManager] ⚠️ Initialisation non terminée, report du chargement');
                 setTimeout(() => this.loadPage(pageName), 100);
                 return;
+            }
+            
+            // Normaliser le nom de la page (scanner -> scan)
+            if (pageName === 'scanner') {
+                pageName = 'scan';
+                console.log('[PageManager] 📝 Redirection scanner → scan');
             }
             
             // Vérifier que la page existe
@@ -309,6 +323,7 @@ class PageManager {
         try {
             const titles = {
                 scan: 'Scanner',
+                scanner: 'Scanner', // Alias
                 emails: 'Emails',
                 tasks: 'Tâches',
                 dashboard: 'Dashboard',
@@ -342,6 +357,56 @@ class PageManager {
     }
 
     getEmailsPageContent() {
+        // Vérifier si des résultats de scan sont disponibles
+        let scanResults = null;
+        try {
+            const stored = sessionStorage.getItem('scanResults');
+            if (stored) {
+                scanResults = JSON.parse(stored);
+            }
+        } catch (e) {
+            console.warn('[PageManager] Erreur lecture scanResults:', e);
+        }
+
+        if (scanResults && scanResults.total > 0) {
+            return `
+                <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
+                    <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                        <h1 style="margin: 0 0 20px 0; color: #333; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 32px;">📧</span>
+                            Résultats du scan
+                        </h1>
+                        
+                        <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h3 style="margin: 0 0 10px 0; color: #0369a1;">Scan terminé avec succès !</h3>
+                                    <p style="margin: 0; color: #0c4a6e;">
+                                        ${scanResults.total} emails analysés en ${scanResults.scanDuration || 0} secondes
+                                    </p>
+                                    <p style="margin: 5px 0 0 0; color: #0c4a6e; font-size: 14px;">
+                                        Période: ${scanResults.selectedDays} jours | ${scanResults.categorized} emails catégorisés
+                                    </p>
+                                </div>
+                                <button onclick="window.pageManager.loadPage('scan')" 
+                                        style="background: #0ea5e9; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                                    Nouveau scan
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; text-align: center;">
+                            <p style="margin: 0 0 15px 0; color: #6c757d;">Le module d'affichage des emails est en cours de chargement...</p>
+                            <div style="width: 30px; height: 30px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                </style>
+            `;
+        }
+
         return `
             <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
                 <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -352,10 +417,10 @@ class PageManager {
                     <p style="color: #666; margin-bottom: 30px;">Consultez et gérez vos emails analysés</p>
                     
                     <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; text-align: center;">
-                        <p style="margin: 0 0 15px 0; color: #6c757d;">Cette page affichera vos emails analysés</p>
+                        <p style="margin: 0 0 15px 0; color: #6c757d;">Aucun email scanné pour le moment</p>
                         <button onclick="window.pageManager.loadPage('scan')" 
                                 style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                            Analyser mes emails
+                            Scanner mes emails
                         </button>
                     </div>
                 </div>
@@ -523,7 +588,7 @@ try {
     // Créer la nouvelle instance
     window.pageManager = new PageManager();
     
-    console.log('✅ PageManager v2.0 chargé et initialisé avec succès');
+    console.log('✅ PageManager v2.1 chargé - Correction scanner/scan');
     
 } catch (error) {
     console.error('❌ Erreur critique lors de l\'initialisation du PageManager:', error);
