@@ -1,655 +1,815 @@
-// MailService.js - Service de récupération des emails Microsoft Graph CORRIGÉ v3.1
+// CategoryManager.js - Version 18.0 - VERSION FINALE CORRIGÉE
 
-class MailService {
+class CategoryManager {
     constructor() {
+        this.categories = {};
         this.isInitialized = false;
-        this.cache = new Map();
-        this.folders = new Map();
-        this.folderMapping = {
-            'inbox': 'inbox',
-            'junkemail': 'junkemail', 
-            'sentitems': 'sentitems',
-            'drafts': 'drafts',
-            'archive': 'archive'
+        this.debugMode = false;
+        this.weightedKeywords = {};
+        this.currentSettings = {};
+        this.initializationComplete = false;
+        
+        // Initialiser immédiatement les catégories et mots-clés
+        this.initializeCategories();
+        this.initializeWeightedDetection();
+        this.setDefaultSettings();
+        
+        // Différer la synchronisation avec les autres modules
+        setTimeout(() => this.deferredInitialization(), 100);
+        
+        console.log('[CategoryManager] ✅ Version 18.0 - Version finale corrigée');
+    }
+
+    async deferredInitialization() {
+        try {
+            // Attendre que le DOM soit prêt
+            if (document.readyState === 'loading') {
+                await new Promise(resolve => {
+                    document.addEventListener('DOMContentLoaded', resolve);
+                });
+            }
+            
+            // Attendre un peu plus pour que les autres modules se chargent
+            await new Promise(resolve => setTimeout(resolve, 150));
+            
+            // Charger les paramètres depuis CategoriesPage si disponible
+            await this.loadSettingsFromCategoriesPage();
+            
+            // Configurer les listeners
+            this.setupSettingsListener();
+            
+            this.initializationComplete = true;
+            console.log('[CategoryManager] ✅ Initialisation différée terminée');
+            
+            // Notifier que CategoryManager est prêt
+            window.dispatchEvent(new CustomEvent('categoryManagerReady', {
+                detail: { manager: this }
+            }));
+            
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur lors de l\'initialisation:', error);
+            this.initializationComplete = true; // Marquer comme terminé même en cas d'erreur
+        }
+    }
+
+    async loadSettingsFromCategoriesPage() {
+        try {
+            // Attendre que CategoriesPage soit disponible
+            let attempts = 0;
+            const maxAttempts = 30; // 3 secondes max
+            
+            while (!window.categoriesPage?.initializationComplete && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (window.categoriesPage?.initializationComplete) {
+                console.log('[CategoryManager] 🔗 CategoriesPage trouvé, chargement des paramètres...');
+                
+                // Charger les paramètres réels
+                const settings = window.categoriesPage.loadSettings();
+                
+                this.currentSettings = {
+                    excludeSpam: settings.preferences?.excludeSpam !== false,
+                    detectCC: settings.preferences?.detectCC !== false,
+                    activeCategories: settings.activeCategories || Object.keys(this.categories),
+                    taskPreselectedCategories: settings.taskPreselectedCategories || ['tasks', 'commercial', 'finance', 'meetings']
+                };
+                
+                console.log('[CategoryManager] ✅ Paramètres chargés depuis CategoriesPage:', this.currentSettings);
+            } else {
+                console.warn('[CategoryManager] ⚠️ CategoriesPage non disponible, utilisation des paramètres par défaut');
+            }
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur chargement paramètres:', error);
+        }
+    }
+    
+    setDefaultSettings() {
+        this.currentSettings = {
+            excludeSpam: true,
+            detectCC: true,
+            activeCategories: Object.keys(this.categories),
+            taskPreselectedCategories: ['tasks', 'commercial', 'finance', 'meetings']
+        };
+        console.log('[CategoryManager] 🔧 Paramètres par défaut définis');
+    }
+
+    // Méthodes pour recevoir les notifications des autres modules
+    setSpamExclusion(enabled) {
+        this.currentSettings.excludeSpam = enabled;
+        console.log(`[CategoryManager] 📧 Exclusion spam ${enabled ? 'activée' : 'désactivée'}`);
+    }
+
+    setCCDetection(enabled) {
+        this.currentSettings.detectCC = enabled;
+        console.log(`[CategoryManager] 📋 Détection CC ${enabled ? 'activée' : 'désactivée'}`);
+    }
+
+    setActiveCategories(activeCategories) {
+        this.currentSettings.activeCategories = activeCategories || Object.keys(this.categories);
+        console.log('[CategoryManager] 🏷️ Catégories actives mises à jour:', this.currentSettings.activeCategories);
+    }
+    
+    setTaskPreselectedCategories(preselectedCategories) {
+        this.currentSettings.taskPreselectedCategories = preselectedCategories || [];
+        console.log('[CategoryManager] ✅ Catégories pré-sélectionnées mises à jour:', this.currentSettings.taskPreselectedCategories);
+    }
+
+    updateSettings(settings) {
+        if (settings.excludeSpam !== undefined) this.setSpamExclusion(settings.excludeSpam);
+        if (settings.detectCC !== undefined) this.setCCDetection(settings.detectCC);
+        if (settings.activeCategories !== undefined) this.setActiveCategories(settings.activeCategories);
+        if (settings.taskPreselectedCategories !== undefined) this.setTaskPreselectedCategories(settings.taskPreselectedCategories);
+        console.log('[CategoryManager] 🔄 Paramètres mis à jour:', this.currentSettings);
+    }
+
+    // Méthodes publiques pour accéder aux paramètres
+    getTaskPreselectedCategories() {
+        return this.currentSettings.taskPreselectedCategories || [];
+    }
+    
+    getActiveCategories() {
+        return this.currentSettings.activeCategories || Object.keys(this.categories);
+    }
+    
+    shouldExcludeSpam() {
+        return this.currentSettings.excludeSpam !== false;
+    }
+    
+    shouldDetectCC() {
+        return this.currentSettings.detectCC !== false;
+    }
+
+    initializeCategories() {
+        this.categories = {
+            // PRIORITÉ MAXIMALE - MARKETING & NEWS (détecté en premier)
+            marketing_news: {
+                name: 'Marketing & News',
+                icon: '📰',
+                color: '#8b5cf6',
+                description: 'Newsletters et promotions',
+                priority: 100
+            },
+            
+            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE POUR INTERCEPTION
+            cc: {
+                name: 'En Copie',
+                icon: '📋',
+                color: '#64748b',
+                description: 'Emails où vous êtes en copie',
+                priority: 90
+            },
+            
+            // CATÉGORIES NORMALES - MÊME PRIORITÉ
+            security: {
+                name: 'Sécurité',
+                icon: '🔒',
+                color: '#991b1b',
+                description: 'Alertes de sécurité et authentification',
+                priority: 50
+            },
+            
+            finance: {
+                name: 'Finance',
+                icon: '💰',
+                color: '#dc2626',
+                description: 'Factures et paiements',
+                priority: 50
+            },
+            
+            tasks: {
+                name: 'Actions Requises',
+                icon: '✅',
+                color: '#ef4444',
+                description: 'Tâches à faire et demandes d\'action',
+                priority: 50
+            },
+            
+            commercial: {
+                name: 'Commercial',
+                icon: '💼',
+                color: '#059669',
+                description: 'Opportunités, devis et contrats',
+                priority: 50
+            },
+            
+            meetings: {
+                name: 'Réunions',
+                icon: '📅',
+                color: '#f59e0b',
+                description: 'Invitations et demandes de réunion',
+                priority: 50
+            },
+            
+            support: {
+                name: 'Support',
+                icon: '🛠️',
+                color: '#f59e0b',
+                description: 'Tickets et assistance',
+                priority: 50
+            },
+            
+            reminders: {
+                name: 'Relances',
+                icon: '🔄',
+                color: '#10b981',
+                description: 'Rappels et suivis',
+                priority: 50
+            },
+            
+            project: {
+                name: 'Projets',
+                icon: '📊',
+                color: '#3b82f6',
+                description: 'Gestion de projet',
+                priority: 50
+            },
+            
+            hr: {
+                name: 'RH',
+                icon: '👥',
+                color: '#10b981',
+                description: 'Ressources humaines',
+                priority: 50
+            },
+            
+            internal: {
+                name: 'Communication Interne',
+                icon: '📢',
+                color: '#0ea5e9',
+                description: 'Annonces internes',
+                priority: 50
+            },
+            
+            notifications: {
+                name: 'Notifications',
+                icon: '🔔',
+                color: '#94a3b8',
+                description: 'Notifications automatiques',
+                priority: 50
+            }
         };
         
-        console.log('[MailService] Constructor - Service de récupération des emails réels');
+        this.isInitialized = true;
+        console.log('[CategoryManager] ✅ Catégories initialisées:', Object.keys(this.categories));
     }
 
-    async initialize() {
-        console.log('[MailService] Initializing...');
-        
-        if (this.isInitialized) {
-            console.log('[MailService] Already initialized');
-            return;
-        }
-
-        try {
-            // Vérifier que AuthService est disponible et initialisé
-            if (!window.authService) {
-                throw new Error('AuthService not available');
-            }
-
-            if (!window.authService.isAuthenticated()) {
-                console.warn('[MailService] User not authenticated, cannot initialize');
-                return;
-            }
-
-            // Charger les dossiers de messagerie
-            console.log('[MailService] Loading mail folders...');
-            await this.loadMailFolders();
-
-            console.log('[MailService] ✅ Initialization complete');
-            this.isInitialized = true;
-
-        } catch (error) {
-            console.error('[MailService] ❌ Initialization failed:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // CHARGEMENT DES DOSSIERS
-    // ================================================
-    async loadMailFolders() {
-        try {
-            const accessToken = await window.authService.getAccessToken();
-            if (!accessToken) {
-                throw new Error('Unable to get access token');
-            }
-
-            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            const folders = data.value || [];
-
-            console.log(`[MailService] ✅ Loaded ${folders.length} folders`);
+    initializeWeightedDetection() {
+        this.weightedKeywords = {
+            // SÉCURITÉ - PATTERNS STRICTS
+            security: {
+                absolute: [
+                    'alerte de connexion', 'alert connexion', 'nouvelle connexion',
+                    'code de vérification', 'verification code', 'security code',
+                    'password reset', 'réinitialisation mot de passe',
+                    'two-factor', '2fa', 'authentification',
+                    'activité suspecte', 'suspicious activity'
+                ],
+                strong: ['sécurité', 'security', 'vérification', 'verify', 'password'],
+                weak: ['compte', 'account', 'accès'],
+                exclusions: ['newsletter', 'unsubscribe', 'promotion']
+            },
             
-            // Stocker les dossiers avec leurs ID réels
-            folders.forEach(folder => {
-                this.folders.set(folder.displayName.toLowerCase(), folder);
-                
-                // Mapping des noms standards
-                if (folder.displayName.toLowerCase().includes('inbox') || 
-                    folder.displayName.toLowerCase().includes('boîte de réception')) {
-                    this.folders.set('inbox', folder);
-                }
-                if (folder.displayName.toLowerCase().includes('junk') || 
-                    folder.displayName.toLowerCase().includes('courrier indésirable')) {
-                    this.folders.set('junkemail', folder);
-                }
-                if (folder.displayName.toLowerCase().includes('sent') || 
-                    folder.displayName.toLowerCase().includes('éléments envoyés')) {
-                    this.folders.set('sentitems', folder);
-                }
-            });
-
-            return folders;
-
-        } catch (error) {
-            console.error('[MailService] Error loading folders:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // MÉTHODE PRINCIPALE : RÉCUPÉRATION DES EMAILS
-    // ================================================
-    async getEmailsFromFolder(folderName, options = {}) {
-        console.log(`[MailService] Getting emails from folder: ${folderName}`);
-        
-        try {
-            // Initialiser si nécessaire
-            if (!this.isInitialized) {
-                await this.initialize();
-            }
-
-            // Vérifier l'authentification
-            if (!window.authService.isAuthenticated()) {
-                throw new Error('User not authenticated');
-            }
-
-            // Obtenir le token d'accès
-            const accessToken = await window.authService.getAccessToken();
-            if (!accessToken) {
-                throw new Error('Unable to get access token');
-            }
-
-            // Obtenir l'ID réel du dossier
-            const folderId = await this.resolveFolderId(folderName);
+            // RÉUNIONS - PATTERNS STRICTS
+            meetings: {
+                absolute: [
+                    'demande de réunion', 'meeting request', 'réunion',
+                    'schedule a meeting', 'planifier une réunion',
+                    'teams meeting', 'zoom meeting', 'google meet',
+                    'conference call', 'rendez-vous', 'rdv'
+                ],
+                strong: ['meeting', 'réunion', 'schedule', 'calendar'],
+                weak: ['présentation', 'agenda'],
+                exclusions: ['newsletter', 'promotion']
+            },
             
-            // Construire l'URL de l'API Microsoft Graph
-            const graphUrl = this.buildGraphUrl(folderId, options);
-            console.log(`[MailService] Query endpoint: ${graphUrl}`);
-
-            // Effectuer la requête
-            const response = await fetch(graphUrl, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[MailService] ❌ Graph API error:', response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-            }
-
-            const data = await response.json();
-            const emails = data.value || [];
-
-            console.log(`[MailService] ✅ Retrieved ${emails.length} emails`);
+            // TÂCHES - PATTERNS STRICTS
+            tasks: {
+                absolute: [
+                    'action required', 'action requise', 'urgent',
+                    'please complete', 'veuillez compléter', 'deadline',
+                    'à faire', 'to do', 'task assigned',
+                    'demande d\'action', 'response needed'
+                ],
+                strong: ['urgent', 'priority', 'action', 'deadline', 'échéance'],
+                weak: ['demande', 'besoin', 'attente'],
+                exclusions: ['newsletter', 'marketing', 'promotion', 'sale']
+            },
             
-            // Traiter et enrichir les emails
-            const processedEmails = this.processEmails(emails, folderName);
+            // RELANCES - PATTERNS STRICTS
+            reminders: {
+                absolute: [
+                    'reminder:', 'rappel:', 'follow up', 'relance',
+                    'gentle reminder', 'following up',
+                    'comme convenu', 'suite à notre'
+                ],
+                strong: ['reminder', 'rappel', 'follow', 'relance'],
+                weak: ['suite', 'convenu'],
+                exclusions: ['newsletter', 'marketing']
+            },
             
-            return processedEmails;
-
-        } catch (error) {
-            console.error(`[MailService] ❌ Error getting emails from ${folderName}:`, error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // RÉSOLUTION DE L'ID DU DOSSIER
-    // ================================================
-    async resolveFolderId(folderName) {
-        // Si c'est déjà un ID complet, l'utiliser directement
-        if (folderName.includes('AAM') || folderName.length > 20) {
-            return folderName;
-        }
-
-        // Chercher dans le cache des dossiers
-        const folder = this.folders.get(folderName.toLowerCase());
-        if (folder) {
-            console.log(`[MailService] Resolved folder ${folderName} to ID: ${folder.id}`);
-            return folder.id;
-        }
-
-        // Pour la boîte de réception, utiliser l'endpoint spécial
-        if (folderName === 'inbox') {
-            return 'inbox'; // Utiliser l'endpoint /me/mailFolders/inbox
-        }
-
-        // Fallback: rechercher par nom de dossier
-        console.warn(`[MailService] Folder ${folderName} not found in cache, using as-is`);
-        return folderName;
-    }
-
-    // ================================================
-    // CONSTRUCTION DE L'URL MICROSOFT GRAPH AMÉLIORÉE
-    // ================================================
-    buildGraphUrl(folderId, options) {
-        const {
-            startDate,
-            endDate,
-            top = 100,
-            orderBy = 'receivedDateTime desc'
-        } = options;
-
-        // Base URL adaptée selon le type d'ID
-        let baseUrl;
-        if (folderId === 'inbox') {
-            // Utiliser l'endpoint spécial pour la boîte de réception
-            baseUrl = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages';
-        } else if (folderId.includes('AAM') || folderId.length > 20) {
-            // ID complet de dossier
-            baseUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
-        } else {
-            // Nom de dossier
-            baseUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
-        }
-
-        // Paramètres de requête
-        const params = new URLSearchParams();
-        
-        // Nombre d'emails à récupérer (limité à 1000 max par Microsoft)
-        params.append('$top', Math.min(top, 1000).toString());
-        
-        // Tri par date de réception décroissante
-        params.append('$orderby', orderBy);
-        
-        // Sélection des champs nécessaires optimisée
-        params.append('$select', [
-            'id',
-            'subject', 
-            'bodyPreview',
-            'body',
-            'from',
-            'toRecipients',
-            'ccRecipients',
-            'receivedDateTime',
-            'sentDateTime',
-            'isRead',
-            'importance',
-            'hasAttachments',
-            'flag',
-            'categories',
-            'parentFolderId',
-            'webLink'
-        ].join(','));
-
-        // Filtre par dates si spécifié
-        if (startDate || endDate) {
-            const filters = [];
+            // COMMERCIAL - PATTERNS STRICTS
+            commercial: {
+                absolute: [
+                    'devis', 'quotation', 'proposal', 'contrat',
+                    'business proposal', 'opportunité commerciale',
+                    'nouveau client', 'signature contrat'
+                ],
+                strong: ['client', 'prospect', 'commercial', 'business'],
+                weak: ['offre', 'négociation'],
+                exclusions: ['newsletter', 'marketing', 'promotion']
+            },
             
-            if (startDate) {
-                const startISO = new Date(startDate).toISOString();
-                filters.push(`receivedDateTime ge ${startISO}`);
-            }
+            // FINANCE - PATTERNS STRICTS
+            finance: {
+                absolute: [
+                    'facture', 'invoice', 'payment', 'paiement',
+                    'virement', 'relevé bancaire', 'impôts',
+                    'déclaration fiscale', 'comptabilité'
+                ],
+                strong: ['montant', 'facture', 'fiscal', 'payment'],
+                weak: ['euro', 'dollar', 'prix'],
+                exclusions: ['newsletter', 'marketing']
+            },
             
-            if (endDate) {
-                // S'assurer que endDate inclut toute la journée
-                const endDateObj = new Date(endDate);
-                endDateObj.setHours(23, 59, 59, 999);
-                const endISO = endDateObj.toISOString();
-                filters.push(`receivedDateTime le ${endISO}`);
-            }
+            // PROJETS
+            project: {
+                absolute: [
+                    'projet', 'project update', 'milestone',
+                    'sprint', 'livrable projet', 'kickoff'
+                ],
+                strong: ['projet', 'project', 'milestone', 'agile'],
+                weak: ['development', 'phase'],
+                exclusions: ['newsletter']
+            },
             
-            if (filters.length > 0) {
-                params.append('$filter', filters.join(' and '));
-            }
-        }
-
-        return `${baseUrl}?${params.toString()}`;
-    }
-
-    // ================================================
-    // TRAITEMENT ET ENRICHISSEMENT DES EMAILS
-    // ================================================
-    processEmails(emails, folderName) {
-        console.log(`[MailService] 🔄 Processing ${emails.length} emails from ${folderName}`);
-        
-        return emails.map(email => {
-            try {
-                // Email de base avec métadonnées ajoutées
-                const processedEmail = {
-                    // Champs originaux de Microsoft Graph
-                    id: email.id,
-                    subject: email.subject || 'Sans sujet',
-                    bodyPreview: email.bodyPreview || '',
-                    body: email.body,
-                    from: email.from,
-                    toRecipients: email.toRecipients || [],
-                    ccRecipients: email.ccRecipients || [],
-                    receivedDateTime: email.receivedDateTime,
-                    sentDateTime: email.sentDateTime,
-                    isRead: email.isRead,
-                    importance: email.importance,
-                    hasAttachments: email.hasAttachments,
-                    flag: email.flag,
-                    categories: email.categories || [],
-                    parentFolderId: email.parentFolderId,
-                    webLink: email.webLink,
+            // RH
+            hr: {
+                absolute: [
+                    'bulletin de paie', 'payslip', 'contrat de travail',
+                    'congés', 'leave request', 'entretien annuel'
+                ],
+                strong: ['rh', 'hr', 'salaire', 'ressources humaines'],
+                weak: ['employee', 'staff'],
+                exclusions: ['newsletter']
+            },
+            
+            // SUPPORT
+            support: {
+                absolute: [
+                    'ticket #', 'support ticket', 'help desk',
+                    'problème résolu', 'issue resolved'
+                ],
+                strong: ['support', 'assistance', 'ticket'],
+                weak: ['help', 'aide'],
+                exclusions: ['newsletter']
+            },
+            
+            // INTERNE
+            internal: {
+                absolute: [
+                    'all staff', 'tout le personnel', 'annonce interne',
+                    'company announcement', 'communication interne'
+                ],
+                strong: ['internal', 'interne', 'company wide'],
+                weak: ['annonce', 'personnel'],
+                exclusions: ['newsletter', 'external']
+            },
+            
+            // NOTIFICATIONS
+            notifications: {
+                absolute: [
+                    'do not reply', 'ne pas répondre', 'noreply@',
+                    'automated message', 'notification automatique'
+                ],
+                strong: ['automated', 'automatic', 'notification'],
+                weak: ['notification', 'alert'],
+                exclusions: ['marketing', 'promotion']
+            },
+            
+            // MARKETING & NEWS - PRIORITÉ MAXIMALE
+            marketing_news: {
+                absolute: [
+                    // DÉSINSCRIPTION
+                    'se désinscrire', 'unsubscribe', 'opt out',
+                    'gérer vos préférences', 'email preferences',
+                    'ne plus recevoir', 'stop emails',
                     
-                    // Métadonnées ajoutées par notre service
-                    sourceFolder: folderName,
-                    retrievedAt: new Date().toISOString(),
+                    // NEWSLETTERS
+                    'newsletter', 'mailing list',
+                    'this email was sent to', 'vous recevez cet email',
                     
-                    // Champs préparés pour la catégorisation
-                    emailText: this.extractEmailText(email),
-                    senderDomain: this.extractSenderDomain(email.from),
-                    recipientCount: (email.toRecipients?.length || 0) + (email.ccRecipients?.length || 0)
+                    // MARKETING
+                    'marketing', 'promotion', 'special offer',
+                    'limited offer', 'shop now', 'discount',
+                    'flash sale', 'exclusive offer',
+                    
+                    // E-COMMERCE
+                    'buy now', 'add to cart', 'new collection',
+                    
+                    // RÉSEAUX SOCIAUX
+                    'follow us', 'suivez-nous', 'on instagram'
+                ],
+                strong: [
+                    'promo', 'deal', 'offer', 'sale', 'discount',
+                    'newsletter', 'mailing', 'campaign', 'marketing',
+                    'exclusive', 'special', 'limited', 'shop'
+                ],
+                weak: ['update', 'discover', 'new'],
+                exclusions: [
+                    'facture urgente', 'paiement requis',
+                    'security alert critical', 'action required immediately'
+                ]
+            },
+
+            // CATÉGORIE CC
+            cc: {
+                absolute: [
+                    'copie pour information', 'for your information', 'fyi',
+                    'en copie', 'courtesy copy'
+                ],
+                strong: ['information', 'copie'],
+                weak: ['fyi', 'info'],
+                exclusions: []
+            }
+        };
+        
+        console.log('[CategoryManager] ✅ Mots-clés initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
+    }
+
+    // ANALYSE PRINCIPALE
+    analyzeEmail(email) {
+        if (!email) return { category: 'other', score: 0, confidence: 0 };
+        
+        // Filtrer les courriers indésirables si activé
+        if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
+            return { category: 'spam', score: 0, confidence: 0, isSpam: true };
+        }
+        
+        const content = this.extractCompleteContent(email);
+        
+        // Vérification CC si activée
+        if (this.shouldDetectCC() && this.isInCC(email)) {
+            // Vérifier si ce n'est pas du marketing malgré le CC
+            const marketingCheck = this.analyzeCategory(content, this.weightedKeywords.marketing_news);
+            if (marketingCheck.score >= 80) {
+                return {
+                    category: 'marketing_news',
+                    score: marketingCheck.total,
+                    confidence: this.calculateConfidence(marketingCheck),
+                    matchedPatterns: marketingCheck.matches,
+                    hasAbsolute: marketingCheck.hasAbsolute,
+                    originallyCC: true
                 };
-
-                return processedEmail;
-
-            } catch (error) {
-                console.warn('[MailService] ⚠️ Error processing email:', email.id, error);
-                return email; // Retourner l'email original en cas d'erreur
             }
+            
+            return {
+                category: 'cc',
+                score: 100,
+                confidence: 0.95,
+                matchedPatterns: [{ keyword: 'email_in_cc', type: 'detected', score: 100 }],
+                hasAbsolute: true,
+                isCC: true
+            };
+        }
+        
+        // Analyse normale
+        const allResults = this.analyzeAllCategories(content);
+        return this.selectByPriorityWithThreshold(allResults);
+    }
+
+    analyzeAllCategories(content) {
+        const results = {};
+        
+        for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
+            const score = this.calculateScore(content, keywords);
+            
+            results[categoryId] = {
+                category: categoryId,
+                score: score.total,
+                hasAbsolute: score.hasAbsolute,
+                matches: score.matches,
+                confidence: this.calculateConfidence(score),
+                priority: this.categories[categoryId]?.priority || 50
+            };
+        }
+        
+        return results;
+    }
+
+    analyzeCategory(content, keywords) {
+        return this.calculateScore(content, keywords);
+    }
+
+    calculateScore(content, keywords) {
+        let totalScore = 0;
+        let hasAbsolute = false;
+        const matches = [];
+        const text = content.text;
+        
+        // Vérifier les exclusions
+        if (keywords.exclusions) {
+            for (const exclusion of keywords.exclusions) {
+                if (this.findInText(text, exclusion)) {
+                    totalScore -= 50;
+                }
+            }
+        }
+        
+        // Mots absolus (100 points)
+        if (keywords.absolute) {
+            for (const keyword of keywords.absolute) {
+                if (this.findInText(text, keyword)) {
+                    totalScore += 100;
+                    hasAbsolute = true;
+                    matches.push({ keyword, type: 'absolute', score: 100 });
+                    
+                    // Bonus si dans le sujet
+                    if (content.subject && this.findInText(content.subject, keyword)) {
+                        totalScore += 50;
+                    }
+                }
+            }
+        }
+        
+        // Mots forts (30 points)
+        if (keywords.strong && matches.length < 5) {
+            for (const keyword of keywords.strong) {
+                if (this.findInText(text, keyword)) {
+                    totalScore += 30;
+                    matches.push({ keyword, type: 'strong', score: 30 });
+                }
+            }
+        }
+        
+        // Mots faibles (10 points) - seulement si pas de mots absolus
+        if (keywords.weak && !hasAbsolute) {
+            for (const keyword of keywords.weak) {
+                if (this.findInText(text, keyword)) {
+                    totalScore += 10;
+                    matches.push({ keyword, type: 'weak', score: 10 });
+                }
+            }
+        }
+        
+        return { total: Math.max(0, totalScore), hasAbsolute, matches };
+    }
+
+    selectByPriorityWithThreshold(results) {
+        const MIN_SCORE_THRESHOLD = 30;
+        const MIN_CONFIDENCE_THRESHOLD = 0.5;
+        
+        // Filtrer selon les catégories actives
+        let filteredResults = Object.values(results);
+        
+        const activeCategories = this.getActiveCategories();
+        if (activeCategories?.length > 0) {
+            filteredResults = filteredResults.filter(r => 
+                activeCategories.includes(r.category) ||
+                r.category === 'marketing_news' ||
+                r.category === 'cc'
+            );
+        }
+        
+        // Trier par priorité puis par score
+        const sortedResults = filteredResults
+            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
+            .sort((a, b) => {
+                if (a.priority !== b.priority) {
+                    return b.priority - a.priority;
+                }
+                return b.score - a.score;
+            });
+        
+        const bestResult = sortedResults[0];
+        
+        if (bestResult) {
+            return {
+                category: bestResult.category,
+                score: bestResult.score,
+                confidence: bestResult.confidence,
+                matchedPatterns: bestResult.matches,
+                hasAbsolute: bestResult.hasAbsolute
+            };
+        }
+        
+        return {
+            category: 'other',
+            score: 0,
+            confidence: 0,
+            matchedPatterns: [],
+            hasAbsolute: false
+        };
+    }
+
+    // DÉTECTION SPAM
+    isSpamEmail(email) {
+        if (email.parentFolderId) {
+            const folderInfo = email.parentFolderId.toLowerCase();
+            if (folderInfo.includes('junk') || folderInfo.includes('spam')) {
+                return true;
+            }
+        }
+        
+        if (email.categories?.some(cat => 
+            cat.toLowerCase().includes('spam') || cat.toLowerCase().includes('junk'))) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    // DÉTECTION CC
+    isInCC(email) {
+        if (!email.ccRecipients?.length) return false;
+        
+        const currentUserEmail = this.getCurrentUserEmail();
+        if (!currentUserEmail) return email.ccRecipients.length > 0;
+        
+        return email.ccRecipients.some(recipient => {
+            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+            return recipientEmail === currentUserEmail.toLowerCase();
         });
     }
 
-    // ================================================
-    // EXTRACTION DU TEXTE DE L'EMAIL AMÉLIORÉE
-    // ================================================
-    extractEmailText(email) {
-        let text = '';
+    getCurrentUserEmail() {
+        try {
+            const userInfo = localStorage.getItem('currentUserInfo');
+            if (userInfo) {
+                const parsed = JSON.parse(userInfo);
+                return parsed.email || parsed.userPrincipalName;
+            }
+        } catch (e) {
+            // Ignore
+        }
+        return null;
+    }
+
+    // EXTRACTION CONTENU
+    extractCompleteContent(email) {
+        let allText = '';
+        let subject = '';
         
-        // Ajouter le sujet (avec poids important)
         if (email.subject) {
-            text += email.subject + ' ';
+            subject = email.subject;
+            allText += (email.subject + ' ').repeat(3);
         }
         
-        // Ajouter les noms et adresses des expéditeurs
-        if (email.from?.emailAddress) {
-            if (email.from.emailAddress.name) {
-                text += email.from.emailAddress.name + ' ';
-            }
-            if (email.from.emailAddress.address) {
-                text += email.from.emailAddress.address + ' ';
-            }
+        if (email.from?.emailAddress?.address) {
+            allText += email.from.emailAddress.address + ' ';
         }
         
-        // Ajouter l'aperçu du corps
         if (email.bodyPreview) {
-            text += email.bodyPreview + ' ';
+            allText += email.bodyPreview + ' ';
         }
         
-        // Ajouter le corps si disponible
-        if (email.body && email.body.content) {
-            // Nettoyer le HTML si c'est du HTML
-            if (email.body.contentType === 'html') {
-                const cleanText = email.body.content
-                    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Supprimer scripts
-                    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Supprimer styles
-                    .replace(/<[^>]*>/g, ' ') // Supprimer les balises HTML
-                    .replace(/&nbsp;/g, ' ') // Remplacer &nbsp;
-                    .replace(/&[^;]+;/g, ' ') // Remplacer autres entités HTML
-                    .replace(/\s+/g, ' ') // Normaliser les espaces
-                    .trim();
-                text += cleanText;
-            } else {
-                text += email.body.content;
-            }
+        if (email.body?.content) {
+            allText += this.cleanHtml(email.body.content) + ' ';
         }
         
-        return text.trim();
-    }
-
-    // ================================================
-    // EXTRACTION DU DOMAINE DE L'EXPÉDITEUR
-    // ================================================
-    extractSenderDomain(fromField) {
-        try {
-            if (!fromField || !fromField.emailAddress || !fromField.emailAddress.address) {
-                return 'unknown';
-            }
-            
-            const email = fromField.emailAddress.address;
-            const domain = email.split('@')[1];
-            return domain ? domain.toLowerCase() : 'unknown';
-            
-        } catch (error) {
-            console.warn('[MailService] Error extracting sender domain:', error);
-            return 'unknown';
-        }
-    }
-
-    // ================================================
-    // RÉCUPÉRATION D'UN EMAIL SPÉCIFIQUE
-    // ================================================
-    async getEmailById(emailId) {
-        console.log(`[MailService] Getting email by ID: ${emailId}`);
-        
-        try {
-            const accessToken = await window.authService.getAccessToken();
-            if (!accessToken) {
-                throw new Error('Unable to get access token');
-            }
-
-            const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const email = await response.json();
-            console.log('[MailService] ✅ Email retrieved');
-            
-            return email;
-
-        } catch (error) {
-            console.error('[MailService] ❌ Error getting email by ID:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // RÉCUPÉRATION DES DOSSIERS PUBLIQUE
-    // ================================================
-    async getFolders() {
-        console.log('[MailService] Getting mail folders');
-        
-        try {
-            const accessToken = await window.authService.getAccessToken();
-            if (!accessToken) {
-                throw new Error('Unable to get access token');
-            }
-
-            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            const folders = data.value || [];
-
-            console.log(`[MailService] ✅ Retrieved ${folders.length} folders`);
-            return folders;
-
-        } catch (error) {
-            console.error('[MailService] ❌ Error getting folders:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // STATISTIQUES D'EMAIL
-    // ================================================
-    async getEmailStats(folderName = 'inbox') {
-        console.log(`[MailService] Getting email stats for ${folderName}`);
-        
-        try {
-            const accessToken = await window.authService.getAccessToken();
-            if (!accessToken) {
-                throw new Error('Unable to get access token');
-            }
-
-            // Résoudre l'ID du dossier
-            const folderId = await this.resolveFolderId(folderName);
-
-            // Requête pour obtenir le nombre total d'emails
-            const endpoint = folderId === 'inbox' ? 
-                'https://graph.microsoft.com/v1.0/me/mailFolders/inbox' :
-                `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}`;
-
-            const response = await fetch(
-                `${endpoint}?$select=totalItemCount,unreadItemCount`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const stats = await response.json();
-            console.log('[MailService] ✅ Email stats retrieved');
-            
-            return {
-                totalEmails: stats.totalItemCount || 0,
-                unreadEmails: stats.unreadItemCount || 0,
-                folderName: folderName
-            };
-
-        } catch (error) {
-            console.error('[MailService] ❌ Error getting email stats:', error);
-            return {
-                totalEmails: 0,
-                unreadEmails: 0,
-                folderName: folderName,
-                error: error.message
-            };
-        }
-    }
-
-    // ================================================
-    // RECHERCHE D'EMAILS
-    // ================================================
-    async searchEmails(query, options = {}) {
-        console.log(`[MailService] Searching emails with query: ${query}`);
-        
-        try {
-            const accessToken = await window.authService.getAccessToken();
-            if (!accessToken) {
-                throw new Error('Unable to get access token');
-            }
-
-            const {
-                top = 50,
-                folderName = 'inbox'
-            } = options;
-
-            const folderId = await this.resolveFolderId(folderName);
-            
-            const params = new URLSearchParams();
-            params.append('$search', `"${query}"`);
-            params.append('$top', top.toString());
-            params.append('$orderby', 'receivedDateTime desc');
-            params.append('$select', [
-                'id', 'subject', 'bodyPreview', 'from', 
-                'receivedDateTime', 'importance', 'hasAttachments'
-            ].join(','));
-
-            const endpoint = folderId === 'inbox' ? 
-                'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages' :
-                `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
-
-            const response = await fetch(`${endpoint}?${params.toString()}`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-            const emails = data.value || [];
-
-            console.log(`[MailService] ✅ Found ${emails.length} emails matching query`);
-            return this.processEmails(emails, folderName);
-
-        } catch (error) {
-            console.error('[MailService] ❌ Error searching emails:', error);
-            throw error;
-        }
-    }
-
-    // ================================================
-    // MÉTHODES DE DIAGNOSTIC AMÉLIORÉES
-    // ================================================
-    async testConnection() {
-        console.log('[MailService] Testing Graph API connection...');
-        
-        try {
-            // Test simple avec l'endpoint utilisateur
-            const accessToken = await window.authService.getAccessToken();
-            if (!accessToken) {
-                throw new Error('No access token available');
-            }
-
-            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const user = await response.json();
-            console.log('[MailService] ✅ Connection test successful:', user.displayName);
-            
-            return {
-                success: true,
-                user: user.displayName,
-                email: user.mail || user.userPrincipalName
-            };
-
-        } catch (error) {
-            console.error('[MailService] ❌ Connection test failed:', error);
-            return {
-                success: false,
-                error: error.message
-            };
-        }
-    }
-
-    // ================================================
-    // NETTOYAGE ET RESET
-    // ================================================
-    reset() {
-        console.log('[MailService] Resetting service...');
-        this.isInitialized = false;
-        this.cache.clear();
-        this.folders.clear();
-    }
-
-    // ================================================
-    // INFORMATIONS DE DIAGNOSTIC AMÉLIORÉES
-    // ================================================
-    getDebugInfo() {
         return {
-            isInitialized: this.isInitialized,
-            hasToken: window.authService ? !!window.authService.getAccessToken : false,
-            foldersCount: this.folders.size * 2, // Cache + mappings
-            cacheSize: this.cache.size,
-            folders: Array.from(this.folders.entries()).map(([name, folder]) => ({
-                name,
-                id: folder.id,
-                displayName: folder.displayName
-            }))
+            text: allText.toLowerCase().trim(),
+            subject: subject.toLowerCase(),
+            domain: this.extractDomain(email.from?.emailAddress?.address),
+            length: allText.length
         };
     }
+
+    cleanHtml(html) {
+        if (!html) return '';
+        return html
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&[^;]+;/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    extractDomain(email) {
+        if (!email?.includes('@')) return 'unknown';
+        return email.split('@')[1]?.toLowerCase() || 'unknown';
+    }
+
+    findInText(text, keyword) {
+        if (!text || !keyword) return false;
+        
+        const normalizedText = text.toLowerCase()
+            .replace(/[éèêë]/g, 'e')
+            .replace(/[àâä]/g, 'a');
+        
+        const normalizedKeyword = keyword.toLowerCase()
+            .replace(/[éèêë]/g, 'e')
+            .replace(/[àâä]/g, 'a');
+        
+        return normalizedText.includes(normalizedKeyword);
+    }
+
+    calculateConfidence(score) {
+        if (score.hasAbsolute) return 0.95;
+        if (score.total >= 200) return 0.90;
+        if (score.total >= 100) return 0.80;
+        if (score.total >= 60) return 0.70;
+        if (score.total >= 30) return 0.60;
+        return 0.50;
+    }
+
+    // MÉTHODES PUBLIQUES
+    getCategories() { return this.categories; }
+    
+    getCategory(categoryId) {
+        if (categoryId === 'all') return { id: 'all', name: 'Tous', icon: '📧', color: '#1e293b' };
+        if (categoryId === 'other') return { id: 'other', name: 'Non classé', icon: '❓', color: '#64748b' };
+        if (categoryId === 'spam') return { id: 'spam', name: 'Spam', icon: '🚫', color: '#dc2626' };
+        return this.categories[categoryId] || null;
+    }
+    
+    getCategoryStats() {
+        const stats = {
+            totalCategories: Object.keys(this.categories).length,
+            totalKeywords: 0
+        };
+        
+        for (const keywords of Object.values(this.weightedKeywords)) {
+            if (keywords.absolute) stats.totalKeywords += keywords.absolute.length;
+            if (keywords.strong) stats.totalKeywords += keywords.strong.length;
+            if (keywords.weak) stats.totalKeywords += keywords.weak.length;
+        }
+        
+        return stats;
+    }
+    
+    setDebugMode(enabled) { this.debugMode = enabled; }
+    
+    setCurrentUserEmail(email) {
+        if (email) {
+            localStorage.setItem('currentUserInfo', JSON.stringify({ email }));
+        }
+    }
+
+    // LISTENER POUR CHANGEMENTS
+    setupSettingsListener() {
+        window.addEventListener('settingsChanged', (event) => {
+            const { type, value } = event.detail;
+            console.log(`[CategoryManager] 📢 Reçu changement: ${type}`, value);
+            
+            switch (type) {
+                case 'preferences':
+                    this.updateSettings(value);
+                    break;
+                case 'activeCategories':
+                    this.setActiveCategories(value);
+                    break;
+                case 'taskPreselectedCategories':
+                    this.setTaskPreselectedCategories(value);
+                    break;
+            }
+        });
+        
+        window.addEventListener('categoriesPageReady', async () => {
+            console.log('[CategoryManager] 🔗 CategoriesPage prêt, synchronisation...');
+            await this.loadSettingsFromCategoriesPage();
+        });
+        
+        console.log('[CategoryManager] ✅ Listeners configurés');
+    }
+
+    // MÉTHODE DE TEST
+    testEmail(subject, expectedCategory = null) {
+        const testEmail = {
+            subject: subject,
+            body: { content: 'Test content' },
+            from: { emailAddress: { address: 'test@example.com' } },
+            toRecipients: [{ emailAddress: { address: 'user@example.com' } }]
+        };
+        
+        const result = this.analyzeEmail(testEmail);
+        
+        console.log('\n[CategoryManager] TEST RESULT:');
+        console.log(`Subject: "${subject}"`);
+        console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
+        console.log(`Score: ${result.score}pts`);
+        console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
+        
+        return result;
+    }
 }
 
-// Créer l'instance globale avec gestion d'erreur améliorée
+// Créer l'instance globale avec gestion d'erreur
 try {
-    window.mailService = new MailService();
-    console.log('[MailService] ✅ Global instance created successfully');
+    window.categoryManager = new CategoryManager();
+    console.log('✅ CategoryManager v18.0 chargé - Version finale corrigée');
 } catch (error) {
-    console.error('[MailService] ❌ Failed to create global instance:', error);
+    console.error('❌ Erreur lors du chargement de CategoryManager:', error);
     
-    // Instance de fallback plus robuste
-    window.mailService = {
-        isInitialized: false,
-        getEmailsFromFolder: async () => {
-            throw new Error('MailService not available - Check console for errors');
-        },
-        initialize: async () => {
-            throw new Error('MailService failed to initialize - Check AuthService');
-        },
-        getDiagnosticInfo: () => ({ 
-            error: 'MailService failed to create',
-            authServiceAvailable: !!window.authService,
-            userAuthenticated: window.authService ? window.authService.isAuthenticated() : false
-        })
+    // Fallback minimal
+    window.categoryManager = {
+        getCategories: () => ({}),
+        getCategory: () => null,
+        analyzeEmail: () => ({ category: 'other', score: 0, confidence: 0 }),
+        getTaskPreselectedCategories: () => [],
+        shouldExcludeSpam: () => true,
+        shouldDetectCC: () => true,
+        setDebugMode: () => {},
+        initializationComplete: false
     };
 }
-
-console.log('✅ MailService v3.1 loaded - Enhanced with better folder resolution and error handling');
