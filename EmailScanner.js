@@ -322,167 +322,172 @@ class EmailScanner {
             return this.settings;
         });
     }
- // ================================================
-    // MÉTHODE PRINCIPALE DE SCAN (améliorée)
-    // ================================================
-    async scan(options = {}) {
-        // Forcer la synchronisation avant le scan
-        await this.forceSettingsReload();
-        
-        // Recharger les catégories pré-sélectionnées depuis CategoryManager
-        const freshPreselectedCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
-        this.taskPreselectedCategories = [...freshPreselectedCategories];
-        console.log('[EmailScanner] 🔄 Catégories pré-sélectionnées rechargées:', this.taskPreselectedCategories);
-        
-        const scanSettings = this.settings.scanSettings || {};
-        const mergedOptions = {
-            days: options.days || scanSettings.defaultPeriod || 7,
-            folder: options.folder || scanSettings.defaultFolder || 'inbox',
-            onProgress: options.onProgress || null,
-            includeSpam: options.includeSpam !== undefined ? options.includeSpam : !this.settings.preferences?.excludeSpam,
-            maxEmails: options.maxEmails || 1000,
-            autoAnalyze: options.autoAnalyze !== undefined ? options.autoAnalyze : scanSettings.autoAnalyze,
-            autoCategrize: options.autoCategrize !== undefined ? options.autoCategrize : scanSettings.autoCategrize,
-            // NOUVEAU: Passer explicitement les catégories pré-sélectionnées
-            taskPreselectedCategories: options.taskPreselectedCategories || this.taskPreselectedCategories
-        };
+// Dans EmailScanner.js - Remplacer la méthode scan() vers ligne 470
 
-        if (this.isScanning) {
-            console.warn('[EmailScanner] Scan déjà en cours');
-            return null;
-        }
+async scan(options = {}) {
+    // Forcer la synchronisation avant le scan
+    await this.forceSettingsReload();
+    
+    // Recharger les catégories pré-sélectionnées depuis CategoryManager
+    const freshPreselectedCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
+    this.taskPreselectedCategories = [...freshPreselectedCategories];
+    console.log('[EmailScanner] 🔄 Catégories pré-sélectionnées rechargées:', this.taskPreselectedCategories);
+    
+    const scanSettings = this.settings.scanSettings || {};
+    const mergedOptions = {
+        days: options.days || scanSettings.defaultPeriod || 7,
+        folder: options.folder || scanSettings.defaultFolder || 'inbox',
+        onProgress: options.onProgress || null,
+        includeSpam: options.includeSpam !== undefined ? options.includeSpam : !this.settings.preferences?.excludeSpam,
+        maxEmails: options.maxEmails || 1000,
+        autoAnalyze: options.autoAnalyze !== undefined ? options.autoAnalyze : scanSettings.autoAnalyze,
+        autoCategrize: options.autoCategrize !== undefined ? options.autoCategrize : scanSettings.autoCategrize,
+        // IMPORTANT: Passer explicitement les catégories pré-sélectionnées fraîches
+        taskPreselectedCategories: options.taskPreselectedCategories || freshPreselectedCategories
+    };
 
-        try {
-            this.isScanning = true;
-            this.reset();
-            this.scanProgress = mergedOptions.onProgress;
-            this.scanMetrics.startTime = Date.now();
-
-            console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN ===');
-            console.log('[EmailScanner] 📊 Options:', mergedOptions);
-            console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées:', this.taskPreselectedCategories);
-            console.log('[EmailScanner] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
-
-            if (!window.mailService) {
-                throw new Error('MailService non disponible');
-            }
-
-            if (!window.categoryManager) {
-                throw new Error('CategoryManager non disponible');
-            }
-
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(endDate.getDate() - mergedOptions.days);
-
-            if (this.scanProgress) {
-                this.scanProgress({ 
-                    phase: 'fetching', 
-                    message: `Récupération des emails des ${mergedOptions.days} derniers jours...`,
-                    progress: { current: 0, total: 100 }
-                });
-            }
-
-            console.log('[EmailScanner] 📧 Récupération des emails du dossier:', mergedOptions.folder);
-
-            let emails;
-            if (typeof window.mailService.getEmailsFromFolder === 'function') {
-                emails = await window.mailService.getEmailsFromFolder(mergedOptions.folder, {
-                    startDate: startDate.toISOString().split('T')[0],
-                    endDate: endDate.toISOString().split('T')[0],
-                    top: mergedOptions.maxEmails
-                });
-            } else if (typeof window.mailService.getEmails === 'function') {
-                emails = await window.mailService.getEmails({
-                    folder: mergedOptions.folder,
-                    days: mergedOptions.days,
-                    maxEmails: mergedOptions.maxEmails
-                });
-            } else {
-                throw new Error('Aucune méthode de récupération d\'emails disponible dans MailService');
-            }
-
-            this.emails = emails || [];
-            console.log(`[EmailScanner] ✅ ${this.emails.length} emails récupérés`);
-
-            if (this.emails.length === 0) {
-                console.warn('[EmailScanner] Aucun email trouvé dans la période spécifiée');
-                return {
-                    success: true,
-                    total: 0,
-                    categorized: 0,
-                    breakdown: {},
-                    stats: { processed: 0, errors: 0 },
-                    emails: [],
-                    taskPreselectedCategories: this.taskPreselectedCategories,
-                    scanMetrics: this.scanMetrics
-                };
-            }
-
-            if (mergedOptions.autoCategrize) {
-                if (this.scanProgress) {
-                    this.scanProgress({
-                        phase: 'categorizing',
-                        message: 'Catégorisation intelligente des emails...',
-                        progress: { current: 0, total: this.emails.length }
-                    });
-                }
-
-                await this.categorizeEmails();
-            }
-
-            if (mergedOptions.autoAnalyze && window.aiTaskAnalyzer) {
-                if (this.scanProgress) {
-                    this.scanProgress({
-                        phase: 'analyzing',
-                        message: 'Analyse IA pour la création de tâches...',
-                        progress: { current: 0, total: Math.min(this.emails.length, 10) }
-                    });
-                }
-
-                await this.analyzeForTasks();
-            }
-
-            const results = this.getDetailedResults();
-
-            if (this.scanProgress) {
-                this.scanProgress({
-                    phase: 'complete',
-                    message: 'Scan terminé avec succès !',
-                    results
-                });
-            }
-
-            this.logScanResults(results);
-            
-            setTimeout(() => {
-                this.dispatchEvent('scanCompleted', {
-                    results,
-                    emails: this.emails,
-                    breakdown: results.breakdown,
-                    taskPreselectedCategories: this.taskPreselectedCategories,
-                    scanMetrics: this.scanMetrics
-                });
-            }, 10);
-
-            return results;
-
-        } catch (error) {
-            console.error('[EmailScanner] ❌ Erreur de scan:', error);
-            
-            if (this.scanProgress) {
-                this.scanProgress({
-                    phase: 'error',
-                    message: `Erreur: ${error.message}`,
-                    error
-                });
-            }
-            
-            throw error;
-        } finally {
-            this.isScanning = false;
-        }
+    if (this.isScanning) {
+        console.warn('[EmailScanner] Scan déjà en cours');
+        return null;
     }
+
+    try {
+        this.isScanning = true;
+        this.reset();
+        this.scanProgress = mergedOptions.onProgress;
+        this.scanMetrics.startTime = Date.now();
+        
+        // IMPORTANT: Mettre à jour les catégories pré-sélectionnées avec celles des options
+        if (mergedOptions.taskPreselectedCategories && mergedOptions.taskPreselectedCategories.length >= 0) {
+            this.taskPreselectedCategories = [...mergedOptions.taskPreselectedCategories];
+            console.log('[EmailScanner] 📋 Utilisation des catégories pré-sélectionnées des options:', this.taskPreselectedCategories);
+        }
+
+        console.log('[EmailScanner] 🚀 === DÉMARRAGE DU SCAN ===');
+        console.log('[EmailScanner] 📊 Options:', mergedOptions);
+        console.log('[EmailScanner] ⭐ Catégories pré-sélectionnées finales:', this.taskPreselectedCategories);
+        console.log('[EmailScanner] 🎯 Catégories actives:', window.categoryManager?.getActiveCategories());
+
+        if (!window.mailService) {
+            throw new Error('MailService non disponible');
+        }
+
+        if (!window.categoryManager) {
+            throw new Error('CategoryManager non disponible');
+        }
+
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - mergedOptions.days);
+
+        if (this.scanProgress) {
+            this.scanProgress({ 
+                phase: 'fetching', 
+                message: `Récupération des emails des ${mergedOptions.days} derniers jours...`,
+                progress: { current: 0, total: 100 }
+            });
+        }
+
+        console.log('[EmailScanner] 📧 Récupération des emails du dossier:', mergedOptions.folder);
+
+        let emails;
+        if (typeof window.mailService.getEmailsFromFolder === 'function') {
+            emails = await window.mailService.getEmailsFromFolder(mergedOptions.folder, {
+                startDate: startDate.toISOString().split('T')[0],
+                endDate: endDate.toISOString().split('T')[0],
+                top: mergedOptions.maxEmails
+            });
+        } else if (typeof window.mailService.getEmails === 'function') {
+            emails = await window.mailService.getEmails({
+                folder: mergedOptions.folder,
+                days: mergedOptions.days,
+                maxEmails: mergedOptions.maxEmails
+            });
+        } else {
+            throw new Error('Aucune méthode de récupération d\'emails disponible dans MailService');
+        }
+
+        this.emails = emails || [];
+        console.log(`[EmailScanner] ✅ ${this.emails.length} emails récupérés`);
+
+        if (this.emails.length === 0) {
+            console.warn('[EmailScanner] Aucun email trouvé dans la période spécifiée');
+            return {
+                success: true,
+                total: 0,
+                categorized: 0,
+                breakdown: {},
+                stats: { processed: 0, errors: 0 },
+                emails: [],
+                taskPreselectedCategories: this.taskPreselectedCategories,
+                scanMetrics: this.scanMetrics
+            };
+        }
+
+        if (mergedOptions.autoCategrize) {
+            if (this.scanProgress) {
+                this.scanProgress({
+                    phase: 'categorizing',
+                    message: 'Catégorisation intelligente des emails...',
+                    progress: { current: 0, total: this.emails.length }
+                });
+            }
+
+            await this.categorizeEmails();
+        }
+
+        if (mergedOptions.autoAnalyze && window.aiTaskAnalyzer) {
+            if (this.scanProgress) {
+                this.scanProgress({
+                    phase: 'analyzing',
+                    message: 'Analyse IA pour la création de tâches...',
+                    progress: { current: 0, total: Math.min(this.emails.length, 10) }
+                });
+            }
+
+            await this.analyzeForTasks();
+        }
+
+        const results = this.getDetailedResults();
+
+        if (this.scanProgress) {
+            this.scanProgress({
+                phase: 'complete',
+                message: 'Scan terminé avec succès !',
+                results
+            });
+        }
+
+        this.logScanResults(results);
+        
+        setTimeout(() => {
+            this.dispatchEvent('scanCompleted', {
+                results,
+                emails: this.emails,
+                breakdown: results.breakdown,
+                taskPreselectedCategories: this.taskPreselectedCategories,
+                scanMetrics: this.scanMetrics
+            });
+        }, 10);
+
+        return results;
+
+    } catch (error) {
+        console.error('[EmailScanner] ❌ Erreur de scan:', error);
+        
+        if (this.scanProgress) {
+            this.scanProgress({
+                phase: 'error',
+                message: `Erreur: ${error.message}`,
+                error
+            });
+        }
+        
+        throw error;
+    } finally {
+        this.isScanning = false;
+    }
+}
 // ================================================
     // CATÉGORISATION AVEC PRÉ-SÉLECTION RENFORCÉE
     // ================================================
