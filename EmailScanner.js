@@ -284,23 +284,22 @@ class EmailScanner {
         return this.settings;
     }
 
-
-    getTaskPreselectedCategories() {
+getTaskPreselectedCategories() {
         // Toujours vérifier d'abord auprès de CategoryManager pour avoir les dernières
         if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
             const managerCategories = window.categoryManager.getTaskPreselectedCategories();
             // Mettre à jour localement si différent
             if (JSON.stringify([...this.taskPreselectedCategories].sort()) !== JSON.stringify([...managerCategories].sort())) {
+                // Log uniquement si changement
                 console.log('[EmailScanner] 🔄 Mise à jour locale des catégories pré-sélectionnées depuis CategoryManager');
                 this.taskPreselectedCategories = [...managerCategories];
             }
         }
         
         const categories = [...this.taskPreselectedCategories];
-        console.log('[EmailScanner] 📋 getTaskPreselectedCategories appelé:', categories);
+        // Pas de log systématique ici
         return categories;
     }
-
     getSettings() {
         return { ...this.settings };
     }
