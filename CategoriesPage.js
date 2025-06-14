@@ -888,14 +888,14 @@ class CategoriesPage {
         console.log('[CategoriesPage] ✅ Synchronisation modules terminée');
     }
 
-    // ================================================
-    // NOTIFICATION DES CHANGEMENTS
-    // ================================================
-    notifySettingsChange(settingType, value) {
+notifySettingsChange(settingType, value) {
         const now = Date.now();
         
+        // Créer une clé unique pour ce changement
         const notificationKey = `${settingType}_${JSON.stringify(value)}`;
-        if (this.lastNotification === notificationKey && (now - this.lastNotificationTime) < 1000) {
+        
+        // Vérifier si on a déjà notifié récemment (anti-boucle)
+        if (this.lastNotification === notificationKey && (now - this.lastNotificationTime) < 2000) {
             console.log(`[CategoriesPage] 🔄 Notification ignorée (trop récente): ${settingType}`);
             return;
         }
@@ -907,6 +907,7 @@ class CategoriesPage {
         console.log(`[CategoriesPage] 🎯 Type: ${settingType}`);
         console.log(`[CategoriesPage] 📊 Valeur:`, value);
         
+        // Délai plus long pour éviter les cascades
         setTimeout(() => {
             this.dispatchEvent('settingsChanged', {
                 type: settingType, 
@@ -914,13 +915,14 @@ class CategoriesPage {
                 source: 'CategoriesPage',
                 timestamp: now
             });
-        }, 10);
+        }, 100);
         
         this.notifySpecificModules(settingType, value);
         
+        // Délai encore plus long pour la synchronisation forcée
         setTimeout(() => {
             this.forceSynchronization();
-        }, 100);
+        }, 500);
     }
 
     notifySpecificModules(settingType, value) {
