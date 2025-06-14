@@ -464,12 +464,11 @@ class CategoryManager {
         return JSON.parse(JSON.stringify(this.settings));
     }
 
-    getTaskPreselectedCategories() {
-        const categories = this.settings.taskPreselectedCategories || [];
-        console.log('[CategoryManager] 📋 getTaskPreselectedCategories:', categories);
-        return [...categories]; // Copie
-    }
-
+getTaskPreselectedCategories() {
+    const categories = this.settings.taskPreselectedCategories || [];
+    // Suppression du log qui créait la boucle
+    return [...categories]; // Copie
+}
     getActiveCategories() {
         if (!this.settings.activeCategories) {
             return Object.keys(this.categories);
@@ -947,215 +946,46 @@ getCategoryKeywords(categoryId) {
         this.isInitialized = true;
     }
 
-    // ================================================
-    // SYSTÈME DE DÉTECTION AVEC MOTS-CLÉS (inchangé)
-    // ================================================
-    initializeWeightedDetection() {
-        this.weightedKeywords = {
-            marketing_news: {
-                absolute: [
-                    'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
-                    'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                    'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
-                    'email preferences', 'préférences email', 'preferences email',
-                    'ne plus recevoir', 'stop emails', 'arreter les emails',
-                    'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
-                    'paramétrez vos choix', 'parametrez vos choix',
-                    'newsletter', 'mailing list', 'mailing',
-                    'this email was sent to', 'you are receiving this',
-                    'limited offer', 'offre limitée', 'special offer',
-                    'promotion', 'promo', 'soldes', 'vente privée'
-                ],
-                strong: [
-                    'promo', 'deal', 'offer', 'sale', 'discount',
-                    'newsletter', 'mailing', 'campaign', 'marketing',
-                    'exclusive', 'special', 'limited', 'new'
-                ],
-                weak: ['update', 'discover', 'new'],
-                exclusions: []
-            },
-
-            security: {
-                absolute: [
-                    'alerte de connexion', 'alert connexion', 'nouvelle connexion',
-                    'activité suspecte', 'suspicious activity', 'login alert',
-                    'new sign-in', 'sign in detected', 'connexion détectée',
-                    'code de vérification', 'verification code', 'security code',
-                    'two-factor', '2fa', 'authentification', 'authentication',
-                    'password reset', 'réinitialisation mot de passe'
-                ],
-                strong: [
-                    'sécurité', 'security', 'vérification', 'verify',
-                    'authentification', 'password', 'mot de passe'
-                ],
-                weak: ['compte', 'account', 'accès'],
-                exclusions: ['newsletter', 'unsubscribe', 'promotion']
-            },
-
-            tasks: {
-                absolute: [
-                    'action required', 'action requise', 'action needed',
-                    'please complete', 'veuillez compléter', 'to do',
-                    'task assigned', 'tâche assignée', 'deadline',
-                    'due date', 'échéance', 'livrable',
-                    'urgence', 'urgent', 'très urgent'
-                ],
-                strong: [
-                    'urgent', 'asap', 'priority', 'priorité',
-                    'complete', 'compléter', 'action', 'faire'
-                ],
-                weak: ['demande', 'besoin', 'attente'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-
-            meetings: {
-                absolute: [
-                    'demande de réunion', 'meeting request', 'réunion',
-                    'schedule a meeting', 'planifier une réunion',
-                    'invitation réunion', 'meeting invitation',
-                    'teams meeting', 'zoom meeting', 'google meet'
-                ],
-                strong: [
-                    'meeting', 'réunion', 'schedule', 'planifier',
-                    'calendar', 'calendrier', 'appointment'
-                ],
-                weak: ['présentation', 'agenda'],
-                exclusions: ['newsletter', 'promotion']
-            },
-
-            commercial: {
-                absolute: [
-                    'devis', 'quotation', 'proposal', 'proposition',
-                    'contrat', 'contract', 'bon de commande',
-                    'purchase order', 'offre commerciale'
-                ],
-                strong: [
-                    'client', 'customer', 'prospect', 'opportunity',
-                    'commercial', 'business', 'marché', 'deal'
-                ],
-                weak: ['offre', 'négociation'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-
-            finance: {
-                absolute: [
-                    'facture', 'invoice', 'payment', 'paiement',
-                    'virement', 'transfer', 'remboursement',
-                    'relevé bancaire', 'bank statement',
-                    'déclaration fiscale', 'tax declaration'
-                ],
-                strong: [
-                    'montant', 'amount', 'total', 'facture',
-                    'fiscal', 'bancaire', 'bank', 'finance'
-                ],
-                weak: ['euro', 'dollar', 'prix'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            reminders: {
-                absolute: [
-                    'reminder:', 'rappel:', 'follow up', 'relance',
-                    'gentle reminder', 'rappel amical', 'following up',
-                    'je reviens vers vous', 'circling back'
-                ],
-                strong: [
-                    'reminder', 'rappel', 'follow', 'relance',
-                    'suite', 'convenu'
-                ],
-                weak: ['previous', 'discussed'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            support: {
-                absolute: [
-                    'ticket #', 'ticket number', 'numéro de ticket',
-                    'case #', 'case number', 'incident #',
-                    'problème résolu', 'issue resolved'
-                ],
-                strong: [
-                    'support', 'assistance', 'help desk',
-                    'technical support', 'ticket'
-                ],
-                weak: ['help', 'aide', 'issue'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            project: {
-                absolute: [
-                    'projet xx', 'project update', 'milestone',
-                    'sprint', 'livrable projet', 'gantt',
-                    'avancement projet', 'project status'
-                ],
-                strong: [
-                    'projet', 'project', 'milestone', 'sprint',
-                    'agile', 'scrum'
-                ],
-                weak: ['development', 'phase'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            hr: {
-                absolute: [
-                    'bulletin de paie', 'payslip', 'contrat de travail',
-                    'congés', 'leave request', 'onboarding',
-                    'entretien annuel', 'performance review'
-                ],
-                strong: [
-                    'rh', 'hr', 'salaire', 'salary',
-                    'ressources humaines', 'human resources'
-                ],
-                weak: ['employee', 'staff'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            internal: {
-                absolute: [
-                    'all staff', 'tout le personnel', 'annonce interne',
-                    'company announcement', 'memo interne',
-                    'communication interne', 'note de service'
-                ],
-                strong: [
-                    'internal', 'interne', 'company wide',
-                    'personnel', 'staff'
-                ],
-                weak: ['annonce', 'announcement'],
-                exclusions: ['newsletter', 'marketing', 'external']
-            },
-
-            notifications: {
-                absolute: [
-                    'do not reply', 'ne pas répondre', 'noreply@',
-                    'automated message', 'notification automatique',
-                    'system notification', 'ceci est un message automatique'
-                ],
-                strong: [
-                    'automated', 'automatic', 'system',
-                    'notification', 'automatique'
-                ],
-                weak: ['notification', 'alert'],
-                exclusions: ['newsletter', 'marketing']
-            },
-
-            cc: {
-                absolute: [
-                    'copie pour information', 'for your information', 'fyi',
-                    'en copie', 'in copy', 'cc:', 'courtesy copy'
-                ],
-                strong: ['information', 'copie', 'copy'],
-                weak: ['fyi', 'info'],
-                exclusions: []
-            }
-        };
-
-        console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
+getTaskPreselectedCategories() {
+    // CORRECTION: Supprimer le log qui cause la boucle infinie
+    // console.log('[CategoryManager] 📋 getTaskPreselectedCategories:', this.taskPreselectedCategories);
+    
+    // Vérifier si on a besoin de synchroniser (max toutes les 5 secondes)
+    const now = Date.now();
+    const needsSync = !this.lastCategorySync || (now - this.lastCategorySync) > 5000;
+    
+    if (needsSync && window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
+        const managerCategories = window.categoryManager.getTaskPreselectedCategories();
+        
+        // Mettre à jour localement seulement si vraiment différent
+        const localSorted = [...this.taskPreselectedCategories].sort().join(',');
+        const managerSorted = [...managerCategories].sort().join(',');
+        
+        if (localSorted !== managerSorted) {
+            // Log seulement en cas de changement réel
+            console.log('[CategoryManager] 🔄 Synchronisation des catégories pré-sélectionnées');
+            this.taskPreselectedCategories = [...managerCategories];
+        }
+        
+        this.lastCategorySync = now;
     }
+    
+    return [...this.taskPreselectedCategories];
+}
+
 
 analyzeEmail(email) {
     if (!email) return null;
     
     const normalizedText = this.normalizeText(email);
     
-    // Check exclusions first
+    // PRIORITÉ 1: Détecter d'abord les newsletters/marketing AVANT tout le reste
+    const newsletterResult = this.checkNewsletterMarkers(normalizedText, email);
+    if (newsletterResult) {
+        return newsletterResult;
+    }
+    
+    // Check exclusions
     if (this.isExcluded(email, normalizedText)) {
         return { 
             category: 'excluded', 
@@ -1190,15 +1020,10 @@ analyzeEmail(email) {
     const allCategories = { ...this.categories };
     const activeCategories = this.getActiveCategories();
     
-    console.log(`[CategoryManager] 🔍 Analyse email: "${email.subject?.substring(0, 50)}"`);
-    console.log(`[CategoryManager] 📂 Catégories totales: ${Object.keys(allCategories).length}`);
-    console.log(`[CategoryManager] ✅ Catégories actives: ${activeCategories.length}`);
-    
     // Analyser pour chaque catégorie ACTIVE
     Object.entries(allCategories).forEach(([categoryId, category]) => {
         // Vérifier si la catégorie est active
         if (!activeCategories.includes(categoryId)) {
-            console.log(`[CategoryManager] ⏭️ Catégorie ${categoryId} inactive, skip`);
             return;
         }
         
@@ -1211,15 +1036,8 @@ analyzeEmail(email) {
         const keywords = this.getCategoryKeywords(categoryId);
         
         if (!keywords || (!keywords.absolute?.length && !keywords.strong?.length && !keywords.weak?.length)) {
-            console.log(`[CategoryManager] ⚠️ Catégorie ${categoryId} sans mots-clés`);
             return;
         }
-        
-        console.log(`[CategoryManager] 🏷️ Test catégorie ${categoryId} (${category.name}):`);
-        console.log(`  - Absolus: ${keywords.absolute?.length || 0}`);
-        console.log(`  - Forts: ${keywords.strong?.length || 0}`);
-        console.log(`  - Faibles: ${keywords.weak?.length || 0}`);
-        console.log(`  - Exclusions: ${keywords.exclusions?.length || 0}`);
         
         // Vérifier les exclusions
         if (keywords.exclusions && keywords.exclusions.length > 0) {
@@ -1232,29 +1050,45 @@ analyzeEmail(email) {
                         score: -50
                     });
                     categoryScore -= 50;
-                    console.log(`  ❌ Exclusion trouvée: "${exclusion}"`);
                 }
             }
         }
         
-        if (!hasExclusion) {
-            // Analyser les mots-clés absolus
-            if (keywords.absolute && keywords.absolute.length > 0) {
-                for (const keyword of keywords.absolute) {
-                    if (normalizedText.includes(keyword.toLowerCase())) {
-                        hasAbsolute = true;
-                        matchedPatterns.push({
-                            type: 'absolute',
-                            keyword: keyword,
-                            score: 100
-                        });
-                        categoryScore += 100;
-                        console.log(`  🎯 Absolu trouvé: "${keyword}"`);
-                    }
+        // Si exclusion trouvée, passer à la catégorie suivante
+        if (hasExclusion) {
+            return;
+        }
+        
+        // Analyser les mots-clés absolus
+        if (keywords.absolute && keywords.absolute.length > 0) {
+            for (const keyword of keywords.absolute) {
+                if (normalizedText.includes(keyword.toLowerCase())) {
+                    hasAbsolute = true;
+                    matchedPatterns.push({
+                        type: 'absolute',
+                        keyword: keyword,
+                        score: 100
+                    });
+                    categoryScore += 100;
                 }
             }
-            
-            // Analyser les mots-clés forts
+        }
+        
+        // Si on a trouvé un mot-clé absolu ET que c'est une catégorie prioritaire
+        // on peut arrêter l'analyse ici
+        if (hasAbsolute && category.priority >= 90) {
+            categoryScores[categoryId] = {
+                score: categoryScore,
+                confidence: 1.0,
+                patterns: matchedPatterns,
+                hasAbsolute: true,
+                priority: category.priority || 50
+            };
+            return;
+        }
+        
+        // Analyser les mots-clés forts seulement si pas d'absolu ou priorité moindre
+        if (!hasAbsolute || category.priority < 90) {
             if (keywords.strong && keywords.strong.length > 0) {
                 for (const keyword of keywords.strong) {
                     if (normalizedText.includes(keyword.toLowerCase())) {
@@ -1264,7 +1098,6 @@ analyzeEmail(email) {
                             score: 30
                         });
                         categoryScore += 30;
-                        console.log(`  💪 Fort trouvé: "${keyword}"`);
                     }
                 }
             }
@@ -1279,7 +1112,6 @@ analyzeEmail(email) {
                             score: 10
                         });
                         categoryScore += 10;
-                        console.log(`  📝 Faible trouvé: "${keyword}"`);
                     }
                 }
             }
@@ -1287,7 +1119,7 @@ analyzeEmail(email) {
         
         // Calculer la confiance
         let confidence = 0;
-        if (hasAbsolute && !hasExclusion) {
+        if (hasAbsolute) {
             confidence = 1.0;
         } else if (categoryScore >= 100) {
             confidence = 0.95;
@@ -1301,7 +1133,7 @@ analyzeEmail(email) {
             confidence = 0.40;
         }
         
-        // Stocker le score pour cette catégorie
+        // Stocker le score pour cette catégorie seulement si significatif
         if (categoryScore > 0 || hasAbsolute) {
             categoryScores[categoryId] = {
                 score: categoryScore,
@@ -1310,45 +1142,62 @@ analyzeEmail(email) {
                 hasAbsolute: hasAbsolute,
                 priority: category.priority || 50
             };
-            console.log(`  ✅ Score final: ${categoryScore} (confiance: ${Math.round(confidence * 100)}%)`);
         }
     });
     
-    // Find best category
+    // NOUVELLE LOGIQUE : Sélection par priorité ET score
     let bestCategory = 'other';
     let bestScore = 0;
     let bestConfidence = 0;
     let bestPatterns = [];
     let bestHasAbsolute = false;
+    let bestPriority = 0;
     
-    // First, check for absolute matches
+    // D'abord, chercher la catégorie avec le plus haut score parmi celles qui ont des mots-clés absolus
     for (const [categoryId, data] of Object.entries(categoryScores)) {
-        if (data.hasAbsolute && data.score > bestScore) {
-            bestCategory = categoryId;
-            bestScore = data.score;
-            bestConfidence = data.confidence;
-            bestPatterns = data.patterns;
-            bestHasAbsolute = true;
-        }
-    }
-    
-    // If no absolute match, find highest score
-    if (!bestHasAbsolute) {
-        for (const [categoryId, data] of Object.entries(categoryScores)) {
-            // Consider priority in case of tie
-            const weightedScore = data.score + (data.priority * 0.1);
+        if (data.hasAbsolute) {
+            // Pour les catégories avec mots-clés absolus, prioriser par priorité puis par score
+            const isHigherPriority = data.priority > bestPriority;
+            const isSamePriorityButHigherScore = data.priority === bestPriority && data.score > bestScore;
             
-            if (weightedScore > bestScore || 
-                (weightedScore === bestScore && data.priority > (categoryScores[bestCategory]?.priority || 0))) {
+            if (!bestHasAbsolute || isHigherPriority || isSamePriorityButHigherScore) {
                 bestCategory = categoryId;
                 bestScore = data.score;
                 bestConfidence = data.confidence;
                 bestPatterns = data.patterns;
+                bestHasAbsolute = true;
+                bestPriority = data.priority;
             }
         }
     }
     
-    console.log(`[CategoryManager] 🏆 Catégorie finale: ${bestCategory} (score: ${bestScore})`);
+    // Si aucun mot-clé absolu trouvé, chercher par score pondéré
+    if (!bestHasAbsolute) {
+        for (const [categoryId, data] of Object.entries(categoryScores)) {
+            // Score pondéré = score + (priorité * 0.5) pour favoriser les catégories prioritaires
+            const weightedScore = data.score + (data.priority * 0.5);
+            const currentWeightedScore = bestScore + (bestPriority * 0.5);
+            
+            if (weightedScore > currentWeightedScore) {
+                bestCategory = categoryId;
+                bestScore = data.score;
+                bestConfidence = data.confidence;
+                bestPatterns = data.patterns;
+                bestPriority = data.priority;
+            }
+        }
+    }
+    
+
+    
+    // SEUIL MINIMUM : Si le score est trop faible, catégoriser comme "other"
+    const MIN_SCORE_THRESHOLD = 20;
+    if (bestScore < MIN_SCORE_THRESHOLD && !bestHasAbsolute) {
+        bestCategory = 'other';
+        bestScore = 0;
+        bestConfidence = 0;
+        bestPatterns = [];
+    }
     
     return {
         category: bestCategory,
