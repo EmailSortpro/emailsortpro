@@ -4783,6 +4783,203 @@ saveCategoryFilters() {
         };
     }
 
+    // ================================================
+// ONGLET CATÉGORIES ET MOTS-CLÉS
+// ================================================
+renderKeywordsTab(settings, moduleStatus) {
+    try {
+        const categories = window.categoryManager?.getCategories() || {};
+        const activeCategories = settings.activeCategories || null;
+        
+        // Séparer les catégories par type
+        const systemCategories = Object.entries(categories).filter(([_, cat]) => !cat.isCustom);
+        const customCategories = Object.entries(categories).filter(([_, cat]) => cat.isCustom);
+        
+        return `
+            <div class="keywords-tab-layout">
+                <!-- Barre d'actions -->
+                <div class="keywords-actions-bar">
+                    <button class="btn-compact btn-primary" onclick="window.categoriesPage.showCreateCategoryModal()">
+                        <i class="fas fa-plus"></i> Nouvelle catégorie
+                    </button>
+                    <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openAllKeywordsModal()">
+                        <i class="fas fa-list"></i> Voir tous les mots-clés
+                    </button>
+                    <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
+                        <i class="fas fa-ban"></i> Gérer les exclusions
+                    </button>
+                </div>
+                
+                <!-- Section Catégories personnalisées -->
+                ${customCategories.length > 0 ? `
+                    <div class="categories-section">
+                        <h3><i class="fas fa-folder-plus"></i> Catégories personnalisées</h3>
+                        <div class="categories-grid-condensed">
+                            ${customCategories.map(([id, category]) => this.renderCategoryCardCondensed(id, category, activeCategories)).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <!-- Section Catégories système -->
+                <div class="categories-section">
+                    <h3><i class="fas fa-folder"></i> Catégories système</h3>
+                    <div class="categories-grid-condensed">
+                        ${systemCategories.map(([id, category]) => this.renderCategoryCardCondensed(id, category, activeCategories)).join('')}
+                    </div>
+                </div>
+                
+                <!-- Section Exclusions globales -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-ban"></i>
+                        <h3>Exclusions globales</h3>
+                    </div>
+                    
+                    <p>Domaines et emails qui ne seront jamais catégorisés automatiquement</p>
+                    
+                    <div class="quick-exclusion-section">
+                        <input type="text" 
+                               id="quick-exclusion-input" 
+                               class="form-input-compact" 
+                               placeholder="Ajouter un domaine ou email à exclure...">
+                        <button class="btn-compact btn-primary" onclick="window.categoriesPage.addQuickExclusion()">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
+                    
+                    <div class="exclusions-list">
+                        ${settings.categoryExclusions?.domains?.length > 0 || settings.categoryExclusions?.emails?.length > 0 ? `
+                            ${settings.categoryExclusions.domains?.length > 0 ? `
+                                <h4><i class="fas fa-globe"></i> Domaines exclus</h4>
+                                <div style="margin-bottom: 16px;">
+                                    ${settings.categoryExclusions.domains.map(domain => `
+                                        <span class="exclusion-badge">
+                                            ${domain}
+                                            <button onclick="window.categoriesPage.removeExclusion('domain', '${domain}')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${settings.categoryExclusions.emails?.length > 0 ? `
+                                <h4><i class="fas fa-envelope"></i> Emails exclus</h4>
+                                <div>
+                                    ${settings.categoryExclusions.emails.map(email => `
+                                        <span class="exclusion-badge">
+                                            ${email}
+                                            <button onclick="window.categoriesPage.removeExclusion('email', '${email}')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        ` : '<p style="color: #6b7280; font-style: italic;">Aucune exclusion configurée</p>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('[CategoriesPage] Erreur renderKeywordsTab:', error);
+        return '<div class="error-display">Erreur lors du chargement de l\'onglet catégories</div>';
+    }
+}
+
+// ================================================
+// RENDU D'UNE CARTE DE CATÉGORIE CONDENSÉE
+// ================================================
+renderCategoryCardCondensed(id, category, activeCategories) {
+    const isActive = activeCategories === null || activeCategories.includes(id);
+    const keywords = window.categoryManager?.getCategoryKeywords(id) || { absolute: [], strong: [], weak: [], exclusions: [] };
+    const filters = window.categoryManager?.getCategoryFilters(id) || { includeDomains: [], excludeDomains: [], includeEmails: [], excludeEmails: [] };
+    
+    const totalKeywords = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
+                         (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
+    
+    const totalFilters = (filters.includeDomains?.length || 0) + (filters.excludeDomains?.length || 0) +
+                        (filters.includeEmails?.length || 0) + (filters.excludeEmails?.length || 0);
+    
+    return `
+        <div class="category-card-condensed ${!isActive ? 'inactive' : ''}">
+            <div class="category-card-header-condensed">
+                <div class="category-icon-condensed" style="background: ${category.color}20; color: ${category.color};">
+                    ${category.icon}
+                </div>
+                <div class="category-info-condensed">
+                    <h3>${category.name}</h3>
+                    <div class="category-badges">
+                        ${category.isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
+                        ${!isActive ? '<span class="inactive-badge">Inactive</span>' : ''}
+                    </div>
+                </div>
+                <label class="toggle-switch-mini" title="${isActive ? 'Désactiver' : 'Activer'} la catégorie">
+                    <input type="checkbox" ${isActive ? 'checked' : ''} 
+                           onchange="window.categoriesPage.toggleCategoryActive('${id}')">
+                    <span class="toggle-slider-mini"></span>
+                </label>
+            </div>
+            
+            <div class="category-stats-condensed">
+                ${keywords.absolute?.length > 0 ? `
+                    <div class="stat-item-condensed highlight-absolute">
+                        <span class="stat-number">${keywords.absolute.length}</span>
+                        <span class="stat-label">absolus</span>
+                    </div>
+                ` : ''}
+                
+                <div class="stat-item-condensed">
+                    <span class="stat-number">${totalKeywords}</span>
+                    <span class="stat-label">mots-clés</span>
+                </div>
+                
+                ${totalFilters > 0 ? `
+                    <div class="stat-item-condensed highlight-filters">
+                        <span class="stat-number">${totalFilters}</span>
+                        <span class="stat-label">filtres</span>
+                    </div>
+                ` : ''}
+                
+                ${category.priority !== 30 ? `
+                    <div class="stat-item-condensed">
+                        <span class="stat-number">${category.priority}</span>
+                        <span class="stat-label">priorité</span>
+                    </div>
+                ` : ''}
+            </div>
+            
+            <div class="category-actions-condensed">
+                <button class="btn-action-condensed" 
+                        onclick="window.categoriesPage.openKeywordsModal('${id}')"
+                        title="Gérer les mots-clés">
+                    <i class="fas fa-key"></i>
+                </button>
+                
+                <button class="btn-action-condensed" 
+                        onclick="window.categoriesPage.openCategoryFiltersModal('${id}')"
+                        title="Gérer les filtres de domaines/emails">
+                    <i class="fas fa-filter"></i>
+                </button>
+                
+                ${category.isCustom ? `
+                    <button class="btn-action-condensed" 
+                            onclick="window.categoriesPage.editCustomCategory('${id}')"
+                            title="Modifier la catégorie">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    
+                    <button class="btn-action-condensed danger" 
+                            onclick="window.categoriesPage.deleteCustomCategory('${id}')"
+                            title="Supprimer la catégorie">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
     renderModuleStatusBar(status) {
         const totalModules = Object.keys(status).length;
         const availableModules = Object.values(status).filter(Boolean).length;
