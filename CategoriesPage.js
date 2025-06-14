@@ -528,24 +528,6 @@ class CategoriesPage {
         this.setupKeywordEvents();
     }
 
-
- getCategoryKeywords(categoryId) {
-    // NOTE: Cette méthode semble être une duplication erronée dans CategoriesPage
-    // Elle devrait utiliser CategoryManager directement
-    if (window.categoryManager && typeof window.categoryManager.getCategoryKeywords === 'function') {
-        return window.categoryManager.getCategoryKeywords(categoryId);
-    }
-    
-    // Fallback - ne devrait jamais être utilisé
-    console.warn(`[CategoriesPage] ⚠️ CategoryManager non disponible pour récupérer les mots-clés de ${categoryId}`);
-    return {
-        absolute: [],
-        strong: [],
-        weak: [],
-        exclusions: []
-    };
-}  
-
     renderKeywordSection(type, title, keywords, icon) {
         const typeClass = type === 'exclusions' ? 'exclusions' : type;
         
@@ -652,81 +634,38 @@ class CategoriesPage {
         }
     }
 
-saveKeywords() {
-    if (!this.editingCategoryId) {
-        this.showToast('Erreur: catégorie non sélectionnée', 'error');
-        return;
-    }
-    
-    try {
-        const keywords = {
-            absolute: this.getKeywordsFromList('absolute'),
-            strong: this.getKeywordsFromList('strong'),
-            weak: this.getKeywordsFromList('weak'),
-            exclusions: this.getKeywordsFromList('exclusions')
-        };
-        
-        console.log('[CategoriesPage] 💾 Sauvegarde mots-clés pour', this.editingCategoryId, ':', keywords);
-        
-        // Mettre à jour dans CategoryManager
-        if (window.categoryManager) {
-            // IMPORTANT: Mettre à jour directement dans weightedKeywords ET dans la catégorie
-            window.categoryManager.weightedKeywords[this.editingCategoryId] = keywords;
-            
-            // Si c'est une catégorie custom, mettre à jour aussi dans customCategories
-            if (window.categoryManager.customCategories[this.editingCategoryId]) {
-                window.categoryManager.customCategories[this.editingCategoryId].keywords = keywords;
-                window.categoryManager.saveCustomCategories();
-            }
-            
-            // Si c'est une catégorie standard, sauvegarder dans localStorage
-            else {
-                const keywordsData = localStorage.getItem('categoryKeywords') || '{}';
-                const allKeywords = JSON.parse(keywordsData);
-                allKeywords[this.editingCategoryId] = keywords;
-                localStorage.setItem('categoryKeywords', JSON.stringify(allKeywords));
-            }
-            
-            // Appeler aussi la méthode officielle
-            window.categoryManager.updateCategoryKeywords(this.editingCategoryId, keywords);
+    saveKeywords() {
+        if (!this.editingCategoryId) {
+            this.showToast('Erreur: catégorie non sélectionnée', 'error');
+            return;
         }
         
-        this.closeModal();
-        this.showToast('Mots-clés sauvegardés avec succès', 'success');
-        this.refreshCurrentTab();
-        
-        // IMPORTANT: Forcer la resynchronisation complète
-        console.log('[CategoriesPage] 🔄 Forçage resynchronisation après sauvegarde mots-clés');
-        
-        // Notifier tous les modules
-        setTimeout(() => {
-            // Événement spécifique pour les mots-clés
-            window.dispatchEvent(new CustomEvent('keywordsUpdated', {
-                detail: {
-                    categoryId: this.editingCategoryId,
-                    keywords: keywords,
-                    source: 'CategoriesPage',
-                    timestamp: Date.now()
-                }
-            }));
+        try {
+            const keywords = {
+                absolute: this.getKeywordsFromList('absolute'),
+                strong: this.getKeywordsFromList('strong'),
+                weak: this.getKeywordsFromList('weak'),
+                exclusions: this.getKeywordsFromList('exclusions')
+            };
             
-            // Forcer la recatégorisation si des emails sont présents
-            if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                console.log('[CategoriesPage] 📧 Déclenchement recatégorisation emails...');
-                window.emailScanner.recategorizeEmails();
-            }
+            console.log('[CategoriesPage] Sauvegarde mots-clés:', keywords);
             
-            // Synchronisation globale
-            this.forceSynchronization();
-        }, 100);
-        
-    } catch (error) {
-        console.error('[CategoriesPage] ❌ Erreur sauvegarde mots-clés:', error);
-        this.showToast('Erreur lors de la sauvegarde', 'error');
+            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+            
+            this.closeModal();
+            this.showToast('Mots-clés sauvegardés avec succès', 'success');
+            this.refreshCurrentTab();
+            
+            // Déclencher la synchronisation
+            setTimeout(() => {
+                this.forceSynchronization();
+            }, 100);
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur sauvegarde mots-clés:', error);
+            this.showToast('Erreur lors de la sauvegarde', 'error');
+        }
     }
-}
-
-
 
     getKeywordsFromList(type) {
         const keywordTags = document.querySelectorAll(`.keywords-list[data-type="${type}"] .keyword-tag`);
