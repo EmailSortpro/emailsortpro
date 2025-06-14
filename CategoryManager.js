@@ -238,25 +238,116 @@ class CategoryManager {
         }
     }
 
-    updateTaskPreselectedCategories(categories, notifyModules = true) {
-        console.log('[CategoryManager] 📋 updateTaskPreselectedCategories:', categories);
-        
-        const normalizedCategories = Array.isArray(categories) ? [...categories] : [];
-        
-        this.syncQueue.push({
-            type: 'taskPreselectedCategories',
-            value: normalizedCategories,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-        
-        return normalizedCategories;
+updateTaskPreselectedCategories(categories, notifyModules = true) {
+    console.log('[CategoryManager] 📋 updateTaskPreselectedCategories:', categories);
+    
+    const normalizedCategories = Array.isArray(categories) ? [...categories] : [];
+    
+    // Invalider le cache
+    this.invalidateTaskCategoriesCache();
+    
+    this.syncQueue.push({
+        type: 'taskPreselectedCategories',
+        value: normalizedCategories,
+        notifyModules,
+        timestamp: Date.now()
+    });
+    
+    if (!this.syncInProgress) {
+        this.processSettingsChanges();
     }
+    
+    return normalizedCategories;
+}
 
+runDiagnostics() {
+    console.group('🏥 DIAGNOSTIC COMPLET CategoryManager');
+    
+    // 1. Vérifier les catégories
+    console.group('📂 Catégories');
+    const allCategories = Object.keys(this.categories);
+    const customCategories = Object.keys(this.customCategories);
+    const activeCategories = this.getActiveCategories();
+    
+    console.log('Total catégories:', allCategories.length);
+    console.log('Catégories standard:', allCategories.filter(c => !this.categories[c].isCustom).length);
+    console.log('Catégories personnalisées:', customCategories.length);
+    console.log('Catégories actives:', activeCategories.length);
+    
+    // Vérifier les catégories personnalisées
+    customCategories.forEach(catId => {
+        const cat = this.categories[catId];
+        const keywords = this.weightedKeywords[catId];
+        const isActive = activeCategories.includes(catId);
+        const keywordCount = this.getTotalKeywordsCount(catId);
+        
+        console.log(`\n${cat.icon} ${cat.name} (${catId}):`);
+        console.log('  - Active:', isActive ? '✅' : '❌');
+        console.log('  - Priorité:', cat.priority);
+        console.log('  - Mots-clés:', keywordCount);
+        
+        if (keywordCount === 0) {
+            console.warn('  ⚠️ AUCUN MOT-CLÉ DÉFINI!');
+        }
+    });
+    console.groupEnd();
+    
+    // 2. Vérifier l'efficacité des catégories
+    console.group('📊 Efficacité des catégories');
+    Object.entries(this.weightedKeywords).forEach(([catId, keywords]) => {
+        const totalKeywords = this.getTotalKeywordsCount(catId);
+        const absoluteCount = keywords.absolute?.length || 0;
+        const efficiency = totalKeywords > 0 ? Math.round((absoluteCount / totalKeywords) * 100) : 0;
+        
+        if (efficiency < 30 && totalKeywords > 0) {
+            const cat = this.categories[catId];
+            console.warn(`⚠️ ${cat.icon} ${cat.name}: ${efficiency}% d'efficacité (${absoluteCount} absolus sur ${totalKeywords} total)`);
+        }
+    });
+    console.groupEnd();
+    
+    // 3. Vérifier la synchronisation
+    console.group('🔄 État de synchronisation');
+    console.log('Queue de sync:', this.syncQueue.length);
+    console.log('Sync en cours:', this.syncInProgress);
+    console.log('Dernière sync:', new Date(this.lastSyncTimestamp).toLocaleTimeString());
+    console.log('Listeners actifs:', this.changeListeners.size);
+    console.groupEnd();
+    
+    // 4. Recommandations
+    console.group('💡 Recommandations');
+    
+    // Catégories sans mots-clés
+    const emptyCats = allCategories.filter(catId => this.getTotalKeywordsCount(catId) === 0);
+    if (emptyCats.length > 0) {
+        console.warn('Catégories sans mots-clés:', emptyCats);
+    }
+    
+    // Catégories peu efficaces
+    const inefficientCats = Object.entries(this.weightedKeywords)
+        .filter(([catId, keywords]) => {
+            const total = this.getTotalKeywordsCount(catId);
+            const absolute = keywords.absolute?.length || 0;
+            return total > 0 && (absolute / total) < 0.3;
+        })
+        .map(([catId]) => this.categories[catId]?.name || catId);
+    
+    if (inefficientCats.length > 0) {
+        console.warn('Catégories peu efficaces (< 30% mots absolus):', inefficientCats);
+        console.log('→ Ajoutez plus de mots-clés absolus pour améliorer la détection');
+    }
+    
+    console.groupEnd();
+    console.groupEnd();
+    
+    return {
+        totalCategories: allCategories.length,
+        customCategories: customCategories.length,
+        activeCategories: activeCategories.length,
+        emptyCategoriesCount: emptyCats.length,
+        inefficientCategoriesCount: inefficientCats.length
+    };
+}
     updateActiveCategories(categories, notifyModules = true) {
         console.log('[CategoryManager] 🏷️ updateActiveCategories:', categories);
         
@@ -443,18 +534,53 @@ class CategoryManager {
         return JSON.parse(JSON.stringify(this.settings));
     }
 
-    getTaskPreselectedCategories() {
-        const categories = this.settings.taskPreselectedCategories || [];
-        console.log('[CategoryManager] 📋 getTaskPreselectedCategories:', categories);
-        return [...categories]; // Copie
+getTaskPreselectedCategories() {
+    // Vérifier le cache avec une durée de vie de 10 secondes
+    const now = Date.now();
+    const CACHE_DURATION = 10000; // 10 secondes
+    
+    if (this._taskCategoriesCache && 
+        this._taskCategoriesCacheTime && 
+        (now - this._taskCategoriesCacheTime) < CACHE_DURATION) {
+        // Retourner depuis le cache sans logger
+        return [...this._taskCategoriesCache];
     }
+    
+    // Récupérer les catégories fraîches
+    const categories = this.settings.taskPreselectedCategories || [];
+    
+    // Mettre à jour le cache
+    this._taskCategoriesCache = [...categories];
+    this._taskCategoriesCacheTime = now;
+    
+    // Log seulement si changement ou première fois
+    if (!this._lastLoggedTaskCategories || 
+        JSON.stringify(this._lastLoggedTaskCategories) !== JSON.stringify(categories)) {
+        console.log('[CategoryManager] 📋 Catégories tâches mises à jour:', categories);
+        this._lastLoggedTaskCategories = [...categories];
+    }
+    
+    return [...categories];
+}
 
-    getActiveCategories() {
-        if (!this.settings.activeCategories) {
-            return Object.keys(this.categories);
-        }
-        return [...this.settings.activeCategories]; // Copie
+invalidateTaskCategoriesCache() {
+    this._taskCategoriesCache = null;
+    this._taskCategoriesCacheTime = 0;
+    console.log('[CategoryManager] 🔄 Cache des catégories tâches invalidé');
+}
+
+getActiveCategories() {
+    // Si activeCategories est null, toutes les catégories sont actives
+    if (!this.settings.activeCategories) {
+        // Retourner TOUTES les catégories (standard + personnalisées)
+        const allCategories = Object.keys(this.categories);
+        console.log('[CategoryManager] Toutes catégories actives:', allCategories);
+        return allCategories;
     }
+    
+    // Sinon retourner seulement les catégories marquées comme actives
+    return [...this.settings.activeCategories];
+}
 
     isCategoryActive(categoryId) {
         const activeCategories = this.getActiveCategories();
@@ -506,54 +632,72 @@ class CategoryManager {
     }
 
 loadCustomCategories() {
-        try {
-            const saved = localStorage.getItem('customCategories');
-            this.customCategories = saved ? JSON.parse(saved) : {};
+    try {
+        const saved = localStorage.getItem('customCategories');
+        this.customCategories = saved ? JSON.parse(saved) : {};
+        
+        console.log('[CategoryManager] 📁 Chargement catégories personnalisées...');
+        
+        // Intégrer les catégories personnalisées APRÈS l'initialisation des mots-clés par défaut
+        Object.entries(this.customCategories).forEach(([id, category]) => {
+            // Ajouter la catégorie avec toutes ses propriétés
+            this.categories[id] = {
+                ...category,
+                isCustom: true,
+                priority: category.priority || 30
+            };
             
-            // Intégrer les catégories personnalisées APRÈS l'initialisation des mots-clés par défaut
-            Object.entries(this.customCategories).forEach(([id, category]) => {
-                // Ajouter la catégorie
-                this.categories[id] = {
-                    ...category,
-                    isCustom: true,
-                    priority: category.priority || 30
+            // IMPORTANT: S'assurer que les mots-clés sont correctement initialisés
+            if (category.keywords) {
+                // Créer la structure complète si elle n'existe pas
+                if (!this.weightedKeywords[id]) {
+                    this.weightedKeywords[id] = {
+                        absolute: [],
+                        strong: [],
+                        weak: [],
+                        exclusions: []
+                    };
+                }
+                
+                // Fusionner les mots-clés (au lieu de remplacer)
+                this.weightedKeywords[id] = {
+                    absolute: [...new Set([...(this.weightedKeywords[id].absolute || []), ...(category.keywords.absolute || [])])],
+                    strong: [...new Set([...(this.weightedKeywords[id].strong || []), ...(category.keywords.strong || [])])],
+                    weak: [...new Set([...(this.weightedKeywords[id].weak || []), ...(category.keywords.weak || [])])],
+                    exclusions: [...new Set([...(this.weightedKeywords[id].exclusions || []), ...(category.keywords.exclusions || [])])]
                 };
                 
-                // IMPORTANT: S'assurer que les mots-clés sont correctement initialisés
-                if (category.keywords) {
-                    // Créer la structure complète si elle n'existe pas
-                    if (!this.weightedKeywords[id]) {
-                        this.weightedKeywords[id] = {
-                            absolute: [],
-                            strong: [],
-                            weak: [],
-                            exclusions: []
-                        };
-                    }
-                    
-                    // Fusionner les mots-clés (au lieu de remplacer)
-                    this.weightedKeywords[id] = {
-                        absolute: [...new Set([...(this.weightedKeywords[id].absolute || []), ...(category.keywords.absolute || [])])],
-                        strong: [...new Set([...(this.weightedKeywords[id].strong || []), ...(category.keywords.strong || [])])],
-                        weak: [...new Set([...(this.weightedKeywords[id].weak || []), ...(category.keywords.weak || [])])],
-                        exclusions: [...new Set([...(this.weightedKeywords[id].exclusions || []), ...(category.keywords.exclusions || [])])]
-                    };
-                    
-                    console.log(`[CategoryManager] Mots-clés chargés pour ${id}:`, this.weightedKeywords[id]);
-                }
-            });
+                console.log(`[CategoryManager] ✅ Catégorie personnalisée "${category.name}" (${id}) chargée avec ${this.getTotalKeywordsCount(id)} mots-clés`);
+            }
             
-            console.log('[CategoryManager] Catégories personnalisées chargées:', Object.keys(this.customCategories));
-            console.log('[CategoryManager] Total catégories actives:', Object.keys(this.categories).length);
-            console.log('[CategoryManager] Total mots-clés configurés:', Object.keys(this.weightedKeywords).length);
-        } catch (error) {
-            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
-            this.customCategories = {};
-        }
+            // Ajouter automatiquement aux catégories actives si pas déjà présent
+            if (this.settings.activeCategories && !this.settings.activeCategories.includes(id)) {
+                console.log(`[CategoryManager] ➕ Ajout automatique de "${category.name}" aux catégories actives`);
+                this.settings.activeCategories.push(id);
+                this.saveSettingsToStorage();
+            }
+        });
+        
+        console.log('[CategoryManager] 📊 Résumé chargement:');
+        console.log('  - Catégories personnalisées:', Object.keys(this.customCategories).length);
+        console.log('  - Total catégories actives:', Object.keys(this.categories).length);
+        console.log('  - Catégories avec mots-clés:', Object.keys(this.weightedKeywords).length);
+        
+    } catch (error) {
+        console.error('[CategoryManager] ❌ Erreur chargement catégories personnalisées:', error);
+        this.customCategories = {};
     }
+}
 
-
-
+getTotalKeywordsCount(categoryId) {
+    const keywords = this.weightedKeywords[categoryId];
+    if (!keywords) return 0;
+    
+    return (keywords.absolute?.length || 0) + 
+           (keywords.strong?.length || 0) + 
+           (keywords.weak?.length || 0) + 
+           (keywords.exclusions?.length || 0);
+}
     createCustomCategory(categoryData) {
         const id = this.generateCategoryId(categoryData.name);
         
@@ -1176,105 +1320,218 @@ loadCustomCategories() {
         return results;
     }
 
-    selectByPriorityWithThreshold(results) {
-        const MIN_SCORE_THRESHOLD = 30;
-        const MIN_CONFIDENCE_THRESHOLD = 0.5;
-        
-        const sortedResults = Object.values(results)
-            .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
-            .sort((a, b) => {
-                if (a.priority !== b.priority) {
-                    return b.priority - a.priority;
-                }
-                return b.score - a.score;
-            });
-        
-        if (this.debugMode) {
-            console.log('[CategoryManager] Scores par catégorie:');
-            sortedResults.forEach(r => {
-                console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
-            });
-        }
-        
-        const bestResult = sortedResults[0];
-        
-        if (bestResult) {
-            return {
-                category: bestResult.category,
-                score: bestResult.score,
-                confidence: bestResult.confidence,
-                matchedPatterns: bestResult.matches,
-                hasAbsolute: bestResult.hasAbsolute
-            };
-        }
-        
+selectByPriorityWithThreshold(results) {
+    // BAISSER le seuil minimum pour capturer plus d'emails
+    const MIN_SCORE_THRESHOLD = 20; // Réduit de 30 à 20
+    const MIN_CONFIDENCE_THRESHOLD = 0.4; // Réduit de 0.5 à 0.4
+    
+    const sortedResults = Object.values(results)
+        .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
+        .sort((a, b) => {
+            // Priorité d'abord
+            if (a.priority !== b.priority) {
+                return b.priority - a.priority;
+            }
+            // Puis score
+            return b.score - a.score;
+        });
+    
+    if (this.debugMode) {
+        console.log('[CategoryManager] 📊 Scores par catégorie:');
+        sortedResults.forEach(r => {
+            console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
+        });
+    }
+    
+    const bestResult = sortedResults[0];
+    
+    if (bestResult) {
         return {
-            category: 'other',
-            score: 0,
-            confidence: 0,
-            matchedPatterns: [],
-            hasAbsolute: false
+            category: bestResult.category,
+            score: bestResult.score,
+            confidence: bestResult.confidence,
+            matchedPatterns: bestResult.matches,
+            hasAbsolute: bestResult.hasAbsolute
         };
     }
-
-    calculateScore(content, keywords, categoryId) {
-        let totalScore = 0;
-        let hasAbsolute = false;
-        const matches = [];
-        const text = content.text;
-        
-        // Test des exclusions en premier
-        if (keywords.exclusions) {
-            for (const exclusion of keywords.exclusions) {
-                if (this.findInText(text, exclusion)) {
-                    totalScore -= categoryId === 'marketing_news' ? 20 : 100;
-                    matches.push({ keyword: exclusion, type: 'exclusion', score: -100 });
-                }
-            }
-        }
-        
-        // Test des mots-clés absolus
-        if (keywords.absolute) {
-            for (const keyword of keywords.absolute) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 100;
-                    hasAbsolute = true;
-                    matches.push({ keyword, type: 'absolute', score: 100 });
-                    
-                    // Bonus si dans le sujet
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 50;
-                        matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
-                    }
-                }
-            }
-        }
-        
-        // Test des mots-clés forts (limiter pour éviter l'inflation)
-        if (keywords.strong && matches.length < 5) {
-            for (const keyword of keywords.strong) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 30;
-                    matches.push({ keyword, type: 'strong', score: 30 });
-                }
-            }
-        }
-        
-        // Test des mots-clés faibles (seulement si pas de match absolu)
-        if (keywords.weak && !hasAbsolute && matches.length < 3) {
-            for (const keyword of keywords.weak) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 10;
-                    matches.push({ keyword, type: 'weak', score: 10 });
-                }
-            }
-        }
-        
-        // Appliquer bonus de domaine
-        this.applyDomainBonus(content, categoryId, matches, totalScore);
-        
-        return { total: Math.max(0, totalScore), hasAbsolute, matches };
+    
+    // Si aucun résultat, essayer une détection basique par domaine
+    const domainCategory = this.detectByDomain(results);
+    if (domainCategory) {
+        return domainCategory;
     }
+    
+    return {
+        category: 'other',
+        score: 0,
+        confidence: 0,
+        matchedPatterns: [],
+        hasAbsolute: false
+    };
+}
+calculateScore(content, keywords, categoryId) {
+    let totalScore = 0;
+    let hasAbsolute = false;
+    const matches = [];
+    const text = content.text;
+    
+    // Bonus de base pour certaines catégories souvent mal détectées
+    const categoryBonus = {
+        'project': 10,
+        'cc': 5,
+        'security': 10,
+        'hr': 10
+    };
+    
+    if (categoryBonus[categoryId]) {
+        totalScore += categoryBonus[categoryId];
+        matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus[categoryId] });
+    }
+    
+    // Test des exclusions en premier
+    if (keywords.exclusions && keywords.exclusions.length > 0) {
+        for (const exclusion of keywords.exclusions) {
+            if (this.findInText(text, exclusion)) {
+                totalScore -= categoryId === 'marketing_news' ? 20 : 50; // Moins pénalisant
+                matches.push({ keyword: exclusion, type: 'exclusion', score: -50 });
+            }
+        }
+    }
+    
+    // Test des mots-clés absolus avec bonus contexte
+    if (keywords.absolute && keywords.absolute.length > 0) {
+        for (const keyword of keywords.absolute) {
+            if (this.findInText(text, keyword)) {
+                totalScore += 100;
+                hasAbsolute = true;
+                matches.push({ keyword, type: 'absolute', score: 100 });
+                
+                // Bonus supplémentaire si dans le sujet
+                if (content.subject && this.findInText(content.subject, keyword)) {
+                    totalScore += 50;
+                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
+                }
+                
+                // Bonus si au début du texte (plus pertinent)
+                if (text.substring(0, 200).includes(keyword.toLowerCase())) {
+                    totalScore += 20;
+                    matches.push({ keyword: keyword + ' (early position)', type: 'bonus', score: 20 });
+                }
+            }
+        }
+    }
+    
+    // Test des mots-clés forts avec scoring amélioré
+    if (keywords.strong && keywords.strong.length > 0) {
+        let strongMatches = 0;
+        for (const keyword of keywords.strong) {
+            if (this.findInText(text, keyword)) {
+                totalScore += 40; // Augmenté de 30 à 40
+                strongMatches++;
+                matches.push({ keyword, type: 'strong', score: 40 });
+                
+                // Bonus si dans le sujet
+                if (content.subject && this.findInText(content.subject, keyword)) {
+                    totalScore += 20;
+                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 20 });
+                }
+            }
+        }
+        
+        // Bonus si plusieurs mots-clés forts matchent
+        if (strongMatches >= 2) {
+            totalScore += 30;
+            matches.push({ keyword: 'multiple_strong_matches', type: 'bonus', score: 30 });
+        }
+    }
+    
+    // Test des mots-clés faibles avec scoring amélioré
+    if (keywords.weak && keywords.weak.length > 0) {
+        let weakMatches = 0;
+        for (const keyword of keywords.weak) {
+            if (this.findInText(text, keyword)) {
+                totalScore += 15; // Augmenté de 10 à 15
+                weakMatches++;
+                matches.push({ keyword, type: 'weak', score: 15 });
+            }
+        }
+        
+        // Bonus si beaucoup de mots faibles matchent
+        if (weakMatches >= 3) {
+            totalScore += 20;
+            matches.push({ keyword: 'multiple_weak_matches', type: 'bonus', score: 20 });
+        }
+    }
+    
+    // Appliquer bonus de domaine amélioré
+    this.applyEnhancedDomainBonus(content, categoryId, matches, totalScore);
+    
+    // Bonus de longueur pour certaines catégories
+    if (['project', 'hr', 'internal'].includes(categoryId) && content.length > 500) {
+        totalScore += 10;
+        matches.push({ keyword: 'long_content', type: 'bonus', score: 10 });
+    }
+    
+    return { 
+        total: Math.max(0, totalScore), 
+        hasAbsolute, 
+        matches 
+    };
+}
+    detectByDomain(results) {
+    // Mapping domaine -> catégorie pour les cas courants
+    const domainMappings = {
+        'linkedin': 'commercial',
+        'indeed': 'commercial',
+        'github': 'project',
+        'gitlab': 'project',
+        'jira': 'project',
+        'asana': 'project',
+        'trello': 'project',
+        'slack': 'internal',
+        'teams': 'meetings',
+        'zoom': 'meetings',
+        'meet': 'meetings',
+        'paypal': 'finance',
+        'stripe': 'finance',
+        'bank': 'finance',
+        'invoice': 'finance',
+        'support': 'support',
+        'help': 'support',
+        'noreply': 'notifications',
+        'notification': 'notifications',
+        'alert': 'security',
+        'security': 'security'
+    };
+    
+    // Extraire le domaine depuis le contexte (à implémenter selon votre structure)
+    // Pour l'instant, retourne null
+    return null;
+}
+
+applyEnhancedDomainBonus(content, categoryId, matches, totalScore) {
+    const domainBonuses = {
+        security: ['microsoft', 'google', 'apple', 'security', 'auth', '2fa', 'verification'],
+        finance: ['gouv.fr', 'impots', 'bank', 'paypal', 'stripe', 'invoice', 'billing'],
+        marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing', 'sendinblue', 'mailjet'],
+        notifications: ['noreply', 'notification', 'donotreply', 'automated', 'system'],
+        project: ['github', 'gitlab', 'jira', 'asana', 'trello', 'confluence', 'bitbucket'],
+        hr: ['workday', 'bamboohr', 'adp', 'payroll', 'hr', 'recruiting'],
+        meetings: ['zoom', 'teams', 'meet', 'webex', 'gotomeeting', 'calendar'],
+        support: ['zendesk', 'freshdesk', 'helpdesk', 'support', 'ticket']
+    };
+    
+    if (domainBonuses[categoryId]) {
+        for (const domainKeyword of domainBonuses[categoryId]) {
+            if (content.domain.includes(domainKeyword)) {
+                const bonus = 40; // Bonus uniforme plus élevé
+                totalScore += bonus;
+                matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
+                break;
+            }
+        }
+    }
+}
 
     applyDomainBonus(content, categoryId, matches, totalScore) {
         const domainBonuses = {
