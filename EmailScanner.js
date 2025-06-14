@@ -1274,36 +1274,48 @@ async categorizeEmails(overridePreselectedCategories = null) {
             }
         };
     }
+// EmailScanner.js - Méthode reset() améliorée (remplacer vers ligne 1280)
 
-    reset() {
-        console.log('[EmailScanner] 🔄 Réinitialisation...');
-        this.emails = [];
-        this.categorizedEmails = {};
+reset() {
+    console.log('[EmailScanner] 🔄 Réinitialisation...');
+    this.emails = [];
+    this.categorizedEmails = {};
+    
+    // Réinitialiser les métriques
+    this.scanMetrics = {
+        startTime: Date.now(),
+        categorizedCount: 0,
+        keywordMatches: {},
+        categoryDistribution: {}
+    };
+    
+    // Initialiser avec toutes les catégories du CategoryManager
+    if (window.categoryManager) {
+        const categories = window.categoryManager.getCategories();
+        const customCategories = window.categoryManager.getCustomCategories();
         
-        // Réinitialiser les métriques
-        this.scanMetrics = {
-            startTime: Date.now(),
-            categorizedCount: 0,
-            keywordMatches: {},
-            categoryDistribution: {}
-        };
+        // Initialiser toutes les catégories standard
+        Object.keys(categories).forEach(catId => {
+            this.categorizedEmails[catId] = [];
+        });
         
-        // Initialiser avec toutes les catégories du CategoryManager
-        if (window.categoryManager) {
-            const categories = window.categoryManager.getCategories();
-            Object.keys(categories).forEach(catId => {
+        // S'assurer que les catégories personnalisées sont incluses
+        Object.keys(customCategories).forEach(catId => {
+            if (!this.categorizedEmails[catId]) {
+                console.log(`[EmailScanner] 🆕 Ajout catégorie personnalisée: ${customCategories[catId].name} (${catId})`);
                 this.categorizedEmails[catId] = [];
-            });
-        }
-        
-        // S'assurer que les catégories spéciales existent
-        this.categorizedEmails.other = [];
-        this.categorizedEmails.excluded = [];
-        this.categorizedEmails.spam = [];
-        
-        console.log('[EmailScanner] ✅ Réinitialisation terminée, catégories:', 
-            Object.keys(this.categorizedEmails));
+            }
+        });
     }
+    
+    // S'assurer que les catégories spéciales existent
+    this.categorizedEmails.other = [];
+    this.categorizedEmails.excluded = [];
+    this.categorizedEmails.spam = [];
+    
+    console.log('[EmailScanner] ✅ Réinitialisation terminée, catégories:', 
+        Object.keys(this.categorizedEmails));
+}
 
     getCategorizedEmails() {
         return { ...this.categorizedEmails };
