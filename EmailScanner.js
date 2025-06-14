@@ -141,38 +141,57 @@ startRealTimeSync() {
         }, 10000); // Toutes les 10 secondes au lieu de 3
     }
 
-    async checkAndSyncSettings() {
-        if (!window.categoryManager) return;
+// EmailScanner.js - Méthode checkAndSyncSettings() améliorée (remplacer vers ligne 175)
+
+async checkAndSyncSettings() {
+    if (!window.categoryManager) return;
+    
+    try {
+        const currentManagerCategories = window.categoryManager.getTaskPreselectedCategories();
+        const currentManagerSettings = window.categoryManager.getSettings();
         
-        try {
-            const currentManagerCategories = window.categoryManager.getTaskPreselectedCategories();
-            const currentManagerSettings = window.categoryManager.getSettings();
+        // Vérifier si les catégories pré-sélectionnées ont changé
+        const categoriesChanged = JSON.stringify([...this.taskPreselectedCategories].sort()) !== 
+                                JSON.stringify([...currentManagerCategories].sort());
+        
+        // NOUVEAU: Vérifier aussi si de nouvelles catégories ont été créées
+        const allCategories = window.categoryManager.getCategories();
+        const customCategories = window.categoryManager.getCustomCategories();
+        
+        // Forcer la re-catégorisation si nouvelles catégories détectées
+        let needsRecategorization = categoriesChanged;
+        
+        // Vérifier si le nombre de catégories a changé
+        if (this._lastKnownCategoriesCount !== Object.keys(allCategories).length) {
+            console.log('[EmailScanner] 🆕 Nouvelles catégories détectées');
+            needsRecategorization = true;
+            this._lastKnownCategoriesCount = Object.keys(allCategories).length;
+        }
+        
+        if (categoriesChanged || needsRecategorization) {
+            console.log('[EmailScanner] 🔄 Désynchronisation détectée, correction...');
+            console.log('  - EmailScanner:', this.taskPreselectedCategories);
+            console.log('  - CategoryManager:', currentManagerCategories);
+            console.log('  - Catégories totales:', Object.keys(allCategories).length);
+            console.log('  - Catégories personnalisées:', Object.keys(customCategories).length);
             
-            // Vérifier si les catégories pré-sélectionnées ont changé
-            const categoriesChanged = JSON.stringify([...this.taskPreselectedCategories].sort()) !== 
-                                    JSON.stringify([...currentManagerCategories].sort());
+            // Forcer la synchronisation
+            this.taskPreselectedCategories = [...currentManagerCategories];
+            this.settings = { ...this.settings, ...currentManagerSettings };
             
-            if (categoriesChanged) {
-                console.log('[EmailScanner] 🔄 Désynchronisation détectée, correction...');
-                console.log('  - EmailScanner:', this.taskPreselectedCategories);
-                console.log('  - CategoryManager:', currentManagerCategories);
-                
-                // Forcer la synchronisation
-                this.taskPreselectedCategories = [...currentManagerCategories];
-                this.settings = { ...this.settings, ...currentManagerSettings };
-                
-                // Re-catégoriser si nécessaire
-                if (this.emails.length > 0) {
-                    this.recategorizeEmails();
-                }
-                
-                console.log('[EmailScanner] ✅ Synchronisation corrigée');
+            // Re-catégoriser si nécessaire
+            if (this.emails.length > 0 && needsRecategorization) {
+                console.log('[EmailScanner] 🔄 Re-catégorisation nécessaire suite aux changements');
+                await this.recategorizeEmails();
             }
             
-        } catch (error) {
-            console.error('[EmailScanner] Erreur vérification sync:', error);
+            console.log('[EmailScanner] ✅ Synchronisation corrigée');
         }
+        
+    } catch (error) {
+        console.error('[EmailScanner] Erreur vérification sync:', error);
     }
+}
 
     // ================================================
     // CHARGEMENT DES PARAMÈTRES RENFORCÉ
