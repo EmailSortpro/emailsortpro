@@ -75,34 +75,22 @@ class MinimalScanModule {
         };
     }
 
-checkSettingsUpdate() {
+    checkSettingsUpdate() {
         const now = Date.now();
-        // Ne vérifier que toutes les 30 secondes minimum
-        if (now - this.lastSettingsSync < 30000) return;
+        if (now - this.lastSettingsSync < 5000) return;
         
         try {
             const oldTaskCategories = [...this.taskPreselectedCategories];
             const oldSelectedDays = this.selectedDays;
             
-            // Charger sans logger
-            if (window.categoryManager && typeof window.categoryManager.getSettings === 'function') {
-                const newSettings = window.categoryManager.getSettings();
-                const newTaskCategories = newSettings.taskPreselectedCategories || [];
-                const newSelectedDays = newSettings.scanSettings?.defaultPeriod || 7;
-                
-                // Ne mettre à jour que si vraiment changé
-                const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== JSON.stringify(newTaskCategories.sort());
-                const daysChanged = oldSelectedDays !== newSelectedDays;
-                
-                if (categoriesChanged || daysChanged) {
-                    console.log('[MinimalScan] 🔄 Changements détectés, mise à jour...');
-                    this.settings = newSettings;
-                    this.taskPreselectedCategories = newTaskCategories;
-                    this.selectedDays = newSelectedDays;
-                    this.updateUIWithNewSettings();
-                }
-                
-                this.lastSettingsSync = now;
+            this.loadSettingsFromCategoryManager();
+            
+            const categoriesChanged = JSON.stringify(oldTaskCategories.sort()) !== JSON.stringify([...this.taskPreselectedCategories].sort());
+            const daysChanged = oldSelectedDays !== this.selectedDays;
+            
+            if (categoriesChanged || daysChanged) {
+                console.log('[MinimalScan] 🔄 Paramètres mis à jour détectés');
+                this.updateUIWithNewSettings();
             }
         } catch (error) {
             console.error('[MinimalScan] Erreur vérification paramètres:', error);
