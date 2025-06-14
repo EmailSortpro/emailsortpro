@@ -285,21 +285,32 @@ class EmailScanner {
     }
 
 getTaskPreselectedCategories() {
-        // Toujours vérifier d'abord auprès de CategoryManager pour avoir les dernières
-        if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
-            const managerCategories = window.categoryManager.getTaskPreselectedCategories();
-            // Mettre à jour localement si différent
-            if (JSON.stringify([...this.taskPreselectedCategories].sort()) !== JSON.stringify([...managerCategories].sort())) {
-                // Log uniquement si changement
-                console.log('[EmailScanner] 🔄 Mise à jour locale des catégories pré-sélectionnées depuis CategoryManager');
-                this.taskPreselectedCategories = [...managerCategories];
-            }
-        }
-        
-        const categories = [...this.taskPreselectedCategories];
-        // Pas de log systématique ici
-        return categories;
+    // CORRECTION: Supprimer le log qui cause la boucle
+    // Utiliser un cache local avec timestamp
+    const now = Date.now();
+    const CACHE_DURATION = 5000; // 5 secondes
+    
+    // Si on a un cache valide, le retourner
+    if (this._categoriesCache && (now - this._categoriesCacheTime) < CACHE_DURATION) {
+        return [...this._categoriesCache];
     }
+    
+    // Sinon, récupérer depuis CategoryManager
+    if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
+        try {
+            // Éviter la récursion en appelant directement les données
+            const categories = window.categoryManager.settings?.taskPreselectedCategories || [];
+            this._categoriesCache = [...categories];
+            this._categoriesCacheTime = now;
+            return [...categories];
+        } catch (error) {
+            console.error('[EmailScanner] Erreur récupération catégories:', error);
+        }
+    }
+    
+    // Fallback
+    return [...this.taskPreselectedCategories];
+}
     getSettings() {
         return { ...this.settings };
     }
