@@ -1052,131 +1052,261 @@ getTotalKeywordsCount(categoryId) {
         this.isInitialized = true;
     }
 
-// CategoryManager.js - Méthode initializeWeightedDetection() complète (remplacer vers ligne 650)
-
-// CategoryManager.js - Remplacer initializeWeightedDetection() vers ligne 650
+// CategoryManager.js - Remplacer COMPLÈTEMENT initializeWeightedDetection() vers ligne 650
 
 initializeWeightedDetection() {
-    // Dictionnaire pour tracker les mots-clés utilisés
-    const usedKeywords = new Map();
-    
-    // Fonction pour vérifier et ajouter un mot-clé
-    const addKeywordIfUnique = (keyword, category, type) => {
-        const normalizedKeyword = keyword.toLowerCase();
-        const existing = usedKeywords.get(normalizedKeyword);
-        
-        if (existing) {
-            console.warn(`[CategoryManager] ⚠️ Mot-clé "${keyword}" déjà utilisé dans ${existing.category} (${existing.type}), ignoré pour ${category}`);
-            return false;
-        }
-        
-        usedKeywords.set(normalizedKeyword, { category, type });
-        return true;
-    };
-    
     this.weightedKeywords = {
-        // Communication interne PRIORITAIRE pour votre cas
-        internal: {
-            absolute: [],
-            strong: [],
-            weak: [],
+        // PRIORITÉ MAXIMALE - MARKETING & NEWS
+        marketing_news: {
+            absolute: [
+                'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
+                'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
+                'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
+                'email preferences', 'préférences email', 'preferences email',
+                'ne plus recevoir', 'stop emails', 'arreter les emails',
+                'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
+                'paramétrez vos choix', 'parametrez vos choix',
+                'newsletter', 'mailing list', 'mailing',
+                'this email was sent to', 'you are receiving this',
+                'limited offer', 'offre limitée', 'special offer',
+                'promotion', 'promo', 'soldes', 'vente privée',
+                'ventes en ligne', 'vente en ligne', 'shopping'
+            ],
+            strong: [
+                'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
+                'newsletter', 'mailing', 'campaign', 'marketing',
+                'exclusive', 'special', 'limited', 'new', 'nouveau',
+                'boutique', 'shopping', 'acheter', 'commander',
+                'offre', 'promotion', 'remise', 'solde'
+            ],
+            weak: ['update', 'discover', 'new', 'nouveauté', 'découvrir'],
             exclusions: []
         },
-        
-        // HR avec exclusions adaptées
-        hr: {
-            absolute: [],
-            strong: [],
-            weak: [],
-            exclusions: []
+
+        security: {
+            absolute: [
+                'alerte de connexion', 'alert connexion', 'nouvelle connexion',
+                'activité suspecte', 'suspicious activity', 'login alert',
+                'new sign-in', 'sign in detected', 'connexion détectée',
+                'code de vérification', 'verification code', 'security code',
+                'two-factor', '2fa', 'authentification', 'authentication',
+                'password reset', 'réinitialisation mot de passe'
+            ],
+            strong: [
+                'sécurité', 'security', 'vérification', 'verify',
+                'authentification', 'password', 'mot de passe'
+            ],
+            weak: ['compte', 'account', 'accès'],
+            exclusions: ['newsletter', 'unsubscribe', 'promotion']
         },
-        
-        // Project avec focus sur présentation/document professionnel
+
+        tasks: {
+            absolute: [
+                'action required', 'action requise', 'action needed',
+                'please complete', 'veuillez compléter', 'to do',
+                'task assigned', 'tâche assignée', 'deadline',
+                'due date', 'échéance', 'livrable',
+                'urgence', 'urgent', 'très urgent',
+                'demande update', 'update request', 'mise à jour demandée',
+                'demande de mise à jour', 'update needed', 'mise a jour requise'
+            ],
+            strong: [
+                'urgent', 'asap', 'priority', 'priorité',
+                'complete', 'compléter', 'action', 'faire',
+                'update', 'mise à jour', 'demande', 'request',
+                'task', 'tâche', 'todo', 'à faire'
+            ],
+            weak: ['demande', 'besoin', 'attente', 'request', 'need', 'waiting'],
+            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe']
+        },
+
+        meetings: {
+            absolute: [
+                'demande de réunion', 'meeting request', 'réunion',
+                'schedule a meeting', 'planifier une réunion',
+                'invitation réunion', 'meeting invitation',
+                'teams meeting', 'zoom meeting', 'google meet',
+                'rendez-vous', 'appointment', 'rdv'
+            ],
+            strong: [
+                'meeting', 'réunion', 'schedule', 'planifier',
+                'calendar', 'calendrier', 'appointment', 'agenda',
+                'conférence', 'conference', 'call'
+            ],
+            weak: ['présentation', 'agenda', 'disponible', 'available'],
+            exclusions: ['newsletter', 'promotion', 'marketing']
+        },
+
+        commercial: {
+            absolute: [
+                'devis', 'quotation', 'proposal', 'proposition',
+                'contrat', 'contract', 'bon de commande',
+                'purchase order', 'offre commerciale',
+                'opportunity', 'opportunité', 'lead'
+            ],
+            strong: [
+                'client', 'customer', 'prospect', 'opportunity',
+                'commercial', 'business', 'marché', 'deal',
+                'vente', 'sales', 'négociation'
+            ],
+            weak: ['offre', 'négociation', 'discussion', 'projet'],
+            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'ventes en ligne']
+        },
+
+        finance: {
+            absolute: [
+                'facture', 'invoice', 'payment', 'paiement',
+                'virement', 'transfer', 'remboursement', 'refund',
+                'relevé bancaire', 'bank statement',
+                'déclaration fiscale', 'tax declaration',
+                'n°commande', 'numéro commande', 'order number',
+                'numéro de commande', 'commande n°', 'commande numéro',
+                'livraison commande', 'commande expédiée',
+                'confirmation commande', 'order confirmation'
+            ],
+            strong: [
+                'montant', 'amount', 'total', 'facture',
+                'fiscal', 'bancaire', 'bank', 'finance',
+                'commande', 'order', 'achat', 'vente',
+                'livraison', 'delivery', 'expédition', 'shipping',
+                'prix', 'price', 'coût', 'cost'
+            ],
+            weak: ['euro', 'dollar', 'prix', 'payment', 'transaction'],
+            exclusions: ['newsletter', 'marketing', 'spam', 'promotion', 'soldes', 'ventes en ligne']
+        },
+
+        reminders: {
+            absolute: [
+                'reminder:', 'rappel:', 'follow up', 'relance',
+                'gentle reminder', 'rappel amical', 'following up',
+                'je reviens vers vous', 'circling back',
+                'comme convenu', 'as discussed'
+            ],
+            strong: [
+                'reminder', 'rappel', 'follow', 'relance',
+                'suite', 'convenu', 'discussed', 'pending'
+            ],
+            weak: ['previous', 'discussed', 'encore', 'still'],
+            exclusions: ['newsletter', 'marketing', 'promotion']
+        },
+
+        support: {
+            absolute: [
+                'ticket #', 'ticket number', 'numéro de ticket',
+                'case #', 'case number', 'incident #',
+                'problème résolu', 'issue resolved',
+                'support ticket', 'demande de support'
+            ],
+            strong: [
+                'support', 'assistance', 'help desk',
+                'technical support', 'ticket', 'incident',
+                'problème', 'problem', 'issue'
+            ],
+            weak: ['help', 'aide', 'issue', 'question'],
+            exclusions: ['newsletter', 'marketing', 'promotion']
+        },
+
         project: {
-            absolute: [],
-            strong: [],
-            weak: [],
-            exclusions: []
+            absolute: [
+                'projet xx', 'project update', 'milestone',
+                'sprint', 'livrable projet', 'gantt',
+                'avancement projet', 'project status',
+                'kickoff', 'retrospective', 'roadmap'
+            ],
+            strong: [
+                'projet', 'project', 'milestone', 'sprint',
+                'agile', 'scrum', 'kanban', 'jira',
+                'development', 'développement'
+            ],
+            weak: ['development', 'phase', 'étape', 'planning'],
+            exclusions: ['newsletter', 'marketing', 'promotion']
+        },
+
+        hr: {
+            absolute: [
+                'bulletin de paie', 'payslip', 'contrat de travail',
+                'congés', 'leave request', 'onboarding',
+                'entretien annuel', 'performance review',
+                'ressources humaines', 'human resources',
+                'offre d\'emploi', 'job offer', 'recrutement'
+            ],
+            strong: [
+                'rh', 'hr', 'salaire', 'salary',
+                'ressources humaines', 'human resources',
+                'contrat', 'paie', 'congés', 'vacation',
+                'emploi', 'job', 'recruitment'
+            ],
+            weak: ['employee', 'staff', 'personnel', 'équipe'],
+            exclusions: [
+                'newsletter', 'marketing', 'famille', 'family', 
+                'personnel', 'personal', 'papa', 'maman',
+                'présentation', 'document', 'correction',
+                'bises', 'bisous', 'familial'
+            ]
+        },
+
+        internal: {
+            absolute: [
+                'all staff', 'tout le personnel', 'annonce interne',
+                'company announcement', 'memo interne',
+                'communication interne', 'note de service',
+                'à tous', 'to all employees'
+            ],
+            strong: [
+                'internal', 'interne', 'company wide',
+                'personnel', 'staff', 'équipe',
+                'annonce', 'announcement'
+            ],
+            weak: ['annonce', 'announcement', 'information', 'update'],
+            exclusions: ['newsletter', 'marketing', 'external', 'client']
+        },
+
+        notifications: {
+            absolute: [
+                'do not reply', 'ne pas répondre', 'noreply@',
+                'automated message', 'notification automatique',
+                'system notification', 'ceci est un message automatique',
+                'no-reply@', 'donotreply@'
+            ],
+            strong: [
+                'automated', 'automatic', 'system',
+                'notification', 'automatique', 'alert'
+            ],
+            weak: ['notification', 'alert', 'info'],
+            exclusions: ['newsletter', 'marketing', 'urgent']
+        },
+
+        cc: {
+            absolute: [
+                'copie pour information', 'for your information', 'fyi',
+                'en copie', 'in copy', 'cc:', 'courtesy copy',
+                'pour info', 'pour information'
+            ],
+            strong: ['information', 'copie', 'copy', 'cc'],
+            weak: ['fyi', 'info'],
+            exclusions: [
+                'commande', 'order', 'facture', 'invoice',
+                'urgent', 'action required', 'payment'
+            ]
+        },
+
+        personal: {
+            absolute: [
+                'papa', 'maman', 'famille', 'bises', 'bisous',
+                'document personnel', 'correction personnelle',
+                'chéri', 'chérie', 'mon amour', 'mamie', 'papy'
+            ],
+            strong: [
+                'famille', 'family', 'personnel', 'personal',
+                'bises', 'bisous', 'présentation personnelle',
+                'vacances', 'week-end', 'anniversaire'
+            ],
+            weak: ['document', 'correction', 'présentation', 'merci'],
+            exclusions: ['rh', 'hr', 'contrat', 'salaire', 'entreprise', 'company']
         }
     };
-    
-    // Communication interne - PRIORITÉ HAUTE
-    const internalKeywords = {
-        absolute: [
-            'all staff', 'tout le personnel', 'annonce interne',
-            'company announcement', 'memo interne',
-            'communication interne', 'note de service',
-            'à tous', 'to all employees', 'bonjour à tous',
-            'projet interne', 'présentation interne'
-        ],
-        strong: [
-            'internal', 'interne', 'company wide',
-            'personnel', 'staff', 'équipe',
-            'annonce', 'announcement', 'information',
-            'présentation équipe', 'réunion interne'
-        ],
-        weak: ['update', 'information', 'partage'],
-        exclusions: ['newsletter', 'marketing', 'external', 'client', 'personnel', 'family']
-    };
-    
-    // Project - Focus professionnel
-    const projectKeywords = {
-        absolute: [
-            'projet xx', 'project update', 'milestone',
-            'sprint', 'livrable projet', 'gantt',
-            'avancement projet', 'project status',
-            'kickoff', 'retrospective', 'roadmap',
-            'présentation projet', 'document projet'
-        ],
-        strong: [
-            'projet', 'project', 'milestone', 'sprint',
-            'agile', 'scrum', 'kanban', 'jira',
-            'development', 'développement', 'planning',
-            'présentation technique', 'documentation'
-        ],
-        weak: ['phase', 'étape', 'planning', 'avancement'],
-        exclusions: ['newsletter', 'marketing', 'promotion', 'papa', 'famille', 'personnel']
-    };
-    
-    // HR - Strict professionnel
-    const hrKeywords = {
-        absolute: [
-            'bulletin de paie', 'payslip', 'contrat de travail',
-            'congés', 'leave request', 'onboarding',
-            'entretien annuel', 'performance review',
-            'ressources humaines', 'human resources',
-            'offre d\'emploi', 'job offer', 'recrutement'
-        ],
-        strong: [
-            'rh', 'hr', 'salaire', 'salary',
-            'ressources humaines', 'human resources',
-            'contrat', 'paie', 'congés', 'vacation',
-            'emploi', 'job', 'recruitment'
-        ],
-        weak: ['employee', 'staff', 'équipe'],
-        exclusions: [
-            'newsletter', 'marketing', 'famille', 'family',
-            'papa', 'maman', 'enfant', 'bébé',
-            'personnel', 'personal', 'privé', 'private',
-            'bisous', 'bises', 'amour', 'chéri'
-        ]
-    };
-    
-    // Ajouter les mots-clés en vérifiant l'unicité
-    Object.entries({ internal: internalKeywords, project: projectKeywords, hr: hrKeywords }).forEach(([category, keywords]) => {
-        Object.entries(keywords).forEach(([type, words]) => {
-            this.weightedKeywords[category][type] = words.filter(word => {
-                if (type === 'exclusions') return true; // Les exclusions peuvent être partagées
-                return addKeywordIfUnique(word, category, type);
-            });
-        });
-    });
-    
-    // Ajouter les autres catégories standard...
-    // [Code existant pour les autres catégories]
-    
-    console.log('[CategoryManager] ✅ Mots-clés initialisés avec déduplication');
-    console.log('[CategoryManager] 📊 Mots-clés uniques détectés:', usedKeywords.size);
+
+    console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
 }
 // CategoryManager.js - Méthode analyzeEmail() améliorée (remplacer vers ligne 1480)
 
@@ -1353,18 +1483,25 @@ isEmptyKeywords(keywords) {
     );
 }
 
+// CategoryManager.js - Remplacer selectByPriorityWithThreshold() vers ligne 1600
+
 selectByPriorityWithThreshold(results) {
-    // BAISSER le seuil minimum pour capturer plus d'emails
-    const MIN_SCORE_THRESHOLD = 20; // Réduit de 30 à 20
-    const MIN_CONFIDENCE_THRESHOLD = 0.4; // Réduit de 0.5 à 0.4
+    // SEUILS TRÈS BAS pour capturer plus d'emails
+    const MIN_SCORE_THRESHOLD = 10; // Réduit de 20 à 10
+    const MIN_CONFIDENCE_THRESHOLD = 0.3; // Réduit de 0.4 à 0.3
     
     const sortedResults = Object.values(results)
         .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
         .sort((a, b) => {
+            // Si un a un match absolu et pas l'autre, privilégier celui avec absolu
+            if (a.hasAbsolute && !b.hasAbsolute) return -1;
+            if (!a.hasAbsolute && b.hasAbsolute) return 1;
+            
             // Priorité d'abord
             if (a.priority !== b.priority) {
                 return b.priority - a.priority;
             }
+            
             // Puis score
             return b.score - a.score;
         });
@@ -1372,7 +1509,7 @@ selectByPriorityWithThreshold(results) {
     if (this.debugMode) {
         console.log('[CategoryManager] 📊 Scores par catégorie:');
         sortedResults.forEach(r => {
-            console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence})`);
+            console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence}, hasAbsolute: ${r.hasAbsolute})`);
         });
     }
     
@@ -1388,10 +1525,21 @@ selectByPriorityWithThreshold(results) {
         };
     }
     
-    // Si aucun résultat, essayer une détection basique par domaine
-    const domainCategory = this.detectByDomain(results);
-    if (domainCategory) {
-        return domainCategory;
+    // Si aucun résultat au-dessus du seuil, prendre le meilleur même en dessous
+    const allSorted = Object.values(results)
+        .filter(r => r.score > 0)
+        .sort((a, b) => b.score - a.score);
+    
+    if (allSorted.length > 0 && allSorted[0].score > 5) {
+        const fallback = allSorted[0];
+        console.log(`[CategoryManager] 📌 Utilisation fallback: ${fallback.category} (${fallback.score}pts)`);
+        return {
+            category: fallback.category,
+            score: fallback.score,
+            confidence: fallback.confidence,
+            matchedPatterns: fallback.matches,
+            hasAbsolute: fallback.hasAbsolute
+        };
     }
     
     return {
