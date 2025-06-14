@@ -1052,7 +1052,7 @@ getTotalKeywordsCount(categoryId) {
         this.isInitialized = true;
     }
 
-// CategoryManager.js - Remplacer COMPLÈTEMENT initializeWeightedDetection() vers ligne 650
+// CategoryManager.js - Remplacer complètement initializeWeightedDetection() 
 
 initializeWeightedDetection() {
     this.weightedKeywords = {
@@ -1070,14 +1070,19 @@ initializeWeightedDetection() {
                 'this email was sent to', 'you are receiving this',
                 'limited offer', 'offre limitée', 'special offer',
                 'promotion', 'promo', 'soldes', 'vente privée',
-                'ventes en ligne', 'vente en ligne', 'shopping'
+                'ventes en ligne', 'vente en ligne', 'shopping',
+                'disable these notifications', 'turn off notifications',
+                'manage notifications', 'notification settings',
+                'email settings', 'communication preferences',
+                'update your preferences', 'modify your subscription'
             ],
             strong: [
                 'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
                 'newsletter', 'mailing', 'campaign', 'marketing',
                 'exclusive', 'special', 'limited', 'new', 'nouveau',
                 'boutique', 'shopping', 'acheter', 'commander',
-                'offre', 'promotion', 'remise', 'solde'
+                'offre', 'promotion', 'remise', 'solde',
+                'notifications', 'alerts', 'updates', 'subscribe'
             ],
             weak: ['update', 'discover', 'new', 'nouveauté', 'découvrir'],
             exclusions: []
@@ -1108,16 +1113,19 @@ initializeWeightedDetection() {
                 'due date', 'échéance', 'livrable',
                 'urgence', 'urgent', 'très urgent',
                 'demande update', 'update request', 'mise à jour demandée',
-                'demande de mise à jour', 'update needed', 'mise a jour requise'
+                'demande de mise à jour', 'update needed', 'mise a jour requise',
+                'correction requise', 'à corriger', 'please review',
+                'merci de valider', 'validation requise', 'approval needed'
             ],
             strong: [
                 'urgent', 'asap', 'priority', 'priorité',
                 'complete', 'compléter', 'action', 'faire',
                 'update', 'mise à jour', 'demande', 'request',
-                'task', 'tâche', 'todo', 'à faire'
+                'task', 'tâche', 'todo', 'à faire',
+                'correction', 'corriger', 'modifier', 'révision'
             ],
             weak: ['demande', 'besoin', 'attente', 'request', 'need', 'waiting'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe']
+            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'papa', 'maman', 'famille']
         },
 
         meetings: {
@@ -1134,7 +1142,7 @@ initializeWeightedDetection() {
                 'conférence', 'conference', 'call'
             ],
             weak: ['présentation', 'agenda', 'disponible', 'available'],
-            exclusions: ['newsletter', 'promotion', 'marketing']
+            exclusions: ['newsletter', 'promotion', 'marketing', 'papa', 'maman', 'famille']
         },
 
         commercial: {
@@ -1175,6 +1183,24 @@ initializeWeightedDetection() {
             exclusions: ['newsletter', 'marketing', 'spam', 'promotion', 'soldes', 'ventes en ligne']
         },
 
+        project: {
+            absolute: [
+                'projet xx', 'project update', 'milestone',
+                'sprint', 'livrable projet', 'gantt',
+                'avancement projet', 'project status',
+                'kickoff', 'retrospective', 'roadmap',
+                'document corrigé', 'version corrigée', 'corrections apportées'
+            ],
+            strong: [
+                'projet', 'project', 'milestone', 'sprint',
+                'agile', 'scrum', 'kanban', 'jira',
+                'development', 'développement',
+                'document', 'présentation', 'correction'
+            ],
+            weak: ['development', 'phase', 'étape', 'planning', 'présentation'],
+            exclusions: ['newsletter', 'marketing', 'promotion', 'papa', 'maman', 'famille', 'bises']
+        },
+
         reminders: {
             absolute: [
                 'reminder:', 'rappel:', 'follow up', 'relance',
@@ -1203,22 +1229,6 @@ initializeWeightedDetection() {
                 'problème', 'problem', 'issue'
             ],
             weak: ['help', 'aide', 'issue', 'question'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
-        project: {
-            absolute: [
-                'projet xx', 'project update', 'milestone',
-                'sprint', 'livrable projet', 'gantt',
-                'avancement projet', 'project status',
-                'kickoff', 'retrospective', 'roadmap'
-            ],
-            strong: [
-                'projet', 'project', 'milestone', 'sprint',
-                'agile', 'scrum', 'kanban', 'jira',
-                'development', 'développement'
-            ],
-            weak: ['development', 'phase', 'étape', 'planning'],
             exclusions: ['newsletter', 'marketing', 'promotion']
         },
 
@@ -1258,7 +1268,7 @@ initializeWeightedDetection() {
                 'annonce', 'announcement'
             ],
             weak: ['annonce', 'announcement', 'information', 'update'],
-            exclusions: ['newsletter', 'marketing', 'external', 'client']
+            exclusions: ['newsletter', 'marketing', 'external', 'client', 'papa', 'maman', 'famille', 'bises']
         },
 
         notifications: {
@@ -1288,27 +1298,12 @@ initializeWeightedDetection() {
                 'commande', 'order', 'facture', 'invoice',
                 'urgent', 'action required', 'payment'
             ]
-        },
-
-        personal: {
-            absolute: [
-                'papa', 'maman', 'famille', 'bises', 'bisous',
-                'document personnel', 'correction personnelle',
-                'chéri', 'chérie', 'mon amour', 'mamie', 'papy'
-            ],
-            strong: [
-                'famille', 'family', 'personnel', 'personal',
-                'bises', 'bisous', 'présentation personnelle',
-                'vacances', 'week-end', 'anniversaire'
-            ],
-            weak: ['document', 'correction', 'présentation', 'merci'],
-            exclusions: ['rh', 'hr', 'contrat', 'salaire', 'entreprise', 'company']
         }
     };
 
     console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
 }
-// CategoryManager.js - Méthode analyzeEmail() améliorée (remplacer vers ligne 1480)
+// CategoryManager.js - Remplacer complètement analyzeEmail()
 
 analyzeEmail(email) {
     if (!email) return { category: 'other', score: 0, confidence: 0 };
@@ -1324,7 +1319,25 @@ analyzeEmail(email) {
         return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
     }
     
-    // AMÉLIORATION: Vérifier si on est destinataire principal ou en CC
+    // NOUVEAU: Détecter les emails familiaux/personnels AVANT tout
+    if (this.isPersonalEmail(content, email)) {
+        // Si une catégorie "personal" existe, l'utiliser
+        if (this.categories.personal || this.customCategories.personal) {
+            return {
+                category: 'personal',
+                score: 100,
+                confidence: 0.95,
+                matchedPatterns: [{ keyword: 'personal_email_detected', type: 'absolute', score: 100 }],
+                hasAbsolute: true,
+                isPersonal: true
+            };
+        } else {
+            // Sinon, exclure l'email
+            return { category: 'excluded', score: 0, confidence: 0, isExcluded: true, reason: 'personal' };
+        }
+    }
+    
+    // Vérifier si on est destinataire principal ou en CC
     const isMainRecipient = this.isMainRecipient(email);
     const isInCC = this.isInCC(email);
     
@@ -1375,6 +1388,43 @@ analyzeEmail(email) {
     
     const allResults = this.analyzeAllCategories(content);
     return this.selectByPriorityWithThreshold(allResults);
+}
+
+// NOUVELLE méthode pour détecter les emails personnels/familiaux
+isPersonalEmail(content, email) {
+    const personalIndicators = [
+        'papa', 'maman', 'mamie', 'papy', 'papi',
+        'chéri', 'chérie', 'mon amour', 'ma chérie',
+        'bises', 'bisous', 'gros bisous', 'je t\'embrasse',
+        'famille', 'familial', 'personnel', 'personal'
+    ];
+    
+    const professionalCounterIndicators = [
+        'ressources humaines', 'human resources', 'rh',
+        'contrat', 'contract', 'entreprise', 'company',
+        'professionnel', 'professional', 'business'
+    ];
+    
+    const text = content.text.toLowerCase();
+    
+    // Compter les indicateurs personnels
+    let personalScore = 0;
+    personalIndicators.forEach(indicator => {
+        if (text.includes(indicator)) {
+            personalScore += 10;
+        }
+    });
+    
+    // Réduire le score si des indicateurs professionnels sont présents
+    let professionalScore = 0;
+    professionalCounterIndicators.forEach(indicator => {
+        if (text.includes(indicator)) {
+            professionalScore += 10;
+        }
+    });
+    
+    // Email personnel si score personnel > 20 ET score professionnel < 10
+    return personalScore > 20 && professionalScore < 10;
 }
 
 // Nouvelle méthode pour vérifier si on est destinataire principal
@@ -1550,156 +1600,7 @@ selectByPriorityWithThreshold(results) {
         hasAbsolute: false
     };
 }
-// CategoryManager.js - Méthode calculateScore() améliorée (remplacer vers ligne 1100)
 
-calculateScore(content, keywords, categoryId) {
-    let totalScore = 0;
-    let hasAbsolute = false;
-    const matches = [];
-    const text = content.text;
-    
-    // Bonus de base pour certaines catégories souvent mal détectées
-    const categoryBonus = {
-        'project': 10,
-        'cc': 5,
-        'security': 10,
-        'hr': 10,
-        'tasks': 15, // AJOUT bonus pour tasks
-        'finance': 10 // AJOUT bonus pour finance
-    };
-    
-    if (categoryBonus[categoryId]) {
-        totalScore += categoryBonus[categoryId];
-        matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus[categoryId] });
-    }
-    
-    // NOUVEAU: Gérer spécialement les emails sans sujet
-    if (content.hasNoSubject) {
-        // Analyser le contenu pour déterminer la catégorie
-        if (text.includes('update') || text.includes('demande')) {
-            if (categoryId === 'tasks') {
-                totalScore += 50; // Boost pour tasks si "update" dans un email sans sujet
-                matches.push({ keyword: 'no_subject_update', type: 'bonus', score: 50 });
-            }
-        }
-    }
-    
-    // Test des exclusions en premier
-    if (keywords.exclusions && keywords.exclusions.length > 0) {
-        for (const exclusion of keywords.exclusions) {
-            if (this.findInText(text, exclusion)) {
-                // Pénalité plus intelligente selon le contexte
-                let penalty = 50;
-                
-                // Réduire la pénalité pour certains cas
-                if (categoryId === 'hr' && (exclusion === 'famille' || exclusion === 'personal')) {
-                    // Si l'email contient aussi des mots RH forts, réduire la pénalité
-                    if (text.includes('ressources humaines') || text.includes('contrat')) {
-                        penalty = 20;
-                    } else {
-                        penalty = 100; // Forte pénalité si pas de mots RH
-                    }
-                }
-                
-                if (categoryId === 'cc' && (exclusion === 'commande' || exclusion === 'order')) {
-                    // Si on est vraiment en CC, réduire la pénalité
-                    if (content.text.includes('cc:') || content.text.includes('copie')) {
-                        penalty = 20;
-                    }
-                }
-                
-                totalScore -= penalty;
-                matches.push({ keyword: exclusion, type: 'exclusion', score: -penalty });
-            }
-        }
-    }
-    
-    // Test des mots-clés absolus avec bonus contexte
-    if (keywords.absolute && keywords.absolute.length > 0) {
-        for (const keyword of keywords.absolute) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 100;
-                hasAbsolute = true;
-                matches.push({ keyword, type: 'absolute', score: 100 });
-                
-                // Bonus supplémentaire si dans le sujet
-                if (content.subject && this.findInText(content.subject, keyword)) {
-                    totalScore += 50;
-                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
-                }
-                
-                // Bonus si au début du texte (plus pertinent)
-                if (text.substring(0, 200).includes(keyword.toLowerCase())) {
-                    totalScore += 20;
-                    matches.push({ keyword: keyword + ' (early position)', type: 'bonus', score: 20 });
-                }
-            }
-        }
-    }
-    
-    // Test des mots-clés forts avec scoring amélioré
-    if (keywords.strong && keywords.strong.length > 0) {
-        let strongMatches = 0;
-        for (const keyword of keywords.strong) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 40;
-                strongMatches++;
-                matches.push({ keyword, type: 'strong', score: 40 });
-                
-                // Bonus si dans le sujet
-                if (content.subject && this.findInText(content.subject, keyword)) {
-                    totalScore += 20;
-                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 20 });
-                }
-            }
-        }
-        
-        // Bonus si plusieurs mots-clés forts matchent
-        if (strongMatches >= 2) {
-            totalScore += 30;
-            matches.push({ keyword: 'multiple_strong_matches', type: 'bonus', score: 30 });
-        }
-    }
-    
-    // Test des mots-clés faibles avec scoring amélioré
-    if (keywords.weak && keywords.weak.length > 0) {
-        let weakMatches = 0;
-        for (const keyword of keywords.weak) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 15;
-                weakMatches++;
-                matches.push({ keyword, type: 'weak', score: 15 });
-            }
-        }
-        
-        // Bonus si beaucoup de mots faibles matchent
-        if (weakMatches >= 3) {
-            totalScore += 20;
-            matches.push({ keyword: 'multiple_weak_matches', type: 'bonus', score: 20 });
-        }
-    }
-    
-    // Appliquer bonus de domaine amélioré
-    this.applyEnhancedDomainBonus(content, categoryId, matches, totalScore);
-    
-    // Bonus de longueur pour certaines catégories
-    if (['project', 'hr', 'internal'].includes(categoryId) && content.length > 500) {
-        totalScore += 10;
-        matches.push({ keyword: 'long_content', type: 'bonus', score: 10 });
-    }
-    
-    // NOUVEAU: Détection contextuelle spéciale
-    if (categoryId === 'finance' && text.includes('showroomprive')) {
-        totalScore += 30;
-        matches.push({ keyword: 'showroomprive_commerce', type: 'domain', score: 30 });
-    }
-    
-    return { 
-        total: Math.max(0, totalScore), 
-        hasAbsolute, 
-        matches 
-    };
-}
     detectByDomain(results) {
     // Mapping domaine -> catégorie pour les cas courants
     const domainMappings = {
@@ -1729,6 +1630,162 @@ calculateScore(content, keywords, categoryId) {
     // Extraire le domaine depuis le contexte (à implémenter selon votre structure)
     // Pour l'instant, retourne null
     return null;
+}
+
+// CategoryManager.js - Remplacer complètement calculateScore()
+
+calculateScore(content, keywords, categoryId) {
+    let totalScore = 0;
+    let hasAbsolute = false;
+    const matches = [];
+    const text = content.text;
+    
+    // NOUVEAU: Pénalité forte pour les catégories professionnelles si email personnel détecté
+    const personalIndicators = ['papa', 'maman', 'bises', 'bisous', 'famille'];
+    const hasPersonalContent = personalIndicators.some(indicator => text.includes(indicator));
+    
+    if (hasPersonalContent && ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
+        totalScore -= 50; // Forte pénalité
+        matches.push({ keyword: 'personal_content_penalty', type: 'penalty', score: -50 });
+    }
+    
+    // Bonus de base pour certaines catégories souvent mal détectées
+    const categoryBonus = {
+        'project': 10,
+        'cc': 5,
+        'security': 10,
+        'hr': 10,
+        'tasks': 15,
+        'finance': 10,
+        'marketing_news': 5 // Petit bonus pour marketing
+    };
+    
+    if (categoryBonus[categoryId]) {
+        totalScore += categoryBonus[categoryId];
+        matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus[categoryId] });
+    }
+    
+    // NOUVEAU: Bonus spécial pour "disable notifications" en marketing_news
+    if (categoryId === 'marketing_news') {
+        const notificationKeywords = [
+            'disable these notifications',
+            'turn off notifications',
+            'manage notifications',
+            'notification settings'
+        ];
+        
+        notificationKeywords.forEach(keyword => {
+            if (text.includes(keyword)) {
+                totalScore += 50; // Bonus fort
+                matches.push({ keyword: keyword, type: 'notification_keyword', score: 50 });
+            }
+        });
+    }
+    
+    // NOUVEAU: Détection spéciale pour les corrections de documents
+    if (categoryId === 'project' || categoryId === 'tasks') {
+        const correctionKeywords = [
+            'document corrigé',
+            'corrections',
+            'corrigé',
+            'modifié',
+            'ci-joint',
+            'présentation'
+        ];
+        
+        correctionKeywords.forEach(keyword => {
+            if (text.includes(keyword)) {
+                totalScore += 30;
+                matches.push({ keyword: keyword, type: 'correction_keyword', score: 30 });
+            }
+        });
+    }
+    
+    // Test des exclusions en premier
+    if (keywords.exclusions && keywords.exclusions.length > 0) {
+        for (const exclusion of keywords.exclusions) {
+            if (this.findInText(text, exclusion)) {
+                let penalty = 50;
+                
+                // Pénalité plus forte pour contenu personnel dans catégories professionnelles
+                if (personalIndicators.includes(exclusion) && 
+                    ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
+                    penalty = 100;
+                }
+                
+                totalScore -= penalty;
+                matches.push({ keyword: exclusion, type: 'exclusion', score: -penalty });
+            }
+        }
+    }
+    
+    // Test des mots-clés absolus
+    if (keywords.absolute && keywords.absolute.length > 0) {
+        for (const keyword of keywords.absolute) {
+            if (this.findInText(text, keyword)) {
+                totalScore += 100;
+                hasAbsolute = true;
+                matches.push({ keyword, type: 'absolute', score: 100 });
+                
+                // Bonus supplémentaire si dans le sujet
+                if (content.subject && this.findInText(content.subject, keyword)) {
+                    totalScore += 50;
+                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
+                }
+            }
+        }
+    }
+    
+    // Test des mots-clés forts
+    if (keywords.strong && keywords.strong.length > 0) {
+        let strongMatches = 0;
+        for (const keyword of keywords.strong) {
+            if (this.findInText(text, keyword)) {
+                totalScore += 40;
+                strongMatches++;
+                matches.push({ keyword, type: 'strong', score: 40 });
+                
+                // Bonus si dans le sujet
+                if (content.subject && this.findInText(content.subject, keyword)) {
+                    totalScore += 20;
+                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 20 });
+                }
+            }
+        }
+        
+        // Bonus si plusieurs mots-clés forts matchent
+        if (strongMatches >= 2) {
+            totalScore += 30;
+            matches.push({ keyword: 'multiple_strong_matches', type: 'bonus', score: 30 });
+        }
+    }
+    
+    // Test des mots-clés faibles
+    if (keywords.weak && keywords.weak.length > 0) {
+        let weakMatches = 0;
+        for (const keyword of keywords.weak) {
+            if (this.findInText(text, keyword)) {
+                totalScore += 15;
+                weakMatches++;
+                matches.push({ keyword, type: 'weak', score: 15 });
+            }
+        }
+        
+        // Bonus si beaucoup de mots faibles matchent
+        if (weakMatches >= 3) {
+            totalScore += 20;
+            matches.push({ keyword: 'multiple_weak_matches', type: 'bonus', score: 20 });
+        }
+    }
+    
+    // Appliquer bonus de domaine
+    this.applyEnhancedDomainBonus(content, categoryId, matches, totalScore);
+    
+    return { 
+        total: Math.max(0, totalScore), 
+        hasAbsolute, 
+        matches 
+    };
 }
 
 applyEnhancedDomainBonus(content, categoryId, matches, totalScore) {
