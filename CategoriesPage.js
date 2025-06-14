@@ -1,35 +1,52 @@
-// CategoriesPage.js - Version simplifiée et minimaliste
+// CategoriesPage.js - Version moderne et simplifiée
 
 class CategoriesPage {
     constructor() {
         this.editingCategoryId = null;
         this.currentModal = null;
-        console.log('[CategoriesPage] ✅ Version simplifiée - Interface minimaliste');
+        console.log('[CategoriesPage] ✅ Version moderne initialisée');
     }
 
     // ================================================
     // RENDU PRINCIPAL
     // ================================================
-    renderSettings(container) {
-        if (!container) return;
+    render(container) {
+        if (!container) {
+            console.error('[CategoriesPage] Container manquant');
+            return;
+        }
 
         try {
             const categories = window.categoryManager?.getCategories() || {};
             const settings = this.loadSettings();
             
             container.innerHTML = `
-                <div class="categories-page">
-                    <div class="page-header">
-                        <h1>Catégories</h1>
-                        <button class="btn-add-category" onclick="window.categoriesPage.showCreateCategoryModal()">
-                            <i class="fas fa-plus"></i> Nouvelle catégorie
+                <div class="categories-modern">
+                    <div class="header-modern">
+                        <div class="header-content">
+                            <h1>Catégories</h1>
+                            <p class="subtitle">Gérez vos catégories d'emails et leurs règles de détection</p>
+                        </div>
+                        <button class="btn-create" onclick="window.categoriesPage.showCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            <span>Nouvelle catégorie</span>
                         </button>
                     </div>
                     
-                    <div class="categories-grid">
+                    <div class="categories-grid-modern">
                         ${Object.entries(categories).map(([id, category]) => 
                             this.renderCategoryCard(id, category, settings.activeCategories)
                         ).join('')}
+                        
+                        ${Object.keys(categories).length === 0 ? `
+                            <div class="empty-state">
+                                <i class="fas fa-folder-open"></i>
+                                <p>Aucune catégorie créée</p>
+                                <button class="btn-create-first" onclick="window.categoriesPage.showCreateModal()">
+                                    Créer votre première catégorie
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -38,43 +55,64 @@ class CategoriesPage {
             
         } catch (error) {
             console.error('[CategoriesPage] Erreur rendu:', error);
-            container.innerHTML = '<div class="error">Erreur de chargement</div>';
+            container.innerHTML = `
+                <div class="error-modern">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h2>Erreur de chargement</h2>
+                    <p>Impossible de charger les catégories</p>
+                    <button onclick="location.reload()" class="btn-reload">
+                        <i class="fas fa-redo"></i> Recharger
+                    </button>
+                </div>
+            `;
         }
     }
 
     // ================================================
-    // RENDU D'UNE CARTE CATÉGORIE
+    // CARTE CATÉGORIE MODERNE
     // ================================================
     renderCategoryCard(id, category, activeCategories) {
         const isActive = activeCategories === null || activeCategories.includes(id);
+        const keywords = window.categoryManager?.getCategoryKeywords(id) || {
+            absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        const totalKeywords = keywords.absolute.length + keywords.strong.length + 
+                             keywords.weak.length + keywords.exclusions.length;
         
         return `
-            <div class="category-card ${!isActive ? 'inactive' : ''}" data-category-id="${id}">
-                <div class="category-icon" style="background: ${category.color}20; color: ${category.color}">
-                    ${category.icon}
-                </div>
-                
-                <h3 class="category-name">${category.name}</h3>
-                
-                <div class="category-actions">
-                    <button class="btn-edit" onclick="window.categoriesPage.openCategoryModal('${id}')" title="Modifier">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    
-                    <label class="toggle-switch" title="${isActive ? 'Désactiver' : 'Activer'}">
+            <div class="category-card-modern ${!isActive ? 'inactive' : ''}" data-id="${id}">
+                <div class="card-header">
+                    <div class="category-icon-modern" style="background: ${category.color}15; color: ${category.color}">
+                        ${category.icon}
+                    </div>
+                    <label class="switch-modern">
                         <input type="checkbox" ${isActive ? 'checked' : ''} 
                                onchange="window.categoriesPage.toggleCategory('${id}')">
-                        <span class="slider"></span>
+                        <span class="switch-slider"></span>
                     </label>
                 </div>
+                
+                <h3 class="category-title">${category.name}</h3>
+                
+                <div class="category-stats">
+                    <span class="stat" title="Mots-clés configurés">
+                        <i class="fas fa-key"></i> ${totalKeywords}
+                    </span>
+                    ${category.isCustom ? '<span class="badge-custom">Custom</span>' : ''}
+                </div>
+                
+                <button class="btn-edit-modern" onclick="window.categoriesPage.openEditModal('${id}')">
+                    <i class="fas fa-cog"></i> Configurer
+                </button>
             </div>
         `;
     }
 
     // ================================================
-    // MODAL DE GESTION D'UNE CATÉGORIE
+    // MODAL D'ÉDITION MODERNE
     // ================================================
-    openCategoryModal(categoryId) {
+    openEditModal(categoryId) {
         const category = window.categoryManager?.getCategory(categoryId);
         if (!category) return;
         
@@ -90,77 +128,65 @@ class CategoriesPage {
         };
         
         const modalHTML = `
-            <div id="category-modal" class="modal-overlay">
-                <div class="modal-container">
-                    <div class="modal-header">
-                        <div class="modal-title">
-                            <span class="modal-icon" style="background: ${category.color}20; color: ${category.color}">
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
+                <div class="modal-modern">
+                    <div class="modal-header-modern">
+                        <div class="modal-title-group">
+                            <div class="modal-icon" style="background: ${category.color}15; color: ${category.color}">
                                 ${category.icon}
-                            </span>
-                            <h2>${category.name}</h2>
+                            </div>
+                            <div>
+                                <h2>${category.name}</h2>
+                                <p>Configuration complète de la catégorie</p>
+                            </div>
                         </div>
-                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                        <button class="btn-close-modern" onclick="window.categoriesPage.closeModal()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
-                    <div class="modal-content">
-                        <!-- Section Filtres -->
-                        <div class="section">
-                            <h3>Filtres d'inclusion/exclusion</h3>
+                    <div class="modal-body-modern">
+                        <!-- Filtres de domaines/emails -->
+                        <div class="config-section">
+                            <h3 class="section-title">
+                                <i class="fas fa-filter"></i> Filtres d'inclusion
+                            </h3>
+                            <p class="section-desc">Forcez la catégorisation pour certains domaines ou emails</p>
                             
                             <div class="filters-grid">
-                                <div class="filter-box include">
-                                    <h4><i class="fas fa-plus-circle"></i> Domaines à inclure</h4>
-                                    <div class="input-group">
-                                        <input type="text" id="include-domain" placeholder="exemple.com" 
-                                               onkeypress="if(event.key==='Enter') window.categoriesPage.addFilter('includeDomains')">
-                                        <button onclick="window.categoriesPage.addFilter('includeDomains')">+</button>
-                                    </div>
-                                    <div class="tags" id="includeDomains-tags">
-                                        ${filters.includeDomains.map(d => this.renderTag(d, 'includeDomains', 'include')).join('')}
-                                    </div>
-                                </div>
-                                
-                                <div class="filter-box include">
-                                    <h4><i class="fas fa-envelope"></i> Emails à inclure</h4>
-                                    <div class="input-group">
-                                        <input type="text" id="include-email" placeholder="contact@exemple.com" 
-                                               onkeypress="if(event.key==='Enter') window.categoriesPage.addFilter('includeEmails')">
-                                        <button onclick="window.categoriesPage.addFilter('includeEmails')">+</button>
-                                    </div>
-                                    <div class="tags" id="includeEmails-tags">
-                                        ${filters.includeEmails.map(e => this.renderTag(e, 'includeEmails', 'include')).join('')}
-                                    </div>
-                                </div>
+                                ${this.renderFilterBox('includeDomains', 'Domaines', filters.includeDomains, '#10b981', 'exemple.com')}
+                                ${this.renderFilterBox('includeEmails', 'Emails', filters.includeEmails, '#10b981', 'contact@exemple.com')}
                             </div>
                         </div>
                         
-                        <!-- Section Mots-clés -->
-                        <div class="section">
-                            <h3>Mots-clés de détection</h3>
+                        <!-- Mots-clés -->
+                        <div class="config-section">
+                            <h3 class="section-title">
+                                <i class="fas fa-tags"></i> Mots-clés de détection
+                            </h3>
+                            <p class="section-desc">Définissez les mots-clés pour la détection automatique</p>
                             
-                            <div class="keywords-grid">
-                                ${this.renderKeywordBox('absolute', 'Absolus (garantit la catégorisation)', keywords.absolute, '#dc2626')}
-                                ${this.renderKeywordBox('strong', 'Forts (poids élevé)', keywords.strong, '#f59e0b')}
-                                ${this.renderKeywordBox('weak', 'Faibles (poids modéré)', keywords.weak, '#3b82f6')}
-                                ${this.renderKeywordBox('exclusions', 'Exclusions (empêche la catégorisation)', keywords.exclusions, '#6b7280')}
+                            <div class="keywords-container">
+                                ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#dc2626', 'Garantit la catégorisation')}
+                                ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#f59e0b', 'Poids élevé dans la détection')}
+                                ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#3b82f6', 'Poids modéré dans la détection')}
+                                ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#6b7280', 'Empêche la catégorisation')}
                             </div>
                         </div>
                         
                         ${category.isCustom ? `
-                            <div class="danger-zone">
-                                <button class="btn-delete" onclick="window.categoriesPage.deleteCategory('${categoryId}')">
-                                    <i class="fas fa-trash"></i> Supprimer la catégorie
+                            <div class="danger-section">
+                                <button class="btn-delete-modern" onclick="window.categoriesPage.deleteCategory('${categoryId}')">
+                                    <i class="fas fa-trash"></i> Supprimer cette catégorie
                                 </button>
                             </div>
                         ` : ''}
                     </div>
                     
-                    <div class="modal-footer">
-                        <button class="btn-secondary" onclick="window.categoriesPage.closeModal()">Fermer</button>
-                        <button class="btn-primary" onclick="window.categoriesPage.saveCategory()">
-                            <i class="fas fa-save"></i> Sauvegarder
+                    <div class="modal-footer-modern">
+                        <button class="btn-cancel" onclick="window.categoriesPage.closeModal()">Annuler</button>
+                        <button class="btn-save" onclick="window.categoriesPage.saveCategory()">
+                            <i class="fas fa-check"></i> Enregistrer
                         </button>
                     </div>
                 </div>
@@ -169,87 +195,117 @@ class CategoriesPage {
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
-        this.currentModal = 'category-modal';
+        this.currentModal = true;
     }
 
     // ================================================
-    // RENDU D'UNE BOÎTE DE MOTS-CLÉS
+    // RENDU DES COMPOSANTS
     // ================================================
-    renderKeywordBox(type, title, keywords, color) {
+    renderFilterBox(type, title, items, color, placeholder) {
         return `
-            <div class="keyword-box">
-                <h4 style="color: ${color}">${title}</h4>
-                <div class="input-group">
-                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé" 
-                           onkeypress="if(event.key==='Enter') window.categoriesPage.addKeyword('${type}')">
-                    <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}')">+</button>
+            <div class="filter-box-modern">
+                <h4>${title}</h4>
+                <div class="input-modern">
+                    <input type="text" id="${type}-input" placeholder="${placeholder}">
+                    <button onclick="window.categoriesPage.addItem('${type}')" style="background: ${color}">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
-                <div class="tags" id="${type}-tags">
-                    ${keywords.map(k => this.renderTag(k, type, 'keyword', color)).join('')}
+                <div class="tags-container" id="${type}-tags">
+                    ${items.map(item => `
+                        <span class="tag-modern" style="background: ${color}15; color: ${color}">
+                            ${item}
+                            <button onclick="window.categoriesPage.removeItem('${type}', '${item}')">×</button>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderKeywordBox(type, title, keywords, color, description) {
+        return `
+            <div class="keyword-box-modern">
+                <div class="keyword-header">
+                    <h4 style="color: ${color}">${title}</h4>
+                    <span class="keyword-count">${keywords.length}</span>
+                </div>
+                <p class="keyword-desc">${description}</p>
+                <div class="input-modern">
+                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé">
+                    <button onclick="window.categoriesPage.addItem('${type}')" style="background: ${color}">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="tags-container" id="${type}-tags">
+                    ${keywords.map(kw => `
+                        <span class="tag-modern" style="background: ${color}15; color: ${color}">
+                            ${kw}
+                            <button onclick="window.categoriesPage.removeItem('${type}', '${kw}')">×</button>
+                        </span>
+                    `).join('')}
                 </div>
             </div>
         `;
     }
 
     // ================================================
-    // RENDU D'UN TAG
+    // MODAL DE CRÉATION
     // ================================================
-    renderTag(text, type, style, color = null) {
-        const styleColor = color || (style === 'include' ? '#16a34a' : '#dc2626');
-        return `
-            <span class="tag ${style}" style="${color ? `background: ${color}20; color: ${color}` : ''}">
-                ${text}
-                <button onclick="window.categoriesPage.removeItem('${type}', '${text}')">×</button>
-            </span>
-        `;
-    }
-
-    // ================================================
-    // MODAL DE CRÉATION DE CATÉGORIE
-    // ================================================
-    showCreateCategoryModal() {
+    showCreateModal() {
         this.closeModal();
         
         const modalHTML = `
-            <div id="create-modal" class="modal-overlay">
-                <div class="modal-container small">
-                    <div class="modal-header">
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
+                <div class="modal-modern modal-small">
+                    <div class="modal-header-modern">
                         <h2>Nouvelle catégorie</h2>
-                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                        <button class="btn-close-modern" onclick="window.categoriesPage.closeModal()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
-                    <div class="modal-content">
-                        <div class="form-group">
-                            <label>Nom</label>
-                            <input type="text" id="new-name" placeholder="Ex: Support Client">
-                        </div>
-                        
-                        <div class="form-row">
+                    <div class="modal-body-modern">
+                        <div class="form-modern">
                             <div class="form-group">
-                                <label>Icône</label>
-                                <select id="new-icon">
-                                    <option value="📂">📂 Dossier</option>
-                                    <option value="💼">💼 Business</option>
-                                    <option value="🎯">🎯 Objectif</option>
-                                    <option value="⚡">⚡ Urgent</option>
-                                    <option value="📧">📧 Email</option>
-                                    <option value="🔔">🔔 Notification</option>
-                                </select>
+                                <label>Nom de la catégorie</label>
+                                <input type="text" id="new-name" placeholder="Ex: Support Client" autofocus>
                             </div>
                             
-                            <div class="form-group">
-                                <label>Couleur</label>
-                                <input type="color" id="new-color" value="#3b82f6">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Icône</label>
+                                    <select id="new-icon" class="select-modern">
+                                        <option value="📁">📁 Dossier</option>
+                                        <option value="💼">💼 Business</option>
+                                        <option value="📧">📧 Email</option>
+                                        <option value="🎯">🎯 Objectif</option>
+                                        <option value="⚡">⚡ Urgent</option>
+                                        <option value="🔔">🔔 Notification</option>
+                                        <option value="💡">💡 Idée</option>
+                                        <option value="📊">📊 Analyse</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Couleur</label>
+                                    <div class="color-picker">
+                                        <input type="color" id="new-color" value="#3b82f6">
+                                        <div class="color-presets">
+                                            ${['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899'].map(c => 
+                                                `<button class="color-preset" style="background: ${c}" onclick="document.getElementById('new-color').value='${c}'"></button>`
+                                            ).join('')}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="modal-footer">
-                        <button class="btn-secondary" onclick="window.categoriesPage.closeModal()">Annuler</button>
-                        <button class="btn-primary" onclick="window.categoriesPage.createCategory()">
-                            <i class="fas fa-plus"></i> Créer
+                    <div class="modal-footer-modern">
+                        <button class="btn-cancel" onclick="window.categoriesPage.closeModal()">Annuler</button>
+                        <button class="btn-save" onclick="window.categoriesPage.createCategory()">
+                            <i class="fas fa-check"></i> Créer
                         </button>
                     </div>
                 </div>
@@ -258,7 +314,7 @@ class CategoriesPage {
         
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
-        this.currentModal = 'create-modal';
+        this.currentModal = true;
         
         setTimeout(() => document.getElementById('new-name')?.focus(), 100);
     }
@@ -266,61 +322,50 @@ class CategoriesPage {
     // ================================================
     // ACTIONS
     // ================================================
-    addKeyword(type) {
+    addItem(type) {
         const input = document.getElementById(`${type}-input`);
-        if (!input || !input.value.trim()) return;
-        
-        const keyword = input.value.trim().toLowerCase();
-        const container = document.getElementById(`${type}-tags`);
-        
-        if (container && !this.isDuplicate(container, keyword)) {
-            const colors = {
-                absolute: '#dc2626',
-                strong: '#f59e0b', 
-                weak: '#3b82f6',
-                exclusions: '#6b7280'
-            };
-            
-            container.insertAdjacentHTML('beforeend', this.renderTag(keyword, type, 'keyword', colors[type]));
-            input.value = '';
-        }
-    }
-
-    addFilter(type) {
-        const inputId = type.includes('Domain') ? 
-            (type.includes('include') ? 'include-domain' : 'exclude-domain') :
-            (type.includes('include') ? 'include-email' : 'exclude-email');
-            
-        const input = document.getElementById(inputId);
         if (!input || !input.value.trim()) return;
         
         const value = input.value.trim().toLowerCase();
         const container = document.getElementById(`${type}-tags`);
         
-        if (container && !this.isDuplicate(container, value)) {
-            const style = type.includes('include') ? 'include' : 'exclude';
-            container.insertAdjacentHTML('beforeend', this.renderTag(value, type, style));
-            input.value = '';
+        if (!container) return;
+        
+        // Vérifier les doublons
+        const existing = container.querySelector(`[data-value="${value}"]`);
+        if (existing) {
+            this.showToast('Déjà ajouté', 'warning');
+            return;
         }
+        
+        const colors = {
+            absolute: '#dc2626',
+            strong: '#f59e0b',
+            weak: '#3b82f6',
+            exclusions: '#6b7280',
+            includeDomains: '#10b981',
+            includeEmails: '#10b981'
+        };
+        
+        const color = colors[type] || '#6b7280';
+        
+        container.insertAdjacentHTML('beforeend', `
+            <span class="tag-modern" style="background: ${color}15; color: ${color}" data-value="${value}">
+                ${value}
+                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">×</button>
+            </span>
+        `);
+        
+        input.value = '';
+        input.focus();
     }
 
     removeItem(type, value) {
         const container = document.getElementById(`${type}-tags`);
         if (!container) return;
         
-        const tags = container.querySelectorAll('.tag');
-        tags.forEach(tag => {
-            if (tag.textContent.trim().replace('×', '').trim() === value) {
-                tag.remove();
-            }
-        });
-    }
-
-    isDuplicate(container, value) {
-        const tags = container.querySelectorAll('.tag');
-        return Array.from(tags).some(tag => 
-            tag.textContent.trim().replace('×', '').trim().toLowerCase() === value
-        );
+        const tag = container.querySelector(`[data-value="${value}"]`);
+        if (tag) tag.remove();
     }
 
     toggleCategory(categoryId) {
@@ -342,8 +387,8 @@ class CategoriesPage {
         settings.activeCategories = activeCategories;
         this.saveSettings(settings);
         
-        // Mettre à jour l'affichage
-        const card = document.querySelector(`[data-category-id="${categoryId}"]`);
+        // Mettre à jour visuellement
+        const card = document.querySelector(`[data-id="${categoryId}"]`);
         if (card) {
             card.classList.toggle('inactive', isActive);
         }
@@ -353,31 +398,36 @@ class CategoriesPage {
 
     createCategory() {
         const name = document.getElementById('new-name')?.value?.trim();
-        const icon = document.getElementById('new-icon')?.value || '📂';
+        const icon = document.getElementById('new-icon')?.value || '📁';
         const color = document.getElementById('new-color')?.value || '#3b82f6';
         
         if (!name) {
-            this.showToast('Le nom est requis', 'error');
+            this.showToast('Nom requis', 'error');
             return;
         }
         
-        const categoryData = {
-            name,
-            icon,
-            color,
-            priority: 30,
-            keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
-        };
-        
-        const newCategory = window.categoryManager?.createCustomCategory(categoryData);
-        
-        if (newCategory) {
-            this.closeModal();
-            this.showToast(`Catégorie "${name}" créée`, 'success');
-            this.refreshPage();
+        try {
+            const categoryData = {
+                name,
+                icon,
+                color,
+                priority: 30,
+                keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
+            };
             
-            // Ouvrir directement la modal d'édition
-            setTimeout(() => this.openCategoryModal(newCategory.id), 300);
+            const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+            
+            if (newCategory) {
+                this.closeModal();
+                this.showToast(`Catégorie "${name}" créée`, 'success');
+                this.refreshPage();
+                
+                // Ouvrir la configuration
+                setTimeout(() => this.openEditModal(newCategory.id), 300);
+            }
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur création:', error);
+            this.showToast('Erreur lors de la création', 'error');
         }
     }
 
@@ -385,20 +435,26 @@ class CategoriesPage {
         if (!this.editingCategoryId) return;
         
         try {
-            // Collecter les mots-clés
-            const keywords = {
-                absolute: this.getItemsFromTags('absolute-tags'),
-                strong: this.getItemsFromTags('strong-tags'),
-                weak: this.getItemsFromTags('weak-tags'),
-                exclusions: this.getItemsFromTags('exclusions-tags')
+            // Collecter tous les tags
+            const getTagsFromContainer = (containerId) => {
+                const container = document.getElementById(containerId);
+                if (!container) return [];
+                const tags = container.querySelectorAll('.tag-modern');
+                return Array.from(tags).map(tag => tag.dataset.value || tag.textContent.replace('×', '').trim());
             };
             
-            // Collecter les filtres
+            const keywords = {
+                absolute: getTagsFromContainer('absolute-tags'),
+                strong: getTagsFromContainer('strong-tags'),
+                weak: getTagsFromContainer('weak-tags'),
+                exclusions: getTagsFromContainer('exclusions-tags')
+            };
+            
             const filters = {
-                includeDomains: this.getItemsFromTags('includeDomains-tags'),
-                excludeDomains: this.getItemsFromTags('excludeDomains-tags'),
-                includeEmails: this.getItemsFromTags('includeEmails-tags'),
-                excludeEmails: this.getItemsFromTags('excludeEmails-tags')
+                includeDomains: getTagsFromContainer('includeDomains-tags'),
+                includeEmails: getTagsFromContainer('includeEmails-tags'),
+                excludeDomains: [],
+                excludeEmails: []
             };
             
             // Sauvegarder
@@ -406,9 +462,10 @@ class CategoriesPage {
             window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
             
             this.closeModal();
-            this.showToast('Catégorie sauvegardée', 'success');
+            this.showToast('Modifications enregistrées', 'success');
+            this.refreshPage();
             
-            // Déclencher re-catégorisation si nécessaire
+            // Re-catégoriser si nécessaire
             if (window.emailScanner?.emails?.length > 0) {
                 window.emailScanner.recategorizeEmails();
             }
@@ -423,32 +480,24 @@ class CategoriesPage {
         const category = window.categoryManager?.getCategory(categoryId);
         if (!category) return;
         
-        if (confirm(`Supprimer la catégorie "${category.name}" ?`)) {
-            window.categoryManager?.deleteCustomCategory(categoryId);
-            this.closeModal();
-            this.showToast('Catégorie supprimée', 'success');
-            this.refreshPage();
+        if (confirm(`Supprimer définitivement "${category.name}" ?`)) {
+            try {
+                window.categoryManager?.deleteCustomCategory(categoryId);
+                this.closeModal();
+                this.showToast('Catégorie supprimée', 'success');
+                this.refreshPage();
+            } catch (error) {
+                console.error('[CategoriesPage] Erreur suppression:', error);
+                this.showToast('Erreur lors de la suppression', 'error');
+            }
         }
-    }
-
-    getItemsFromTags(containerId) {
-        const container = document.getElementById(containerId);
-        if (!container) return [];
-        
-        const tags = container.querySelectorAll('.tag');
-        return Array.from(tags).map(tag => 
-            tag.textContent.trim().replace('×', '').trim()
-        );
     }
 
     closeModal() {
-        if (this.currentModal) {
-            const modal = document.getElementById(this.currentModal);
-            if (modal) modal.remove();
-            this.currentModal = null;
-            this.editingCategoryId = null;
-        }
+        document.querySelector('.modal-backdrop')?.remove();
         document.body.style.overflow = 'auto';
+        this.currentModal = null;
+        this.editingCategoryId = null;
     }
 
     refreshPage() {
@@ -456,7 +505,7 @@ class CategoriesPage {
                         document.querySelector('.main-content') ||
                         document.querySelector('.content');
         if (container) {
-            this.renderSettings(container);
+            this.render(container);
         }
     }
 
@@ -481,148 +530,227 @@ class CategoriesPage {
     }
 
     showToast(message, type = 'info') {
+        // Si UIManager existe
         if (window.uiManager?.showToast) {
             window.uiManager.showToast(message, type);
-        } else {
-            console.log(`[${type}] ${message}`);
+            return;
         }
+        
+        // Sinon créer un toast simple
+        const toast = document.createElement('div');
+        toast.className = `toast-modern toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}-circle"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     }
 
     // ================================================
-    // STYLES CSS
+    // STYLES MODERNES
     // ================================================
     addStyles() {
-        if (document.getElementById('categoriesPageStyles')) return;
+        if (document.getElementById('categoriesModernStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'categoriesPageStyles';
+        styles.id = 'categoriesModernStyles';
         styles.textContent = `
-            .categories-page {
-                padding: 20px;
+            /* Base */
+            .categories-modern {
+                padding: 24px;
                 max-width: 1200px;
                 margin: 0 auto;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
             
-            .page-header {
+            /* Header */
+            .header-modern {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 30px;
+                margin-bottom: 32px;
+                padding-bottom: 24px;
+                border-bottom: 1px solid #e5e7eb;
             }
             
-            .page-header h1 {
-                font-size: 28px;
+            .header-content h1 {
+                font-size: 32px;
                 font-weight: 700;
-                color: #1f2937;
+                color: #111827;
+                margin: 0 0 4px 0;
+            }
+            
+            .subtitle {
+                color: #6b7280;
+                font-size: 16px;
                 margin: 0;
             }
             
-            .btn-add-category {
+            .btn-create {
                 background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
                 color: white;
                 border: none;
-                padding: 10px 20px;
-                border-radius: 8px;
+                padding: 12px 24px;
+                border-radius: 12px;
+                font-size: 15px;
                 font-weight: 600;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                transition: all 0.2s ease;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             }
             
-            .btn-add-category:hover {
+            .btn-create:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             }
             
-            /* Grille de catégories */
-            .categories-grid {
+            .btn-create:active {
+                transform: translateY(0);
+            }
+            
+            /* Grid */
+            .categories-grid-modern {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                gap: 16px;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 20px;
             }
             
-            .category-card {
+            /* Card */
+            .category-card-modern {
                 background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 20px;
-                text-align: center;
-                transition: all 0.2s ease;
+                border: 2px solid #f3f4f6;
+                border-radius: 16px;
+                padding: 24px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 position: relative;
+                overflow: hidden;
             }
             
-            .category-card:hover {
-                border-color: #3b82f6;
+            .category-card-modern::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: linear-gradient(90deg, #3b82f6, #6366f1);
+                transform: scaleX(0);
+                transition: transform 0.3s ease;
+            }
+            
+            .category-card-modern:hover {
+                border-color: #e5e7eb;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
                 transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             
-            .category-card.inactive {
-                opacity: 0.5;
+            .category-card-modern:hover::before {
+                transform: scaleX(1);
+            }
+            
+            .category-card-modern.inactive {
+                opacity: 0.6;
                 background: #f9fafb;
             }
             
-            .category-icon {
-                width: 60px;
-                height: 60px;
-                margin: 0 auto 12px;
+            .card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+            
+            .category-icon-modern {
+                width: 48px;
+                height: 48px;
                 border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 28px;
+                font-size: 24px;
             }
             
-            .category-name {
-                font-size: 16px;
+            .category-title {
+                font-size: 18px;
                 font-weight: 600;
-                color: #1f2937;
-                margin: 0 0 16px 0;
+                color: #111827;
+                margin: 0 0 12px 0;
             }
             
-            .category-actions {
+            .category-stats {
                 display: flex;
-                justify-content: center;
                 align-items: center;
                 gap: 12px;
+                margin-bottom: 16px;
+                color: #6b7280;
+                font-size: 14px;
             }
             
-            .btn-edit {
-                width: 36px;
-                height: 36px;
-                border: 1px solid #e5e7eb;
-                background: white;
-                border-radius: 8px;
+            .stat {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            .badge-custom {
+                background: #f3e8ff;
+                color: #7c3aed;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .btn-edit-modern {
+                width: 100%;
+                background: #f3f4f6;
+                border: none;
+                padding: 10px;
+                border-radius: 10px;
+                font-size: 14px;
+                font-weight: 600;
+                color: #374151;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                gap: 6px;
                 transition: all 0.2s ease;
             }
             
-            .btn-edit:hover {
-                border-color: #3b82f6;
-                color: #3b82f6;
-                background: #eff6ff;
+            .btn-edit-modern:hover {
+                background: #e5e7eb;
+                color: #111827;
             }
             
-            /* Toggle switch */
-            .toggle-switch {
+            /* Switch moderne */
+            .switch-modern {
                 position: relative;
                 display: inline-block;
-                width: 44px;
-                height: 24px;
+                width: 48px;
+                height: 26px;
             }
             
-            .toggle-switch input {
+            .switch-modern input {
                 opacity: 0;
                 width: 0;
                 height: 0;
             }
             
-            .slider {
+            .switch-slider {
                 position: absolute;
                 cursor: pointer;
                 top: 0;
@@ -631,114 +759,143 @@ class CategoriesPage {
                 bottom: 0;
                 background-color: #e5e7eb;
                 transition: .4s;
-                border-radius: 24px;
+                border-radius: 26px;
             }
             
-            .slider:before {
+            .switch-slider:before {
                 position: absolute;
                 content: "";
-                height: 18px;
-                width: 18px;
+                height: 20px;
+                width: 20px;
                 left: 3px;
                 bottom: 3px;
                 background-color: white;
                 transition: .4s;
                 border-radius: 50%;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
             }
             
-            input:checked + .slider {
-                background-color: #3b82f6;
+            input:checked + .switch-slider {
+                background: linear-gradient(135deg, #3b82f6, #2563eb);
             }
             
-            input:checked + .slider:before {
-                transform: translateX(20px);
+            input:checked + .switch-slider:before {
+                transform: translateX(22px);
             }
             
             /* Modal */
-            .modal-overlay {
+            .modal-backdrop {
                 position: fixed;
                 top: 0;
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(4px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 z-index: 1000;
                 padding: 20px;
+                animation: fadeIn 0.2s ease;
             }
             
-            .modal-container {
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .modal-modern {
                 background: white;
-                border-radius: 16px;
+                border-radius: 20px;
                 width: 100%;
-                max-width: 800px;
+                max-width: 900px;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             }
             
-            .modal-container.small {
+            @keyframes slideUp {
+                from { 
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .modal-modern.modal-small {
                 max-width: 500px;
             }
             
-            .modal-header {
-                padding: 24px;
+            .modal-header-modern {
+                padding: 24px 32px;
                 border-bottom: 1px solid #e5e7eb;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
             }
             
-            .modal-title {
+            .modal-title-group {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 16px;
             }
             
             .modal-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+            }
+            
+            .modal-header-modern h2 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #111827;
+                margin: 0;
+            }
+            
+            .modal-header-modern p {
+                color: #6b7280;
+                font-size: 14px;
+                margin: 4px 0 0 0;
+            }
+            
+            .btn-close-modern {
+                background: none;
+                border: none;
                 width: 40px;
                 height: 40px;
                 border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
-            }
-            
-            .modal-header h2 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 700;
-                color: #1f2937;
-            }
-            
-            .modal-close {
-                background: none;
-                border: none;
-                font-size: 20px;
-                color: #6b7280;
                 cursor: pointer;
-                padding: 8px;
-                border-radius: 8px;
+                color: #6b7280;
                 transition: all 0.2s ease;
             }
             
-            .modal-close:hover {
+            .btn-close-modern:hover {
                 background: #f3f4f6;
-                color: #374151;
+                color: #111827;
             }
             
-            .modal-content {
-                padding: 24px;
+            .modal-body-modern {
+                padding: 32px;
                 overflow-y: auto;
                 flex: 1;
             }
             
-            .modal-footer {
-                padding: 24px;
+            .modal-footer-modern {
+                padding: 24px 32px;
                 border-top: 1px solid #e5e7eb;
                 display: flex;
                 justify-content: flex-end;
@@ -746,135 +903,173 @@ class CategoriesPage {
             }
             
             /* Sections */
-            .section {
-                margin-bottom: 32px;
+            .config-section {
+                margin-bottom: 40px;
             }
             
-            .section h3 {
+            .section-title {
                 font-size: 18px;
                 font-weight: 600;
-                color: #1f2937;
-                margin: 0 0 16px 0;
+                color: #111827;
+                margin: 0 0 8px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
-            /* Grilles */
-            .filters-grid,
-            .keywords-grid {
+            .section-desc {
+                color: #6b7280;
+                font-size: 14px;
+                margin: 0 0 20px 0;
+            }
+            
+            /* Filters & Keywords */
+            .filters-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            
+            .keywords-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                 gap: 16px;
             }
             
-            .filter-box,
-            .keyword-box {
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
+            .filter-box-modern,
+            .keyword-box-modern {
                 background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 16px;
             }
             
-            .filter-box.include {
-                background: #f0fdf4;
-                border-color: #86efac;
+            .keyword-box-modern {
+                background: #fafbfc;
             }
             
-            .filter-box h4,
-            .keyword-box h4 {
-                font-size: 14px;
-                font-weight: 600;
-                margin: 0 0 12px 0;
+            .keyword-header {
                 display: flex;
+                justify-content: space-between;
                 align-items: center;
-                gap: 6px;
+                margin-bottom: 4px;
             }
             
-            /* Input groups */
-            .input-group {
+            .keyword-header h4,
+            .filter-box-modern h4 {
+                font-size: 15px;
+                font-weight: 600;
+                margin: 0;
+            }
+            
+            .keyword-count {
+                background: #e5e7eb;
+                color: #6b7280;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .keyword-desc {
+                font-size: 12px;
+                color: #6b7280;
+                margin: 0 0 12px 0;
+            }
+            
+            /* Input moderne */
+            .input-modern {
                 display: flex;
                 gap: 8px;
                 margin-bottom: 12px;
             }
             
-            .input-group input {
+            .input-modern input {
                 flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
+                padding: 10px 14px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
                 font-size: 14px;
+                background: white;
+                transition: all 0.2s ease;
             }
             
-            .input-group input:focus {
+            .input-modern input:focus {
                 outline: none;
                 border-color: #3b82f6;
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
-            .input-group button {
-                padding: 8px 12px;
-                background: #3b82f6;
-                color: white;
+            .input-modern button {
+                padding: 10px 14px;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
+                color: white;
                 cursor: pointer;
                 font-weight: 600;
                 transition: all 0.2s ease;
             }
             
-            .input-group button:hover {
-                background: #2563eb;
+            .input-modern button:hover {
+                transform: scale(1.05);
+            }
+            
+            .input-modern button:active {
+                transform: scale(0.95);
             }
             
             /* Tags */
-            .tags {
+            .tags-container {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 6px;
                 min-height: 32px;
             }
             
-            .tag {
+            .tag-modern {
                 display: inline-flex;
                 align-items: center;
-                gap: 4px;
-                padding: 4px 8px;
-                border-radius: 6px;
+                gap: 6px;
+                padding: 6px 10px;
+                border-radius: 8px;
                 font-size: 13px;
                 font-weight: 500;
+                animation: tagAppear 0.2s ease;
             }
             
-            .tag.keyword {
-                border: 1px solid currentColor;
+            @keyframes tagAppear {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
             }
             
-            .tag.include {
-                background: #dcfce7;
-                color: #16a34a;
-            }
-            
-            .tag.exclude {
-                background: #fee2e2;
-                color: #dc2626;
-            }
-            
-            .tag button {
+            .tag-modern button {
                 background: none;
                 border: none;
                 color: currentColor;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 18px;
                 line-height: 1;
-                padding: 0 2px;
-                opacity: 0.7;
+                padding: 0;
+                margin-left: 2px;
+                opacity: 0.6;
                 transition: opacity 0.2s ease;
             }
             
-            .tag button:hover {
+            .tag-modern button:hover {
                 opacity: 1;
             }
             
-            /* Form groups */
-            .form-group {
-                margin-bottom: 16px;
+            /* Form moderne */
+            .form-modern {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
             }
             
             .form-group label {
@@ -882,16 +1077,25 @@ class CategoriesPage {
                 font-size: 14px;
                 font-weight: 600;
                 color: #374151;
-                margin-bottom: 6px;
+                margin-bottom: 8px;
             }
             
             .form-group input,
-            .form-group select {
+            .select-modern {
                 width: 100%;
-                padding: 8px 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 6px;
+                padding: 10px 14px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
                 font-size: 14px;
+                background: white;
+                transition: all 0.2s ease;
+            }
+            
+            .form-group input:focus,
+            .select-modern:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
             .form-row {
@@ -900,12 +1104,47 @@ class CategoriesPage {
                 gap: 16px;
             }
             
-            /* Buttons */
-            .btn-primary,
-            .btn-secondary,
-            .btn-delete {
-                padding: 8px 16px;
+            /* Color picker */
+            .color-picker {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .color-picker input[type="color"] {
+                width: 100%;
+                height: 40px;
+                border: none;
                 border-radius: 8px;
+                cursor: pointer;
+            }
+            
+            .color-presets {
+                display: flex;
+                gap: 4px;
+            }
+            
+            .color-preset {
+                width: 24px;
+                height: 24px;
+                border: 2px solid white;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: transform 0.2s ease;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            
+            .color-preset:hover {
+                transform: scale(1.2);
+            }
+            
+            /* Buttons */
+            .btn-save,
+            .btn-cancel,
+            .btn-delete-modern {
+                padding: 10px 20px;
+                border-radius: 10px;
+                font-size: 14px;
                 font-weight: 600;
                 border: none;
                 cursor: pointer;
@@ -915,54 +1154,203 @@ class CategoriesPage {
                 transition: all 0.2s ease;
             }
             
-            .btn-primary {
-                background: #3b82f6;
+            .btn-save {
+                background: linear-gradient(135deg, #3b82f6, #2563eb);
                 color: white;
             }
             
-            .btn-primary:hover {
-                background: #2563eb;
+            .btn-save:hover {
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
             }
             
-            .btn-secondary {
+            .btn-cancel {
                 background: #f3f4f6;
                 color: #374151;
             }
             
-            .btn-secondary:hover {
+            .btn-cancel:hover {
                 background: #e5e7eb;
             }
             
-            .btn-delete {
+            .btn-delete-modern {
                 background: #fee2e2;
                 color: #dc2626;
+                width: 100%;
+                justify-content: center;
             }
             
-            .btn-delete:hover {
+            .btn-delete-modern:hover {
                 background: #fca5a5;
             }
             
-            /* Danger zone */
-            .danger-zone {
-                margin-top: 32px;
-                padding-top: 24px;
+            /* Danger section */
+            .danger-section {
+                margin-top: 40px;
+                padding-top: 32px;
                 border-top: 1px solid #e5e7eb;
+            }
+            
+            /* Empty state */
+            .empty-state {
+                grid-column: 1 / -1;
                 text-align: center;
+                padding: 60px 20px;
+                color: #6b7280;
+            }
+            
+            .empty-state i {
+                font-size: 48px;
+                color: #d1d5db;
+                margin-bottom: 16px;
+                display: block;
+            }
+            
+            .empty-state p {
+                font-size: 16px;
+                margin: 0 0 20px 0;
+            }
+            
+            .btn-create-first {
+                background: linear-gradient(135deg, #3b82f6, #2563eb);
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 10px;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .btn-create-first:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+            
+            /* Error state */
+            .error-modern {
+                text-align: center;
+                padding: 60px 20px;
+            }
+            
+            .error-modern i {
+                font-size: 48px;
+                color: #ef4444;
+                margin-bottom: 16px;
+                display: block;
+            }
+            
+            .error-modern h2 {
+                font-size: 24px;
+                color: #111827;
+                margin: 0 0 8px 0;
+            }
+            
+            .error-modern p {
+                color: #6b7280;
+                margin: 0 0 24px 0;
+            }
+            
+            .btn-reload {
+                background: #f3f4f6;
+                color: #374151;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 10px;
+                font-weight: 600;
+                cursor: pointer;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s ease;
+            }
+            
+            .btn-reload:hover {
+                background: #e5e7eb;
+            }
+            
+            /* Toast */
+            .toast-modern {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                background: white;
+                padding: 16px 20px;
+                border-radius: 12px;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                font-weight: 500;
+                transform: translateX(400px);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                z-index: 2000;
+            }
+            
+            .toast-modern.show {
+                transform: translateX(0);
+            }
+            
+            .toast-modern i {
+                font-size: 18px;
+            }
+            
+            .toast-success {
+                border-left: 4px solid #10b981;
+                color: #059669;
+            }
+            
+            .toast-error {
+                border-left: 4px solid #ef4444;
+                color: #dc2626;
+            }
+            
+            .toast-warning {
+                border-left: 4px solid #f59e0b;
+                color: #d97706;
+            }
+            
+            .toast-info {
+                border-left: 4px solid #3b82f6;
+                color: #2563eb;
             }
             
             /* Responsive */
             @media (max-width: 768px) {
-                .categories-grid {
-                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                .categories-grid-modern {
+                    grid-template-columns: 1fr;
                 }
                 
                 .filters-grid,
-                .keywords-grid {
+                .keywords-container {
                     grid-template-columns: 1fr;
                 }
                 
                 .form-row {
                     grid-template-columns: 1fr;
+                }
+                
+                .header-modern {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 16px;
+                }
+                
+                .btn-create {
+                    width: 100%;
+                    justify-content: center;
+                }
+                
+                .modal-modern {
+                    margin: 10px;
+                    max-height: calc(100vh - 20px);
+                }
+                
+                .toast-modern {
+                    right: 12px;
+                    left: 12px;
+                    bottom: 12px;
                 }
             }
         `;
@@ -974,11 +1362,11 @@ class CategoriesPage {
 // Créer l'instance globale
 window.categoriesPage = new CategoriesPage();
 
-// Intégrer au PageManager
+// Intégration au PageManager
 if (window.pageManager?.pages) {
     window.pageManager.pages.settings = (container) => {
-        window.categoriesPage.renderSettings(container);
+        window.categoriesPage.render(container);
     };
 }
 
-console.log('✅ CategoriesPage simplifiée chargée');
+console.log('✅ CategoriesPage moderne chargée');
