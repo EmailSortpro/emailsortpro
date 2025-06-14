@@ -1,4 +1,4 @@
-// MailService.js - Service de récupération des emails Microsoft Graph CORRIGÉ v3.1
+// MailService.js - Service de récupération des emails Microsoft Graph SANS LIMITATION v4.0
 
 class MailService {
     constructor() {
@@ -13,7 +13,15 @@ class MailService {
             'archive': 'archive'
         };
         
-        console.log('[MailService] Constructor - Service de récupération des emails réels');
+        // Configuration pour contourner les limitations
+        this.config = {
+            batchSize: 999, // Juste sous la limite de 1000
+            delayBetweenBatches: 100, // Délai minimal entre les requêtes (ms)
+            maxRetries: 3,
+            retryDelay: 1000
+        };
+        
+        console.log('[MailService] Constructor - Service de récupération des emails SANS LIMITATION');
     }
 
     async initialize() {
@@ -102,10 +110,10 @@ class MailService {
     }
 
     // ================================================
-    // MÉTHODE PRINCIPALE : RÉCUPÉRATION DES EMAILS
+    // MÉTHODE PRINCIPALE : RÉCUPÉRATION DES EMAILS SANS LIMITE
     // ================================================
     async getEmailsFromFolder(folderName, options = {}) {
-        console.log(`[MailService] Getting emails from folder: ${folderName}`);
+        console.log(`[MailService] Getting ALL emails from folder: ${folderName}`);
         
         try {
             // Initialiser si nécessaire
@@ -127,33 +135,13 @@ class MailService {
             // Obtenir l'ID réel du dossier
             const folderId = await this.resolveFolderId(folderName);
             
-            // Construire l'URL de l'API Microsoft Graph
-            const graphUrl = this.buildGraphUrl(folderId, options);
-            console.log(`[MailService] Query endpoint: ${graphUrl}`);
-
-            // Effectuer la requête
-            const response = await fetch(graphUrl, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[MailService] ❌ Graph API error:', response.status, errorText);
-                throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-            }
-
-            const data = await response.json();
-            const emails = data.value || [];
-
-            console.log(`[MailService] ✅ Retrieved ${emails.length} emails`);
+            // Récupérer TOUS les emails par pagination
+            const allEmails = await this.getAllEmailsPaginated(folderId, accessToken, options);
+            
+            console.log(`[MailService] ✅ Retrieved ${allEmails.length} total emails from ${folderName}`);
             
             // Traiter et enrichir les emails
-            const processedEmails = this.processEmails(emails, folderName);
+            const processedEmails = this.processEmails(allEmails, folderName);
             
             return processedEmails;
 
@@ -161,6 +149,127 @@ class MailService {
             console.error(`[MailService] ❌ Error getting emails from ${folderName}:`, error);
             throw error;
         }
+    }
+
+    // ================================================
+    // RÉCUPÉRATION PAGINÉE SANS LIMITE
+    // ================================================
+    async getAllEmailsPaginated(folderId, accessToken, options = {}) {
+        const allEmails = [];
+        let nextLink = null;
+        let pageNumber = 1;
+        let totalRetrieved = 0;
+        
+        // Limiter si l'utilisateur a spécifié un nombre max
+        const userLimit = options.top || Infinity;
+        
+        console.log('[MailService] Starting paginated retrieval...');
+        
+        do {
+            try {
+                console.log(`[MailService] Fetching page ${pageNumber}...`);
+                
+                // Construire l'URL (première page ou page suivante)
+                const url = nextLink || this.buildGraphUrl(folderId, {
+                    ...options,
+                    top: Math.min(this.config.batchSize, userLimit - totalRetrieved)
+                });
+                
+                // Effectuer la requête avec retry automatique
+                const response = await this.fetchWithRetry(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Prefer': 'odata.maxpagesize=999' // Optimiser la taille de page
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                const emails = data.value || [];
+                
+                // Ajouter les emails récupérés
+                allEmails.push(...emails);
+                totalRetrieved += emails.length;
+                
+                console.log(`[MailService] Page ${pageNumber}: ${emails.length} emails (Total: ${totalRetrieved})`);
+                
+                // Récupérer le lien vers la page suivante
+                nextLink = data['@odata.nextLink'] || null;
+                
+                // Vérifier si on a atteint la limite utilisateur
+                if (totalRetrieved >= userLimit) {
+                    console.log('[MailService] User limit reached, stopping pagination');
+                    break;
+                }
+                
+                // Petit délai entre les pages pour éviter le rate limiting
+                if (nextLink) {
+                    await this.delay(this.config.delayBetweenBatches);
+                }
+                
+                pageNumber++;
+                
+            } catch (error) {
+                console.error(`[MailService] Error on page ${pageNumber}:`, error);
+                
+                // En cas d'erreur 429 (Too Many Requests), attendre plus longtemps
+                if (error.message.includes('429')) {
+                    console.log('[MailService] Rate limit hit, waiting 60 seconds...');
+                    await this.delay(60000);
+                    continue; // Réessayer la même page
+                }
+                
+                throw error;
+            }
+            
+        } while (nextLink);
+        
+        console.log(`[MailService] ✅ Pagination complete: ${totalRetrieved} total emails retrieved`);
+        return allEmails;
+    }
+
+    // ================================================
+    // REQUÊTE HTTP AVEC RETRY AUTOMATIQUE
+    // ================================================
+    async fetchWithRetry(url, options, retryCount = 0) {
+        try {
+            const response = await fetch(url, options);
+            
+            // Si rate limit (429), attendre et réessayer
+            if (response.status === 429 && retryCount < this.config.maxRetries) {
+                const retryAfter = response.headers.get('Retry-After') || 60;
+                const waitTime = parseInt(retryAfter) * 1000;
+                
+                console.log(`[MailService] Rate limited. Waiting ${retryAfter} seconds before retry ${retryCount + 1}/${this.config.maxRetries}`);
+                await this.delay(waitTime);
+                
+                return this.fetchWithRetry(url, options, retryCount + 1);
+            }
+            
+            return response;
+            
+        } catch (error) {
+            if (retryCount < this.config.maxRetries) {
+                console.log(`[MailService] Request failed, retry ${retryCount + 1}/${this.config.maxRetries}`);
+                await this.delay(this.config.retryDelay * (retryCount + 1));
+                return this.fetchWithRetry(url, options, retryCount + 1);
+            }
+            throw error;
+        }
+    }
+
+    // ================================================
+    // UTILITAIRE DE DÉLAI
+    // ================================================
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     // ================================================
@@ -196,7 +305,7 @@ class MailService {
         const {
             startDate,
             endDate,
-            top = 100,
+            top = this.config.batchSize,
             orderBy = 'receivedDateTime desc'
         } = options;
 
@@ -216,8 +325,8 @@ class MailService {
         // Paramètres de requête
         const params = new URLSearchParams();
         
-        // Nombre d'emails à récupérer (limité à 1000 max par Microsoft)
-        params.append('$top', Math.min(top, 1000).toString());
+        // Nombre d'emails à récupérer par page
+        params.append('$top', Math.min(top, this.config.batchSize).toString());
         
         // Tri par date de réception décroissante
         params.append('$orderby', orderBy);
@@ -392,12 +501,15 @@ class MailService {
                 throw new Error('Unable to get access token');
             }
 
-            const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
+            const response = await this.fetchWithRetry(
+                `https://graph.microsoft.com/v1.0/me/messages/${emailId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -426,12 +538,15 @@ class MailService {
                 throw new Error('Unable to get access token');
             }
 
-            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
+            const response = await this.fetchWithRetry(
+                'https://graph.microsoft.com/v1.0/me/mailFolders',
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -450,7 +565,7 @@ class MailService {
     }
 
     // ================================================
-    // STATISTIQUES D'EMAIL
+    // STATISTIQUES D'EMAIL AMÉLIORÉES
     // ================================================
     async getEmailStats(folderName = 'inbox') {
         console.log(`[MailService] Getting email stats for ${folderName}`);
@@ -469,7 +584,7 @@ class MailService {
                 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox' :
                 `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}`;
 
-            const response = await fetch(
+            const response = await this.fetchWithRetry(
                 `${endpoint}?$select=totalItemCount,unreadItemCount`,
                 {
                     headers: {
@@ -504,7 +619,7 @@ class MailService {
     }
 
     // ================================================
-    // RECHERCHE D'EMAILS
+    // RECHERCHE D'EMAILS AVEC PAGINATION
     // ================================================
     async searchEmails(query, options = {}) {
         console.log(`[MailService] Searching emails with query: ${query}`);
@@ -524,7 +639,7 @@ class MailService {
             
             const params = new URLSearchParams();
             params.append('$search', `"${query}"`);
-            params.append('$top', top.toString());
+            params.append('$top', Math.min(top, this.config.batchSize).toString());
             params.append('$orderby', 'receivedDateTime desc');
             params.append('$select', [
                 'id', 'subject', 'bodyPreview', 'from', 
@@ -535,12 +650,15 @@ class MailService {
                 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages' :
                 `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
 
-            const response = await fetch(`${endpoint}?${params.toString()}`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
+            const response = await this.fetchWithRetry(
+                `${endpoint}?${params.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -559,6 +677,65 @@ class MailService {
     }
 
     // ================================================
+    // RÉCUPÉRATION EN MASSE DE TOUS LES DOSSIERS
+    // ================================================
+    async getAllEmailsFromAllFolders(options = {}) {
+        console.log('[MailService] Getting emails from ALL folders...');
+        
+        try {
+            // S'assurer que les dossiers sont chargés
+            if (this.folders.size === 0) {
+                await this.loadMailFolders();
+            }
+
+            const allEmails = [];
+            const folderResults = [];
+
+            // Parcourir tous les dossiers
+            for (const [folderName, folder] of this.folders) {
+                console.log(`[MailService] Processing folder: ${folder.displayName}`);
+                
+                try {
+                    const emails = await this.getEmailsFromFolder(folder.id, options);
+                    allEmails.push(...emails);
+                    
+                    folderResults.push({
+                        folderName: folder.displayName,
+                        folderId: folder.id,
+                        count: emails.length,
+                        success: true
+                    });
+                    
+                } catch (error) {
+                    console.error(`[MailService] Error in folder ${folder.displayName}:`, error);
+                    folderResults.push({
+                        folderName: folder.displayName,
+                        folderId: folder.id,
+                        count: 0,
+                        success: false,
+                        error: error.message
+                    });
+                }
+                
+                // Petit délai entre les dossiers
+                await this.delay(this.config.delayBetweenBatches);
+            }
+
+            console.log(`[MailService] ✅ Retrieved ${allEmails.length} total emails from ${folderResults.length} folders`);
+            
+            return {
+                emails: allEmails,
+                folderResults: folderResults,
+                totalCount: allEmails.length
+            };
+
+        } catch (error) {
+            console.error('[MailService] ❌ Error getting all emails:', error);
+            throw error;
+        }
+    }
+
+    // ================================================
     // MÉTHODES DE DIAGNOSTIC AMÉLIORÉES
     // ================================================
     async testConnection() {
@@ -571,12 +748,15 @@ class MailService {
                 throw new Error('No access token available');
             }
 
-            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
+            const response = await this.fetchWithRetry(
+                'https://graph.microsoft.com/v1.0/me',
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -617,8 +797,9 @@ class MailService {
         return {
             isInitialized: this.isInitialized,
             hasToken: window.authService ? !!window.authService.getAccessToken : false,
-            foldersCount: this.folders.size * 2, // Cache + mappings
+            foldersCount: this.folders.size,
             cacheSize: this.cache.size,
+            config: this.config,
             folders: Array.from(this.folders.entries()).map(([name, folder]) => ({
                 name,
                 id: folder.id,
@@ -652,4 +833,4 @@ try {
     };
 }
 
-console.log('✅ MailService v3.1 loaded - Enhanced with better folder resolution and error handling');
+console.log('✅ MailService v4.0 loaded - UNLIMITED email retrieval with automatic pagination');
