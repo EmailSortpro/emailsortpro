@@ -18,7 +18,7 @@ class CategoryManager {
         
         this.initializeCategories();
         this.loadCustomCategories();
-        this.initializeWeightedDetection();
+        this.initializeWeightedDetection();this.initializeFilters();
         this.setupEventListeners();
         
         // NOUVEAU: Démarrer la synchronisation automatique
@@ -1786,6 +1786,158 @@ calculateScore(content, keywords, categoryId) {
         hasAbsolute, 
         matches 
     };
+}
+
+// Ajouter ces méthodes dans CategoryManager.js
+
+getCategoryFilters(categoryId) {
+    if (!this.categories[categoryId]) {
+        return {
+            includeDomains: [],
+            excludeDomains: [],
+            includeEmails: [],
+            excludeEmails: []
+        };
+    }
+    
+    // Charger depuis le stockage ou utiliser les valeurs par défaut
+    const filters = this.categoryFilters?.[categoryId] || this.categories[categoryId].filters || {
+        includeDomains: [],
+        excludeDomains: [],
+        includeEmails: [],
+        excludeEmails: []
+    };
+    
+    return {
+        includeDomains: filters.includeDomains || [],
+        excludeDomains: filters.excludeDomains || [],
+        includeEmails: filters.includeEmails || [],
+        excludeEmails: filters.excludeEmails || []
+    };
+}
+
+updateCategoryFilters(categoryId, filters) {
+    if (!this.categories[categoryId]) {
+        throw new Error('Catégorie non trouvée');
+    }
+    
+    console.log(`[CategoryManager] Mise à jour filtres pour ${categoryId}:`, filters);
+    
+    // Initialiser si nécessaire
+    if (!this.categoryFilters) {
+        this.categoryFilters = {};
+    }
+    
+    this.categoryFilters[categoryId] = {
+        includeDomains: filters.includeDomains || [],
+        excludeDomains: filters.excludeDomains || [],
+        includeEmails: filters.includeEmails || [],
+        excludeEmails: filters.excludeEmails || []
+    };
+    
+    // Si c'est une catégorie personnalisée, sauvegarder
+    if (this.customCategories[categoryId]) {
+        this.customCategories[categoryId].filters = this.categoryFilters[categoryId];
+        this.saveCustomCategories();
+    } else {
+        // Pour les catégories standard, sauvegarder dans localStorage séparément
+        this.saveCategoryFilters();
+    }
+    
+    console.log(`[CategoryManager] Filtres mis à jour pour ${categoryId}`);
+    
+    // Notifier les changements
+    setTimeout(() => {
+        this.dispatchEvent('categoryFiltersUpdated', { 
+            categoryId, 
+            filters: this.categoryFilters[categoryId] 
+        });
+    }, 10);
+}
+
+saveCategoryFilters() {
+    try {
+        localStorage.setItem('categoryFilters', JSON.stringify(this.categoryFilters || {}));
+        console.log('[CategoryManager] Filtres de catégories sauvegardés');
+    } catch (error) {
+        console.error('[CategoryManager] Erreur sauvegarde filtres:', error);
+    }
+}
+
+loadCategoryFilters() {
+    try {
+        const saved = localStorage.getItem('categoryFilters');
+        this.categoryFilters = saved ? JSON.parse(saved) : {};
+        console.log('[CategoryManager] Filtres de catégories chargés');
+    } catch (error) {
+        console.error('[CategoryManager] Erreur chargement filtres:', error);
+        this.categoryFilters = {};
+    }
+}
+
+// Modifier la méthode analyzeEmail pour prendre en compte les filtres
+analyzeEmailWithFilters(email) {
+    const baseAnalysis = this.analyzeEmail(email);
+    
+    // Si l'email est déjà bien catégorisé avec un score élevé, on peut le garder
+    if (baseAnalysis.category !== 'other' && baseAnalysis.score >= 100 && baseAnalysis.hasAbsolute) {
+        return baseAnalysis;
+    }
+    
+    // Vérifier les filtres d'inclusion/exclusion pour chaque catégorie
+    const emailDomain = this.extractDomain(email.from?.emailAddress?.address);
+    const emailAddress = email.from?.emailAddress?.address?.toLowerCase();
+    
+    let bestMatch = null;
+    let highestPriority = -1;
+    
+    Object.entries(this.categories).forEach(([categoryId, category]) => {
+        const filters = this.getCategoryFilters(categoryId);
+        
+        // Vérifier les exclusions d'abord
+        if (filters.excludeDomains?.includes(emailDomain) || 
+            filters.excludeEmails?.includes(emailAddress)) {
+            // Cette catégorie est exclue pour cet email
+            return;
+        }
+        
+        // Vérifier les inclusions
+        if (filters.includeDomains?.includes(emailDomain) || 
+            filters.includeEmails?.includes(emailAddress)) {
+            // Cette catégorie a une inclusion directe
+            const priority = category.priority || 50;
+            if (priority > highestPriority) {
+                highestPriority = priority;
+                bestMatch = {
+                    category: categoryId,
+                    score: 150, // Score élevé pour les inclusions directes
+                    confidence: 0.95,
+                    matchedPatterns: [{
+                        keyword: filters.includeDomains?.includes(emailDomain) ? 
+                            `domain:${emailDomain}` : `email:${emailAddress}`,
+                        type: 'filter',
+                        score: 150
+                    }],
+                    hasAbsolute: true,
+                    matchedByFilter: true
+                };
+            }
+        }
+    });
+    
+    // Si on a trouvé une correspondance par filtre, l'utiliser
+    if (bestMatch) {
+        return bestMatch;
+    }
+    
+    // Sinon, retourner l'analyse de base
+    return baseAnalysis;
+}
+
+// Ajouter cette méthode dans l'initialisation
+initializeFilters() {
+    this.loadCategoryFilters();
+    console.log('[CategoryManager] Filtres initialisés');
 }
 
 applyEnhancedDomainBonus(content, categoryId, matches, totalScore) {
