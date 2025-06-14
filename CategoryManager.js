@@ -477,6 +477,8 @@ class CategoryManager {
         return this.settings.preferences?.detectCC !== false;
     }
 
+
+
     // ================================================
     // SYSTÈME D'ÉCOUTE POUR AUTRES MODULES
     // ================================================
@@ -494,40 +496,6 @@ class CategoryManager {
         this.changeListeners.delete(callback);
     }
 
-    // ================================================
-    // GESTION DES CATÉGORIES PERSONNALISÉES (inchangé)
-    // ================================================
-    loadCustomCategories() {
-        try {
-            const saved = localStorage.getItem('customCategories');
-            this.customCategories = saved ? JSON.parse(saved) : {};
-            
-            // Intégrer les catégories personnalisées
-            Object.entries(this.customCategories).forEach(([id, category]) => {
-                this.categories[id] = {
-                    ...category,
-                    isCustom: true,
-                    priority: category.priority || 30
-                };
-                
-                // S'assurer que les mots-clés existent
-                if (category.keywords) {
-                    this.weightedKeywords[id] = {
-                        absolute: category.keywords.absolute || [],
-                        strong: category.keywords.strong || [],
-                        weak: category.keywords.weak || [],
-                        exclusions: category.keywords.exclusions || []
-                    };
-                }
-            });
-            
-            console.log('[CategoryManager] Catégories personnalisées chargées:', Object.keys(this.customCategories));
-        } catch (error) {
-            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
-            this.customCategories = {};
-        }
-    }
-
     saveCustomCategories() {
         try {
             localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
@@ -536,6 +504,55 @@ class CategoryManager {
             console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
         }
     }
+
+loadCustomCategories() {
+        try {
+            const saved = localStorage.getItem('customCategories');
+            this.customCategories = saved ? JSON.parse(saved) : {};
+            
+            // Intégrer les catégories personnalisées APRÈS l'initialisation des mots-clés par défaut
+            Object.entries(this.customCategories).forEach(([id, category]) => {
+                // Ajouter la catégorie
+                this.categories[id] = {
+                    ...category,
+                    isCustom: true,
+                    priority: category.priority || 30
+                };
+                
+                // IMPORTANT: S'assurer que les mots-clés sont correctement initialisés
+                if (category.keywords) {
+                    // Créer la structure complète si elle n'existe pas
+                    if (!this.weightedKeywords[id]) {
+                        this.weightedKeywords[id] = {
+                            absolute: [],
+                            strong: [],
+                            weak: [],
+                            exclusions: []
+                        };
+                    }
+                    
+                    // Fusionner les mots-clés (au lieu de remplacer)
+                    this.weightedKeywords[id] = {
+                        absolute: [...new Set([...(this.weightedKeywords[id].absolute || []), ...(category.keywords.absolute || [])])],
+                        strong: [...new Set([...(this.weightedKeywords[id].strong || []), ...(category.keywords.strong || [])])],
+                        weak: [...new Set([...(this.weightedKeywords[id].weak || []), ...(category.keywords.weak || [])])],
+                        exclusions: [...new Set([...(this.weightedKeywords[id].exclusions || []), ...(category.keywords.exclusions || [])])]
+                    };
+                    
+                    console.log(`[CategoryManager] Mots-clés chargés pour ${id}:`, this.weightedKeywords[id]);
+                }
+            });
+            
+            console.log('[CategoryManager] Catégories personnalisées chargées:', Object.keys(this.customCategories));
+            console.log('[CategoryManager] Total catégories actives:', Object.keys(this.categories).length);
+            console.log('[CategoryManager] Total mots-clés configurés:', Object.keys(this.weightedKeywords).length);
+        } catch (error) {
+            console.error('[CategoryManager] Erreur chargement catégories personnalisées:', error);
+            this.customCategories = {};
+        }
+    }
+
+
 
     createCustomCategory(categoryData) {
         const id = this.generateCategoryId(categoryData.name);
