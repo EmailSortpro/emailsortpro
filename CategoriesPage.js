@@ -1,39 +1,34 @@
-// CategoriesPage.js - Version Minimaliste
-// Focus sur l'essentiel : affichage des catégories et gestion complète dans une seule vue
+// CategoriesPage.js - Version simplifiée et minimaliste
 
 class CategoriesPage {
     constructor() {
         this.editingCategoryId = null;
         this.currentModal = null;
-        console.log('[CategoriesPage] ✅ Version minimaliste initialisée');
+        console.log('[CategoriesPage] ✅ Version simplifiée - Interface minimaliste');
     }
 
     // ================================================
     // RENDU PRINCIPAL
     // ================================================
-    render(container) {
-        if (!container) {
-            console.error('[CategoriesPage] Container manquant');
-            return;
-        }
+    renderSettings(container) {
+        if (!container) return;
 
         try {
             const categories = window.categoryManager?.getCategories() || {};
             const settings = this.loadSettings();
-            const activeCategories = settings.activeCategories || null;
             
             container.innerHTML = `
-                <div class="categories-page-minimal">
-                    <div class="page-header-minimal">
+                <div class="categories-page">
+                    <div class="page-header">
                         <h1>Catégories</h1>
-                        <button class="btn-primary" onclick="window.categoriesPage.showCreateCategoryModal()">
+                        <button class="btn-add-category" onclick="window.categoriesPage.showCreateCategoryModal()">
                             <i class="fas fa-plus"></i> Nouvelle catégorie
                         </button>
                     </div>
                     
-                    <div class="categories-grid-minimal">
+                    <div class="categories-grid">
                         ${Object.entries(categories).map(([id, category]) => 
-                            this.renderCategoryCard(id, category, activeCategories)
+                            this.renderCategoryCard(id, category, settings.activeCategories)
                         ).join('')}
                     </div>
                 </div>
@@ -48,31 +43,30 @@ class CategoriesPage {
     }
 
     // ================================================
-    // RENDU D'UNE CARTE DE CATÉGORIE
+    // RENDU D'UNE CARTE CATÉGORIE
     // ================================================
     renderCategoryCard(id, category, activeCategories) {
         const isActive = activeCategories === null || activeCategories.includes(id);
-        const keywords = window.categoryManager?.getCategoryKeywords(id) || {};
-        const totalKeywords = Object.values(keywords).flat().length;
         
         return `
-            <div class="category-card ${!isActive ? 'inactive' : ''}" 
-                 onclick="window.categoriesPage.openCategoryModal('${id}')">
-                <div class="card-header">
-                    <div class="card-icon" style="background: ${category.color}20; color: ${category.color}">
-                        ${category.icon}
-                    </div>
-                    <div class="card-info">
-                        <h3>${category.name}</h3>
-                        <span class="keywords-count">${totalKeywords} mots-clés</span>
-                    </div>
-                    <label class="toggle-switch" onclick="event.stopPropagation()">
+            <div class="category-card ${!isActive ? 'inactive' : ''}" data-category-id="${id}">
+                <div class="category-icon" style="background: ${category.color}20; color: ${category.color}">
+                    ${category.icon}
+                </div>
+                
+                <h3 class="category-name">${category.name}</h3>
+                
+                <div class="category-actions">
+                    <button class="btn-edit" onclick="window.categoriesPage.openCategoryModal('${id}')" title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    
+                    <label class="toggle-switch" title="${isActive ? 'Désactiver' : 'Activer'}">
                         <input type="checkbox" ${isActive ? 'checked' : ''} 
                                onchange="window.categoriesPage.toggleCategory('${id}')">
                         <span class="slider"></span>
                     </label>
                 </div>
-                ${category.isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
             </div>
         `;
     }
@@ -96,8 +90,8 @@ class CategoriesPage {
         };
         
         const modalHTML = `
-            <div id="category-modal" class="modal-overlay" onclick="if(event.target === this) window.categoriesPage.closeModal()">
-                <div class="modal-content">
+            <div id="category-modal" class="modal-overlay">
+                <div class="modal-container">
                     <div class="modal-header">
                         <div class="modal-title">
                             <span class="modal-icon" style="background: ${category.color}20; color: ${category.color}">
@@ -105,43 +99,67 @@ class CategoriesPage {
                             </span>
                             <h2>${category.name}</h2>
                         </div>
-                        <button class="close-btn" onclick="window.categoriesPage.closeModal()">×</button>
+                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     
-                    <div class="modal-body">
+                    <div class="modal-content">
+                        <!-- Section Filtres -->
+                        <div class="section">
+                            <h3>Filtres d'inclusion/exclusion</h3>
+                            
+                            <div class="filters-grid">
+                                <div class="filter-box include">
+                                    <h4><i class="fas fa-plus-circle"></i> Domaines à inclure</h4>
+                                    <div class="input-group">
+                                        <input type="text" id="include-domain" placeholder="exemple.com" 
+                                               onkeypress="if(event.key==='Enter') window.categoriesPage.addFilter('includeDomains')">
+                                        <button onclick="window.categoriesPage.addFilter('includeDomains')">+</button>
+                                    </div>
+                                    <div class="tags" id="includeDomains-tags">
+                                        ${filters.includeDomains.map(d => this.renderTag(d, 'includeDomains', 'include')).join('')}
+                                    </div>
+                                </div>
+                                
+                                <div class="filter-box include">
+                                    <h4><i class="fas fa-envelope"></i> Emails à inclure</h4>
+                                    <div class="input-group">
+                                        <input type="text" id="include-email" placeholder="contact@exemple.com" 
+                                               onkeypress="if(event.key==='Enter') window.categoriesPage.addFilter('includeEmails')">
+                                        <button onclick="window.categoriesPage.addFilter('includeEmails')">+</button>
+                                    </div>
+                                    <div class="tags" id="includeEmails-tags">
+                                        ${filters.includeEmails.map(e => this.renderTag(e, 'includeEmails', 'include')).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Section Mots-clés -->
                         <div class="section">
-                            <h3>Mots-clés</h3>
+                            <h3>Mots-clés de détection</h3>
+                            
                             <div class="keywords-grid">
-                                ${this.renderKeywordSection('absolute', 'Absolus 🎯', keywords.absolute, '#dc2626')}
-                                ${this.renderKeywordSection('strong', 'Forts 💪', keywords.strong, '#f59e0b')}
-                                ${this.renderKeywordSection('weak', 'Faibles 📝', keywords.weak, '#3b82f6')}
-                                ${this.renderKeywordSection('exclusions', 'Exclusions 🚫', keywords.exclusions, '#6b7280')}
+                                ${this.renderKeywordBox('absolute', 'Absolus (garantit la catégorisation)', keywords.absolute, '#dc2626')}
+                                ${this.renderKeywordBox('strong', 'Forts (poids élevé)', keywords.strong, '#f59e0b')}
+                                ${this.renderKeywordBox('weak', 'Faibles (poids modéré)', keywords.weak, '#3b82f6')}
+                                ${this.renderKeywordBox('exclusions', 'Exclusions (empêche la catégorisation)', keywords.exclusions, '#6b7280')}
                             </div>
                         </div>
                         
-                        <!-- Section Filtres de domaines/emails -->
-                        <div class="section">
-                            <h3>Filtres par expéditeur</h3>
-                            <div class="filters-grid">
-                                ${this.renderFilterSection('includeDomains', 'Domaines à inclure', filters.includeDomains, '#16a34a')}
-                                ${this.renderFilterSection('includeEmails', 'Emails à inclure', filters.includeEmails, '#16a34a')}
-                                ${this.renderFilterSection('excludeDomains', 'Domaines à exclure', filters.excludeDomains, '#dc2626')}
-                                ${this.renderFilterSection('excludeEmails', 'Emails à exclure', filters.excludeEmails, '#dc2626')}
+                        ${category.isCustom ? `
+                            <div class="danger-zone">
+                                <button class="btn-delete" onclick="window.categoriesPage.deleteCategory('${categoryId}')">
+                                    <i class="fas fa-trash"></i> Supprimer la catégorie
+                                </button>
                             </div>
-                        </div>
-                        
-                        <!-- Paramètres si catégorie personnalisée -->
-                        ${category.isCustom ? this.renderCategorySettings(category) : ''}
+                        ` : ''}
                     </div>
                     
                     <div class="modal-footer">
-                        ${category.isCustom ? `
-                            <button class="btn-danger" onclick="window.categoriesPage.deleteCategory('${categoryId}')">
-                                <i class="fas fa-trash"></i> Supprimer
-                            </button>
-                        ` : ''}
-                        <button class="btn-primary" onclick="window.categoriesPage.saveChanges()">
+                        <button class="btn-secondary" onclick="window.categoriesPage.closeModal()">Fermer</button>
+                        <button class="btn-primary" onclick="window.categoriesPage.saveCategory()">
                             <i class="fas fa-save"></i> Sauvegarder
                         </button>
                     </div>
@@ -155,291 +173,60 @@ class CategoriesPage {
     }
 
     // ================================================
-    // SECTIONS DE MOTS-CLÉS ET FILTRES
+    // RENDU D'UNE BOÎTE DE MOTS-CLÉS
     // ================================================
-    renderKeywordSection(type, title, keywords, color) {
+    renderKeywordBox(type, title, keywords, color) {
         return `
-            <div class="keyword-section">
+            <div class="keyword-box">
                 <h4 style="color: ${color}">${title}</h4>
-                <div class="add-item">
-                    <input type="text" placeholder="Ajouter..." 
-                           onkeypress="if(event.key==='Enter') window.categoriesPage.addKeyword('${type}', this)">
-                    <button onclick="window.categoriesPage.addKeyword('${type}', this.previousElementSibling)">+</button>
+                <div class="input-group">
+                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé" 
+                           onkeypress="if(event.key==='Enter') window.categoriesPage.addKeyword('${type}')">
+                    <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}')">+</button>
                 </div>
-                <div class="items-list" data-type="${type}">
-                    ${keywords.map(kw => `
-                        <span class="item-tag" style="background: ${color}20; color: ${color}">
-                            ${kw}
-                            <button onclick="window.categoriesPage.removeKeyword('${type}', '${kw}')">×</button>
-                        </span>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-    
-    renderFilterSection(type, title, items, color) {
-        const placeholder = type.includes('Emails') ? 'email@example.com' : 'example.com';
-        return `
-            <div class="filter-section">
-                <h4 style="color: ${color}">${title}</h4>
-                <div class="add-item">
-                    <input type="text" placeholder="${placeholder}" 
-                           onkeypress="if(event.key==='Enter') window.categoriesPage.addFilter('${type}', this)">
-                    <button onclick="window.categoriesPage.addFilter('${type}', this.previousElementSibling)">+</button>
-                </div>
-                <div class="items-list" data-type="${type}">
-                    ${items.map(item => `
-                        <span class="item-tag" style="background: ${color}20; color: ${color}">
-                            ${item}
-                            <button onclick="window.categoriesPage.removeFilter('${type}', '${item}')">×</button>
-                        </span>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-    
-    renderCategorySettings(category) {
-        return `
-            <div class="section">
-                <h3>Paramètres</h3>
-                <div class="settings-grid">
-                    <div class="setting-group">
-                        <label>Nom</label>
-                        <input type="text" id="cat-name" value="${category.name}">
-                    </div>
-                    <div class="setting-group">
-                        <label>Icône</label>
-                        <select id="cat-icon">
-                            ${['📂', '💼', '🎯', '⚡', '📧', '🔔', '💡', '🎨', '🔧', '📊'].map(icon => 
-                                `<option value="${icon}" ${category.icon === icon ? 'selected' : ''}>${icon}</option>`
-                            ).join('')}
-                        </select>
-                    </div>
-                    <div class="setting-group">
-                        <label>Couleur</label>
-                        <input type="color" id="cat-color" value="${category.color}">
-                    </div>
-                    <div class="setting-group">
-                        <label>Priorité</label>
-                        <select id="cat-priority">
-                            <option value="10" ${category.priority === 10 ? 'selected' : ''}>Basse</option>
-                            <option value="30" ${category.priority === 30 ? 'selected' : ''}>Normale</option>
-                            <option value="50" ${category.priority === 50 ? 'selected' : ''}>Haute</option>
-                            <option value="90" ${category.priority === 90 ? 'selected' : ''}>Critique</option>
-                        </select>
-                    </div>
+                <div class="tags" id="${type}-tags">
+                    ${keywords.map(k => this.renderTag(k, type, 'keyword', color)).join('')}
                 </div>
             </div>
         `;
     }
 
     // ================================================
-    // ACTIONS
+    // RENDU D'UN TAG
     // ================================================
-    addKeyword(type, input) {
-        const value = input.value.trim().toLowerCase();
-        if (!value || value.length < 2) return;
-        
-        const container = document.querySelector(`.items-list[data-type="${type}"]`);
-        const exists = Array.from(container.children).some(tag => 
-            tag.textContent.trim().toLowerCase().startsWith(value)
-        );
-        
-        if (!exists) {
-            const colors = {
-                absolute: '#dc2626',
-                strong: '#f59e0b',
-                weak: '#3b82f6',
-                exclusions: '#6b7280'
-            };
-            
-            container.insertAdjacentHTML('beforeend', `
-                <span class="item-tag" style="background: ${colors[type]}20; color: ${colors[type]}">
-                    ${value}
-                    <button onclick="window.categoriesPage.removeKeyword('${type}', '${value}')">×</button>
-                </span>
-            `);
-        }
-        
-        input.value = '';
-    }
-    
-    removeKeyword(type, keyword) {
-        const container = document.querySelector(`.items-list[data-type="${type}"]`);
-        Array.from(container.children).forEach(tag => {
-            if (tag.textContent.trim().toLowerCase().startsWith(keyword.toLowerCase())) {
-                tag.remove();
-            }
-        });
-    }
-    
-    addFilter(type, input) {
-        const value = input.value.trim().toLowerCase();
-        if (!value) return;
-        
-        // Validation basique
-        const isEmail = type.includes('Emails');
-        if (isEmail && !value.includes('@')) return;
-        if (!isEmail && value.includes('@')) return;
-        
-        const container = document.querySelector(`.items-list[data-type="${type}"]`);
-        const exists = Array.from(container.children).some(tag => 
-            tag.textContent.trim().toLowerCase().startsWith(value)
-        );
-        
-        if (!exists) {
-            const color = type.includes('include') ? '#16a34a' : '#dc2626';
-            container.insertAdjacentHTML('beforeend', `
-                <span class="item-tag" style="background: ${color}20; color: ${color}">
-                    ${value}
-                    <button onclick="window.categoriesPage.removeFilter('${type}', '${value}')">×</button>
-                </span>
-            `);
-        }
-        
-        input.value = '';
-    }
-    
-    removeFilter(type, filter) {
-        const container = document.querySelector(`.items-list[data-type="${type}"]`);
-        Array.from(container.children).forEach(tag => {
-            if (tag.textContent.trim().toLowerCase().startsWith(filter.toLowerCase())) {
-                tag.remove();
-            }
-        });
-    }
-    
-    saveChanges() {
-        if (!this.editingCategoryId) return;
-        
-        try {
-            // Sauvegarder les mots-clés
-            const keywords = {
-                absolute: this.getItemsFromList('absolute'),
-                strong: this.getItemsFromList('strong'),
-                weak: this.getItemsFromList('weak'),
-                exclusions: this.getItemsFromList('exclusions')
-            };
-            
-            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
-            
-            // Sauvegarder les filtres
-            const filters = {
-                includeDomains: this.getItemsFromList('includeDomains'),
-                excludeDomains: this.getItemsFromList('excludeDomains'),
-                includeEmails: this.getItemsFromList('includeEmails'),
-                excludeEmails: this.getItemsFromList('excludeEmails')
-            };
-            
-            window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
-            
-            // Sauvegarder les paramètres si catégorie personnalisée
-            const category = window.categoryManager?.getCategory(this.editingCategoryId);
-            if (category?.isCustom) {
-                const updates = {
-                    name: document.getElementById('cat-name')?.value || category.name,
-                    icon: document.getElementById('cat-icon')?.value || category.icon,
-                    color: document.getElementById('cat-color')?.value || category.color,
-                    priority: parseInt(document.getElementById('cat-priority')?.value) || category.priority
-                };
-                
-                window.categoryManager?.updateCustomCategory(this.editingCategoryId, updates);
-            }
-            
-            this.closeModal();
-            this.showToast('Modifications sauvegardées', 'success');
-            
-            // Rafraîchir l'affichage
-            const container = document.querySelector('.categories-page-minimal')?.parentElement;
-            if (container) this.render(container);
-            
-            // Déclencher re-catégorisation si nécessaire
-            if (window.emailScanner?.emails?.length > 0) {
-                window.emailScanner.recategorizeEmails();
-            }
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur sauvegarde:', error);
-            this.showToast('Erreur lors de la sauvegarde', 'error');
-        }
-    }
-    
-    getItemsFromList(type) {
-        const container = document.querySelector(`.items-list[data-type="${type}"]`);
-        if (!container) return [];
-        
-        return Array.from(container.children).map(tag => 
-            tag.textContent.trim().replace(/×$/, '').trim().toLowerCase()
-        );
-    }
-    
-    toggleCategory(categoryId) {
-        event.stopPropagation();
-        const settings = this.loadSettings();
-        let activeCategories = settings.activeCategories;
-        
-        if (!activeCategories) {
-            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
-            activeCategories = [...allCategories];
-        }
-        
-        const isActive = activeCategories.includes(categoryId);
-        
-        if (isActive) {
-            activeCategories = activeCategories.filter(id => id !== categoryId);
-        } else {
-            activeCategories.push(categoryId);
-        }
-        
-        settings.activeCategories = activeCategories;
-        this.saveSettings(settings);
-        
-        // Rafraîchir l'affichage
-        const container = document.querySelector('.categories-page-minimal')?.parentElement;
-        if (container) this.render(container);
-    }
-    
-    deleteCategory(categoryId) {
-        const category = window.categoryManager?.getCategory(categoryId);
-        if (!category || !confirm(`Supprimer "${category.name}" ?`)) return;
-        
-        try {
-            window.categoryManager?.deleteCustomCategory(categoryId);
-            this.closeModal();
-            this.showToast('Catégorie supprimée', 'success');
-            
-            const container = document.querySelector('.categories-page-minimal')?.parentElement;
-            if (container) this.render(container);
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur suppression:', error);
-            this.showToast('Erreur lors de la suppression', 'error');
-        }
+    renderTag(text, type, style, color = null) {
+        const styleColor = color || (style === 'include' ? '#16a34a' : '#dc2626');
+        return `
+            <span class="tag ${style}" style="${color ? `background: ${color}20; color: ${color}` : ''}">
+                ${text}
+                <button onclick="window.categoriesPage.removeItem('${type}', '${text}')">×</button>
+            </span>
+        `;
     }
 
     // ================================================
-    // MODAL CRÉATION DE CATÉGORIE
+    // MODAL DE CRÉATION DE CATÉGORIE
     // ================================================
     showCreateCategoryModal() {
         this.closeModal();
         
         const modalHTML = `
-            <div id="create-modal" class="modal-overlay" onclick="if(event.target === this) window.categoriesPage.closeModal()">
-                <div class="modal-content small">
+            <div id="create-modal" class="modal-overlay">
+                <div class="modal-container small">
                     <div class="modal-header">
                         <h2>Nouvelle catégorie</h2>
-                        <button class="close-btn" onclick="window.categoriesPage.closeModal()">×</button>
+                        <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     
-                    <div class="modal-body">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Nom *</label>
-                                <input type="text" id="new-name" placeholder="ex: Support Client">
-                            </div>
-                            
+                    <div class="modal-content">
+                        <div class="form-group">
+                            <label>Nom</label>
+                            <input type="text" id="new-name" placeholder="Ex: Support Client">
+                        </div>
+                        
+                        <div class="form-row">
                             <div class="form-group">
                                 <label>Icône</label>
                                 <select id="new-icon">
@@ -454,17 +241,7 @@ class CategoriesPage {
                             
                             <div class="form-group">
                                 <label>Couleur</label>
-                                <input type="color" id="new-color" value="#6366f1">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>Priorité</label>
-                                <select id="new-priority">
-                                    <option value="10">Basse</option>
-                                    <option value="30" selected>Normale</option>
-                                    <option value="50">Haute</option>
-                                    <option value="90">Critique</option>
-                                </select>
+                                <input type="color" id="new-color" value="#3b82f6">
                             </div>
                         </div>
                     </div>
@@ -485,45 +262,185 @@ class CategoriesPage {
         
         setTimeout(() => document.getElementById('new-name')?.focus(), 100);
     }
-    
+
+    // ================================================
+    // ACTIONS
+    // ================================================
+    addKeyword(type) {
+        const input = document.getElementById(`${type}-input`);
+        if (!input || !input.value.trim()) return;
+        
+        const keyword = input.value.trim().toLowerCase();
+        const container = document.getElementById(`${type}-tags`);
+        
+        if (container && !this.isDuplicate(container, keyword)) {
+            const colors = {
+                absolute: '#dc2626',
+                strong: '#f59e0b', 
+                weak: '#3b82f6',
+                exclusions: '#6b7280'
+            };
+            
+            container.insertAdjacentHTML('beforeend', this.renderTag(keyword, type, 'keyword', colors[type]));
+            input.value = '';
+        }
+    }
+
+    addFilter(type) {
+        const inputId = type.includes('Domain') ? 
+            (type.includes('include') ? 'include-domain' : 'exclude-domain') :
+            (type.includes('include') ? 'include-email' : 'exclude-email');
+            
+        const input = document.getElementById(inputId);
+        if (!input || !input.value.trim()) return;
+        
+        const value = input.value.trim().toLowerCase();
+        const container = document.getElementById(`${type}-tags`);
+        
+        if (container && !this.isDuplicate(container, value)) {
+            const style = type.includes('include') ? 'include' : 'exclude';
+            container.insertAdjacentHTML('beforeend', this.renderTag(value, type, style));
+            input.value = '';
+        }
+    }
+
+    removeItem(type, value) {
+        const container = document.getElementById(`${type}-tags`);
+        if (!container) return;
+        
+        const tags = container.querySelectorAll('.tag');
+        tags.forEach(tag => {
+            if (tag.textContent.trim().replace('×', '').trim() === value) {
+                tag.remove();
+            }
+        });
+    }
+
+    isDuplicate(container, value) {
+        const tags = container.querySelectorAll('.tag');
+        return Array.from(tags).some(tag => 
+            tag.textContent.trim().replace('×', '').trim().toLowerCase() === value
+        );
+    }
+
+    toggleCategory(categoryId) {
+        const settings = this.loadSettings();
+        let activeCategories = settings.activeCategories;
+        
+        if (!activeCategories) {
+            activeCategories = Object.keys(window.categoryManager?.getCategories() || {});
+        }
+        
+        const isActive = activeCategories.includes(categoryId);
+        
+        if (isActive) {
+            activeCategories = activeCategories.filter(id => id !== categoryId);
+        } else {
+            activeCategories.push(categoryId);
+        }
+        
+        settings.activeCategories = activeCategories;
+        this.saveSettings(settings);
+        
+        // Mettre à jour l'affichage
+        const card = document.querySelector(`[data-category-id="${categoryId}"]`);
+        if (card) {
+            card.classList.toggle('inactive', isActive);
+        }
+        
+        this.showToast(isActive ? 'Catégorie désactivée' : 'Catégorie activée', 'success');
+    }
+
     createCategory() {
         const name = document.getElementById('new-name')?.value?.trim();
+        const icon = document.getElementById('new-icon')?.value || '📂';
+        const color = document.getElementById('new-color')?.value || '#3b82f6';
+        
         if (!name) {
             this.showToast('Le nom est requis', 'error');
             return;
         }
         
-        try {
-            const categoryData = {
-                name,
-                icon: document.getElementById('new-icon')?.value || '📂',
-                color: document.getElementById('new-color')?.value || '#6366f1',
-                priority: parseInt(document.getElementById('new-priority')?.value) || 30,
-                keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
-            };
+        const categoryData = {
+            name,
+            icon,
+            color,
+            priority: 30,
+            keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
+        };
+        
+        const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+        
+        if (newCategory) {
+            this.closeModal();
+            this.showToast(`Catégorie "${name}" créée`, 'success');
+            this.refreshPage();
             
-            const newCategory = window.categoryManager?.createCustomCategory(categoryData);
-            
-            if (newCategory) {
-                this.closeModal();
-                this.showToast(`Catégorie "${name}" créée`, 'success');
-                
-                const container = document.querySelector('.categories-page-minimal')?.parentElement;
-                if (container) this.render(container);
-                
-                // Ouvrir directement la modal d'édition
-                setTimeout(() => this.openCategoryModal(newCategory.id), 100);
-            }
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur création:', error);
-            this.showToast('Erreur lors de la création', 'error');
+            // Ouvrir directement la modal d'édition
+            setTimeout(() => this.openCategoryModal(newCategory.id), 300);
         }
     }
 
-    // ================================================
-    // UTILITAIRES
-    // ================================================
+    saveCategory() {
+        if (!this.editingCategoryId) return;
+        
+        try {
+            // Collecter les mots-clés
+            const keywords = {
+                absolute: this.getItemsFromTags('absolute-tags'),
+                strong: this.getItemsFromTags('strong-tags'),
+                weak: this.getItemsFromTags('weak-tags'),
+                exclusions: this.getItemsFromTags('exclusions-tags')
+            };
+            
+            // Collecter les filtres
+            const filters = {
+                includeDomains: this.getItemsFromTags('includeDomains-tags'),
+                excludeDomains: this.getItemsFromTags('excludeDomains-tags'),
+                includeEmails: this.getItemsFromTags('includeEmails-tags'),
+                excludeEmails: this.getItemsFromTags('excludeEmails-tags')
+            };
+            
+            // Sauvegarder
+            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+            window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
+            
+            this.closeModal();
+            this.showToast('Catégorie sauvegardée', 'success');
+            
+            // Déclencher re-catégorisation si nécessaire
+            if (window.emailScanner?.emails?.length > 0) {
+                window.emailScanner.recategorizeEmails();
+            }
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur sauvegarde:', error);
+            this.showToast('Erreur lors de la sauvegarde', 'error');
+        }
+    }
+
+    deleteCategory(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) return;
+        
+        if (confirm(`Supprimer la catégorie "${category.name}" ?`)) {
+            window.categoryManager?.deleteCustomCategory(categoryId);
+            this.closeModal();
+            this.showToast('Catégorie supprimée', 'success');
+            this.refreshPage();
+        }
+    }
+
+    getItemsFromTags(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return [];
+        
+        const tags = container.querySelectorAll('.tag');
+        return Array.from(tags).map(tag => 
+            tag.textContent.trim().replace('×', '').trim()
+        );
+    }
+
     closeModal() {
         if (this.currentModal) {
             const modal = document.getElementById(this.currentModal);
@@ -533,15 +450,19 @@ class CategoriesPage {
         }
         document.body.style.overflow = 'auto';
     }
-    
-    showToast(message, type = 'info') {
-        if (window.uiManager?.showToast) {
-            window.uiManager.showToast(message, type);
-        } else {
-            console.log(`[Toast ${type}] ${message}`);
+
+    refreshPage() {
+        const container = document.querySelector('.settings-container') || 
+                        document.querySelector('.main-content') ||
+                        document.querySelector('.content');
+        if (container) {
+            this.renderSettings(container);
         }
     }
-    
+
+    // ================================================
+    // UTILITAIRES
+    // ================================================
     loadSettings() {
         try {
             const saved = localStorage.getItem('categorySettings');
@@ -550,119 +471,149 @@ class CategoriesPage {
             return { activeCategories: null };
         }
     }
-    
+
     saveSettings(settings) {
         try {
             localStorage.setItem('categorySettings', JSON.stringify(settings));
         } catch (error) {
-            console.error('[CategoriesPage] Erreur sauvegarde settings:', error);
+            console.error('[CategoriesPage] Erreur sauvegarde:', error);
+        }
+    }
+
+    showToast(message, type = 'info') {
+        if (window.uiManager?.showToast) {
+            window.uiManager.showToast(message, type);
+        } else {
+            console.log(`[${type}] ${message}`);
         }
     }
 
     // ================================================
-    // STYLES MINIMALISTES
+    // STYLES CSS
     // ================================================
     addStyles() {
-        if (document.getElementById('categoriesPageMinimalStyles')) return;
+        if (document.getElementById('categoriesPageStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'categoriesPageMinimalStyles';
+        styles.id = 'categoriesPageStyles';
         styles.textContent = `
-            .categories-page-minimal {
+            .categories-page {
                 padding: 20px;
                 max-width: 1200px;
                 margin: 0 auto;
             }
             
-            .page-header-minimal {
+            .page-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 20px;
+                margin-bottom: 30px;
             }
             
-            .page-header-minimal h1 {
-                font-size: 24px;
+            .page-header h1 {
+                font-size: 28px;
                 font-weight: 700;
+                color: #1f2937;
                 margin: 0;
             }
             
+            .btn-add-category {
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                transition: all 0.2s ease;
+            }
+            
+            .btn-add-category:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+            
             /* Grille de catégories */
-            .categories-grid-minimal {
+            .categories-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
                 gap: 16px;
             }
             
-            /* Carte de catégorie */
             .category-card {
                 background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
-                cursor: pointer;
-                transition: all 0.2s;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 20px;
+                text-align: center;
+                transition: all 0.2s ease;
                 position: relative;
             }
             
             .category-card:hover {
                 border-color: #3b82f6;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             
             .category-card.inactive {
-                opacity: 0.6;
+                opacity: 0.5;
+                background: #f9fafb;
             }
             
-            .card-header {
+            .category-icon {
+                width: 60px;
+                height: 60px;
+                margin: 0 auto 12px;
+                border-radius: 12px;
                 display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 28px;
+            }
+            
+            .category-name {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                margin: 0 0 16px 0;
+            }
+            
+            .category-actions {
+                display: flex;
+                justify-content: center;
                 align-items: center;
                 gap: 12px;
             }
             
-            .card-icon {
-                width: 40px;
-                height: 40px;
-                border-radius: 6px;
+            .btn-edit {
+                width: 36px;
+                height: 36px;
+                border: 1px solid #e5e7eb;
+                background: white;
+                border-radius: 8px;
+                cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
+                transition: all 0.2s ease;
             }
             
-            .card-info {
-                flex: 1;
-            }
-            
-            .card-info h3 {
-                margin: 0 0 4px 0;
-                font-size: 16px;
-                font-weight: 600;
-            }
-            
-            .keywords-count {
-                font-size: 13px;
-                color: #6b7280;
-            }
-            
-            .custom-badge {
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                font-size: 10px;
-                background: #f3e8ff;
-                color: #7c3aed;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-weight: 600;
+            .btn-edit:hover {
+                border-color: #3b82f6;
+                color: #3b82f6;
+                background: #eff6ff;
             }
             
             /* Toggle switch */
             .toggle-switch {
                 position: relative;
                 display: inline-block;
-                width: 36px;
-                height: 20px;
+                width: 44px;
+                height: 24px;
             }
             
             .toggle-switch input {
@@ -679,28 +630,28 @@ class CategoriesPage {
                 right: 0;
                 bottom: 0;
                 background-color: #e5e7eb;
-                transition: 0.3s;
-                border-radius: 20px;
+                transition: .4s;
+                border-radius: 24px;
             }
             
             .slider:before {
                 position: absolute;
                 content: "";
-                height: 14px;
-                width: 14px;
+                height: 18px;
+                width: 18px;
                 left: 3px;
                 bottom: 3px;
                 background-color: white;
-                transition: 0.3s;
+                transition: .4s;
                 border-radius: 50%;
             }
             
-            .toggle-switch input:checked + .slider {
+            input:checked + .slider {
                 background-color: #3b82f6;
             }
             
-            .toggle-switch input:checked + .slider:before {
-                transform: translateX(16px);
+            input:checked + .slider:before {
+                transform: translateX(20px);
             }
             
             /* Modal */
@@ -710,7 +661,7 @@ class CategoriesPage {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.5);
+                background: rgba(0, 0, 0, 0.5);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -718,23 +669,23 @@ class CategoriesPage {
                 padding: 20px;
             }
             
-            .modal-content {
+            .modal-container {
                 background: white;
-                border-radius: 12px;
-                max-width: 800px;
+                border-radius: 16px;
                 width: 100%;
+                max-width: 800px;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
             }
             
-            .modal-content.small {
+            .modal-container.small {
                 max-width: 500px;
             }
             
             .modal-header {
-                padding: 20px;
+                padding: 24px;
                 border-bottom: 1px solid #e5e7eb;
                 display: flex;
                 align-items: center;
@@ -748,43 +699,46 @@ class CategoriesPage {
             }
             
             .modal-icon {
-                width: 32px;
-                height: 32px;
-                border-radius: 6px;
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 18px;
+                font-size: 20px;
             }
             
             .modal-header h2 {
                 margin: 0;
                 font-size: 20px;
-                font-weight: 600;
+                font-weight: 700;
+                color: #1f2937;
             }
             
-            .close-btn {
+            .modal-close {
                 background: none;
                 border: none;
-                font-size: 24px;
-                cursor: pointer;
+                font-size: 20px;
                 color: #6b7280;
-                padding: 4px 8px;
-                border-radius: 4px;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 8px;
+                transition: all 0.2s ease;
             }
             
-            .close-btn:hover {
+            .modal-close:hover {
                 background: #f3f4f6;
+                color: #374151;
             }
             
-            .modal-body {
-                padding: 20px;
+            .modal-content {
+                padding: 24px;
                 overflow-y: auto;
                 flex: 1;
             }
             
             .modal-footer {
-                padding: 20px;
+                padding: 24px;
                 border-top: 1px solid #e5e7eb;
                 display: flex;
                 justify-content: flex-end;
@@ -796,143 +750,169 @@ class CategoriesPage {
                 margin-bottom: 32px;
             }
             
-            .section:last-child {
-                margin-bottom: 0;
-            }
-            
             .section h3 {
-                font-size: 16px;
+                font-size: 18px;
                 font-weight: 600;
+                color: #1f2937;
                 margin: 0 0 16px 0;
             }
             
             /* Grilles */
-            .keywords-grid, .filters-grid {
+            .filters-grid,
+            .keywords-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                 gap: 16px;
             }
             
-            .settings-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 16px;
-            }
-            
-            .form-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 16px;
-            }
-            
-            /* Sections d'items */
-            .keyword-section, .filter-section {
+            .filter-box,
+            .keyword-box {
                 border: 1px solid #e5e7eb;
-                border-radius: 6px;
-                padding: 12px;
+                border-radius: 8px;
+                padding: 16px;
+                background: #f9fafb;
             }
             
-            .keyword-section h4, .filter-section h4 {
+            .filter-box.include {
+                background: #f0fdf4;
+                border-color: #86efac;
+            }
+            
+            .filter-box h4,
+            .keyword-box h4 {
                 font-size: 14px;
                 font-weight: 600;
-                margin: 0 0 8px 0;
-            }
-            
-            /* Ajout d'item */
-            .add-item {
+                margin: 0 0 12px 0;
                 display: flex;
-                gap: 4px;
-                margin-bottom: 8px;
+                align-items: center;
+                gap: 6px;
             }
             
-            .add-item input {
+            /* Input groups */
+            .input-group {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .input-group input {
                 flex: 1;
-                padding: 4px 8px;
+                padding: 8px 12px;
                 border: 1px solid #d1d5db;
-                border-radius: 4px;
-                font-size: 13px;
+                border-radius: 6px;
+                font-size: 14px;
             }
             
-            .add-item button {
-                padding: 4px 12px;
+            .input-group input:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .input-group button {
+                padding: 8px 12px;
                 background: #3b82f6;
                 color: white;
                 border: none;
-                border-radius: 4px;
+                border-radius: 6px;
                 cursor: pointer;
-                font-size: 16px;
-                line-height: 1;
+                font-weight: 600;
+                transition: all 0.2s ease;
             }
             
-            .add-item button:hover {
+            .input-group button:hover {
                 background: #2563eb;
             }
             
-            /* Liste d'items */
-            .items-list {
+            /* Tags */
+            .tags {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 4px;
+                gap: 6px;
                 min-height: 32px;
             }
             
-            .item-tag {
+            .tag {
                 display: inline-flex;
                 align-items: center;
                 gap: 4px;
                 padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
+                border-radius: 6px;
+                font-size: 13px;
                 font-weight: 500;
             }
             
-            .item-tag button {
+            .tag.keyword {
+                border: 1px solid currentColor;
+            }
+            
+            .tag.include {
+                background: #dcfce7;
+                color: #16a34a;
+            }
+            
+            .tag.exclude {
+                background: #fee2e2;
+                color: #dc2626;
+            }
+            
+            .tag button {
                 background: none;
                 border: none;
                 color: currentColor;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 16px;
+                line-height: 1;
                 padding: 0 2px;
                 opacity: 0.7;
+                transition: opacity 0.2s ease;
             }
             
-            .item-tag button:hover {
+            .tag button:hover {
                 opacity: 1;
             }
             
-            /* Paramètres */
-            .setting-group, .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: 4px;
+            /* Form groups */
+            .form-group {
+                margin-bottom: 16px;
             }
             
-            .setting-group label, .form-group label {
-                font-size: 13px;
+            .form-group label {
+                display: block;
+                font-size: 14px;
                 font-weight: 600;
                 color: #374151;
+                margin-bottom: 6px;
             }
             
-            .setting-group input, .setting-group select,
-            .form-group input, .form-group select {
-                padding: 6px 8px;
+            .form-group input,
+            .form-group select {
+                width: 100%;
+                padding: 8px 12px;
                 border: 1px solid #d1d5db;
-                border-radius: 4px;
-                font-size: 13px;
+                border-radius: 6px;
+                font-size: 14px;
             }
             
-            /* Boutons */
-            .btn-primary, .btn-secondary, .btn-danger {
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+            
+            /* Buttons */
+            .btn-primary,
+            .btn-secondary,
+            .btn-delete {
                 padding: 8px 16px;
-                border-radius: 6px;
-                font-size: 13px;
+                border-radius: 8px;
                 font-weight: 600;
                 border: none;
                 cursor: pointer;
                 display: inline-flex;
                 align-items: center;
                 gap: 6px;
-                transition: all 0.2s;
+                transition: all 0.2s ease;
             }
             
             .btn-primary {
@@ -953,28 +933,36 @@ class CategoriesPage {
                 background: #e5e7eb;
             }
             
-            .btn-danger {
+            .btn-delete {
                 background: #fee2e2;
                 color: #dc2626;
             }
             
-            .btn-danger:hover {
+            .btn-delete:hover {
                 background: #fca5a5;
+            }
+            
+            /* Danger zone */
+            .danger-zone {
+                margin-top: 32px;
+                padding-top: 24px;
+                border-top: 1px solid #e5e7eb;
+                text-align: center;
             }
             
             /* Responsive */
             @media (max-width: 768px) {
-                .categories-grid-minimal {
+                .categories-grid {
+                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                }
+                
+                .filters-grid,
+                .keywords-grid {
                     grid-template-columns: 1fr;
                 }
                 
-                .keywords-grid, .filters-grid {
+                .form-row {
                     grid-template-columns: 1fr;
-                }
-                
-                .modal-content {
-                    margin: 10px;
-                    max-height: calc(100vh - 20px);
                 }
             }
         `;
@@ -984,18 +972,13 @@ class CategoriesPage {
 }
 
 // Créer l'instance globale
-if (window.categoriesPage) {
-    console.log('[CategoriesPage] Nettoyage de l\'ancienne instance');
-}
-
 window.categoriesPage = new CategoriesPage();
 
-// Export pour PageManager
+// Intégrer au PageManager
 if (window.pageManager?.pages) {
-    window.pageManager.pages.categories = (container) => {
-        window.categoriesPage.render(container);
+    window.pageManager.pages.settings = (container) => {
+        window.categoriesPage.renderSettings(container);
     };
-    console.log('✅ CategoriesPage minimaliste intégrée au PageManager');
 }
 
-console.log('✅ CategoriesPage minimaliste chargée');
+console.log('✅ CategoriesPage simplifiée chargée');
