@@ -1,12 +1,15 @@
-// CategoriesPage.js - Version ultra-minimaliste et moderne
-
+// CategoriesPage.js - Version moderne et joyeuse
 class CategoriesPage {
     constructor() {
         this.editingCategoryId = null;
         this.currentModal = null;
         this.searchTerm = '';
-        this.viewMode = 'grid'; // 'grid' ou 'list'
-        console.log('[CategoriesPage] ✅ Interface minimaliste initialisée');
+        this.viewMode = 'grid';
+        this.colors = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+            '#FF9FF3', '#54A0FF', '#48DBFB', '#A29BFE', '#FD79A8'
+        ];
+        console.log('[CategoriesPage] 🎨 Interface moderne initialisée');
     }
 
     // ================================================
@@ -20,59 +23,43 @@ class CategoriesPage {
             const settings = this.loadSettings();
             
             container.innerHTML = `
-                <div class="categories-minimal">
-                    <!-- Header épuré -->
-                    <div class="header-minimal">
-                        <div>
-                            <h1>Catégories</h1>
-                            <p class="header-subtitle">Gérez vos règles de détection d'emails</p>
+                <div class="categories-modern">
+                    <!-- Header vibrant -->
+                    <div class="header-modern">
+                        <div class="header-content">
+                            <h1>Catégories <span class="emoji">✨</span></h1>
+                            <p class="subtitle">Organisez vos emails avec style</p>
                         </div>
-                        <button class="btn-add" onclick="window.categoriesPage.showCreateModal()" title="Nouvelle catégorie">
+                        <button class="btn-create" onclick="window.categoriesPage.showCreateModal()">
                             <i class="fas fa-plus"></i>
+                            <span>Créer</span>
                         </button>
                     </div>
                     
-                    <!-- Barre de contrôle -->
-                    <div class="control-bar">
-                        <div class="search-box">
+                    <!-- Stats colorées -->
+                    <div class="stats-bar">
+                        <div class="stat-card" style="--accent: #FF6B6B">
+                            <div class="stat-value">${Object.keys(categories).length}</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="stat-card" style="--accent: #4ECDC4">
+                            <div class="stat-value">${this.getActiveCount(categories, settings.activeCategories)}</div>
+                            <div class="stat-label">Actives</div>
+                        </div>
+                        <div class="stat-card" style="--accent: #45B7D1">
+                            <div class="stat-value">${this.getTotalKeywords(categories)}</div>
+                            <div class="stat-label">Mots-clés</div>
+                        </div>
+                        <div class="search-modern">
                             <i class="fas fa-search"></i>
                             <input type="text" 
-                                   placeholder="Rechercher une catégorie..." 
+                                   placeholder="Rechercher..." 
                                    onkeyup="window.categoriesPage.handleSearch(this.value)">
                         </div>
-                        
-                        <div class="view-toggle">
-                            <button class="${this.viewMode === 'grid' ? 'active' : ''}" 
-                                    onclick="window.categoriesPage.setViewMode('grid')" 
-                                    title="Vue grille">
-                                <i class="fas fa-th"></i>
-                            </button>
-                            <button class="${this.viewMode === 'list' ? 'active' : ''}" 
-                                    onclick="window.categoriesPage.setViewMode('list')" 
-                                    title="Vue liste">
-                                <i class="fas fa-bars"></i>
-                            </button>
-                        </div>
                     </div>
                     
-                    <!-- Stats rapides -->
-                    <div class="quick-stats">
-                        <div class="stat-item">
-                            <span class="stat-number">${Object.keys(categories).length}</span>
-                            <span class="stat-label">catégories</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number">${this.getActiveCount(categories, settings.activeCategories)}</span>
-                            <span class="stat-label">actives</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-number">${this.getTotalKeywords(categories)}</span>
-                            <span class="stat-label">mots-clés</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Catégories -->
-                    <div class="categories-container ${this.viewMode}" id="categories-container">
+                    <!-- Grille de catégories -->
+                    <div class="categories-grid" id="categories-container">
                         ${this.renderCategories(categories, settings.activeCategories)}
                     </div>
                 </div>
@@ -94,89 +81,53 @@ class CategoriesPage {
         
         if (Object.keys(filtered).length === 0) {
             return `
-                <div class="empty-state-minimal">
-                    <i class="fas fa-search"></i>
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
                     <p>Aucune catégorie trouvée</p>
                 </div>
             `;
         }
         
         return Object.entries(filtered)
-            .map(([id, category]) => this.viewMode === 'grid' 
-                ? this.renderGridCard(id, category, activeCategories)
-                : this.renderListItem(id, category, activeCategories)
-            ).join('');
+            .map(([id, category]) => this.renderCategoryCard(id, category, activeCategories))
+            .join('');
     }
 
-    // Vue grille compacte
-    renderGridCard(id, category, activeCategories) {
+    renderCategoryCard(id, category, activeCategories) {
         const isActive = activeCategories === null || activeCategories.includes(id);
         const stats = this.getCategoryStats(id);
         
         return `
-            <div class="cat-card ${!isActive ? 'inactive' : ''}" data-id="${id}">
-                <div class="cat-icon" style="background: ${category.color}20; color: ${category.color}">
-                    ${category.icon}
+            <div class="category-card ${!isActive ? 'inactive' : ''}" 
+                 data-id="${id}"
+                 style="--cat-color: ${category.color}">
+                
+                <div class="card-header">
+                    <div class="cat-emoji">${category.icon}</div>
+                    <div class="cat-name">${category.name}</div>
                 </div>
                 
-                <div class="cat-info">
-                    <h3>${category.name}</h3>
-                    <div class="cat-meta">
-                        <span class="meta-item" title="Mots-clés">
-                            <i class="fas fa-key"></i> ${stats.keywords}
-                        </span>
-                        ${stats.absolute > 0 ? `
-                            <span class="meta-item highlight" title="Mots-clés absolus">
-                                <i class="fas fa-star"></i> ${stats.absolute}
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="cat-actions">
-                    <button class="btn-toggle ${isActive ? 'active' : ''}" 
-                            onclick="window.categoriesPage.toggleCategory('${id}')"
-                            title="${isActive ? 'Désactiver' : 'Activer'}">
-                        <i class="fas fa-power-off"></i>
-                    </button>
-                    <button class="btn-config" 
-                            onclick="window.categoriesPage.openModal('${id}')"
-                            title="Configurer">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    // Vue liste ultra-compacte
-    renderListItem(id, category, activeCategories) {
-        const isActive = activeCategories === null || activeCategories.includes(id);
-        const stats = this.getCategoryStats(id);
-        
-        return `
-            <div class="cat-list-item ${!isActive ? 'inactive' : ''}" data-id="${id}">
-                <div class="list-icon" style="background: ${category.color}20; color: ${category.color}">
-                    ${category.icon}
-                </div>
-                
-                <div class="list-info">
-                    <span class="list-name">${category.name}</span>
-                    <span class="list-stats">
-                        ${stats.keywords} mots-clés
-                        ${stats.absolute > 0 ? `• <strong>${stats.absolute} absolus</strong>` : ''}
+                <div class="card-stats">
+                    <span class="stat-badge">
+                        <i class="fas fa-key"></i> ${stats.keywords}
                     </span>
+                    ${stats.absolute > 0 ? `
+                        <span class="stat-badge special">
+                            <i class="fas fa-star"></i> ${stats.absolute}
+                        </span>
+                    ` : ''}
                 </div>
                 
-                <div class="list-actions">
-                    <button class="btn-mini ${isActive ? 'active' : ''}" 
+                <div class="card-actions">
+                    <button class="btn-action ${isActive ? 'active' : ''}" 
                             onclick="window.categoriesPage.toggleCategory('${id}')"
                             title="${isActive ? 'Actif' : 'Inactif'}">
-                        <i class="fas fa-circle"></i>
+                        <i class="fas fa-toggle-${isActive ? 'on' : 'off'}"></i>
                     </button>
-                    <button class="btn-mini" 
-                            onclick="window.categoriesPage.openModal('${id}')">
-                        <i class="fas fa-ellipsis-v"></i>
+                    <button class="btn-action" 
+                            onclick="window.categoriesPage.openModal('${id}')"
+                            title="Configurer">
+                        <i class="fas fa-sliders-h"></i>
                     </button>
                 </div>
             </div>
@@ -184,7 +135,7 @@ class CategoriesPage {
     }
 
     // ================================================
-    // MODAL SIMPLIFIÉE
+    // MODAL MODERNE
     // ================================================
     openModal(categoryId) {
         const category = window.categoryManager?.getCategory(categoryId);
@@ -198,14 +149,12 @@ class CategoriesPage {
         };
         
         const modalHTML = `
-            <div class="modal-minimal" onclick="if(event.target === this) window.categoriesPage.closeModal()">
-                <div class="modal-content">
-                    <!-- Header minimal -->
-                    <div class="modal-header">
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
+                <div class="modal-modern">
+                    <!-- Header avec gradient -->
+                    <div class="modal-header" style="background: linear-gradient(135deg, ${category.color}20, ${category.color}10)">
                         <div class="modal-title">
-                            <span class="modal-category-icon" style="background: ${category.color}20; color: ${category.color}">
-                                ${category.icon}
-                            </span>
+                            <span class="modal-icon">${category.icon}</span>
                             <h2>${category.name}</h2>
                         </div>
                         <button class="btn-close" onclick="window.categoriesPage.closeModal()">
@@ -213,73 +162,85 @@ class CategoriesPage {
                         </button>
                     </div>
                     
-                    <!-- Tabs simples -->
-                    <div class="modal-tabs">
+                    <!-- Tabs modernes -->
+                    <div class="tabs-modern">
                         <button class="tab active" data-tab="keywords" onclick="window.categoriesPage.switchTab('keywords')">
-                            Mots-clés
+                            <i class="fas fa-key"></i> Mots-clés
                         </button>
                         <button class="tab" data-tab="filters" onclick="window.categoriesPage.switchTab('filters')">
-                            Filtres
+                            <i class="fas fa-filter"></i> Filtres
                         </button>
                         ${category.isCustom ? `
                             <button class="tab" data-tab="settings" onclick="window.categoriesPage.switchTab('settings')">
-                                Paramètres
+                                <i class="fas fa-cog"></i> Paramètres
                             </button>
                         ` : ''}
                     </div>
                     
-                    <!-- Contenu des tabs -->
-                    <div class="modal-body">
+                    <!-- Contenu -->
+                    <div class="modal-content">
                         <!-- Tab Mots-clés -->
-                        <div class="tab-content active" id="tab-keywords">
-                            <div class="keyword-grid">
-                                ${this.renderKeywordSection('absolute', 'Absolus', keywords.absolute, '#ef4444', 'Déclenche toujours')}
-                                ${this.renderKeywordSection('strong', 'Forts', keywords.strong, '#f59e0b', 'Poids élevé')}
-                                ${this.renderKeywordSection('weak', 'Faibles', keywords.weak, '#3b82f6', 'Poids modéré')}
-                                ${this.renderKeywordSection('exclusions', 'Exclusions', keywords.exclusions, '#6b7280', 'Empêche la détection')}
+                        <div class="tab-panel active" id="tab-keywords">
+                            <div class="keywords-layout">
+                                ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#FF6B6B', 'fa-star', 'Déclenchent toujours la catégorie')}
+                                ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#FECA57', 'fa-bolt', 'Poids élevé dans la détection')}
+                                ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#54A0FF', 'fa-feather', 'Poids modéré dans la détection')}
+                                ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#A29BFE', 'fa-ban', 'Empêchent la détection')}
                             </div>
                         </div>
                         
                         <!-- Tab Filtres -->
-                        <div class="tab-content" id="tab-filters">
-                            <div class="filters-simple">
-                                <div class="filter-section">
-                                    <h4><i class="fas fa-plus-circle"></i> Inclure ces domaines</h4>
-                                    <div class="input-group">
+                        <div class="tab-panel" id="tab-filters">
+                            <div class="filters-layout">
+                                <div class="filter-box">
+                                    <h4><i class="fas fa-globe"></i> Domaines inclus</h4>
+                                    <p class="filter-hint">Emails provenant uniquement de ces domaines</p>
+                                    <div class="input-modern">
                                         <input type="text" id="include-domain" placeholder="exemple.com">
-                                        <button onclick="window.categoriesPage.addFilter('includeDomains')">+</button>
+                                        <button onclick="window.categoriesPage.addFilter('includeDomains')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
                                     </div>
-                                    <div class="items" id="includeDomains-items"></div>
+                                    <div class="tags" id="includeDomains-items"></div>
                                 </div>
                                 
-                                <div class="filter-section">
-                                    <h4><i class="fas fa-envelope"></i> Inclure ces emails</h4>
-                                    <div class="input-group">
+                                <div class="filter-box">
+                                    <h4><i class="fas fa-at"></i> Emails inclus</h4>
+                                    <p class="filter-hint">Emails provenant uniquement de ces adresses</p>
+                                    <div class="input-modern">
                                         <input type="text" id="include-email" placeholder="contact@exemple.com">
-                                        <button onclick="window.categoriesPage.addFilter('includeEmails')">+</button>
+                                        <button onclick="window.categoriesPage.addFilter('includeEmails')">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
                                     </div>
-                                    <div class="items" id="includeEmails-items"></div>
+                                    <div class="tags" id="includeEmails-items"></div>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- Tab Paramètres -->
                         ${category.isCustom ? `
-                            <div class="tab-content" id="tab-settings">
-                                <div class="settings-simple">
-                                    <button class="btn-danger" onclick="window.categoriesPage.deleteCategory('${categoryId}')">
-                                        <i class="fas fa-trash"></i> Supprimer cette catégorie
-                                    </button>
+                            <div class="tab-panel" id="tab-settings">
+                                <div class="settings-content">
+                                    <div class="danger-zone">
+                                        <h4><i class="fas fa-exclamation-triangle"></i> Zone dangereuse</h4>
+                                        <p>Cette action est irréversible</p>
+                                        <button class="btn-danger" onclick="window.categoriesPage.deleteCategory('${categoryId}')">
+                                            <i class="fas fa-trash"></i> Supprimer la catégorie
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ` : ''}
                     </div>
                     
-                    <!-- Footer minimal -->
+                    <!-- Footer -->
                     <div class="modal-footer">
-                        <button class="btn-secondary" onclick="window.categoriesPage.closeModal()">Fermer</button>
-                        <button class="btn-primary" onclick="window.categoriesPage.save()">
-                            Enregistrer
+                        <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
+                            Annuler
+                        </button>
+                        <button class="btn-modern primary" onclick="window.categoriesPage.save()">
+                            <i class="fas fa-check"></i> Enregistrer
                         </button>
                     </div>
                 </div>
@@ -290,26 +251,30 @@ class CategoriesPage {
         document.body.style.overflow = 'hidden';
         this.currentModal = true;
         
-        // Charger les données
         this.loadModalData(categoryId);
     }
 
-    renderKeywordSection(type, title, keywords, color, hint) {
+    renderKeywordBox(type, title, keywords, color, icon, description) {
         return `
-            <div class="keyword-section">
-                <div class="section-header">
-                    <h4 style="color: ${color}">${title}</h4>
-                    <span class="hint">${hint}</span>
+            <div class="keyword-box">
+                <div class="box-header">
+                    <h4><i class="fas ${icon}"></i> ${title}</h4>
+                    <span class="box-count" style="background: ${color}20; color: ${color}">${keywords.length}</span>
                 </div>
-                <div class="input-group">
-                    <input type="text" id="${type}-input" placeholder="Ajouter...">
-                    <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}')">+</button>
+                <p class="box-description">${description}</p>
+                <div class="input-modern">
+                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé...">
+                    <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}', '${color}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
-                <div class="items" id="${type}-items">
+                <div class="tags" id="${type}-items">
                     ${keywords.map(k => `
-                        <span class="item" style="background: ${color}20; color: ${color}">
+                        <span class="tag" style="background: ${color}15; color: ${color}">
                             ${k}
-                            <button onclick="window.categoriesPage.removeItem('${type}', '${k}')">×</button>
+                            <button onclick="window.categoriesPage.removeItem('${type}', '${k}')">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </span>
                     `).join('')}
                 </div>
@@ -318,48 +283,58 @@ class CategoriesPage {
     }
 
     // ================================================
-    // MODAL DE CRÉATION MINIMALISTE
+    // MODAL DE CRÉATION
     // ================================================
     showCreateModal() {
         this.closeModal();
         
         const modalHTML = `
-            <div class="modal-minimal" onclick="if(event.target === this) window.categoriesPage.closeModal()">
-                <div class="modal-content modal-small">
-                    <div class="modal-header">
-                        <h2>Nouvelle catégorie</h2>
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
+                <div class="modal-modern modal-create">
+                    <div class="create-header">
+                        <h2>Nouvelle catégorie ✨</h2>
                         <button class="btn-close" onclick="window.categoriesPage.closeModal()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
-                    <div class="modal-body">
-                        <div class="form-minimal">
-                            <input type="text" id="new-name" placeholder="Nom de la catégorie" autofocus>
-                            
-                            <div class="icon-color-row">
-                                <div class="icon-picker">
-                                    <label>Icône</label>
-                                    <div class="icon-options">
-                                        ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌'].map(icon => 
-                                            `<button class="icon-option" onclick="window.categoriesPage.selectIcon('${icon}')">${icon}</button>`
-                                        ).join('')}
-                                    </div>
-                                    <input type="hidden" id="new-icon" value="📁">
-                                </div>
-                                
-                                <div class="color-picker-minimal">
-                                    <label>Couleur</label>
-                                    <input type="color" id="new-color" value="#3b82f6">
-                                </div>
+                    <div class="create-content">
+                        <input type="text" 
+                               id="new-name" 
+                               class="input-name" 
+                               placeholder="Nom de la catégorie" 
+                               autofocus>
+                        
+                        <div class="emoji-picker">
+                            <label>Choisir une icône</label>
+                            <div class="emoji-grid">
+                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌', '🌟', '🚀', '💎', '🎨', '🔥'].map(emoji => 
+                                    `<button class="emoji-option ${emoji === '📁' ? 'selected' : ''}" 
+                                             onclick="window.categoriesPage.selectIcon('${emoji}')">${emoji}</button>`
+                                ).join('')}
                             </div>
+                            <input type="hidden" id="new-icon" value="📁">
+                        </div>
+                        
+                        <div class="color-selector">
+                            <label>Couleur de la catégorie</label>
+                            <div class="color-grid">
+                                ${this.colors.map((color, i) => 
+                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
+                                             style="background: ${color}"
+                                             onclick="window.categoriesPage.selectColor('${color}')"></button>`
+                                ).join('')}
+                            </div>
+                            <input type="hidden" id="new-color" value="${this.colors[0]}">
                         </div>
                     </div>
                     
                     <div class="modal-footer">
-                        <button class="btn-secondary" onclick="window.categoriesPage.closeModal()">Annuler</button>
-                        <button class="btn-primary" onclick="window.categoriesPage.createCategory()">
-                            Créer
+                        <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
+                            Annuler
+                        </button>
+                        <button class="btn-modern primary" onclick="window.categoriesPage.createCategory()">
+                            <i class="fas fa-sparkles"></i> Créer
                         </button>
                     </div>
                 </div>
@@ -381,17 +356,6 @@ class CategoriesPage {
         this.updateCategoriesDisplay();
     }
 
-    setViewMode(mode) {
-        this.viewMode = mode;
-        this.updateCategoriesDisplay();
-        
-        // Mettre à jour les boutons
-        document.querySelectorAll('.view-toggle button').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        event.target.classList.add('active');
-    }
-
     filterCategories(categories) {
         if (!this.searchTerm) return categories;
         
@@ -411,31 +375,34 @@ class CategoriesPage {
         const categories = window.categoryManager?.getCategories() || {};
         const settings = this.loadSettings();
         
-        container.className = `categories-container ${this.viewMode}`;
         container.innerHTML = this.renderCategories(categories, settings.activeCategories);
     }
 
     switchTab(tabName) {
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.remove('active');
-            if (tab.dataset.tab === tabName) tab.classList.add('active');
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
         });
         
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.remove('active');
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.toggle('active', panel.id === `tab-${tabName}`);
         });
-        
-        document.getElementById(`tab-${tabName}`)?.classList.add('active');
     }
 
     selectIcon(icon) {
         document.getElementById('new-icon').value = icon;
-        document.querySelectorAll('.icon-option').forEach(btn => {
+        document.querySelectorAll('.emoji-option').forEach(btn => {
             btn.classList.toggle('selected', btn.textContent === icon);
         });
     }
 
-    addKeyword(type) {
+    selectColor(color) {
+        document.getElementById('new-color').value = color;
+        document.querySelectorAll('.color-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.style.background === color);
+        });
+    }
+
+    addKeyword(type, color) {
         const input = document.getElementById(`${type}-input`);
         if (!input?.value.trim()) return;
         
@@ -444,21 +411,17 @@ class CategoriesPage {
         
         if (!container) return;
         
-        const colors = {
-            absolute: '#ef4444',
-            strong: '#f59e0b',
-            weak: '#3b82f6',
-            exclusions: '#6b7280'
-        };
-        
         container.insertAdjacentHTML('beforeend', `
-            <span class="item" style="background: ${colors[type]}20; color: ${colors[type]}">
+            <span class="tag" style="background: ${color}15; color: ${color}">
                 ${value}
-                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">×</button>
+                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
             </span>
         `);
         
         input.value = '';
+        input.focus();
     }
 
     addFilter(type) {
@@ -472,23 +435,28 @@ class CategoriesPage {
         if (!container) return;
         
         container.insertAdjacentHTML('beforeend', `
-            <span class="item filter-item">
+            <span class="tag filter-tag">
+                <i class="fas fa-${type.includes('Domain') ? 'globe' : 'at'}"></i>
                 ${value}
-                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">×</button>
+                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
             </span>
         `);
         
         input.value = '';
+        input.focus();
     }
 
     removeItem(type, value) {
         const container = document.getElementById(`${type}-items`);
         if (!container) return;
         
-        const items = container.querySelectorAll('.item');
-        items.forEach(item => {
-            if (item.textContent.trim().replace('×', '').trim() === value) {
-                item.remove();
+        const tags = container.querySelectorAll('.tag');
+        tags.forEach(tag => {
+            const text = tag.textContent.trim().replace(/×$/, '').trim();
+            if (text === value || text.includes(value)) {
+                tag.remove();
             }
         });
     }
@@ -509,16 +477,16 @@ class CategoriesPage {
         this.saveSettings(settings);
         
         this.updateCategoriesDisplay();
-        this.showToast(isActive ? 'Catégorie désactivée' : 'Catégorie activée');
+        this.showToast(isActive ? '🔴 Catégorie désactivée' : '🟢 Catégorie activée');
     }
 
     createCategory() {
         const name = document.getElementById('new-name')?.value?.trim();
         const icon = document.getElementById('new-icon')?.value || '📁';
-        const color = document.getElementById('new-color')?.value || '#3b82f6';
+        const color = document.getElementById('new-color')?.value || this.colors[0];
         
         if (!name) {
-            this.showToast('Nom requis', 'error');
+            this.showToast('⚠️ Nom requis', 'warning');
             return;
         }
         
@@ -534,7 +502,7 @@ class CategoriesPage {
         
         if (newCategory) {
             this.closeModal();
-            this.showToast('Catégorie créée');
+            this.showToast('✅ Catégorie créée avec succès!');
             this.refreshPage();
             
             setTimeout(() => this.openModal(newCategory.id), 300);
@@ -545,13 +513,13 @@ class CategoriesPage {
         if (!this.editingCategoryId) return;
         
         try {
-            // Collecter les données
             const getItems = (containerId) => {
                 const container = document.getElementById(containerId);
                 if (!container) return [];
-                return Array.from(container.querySelectorAll('.item')).map(item => 
-                    item.textContent.trim().replace('×', '').trim()
-                );
+                return Array.from(container.querySelectorAll('.tag')).map(tag => {
+                    const text = tag.textContent.trim();
+                    return text.replace(/×$/, '').replace(/^[^\s]+\s/, '').trim();
+                });
             };
             
             const keywords = {
@@ -572,12 +540,12 @@ class CategoriesPage {
             window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
             
             this.closeModal();
-            this.showToast('Modifications enregistrées');
+            this.showToast('💾 Modifications enregistrées!');
             this.refreshPage();
             
         } catch (error) {
             console.error('[CategoriesPage] Erreur:', error);
-            this.showToast('Erreur', 'error');
+            this.showToast('❌ Erreur lors de la sauvegarde', 'error');
         }
     }
 
@@ -585,10 +553,10 @@ class CategoriesPage {
         const category = window.categoryManager?.getCategory(categoryId);
         if (!category) return;
         
-        if (confirm(`Supprimer "${category.name}" ?`)) {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer "${category.name}" ?`)) {
             window.categoryManager?.deleteCustomCategory(categoryId);
             this.closeModal();
-            this.showToast('Catégorie supprimée');
+            this.showToast('🗑️ Catégorie supprimée');
             this.refreshPage();
         }
     }
@@ -598,14 +566,16 @@ class CategoriesPage {
             includeDomains: [], includeEmails: []
         };
         
-        // Charger les filtres
         if (filters.includeDomains.length > 0) {
             const container = document.getElementById('includeDomains-items');
             if (container) {
                 container.innerHTML = filters.includeDomains.map(d => `
-                    <span class="item filter-item">
+                    <span class="tag filter-tag">
+                        <i class="fas fa-globe"></i>
                         ${d}
-                        <button onclick="window.categoriesPage.removeItem('includeDomains', '${d}')">×</button>
+                        <button onclick="window.categoriesPage.removeItem('includeDomains', '${d}')">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </span>
                 `).join('');
             }
@@ -615,9 +585,12 @@ class CategoriesPage {
             const container = document.getElementById('includeEmails-items');
             if (container) {
                 container.innerHTML = filters.includeEmails.map(e => `
-                    <span class="item filter-item">
+                    <span class="tag filter-tag">
+                        <i class="fas fa-at"></i>
                         ${e}
-                        <button onclick="window.categoriesPage.removeItem('includeEmails', '${e}')">×</button>
+                        <button onclick="window.categoriesPage.removeItem('includeEmails', '${e}')">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </span>
                 `).join('');
             }
@@ -625,7 +598,7 @@ class CategoriesPage {
     }
 
     closeModal() {
-        document.querySelector('.modal-minimal')?.remove();
+        document.querySelector('.modal-backdrop')?.remove();
         document.body.style.overflow = 'auto';
         this.currentModal = null;
         this.editingCategoryId = null;
@@ -686,10 +659,14 @@ class CategoriesPage {
         }
     }
 
-    showToast(message, type = 'info') {
+    showToast(message, type = 'success') {
         const toast = document.createElement('div');
-        toast.className = `toast-minimal ${type}`;
-        toast.textContent = message;
+        toast.className = `toast-modern ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                ${message}
+            </div>
+        `;
         
         document.body.appendChild(toast);
         
@@ -698,378 +675,355 @@ class CategoriesPage {
         setTimeout(() => {
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
-        }, 2000);
+        }, 3000);
     }
 
     renderError() {
         return `
-            <div class="error-minimal">
-                <i class="fas fa-exclamation-circle"></i>
-                <p>Erreur de chargement</p>
-                <button onclick="location.reload()">Recharger</button>
+            <div class="error-state">
+                <div class="error-icon">😵</div>
+                <h3>Oups! Une erreur est survenue</h3>
+                <button class="btn-modern primary" onclick="location.reload()">
+                    <i class="fas fa-redo"></i> Recharger
+                </button>
             </div>
         `;
     }
 
     // ================================================
-    // STYLES MINIMALISTES
+    // STYLES MODERNES
     // ================================================
     addStyles() {
-        if (document.getElementById('categoriesMinimalStyles')) return;
+        if (document.getElementById('categoriesModernStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'categoriesMinimalStyles';
+        styles.id = 'categoriesModernStyles';
         styles.textContent = `
-            /* Reset et base */
-            .categories-minimal * {
-                box-sizing: border-box;
+            /* Base et variables */
+            .categories-modern {
+                --primary: #6366F1;
+                --secondary: #EC4899;
+                --success: #10B981;
+                --warning: #F59E0B;
+                --danger: #EF4444;
+                --bg: #F9FAFB;
+                --surface: #FFFFFF;
+                --text: #111827;
+                --text-secondary: #6B7280;
+                --border: #E5E7EB;
+                --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+                
+                padding: 24px;
+                min-height: 100vh;
+                background: var(--bg);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+                color: var(--text);
             }
             
-            .categories-minimal {
-                padding: 20px;
-                max-width: 1000px;
-                margin: 0 auto;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                color: #1a1a1a;
-            }
-            
-            /* Header minimal */
-            .header-minimal {
+            /* Header moderne */
+            .header-modern {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 24px;
+                margin-bottom: 32px;
+                padding: 0 8px;
             }
             
-            .header-minimal h1 {
-                font-size: 24px;
-                font-weight: 600;
+            .header-content h1 {
+                font-size: 32px;
+                font-weight: 700;
                 margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
-            .header-subtitle {
-                font-size: 14px;
-                color: #666;
+            .emoji {
+                font-size: 28px;
+            }
+            
+            .subtitle {
+                font-size: 16px;
+                color: var(--text-secondary);
                 margin: 4px 0 0 0;
             }
             
-            .btn-add {
-                width: 40px;
-                height: 40px;
-                background: #000;
-                color: white;
-                border: none;
-                border-radius: 50%;
-                cursor: pointer;
+            .btn-create {
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                transition: transform 0.2s;
-            }
-            
-            .btn-add:hover {
-                transform: scale(1.1);
-            }
-            
-            /* Barre de contrôle */
-            .control-bar {
-                display: flex;
-                gap: 16px;
-                margin-bottom: 20px;
-            }
-            
-            .search-box {
-                flex: 1;
-                position: relative;
-            }
-            
-            .search-box i {
-                position: absolute;
-                left: 16px;
-                top: 50%;
-                transform: translateY(-50%);
-                color: #999;
-                font-size: 14px;
-            }
-            
-            .search-box input {
-                width: 100%;
-                padding: 10px 16px 10px 40px;
-                border: 1px solid #e5e5e5;
-                border-radius: 8px;
-                font-size: 14px;
-                background: #f8f8f8;
-                transition: all 0.2s;
-            }
-            
-            .search-box input:focus {
-                outline: none;
-                border-color: #000;
-                background: white;
-            }
-            
-            .view-toggle {
-                display: flex;
-                gap: 4px;
-                background: #f8f8f8;
-                padding: 4px;
-                border-radius: 8px;
-            }
-            
-            .view-toggle button {
-                width: 32px;
-                height: 32px;
+                gap: 8px;
+                padding: 12px 20px;
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                color: white;
                 border: none;
-                background: transparent;
-                border-radius: 6px;
-                cursor: pointer;
-                color: #666;
-                transition: all 0.2s;
-            }
-            
-            .view-toggle button.active {
-                background: white;
-                color: #000;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            }
-            
-            /* Stats rapides */
-            .quick-stats {
-                display: flex;
-                gap: 24px;
-                margin-bottom: 24px;
-                padding: 16px;
-                background: #f8f8f8;
-                border-radius: 8px;
-            }
-            
-            .stat-item {
-                display: flex;
-                align-items: baseline;
-                gap: 6px;
-            }
-            
-            .stat-number {
-                font-size: 20px;
+                border-radius: 12px;
+                font-size: 15px;
                 font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            }
+            
+            .btn-create:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+            }
+            
+            /* Stats bar */
+            .stats-bar {
+                display: grid;
+                grid-template-columns: repeat(3, 120px) 1fr;
+                gap: 16px;
+                margin-bottom: 24px;
+                padding: 0 8px;
+            }
+            
+            .stat-card {
+                background: var(--surface);
+                border-radius: 16px;
+                padding: 16px;
+                text-align: center;
+                border: 2px solid transparent;
+                transition: all 0.3s;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .stat-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: var(--accent);
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            
+            .stat-card:hover {
+                border-color: var(--accent);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .stat-card:hover::before {
+                opacity: 1;
+            }
+            
+            .stat-value {
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--accent);
             }
             
             .stat-label {
-                font-size: 14px;
-                color: #666;
+                font-size: 12px;
+                color: var(--text-secondary);
+                margin-top: 4px;
             }
             
-            /* Container des catégories */
-            .categories-container {
-                display: grid;
-                gap: 12px;
+            /* Recherche moderne */
+            .search-modern {
+                position: relative;
+                display: flex;
+                align-items: center;
             }
             
-            .categories-container.grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            .search-modern i {
+                position: absolute;
+                left: 16px;
+                color: var(--text-secondary);
+                pointer-events: none;
             }
             
-            .categories-container.list {
-                grid-template-columns: 1fr;
-                gap: 4px;
-            }
-            
-            /* Vue grille */
-            .cat-card {
-                background: white;
-                border: 1px solid #e5e5e5;
+            .search-modern input {
+                width: 100%;
+                padding: 14px 16px 14px 44px;
+                border: 2px solid var(--border);
                 border-radius: 12px;
-                padding: 16px;
-                transition: all 0.2s;
+                font-size: 15px;
+                background: var(--surface);
+                transition: all 0.3s;
+            }
+            
+            .search-modern input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+            
+            /* Grille de catégories */
+            .categories-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 16px;
+                padding: 0 8px;
+            }
+            
+            /* Carte de catégorie */
+            .category-card {
+                background: var(--surface);
+                border-radius: 16px;
+                padding: 20px;
+                border: 2px solid var(--border);
+                transition: all 0.3s;
                 cursor: pointer;
+                position: relative;
+                overflow: hidden;
             }
             
-            .cat-card:hover {
-                border-color: #000;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            .category-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: linear-gradient(135deg, var(--cat-color)10, transparent);
+                opacity: 0;
+                transition: opacity 0.3s;
             }
             
-            .cat-card.inactive {
+            .category-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+                border-color: var(--cat-color);
+            }
+            
+            .category-card:hover::before {
+                opacity: 1;
+            }
+            
+            .category-card.inactive {
                 opacity: 0.5;
             }
             
-            .cat-icon {
+            .card-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+            
+            .cat-emoji {
+                font-size: 28px;
                 width: 48px;
                 height: 48px;
-                border-radius: 10px;
+                background: var(--cat-color)15;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 24px;
-                margin-bottom: 12px;
             }
             
-            .cat-info h3 {
-                font-size: 16px;
+            .cat-name {
+                font-size: 18px;
                 font-weight: 600;
-                margin: 0 0 4px 0;
+                flex: 1;
             }
             
-            .cat-meta {
+            .card-stats {
                 display: flex;
-                gap: 12px;
-                font-size: 12px;
-                color: #666;
-                margin-bottom: 12px;
+                gap: 8px;
+                margin-bottom: 16px;
             }
             
-            .meta-item {
-                display: flex;
+            .stat-badge {
+                display: inline-flex;
                 align-items: center;
                 gap: 4px;
+                padding: 4px 10px;
+                background: var(--bg);
+                border-radius: 20px;
+                font-size: 12px;
+                color: var(--text-secondary);
             }
             
-            .meta-item.highlight {
-                color: #f59e0b;
+            .stat-badge.special {
+                background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+                color: #92400E;
                 font-weight: 600;
             }
             
-            .cat-actions {
+            .card-actions {
                 display: flex;
                 gap: 8px;
             }
             
-            .btn-toggle,
-            .btn-config {
+            .btn-action {
                 flex: 1;
                 padding: 8px;
-                border: 1px solid #e5e5e5;
-                background: white;
-                border-radius: 6px;
+                border: 2px solid var(--border);
+                background: var(--surface);
+                border-radius: 10px;
                 cursor: pointer;
-                font-size: 12px;
-                transition: all 0.2s;
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
-            .btn-toggle.active {
-                background: #000;
+            .btn-action:hover {
+                border-color: var(--primary);
+                background: var(--primary)10;
+                color: var(--primary);
+            }
+            
+            .btn-action.active {
+                background: var(--success);
                 color: white;
-                border-color: #000;
+                border-color: var(--success);
             }
             
-            .btn-config:hover {
-                border-color: #000;
-            }
-            
-            /* Vue liste */
-            .cat-list-item {
-                background: white;
-                border: 1px solid #e5e5e5;
-                border-radius: 8px;
-                padding: 12px 16px;
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                transition: all 0.2s;
-            }
-            
-            .cat-list-item:hover {
-                border-color: #000;
-                background: #fafafa;
-            }
-            
-            .cat-list-item.inactive {
-                opacity: 0.5;
-            }
-            
-            .list-icon {
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-                flex-shrink: 0;
-            }
-            
-            .list-info {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            
-            .list-name {
-                font-weight: 600;
-                font-size: 14px;
-            }
-            
-            .list-stats {
-                font-size: 12px;
-                color: #666;
-            }
-            
-            .list-stats strong {
-                color: #f59e0b;
-            }
-            
-            .list-actions {
-                display: flex;
-                gap: 8px;
-            }
-            
-            .btn-mini {
-                width: 32px;
-                height: 32px;
-                border: 1px solid #e5e5e5;
-                background: white;
-                border-radius: 6px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 10px;
-                transition: all 0.2s;
-            }
-            
-            .btn-mini:hover {
-                border-color: #000;
-            }
-            
-            .btn-mini.active {
-                color: #10b981;
-            }
-            
-            /* Modal minimaliste */
-            .modal-minimal {
+            /* Modal moderne */
+            .modal-backdrop {
                 position: fixed;
                 top: 0;
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0,0,0,0.4);
+                background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 z-index: 1000;
                 padding: 20px;
+                animation: fadeIn 0.3s;
             }
             
-            .modal-content {
-                background: white;
-                border-radius: 16px;
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .modal-modern {
+                background: var(--surface);
+                border-radius: 24px;
                 width: 100%;
-                max-width: 600px;
-                max-height: 90vh;
+                max-width: 720px;
+                max-height: 85vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                animation: slideUp 0.3s;
             }
             
-            .modal-content.modal-small {
-                max-width: 400px;
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
             }
             
-            .modal-header {
-                padding: 20px;
-                border-bottom: 1px solid #e5e5e5;
+            .modal-create {
+                max-width: 480px;
+            }
+            
+            .modal-header,
+            .create-header {
+                padding: 24px;
+                border-bottom: 1px solid var(--border);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -1081,65 +1035,65 @@ class CategoriesPage {
                 gap: 12px;
             }
             
-            .modal-category-icon {
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
+            .modal-icon {
+                font-size: 32px;
             }
             
-            .modal-header h2 {
-                font-size: 18px;
-                font-weight: 600;
+            .modal-header h2,
+            .create-header h2 {
+                font-size: 24px;
+                font-weight: 700;
                 margin: 0;
             }
             
             .btn-close {
-                width: 32px;
-                height: 32px;
+                width: 40px;
+                height: 40px;
                 border: none;
-                background: #f8f8f8;
-                border-radius: 6px;
+                background: var(--bg);
+                border-radius: 12px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s;
+                transition: all 0.3s;
             }
             
             .btn-close:hover {
-                background: #e5e5e5;
+                background: var(--danger)10;
+                color: var(--danger);
             }
             
-            /* Tabs */
-            .modal-tabs {
+            /* Tabs modernes */
+            .tabs-modern {
                 display: flex;
-                padding: 0 20px;
-                gap: 24px;
-                border-bottom: 1px solid #e5e5e5;
+                padding: 0 24px;
+                gap: 32px;
+                border-bottom: 1px solid var(--border);
+                background: var(--bg);
             }
             
             .tab {
-                padding: 12px 0;
+                padding: 16px 0;
                 border: none;
                 background: none;
-                font-size: 14px;
-                font-weight: 500;
-                color: #666;
+                font-size: 15px;
+                font-weight: 600;
+                color: var(--text-secondary);
                 cursor: pointer;
                 position: relative;
-                transition: color 0.2s;
+                transition: color 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
             .tab:hover {
-                color: #000;
+                color: var(--text);
             }
             
             .tab.active {
-                color: #000;
+                color: var(--primary);
             }
             
             .tab.active::after {
@@ -1148,352 +1102,472 @@ class CategoriesPage {
                 bottom: -1px;
                 left: 0;
                 right: 0;
-                height: 2px;
-                background: #000;
+                height: 3px;
+                background: var(--primary);
+                border-radius: 3px 3px 0 0;
             }
             
-            .modal-body {
-                padding: 20px;
+            /* Contenu modal */
+            .modal-content,
+            .create-content {
+                padding: 24px;
                 overflow-y: auto;
                 flex: 1;
             }
             
-            .tab-content {
+            .tab-panel {
                 display: none;
             }
             
-            .tab-content.active {
+            .tab-panel.active {
                 display: block;
             }
             
-            /* Sections de mots-clés */
-            .keyword-grid {
+            /* Layout mots-clés */
+            .keywords-layout {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 20px;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 24px;
             }
             
-            .keyword-section {
+            .keyword-box {
+                background: var(--bg);
+                border-radius: 16px;
+                padding: 20px;
+                transition: all 0.3s;
+            }
+            
+            .keyword-box:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            }
+            
+            .box-header {
                 display: flex;
-                flex-direction: column;
-                gap: 12px;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
             }
             
-            .section-header {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-            }
-            
-            .section-header h4 {
-                font-size: 14px;
+            .box-header h4 {
+                font-size: 16px;
                 font-weight: 600;
                 margin: 0;
-            }
-            
-            .hint {
-                font-size: 11px;
-                color: #999;
-            }
-            
-            .input-group {
                 display: flex;
+                align-items: center;
                 gap: 8px;
             }
             
-            .input-group input {
-                flex: 1;
-                padding: 8px 12px;
-                border: 1px solid #e5e5e5;
-                border-radius: 6px;
+            .box-count {
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .box-description {
                 font-size: 13px;
+                color: var(--text-secondary);
+                margin: 0 0 16px 0;
             }
             
-            .input-group input:focus {
+            /* Input moderne */
+            .input-modern {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .input-modern input {
+                flex: 1;
+                padding: 10px 16px;
+                border: 2px solid var(--border);
+                border-radius: 10px;
+                font-size: 14px;
+                transition: all 0.3s;
+            }
+            
+            .input-modern input:focus {
                 outline: none;
-                border-color: #000;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             
-            .input-group button {
-                width: 32px;
-                height: 32px;
+            .input-modern button {
+                width: 40px;
+                height: 40px;
                 border: none;
-                border-radius: 6px;
+                border-radius: 10px;
                 color: white;
                 cursor: pointer;
-                font-weight: 600;
-                transition: transform 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s;
             }
             
-            .input-group button:hover {
+            .input-modern button:hover {
                 transform: scale(1.1);
             }
             
-            /* Items */
-            .items {
+            /* Tags */
+            .tags {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 6px;
-                min-height: 32px;
+                gap: 8px;
+                min-height: 40px;
             }
             
-            .item {
+            .tag {
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
-                padding: 4px 10px;
-                border-radius: 6px;
-                font-size: 12px;
+                gap: 8px;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 14px;
                 font-weight: 500;
+                transition: all 0.3s;
             }
             
-            .item button {
+            .tag button {
                 background: none;
                 border: none;
                 color: currentColor;
                 cursor: pointer;
-                font-size: 14px;
-                line-height: 1;
-                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 opacity: 0.6;
+                transition: opacity 0.3s;
+                font-size: 10px;
             }
             
-            .item button:hover {
+            .tag button:hover {
                 opacity: 1;
             }
             
-            .filter-item {
-                background: #f0f9ff;
-                color: #0369a1;
+            .filter-tag {
+                background: var(--primary)10;
+                color: var(--primary);
             }
             
-            /* Filtres */
-            .filters-simple {
+            /* Layout filtres */
+            .filters-layout {
                 display: grid;
                 gap: 24px;
             }
             
-            .filter-section h4 {
-                font-size: 14px;
-                font-weight: 600;
-                margin: 0 0 12px 0;
-                display: flex;
-                align-items: center;
-                gap: 6px;
+            .filter-box {
+                background: var(--bg);
+                border-radius: 16px;
+                padding: 20px;
             }
             
-            /* Settings */
-            .settings-simple {
+            .filter-box h4 {
+                font-size: 16px;
+                font-weight: 600;
+                margin: 0 0 8px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .filter-hint {
+                font-size: 13px;
+                color: var(--text-secondary);
+                margin: 0 0 16px 0;
+            }
+            
+            /* Paramètres */
+            .settings-content {
                 padding: 20px 0;
+            }
+            
+            .danger-zone {
+                background: var(--danger)10;
+                border: 2px solid var(--danger)20;
+                border-radius: 16px;
+                padding: 24px;
+            }
+            
+            .danger-zone h4 {
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--danger);
+                margin: 0 0 8px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .danger-zone p {
+                font-size: 14px;
+                color: var(--text-secondary);
+                margin: 0 0 16px 0;
             }
             
             .btn-danger {
                 width: 100%;
                 padding: 12px;
-                background: #fee;
-                color: #dc2626;
-                border: 1px solid #fca5a5;
-                border-radius: 8px;
+                background: var(--danger);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 15px;
                 font-weight: 600;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 8px;
-                transition: all 0.2s;
+                transition: all 0.3s;
             }
             
             .btn-danger:hover {
-                background: #fca5a5;
+                background: #DC2626;
+                transform: scale(1.02);
             }
             
             /* Footer modal */
             .modal-footer {
-                padding: 20px;
-                border-top: 1px solid #e5e5e5;
+                padding: 20px 24px;
+                border-top: 1px solid var(--border);
                 display: flex;
                 justify-content: flex-end;
                 gap: 12px;
+                background: var(--bg);
             }
             
-            .btn-primary,
-            .btn-secondary {
-                padding: 8px 20px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 500;
+            /* Boutons modernes */
+            .btn-modern {
+                padding: 10px 20px;
+                border-radius: 10px;
+                font-size: 15px;
+                font-weight: 600;
                 border: none;
                 cursor: pointer;
-                transition: all 0.2s;
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
-            .btn-primary {
-                background: #000;
+            .btn-modern.primary {
+                background: var(--primary);
                 color: white;
             }
             
-            .btn-primary:hover {
-                background: #333;
+            .btn-modern.primary:hover {
+                background: #5558E3;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
             }
             
-            .btn-secondary {
-                background: #f8f8f8;
-                color: #666;
+            .btn-modern.secondary {
+                background: var(--bg);
+                color: var(--text-secondary);
+                border: 2px solid var(--border);
             }
             
-            .btn-secondary:hover {
-                background: #e5e5e5;
+            .btn-modern.secondary:hover {
+                background: var(--surface);
+                border-color: var(--text-secondary);
             }
             
-            /* Form minimal */
-            .form-minimal {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .form-minimal input[type="text"] {
-                padding: 12px 16px;
-                border: 1px solid #e5e5e5;
-                border-radius: 8px;
-                font-size: 14px;
-            }
-            
-            .form-minimal input[type="text"]:focus {
-                outline: none;
-                border-color: #000;
-            }
-            
-            .icon-color-row {
-                display: grid;
-                grid-template-columns: 1fr auto;
-                gap: 16px;
-            }
-            
-            .icon-picker label,
-            .color-picker-minimal label {
-                display: block;
-                font-size: 12px;
+            /* Création de catégorie */
+            .input-name {
+                width: 100%;
+                padding: 16px 20px;
+                border: 2px solid var(--border);
+                border-radius: 12px;
+                font-size: 18px;
                 font-weight: 600;
-                color: #666;
-                margin-bottom: 8px;
+                margin-bottom: 24px;
+                transition: all 0.3s;
             }
             
-            .icon-options {
-                display: flex;
-                gap: 4px;
-                flex-wrap: wrap;
+            .input-name:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             
-            .icon-option {
-                width: 36px;
-                height: 36px;
-                border: 1px solid #e5e5e5;
-                background: white;
-                border-radius: 6px;
+            .emoji-picker,
+            .color-selector {
+                margin-bottom: 24px;
+            }
+            
+            .emoji-picker label,
+            .color-selector label {
+                display: block;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                margin-bottom: 12px;
+            }
+            
+            .emoji-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+                gap: 8px;
+            }
+            
+            .emoji-option {
+                width: 48px;
+                height: 48px;
+                border: 2px solid var(--border);
+                background: var(--surface);
+                border-radius: 12px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 18px;
-                transition: all 0.2s;
+                font-size: 24px;
+                transition: all 0.3s;
             }
             
-            .icon-option:hover,
-            .icon-option.selected {
-                border-color: #000;
-                background: #f8f8f8;
+            .emoji-option:hover {
+                border-color: var(--primary);
+                transform: scale(1.1);
             }
             
-            .color-picker-minimal input[type="color"] {
-                width: 80px;
-                height: 36px;
-                border: 1px solid #e5e5e5;
-                border-radius: 6px;
+            .emoji-option.selected {
+                border-color: var(--primary);
+                background: var(--primary)10;
+            }
+            
+            .color-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+                gap: 8px;
+            }
+            
+            .color-option {
+                width: 40px;
+                height: 40px;
+                border: 3px solid transparent;
+                border-radius: 10px;
                 cursor: pointer;
+                transition: all 0.3s;
+                position: relative;
             }
             
-            /* État vide */
-            .empty-state-minimal {
+            .color-option:hover {
+                transform: scale(1.1);
+            }
+            
+            .color-option.selected {
+                border-color: var(--text);
+            }
+            
+            .color-option.selected::after {
+                content: '✓';
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            
+            /* États vides */
+            .empty-state,
+            .error-state {
                 grid-column: 1 / -1;
                 text-align: center;
-                padding: 60px 20px;
-                color: #999;
+                padding: 80px 20px;
             }
             
-            .empty-state-minimal i {
-                font-size: 48px;
-                color: #e5e5e5;
+            .empty-icon,
+            .error-icon {
+                font-size: 64px;
                 margin-bottom: 16px;
                 display: block;
             }
             
-            /* Erreur */
-            .error-minimal {
-                text-align: center;
-                padding: 60px 20px;
+            .empty-state p,
+            .error-state h3 {
+                font-size: 18px;
+                color: var(--text-secondary);
+                margin: 0;
             }
             
-            .error-minimal i {
-                font-size: 48px;
-                color: #dc2626;
+            .error-state h3 {
+                color: var(--text);
                 margin-bottom: 16px;
-                display: block;
             }
             
-            .error-minimal button {
-                margin-top: 16px;
-                padding: 8px 20px;
-                background: #f8f8f8;
-                border: 1px solid #e5e5e5;
-                border-radius: 8px;
-                cursor: pointer;
-            }
-            
-            /* Toast minimal */
-            .toast-minimal {
+            /* Toast moderne */
+            .toast-modern {
                 position: fixed;
-                bottom: 20px;
+                bottom: 24px;
                 left: 50%;
                 transform: translateX(-50%) translateY(100px);
-                background: #000;
+                background: var(--text);
                 color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                font-size: 14px;
+                padding: 16px 24px;
+                border-radius: 12px;
+                font-size: 15px;
+                font-weight: 600;
                 transition: transform 0.3s;
                 z-index: 2000;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             }
             
-            .toast-minimal.show {
+            .toast-modern.show {
                 transform: translateX(-50%) translateY(0);
             }
             
-            .toast-minimal.error {
-                background: #dc2626;
+            .toast-modern.warning {
+                background: var(--warning);
+            }
+            
+            .toast-modern.error {
+                background: var(--danger);
             }
             
             /* Responsive */
             @media (max-width: 768px) {
-                .categories-container.grid {
+                .categories-grid {
+                    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                    gap: 12px;
+                }
+                
+                .stats-bar {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+                
+                .search-modern {
+                    grid-column: 1 / -1;
+                }
+                
+                .keywords-layout {
                     grid-template-columns: 1fr;
                 }
                 
-                .control-bar {
-                    flex-direction: column;
+                .modal-modern {
+                    max-height: 95vh;
                 }
                 
-                .keyword-grid {
-                    grid-template-columns: 1fr;
+                .header-content h1 {
+                    font-size: 24px;
                 }
                 
-                .icon-color-row {
-                    grid-template-columns: 1fr;
+                .cat-name {
+                    font-size: 16px;
                 }
-                
-                .quick-stats {
-                    justify-content: space-between;
-                }
+            }
+            
+            /* Animations supplémentaires */
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+            
+            .category-card:active {
+                animation: pulse 0.3s;
             }
         `;
         
@@ -1511,4 +1585,4 @@ if (window.pageManager?.pages) {
     };
 }
 
-console.log('✅ CategoriesPage ultra-minimaliste chargée');
+console.log('🎨 CategoriesPage moderne chargée');
