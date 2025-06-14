@@ -2675,8 +2675,116 @@ addStyles() {
             color: #1f2937;
             margin-bottom: 10px;
         }
-        
+        /* Carte cliquable style automatisation */
+.category-card-clickable {
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    background: white;
+}
+
+.category-card-clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
+}
+
+.category-card-clickable.inactive {
+    opacity: 0.6;
+    background: #f9fafb;
+}
+
+.category-card-content-enhanced {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.category-info-flex {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.category-badges-inline {
+    display: flex;
+    gap: 4px;
+}
+
+.category-stats-quick {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+    margin-right: 12px;
+}
+
+.stat-bubble {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.stat-bubble.highlight {
+    background: #fee2e2;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.category-actions-mini {
+    display: flex;
+    align-items: center;
+}
+
+/* Tabs dans la modal */
+.category-details-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn:hover {
+    color: #374151;
+}
+
+.tab-btn.active {
+    color: #3b82f6;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #3b82f6;
+}
         /* ==================== BOUTONS ==================== */
+
         .btn, .btn-compact {
             padding: 8px 16px;
             border-radius: 8px;
@@ -4781,9 +4889,9 @@ renderKeywordsTab(settings, moduleStatus) {
                             <i class="fas fa-folder-plus"></i>
                             <h3>Catégories personnalisées (${customCategories.length})</h3>
                         </div>
-                        <div class="categories-grid-expanded">
+                        <div class="categories-selection-grid-automation">
                             ${customCategories.map(([id, category]) => 
-                                this.renderCategoryCardForKeywordsTab(id, category, activeCategories)
+                                this.renderCategoryCardSimple(id, category, activeCategories)
                             ).join('')}
                         </div>
                     </div>
@@ -4795,9 +4903,9 @@ renderKeywordsTab(settings, moduleStatus) {
                         <i class="fas fa-folder"></i>
                         <h3>Catégories système (${systemCategories.length})</h3>
                     </div>
-                    <div class="categories-grid-expanded">
+                    <div class="categories-selection-grid-automation">
                         ${systemCategories.map(([id, category]) => 
-                            this.renderCategoryCardForKeywordsTab(id, category, activeCategories)
+                            this.renderCategoryCardSimple(id, category, activeCategories)
                         ).join('')}
                     </div>
                 </div>
@@ -4806,7 +4914,7 @@ renderKeywordsTab(settings, moduleStatus) {
                 <div class="settings-card-compact full-width">
                     <div class="card-header-compact">
                         <i class="fas fa-ban"></i>
-                        <h3>Exclusions globales rapides</h3>
+                        <h3>Exclusions globales</h3>
                     </div>
                     
                     <div class="quick-exclusion-inline">
@@ -4832,6 +4940,130 @@ renderKeywordsTab(settings, moduleStatus) {
         console.error('[CategoriesPage] Erreur renderKeywordsTab:', error);
         return '<div class="error-display">Erreur lors du chargement de l\'onglet catégories</div>';
     }
+}
+
+// Nouvelle méthode pour rendre une carte simple cliquable
+renderCategoryCardSimple(id, category, activeCategories) {
+    const isActive = activeCategories === null || activeCategories.includes(id);
+    const keywords = window.categoryManager?.getCategoryKeywords(id) || { 
+        absolute: [], 
+        strong: [], 
+        weak: [], 
+        exclusions: [] 
+    };
+    
+    const totalKeywords = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
+                         (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
+    
+    return `
+        <div class="category-card-clickable ${!isActive ? 'inactive' : ''}" 
+             onclick="window.categoriesPage.openCategoryDetailsModal('${id}')">
+            <div class="category-card-content-enhanced">
+                <span class="cat-icon-automation" style="background: ${category.color}20; color: ${category.color}">
+                    ${category.icon}
+                </span>
+                <div class="category-info-flex">
+                    <span class="cat-name-automation">${category.name}</span>
+                    <div class="category-badges-inline">
+                        ${category.isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
+                        ${!isActive ? '<span class="inactive-badge">Inactive</span>' : ''}
+                    </div>
+                </div>
+                <div class="category-stats-quick">
+                    ${totalKeywords > 0 ? `
+                        <span class="stat-bubble">${totalKeywords} mots-clés</span>
+                    ` : ''}
+                    ${keywords.absolute?.length > 0 ? `
+                        <span class="stat-bubble highlight">${keywords.absolute.length} absolus</span>
+                    ` : ''}
+                </div>
+                <div class="category-actions-mini">
+                    <label class="toggle-switch-mini" onclick="event.stopPropagation()">
+                        <input type="checkbox" ${isActive ? 'checked' : ''} 
+                               onchange="window.categoriesPage.toggleCategoryActive('${id}')">
+                        <span class="toggle-slider-mini"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Nouvelle méthode pour ouvrir la modal de détails
+openCategoryDetailsModal(categoryId) {
+    const category = window.categoryManager?.getCategory(categoryId);
+    if (!category) {
+        this.showToast('Catégorie non trouvée', 'error');
+        return;
+    }
+    
+    this.closeModal();
+    
+    const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+        absolute: [], strong: [], weak: [], exclusions: []
+    };
+    
+    const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
+        includeDomains: [], excludeDomains: [], includeEmails: [], excludeEmails: []
+    };
+    
+    const modalId = 'category-details-modal';
+    const modalHTML = `
+        <div id="${modalId}" class="modal-overlay">
+            <div class="modal-container large">
+                <div class="modal-header">
+                    <div class="category-header">
+                        <div class="category-icon" style="background: ${category.color}20; color: ${category.color};">
+                            ${category.icon}
+                        </div>
+                        <div>
+                            <h2>${category.name}</h2>
+                            <p>Configuration complète de la catégorie</p>
+                        </div>
+                    </div>
+                    <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-content">
+                    <div class="category-details-tabs">
+                        <button class="tab-btn active" onclick="window.categoriesPage.switchDetailTab('keywords')">
+                            <i class="fas fa-key"></i> Mots-clés
+                        </button>
+                        <button class="tab-btn" onclick="window.categoriesPage.switchDetailTab('filters')">
+                            <i class="fas fa-filter"></i> Filtres
+                        </button>
+                        ${category.isCustom ? `
+                            <button class="tab-btn" onclick="window.categoriesPage.switchDetailTab('settings')">
+                                <i class="fas fa-cog"></i> Paramètres
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div id="detail-tab-content">
+                        ${this.renderKeywordsTabContent(categoryId, keywords)}
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    ${category.isCustom ? `
+                        <button class="btn btn-danger" onclick="window.categoriesPage.deleteCustomCategory('${categoryId}')">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    ` : ''}
+                    <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                        Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+    this.currentModal = modalId;
+    this.editingCategoryId = categoryId;
 }
 renderCategoryCardForKeywordsTab(id, category, activeCategories) {
     const isActive = activeCategories === null || activeCategories.includes(id);
