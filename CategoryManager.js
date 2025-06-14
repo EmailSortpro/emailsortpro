@@ -630,6 +630,7 @@ getActiveCategories() {
             console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
         }
     }
+// CategoryManager.js - Amélioration de loadCustomCategories() (remplacer vers ligne 490)
 
 loadCustomCategories() {
     try {
@@ -648,26 +649,31 @@ loadCustomCategories() {
             };
             
             // IMPORTANT: S'assurer que les mots-clés sont correctement initialisés
+            if (!this.weightedKeywords[id]) {
+                this.weightedKeywords[id] = {
+                    absolute: [],
+                    strong: [],
+                    weak: [],
+                    exclusions: []
+                };
+            }
+            
+            // Fusionner les mots-clés sauvegardés
             if (category.keywords) {
-                // Créer la structure complète si elle n'existe pas
-                if (!this.weightedKeywords[id]) {
-                    this.weightedKeywords[id] = {
-                        absolute: [],
-                        strong: [],
-                        weak: [],
-                        exclusions: []
-                    };
-                }
-                
-                // Fusionner les mots-clés (au lieu de remplacer)
                 this.weightedKeywords[id] = {
                     absolute: [...new Set([...(this.weightedKeywords[id].absolute || []), ...(category.keywords.absolute || [])])],
                     strong: [...new Set([...(this.weightedKeywords[id].strong || []), ...(category.keywords.strong || [])])],
                     weak: [...new Set([...(this.weightedKeywords[id].weak || []), ...(category.keywords.weak || [])])],
                     exclusions: [...new Set([...(this.weightedKeywords[id].exclusions || []), ...(category.keywords.exclusions || [])])]
                 };
-                
-                console.log(`[CategoryManager] ✅ Catégorie personnalisée "${category.name}" (${id}) chargée avec ${this.getTotalKeywordsCount(id)} mots-clés`);
+            }
+            
+            const totalKeywords = this.getTotalKeywordsCount(id);
+            console.log(`[CategoryManager] ✅ Catégorie personnalisée "${category.name}" (${id}):`);
+            console.log(`  - Priorité: ${category.priority || 30}`);
+            console.log(`  - Mots-clés: ${totalKeywords}`);
+            if (totalKeywords === 0) {
+                console.warn(`  ⚠️ AUCUN MOT-CLÉ - La catégorie ne pourra pas détecter d'emails!`);
             }
             
             // Ajouter automatiquement aux catégories actives si pas déjà présent
@@ -681,7 +687,20 @@ loadCustomCategories() {
         console.log('[CategoryManager] 📊 Résumé chargement:');
         console.log('  - Catégories personnalisées:', Object.keys(this.customCategories).length);
         console.log('  - Total catégories actives:', Object.keys(this.categories).length);
-        console.log('  - Catégories avec mots-clés:', Object.keys(this.weightedKeywords).length);
+        console.log('  - Catégories avec mots-clés:', Object.keys(this.weightedKeywords).filter(id => this.getTotalKeywordsCount(id) > 0).length);
+        
+        // NOUVEAU: Vérifier et alerter pour les catégories sans mots-clés
+        const categoriesWithoutKeywords = Object.entries(this.categories)
+            .filter(([id, cat]) => cat.isCustom && this.getTotalKeywordsCount(id) === 0)
+            .map(([id, cat]) => ({ id, name: cat.name }));
+        
+        if (categoriesWithoutKeywords.length > 0) {
+            console.warn('[CategoryManager] ⚠️ Catégories personnalisées sans mots-clés:');
+            categoriesWithoutKeywords.forEach(cat => {
+                console.warn(`  - ${cat.name} (${cat.id})`);
+            });
+            console.log('[CategoryManager] 💡 Utilisez la page Paramètres > Catégories pour ajouter des mots-clés');
+        }
         
     } catch (error) {
         console.error('[CategoryManager] ❌ Erreur chargement catégories personnalisées:', error);
@@ -1379,37 +1398,87 @@ isMainRecipient(email) {
         return recipientEmail === currentUserEmail.toLowerCase();
     });
 }
-    analyzeAllCategories(content) {
-        const results = {};
-        const activeCategories = this.getActiveCategories();
-        
-        for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
-            // Toujours inclure marketing_news et cc même si non actives
-            if (!activeCategories.includes(categoryId) && 
-                categoryId !== 'marketing_news' && 
-                categoryId !== 'cc') {
-                continue;
-            }
-            
-            // Vérifier que la catégorie existe encore
-            if (!this.categories[categoryId]) {
-                continue;
-            }
-            
-            const score = this.calculateScore(content, keywords, categoryId);
-            
-            results[categoryId] = {
-                category: categoryId,
-                score: score.total,
-                hasAbsolute: score.hasAbsolute,
-                matches: score.matches,
-                confidence: this.calculateConfidence(score),
-                priority: this.categories[categoryId]?.priority || 50
-            };
+// CategoryManager.js - Méthode analyzeAllCategories() améliorée (remplacer vers ligne 1530)
+
+analyzeAllCategories(content) {
+    const results = {};
+    const activeCategories = this.getActiveCategories();
+    
+    // IMPORTANT: Logger les catégories actives pour debug
+    if (this.debugMode) {
+        console.log('[CategoryManager] 🎯 Catégories actives pour analyse:', activeCategories);
+        console.log('[CategoryManager] 📝 Catégories avec mots-clés:', Object.keys(this.weightedKeywords));
+    }
+    
+    for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
+        // Toujours inclure marketing_news et cc même si non actives
+        if (!activeCategories.includes(categoryId) && 
+            categoryId !== 'marketing_news' && 
+            categoryId !== 'cc') {
+            continue;
         }
         
-        return results;
+        // Vérifier que la catégorie existe encore
+        if (!this.categories[categoryId]) {
+            console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} dans weightedKeywords mais pas dans categories`);
+            continue;
+        }
+        
+        // NOUVEAU: Vérifier si la catégorie a des mots-clés
+        const hasKeywords = keywords && (
+            (keywords.absolute && keywords.absolute.length > 0) ||
+            (keywords.strong && keywords.strong.length > 0) ||
+            (keywords.weak && keywords.weak.length > 0)
+        );
+        
+        if (!hasKeywords) {
+            console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} (${this.categories[categoryId]?.name}) n'a pas de mots-clés`);
+            // Continuer quand même avec un score de base pour les catégories personnalisées
+            if (this.categories[categoryId]?.isCustom) {
+                results[categoryId] = {
+                    category: categoryId,
+                    score: 0,
+                    hasAbsolute: false,
+                    matches: [],
+                    confidence: 0,
+                    priority: this.categories[categoryId]?.priority || 50,
+                    noKeywords: true
+                };
+            }
+            continue;
+        }
+        
+        const score = this.calculateScore(content, keywords, categoryId);
+        
+        results[categoryId] = {
+            category: categoryId,
+            score: score.total,
+            hasAbsolute: score.hasAbsolute,
+            matches: score.matches,
+            confidence: this.calculateConfidence(score),
+            priority: this.categories[categoryId]?.priority || 50
+        };
     }
+    
+    // NOUVEAU: Analyser aussi les catégories personnalisées sans mots-clés
+    Object.entries(this.customCategories).forEach(([catId, category]) => {
+        if (!results[catId] && activeCategories.includes(catId)) {
+            console.log(`[CategoryManager] 🆕 Catégorie personnalisée ${catId} (${category.name}) ajoutée avec score 0`);
+            results[catId] = {
+                category: catId,
+                score: 0,
+                hasAbsolute: false,
+                matches: [],
+                confidence: 0,
+                priority: category.priority || 30,
+                isCustom: true,
+                noKeywords: true
+            };
+        }
+    });
+    
+    return results;
+}
 
 selectByPriorityWithThreshold(results) {
     // BAISSER le seuil minimum pour capturer plus d'emails
@@ -1922,23 +1991,88 @@ escapeRegex(string) {
         
         return false;
     }
+// CategoryManager.js - Méthode isInCC() corrigée (remplacer vers ligne 1950)
 
-    isInCC(email) {
-        if (!email.ccRecipients || !Array.isArray(email.ccRecipients)) {
-            return false;
-        }
-        
-        const currentUserEmail = this.getCurrentUserEmail();
-        if (!currentUserEmail) {
-            return email.ccRecipients.length > 0;
-        }
-        
-        return email.ccRecipients.some(recipient => {
+isInCC(email) {
+    // Vérifier d'abord si on a des destinataires en CC
+    if (!email.ccRecipients || !Array.isArray(email.ccRecipients) || email.ccRecipients.length === 0) {
+        return false;
+    }
+    
+    const currentUserEmail = this.getCurrentUserEmail();
+    
+    // Si on ne peut pas déterminer l'email de l'utilisateur actuel
+    if (!currentUserEmail) {
+        console.log('[CategoryManager] ⚠️ Email utilisateur non trouvé, vérification CC basée sur la présence de CC');
+        // Si il y a des CC mais qu'on n'est pas dans TO, on est probablement en CC
+        const isInTo = email.toRecipients?.some(recipient => {
             const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-            return recipientEmail === currentUserEmail.toLowerCase();
+            return recipientEmail && recipientEmail.includes('@');
+        });
+        
+        return email.ccRecipients.length > 0 && !isInTo;
+    }
+    
+    // Vérifier si on est dans les CC
+    const isInCCList = email.ccRecipients.some(recipient => {
+        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+        return recipientEmail === currentUserEmail.toLowerCase();
+    });
+    
+    // Vérifier aussi si on n'est PAS dans les TO
+    const isInToList = email.toRecipients?.some(recipient => {
+        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+        return recipientEmail === currentUserEmail.toLowerCase();
+    }) || false;
+    
+    // On est en CC si on est dans la liste CC et PAS dans TO
+    const result = isInCCList && !isInToList;
+    
+    if (result) {
+        console.log('[CategoryManager] 📋 Email détecté en CC:', {
+            subject: email.subject?.substring(0, 50),
+            ccCount: email.ccRecipients.length,
+            toCount: email.toRecipients?.length || 0
         });
     }
+    
+    return result;
+}
 
+// Méthode getCurrentUserEmail() améliorée (remplacer vers ligne 1970)
+
+getCurrentUserEmail() {
+    try {
+        // Essayer plusieurs sources
+        const userInfo = localStorage.getItem('currentUserInfo');
+        if (userInfo) {
+            const parsed = JSON.parse(userInfo);
+            return parsed.email || parsed.userPrincipalName || parsed.mail;
+        }
+        
+        // Essayer depuis le token MSAL
+        const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
+        if (msalAccounts.length > 0) {
+            const firstAccount = localStorage.getItem(msalAccounts[0]);
+            if (firstAccount) {
+                const account = JSON.parse(firstAccount);
+                return account.username || account.preferred_username;
+            }
+        }
+        
+        // Essayer depuis AuthService
+        if (window.authService && typeof window.authService.getCurrentUser === 'function') {
+            const user = window.authService.getCurrentUser();
+            if (user) {
+                return user.email || user.userPrincipalName || user.username;
+            }
+        }
+        
+    } catch (e) {
+        console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur:', e);
+    }
+    return null;
+}
     getCurrentUserEmail() {
         try {
             const userInfo = localStorage.getItem('currentUserInfo');
