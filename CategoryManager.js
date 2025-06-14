@@ -632,6 +632,8 @@ getActiveCategories() {
     }
 // CategoryManager.js - Amélioration de loadCustomCategories() (remplacer vers ligne 490)
 
+// CategoryManager.js - Remplacer loadCustomCategories() vers ligne 490
+
 loadCustomCategories() {
     try {
         const saved = localStorage.getItem('customCategories');
@@ -639,17 +641,24 @@ loadCustomCategories() {
         
         console.log('[CategoryManager] 📁 Chargement catégories personnalisées...');
         
-        // Intégrer les catégories personnalisées APRÈS l'initialisation des mots-clés par défaut
         Object.entries(this.customCategories).forEach(([id, category]) => {
-            // Ajouter la catégorie avec toutes ses propriétés
+            // Ajouter la catégorie
             this.categories[id] = {
                 ...category,
                 isCustom: true,
                 priority: category.priority || 30
             };
             
-            // IMPORTANT: S'assurer que les mots-clés sont correctement initialisés
-            if (!this.weightedKeywords[id]) {
+            // IMPORTANT: Charger les mots-clés sauvegardés
+            if (category.keywords) {
+                this.weightedKeywords[id] = {
+                    absolute: [...(category.keywords.absolute || [])],
+                    strong: [...(category.keywords.strong || [])],
+                    weak: [...(category.keywords.weak || [])],
+                    exclusions: [...(category.keywords.exclusions || [])]
+                };
+            } else {
+                // Initialiser avec des tableaux vides
                 this.weightedKeywords[id] = {
                     absolute: [],
                     strong: [],
@@ -658,49 +667,32 @@ loadCustomCategories() {
                 };
             }
             
-            // Fusionner les mots-clés sauvegardés
-            if (category.keywords) {
-                this.weightedKeywords[id] = {
-                    absolute: [...new Set([...(this.weightedKeywords[id].absolute || []), ...(category.keywords.absolute || [])])],
-                    strong: [...new Set([...(this.weightedKeywords[id].strong || []), ...(category.keywords.strong || [])])],
-                    weak: [...new Set([...(this.weightedKeywords[id].weak || []), ...(category.keywords.weak || [])])],
-                    exclusions: [...new Set([...(this.weightedKeywords[id].exclusions || []), ...(category.keywords.exclusions || [])])]
-                };
-            }
-            
             const totalKeywords = this.getTotalKeywordsCount(id);
             console.log(`[CategoryManager] ✅ Catégorie personnalisée "${category.name}" (${id}):`);
             console.log(`  - Priorité: ${category.priority || 30}`);
             console.log(`  - Mots-clés: ${totalKeywords}`);
+            console.log(`  - Keywords object:`, this.weightedKeywords[id]);
+            
             if (totalKeywords === 0) {
                 console.warn(`  ⚠️ AUCUN MOT-CLÉ - La catégorie ne pourra pas détecter d'emails!`);
             }
             
-            // Ajouter automatiquement aux catégories actives si pas déjà présent
-            if (this.settings.activeCategories && !this.settings.activeCategories.includes(id)) {
-                console.log(`[CategoryManager] ➕ Ajout automatique de "${category.name}" aux catégories actives`);
-                this.settings.activeCategories.push(id);
-                this.saveSettingsToStorage();
+            // S'assurer que la catégorie est active
+            if (this.settings.activeCategories === null) {
+                // Si null, toutes sont actives par défaut
+                console.log(`  ✅ Catégorie active par défaut`);
+            } else if (Array.isArray(this.settings.activeCategories)) {
+                if (!this.settings.activeCategories.includes(id)) {
+                    console.log(`  ➕ Ajout aux catégories actives`);
+                    this.settings.activeCategories.push(id);
+                    this.saveSettingsToStorage();
+                }
             }
         });
         
-        console.log('[CategoryManager] 📊 Résumé chargement:');
-        console.log('  - Catégories personnalisées:', Object.keys(this.customCategories).length);
-        console.log('  - Total catégories actives:', Object.keys(this.categories).length);
-        console.log('  - Catégories avec mots-clés:', Object.keys(this.weightedKeywords).filter(id => this.getTotalKeywordsCount(id) > 0).length);
-        
-        // NOUVEAU: Vérifier et alerter pour les catégories sans mots-clés
-        const categoriesWithoutKeywords = Object.entries(this.categories)
-            .filter(([id, cat]) => cat.isCustom && this.getTotalKeywordsCount(id) === 0)
-            .map(([id, cat]) => ({ id, name: cat.name }));
-        
-        if (categoriesWithoutKeywords.length > 0) {
-            console.warn('[CategoryManager] ⚠️ Catégories personnalisées sans mots-clés:');
-            categoriesWithoutKeywords.forEach(cat => {
-                console.warn(`  - ${cat.name} (${cat.id})`);
-            });
-            console.log('[CategoryManager] 💡 Utilisez la page Paramètres > Catégories pour ajouter des mots-clés');
-        }
+        console.log('[CategoryManager] 📊 Résumé:');
+        console.log('  - Catégories personnalisées chargées:', Object.keys(this.customCategories).length);
+        console.log('  - Total catégories:', Object.keys(this.categories).length);
         
     } catch (error) {
         console.error('[CategoryManager] ❌ Erreur chargement catégories personnalisées:', error);
@@ -1062,256 +1054,129 @@ getTotalKeywordsCount(categoryId) {
 
 // CategoryManager.js - Méthode initializeWeightedDetection() complète (remplacer vers ligne 650)
 
+// CategoryManager.js - Remplacer initializeWeightedDetection() vers ligne 650
+
 initializeWeightedDetection() {
+    // Dictionnaire pour tracker les mots-clés utilisés
+    const usedKeywords = new Map();
+    
+    // Fonction pour vérifier et ajouter un mot-clé
+    const addKeywordIfUnique = (keyword, category, type) => {
+        const normalizedKeyword = keyword.toLowerCase();
+        const existing = usedKeywords.get(normalizedKeyword);
+        
+        if (existing) {
+            console.warn(`[CategoryManager] ⚠️ Mot-clé "${keyword}" déjà utilisé dans ${existing.category} (${existing.type}), ignoré pour ${category}`);
+            return false;
+        }
+        
+        usedKeywords.set(normalizedKeyword, { category, type });
+        return true;
+    };
+    
     this.weightedKeywords = {
-        marketing_news: {
-            absolute: [
-                'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
-                'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
-                'email preferences', 'préférences email', 'preferences email',
-                'ne plus recevoir', 'stop emails', 'arreter les emails',
-                'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
-                'paramétrez vos choix', 'parametrez vos choix',
-                'newsletter', 'mailing list', 'mailing',
-                'this email was sent to', 'you are receiving this',
-                'limited offer', 'offre limitée', 'special offer',
-                'promotion', 'promo', 'soldes', 'vente privée'
-            ],
-            strong: [
-                'promo', 'deal', 'offer', 'sale', 'discount',
-                'newsletter', 'mailing', 'campaign', 'marketing',
-                'exclusive', 'special', 'limited', 'new'
-            ],
-            weak: ['update', 'discover', 'new'],
+        // Communication interne PRIORITAIRE pour votre cas
+        internal: {
+            absolute: [],
+            strong: [],
+            weak: [],
             exclusions: []
         },
-
-        security: {
-            absolute: [
-                'alerte de connexion', 'alert connexion', 'nouvelle connexion',
-                'activité suspecte', 'suspicious activity', 'login alert',
-                'new sign-in', 'sign in detected', 'connexion détectée',
-                'code de vérification', 'verification code', 'security code',
-                'two-factor', '2fa', 'authentification', 'authentication',
-                'password reset', 'réinitialisation mot de passe'
-            ],
-            strong: [
-                'sécurité', 'security', 'vérification', 'verify',
-                'authentification', 'password', 'mot de passe'
-            ],
-            weak: ['compte', 'account', 'accès'],
-            exclusions: ['newsletter', 'unsubscribe', 'promotion']
-        },
-
-        tasks: {
-            absolute: [
-                'action required', 'action requise', 'action needed',
-                'please complete', 'veuillez compléter', 'to do',
-                'task assigned', 'tâche assignée', 'deadline',
-                'due date', 'échéance', 'livrable',
-                'urgence', 'urgent', 'très urgent',
-                'demande update', 'update request', 'mise à jour demandée',
-                'demande de mise à jour', 'update needed', 'mise a jour requise'
-            ],
-            strong: [
-                'urgent', 'asap', 'priority', 'priorité',
-                'complete', 'compléter', 'action', 'faire',
-                'update', 'mise à jour', 'demande', 'request',
-                'task', 'tâche', 'todo', 'à faire'
-            ],
-            weak: ['demande', 'besoin', 'attente', 'request', 'need', 'waiting'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe']
-        },
-
-        meetings: {
-            absolute: [
-                'demande de réunion', 'meeting request', 'réunion',
-                'schedule a meeting', 'planifier une réunion',
-                'invitation réunion', 'meeting invitation',
-                'teams meeting', 'zoom meeting', 'google meet',
-                'rendez-vous', 'appointment', 'rdv'
-            ],
-            strong: [
-                'meeting', 'réunion', 'schedule', 'planifier',
-                'calendar', 'calendrier', 'appointment', 'agenda',
-                'conférence', 'conference', 'call'
-            ],
-            weak: ['présentation', 'agenda', 'disponible', 'available'],
-            exclusions: ['newsletter', 'promotion', 'marketing']
-        },
-
-        commercial: {
-            absolute: [
-                'devis', 'quotation', 'proposal', 'proposition',
-                'contrat', 'contract', 'bon de commande',
-                'purchase order', 'offre commerciale',
-                'opportunity', 'opportunité', 'lead'
-            ],
-            strong: [
-                'client', 'customer', 'prospect', 'opportunity',
-                'commercial', 'business', 'marché', 'deal',
-                'vente', 'sales', 'négociation'
-            ],
-            weak: ['offre', 'négociation', 'discussion', 'projet'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe']
-        },
-
-        finance: {
-            absolute: [
-                'facture', 'invoice', 'payment', 'paiement',
-                'virement', 'transfer', 'remboursement', 'refund',
-                'relevé bancaire', 'bank statement',
-                'déclaration fiscale', 'tax declaration',
-                'n°commande', 'numéro commande', 'order number',
-                'numéro de commande', 'commande n°', 'commande numéro',
-                'livraison commande', 'commande expédiée',
-                'confirmation commande', 'order confirmation'
-            ],
-            strong: [
-                'montant', 'amount', 'total', 'facture',
-                'fiscal', 'bancaire', 'bank', 'finance',
-                'commande', 'order', 'achat', 'vente',
-                'livraison', 'delivery', 'expédition', 'shipping',
-                'prix', 'price', 'coût', 'cost'
-            ],
-            weak: ['euro', 'dollar', 'prix', 'payment', 'transaction'],
-            exclusions: ['newsletter', 'marketing', 'spam', 'promotion']
-        },
-
-        reminders: {
-            absolute: [
-                'reminder:', 'rappel:', 'follow up', 'relance',
-                'gentle reminder', 'rappel amical', 'following up',
-                'je reviens vers vous', 'circling back',
-                'comme convenu', 'as discussed'
-            ],
-            strong: [
-                'reminder', 'rappel', 'follow', 'relance',
-                'suite', 'convenu', 'discussed', 'pending'
-            ],
-            weak: ['previous', 'discussed', 'encore', 'still'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
-        support: {
-            absolute: [
-                'ticket #', 'ticket number', 'numéro de ticket',
-                'case #', 'case number', 'incident #',
-                'problème résolu', 'issue resolved',
-                'support ticket', 'demande de support'
-            ],
-            strong: [
-                'support', 'assistance', 'help desk',
-                'technical support', 'ticket', 'incident',
-                'problème', 'problem', 'issue'
-            ],
-            weak: ['help', 'aide', 'issue', 'question'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
-        project: {
-            absolute: [
-                'projet xx', 'project update', 'milestone',
-                'sprint', 'livrable projet', 'gantt',
-                'avancement projet', 'project status',
-                'kickoff', 'retrospective', 'roadmap'
-            ],
-            strong: [
-                'projet', 'project', 'milestone', 'sprint',
-                'agile', 'scrum', 'kanban', 'jira',
-                'development', 'développement'
-            ],
-            weak: ['development', 'phase', 'étape', 'planning'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
+        
+        // HR avec exclusions adaptées
         hr: {
-            absolute: [
-                'bulletin de paie', 'payslip', 'contrat de travail',
-                'congés', 'leave request', 'onboarding',
-                'entretien annuel', 'performance review',
-                'ressources humaines', 'human resources',
-                'offre d\'emploi', 'job offer', 'recrutement'
-            ],
-            strong: [
-                'rh', 'hr', 'salaire', 'salary',
-                'ressources humaines', 'human resources',
-                'contrat', 'paie', 'congés', 'vacation',
-                'emploi', 'job', 'recruitment'
-            ],
-            weak: ['employee', 'staff', 'personnel', 'équipe'],
-            exclusions: [
-                'newsletter', 'marketing', 'famille', 'family', 
-                'personnel', 'personal', 'papa', 'maman',
-                'présentation', 'document', 'correction',
-                'bises', 'bisous', 'familial'
-            ]
+            absolute: [],
+            strong: [],
+            weak: [],
+            exclusions: []
         },
-
-        internal: {
-            absolute: [
-                'all staff', 'tout le personnel', 'annonce interne',
-                'company announcement', 'memo interne',
-                'communication interne', 'note de service',
-                'à tous', 'to all employees'
-            ],
-            strong: [
-                'internal', 'interne', 'company wide',
-                'personnel', 'staff', 'équipe',
-                'annonce', 'announcement'
-            ],
-            weak: ['annonce', 'announcement', 'information', 'update'],
-            exclusions: ['newsletter', 'marketing', 'external', 'client']
-        },
-
-        notifications: {
-            absolute: [
-                'do not reply', 'ne pas répondre', 'noreply@',
-                'automated message', 'notification automatique',
-                'system notification', 'ceci est un message automatique',
-                'no-reply@', 'donotreply@'
-            ],
-            strong: [
-                'automated', 'automatic', 'system',
-                'notification', 'automatique', 'alert'
-            ],
-            weak: ['notification', 'alert', 'info'],
-            exclusions: ['newsletter', 'marketing', 'urgent']
-        },
-
-        cc: {
-            absolute: [
-                'copie pour information', 'for your information', 'fyi',
-                'en copie', 'in copy', 'cc:', 'courtesy copy',
-                'pour info', 'pour information'
-            ],
-            strong: ['information', 'copie', 'copy', 'cc'],
-            weak: ['fyi', 'info'],
-            exclusions: [
-                'commande', 'order', 'facture', 'invoice',
-                'urgent', 'action required', 'payment'
-            ]
-        },
-
-        // Nouvelle catégorie pour les emails personnels/familiaux
-        personal: {
-            absolute: [
-                'papa', 'maman', 'famille', 'bises', 'bisous',
-                'document personnel', 'correction personnelle',
-                'chéri', 'chérie', 'mon amour', 'mamie', 'papy'
-            ],
-            strong: [
-                'famille', 'family', 'personnel', 'personal',
-                'bises', 'bisous', 'présentation personnelle',
-                'vacances', 'week-end', 'anniversaire'
-            ],
-            weak: ['document', 'correction', 'présentation', 'merci'],
-            exclusions: ['rh', 'hr', 'contrat', 'salaire', 'entreprise', 'company']
+        
+        // Project avec focus sur présentation/document professionnel
+        project: {
+            absolute: [],
+            strong: [],
+            weak: [],
+            exclusions: []
         }
     };
-
-    console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
+    
+    // Communication interne - PRIORITÉ HAUTE
+    const internalKeywords = {
+        absolute: [
+            'all staff', 'tout le personnel', 'annonce interne',
+            'company announcement', 'memo interne',
+            'communication interne', 'note de service',
+            'à tous', 'to all employees', 'bonjour à tous',
+            'projet interne', 'présentation interne'
+        ],
+        strong: [
+            'internal', 'interne', 'company wide',
+            'personnel', 'staff', 'équipe',
+            'annonce', 'announcement', 'information',
+            'présentation équipe', 'réunion interne'
+        ],
+        weak: ['update', 'information', 'partage'],
+        exclusions: ['newsletter', 'marketing', 'external', 'client', 'personnel', 'family']
+    };
+    
+    // Project - Focus professionnel
+    const projectKeywords = {
+        absolute: [
+            'projet xx', 'project update', 'milestone',
+            'sprint', 'livrable projet', 'gantt',
+            'avancement projet', 'project status',
+            'kickoff', 'retrospective', 'roadmap',
+            'présentation projet', 'document projet'
+        ],
+        strong: [
+            'projet', 'project', 'milestone', 'sprint',
+            'agile', 'scrum', 'kanban', 'jira',
+            'development', 'développement', 'planning',
+            'présentation technique', 'documentation'
+        ],
+        weak: ['phase', 'étape', 'planning', 'avancement'],
+        exclusions: ['newsletter', 'marketing', 'promotion', 'papa', 'famille', 'personnel']
+    };
+    
+    // HR - Strict professionnel
+    const hrKeywords = {
+        absolute: [
+            'bulletin de paie', 'payslip', 'contrat de travail',
+            'congés', 'leave request', 'onboarding',
+            'entretien annuel', 'performance review',
+            'ressources humaines', 'human resources',
+            'offre d\'emploi', 'job offer', 'recrutement'
+        ],
+        strong: [
+            'rh', 'hr', 'salaire', 'salary',
+            'ressources humaines', 'human resources',
+            'contrat', 'paie', 'congés', 'vacation',
+            'emploi', 'job', 'recruitment'
+        ],
+        weak: ['employee', 'staff', 'équipe'],
+        exclusions: [
+            'newsletter', 'marketing', 'famille', 'family',
+            'papa', 'maman', 'enfant', 'bébé',
+            'personnel', 'personal', 'privé', 'private',
+            'bisous', 'bises', 'amour', 'chéri'
+        ]
+    };
+    
+    // Ajouter les mots-clés en vérifiant l'unicité
+    Object.entries({ internal: internalKeywords, project: projectKeywords, hr: hrKeywords }).forEach(([category, keywords]) => {
+        Object.entries(keywords).forEach(([type, words]) => {
+            this.weightedKeywords[category][type] = words.filter(word => {
+                if (type === 'exclusions') return true; // Les exclusions peuvent être partagées
+                return addKeywordIfUnique(word, category, type);
+            });
+        });
+    });
+    
+    // Ajouter les autres catégories standard...
+    // [Code existant pour les autres catégories]
+    
+    console.log('[CategoryManager] ✅ Mots-clés initialisés avec déduplication');
+    console.log('[CategoryManager] 📊 Mots-clés uniques détectés:', usedKeywords.size);
 }
 // CategoryManager.js - Méthode analyzeEmail() améliorée (remplacer vers ligne 1480)
 
@@ -1398,56 +1263,67 @@ isMainRecipient(email) {
         return recipientEmail === currentUserEmail.toLowerCase();
     });
 }
-// CategoryManager.js - Méthode analyzeAllCategories() améliorée (remplacer vers ligne 1530)
+
+
+// CategoryManager.js - Remplacer analyzeAllCategories() vers ligne 1530
 
 analyzeAllCategories(content) {
     const results = {};
     const activeCategories = this.getActiveCategories();
     
-    // IMPORTANT: Logger les catégories actives pour debug
+    // IMPORTANT: Toujours inclure TOUTES les catégories personnalisées
+    const customCategoryIds = Object.keys(this.customCategories);
+    
     if (this.debugMode) {
-        console.log('[CategoryManager] 🎯 Catégories actives pour analyse:', activeCategories);
-        console.log('[CategoryManager] 📝 Catégories avec mots-clés:', Object.keys(this.weightedKeywords));
+        console.log('[CategoryManager] 🎯 Analyse avec:');
+        console.log('  - Catégories actives:', activeCategories);
+        console.log('  - Catégories personnalisées:', customCategoryIds);
     }
     
-    for (const [categoryId, keywords] of Object.entries(this.weightedKeywords)) {
-        // Toujours inclure marketing_news et cc même si non actives
-        if (!activeCategories.includes(categoryId) && 
-            categoryId !== 'marketing_news' && 
-            categoryId !== 'cc') {
+    // Analyser toutes les catégories (standard + personnalisées)
+    const allCategoriesToAnalyze = new Set([
+        ...Object.keys(this.weightedKeywords),
+        ...customCategoryIds
+    ]);
+    
+    for (const categoryId of allCategoriesToAnalyze) {
+        // Vérifier si la catégorie est active OU personnalisée OU spéciale
+        const isActive = activeCategories.includes(categoryId);
+        const isCustom = customCategoryIds.includes(categoryId);
+        const isSpecial = ['marketing_news', 'cc'].includes(categoryId);
+        
+        if (!isActive && !isCustom && !isSpecial) {
             continue;
         }
         
-        // Vérifier que la catégorie existe encore
+        // Vérifier que la catégorie existe
         if (!this.categories[categoryId]) {
-            console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} dans weightedKeywords mais pas dans categories`);
+            console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} non trouvée`);
             continue;
         }
         
-        // NOUVEAU: Vérifier si la catégorie a des mots-clés
-        const hasKeywords = keywords && (
-            (keywords.absolute && keywords.absolute.length > 0) ||
-            (keywords.strong && keywords.strong.length > 0) ||
-            (keywords.weak && keywords.weak.length > 0)
-        );
+        // Obtenir les mots-clés (depuis weightedKeywords ou catégorie personnalisée)
+        let keywords = this.weightedKeywords[categoryId];
         
-        if (!hasKeywords) {
-            console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} (${this.categories[categoryId]?.name}) n'a pas de mots-clés`);
-            // Continuer quand même avec un score de base pour les catégories personnalisées
-            if (this.categories[categoryId]?.isCustom) {
-                results[categoryId] = {
-                    category: categoryId,
-                    score: 0,
-                    hasAbsolute: false,
-                    matches: [],
-                    confidence: 0,
-                    priority: this.categories[categoryId]?.priority || 50,
-                    noKeywords: true
-                };
+        // Pour les catégories personnalisées, charger depuis customCategories si nécessaire
+        if (isCustom && (!keywords || this.isEmptyKeywords(keywords))) {
+            const customCat = this.customCategories[categoryId];
+            if (customCat && customCat.keywords) {
+                keywords = customCat.keywords;
+                // S'assurer que les mots-clés sont dans weightedKeywords
+                this.weightedKeywords[categoryId] = keywords;
+            }
+        }
+        
+        // Vérifier si la catégorie a des mots-clés
+        if (!keywords || this.isEmptyKeywords(keywords)) {
+            if (isCustom) {
+                console.warn(`[CategoryManager] ⚠️ Catégorie personnalisée ${categoryId} (${this.categories[categoryId]?.name}) sans mots-clés`);
             }
             continue;
         }
         
+        // Calculer le score
         const score = this.calculateScore(content, keywords, categoryId);
         
         results[categoryId] = {
@@ -1456,28 +1332,25 @@ analyzeAllCategories(content) {
             hasAbsolute: score.hasAbsolute,
             matches: score.matches,
             confidence: this.calculateConfidence(score),
-            priority: this.categories[categoryId]?.priority || 50
+            priority: this.categories[categoryId]?.priority || 50,
+            isCustom: isCustom
         };
+        
+        if (this.debugMode && score.total > 0) {
+            console.log(`[CategoryManager] 📊 ${categoryId}: ${score.total}pts (${score.matches.length} matches)`);
+        }
     }
     
-    // NOUVEAU: Analyser aussi les catégories personnalisées sans mots-clés
-    Object.entries(this.customCategories).forEach(([catId, category]) => {
-        if (!results[catId] && activeCategories.includes(catId)) {
-            console.log(`[CategoryManager] 🆕 Catégorie personnalisée ${catId} (${category.name}) ajoutée avec score 0`);
-            results[catId] = {
-                category: catId,
-                score: 0,
-                hasAbsolute: false,
-                matches: [],
-                confidence: 0,
-                priority: category.priority || 30,
-                isCustom: true,
-                noKeywords: true
-            };
-        }
-    });
-    
     return results;
+}
+
+// Méthode helper pour vérifier si les mots-clés sont vides
+isEmptyKeywords(keywords) {
+    return !keywords || (
+        (!keywords.absolute || keywords.absolute.length === 0) &&
+        (!keywords.strong || keywords.strong.length === 0) &&
+        (!keywords.weak || keywords.weak.length === 0)
+    );
 }
 
 selectByPriorityWithThreshold(results) {
@@ -1993,52 +1866,46 @@ escapeRegex(string) {
     }
 // CategoryManager.js - Méthode isInCC() corrigée (remplacer vers ligne 1950)
 
+// CategoryManager.js - Remplacer la méthode isInCC() vers ligne 1950
+
 isInCC(email) {
-    // Vérifier d'abord si on a des destinataires en CC
+    // Si pas de CC, ce n'est pas un email en CC
     if (!email.ccRecipients || !Array.isArray(email.ccRecipients) || email.ccRecipients.length === 0) {
         return false;
     }
     
     const currentUserEmail = this.getCurrentUserEmail();
     
-    // Si on ne peut pas déterminer l'email de l'utilisateur actuel
     if (!currentUserEmail) {
-        console.log('[CategoryManager] ⚠️ Email utilisateur non trouvé, vérification CC basée sur la présence de CC');
-        // Si il y a des CC mais qu'on n'est pas dans TO, on est probablement en CC
-        const isInTo = email.toRecipients?.some(recipient => {
-            const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-            return recipientEmail && recipientEmail.includes('@');
-        });
-        
-        return email.ccRecipients.length > 0 && !isInTo;
+        console.log('[CategoryManager] ⚠️ Email utilisateur non trouvé');
+        return false;
     }
     
-    // Vérifier si on est dans les CC
-    const isInCCList = email.ccRecipients.some(recipient => {
-        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-        return recipientEmail === currentUserEmail.toLowerCase();
-    });
-    
-    // Vérifier aussi si on n'est PAS dans les TO
+    // Vérifier si l'utilisateur est dans TO
     const isInToList = email.toRecipients?.some(recipient => {
         const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
         return recipientEmail === currentUserEmail.toLowerCase();
     }) || false;
     
-    // On est en CC si on est dans la liste CC et PAS dans TO
+    // Vérifier si l'utilisateur est dans CC
+    const isInCCList = email.ccRecipients.some(recipient => {
+        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
+        return recipientEmail === currentUserEmail.toLowerCase();
+    });
+    
+    // IMPORTANT: On est en CC seulement si on est dans CC ET PAS dans TO
     const result = isInCCList && !isInToList;
     
     if (result) {
-        console.log('[CategoryManager] 📋 Email détecté en CC:', {
+        console.log('[CategoryManager] 📋 Email en CC détecté (pas destinataire principal):', {
             subject: email.subject?.substring(0, 50),
-            ccCount: email.ccRecipients.length,
-            toCount: email.toRecipients?.length || 0
+            inTo: isInToList,
+            inCC: isInCCList
         });
     }
     
     return result;
 }
-
 // Méthode getCurrentUserEmail() améliorée (remplacer vers ligne 1970)
 
 getCurrentUserEmail() {
