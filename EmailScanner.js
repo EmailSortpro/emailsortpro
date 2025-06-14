@@ -130,11 +130,15 @@ class EmailScanner {
         }, 10);
     }
 
-    startRealTimeSync() {
+startRealTimeSync() {
         // Vérification périodique pour s'assurer de la synchronisation
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+        }
+        
         this.syncInterval = setInterval(() => {
             this.checkAndSyncSettings();
-        }, 3000);
+        }, 10000); // Toutes les 10 secondes au lieu de 3
     }
 
     async checkAndSyncSettings() {
@@ -285,21 +289,47 @@ class EmailScanner {
     }
 
 
-    getTaskPreselectedCategories() {
-        // Toujours vérifier d'abord auprès de CategoryManager pour avoir les dernières
-        if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
-            const managerCategories = window.categoryManager.getTaskPreselectedCategories();
-            // Mettre à jour localement si différent
-            if (JSON.stringify([...this.taskPreselectedCategories].sort()) !== JSON.stringify([...managerCategories].sort())) {
-                console.log('[EmailScanner] 🔄 Mise à jour locale des catégories pré-sélectionnées depuis CategoryManager');
-                this.taskPreselectedCategories = [...managerCategories];
-            }
+getTaskPreselectedCategories() {
+    // Cache de 30 secondes pour éviter les appels répétitifs
+    const now = Date.now();
+    const CACHE_DURATION = 30000; // 30 secondes
+    
+    if (this._categoriesCache && 
+        this._categoriesCacheTime && 
+        (now - this._categoriesCacheTime) < CACHE_DURATION) {
+        return [...this._categoriesCache];
+    }
+    
+    // Toujours vérifier d'abord auprès de CategoryManager pour avoir les dernières
+    if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
+        const managerCategories = window.categoryManager.getTaskPreselectedCategories();
+        
+        // Mettre à jour le cache
+        this._categoriesCache = [...managerCategories];
+        this._categoriesCacheTime = now;
+        
+        // Log seulement si changement
+        if (!this._lastLoggedCategories || 
+            JSON.stringify(this._lastLoggedCategories) !== JSON.stringify(managerCategories)) {
+            console.log('[EmailScanner] 📋 Catégories tâches synchronisées:', managerCategories);
+            this._lastLoggedCategories = [...managerCategories];
         }
         
-        const categories = [...this.taskPreselectedCategories];
-        console.log('[EmailScanner] 📋 getTaskPreselectedCategories appelé:', categories);
-        return categories;
+        // Mise à jour locale si différent
+        if (JSON.stringify([...this.taskPreselectedCategories].sort()) !== JSON.stringify([...managerCategories].sort())) {
+            this.taskPreselectedCategories = [...managerCategories];
+        }
+        
+        return [...managerCategories];
     }
+    
+    return [...this.taskPreselectedCategories];
+}
+
+invalidateCategoriesCache() {
+    this._categoriesCache = null;
+    this._categoriesCacheTime = 0;
+}
 
     getSettings() {
         return { ...this.settings };
