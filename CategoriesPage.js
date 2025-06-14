@@ -4868,8 +4868,8 @@ renderKeywordsTab(settings, moduleStatus) {
         const customCategories = Object.entries(categories).filter(([_, cat]) => cat.isCustom);
         
         return `
-            <div class="automation-focused-layout">
-                <!-- Barre d'actions -->
+            <div class="keywords-tab-layout">
+                <!-- Barre d'actions principale -->
                 <div class="keywords-actions-bar">
                     <button class="btn-compact btn-primary" onclick="window.categoriesPage.showCreateCategoryModal()">
                         <i class="fas fa-plus"></i> Nouvelle catégorie
@@ -4878,59 +4878,49 @@ renderKeywordsTab(settings, moduleStatus) {
                         <i class="fas fa-list"></i> Vue d'ensemble
                     </button>
                     <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
-                        <i class="fas fa-ban"></i> Exclusions globales
+                        <i class="fas fa-ban"></i> Exclusions
                     </button>
                 </div>
                 
-                <!-- Section Catégories personnalisées -->
+                <!-- Catégories personnalisées -->
                 ${customCategories.length > 0 ? `
-                    <div class="settings-card-compact full-width">
-                        <div class="card-header-compact">
-                            <i class="fas fa-folder-plus"></i>
-                            <h3>Catégories personnalisées (${customCategories.length})</h3>
-                        </div>
-                        <div class="categories-selection-grid-automation">
+                    <div class="categories-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-folder-plus"></i> 
+                            Catégories personnalisées (${customCategories.length})
+                        </h3>
+                        <div class="categories-grid-compact">
                             ${customCategories.map(([id, category]) => 
-                                this.renderCategoryCardSimple(id, category, activeCategories)
+                                this.renderCategorySquare(id, category, activeCategories)
                             ).join('')}
                         </div>
                     </div>
                 ` : ''}
                 
-                <!-- Section Catégories système -->
-                <div class="settings-card-compact full-width">
-                    <div class="card-header-compact">
-                        <i class="fas fa-folder"></i>
-                        <h3>Catégories système (${systemCategories.length})</h3>
-                    </div>
-                    <div class="categories-selection-grid-automation">
+                <!-- Catégories système -->
+                <div class="categories-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-folder"></i> 
+                        Catégories système (${systemCategories.length})
+                    </h3>
+                    <div class="categories-grid-compact">
                         ${systemCategories.map(([id, category]) => 
-                            this.renderCategoryCardSimple(id, category, activeCategories)
+                            this.renderCategorySquare(id, category, activeCategories)
                         ).join('')}
                     </div>
                 </div>
                 
-                <!-- Section Exclusions globales compacte -->
-                <div class="settings-card-compact full-width">
-                    <div class="card-header-compact">
-                        <i class="fas fa-ban"></i>
-                        <h3>Exclusions globales</h3>
-                    </div>
-                    
-                    <div class="quick-exclusion-inline">
-                        <p>Domaines et emails qui ne seront jamais catégorisés automatiquement</p>
-                        <div class="exclusion-stats">
-                            <span class="stat-mini">
-                                <i class="fas fa-globe"></i> 
-                                ${settings.categoryExclusions?.domains?.length || 0} domaines
-                            </span>
-                            <span class="stat-mini">
-                                <i class="fas fa-envelope"></i> 
-                                ${settings.categoryExclusions?.emails?.length || 0} emails
-                            </span>
+                <!-- Section exclusions en bas -->
+                <div class="exclusions-summary-section">
+                    <div class="exclusions-summary-content">
+                        <div class="exclusions-summary-info">
+                            <i class="fas fa-ban"></i>
+                            <span>Exclusions globales: </span>
+                            <strong>${(settings.categoryExclusions?.domains?.length || 0) + (settings.categoryExclusions?.emails?.length || 0)}</strong>
+                            règles actives
                         </div>
-                        <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
-                            <i class="fas fa-cog"></i> Gérer les exclusions
+                        <button class="btn-compact btn-sm btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
+                            <i class="fas fa-cog"></i> Gérer
                         </button>
                     </div>
                 </div>
@@ -4938,8 +4928,726 @@ renderKeywordsTab(settings, moduleStatus) {
         `;
     } catch (error) {
         console.error('[CategoriesPage] Erreur renderKeywordsTab:', error);
-        return '<div class="error-display">Erreur lors du chargement de l\'onglet catégories</div>';
+        return '<div class="error-display">Erreur lors du chargement</div>';
     }
+}
+
+renderCategorySquare(id, category, activeCategories) {
+    const isActive = activeCategories === null || activeCategories.includes(id);
+    const keywords = window.categoryManager?.getCategoryKeywords(id) || { 
+        absolute: [], strong: [], weak: [], exclusions: [] 
+    };
+    
+    const totalKeywords = (keywords.absolute?.length || 0) + 
+                         (keywords.strong?.length || 0) + 
+                         (keywords.weak?.length || 0) + 
+                         (keywords.exclusions?.length || 0);
+    
+    const hasAbsolute = keywords.absolute?.length > 0;
+    
+    return `
+        <div class="category-square ${!isActive ? 'inactive' : ''} ${hasAbsolute ? 'has-absolute' : ''}" 
+             onclick="window.categoriesPage.openCategoryManagementModal('${id}')">
+            
+            <!-- Toggle switch en haut à droite -->
+            <label class="category-toggle" onclick="event.stopPropagation()">
+                <input type="checkbox" 
+                       ${isActive ? 'checked' : ''} 
+                       onchange="window.categoriesPage.toggleCategoryActive('${id}')">
+                <span class="toggle-slider"></span>
+            </label>
+            
+            <!-- Icône de la catégorie -->
+            <div class="category-square-icon" style="background: ${category.color}20; color: ${category.color}">
+                ${category.icon}
+            </div>
+            
+            <!-- Nom de la catégorie -->
+            <h4 class="category-square-name">${category.name}</h4>
+            
+            <!-- Badges -->
+            <div class="category-square-badges">
+                ${category.isCustom ? '<span class="badge-custom">Custom</span>' : ''}
+                ${!isActive ? '<span class="badge-inactive">Inactif</span>' : ''}
+            </div>
+            
+            <!-- Stats rapides -->
+            <div class="category-square-stats">
+                ${totalKeywords > 0 ? `
+                    <div class="stat-item">
+                        <span class="stat-number">${totalKeywords}</span>
+                        <span class="stat-label">mots-clés</span>
+                    </div>
+                ` : '<div class="stat-item empty">Aucun mot-clé</div>'}
+                
+                ${hasAbsolute ? `
+                    <div class="stat-item important">
+                        <span class="stat-number">${keywords.absolute.length}</span>
+                        <span class="stat-label">absolus</span>
+                    </div>
+                ` : ''}
+            </div>
+            
+            <!-- Indicateur visuel de configuration -->
+            <div class="category-square-indicator">
+                ${totalKeywords > 10 ? '<i class="fas fa-check-circle" style="color: #10b981"></i>' : 
+                  totalKeywords > 0 ? '<i class="fas fa-check-circle" style="color: #f59e0b"></i>' : 
+                  '<i class="fas fa-exclamation-circle" style="color: #dc2626"></i>'}
+            </div>
+        </div>
+    `;
+}
+
+renderKeywordsTabContent(categoryId, keywords) {
+    return `
+        <div class="keywords-management-compact">
+            <!-- Statistiques rapides -->
+            <div class="keywords-stats-bar">
+                <div class="keyword-stat">
+                    <span class="stat-icon" style="color: #dc2626">🎯</span>
+                    <span class="stat-value">${keywords.absolute?.length || 0}</span>
+                    <span class="stat-name">Absolus</span>
+                </div>
+                <div class="keyword-stat">
+                    <span class="stat-icon" style="color: #f59e0b">💪</span>
+                    <span class="stat-value">${keywords.strong?.length || 0}</span>
+                    <span class="stat-name">Forts</span>
+                </div>
+                <div class="keyword-stat">
+                    <span class="stat-icon" style="color: #3b82f6">📝</span>
+                    <span class="stat-value">${keywords.weak?.length || 0}</span>
+                    <span class="stat-name">Faibles</span>
+                </div>
+                <div class="keyword-stat">
+                    <span class="stat-icon" style="color: #6b7280">🚫</span>
+                    <span class="stat-value">${keywords.exclusions?.length || 0}</span>
+                    <span class="stat-name">Exclusions</span>
+                </div>
+            </div>
+            
+            <!-- Grille 2x2 des sections de mots-clés -->
+            <div class="keywords-grid-2x2">
+                ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#fee2e2', '#dc2626')}
+                ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#fef3c7', '#f59e0b')}
+                ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#e0e7ff', '#3b82f6')}
+                ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#f3f4f6', '#6b7280')}
+            </div>
+            
+            <!-- Section test compacte -->
+            <div class="keywords-test-compact">
+                <h4><i class="fas fa-vial"></i> Test rapide</h4>
+                <div class="test-input-row">
+                    <input type="text" id="test-text-compact" class="form-input" 
+                           placeholder="Tapez un texte pour tester..." 
+                           onkeypress="if(event.key==='Enter') window.categoriesPage.testKeywordsCompact()">
+                    <button class="btn btn-sm btn-primary" onclick="window.categoriesPage.testKeywordsCompact()">
+                        Tester
+                    </button>
+                </div>
+                <div id="test-results-compact" class="test-results-compact"></div>
+            </div>
+        </div>
+    `;
+}
+renderFilterBox(type, title, items, bgColor, textColor, icon) {
+    const isEmail = type.includes('Emails');
+    const placeholder = isEmail ? 'email@example.com' : 'example.com';
+    
+    return `
+        <div class="filter-box" style="background: ${bgColor}; border-color: ${textColor}20">
+            <div class="filter-box-header">
+                <h5 style="color: ${textColor}">${icon} ${title}</h5>
+                <span class="filter-count" style="color: ${textColor}">${items.length}</span>
+            </div>
+            
+            <div class="filter-box-input">
+                <input type="text" 
+                       class="filter-input-compact" 
+                       data-type="${type}"
+                       placeholder="${placeholder}" 
+                       maxlength="100"
+                       onkeypress="if(event.key==='Enter') window.categoriesPage.addFilterCompact('${type}')">
+                <button class="btn-add-compact" 
+                        style="background: ${textColor}; color: white"
+                        onclick="window.categoriesPage.addFilterCompact('${type}')">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="filter-tags-compact" data-type="${type}">
+                ${items.map(item => `
+                    <span class="filter-tag-compact" style="background: ${textColor}20; color: ${textColor}">
+                        ${item}
+                        <button onclick="window.categoriesPage.removeFilterCompact('${type}', '${item}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+renderSettingsTabContent(categoryId) {
+    const category = window.categoryManager?.getCategory(categoryId);
+    if (!category || !category.isCustom) return '';
+    
+    return `
+        <div class="category-settings-compact">
+            <div class="settings-form-grid">
+                <div class="form-group-compact">
+                    <label>Nom de la catégorie</label>
+                    <input type="text" id="edit-cat-name" value="${category.name}" maxlength="50" class="form-input">
+                </div>
+                
+                <div class="form-group-compact">
+                    <label>Description</label>
+                    <textarea id="edit-cat-description" rows="2" class="form-textarea">${category.description || ''}</textarea>
+                </div>
+                
+                <div class="form-row-compact">
+                    <div class="form-group-compact">
+                        <label>Icône</label>
+                        <select id="edit-cat-icon" class="form-select">
+                            ${this.getIconOptions(category.icon)}
+                        </select>
+                    </div>
+                    
+                    <div class="form-group-compact">
+                        <label>Couleur</label>
+                        <div class="color-picker-compact">
+                            <input type="color" id="edit-cat-color" value="${category.color}">
+                            <div class="color-presets-compact">
+                                ${this.renderColorPresetsCompact()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group-compact">
+                    <label>Priorité</label>
+                    <select id="edit-cat-priority" class="form-select">
+                        <option value="10" ${category.priority === 10 ? 'selected' : ''}>Très basse</option>
+                        <option value="30" ${category.priority === 30 ? 'selected' : ''}>Normale</option>
+                        <option value="50" ${category.priority === 50 ? 'selected' : ''}>Élevée</option>
+                        <option value="70" ${category.priority === 70 ? 'selected' : ''}>Très élevée</option>
+                        <option value="90" ${category.priority === 90 ? 'selected' : ''}>Critique</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+}
+switchModalTab(tabName) {
+    // Mettre à jour les boutons
+    document.querySelectorAll('.tab-compact').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabName) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Mettre à jour le contenu
+    const contentContainer = document.getElementById('modal-tab-content');
+    if (!contentContainer) return;
+    
+    const categoryId = this.editingCategoryId;
+    const category = window.categoryManager?.getCategory(categoryId);
+    
+    let content = '';
+    
+    switch (tabName) {
+        case 'keywords':
+            const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+                absolute: [], strong: [], weak: [], exclusions: []
+            };
+            content = this.renderKeywordsTabContent(categoryId, keywords);
+            break;
+            
+        case 'filters':
+            const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
+                includeDomains: [], excludeDomains: [], includeEmails: [], excludeEmails: []
+            };
+            content = this.renderFiltersTabContent(categoryId, filters);
+            break;
+            
+        case 'settings':
+            if (category?.isCustom) {
+                content = this.renderSettingsTabContent(categoryId);
+            }
+            break;
+    }
+    
+    contentContainer.innerHTML = content;
+    this.currentModalTab = tabName;
+}
+
+saveKeywordsCompact() {
+    if (!this.editingCategoryId) return;
+    
+    try {
+        const keywords = {
+            absolute: this.getKeywordsFromCompactList('absolute'),
+            strong: this.getKeywordsFromCompactList('strong'),
+            weak: this.getKeywordsFromCompactList('weak'),
+            exclusions: this.getKeywordsFromCompactList('exclusions')
+        };
+        
+        // Sauvegarder via CategoryManager
+        window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+        
+        // Si catégorie custom, sauvegarder aussi dans localStorage
+        const category = window.categoryManager?.getCategory(this.editingCategoryId);
+        if (category?.isCustom) {
+            const customCategories = window.categoryManager?.getCustomCategories() || {};
+            if (customCategories[this.editingCategoryId]) {
+                customCategories[this.editingCategoryId].keywords = keywords;
+                localStorage.setItem('customCategories', JSON.stringify(customCategories));
+            }
+        }
+        
+        this.showToast('Mots-clés sauvegardés', 'success');
+        
+        // Déclencher re-catégorisation si nécessaire
+        if (window.emailScanner?.emails?.length > 0) {
+            window.emailScanner.recategorizeEmails();
+        }
+        
+    } catch (error) {
+        console.error('[CategoriesPage] Erreur sauvegarde mots-clés:', error);
+        this.showToast('Erreur lors de la sauvegarde', 'error');
+    }
+}
+saveFiltersCompact() {
+    if (!this.editingCategoryId) return;
+    
+    try {
+        const filters = {
+            includeDomains: this.getFiltersFromCompactList('includeDomains'),
+            excludeDomains: this.getFiltersFromCompactList('excludeDomains'),
+            includeEmails: this.getFiltersFromCompactList('includeEmails'),
+            excludeEmails: this.getFiltersFromCompactList('excludeEmails')
+        };
+        
+        // Sauvegarder via CategoryManager
+        window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
+        
+        this.showToast('Filtres sauvegardés', 'success');
+        
+        // Déclencher re-catégorisation si nécessaire
+        if (window.emailScanner?.emails?.length > 0) {
+            window.emailScanner.recategorizeEmails();
+        }
+        
+    } catch (error) {
+        console.error('[CategoriesPage] Erreur sauvegarde filtres:', error);
+        this.showToast('Erreur lors de la sauvegarde', 'error');
+    }
+}
+saveCategorySettings() {
+    if (!this.editingCategoryId) return;
+    
+    const name = document.getElementById('edit-cat-name')?.value?.trim();
+    const description = document.getElementById('edit-cat-description')?.value?.trim();
+    const icon = document.getElementById('edit-cat-icon')?.value;
+    const color = document.getElementById('edit-cat-color')?.value;
+    const priority = parseInt(document.getElementById('edit-cat-priority')?.value) || 30;
+    
+    if (!name) {
+        this.showToast('Le nom est requis', 'error');
+        return;
+    }
+    
+    try {
+        const updates = { name, description, icon, color, priority };
+        window.categoryManager?.updateCustomCategory(this.editingCategoryId, updates);
+        
+        this.showToast('Paramètres sauvegardés', 'success');
+        
+        // Rafraîchir l'affichage
+        this.refreshCurrentTab();
+        
+    } catch (error) {
+        console.error('[CategoriesPage] Erreur sauvegarde paramètres:', error);
+        this.showToast('Erreur lors de la sauvegarde', 'error');
+    }
+}
+
+// Ajouter un mot-clé depuis l'interface compacte
+addKeywordCompact(type) {
+    const input = document.querySelector(`.keyword-input-compact[data-type="${type}"]`);
+    if (!input) return;
+    
+    const keyword = input.value.trim().toLowerCase();
+    if (!keyword || keyword.length < 2) {
+        this.showToast('Mot-clé trop court (min 2 caractères)', 'warning');
+        return;
+    }
+    
+    // Vérifier les doublons
+    const existing = document.querySelectorAll(`.keyword-tags-compact[data-type="${type}"] .keyword-tag-compact`);
+    const exists = Array.from(existing).some(tag => 
+        tag.textContent.trim().toLowerCase().includes(keyword)
+    );
+    
+    if (exists) {
+        this.showToast('Ce mot-clé existe déjà', 'warning');
+        return;
+    }
+    
+    // Ajouter le tag
+    const container = document.querySelector(`.keyword-tags-compact[data-type="${type}"]`);
+    if (container) {
+        const colors = {
+            absolute: '#dc2626',
+            strong: '#f59e0b',
+            weak: '#3b82f6',
+            exclusions: '#6b7280'
+        };
+        
+        const tagHTML = `
+            <span class="keyword-tag-compact" style="background: ${colors[type]}20; color: ${colors[type]}">
+                ${keyword}
+                <button onclick="window.categoriesPage.removeKeywordCompact('${type}', '${keyword}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `;
+        container.insertAdjacentHTML('beforeend', tagHTML);
+    }
+    
+    input.value = '';
+    this.updateKeywordCountCompact(type);
+}
+
+// Supprimer un mot-clé
+removeKeywordCompact(type, keyword) {
+    const container = document.querySelector(`.keyword-tags-compact[data-type="${type}"]`);
+    if (!container) return;
+    
+    const tags = container.querySelectorAll('.keyword-tag-compact');
+    tags.forEach(tag => {
+        if (tag.textContent.trim().toLowerCase().includes(keyword.toLowerCase())) {
+            tag.remove();
+        }
+    });
+    
+    this.updateKeywordCountCompact(type);
+}
+
+// Mettre à jour le compteur
+updateKeywordCountCompact(type) {
+    const count = document.querySelectorAll(`.keyword-tags-compact[data-type="${type}"] .keyword-tag-compact`).length;
+    const countElement = document.querySelector(`.keyword-box .keyword-count`);
+    if (countElement) {
+        countElement.textContent = count;
+    }
+}
+
+// Récupérer les mots-clés depuis l'interface
+getKeywordsFromCompactList(type) {
+    const tags = document.querySelectorAll(`.keyword-tags-compact[data-type="${type}"] .keyword-tag-compact`);
+    return Array.from(tags).map(tag => 
+        tag.textContent.trim().replace(/\s*×$/, '').toLowerCase()
+    );
+}
+
+// Fonctions similaires pour les filtres
+addFilterCompact(type) {
+    const input = document.querySelector(`.filter-input-compact[data-type="${type}"]`);
+    if (!input) return;
+    
+    const value = input.value.trim().toLowerCase();
+    if (!value) return;
+    
+    // Validation
+    const isEmail = type.includes('Emails');
+    if (isEmail && !value.includes('@')) {
+        this.showToast('Format email invalide', 'error');
+        return;
+    }
+    if (!isEmail && value.includes('@')) {
+        this.showToast('Entrez uniquement le domaine', 'error');
+        return;
+    }
+    
+    // Vérifier doublon
+    const existing = document.querySelectorAll(`.filter-tags-compact[data-type="${type}"] .filter-tag-compact`);
+    const exists = Array.from(existing).some(tag => 
+        tag.textContent.trim().toLowerCase().includes(value)
+    );
+    
+    if (exists) {
+        this.showToast('Ce filtre existe déjà', 'warning');
+        return;
+    }
+    
+    // Ajouter
+    const container = document.querySelector(`.filter-tags-compact[data-type="${type}"]`);
+    if (container) {
+        const color = type.includes('include') ? '#16a34a' : '#dc2626';
+        const tagHTML = `
+            <span class="filter-tag-compact" style="background: ${color}20; color: ${color}">
+                ${value}
+                <button onclick="window.categoriesPage.removeFilterCompact('${type}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `;
+        container.insertAdjacentHTML('beforeend', tagHTML);
+    }
+    
+    input.value = '';
+    this.updateFilterCountCompact(type);
+}
+
+removeFilterCompact(type, filter) {
+    const container = document.querySelector(`.filter-tags-compact[data-type="${type}"]`);
+    if (!container) return;
+    
+    const tags = container.querySelectorAll('.filter-tag-compact');
+    tags.forEach(tag => {
+        if (tag.textContent.trim().toLowerCase().includes(filter.toLowerCase())) {
+            tag.remove();
+        }
+    });
+    
+    this.updateFilterCountCompact(type);
+}
+
+updateFilterCountCompact(type) {
+    const count = document.querySelectorAll(`.filter-tags-compact[data-type="${type}"] .filter-tag-compact`).length;
+    const countElement = document.querySelector(`.filter-box .filter-count`);
+    if (countElement) {
+        countElement.textContent = count;
+    }
+}
+
+getFiltersFromCompactList(type) {
+    const tags = document.querySelectorAll(`.filter-tags-compact[data-type="${type}"] .filter-tag-compact`);
+    return Array.from(tags).map(tag => 
+        tag.textContent.trim().replace(/\s*×$/, '').toLowerCase()
+    );
+}
+
+// Test compact des mots-clés
+testKeywordsCompact() {
+    const testText = document.getElementById('test-text-compact')?.value?.trim();
+    if (!testText) {
+        this.showToast('Entrez un texte à tester', 'warning');
+        return;
+    }
+    
+    const keywords = {
+        absolute: this.getKeywordsFromCompactList('absolute'),
+        strong: this.getKeywordsFromCompactList('strong'),
+        weak: this.getKeywordsFromCompactList('weak'),
+        exclusions: this.getKeywordsFromCompactList('exclusions')
+    };
+    
+    const results = this.analyzeTextWithKeywords(testText, keywords);
+    
+    const resultsContainer = document.getElementById('test-results-compact');
+    if (resultsContainer) {
+        resultsContainer.innerHTML = `
+            <div class="test-result-compact ${results.wouldMatch ? 'match' : 'no-match'}">
+                <span class="result-icon">${results.wouldMatch ? '✅' : '❌'}</span>
+                <span class="result-text">
+                    Score: <strong>${results.totalScore}</strong> - 
+                    ${results.wouldMatch ? 'DÉTECTÉ' : 'NON DÉTECTÉ'}
+                </span>
+                ${results.matches.length > 0 ? `
+                    <div class="result-matches-compact">
+                        ${results.matches.map(m => `
+                            <span class="match-badge ${m.type}">
+                                ${m.keyword} (${m.score > 0 ? '+' : ''}${m.score})
+                            </span>
+                        `).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+}
+
+// Helpers pour les options
+getIconOptions(selectedIcon) {
+    const icons = [
+        '📂', '💼', '🎯', '⚡', '📧', '🔔', 
+        '💡', '🎨', '🔧', '📊', '🎓', '🌟'
+    ];
+    return icons.map(icon => 
+        `<option value="${icon}" ${icon === selectedIcon ? 'selected' : ''}>${icon}</option>`
+    ).join('');
+}
+
+renderColorPresetsCompact() {
+    const colors = [
+        '#ef4444', '#f97316', '#f59e0b', '#eab308',
+        '#84cc16', '#22c55e', '#10b981', '#06b6d4',
+        '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6'
+    ];
+    
+    return colors.map(color => `
+        <button class="color-preset-compact" 
+                style="background: ${color}" 
+                onclick="document.getElementById('edit-cat-color').value='${color}'"></button>
+    `).join('');
+}
+saveCurrentTab() {
+    if (!this.editingCategoryId) return;
+    
+    switch (this.currentModalTab) {
+        case 'keywords':
+            this.saveKeywordsCompact();
+            break;
+        case 'filters':
+            this.saveFiltersCompact();
+            break;
+        case 'settings':
+            this.saveCategorySettings();
+            break;
+    }
+}
+renderFiltersTabContent(categoryId, filters) {
+    return `
+        <div class="filters-management-compact">
+            <!-- Grille 2x2 pour les filtres -->
+            <div class="filters-grid-2x2">
+                ${this.renderFilterBox('includeDomains', 'Domaines à inclure', filters.includeDomains, '#d1fae5', '#16a34a', '🌐')}
+                ${this.renderFilterBox('includeEmails', 'Emails à inclure', filters.includeEmails, '#d1fae5', '#16a34a', '📧')}
+                ${this.renderFilterBox('excludeDomains', 'Domaines à exclure', filters.excludeDomains, '#fee2e2', '#dc2626', '🌐')}
+                ${this.renderFilterBox('excludeEmails', 'Emails à exclure', filters.excludeEmails, '#fee2e2', '#dc2626', '📧')}
+            </div>
+            
+            <!-- Aide contextuelle -->
+            <div class="filters-help-compact">
+                <i class="fas fa-info-circle"></i>
+                <p>Les filtres permettent de forcer ou empêcher la catégorisation selon l'expéditeur</p>
+            </div>
+        </div>
+    `;
+}
+renderKeywordBox(type, title, keywords, bgColor, textColor) {
+    return `
+        <div class="keyword-box" style="background: ${bgColor}; border-color: ${textColor}20">
+            <div class="keyword-box-header">
+                <h5 style="color: ${textColor}">${title}</h5>
+                <span class="keyword-count" style="color: ${textColor}">${keywords.length}</span>
+            </div>
+            
+            <div class="keyword-box-input">
+                <input type="text" 
+                       class="keyword-input-compact" 
+                       data-type="${type}"
+                       placeholder="Ajouter..." 
+                       maxlength="50"
+                       onkeypress="if(event.key==='Enter') window.categoriesPage.addKeywordCompact('${type}')">
+                <button class="btn-add-compact" 
+                        style="background: ${textColor}; color: white"
+                        onclick="window.categoriesPage.addKeywordCompact('${type}')">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="keyword-tags-compact" data-type="${type}">
+                ${keywords.map(keyword => `
+                    <span class="keyword-tag-compact" style="background: ${textColor}20; color: ${textColor}">
+                        ${keyword}
+                        <button onclick="window.categoriesPage.removeKeywordCompact('${type}', '${keyword}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+openCategoryManagementModal(categoryId) {
+    const category = window.categoryManager?.getCategory(categoryId);
+    if (!category) {
+        this.showToast('Catégorie non trouvée', 'error');
+        return;
+    }
+    
+    this.closeModal();
+    this.editingCategoryId = categoryId;
+    
+    const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+        absolute: [], strong: [], weak: [], exclusions: []
+    };
+    
+    const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
+        includeDomains: [], excludeDomains: [], includeEmails: [], excludeEmails: []
+    };
+    
+    const modalId = 'category-management-modal';
+    const modalHTML = `
+        <div id="${modalId}" class="modal-overlay">
+            <div class="modal-container large">
+                <!-- Header avec icône et infos -->
+                <div class="modal-header-enhanced">
+                    <div class="modal-category-info">
+                        <div class="modal-category-icon" style="background: ${category.color}20; color: ${category.color}">
+                            ${category.icon}
+                        </div>
+                        <div class="modal-category-details">
+                            <h2>${category.name}</h2>
+                            <div class="modal-category-meta">
+                                ${category.isCustom ? '<span class="badge-custom">Personnalisée</span>' : ''}
+                                <span class="badge-priority">Priorité: ${category.priority}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Tabs compacts -->
+                <div class="modal-tabs-compact">
+                    <button class="tab-compact active" data-tab="keywords" onclick="window.categoriesPage.switchModalTab('keywords')">
+                        <i class="fas fa-key"></i> Mots-clés
+                    </button>
+                    <button class="tab-compact" data-tab="filters" onclick="window.categoriesPage.switchModalTab('filters')">
+                        <i class="fas fa-filter"></i> Filtres
+                    </button>
+                    ${category.isCustom ? `
+                        <button class="tab-compact" data-tab="settings" onclick="window.categoriesPage.switchModalTab('settings')">
+                            <i class="fas fa-cog"></i> Paramètres
+                        </button>
+                    ` : ''}
+                </div>
+                
+                <!-- Contenu des tabs -->
+                <div class="modal-tab-content" id="modal-tab-content">
+                    ${this.renderKeywordsTabContent(categoryId, keywords)}
+                </div>
+                
+                <!-- Footer avec actions -->
+                <div class="modal-footer-compact">
+                    ${category.isCustom ? `
+                        <button class="btn btn-danger btn-sm" onclick="window.categoriesPage.deleteCustomCategory('${categoryId}')">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    ` : ''}
+                    <div class="modal-footer-actions">
+                        <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                            Fermer
+                        </button>
+                        <button class="btn btn-primary" onclick="window.categoriesPage.saveCurrentTab()">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+    this.currentModal = modalId;
+    this.currentModalTab = 'keywords';
 }
 
 // Nouvelle méthode pour rendre une carte simple cliquable
