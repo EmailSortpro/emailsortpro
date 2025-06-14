@@ -2658,325 +2658,112 @@ addStyles() {
     const styles = document.createElement('style');
     styles.id = 'categoriesPageStyles';
     styles.textContent = `
-        /* ==================== STYLES DE BASE ==================== */
-        .settings-page-compact {
-            padding: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .page-header-compact {
-            margin-bottom: 25px;
-        }
-        
-        .page-header-compact h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 10px;
-        }
-        
-        /* ==================== BOUTONS ==================== */
-        .btn, .btn-compact {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .btn.btn-primary, .btn-compact.btn-primary {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            color: white;
-        }
-        
-        .btn.btn-primary:hover, .btn-compact.btn-primary:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-        }
-        
-        .btn.btn-secondary, .btn-compact.btn-secondary {
-            background: #f3f4f6;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .btn.btn-secondary:hover, .btn-compact.btn-secondary:hover {
-            background: #e5e7eb;
-            border-color: #d1d5db;
-        }
-        
-        .btn.btn-danger, .btn-compact.btn-danger {
-            background: #fee2e2;
-            color: #dc2626;
-            border: 1px solid #fca5a5;
-        }
-        
-        .btn.btn-danger:hover, .btn-compact.btn-danger:hover {
-            background: #fca5a5;
-            color: #991b1b;
-        }
-        
-        .btn.btn-sm, .btn-compact.btn-sm {
-            padding: 4px 8px;
-            font-size: 11px;
-        }
-        
-        /* Mini boutons icône */
-        .btn-icon-mini {
-            width: 28px;
-            height: 28px;
-            padding: 0;
-            border: 1px solid #e5e7eb;
+        /* ==================== CARTE CATÉGORIE ÉTENDUE ==================== */
+        .category-card-expanded {
             background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #6b7280;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-icon-mini:hover {
-            background: #f8fafc;
-            border-color: #3b82f6;
-            color: #3b82f6;
-            transform: translateY(-1px);
-        }
-        
-        .btn-icon-mini.danger:hover {
-            border-color: #dc2626;
-            color: #dc2626;
-            background: #fef2f2;
-        }
-        
-        /* ==================== ONGLETS ==================== */
-        .settings-tabs-compact {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e5e7eb;
-            padding-bottom: 0;
-        }
-        
-        .tab-button-compact {
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            color: #6b7280;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .tab-button-compact:hover {
-            color: #374151;
-        }
-        
-        .tab-button-compact.active {
-            color: #3b82f6;
-        }
-        
-        .tab-button-compact.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: #3b82f6;
-        }
-        
-        /* ==================== CONTENU DES ONGLETS ==================== */
-        .tab-content-compact {
-            animation: fadeIn 0.3s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        /* ==================== LAYOUT PRINCIPAL ==================== */
-        .automation-focused-layout {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .keywords-actions-bar {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-        
-        /* ==================== GRILLES ET CARTES ==================== */
-        .settings-grid-compact {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-        }
-        
-        .settings-card-compact {
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         
-        .settings-card-compact.full-width {
-            grid-column: 1 / -1;
+        .category-card-expanded:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+            transform: translateY(-2px);
         }
         
-        .card-header-compact {
+        .category-card-expanded.inactive {
+            opacity: 0.7;
+            background: #f9fafb;
+        }
+        
+        /* En-tête de carte étendue */
+        .category-card-header-expanded {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+        
+        .category-header-main {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
+            gap: 16px;
         }
         
-        .card-header-compact i {
+        .cat-icon-large {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        
+        .category-title-section h3 {
+            margin: 0 0 8px 0;
             font-size: 20px;
-            color: #3b82f6;
-        }
-        
-        .card-header-compact h3 {
-            font-size: 18px;
-            font-weight: 600;
+            font-weight: 700;
             color: #1f2937;
-            margin: 0;
-            flex: 1;
         }
         
-        /* ==================== FORMULAIRES ==================== */
-        .settings-form-compact {
+        .category-meta {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        
-        .form-group-compact, .form-group {
-            display: flex;
-            flex-direction: column;
             gap: 8px;
+            align-items: center;
         }
         
-        .form-group-compact label, .form-group label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .form-input-compact, .form-select-compact,
-        .form-input, .form-textarea, .form-select {
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
+        .badge-custom,
+        .badge-inactive,
+        .badge-priority {
+            font-size: 11px;
+            padding: 4px 8px;
             border-radius: 6px;
-            font-size: 14px;
-            background: white;
-            transition: all 0.2s ease;
+            font-weight: 600;
         }
         
-        .form-input-compact:focus, .form-select-compact:focus,
-        .form-input:focus, .form-textarea:focus, .form-select:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        .badge-custom {
+            background: #f3e8ff;
+            color: #7c3aed;
         }
         
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+        .badge-inactive {
+            background: #fee2e2;
+            color: #dc2626;
         }
         
-        /* ==================== TOGGLE SWITCHES ==================== */
-        .toggle-setting-compact {
+        .badge-priority {
+            background: #e0e7ff;
+            color: #4338ca;
+        }
+        
+        .category-header-actions {
             display: flex;
             align-items: center;
             gap: 12px;
-            cursor: pointer;
-            user-select: none;
         }
         
-        .toggle-setting-compact input[type="checkbox"] {
-            position: absolute;
-            opacity: 0;
-        }
-        
-        .toggle-slider-compact {
+        /* Toggle switch stylisé */
+        .toggle-switch-stylish {
             position: relative;
             display: inline-block;
-            width: 44px;
-            height: 24px;
-            background: #e5e7eb;
-            border-radius: 12px;
-            transition: all 0.3s ease;
+            width: 48px;
+            height: 26px;
         }
         
-        .toggle-slider-compact::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 20px;
-            height: 20px;
-            background: white;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        .toggle-setting-compact input:checked + .toggle-slider-compact {
-            background: #3b82f6;
-        }
-        
-        .toggle-setting-compact input:checked + .toggle-slider-compact::after {
-            transform: translateX(20px);
-        }
-        
-        .toggle-label-compact {
-            font-size: 14px;
-            color: #374151;
-            font-weight: 500;
-        }
-        
-        /* Toggle mini pour catégories */
-        .toggle-switch-mini {
-            position: relative;
-            display: inline-block;
-            width: 36px;
-            height: 20px;
-        }
-        
-        .toggle-switch-mini input {
+        .toggle-switch-stylish input {
             opacity: 0;
             width: 0;
             height: 0;
         }
         
-        .toggle-slider-mini {
+        .toggle-slider-stylish {
             position: absolute;
             cursor: pointer;
             top: 0;
@@ -2985,348 +2772,91 @@ addStyles() {
             bottom: 0;
             background-color: #e5e7eb;
             transition: 0.3s;
-            border-radius: 20px;
+            border-radius: 26px;
         }
         
-        .toggle-slider-mini:before {
+        .toggle-slider-stylish:before {
             position: absolute;
             content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
             background-color: white;
             transition: 0.3s;
             border-radius: 50%;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         
-        .toggle-switch-mini input:checked + .toggle-slider-mini {
+        .toggle-switch-stylish input:checked + .toggle-slider-stylish {
             background-color: #3b82f6;
         }
         
-        .toggle-switch-mini input:checked + .toggle-slider-mini:before {
-            transform: translateX(16px);
+        .toggle-switch-stylish input:checked + .toggle-slider-stylish:before {
+            transform: translateX(22px);
         }
         
-        /* ==================== CATÉGORIES AMÉLIORÉES ==================== */
-        .categories-selection-grid-automation {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 12px;
-            margin-top: 16px;
-        }
-        
-        .category-checkbox-item-enhanced {
-            position: relative;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
+        /* Boutons d'action */
+        .btn-icon-action {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #e5e7eb;
             background: white;
-        }
-        
-        .category-checkbox-item-enhanced:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-color: #3b82f6;
-        }
-        
-        .category-checkbox-item-enhanced.inactive {
-            opacity: 0.6;
-            background: #f9fafb;
-        }
-        
-        .category-checkbox-item-enhanced input[type="checkbox"] {
-            position: absolute;
-            opacity: 0;
-        }
-        
-        .category-checkbox-item-enhanced input[type="checkbox"]:checked + .category-checkbox-content-enhanced {
-            background: #eff6ff;
             border-radius: 8px;
-        }
-        
-        .category-checkbox-content-enhanced {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .cat-icon-automation {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            display: flex;
+            cursor: pointer;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
-            flex-shrink: 0;
-        }
-        
-        .cat-name-automation {
             font-size: 14px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-        
-        .custom-badge {
-            background: #f3e8ff;
-            color: #7c3aed;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        
-        .inactive-badge {
-            background: #f3f4f6;
             color: #6b7280;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-        
-        /* Stats mini pour les catégories */
-        .category-stats-mini {
-            display: flex;
-            gap: 6px;
-            margin-top: 4px;
-            flex-wrap: wrap;
-        }
-        
-        .stat-mini {
-            font-size: 11px;
-            color: #6b7280;
-            padding: 2px 6px;
-            background: #f8fafc;
-            border-radius: 4px;
-        }
-        
-        .stat-mini.highlight-absolute {
-            background: #fee2e2;
-            color: #dc2626;
-            font-weight: 600;
-        }
-        
-        .stat-mini.highlight-filters {
-            background: #e0e7ff;
-            color: #4338ca;
-            font-weight: 600;
-        }
-        
-        /* Actions inline pour les catégories */
-        .category-actions-inline {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-            margin-left: auto;
-        }
-        
-        /* ==================== INDICATEURS DE STATUT ==================== */
-        .status-badge {
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        
-        .status-badge.status-ok {
-            background: #dcfce7;
-            color: #166534;
-        }
-        
-        .status-badge.status-warning {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        
-        .status-badge.status-error {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        
-        /* ==================== SYNCHRONISATION ==================== */
-        .automation-sync-indicator {
-            margin: 16px 0;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .sync-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-        
-        .sync-indicator.sync-ok {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #10b981;
-        }
-        
-        .sync-indicator.sync-warning {
-            background: #fef3c7;
-            color: #92400e;
-            border: 1px solid #f59e0b;
-        }
-        
-        .btn-fix-sync-small {
-            background: rgba(0, 0, 0, 0.1);
-            border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-left: auto;
             transition: all 0.2s ease;
         }
         
-        .btn-fix-sync-small:hover {
-            background: rgba(0, 0, 0, 0.2);
+        .btn-icon-action:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
             transform: translateY(-1px);
         }
         
-        /* ==================== INDICATEUR DE SÉLECTION ==================== */
-        .selected-indicator {
-            background: #3b82f6 !important;
-            color: white !important;
-            font-size: 10px !important;
-            padding: 2px 6px !important;
-            border-radius: 4px !important;
-            margin-left: 8px !important;
-            font-weight: 600 !important;
-            animation: pulseSelection 2s infinite;
+        .btn-icon-action.danger:hover {
+            border-color: #dc2626;
+            color: #dc2626;
+            background: #fef2f2;
         }
         
-        @keyframes pulseSelection {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.05); }
+        /* Statistiques résumées */
+        .category-stats-summary {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 24px;
         }
         
-        /* ==================== OPTIONS D'AUTOMATISATION ==================== */
-        .automation-options-enhanced {
-            margin-top: 32px;
-        }
-        
-        .automation-options-enhanced h4 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 16px;
+        .stat-block {
             display: flex;
             align-items: center;
             gap: 8px;
         }
         
-        .automation-options-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 16px;
-        }
-        
-        .checkbox-enhanced {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 16px;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .checkbox-enhanced:hover {
-            background: #f3f4f6;
-            border-color: #d1d5db;
-        }
-        
-        .checkbox-enhanced input[type="checkbox"] {
-            margin-top: 2px;
-            cursor: pointer;
-        }
-        
-        .checkbox-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .checkbox-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-        
-        .checkbox-description {
-            font-size: 12px;
+        .stat-block i {
+            font-size: 16px;
             color: #6b7280;
-            line-height: 1.4;
         }
         
-        /* ==================== STATISTIQUES ==================== */
-        .automation-stats {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid #e5e7eb;
+        .stat-block.highlight i {
+            color: #dc2626;
         }
         
-        .automation-stats h4 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 16px;
-        }
-        
-        .stat-item {
-            text-align: center;
-            padding: 16px;
-            background: #f9fafb;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .stat-item.sync-stat {
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-        
-        .stat-item.sync-stat:hover {
-            border-color: #3b82f6;
-        }
-        
-        .stat-number {
-            display: block;
-            font-size: 24px;
+        .stat-value {
+            font-size: 18px;
             font-weight: 700;
-            color: #3b82f6;
-            margin-bottom: 4px;
+            color: #1f2937;
+        }
+        
+        .stat-block.highlight .stat-value {
+            color: #dc2626;
         }
         
         .stat-label {
@@ -3335,901 +2865,278 @@ addStyles() {
             font-weight: 500;
         }
         
-        /* ==================== EXCLUSIONS ==================== */
-        .quick-exclusion-section {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .quick-exclusion-section input {
-            flex: 1;
-        }
-        
-        .exclusions-list {
-            margin-top: 16px;
-        }
-        
-        .exclusions-list h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .exclusion-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #f3f4f6;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            margin: 4px;
-        }
-        
-        .exclusion-badge button {
-            background: none;
-            border: none;
-            color: #dc2626;
-            cursor: pointer;
-            padding: 0;
-            font-size: 10px;
-        }
-        
-        .exclusion-badge button:hover {
-            color: #991b1b;
-        }
-        
-        /* ==================== IMPORT/EXPORT ==================== */
-        .import-export-section {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        
-        /* ==================== MODALES ==================== */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.75);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            backdrop-filter: blur(4px);
+        /* Corps de la carte étendue */
+        .category-card-body-expanded {
             padding: 20px;
         }
         
-        .modal-container {
-            background: white;
-            border-radius: 16px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-        }
-        
-        .modal-container.medium {
-            max-width: 700px;
-        }
-        
-        .modal-container.large {
-            max-width: 900px;
-        }
-        
-        .modal-header {
-            padding: 24px;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .modal-header h2 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .modal-close {
-            background: none;
-            border: none;
-            font-size: 24px;
-            cursor: pointer;
-            color: #6b7280;
-            padding: 8px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .modal-close:hover {
-            background: #f3f4f6;
-            color: #374151;
-        }
-        
-        .modal-content {
-            padding: 24px;
-            overflow-y: auto;
-            flex: 1;
-        }
-        
-        .modal-footer {
-            padding: 24px;
-            border-top: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-        
-        .category-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .category-header .category-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-        
-        .category-header h2 {
-            margin: 0 0 4px 0;
-        }
-        
-        .category-header p {
-            margin: 0;
-            color: #6b7280;
-            font-size: 14px;
-        }
-        
-        /* ==================== FORMULAIRES MODALES ==================== */
-        .form-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .color-picker {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .color-picker input[type="color"] {
-            width: 100%;
-            height: 40px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        
-        .color-presets {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 4px;
-        }
-        
-        .color-preset {
-            width: 24px;
-            height: 24px;
-            border: 2px solid white;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        
-        .color-preset:hover {
-            transform: scale(1.1);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* ==================== GESTION DES MOTS-CLÉS ==================== */
-        .keywords-explanation {
-            margin-bottom: 24px;
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .keyword-type-info {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-        }
-        
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .info-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .info-desc {
-            font-size: 12px;
-            color: #6b7280;
-            line-height: 1.4;
-        }
-        
-        .keywords-sections {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
+        .detail-section {
             margin-bottom: 24px;
         }
         
-        .keyword-section {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-            background: white;
-        }
-        
-        .keyword-section.absolute {
-            border-color: #fca5a5;
-            background: #fef2f2;
-        }
-        
-        .keyword-section.strong {
-            border-color: #fde68a;
-            background: #fffbeb;
-        }
-        
-        .keyword-section.weak {
-            border-color: #c7d2fe;
-            background: #f0f9ff;
-        }
-        
-        .keyword-section.exclusions {
-            border-color: #d1d5db;
-            background: #f9fafb;
+        .detail-section:last-child {
+            margin-bottom: 0;
         }
         
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .section-header h4 {
             margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .keyword-count {
-            font-size: 12px;
-            color: #6b7280;
-            font-weight: 500;
-        }
-        
-        .add-keyword-form {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        
-        .keyword-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 13px;
-        }
-        
-        .keyword-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-        }
-        
-        .add-keyword-btn {
-            padding: 8px 12px;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.2s ease;
-        }
-        
-        .add-keyword-btn:hover {
-            background: #2563eb;
-        }
-        
-        .keywords-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            min-height: 40px;
-        }
-        
-        .keyword-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        
-        .keyword-tag.absolute {
-            background: #fee2e2;
-            color: #dc2626;
-            border: 1px solid #fca5a5;
-        }
-        
-        .keyword-tag.strong {
-            background: #fef3c7;
-            color: #d97706;
-            border: 1px solid #fde68a;
-        }
-        
-        .keyword-tag.weak {
-            background: #e0e7ff;
-            color: #4338ca;
-            border: 1px solid #c7d2fe;
-        }
-        
-        .keyword-tag.exclusions {
-            background: #f3f4f6;
-            color: #6b7280;
-            border: 1px solid #d1d5db;
-        }
-        
-        .keyword-text {
-            flex: 1;
-        }
-        
-        .remove-keyword {
-            background: none;
-            border: none;
-            color: currentColor;
-            cursor: pointer;
-            font-size: 10px;
-            padding: 2px;
-            border-radius: 50%;
-            transition: all 0.2s ease;
-            opacity: 0.7;
-        }
-        
-        .remove-keyword:hover {
-            opacity: 1;
-            background: rgba(0, 0, 0, 0.1);
-        }
-        
-        /* ==================== TEST DES MOTS-CLÉS ==================== */
-        .keywords-test-section {
-            margin-top: 24px;
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .keywords-test-section h4 {
-            margin: 0 0 12px 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .test-input-group {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        
-        .test-input-group input {
-            flex: 1;
-        }
-        
-        .test-results {
-            min-height: 40px;
-        }
-        
-        .test-result {
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid;
-        }
-        
-        .test-result.match {
-            background: #f0fdf4;
-            border-color: #bbf7d0;
-            color: #166534;
-        }
-        
-        .test-result.no-match {
-            background: #fef2f2;
-            border-color: #fca5a5;
-            color: #991b1b;
-        }
-        
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            font-weight: 600;
-        }
-        
-        .result-category {
-            margin-bottom: 12px;
-            font-size: 14px;
-        }
-        
-        .category-badge {
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-        
-        .result-matches h5 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .matches-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        
-        .match-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-        
-        .match-score {
-            font-weight: 700;
-        }
-        
-        .no-matches {
-            font-style: italic;
-            color: #6b7280;
-        }
-        
-        /* ==================== APERÇU TOUS MOTS-CLÉS ==================== */
-        .all-keywords-content {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-        
-        .category-keywords-summary {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-            background: white;
-        }
-        
-        .category-summary-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .category-summary-header .category-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-        }
-        
-        .category-summary-header h4 {
-            margin: 0;
-            flex: 1;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-        
-        .keywords-count {
-            font-size: 12px;
-            color: #6b7280;
-            font-weight: 500;
-            background: #f3f4f6;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-        
-        .keywords-type-list {
-            margin-bottom: 16px;
-        }
-        
-        .keywords-type-list:last-child {
-            margin-bottom: 0;
-        }
-        
-        .keywords-type-list h5 {
-            margin: 0 0 8px 0;
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .keywords-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-        }
-        
-        /* ==================== MODAL D'EXCLUSIONS ==================== */
-        .exclusions-management {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-        
-        .exclusion-form {
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .exclusion-form h4 {
-            margin: 0 0 12px 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-        
-        .exclusion-form .form-group {
-            display: flex;
-            gap: 12px;
-            align-items: flex-end;
-        }
-        
-        .exclusion-form input {
-            flex: 1;
-        }
-        
-        .current-exclusions {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        
-        .current-exclusions h4 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-        
-        .exclusion-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .exclusion-group h5 {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        
-        .exclusions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 8px;
-        }
-        
-        .exclusion-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            font-size: 13px;
-        }
-        
-        .exclusion-item span {
-            flex: 1;
-            font-weight: 500;
-        }
-        
-        .btn-remove {
-            background: none;
-            border: none;
-            color: #dc2626;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-remove:hover {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        
-        .no-exclusions {
-            text-align: center;
-            padding: 24px;
-            color: #6b7280;
-            font-style: italic;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* ==================== MODAL DES FILTRES ==================== */
-        .filters-sections {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .filter-section {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 16px;
-            background: white;
-        }
-        
-        .filter-section.include-section {
-            border-color: #bbf7d0;
-            background: #f0fdf4;
-        }
-        
-        .filter-section.exclude-section {
-            border-color: #fca5a5;
-            background: #fef2f2;
-        }
-        
-        .filter-section h4 {
-            margin: 0 0 8px 0;
             font-size: 15px;
             font-weight: 600;
-            color: #1f2937;
+            color: #374151;
             display: flex;
             align-items: center;
-            gap: 6px;
-        }
-        
-        .filter-section.include-section h4 {
-            color: #16a34a;
-        }
-        
-        .filter-section.exclude-section h4 {
-            color: #dc2626;
-        }
-        
-        .filter-description {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 12px;
-            line-height: 1.4;
-        }
-        
-        .filter-input-group {
-            display: flex;
             gap: 8px;
-            margin-bottom: 12px;
         }
         
-        .filter-input {
-            flex: 1;
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 13px;
-        }
-        
-        .filter-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-        }
-        
-        .btn-add-filter {
-            padding: 8px 12px;
-            background: #3b82f6;
-            color: white;
-            border: none;
+        .btn-edit-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: 1px solid #e5e7eb;
+            background: white;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 12px;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 4px;
             transition: all 0.2s ease;
         }
         
-        .btn-add-filter:hover {
-            background: #2563eb;
+        .btn-edit-small:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: #eff6ff;
         }
         
-        .filter-list {
+        /* Groupes de mots-clés */
+        .keywords-preview,
+        .filters-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .keyword-group,
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        
+        .keyword-type-label,
+        .filter-type-label {
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 80px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .keyword-type-label.absolute { color: #dc2626; }
+        .keyword-type-label.strong { color: #f59e0b; }
+        .keyword-type-label.weak { color: #3b82f6; }
+        .keyword-type-label.exclusions { color: #6b7280; }
+        
+        .filter-type-label {
+            color: #374151;
+        }
+        
+        .keyword-tags,
+        .filter-tags {
+            flex: 1;
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            min-height: 32px;
+            align-items: center;
         }
         
-        .filter-tag {
+        /* Mini tags */
+        .mini-tag {
             display: inline-flex;
             align-items: center;
             gap: 4px;
             padding: 4px 8px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 500;
+            border: 1px solid transparent;
         }
         
-        .filter-tag.include {
-            background: #dcfce7;
-            color: #16a34a;
-            border: 1px solid #bbf7d0;
-        }
-        
-        .filter-tag.exclude {
+        .mini-tag.absolute {
             background: #fee2e2;
             color: #dc2626;
-            border: 1px solid #fca5a5;
+            border-color: #fca5a5;
         }
         
-        .filter-tag button {
-            background: none;
-            border: none;
-            color: currentColor;
-            cursor: pointer;
-            font-size: 10px;
-            padding: 0 2px;
-            opacity: 0.7;
+        .mini-tag.strong {
+            background: #fef3c7;
+            color: #d97706;
+            border-color: #fde68a;
         }
         
-        .filter-tag button:hover {
-            opacity: 1;
+        .mini-tag.weak {
+            background: #e0e7ff;
+            color: #4338ca;
+            border-color: #c7d2fe;
         }
         
-        /* ==================== MESSAGES D'ERREUR ==================== */
-        .error-display {
-            padding: 20px;
-            text-align: center;
+        .mini-tag.exclusions {
+            background: #f3f4f6;
+            color: #6b7280;
+            border-color: #d1d5db;
+        }
+        
+        .mini-tag.include {
+            background: #d1fae5;
+            color: #065f46;
+            border-color: #86efac;
+        }
+        
+        .mini-tag.exclude {
             background: #fee2e2;
-            border: 1px solid #fca5a5;
-            border-radius: 12px;
-            color: #991b1b;
+            color: #dc2626;
+            border-color: #fca5a5;
         }
         
-        /* ==================== RESPONSIVE ==================== */
+        .more-indicator {
+            font-size: 11px;
+            color: #6b7280;
+            font-style: italic;
+            padding: 4px 8px;
+            background: #f3f4f6;
+            border-radius: 6px;
+        }
+        
+        /* État vide */
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: #6b7280;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            color: #d1d5db;
+            margin-bottom: 16px;
+            display: block;
+        }
+        
+        .empty-state p {
+            margin: 0 0 16px 0;
+            font-size: 14px;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        
+        .btn-small.btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .btn-small.btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+        
+        .btn-small.btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border-color: #e5e7eb;
+        }
+        
+        .btn-small.btn-secondary:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+        
+        /* Responsive */
         @media (max-width: 768px) {
-            .settings-grid-compact {
-                grid-template-columns: 1fr;
+            .category-card-header-expanded {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
             }
             
-            .categories-selection-grid-automation {
-                grid-template-columns: 1fr;
+            .category-header-actions {
+                width: 100%;
+                justify-content: flex-end;
             }
             
-            .automation-options-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .keywords-sections {
-                grid-template-columns: 1fr;
-            }
-            
-            .keyword-type-info {
-                grid-template-columns: 1fr;
-            }
-            
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-            
-            .color-presets {
-                grid-template-columns: repeat(4, 1fr);
-            }
-            
-            .modal-container {
-                margin: 10px;
-                max-height: calc(100vh - 20px);
-            }
-            
-            .modal-header,
-            .modal-content,
-            .modal-footer {
-                padding: 16px;
-            }
-            
-            .filters-sections {
-                grid-template-columns: 1fr;
-            }
-            
-            .category-actions-inline {
+            .category-stats-summary {
                 flex-wrap: wrap;
+                gap: 16px;
+            }
+            
+            .keyword-type-label,
+            .filter-type-label {
+                min-width: 60px;
+                font-size: 11px;
+            }
+            
+            .quick-actions {
+                flex-direction: column;
+            }
+            
+            .btn-small {
+                width: 100%;
+                justify-content: center;
             }
         }
         
         @media (max-width: 480px) {
-            .btn-icon-mini {
-                width: 24px;
-                height: 24px;
-                font-size: 10px;
+            .cat-icon-large {
+                width: 48px;
+                height: 48px;
+                font-size: 24px;
             }
             
-            .stat-mini {
-                font-size: 10px;
-                padding: 1px 4px;
+            .category-title-section h3 {
+                font-size: 18px;
             }
             
-            .keywords-actions-bar {
+            .stat-block {
                 flex-direction: column;
-                width: 100%;
+                text-align: center;
+                gap: 4px;
             }
             
-            .keywords-actions-bar button {
-                width: 100%;
+            .keyword-group,
+            .filter-group {
+                flex-direction: column;
+                gap: 8px;
             }
         }
+        
+        /* Ajout des styles existants... */
+        ${this.getExistingStyles()}
     `;
     
     document.head.appendChild(styles);
 }
-
     // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
@@ -4258,7 +3165,8 @@ addStyles() {
             uiManager: !!window.uiManager
         };
     }
-renderKeywordsTab(settings, moduleStatus) {
+
+    renderKeywordsTab(settings, moduleStatus) {
     try {
         const categories = window.categoryManager?.getCategories() || {};
         const activeCategories = settings.activeCategories || null;
@@ -4267,7 +3175,6 @@ renderKeywordsTab(settings, moduleStatus) {
         const systemCategories = Object.entries(categories).filter(([_, cat]) => !cat.isCustom);
         const customCategories = Object.entries(categories).filter(([_, cat]) => cat.isCustom);
         
-        // Utiliser le même style que l'onglet automatisation
         return `
             <div class="automation-focused-layout">
                 <!-- Barre d'actions -->
@@ -4276,10 +3183,10 @@ renderKeywordsTab(settings, moduleStatus) {
                         <i class="fas fa-plus"></i> Nouvelle catégorie
                     </button>
                     <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openAllKeywordsModal()">
-                        <i class="fas fa-list"></i> Voir tous les mots-clés
+                        <i class="fas fa-list"></i> Vue d'ensemble
                     </button>
                     <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
-                        <i class="fas fa-ban"></i> Gérer les exclusions
+                        <i class="fas fa-ban"></i> Exclusions globales
                     </button>
                 </div>
                 
@@ -4288,10 +3195,12 @@ renderKeywordsTab(settings, moduleStatus) {
                     <div class="settings-card-compact full-width">
                         <div class="card-header-compact">
                             <i class="fas fa-folder-plus"></i>
-                            <h3>Catégories personnalisées</h3>
+                            <h3>Catégories personnalisées (${customCategories.length})</h3>
                         </div>
-                        <div class="categories-selection-grid-automation">
-                            ${customCategories.map(([id, category]) => this.renderCategoryCardForKeywordsTab(id, category, activeCategories)).join('')}
+                        <div class="categories-grid-expanded">
+                            ${customCategories.map(([id, category]) => 
+                                this.renderCategoryCardForKeywordsTab(id, category, activeCategories)
+                            ).join('')}
                         </div>
                     </div>
                 ` : ''}
@@ -4300,62 +3209,37 @@ renderKeywordsTab(settings, moduleStatus) {
                 <div class="settings-card-compact full-width">
                     <div class="card-header-compact">
                         <i class="fas fa-folder"></i>
-                        <h3>Catégories système</h3>
+                        <h3>Catégories système (${systemCategories.length})</h3>
                     </div>
-                    <div class="categories-selection-grid-automation">
-                        ${systemCategories.map(([id, category]) => this.renderCategoryCardForKeywordsTab(id, category, activeCategories)).join('')}
+                    <div class="categories-grid-expanded">
+                        ${systemCategories.map(([id, category]) => 
+                            this.renderCategoryCardForKeywordsTab(id, category, activeCategories)
+                        ).join('')}
                     </div>
                 </div>
                 
-                <!-- Section Exclusions globales -->
+                <!-- Section Exclusions globales compacte -->
                 <div class="settings-card-compact full-width">
                     <div class="card-header-compact">
                         <i class="fas fa-ban"></i>
-                        <h3>Exclusions globales</h3>
+                        <h3>Exclusions globales rapides</h3>
                     </div>
                     
-                    <p>Domaines et emails qui ne seront jamais catégorisés automatiquement</p>
-                    
-                    <div class="quick-exclusion-section">
-                        <input type="text" 
-                               id="quick-exclusion-input" 
-                               class="form-input-compact" 
-                               placeholder="Ajouter un domaine ou email à exclure...">
-                        <button class="btn-compact btn-primary" onclick="window.categoriesPage.addQuickExclusion()">
-                            <i class="fas fa-plus"></i> Ajouter
+                    <div class="quick-exclusion-inline">
+                        <p>Domaines et emails qui ne seront jamais catégorisés automatiquement</p>
+                        <div class="exclusion-stats">
+                            <span class="stat-mini">
+                                <i class="fas fa-globe"></i> 
+                                ${settings.categoryExclusions?.domains?.length || 0} domaines
+                            </span>
+                            <span class="stat-mini">
+                                <i class="fas fa-envelope"></i> 
+                                ${settings.categoryExclusions?.emails?.length || 0} emails
+                            </span>
+                        </div>
+                        <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
+                            <i class="fas fa-cog"></i> Gérer les exclusions
                         </button>
-                    </div>
-                    
-                    <div class="exclusions-list">
-                        ${settings.categoryExclusions?.domains?.length > 0 || settings.categoryExclusions?.emails?.length > 0 ? `
-                            ${settings.categoryExclusions.domains?.length > 0 ? `
-                                <h4><i class="fas fa-globe"></i> Domaines exclus</h4>
-                                <div style="margin-bottom: 16px;">
-                                    ${settings.categoryExclusions.domains.map(domain => `
-                                        <span class="exclusion-badge">
-                                            ${domain}
-                                            <button onclick="window.categoriesPage.removeExclusion('domain', '${domain}')">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </span>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                            
-                            ${settings.categoryExclusions.emails?.length > 0 ? `
-                                <h4><i class="fas fa-envelope"></i> Emails exclus</h4>
-                                <div>
-                                    ${settings.categoryExclusions.emails.map(email => `
-                                        <span class="exclusion-badge">
-                                            ${email}
-                                            <button onclick="window.categoriesPage.removeExclusion('email', '${email}')">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                        </span>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        ` : '<p style="color: #6b7280; font-style: italic;">Aucune exclusion configurée</p>'}
                     </div>
                 </div>
             </div>
@@ -4368,8 +3252,18 @@ renderKeywordsTab(settings, moduleStatus) {
 
 renderCategoryCardForKeywordsTab(id, category, activeCategories) {
     const isActive = activeCategories === null || activeCategories.includes(id);
-    const keywords = window.categoryManager?.getCategoryKeywords(id) || { absolute: [], strong: [], weak: [], exclusions: [] };
-    const filters = window.categoryManager?.getCategoryFilters(id) || { includeDomains: [], excludeDomains: [], includeEmails: [], excludeEmails: [] };
+    const keywords = window.categoryManager?.getCategoryKeywords(id) || { 
+        absolute: [], 
+        strong: [], 
+        weak: [], 
+        exclusions: [] 
+    };
+    const filters = window.categoryManager?.getCategoryFilters(id) || { 
+        includeDomains: [], 
+        excludeDomains: [], 
+        includeEmails: [], 
+        excludeEmails: [] 
+    };
     
     const totalKeywords = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
                          (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
@@ -4377,72 +3271,168 @@ renderCategoryCardForKeywordsTab(id, category, activeCategories) {
     const totalFilters = (filters.includeDomains?.length || 0) + (filters.excludeDomains?.length || 0) +
                         (filters.includeEmails?.length || 0) + (filters.excludeEmails?.length || 0);
     
-    // Utiliser le même style que les cartes de l'onglet automatisation
+    // Fonction helper pour afficher les tags
+    const renderTags = (items, type, icon = '') => {
+        if (!items || items.length === 0) return '';
+        return items.map(item => `<span class="mini-tag ${type}">${icon} ${item}</span>`).join('');
+    };
+    
     return `
-        <div class="category-checkbox-item-enhanced ${!isActive ? 'inactive' : ''}" data-category-id="${id}">
-            <div class="category-checkbox-content-enhanced">
-                <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
-                    <span class="cat-icon-automation" style="background: ${category.color}20; color: ${category.color}">
+        <div class="category-card-expanded ${!isActive ? 'inactive' : ''}" data-category-id="${id}">
+            <!-- En-tête de la carte -->
+            <div class="category-card-header-expanded">
+                <div class="category-header-main">
+                    <span class="cat-icon-large" style="background: ${category.color}20; color: ${category.color}">
                         ${category.icon}
                     </span>
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="cat-name-automation">${category.name}</span>
-                            ${category.isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
-                            ${!isActive ? '<span class="inactive-badge">Inactive</span>' : ''}
+                    <div class="category-title-section">
+                        <h3>${category.name}</h3>
+                        <div class="category-meta">
+                            ${category.isCustom ? '<span class="badge-custom">Personnalisée</span>' : ''}
+                            ${!isActive ? '<span class="badge-inactive">Inactive</span>' : ''}
+                            <span class="badge-priority">Priorité: ${category.priority}</span>
                         </div>
-                        <div class="category-stats-mini">
-                            ${keywords.absolute?.length > 0 ? `
-                                <span class="stat-mini highlight-absolute">
-                                    ${keywords.absolute.length} absolus
-                                </span>
-                            ` : ''}
-                            <span class="stat-mini">
-                                ${totalKeywords} mots-clés
-                            </span>
-                            ${totalFilters > 0 ? `
-                                <span class="stat-mini highlight-filters">
-                                    ${totalFilters} filtres
-                                </span>
-                            ` : ''}
-                        </div>
-                    </div>
-                    <div class="category-actions-inline">
-                        <button class="btn-icon-mini" 
-                                onclick="event.stopPropagation(); window.categoriesPage.openKeywordsModal('${id}')"
-                                title="Gérer les mots-clés">
-                            <i class="fas fa-key"></i>
-                        </button>
-                        <button class="btn-icon-mini" 
-                                onclick="event.stopPropagation(); window.categoriesPage.openCategoryFiltersModal('${id}')"
-                                title="Gérer les filtres">
-                            <i class="fas fa-filter"></i>
-                        </button>
-                        ${category.isCustom ? `
-                            <button class="btn-icon-mini" 
-                                    onclick="event.stopPropagation(); window.categoriesPage.editCustomCategory('${id}')"
-                                    title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon-mini danger" 
-                                    onclick="event.stopPropagation(); window.categoriesPage.deleteCustomCategory('${id}')"
-                                    title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        ` : ''}
-                        <label class="toggle-switch-mini" title="${isActive ? 'Désactiver' : 'Activer'}" 
-                               onclick="event.stopPropagation()">
-                            <input type="checkbox" ${isActive ? 'checked' : ''} 
-                                   onchange="window.categoriesPage.toggleCategoryActive('${id}')">
-                            <span class="toggle-slider-mini"></span>
-                        </label>
                     </div>
                 </div>
+                <div class="category-header-actions">
+                    <label class="toggle-switch-stylish" title="${isActive ? 'Désactiver' : 'Activer'}">
+                        <input type="checkbox" ${isActive ? 'checked' : ''} 
+                               onchange="window.categoriesPage.toggleCategoryActive('${id}')">
+                        <span class="toggle-slider-stylish"></span>
+                    </label>
+                    ${category.isCustom ? `
+                        <button class="btn-icon-action" onclick="window.categoriesPage.editCustomCategory('${id}')" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon-action danger" onclick="window.categoriesPage.deleteCustomCategory('${id}')" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Statistiques résumées -->
+            <div class="category-stats-summary">
+                <div class="stat-block">
+                    <i class="fas fa-key"></i>
+                    <span class="stat-value">${totalKeywords}</span>
+                    <span class="stat-label">Mots-clés</span>
+                </div>
+                <div class="stat-block ${keywords.absolute?.length > 0 ? 'highlight' : ''}">
+                    <i class="fas fa-bullseye"></i>
+                    <span class="stat-value">${keywords.absolute?.length || 0}</span>
+                    <span class="stat-label">Absolus</span>
+                </div>
+                <div class="stat-block">
+                    <i class="fas fa-filter"></i>
+                    <span class="stat-value">${totalFilters}</span>
+                    <span class="stat-label">Filtres</span>
+                </div>
+            </div>
+            
+            <!-- Corps de la carte avec tous les détails -->
+            <div class="category-card-body-expanded">
+                <!-- Section Mots-clés -->
+                ${totalKeywords > 0 ? `
+                    <div class="detail-section">
+                        <div class="section-header">
+                            <h4><i class="fas fa-key"></i> Mots-clés (${totalKeywords})</h4>
+                            <button class="btn-edit-small" onclick="window.categoriesPage.openKeywordsModal('${id}')">
+                                <i class="fas fa-edit"></i> Modifier
+                            </button>
+                        </div>
+                        <div class="keywords-preview">
+                            ${keywords.absolute?.length > 0 ? `
+                                <div class="keyword-group">
+                                    <span class="keyword-type-label absolute">🎯 Absolus</span>
+                                    <div class="keyword-tags">
+                                        ${renderTags(keywords.absolute.slice(0, 5), 'absolute')}
+                                        ${keywords.absolute.length > 5 ? `<span class="more-indicator">+${keywords.absolute.length - 5} autres</span>` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${keywords.strong?.length > 0 ? `
+                                <div class="keyword-group">
+                                    <span class="keyword-type-label strong">💪 Forts</span>
+                                    <div class="keyword-tags">
+                                        ${renderTags(keywords.strong.slice(0, 5), 'strong')}
+                                        ${keywords.strong.length > 5 ? `<span class="more-indicator">+${keywords.strong.length - 5} autres</span>` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${keywords.weak?.length > 0 ? `
+                                <div class="keyword-group">
+                                    <span class="keyword-type-label weak">📝 Faibles</span>
+                                    <div class="keyword-tags">
+                                        ${renderTags(keywords.weak.slice(0, 5), 'weak')}
+                                        ${keywords.weak.length > 5 ? `<span class="more-indicator">+${keywords.weak.length - 5} autres</span>` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${keywords.exclusions?.length > 0 ? `
+                                <div class="keyword-group">
+                                    <span class="keyword-type-label exclusions">🚫 Exclusions</span>
+                                    <div class="keyword-tags">
+                                        ${renderTags(keywords.exclusions.slice(0, 5), 'exclusions')}
+                                        ${keywords.exclusions.length > 5 ? `<span class="more-indicator">+${keywords.exclusions.length - 5} autres</span>` : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <!-- Section Filtres -->
+                ${totalFilters > 0 ? `
+                    <div class="detail-section">
+                        <div class="section-header">
+                            <h4><i class="fas fa-filter"></i> Filtres (${totalFilters})</h4>
+                            <button class="btn-edit-small" onclick="window.categoriesPage.openCategoryFiltersModal('${id}')">
+                                <i class="fas fa-edit"></i> Modifier
+                            </button>
+                        </div>
+                        <div class="filters-preview">
+                            ${filters.includeDomains?.length > 0 || filters.includeEmails?.length > 0 ? `
+                                <div class="filter-group include">
+                                    <span class="filter-type-label">✅ Inclure</span>
+                                    <div class="filter-tags">
+                                        ${renderTags(filters.includeDomains, 'include', '🌐')}
+                                        ${renderTags(filters.includeEmails, 'include', '📧')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            ${filters.excludeDomains?.length > 0 || filters.excludeEmails?.length > 0 ? `
+                                <div class="filter-group exclude">
+                                    <span class="filter-type-label">❌ Exclure</span>
+                                    <div class="filter-tags">
+                                        ${renderTags(filters.excludeDomains, 'exclude', '🌐')}
+                                        ${renderTags(filters.excludeEmails, 'exclude', '📧')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <!-- Section Actions si aucune donnée -->
+                ${totalKeywords === 0 && totalFilters === 0 ? `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucune configuration définie</p>
+                        <div class="quick-actions">
+                            <button class="btn-small btn-primary" onclick="window.categoriesPage.openKeywordsModal('${id}')">
+                                <i class="fas fa-plus"></i> Ajouter des mots-clés
+                            </button>
+                            <button class="btn-small btn-secondary" onclick="window.categoriesPage.openCategoryFiltersModal('${id}')">
+                                <i class="fas fa-filter"></i> Ajouter des filtres
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         </div>
     `;
 }
-
 // ================================================
 // RENDU D'UNE CARTE DE CATÉGORIE CONDENSÉE
 // ================================================
