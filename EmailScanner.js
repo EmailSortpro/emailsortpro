@@ -332,11 +332,26 @@ getTaskPreselectedCategories() {
             return this.settings;
         });
     }
-// EmailScanner.js - Méthode scan() complète corrigée (remplacer vers ligne 470)
-
 async scan(options = {}) {
     // ÉTAPE 1: Synchronisation forcée AVANT tout
     console.log('[EmailScanner] 🔄 === SYNCHRONISATION PRÉ-SCAN ===');
+    
+    // Vérifier que CategoryManager est disponible AVANT de continuer
+    if (!window.categoryManager) {
+        console.warn('[EmailScanner] ⚠️ CategoryManager non disponible, tentative de chargement...');
+        
+        // Attendre un peu que CategoryManager soit chargé
+        let retries = 0;
+        while (!window.categoryManager && retries < 10) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+        }
+        
+        if (!window.categoryManager) {
+            console.error('[EmailScanner] ❌ CategoryManager toujours non disponible après attente');
+            throw new Error('CategoryManager non disponible - Veuillez recharger la page');
+        }
+    }
     
     // Forcer le rechargement depuis CategoryManager
     if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
@@ -409,10 +424,8 @@ async scan(options = {}) {
             throw new Error('MailService non disponible');
         }
 
-        if (!window.categoryManager) {
-            throw new Error('CategoryManager non disponible');
-        }
-
+        // CategoryManager est déjà vérifié au début
+        
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(endDate.getDate() - mergedOptions.days);
