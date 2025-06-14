@@ -1592,136 +1592,428 @@ notifySettingsChange(settingType, value) {
         }
     }
 
-    // ================================================
-    // ONGLET CATÉGORIES
-    // ================================================
-    renderKeywordsTab(settings, moduleStatus) {
-        try {
-            const categories = window.categoryManager?.getCategories() || {};
-            const customCategories = window.categoryManager?.getCustomCategories() || {};
-            const activeCategories = settings.activeCategories;
-            
-            return `
-                <div class="keywords-tab-layout">
-                    <!-- Actions principales -->
-                    <div class="keywords-actions-bar">
-                        <button class="btn-compact btn-primary" onclick="window.categoriesPage.showCreateCategoryModal()">
-                            <i class="fas fa-plus"></i> Nouvelle catégorie
-                        </button>
-                        <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openAllKeywordsModal()">
-                            <i class="fas fa-list"></i> Voir tous les mots-clés
-                        </button>
-                        <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
-                            <i class="fas fa-ban"></i> Gérer les exclusions
-                        </button>
-                    </div>
-                    
-                    <!-- Grille des catégories -->
-                    <div class="categories-grid-enhanced">
-                        ${Object.entries(categories).map(([id, category]) => {
-                            const isCustom = category.isCustom || customCategories[id];
-                            const keywords = window.categoryManager?.getCategoryKeywords(id) || { absolute: [], strong: [], weak: [], exclusions: [] };
-                            const totalKeywords = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + (keywords.weak?.length || 0);
-                            const isActive = !activeCategories || activeCategories.includes(id);
-                            
-                            return `
-                                <div class="category-card-enhanced ${!isActive ? 'inactive' : ''}" data-category-id="${id}">
-                                    <div class="category-card-header">
-                                        <div class="category-icon-large" style="background: ${category.color}20; color: ${category.color}">
-                                            ${category.icon}
-                                        </div>
-                                        <div class="category-info">
-                                            <div class="category-title-row">
-                                                <h3>${category.name}</h3>
-                                                <div class="category-toggle">
-                                                    <label class="toggle-switch-mini">
-                                                        <input type="checkbox" ${isActive ? 'checked' : ''} 
-                                                               onchange="window.categoriesPage.toggleCategoryActive('${id}')">
-                                                        <span class="toggle-slider-mini"></span>
-                                                    </label>
-                                                </div>
-                                            </div>
+renderKeywordsTab(settings, moduleStatus) {
+    try {
+        const categories = window.categoryManager?.getCategories() || {};
+        const customCategories = window.categoryManager?.getCustomCategories() || {};
+        const activeCategories = settings.activeCategories;
+        
+        return `
+            <div class="keywords-tab-layout">
+                <!-- Actions principales -->
+                <div class="keywords-actions-bar">
+                    <button class="btn-compact btn-primary" onclick="window.categoriesPage.showCreateCategoryModal()">
+                        <i class="fas fa-plus"></i> Nouvelle catégorie
+                    </button>
+                    <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openAllKeywordsModal()">
+                        <i class="fas fa-list"></i> Voir tous les mots-clés
+                    </button>
+                    <button class="btn-compact btn-secondary" onclick="window.categoriesPage.openExclusionsModal()">
+                        <i class="fas fa-ban"></i> Gérer les exclusions globales
+                    </button>
+                </div>
+                
+                <!-- Grille des catégories condensée -->
+                <div class="categories-grid-condensed">
+                    ${Object.entries(categories).map(([id, category]) => {
+                        const isCustom = category.isCustom || customCategories[id];
+                        const keywords = window.categoryManager?.getCategoryKeywords(id) || { absolute: [], strong: [], weak: [], exclusions: [] };
+                        const totalKeywords = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + (keywords.weak?.length || 0);
+                        const isActive = !activeCategories || activeCategories.includes(id);
+                        
+                        // Récupérer les inclusions/exclusions spécifiques
+                        const categoryFilters = window.categoryManager?.getCategoryFilters(id) || { includeDomains: [], excludeDomains: [], includeEmails: [], excludeEmails: [] };
+                        const totalFilters = (categoryFilters.includeDomains?.length || 0) + (categoryFilters.excludeDomains?.length || 0) + 
+                                           (categoryFilters.includeEmails?.length || 0) + (categoryFilters.excludeEmails?.length || 0);
+                        
+                        return `
+                            <div class="category-card-condensed ${!isActive ? 'inactive' : ''}" data-category-id="${id}">
+                                <div class="category-card-header-condensed">
+                                    <div class="category-icon-condensed" style="background: ${category.color}20; color: ${category.color}">
+                                        ${category.icon}
+                                    </div>
+                                    <div class="category-info-condensed">
+                                        <h3>${category.name}</h3>
+                                        <div class="category-badges">
                                             ${isCustom ? '<span class="custom-badge">Personnalisée</span>' : ''}
                                             ${!isActive ? '<span class="inactive-badge">Désactivée</span>' : ''}
                                         </div>
                                     </div>
-                                    
-                                    <p class="category-description">${category.description || 'Aucune description'}</p>
-                                    
-                                    <div class="keywords-summary">
-                                        <div class="keyword-count">
-                                            <i class="fas fa-key"></i>
-                                            <span>${totalKeywords} mot${totalKeywords > 1 ? 's' : ''}-clé${totalKeywords > 1 ? 's' : ''}</span>
-                                        </div>
-                                        ${keywords.absolute?.length > 0 ? `<span class="keyword-badge absolute">${keywords.absolute.length} absolus</span>` : ''}
-                                        ${keywords.strong?.length > 0 ? `<span class="keyword-badge strong">${keywords.strong.length} forts</span>` : ''}
-                                        ${keywords.weak?.length > 0 ? `<span class="keyword-badge weak">${keywords.weak.length} faibles</span>` : ''}
-                                        ${keywords.exclusions?.length > 0 ? `<span class="keyword-badge exclusions">${keywords.exclusions.length} exclusions</span>` : ''}
-                                    </div>
-                                    
-                                    <div class="category-actions">
-                                        <button class="btn-compact btn-secondary btn-sm" onclick="window.categoriesPage.openKeywordsModal('${id}')">
-                                            <i class="fas fa-edit"></i> Mots-clés
-                                        </button>
-                                        ${isCustom ? `
-                                            <button class="btn-compact btn-secondary btn-sm" onclick="window.categoriesPage.editCustomCategory('${id}')">
-                                                <i class="fas fa-cog"></i> Modifier
-                                            </button>
-                                            <button class="btn-compact btn-danger btn-sm" onclick="window.categoriesPage.deleteCustomCategory('${id}')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        ` : ''}
+                                    <div class="category-toggle">
+                                        <label class="toggle-switch-mini">
+                                            <input type="checkbox" ${isActive ? 'checked' : ''} 
+                                                   onchange="window.categoriesPage.toggleCategoryActive('${id}')">
+                                            <span class="toggle-slider-mini"></span>
+                                        </label>
                                     </div>
                                 </div>
-                            `;
-                        }).join('')}
+                                
+                                <div class="category-stats-condensed">
+                                    <div class="stat-item-condensed">
+                                        <span class="stat-number">${totalKeywords}</span>
+                                        <span class="stat-label">mots-clés</span>
+                                    </div>
+                                    ${keywords.absolute?.length > 0 ? `
+                                        <div class="stat-item-condensed highlight-absolute">
+                                            <span class="stat-number">${keywords.absolute.length}</span>
+                                            <span class="stat-label">absolus</span>
+                                        </div>
+                                    ` : ''}
+                                    ${keywords.strong?.length > 0 ? `
+                                        <div class="stat-item-condensed">
+                                            <span class="stat-number">${keywords.strong.length}</span>
+                                            <span class="stat-label">forts</span>
+                                        </div>
+                                    ` : ''}
+                                    ${keywords.weak?.length > 0 ? `
+                                        <div class="stat-item-condensed">
+                                            <span class="stat-number">${keywords.weak.length}</span>
+                                            <span class="stat-label">faibles</span>
+                                        </div>
+                                    ` : ''}
+                                    ${totalFilters > 0 ? `
+                                        <div class="stat-item-condensed highlight-filters">
+                                            <span class="stat-number">${totalFilters}</span>
+                                            <span class="stat-label">filtres</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                
+                                <div class="category-actions-condensed">
+                                    <button class="btn-action-condensed" onclick="window.categoriesPage.openKeywordsModal('${id}')" title="Gérer les mots-clés">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                    <button class="btn-action-condensed" onclick="window.categoriesPage.openCategoryFiltersModal('${id}')" title="Gérer les filtres">
+                                        <i class="fas fa-filter"></i>
+                                    </button>
+                                    ${isCustom ? `
+                                        <button class="btn-action-condensed" onclick="window.categoriesPage.editCustomCategory('${id}')" title="Modifier">
+                                            <i class="fas fa-cog"></i>
+                                        </button>
+                                        <button class="btn-action-condensed danger" onclick="window.categoriesPage.deleteCustomCategory('${id}')" title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                
+                <!-- Section d'exclusion rapide globale -->
+                <div class="settings-card-compact">
+                    <div class="card-header-compact">
+                        <i class="fas fa-ban"></i>
+                        <h3>Exclusions globales rapides</h3>
+                    </div>
+                    <div class="quick-exclusion-section">
+                        <input type="text" 
+                               id="quick-exclusion-input" 
+                               class="form-input-compact" 
+                               placeholder="Domaine ou email à exclure globalement (ex: newsletter.com)">
+                        <button class="btn-compact btn-primary" onclick="window.categoriesPage.addQuickExclusion()">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
                     </div>
                     
-                    <!-- Section d'exclusion rapide -->
-                    <div class="settings-card-compact">
-                        <div class="card-header-compact">
-                            <i class="fas fa-ban"></i>
-                            <h3>Exclusion rapide</h3>
+                    ${settings.categoryExclusions?.domains?.length > 0 || settings.categoryExclusions?.emails?.length > 0 ? `
+                        <div class="exclusions-list">
+                            <h4>Exclusions globales actives</h4>
+                            ${(settings.categoryExclusions.domains || []).map(domain => `
+                                <span class="exclusion-badge">
+                                    <i class="fas fa-globe"></i> ${domain}
+                                    <button onclick="window.categoriesPage.removeExclusion('domain', '${domain}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                            ${(settings.categoryExclusions.emails || []).map(email => `
+                                <span class="exclusion-badge">
+                                    <i class="fas fa-envelope"></i> ${email}
+                                    <button onclick="window.categoriesPage.removeExclusion('email', '${email}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
                         </div>
-                        <div class="quick-exclusion-section">
-                            <input type="text" 
-                                   id="quick-exclusion-input" 
-                                   class="form-input-compact" 
-                                   placeholder="Domaine ou email à exclure (ex: newsletter.com)">
-                            <button class="btn-compact btn-primary" onclick="window.categoriesPage.addQuickExclusion()">
-                                <i class="fas fa-plus"></i> Ajouter
-                            </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('[CategoriesPage] Erreur renderKeywordsTab:', error);
+        return '<div>Erreur lors du chargement de l\'onglet catégories</div>';
+    }
+}
+
+openCategoryFiltersModal(categoryId) {
+    const category = window.categoryManager?.getCategory(categoryId);
+    if (!category) {
+        this.showToast('Catégorie non trouvée', 'error');
+        return;
+    }
+    
+    this.closeModal();
+    this.editingCategoryId = categoryId;
+    
+    const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
+        includeDomains: [],
+        excludeDomains: [],
+        includeEmails: [],
+        excludeEmails: []
+    };
+    
+    const modalId = 'category-filters-modal';
+    const modalHTML = `
+        <div id="${modalId}" class="modal-overlay">
+            <div class="modal-container medium">
+                <div class="modal-header">
+                    <div class="category-header">
+                        <div class="category-icon" style="background: ${category.color}20; color: ${category.color};">
+                            ${category.icon}
                         </div>
-                        
-                        ${settings.categoryExclusions?.domains?.length > 0 || settings.categoryExclusions?.emails?.length > 0 ? `
-                            <div class="exclusions-list">
-                                <h4>Exclusions actives</h4>
-                                ${(settings.categoryExclusions.domains || []).map(domain => `
-                                    <span class="exclusion-badge">
+                        <div>
+                            <h2>Filtres - ${category.name}</h2>
+                            <p>Gérez les domaines et emails à inclure ou exclure pour cette catégorie</p>
+                        </div>
+                    </div>
+                    <button class="modal-close" onclick="window.categoriesPage.closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-content">
+                    <div class="filters-sections">
+                        <!-- Inclure des domaines -->
+                        <div class="filter-section include-section">
+                            <h4><i class="fas fa-plus-circle"></i> Domaines à inclure</h4>
+                            <p class="filter-description">Les emails de ces domaines seront prioritairement classés dans cette catégorie</p>
+                            <div class="filter-input-group">
+                                <input type="text" id="include-domain-input" class="filter-input" 
+                                       placeholder="Ajouter un domaine (ex: company.com)" 
+                                       onkeypress="if(event.key==='Enter') window.categoriesPage.addCategoryFilter('${categoryId}', 'includeDomains')">
+                                <button class="btn-add-filter" onclick="window.categoriesPage.addCategoryFilter('${categoryId}', 'includeDomains')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="filter-list" id="include-domains-list">
+                                ${filters.includeDomains.map(domain => `
+                                    <span class="filter-tag include">
                                         <i class="fas fa-globe"></i> ${domain}
-                                        <button onclick="window.categoriesPage.removeExclusion('domain', '${domain}')">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </span>
-                                `).join('')}
-                                ${(settings.categoryExclusions.emails || []).map(email => `
-                                    <span class="exclusion-badge">
-                                        <i class="fas fa-envelope"></i> ${email}
-                                        <button onclick="window.categoriesPage.removeExclusion('email', '${email}')">
+                                        <button onclick="window.categoriesPage.removeCategoryFilter('${categoryId}', 'includeDomains', '${domain}')">
                                             <i class="fas fa-times"></i>
                                         </button>
                                     </span>
                                 `).join('')}
                             </div>
-                        ` : ''}
+                        </div>
+                        
+                        <!-- Inclure des emails -->
+                        <div class="filter-section include-section">
+                            <h4><i class="fas fa-plus-circle"></i> Emails à inclure</h4>
+                            <p class="filter-description">Les emails de ces expéditeurs seront prioritairement classés dans cette catégorie</p>
+                            <div class="filter-input-group">
+                                <input type="text" id="include-email-input" class="filter-input" 
+                                       placeholder="Ajouter un email (ex: contact@example.com)" 
+                                       onkeypress="if(event.key==='Enter') window.categoriesPage.addCategoryFilter('${categoryId}', 'includeEmails')">
+                                <button class="btn-add-filter" onclick="window.categoriesPage.addCategoryFilter('${categoryId}', 'includeEmails')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="filter-list" id="include-emails-list">
+                                ${filters.includeEmails.map(email => `
+                                    <span class="filter-tag include">
+                                        <i class="fas fa-envelope"></i> ${email}
+                                        <button onclick="window.categoriesPage.removeCategoryFilter('${categoryId}', 'includeEmails', '${email}')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Exclure des domaines -->
+                        <div class="filter-section exclude-section">
+                            <h4><i class="fas fa-minus-circle"></i> Domaines à exclure</h4>
+                            <p class="filter-description">Les emails de ces domaines ne seront jamais classés dans cette catégorie</p>
+                            <div class="filter-input-group">
+                                <input type="text" id="exclude-domain-input" class="filter-input" 
+                                       placeholder="Ajouter un domaine à exclure" 
+                                       onkeypress="if(event.key==='Enter') window.categoriesPage.addCategoryFilter('${categoryId}', 'excludeDomains')">
+                                <button class="btn-add-filter" onclick="window.categoriesPage.addCategoryFilter('${categoryId}', 'excludeDomains')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="filter-list" id="exclude-domains-list">
+                                ${filters.excludeDomains.map(domain => `
+                                    <span class="filter-tag exclude">
+                                        <i class="fas fa-globe"></i> ${domain}
+                                        <button onclick="window.categoriesPage.removeCategoryFilter('${categoryId}', 'excludeDomains', '${domain}')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <!-- Exclure des emails -->
+                        <div class="filter-section exclude-section">
+                            <h4><i class="fas fa-minus-circle"></i> Emails à exclure</h4>
+                            <p class="filter-description">Les emails de ces expéditeurs ne seront jamais classés dans cette catégorie</p>
+                            <div class="filter-input-group">
+                                <input type="text" id="exclude-email-input" class="filter-input" 
+                                       placeholder="Ajouter un email à exclure" 
+                                       onkeypress="if(event.key==='Enter') window.categoriesPage.addCategoryFilter('${categoryId}', 'excludeEmails')">
+                                <button class="btn-add-filter" onclick="window.categoriesPage.addCategoryFilter('${categoryId}', 'excludeEmails')">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            <div class="filter-list" id="exclude-emails-list">
+                                ${filters.excludeEmails.map(email => `
+                                    <span class="filter-tag exclude">
+                                        <i class="fas fa-envelope"></i> ${email}
+                                        <button onclick="window.categoriesPage.removeCategoryFilter('${categoryId}', 'excludeEmails', '${email}')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
                     </div>
                 </div>
-            `;
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur renderKeywordsTab:', error);
-            return '<div>Erreur lors du chargement de l\'onglet catégories</div>';
-        }
+                
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="window.categoriesPage.closeModal()">
+                        Fermer
+                    </button>
+                    <button class="btn btn-primary" onclick="window.categoriesPage.saveCategoryFilters()">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+    this.currentModal = modalId;
+}
+
+addCategoryFilter(categoryId, filterType) {
+    const inputMap = {
+        'includeDomains': 'include-domain-input',
+        'includeEmails': 'include-email-input',
+        'excludeDomains': 'exclude-domain-input',
+        'excludeEmails': 'exclude-email-input'
+    };
+    
+    const input = document.getElementById(inputMap[filterType]);
+    if (!input) return;
+    
+    const value = input.value.trim().toLowerCase();
+    if (!value) return;
+    
+    // Validation basique
+    if (filterType.includes('Emails') && !value.includes('@')) {
+        this.showToast('Format d\'email invalide', 'error');
+        return;
     }
+    
+    if (filterType.includes('Domains') && value.includes('@')) {
+        this.showToast('Entrez uniquement le domaine (sans @)', 'error');
+        return;
+    }
+    
+    // Ajouter à la liste temporaire
+    const listId = filterType.replace(/([A-Z])/g, '-$1').toLowerCase() + '-list';
+    const list = document.getElementById(listId);
+    
+    if (list) {
+        // Vérifier si déjà présent
+        const existing = list.querySelector(`[data-value="${value}"]`);
+        if (existing) {
+            this.showToast('Déjà dans la liste', 'warning');
+            return;
+        }
+        
+        const icon = filterType.includes('Emails') ? 'envelope' : 'globe';
+        const tagClass = filterType.includes('include') ? 'include' : 'exclude';
+        
+        const tagHTML = `
+            <span class="filter-tag ${tagClass}" data-value="${value}">
+                <i class="fas fa-${icon}"></i> ${value}
+                <button onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `;
+        
+        list.insertAdjacentHTML('beforeend', tagHTML);
+    }
+    
+    input.value = '';
+    console.log(`[CategoriesPage] Filtre ajouté: ${filterType} - ${value}`);
+}
+
+removeCategoryFilter(categoryId, filterType, value) {
+    // Cette fonction sera appelée depuis la modal, donc on peut directement
+    // supprimer l'élément du DOM et sauvegarder ensuite
+    const element = event.target.closest('.filter-tag');
+    if (element) {
+        element.remove();
+    }
+}
+
+saveCategoryFilters() {
+    if (!this.editingCategoryId) return;
+    
+    try {
+        const filters = {
+            includeDomains: [],
+            excludeDomains: [],
+            includeEmails: [],
+            excludeEmails: []
+        };
+        
+        // Collecter tous les filtres depuis le DOM
+        const filterTypes = ['include-domains', 'include-emails', 'exclude-domains', 'exclude-emails'];
+        
+        filterTypes.forEach(type => {
+            const list = document.getElementById(`${type}-list`);
+            if (list) {
+                const tags = list.querySelectorAll('.filter-tag');
+                const filterKey = type.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                
+                tags.forEach(tag => {
+                    const value = tag.dataset.value || tag.textContent.trim().replace(/^[^\s]+\s/, '').replace(/\s*×$/, '');
+                    if (value) {
+                        filters[filterKey].push(value);
+                    }
+                });
+            }
+        });
+        
+        console.log('[CategoriesPage] 💾 Sauvegarde filtres pour', this.editingCategoryId, ':', filters);
+        
+        // Sauvegarder dans CategoryManager
+        window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
+        
+        this.closeModal();
+        this.showToast('Filtres sauvegardés avec succès', 'success');
+        
+        // Forcer la re-catégorisation si des emails existent
+        setTimeout(() => {
+            if (window.emailScanner?.emails?.length > 0) {
+                console.log('[CategoriesPage] 🔄 Déclenchement re-catégorisation suite aux nouveaux filtres');
+                window.emailScanner.recategorizeEmails();
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('[CategoriesPage] Erreur sauvegarde filtres:', error);
+        this.showToast('Erreur lors de la sauvegarde', 'error');
+    }
+}
 
     // ================================================
     // INDICATEURS DE STATUT
@@ -4009,7 +4301,307 @@ notifySettingsChange(settingType, value) {
                 .modal-footer {
                     padding: 16px;
                 }
-            }
+
+            }// Ajouter dans la fonction addStyles() après les styles existants
+
+/* Catégories condensées */
+.categories-grid-condensed {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.category-card-condensed {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.category-card-condensed:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
+
+.category-card-condensed.inactive {
+    opacity: 0.6;
+    background: #f9fafb;
+}
+
+.category-card-header-condensed {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.category-icon-condensed {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.category-info-condensed {
+    flex: 1;
+    min-width: 0;
+}
+
+.category-info-condensed h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 4px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.category-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.category-stats-condensed {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.stat-item-condensed {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.stat-item-condensed.highlight-absolute {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.stat-item-condensed.highlight-filters {
+    background: #e0e7ff;
+    border-color: #c7d2fe;
+    color: #4338ca;
+    font-weight: 600;
+}
+
+.stat-number {
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.stat-label {
+    color: #6b7280;
+    font-size: 11px;
+}
+
+.category-actions-condensed {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-action-condensed {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.btn-action-condensed:hover {
+    background: #f8fafc;
+    border-color: #3b82f6;
+    color: #3b82f6;
+    transform: translateY(-1px);
+}
+
+.btn-action-condensed.danger:hover {
+    border-color: #dc2626;
+    color: #dc2626;
+    background: #fef2f2;
+}
+
+/* Modal des filtres */
+.modal-container.medium {
+    max-width: 700px;
+}
+
+.filters-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.filter-section {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    background: white;
+}
+
+.filter-section.include-section {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.filter-section.exclude-section {
+    border-color: #fca5a5;
+    background: #fef2f2;
+}
+
+.filter-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-section.include-section h4 {
+    color: #16a34a;
+}
+
+.filter-section.exclude-section h4 {
+    color: #dc2626;
+}
+
+.filter-description {
+    font-size: 12px;
+    color: #6b7280;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.filter-input-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.filter-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.btn-add-filter {
+    padding: 8px 12px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-add-filter:hover {
+    background: #2563eb;
+}
+
+.filter-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 32px;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.filter-tag.include {
+    background: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+}
+
+.filter-tag.exclude {
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.filter-tag button {
+    background: none;
+    border: none;
+    color: currentColor;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 0 2px;
+    opacity: 0.7;
+}
+
+.filter-tag button:hover {
+    opacity: 1;
+}
+
+/* Responsive pour la vue condensée */
+@media (max-width: 768px) {
+    .categories-grid-condensed {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters-sections {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .category-stats-condensed {
+        font-size: 11px;
+    }
+    
+    .stat-item-condensed {
+        padding: 2px 6px;
+    }
+    
+    .btn-action-condensed {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+}
         `;
         
         document.head.appendChild(styles);
