@@ -239,7 +239,7 @@ async renderEmails(container) {
                     </div>
                 ` : ''}
 
-                <!-- Barre de contrôles avec boutons TOUJOURS VISIBLES -->
+                <!-- Barre de contrôles FIXÉE et COMPACTE -->
                 <div class="controls-bar-harmonized">
                     <!-- Section recherche -->
                     <div class="search-section-harmonized">
@@ -280,9 +280,9 @@ async renderEmails(container) {
                         </button>
                     </div>
                     
-                    <!-- Actions principales TOUJOURS VISIBLES -->
+                    <!-- Actions principales COMPACTES -->
                     <div class="action-buttons-harmonized">
-                        <!-- Bouton Sélectionner tout TOUJOURS VISIBLE -->
+                        <!-- Bouton Sélectionner tout -->
                         <button class="btn-harmonized btn-selection-toggle" 
                                 onclick="window.pageManager.toggleAllSelection()"
                                 title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
@@ -291,23 +291,34 @@ async renderEmails(container) {
                             ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
                         </button>
                         
-                        <!-- Bouton Créer tâches TOUJOURS VISIBLE (désactivé si pas de sélection) -->
-                        <button class="btn-harmonized btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                onclick="window.pageManager.createTasksFromSelection()"
-                                ${selectedCount === 0 ? 'disabled' : ''}>
-                            <i class="fas fa-tasks"></i>
-                            <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                            ${selectedCount > 0 ? `<span class="count-badge-harmonized">${selectedCount}</span>` : ''}
-                        </button>
+                        <!-- Bouton Créer tâches (avec nombre intégré) -->
+                        ${selectedCount > 0 ? `
+                            <button class="btn-harmonized btn-primary" 
+                                    onclick="window.pageManager.createTasksFromSelection()">
+                                <i class="fas fa-tasks"></i>
+                                <span>Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</span>
+                            </button>
+                            
+                            <!-- Bouton clear selection -->
+                            <button class="btn-harmonized btn-clear-selection" 
+                                    onclick="window.pageManager.clearSelection()"
+                                    title="Effacer la sélection">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : `
+                            <button class="btn-harmonized btn-primary disabled" disabled>
+                                <i class="fas fa-tasks"></i>
+                                <span>Créer tâches</span>
+                            </button>
+                        `}
                         
-                        <!-- Bouton Actions TOUJOURS VISIBLE (désactivé si pas de sélection) -->
+                        <!-- Bouton Actions -->
                         <div class="dropdown-action-harmonized">
                             <button class="btn-harmonized btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
                                     onclick="window.pageManager.toggleBulkActions(event)"
                                     ${selectedCount === 0 ? 'disabled' : ''}>
                                 <i class="fas fa-ellipsis-v"></i>
                                 <span>Actions</span>
-                                <i class="fas fa-chevron-down"></i>
                             </button>
                             <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
                                 <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
@@ -330,21 +341,11 @@ async renderEmails(container) {
                             </div>
                         </div>
                         
-                        <!-- Bouton Actualiser TOUJOURS VISIBLE -->
+                        <!-- Bouton Actualiser -->
                         <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
                             <i class="fas fa-sync-alt"></i>
                             <span>Actualiser</span>
                         </button>
-                        
-                        <!-- Indicateur de sélection (si emails sélectionnés) -->
-                        ${selectedCount > 0 ? `
-                            <div class="selection-info-harmonized">
-                                <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
-                                <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
 
@@ -2172,6 +2173,20 @@ addHarmonizedEmailStyles() {
             box-shadow: var(--shadow-hover);
         }
         
+        /* Boutons désactivés */
+        .btn-harmonized.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+        
+        .btn-harmonized.disabled:hover {
+            transform: none !important;
+            box-shadow: var(--shadow-base) !important;
+            background: white !important;
+            border-color: #e5e7eb !important;
+        }
+        
         .btn-harmonized.btn-primary {
             background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
             color: white;
@@ -2183,6 +2198,12 @@ addHarmonizedEmailStyles() {
             background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        }
+        
+        .btn-harmonized.btn-primary.disabled {
+            background: #e5e7eb !important;
+            color: #9ca3af !important;
+            box-shadow: var(--shadow-base) !important;
         }
         
         .btn-harmonized.btn-secondary {
@@ -2329,141 +2350,124 @@ addHarmonizedEmailStyles() {
             margin: 8px 0;
         }
         
-        /* ===== FILTRES DE CATÉGORIES AVEC STRUCTURE FIXE ===== */
-.status-filters-harmonized-twolines {
-    display: flex;
-    gap: var(--gap-small);
-    margin-bottom: var(--gap-medium);
-    flex-wrap: wrap;
-    width: 100%;
-}
-        
-.status-pill-harmonized-twolines {
-    height: 60px;
-    padding: var(--gap-small);
-    font-size: 12px;
-    font-weight: 700;
-    flex: 0 1 calc(16.666% - var(--gap-small));
-    min-width: 120px;
-    max-width: 180px;
-    border-radius: var(--btn-border-radius);
-    box-shadow: var(--shadow-base);
-    transition: all var(--transition-speed) ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    background: white;
-    color: #374151;
-    border: 1px solid #e5e7eb;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
-        
-        /* Wrapper interne avec padding pour l'étoile */
-        .pill-wrapper-with-star {
+        /* ===== FILTRES DE CATÉGORIES AVEC ÉTOILE FIXE ===== */
+        .status-filters-harmonized-twolines {
+            display: flex;
+            gap: var(--gap-small);
+            margin-bottom: var(--gap-medium);
+            flex-wrap: wrap;
             width: 100%;
-            height: 100%;
+        }
+        
+        .status-pill-harmonized-twolines {
+            height: 60px;
             padding: var(--gap-small);
-            padding-right: 28px; /* Espace réservé pour l'étoile */
+            font-size: 12px;
+            font-weight: 700;
+            flex: 0 1 calc(16.666% - var(--gap-small));
+            min-width: 120px;
+            max-width: 180px;
+            border-radius: var(--btn-border-radius);
+            box-shadow: var(--shadow-base);
+            transition: all var(--transition-speed) ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            text-align: center;
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
             position: relative;
+            overflow: visible !important; /* Important pour l'étoile */
         }
         
         /* Style pour les catégories pré-sélectionnées */
-.status-pill-harmonized-twolines.preselected-category {
-    animation: pulsePreselected 3s ease-in-out infinite;
-    border-width: 2px;
-}
+        .status-pill-harmonized-twolines.preselected-category {
+            animation: pulsePreselected 3s ease-in-out infinite;
+            border-width: 2px;
+        }
         
-.status-pill-harmonized-twolines.preselected-category::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: inherit;
-    background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
-    background-size: 300% 300%;
-    animation: gradientShift 4s ease infinite;
-    z-index: -1;
-    opacity: 0.3;
-}
-        
-@keyframes pulsePreselected {
-    0%, 100% { 
-        transform: scale(1);
-    }
-    50% { 
-        transform: scale(1.03);
-    }
-}
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-        
-.pill-content-twolines {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    width: 100%;
-    height: 100%;
-    justify-content: center;
-}
-.pill-first-line-twolines {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    height: 20px; /* Hauteur fixe pour éviter les variations */
-}
-        
-.pill-icon-twolines {
-    font-size: 16px;
-}
-
-        
-.pill-count-twolines {
-    background: rgba(0, 0, 0, 0.1);
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 800;
-    min-width: 18px;
-    text-align: center;
-}
-        
-        /* Slot pour l'étoile - toujours présent */
-        .star-slot {
+        .status-pill-harmonized-twolines.preselected-category::before {
+            content: '';
             position: absolute;
-            top: 4px;
-            right: 4px;
-            width: 20px;
-            height: 20px;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: inherit;
+            background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
+            background-size: 300% 300%;
+            animation: gradientShift 4s ease infinite;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        @keyframes pulsePreselected {
+            0%, 100% { 
+                transform: scale(1);
+            }
+            50% { 
+                transform: scale(1.03);
+            }
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .pill-content-twolines {
             display: flex;
+            flex-direction: column;
             align-items: center;
+            gap: 4px;
+            width: 100%;
+            height: 100%;
             justify-content: center;
         }
         
-        .star-slot.has-star .preselected-star {
+        .pill-first-line-twolines {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .pill-icon-twolines {
+            font-size: 16px;
+        }
+        
+        .pill-count-twolines {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        /* Étoile de pré-sélection TOUJOURS VISIBLE */
+        .preselected-star {
+            position: absolute;
+            top: -8px;
+            right: -8px;
             width: 20px;
             height: 20px;
             background: var(--preselect-color);
             color: white;
             border-radius: 50%;
-            display: flex;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             font-size: 11px;
             border: 2px solid white;
             box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
             animation: starPulse 2s ease-in-out infinite;
+            z-index: 10;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         @keyframes starPulse {
@@ -2476,61 +2480,40 @@ addHarmonizedEmailStyles() {
                 box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
             }
         }
-
-        .pill-star-inline {
-    font-size: 12px;
-    margin-left: 2px;
-    filter: brightness(1.2);
-    animation: starGlow 2s ease-in-out infinite;
-}
-
-
-@keyframes starGlow {
-    0%, 100% { 
-        opacity: 0.8;
-        transform: scale(1);
-    }
-    50% { 
-        opacity: 1;
-        transform: scale(1.1);
-    }
-}
         
-.pill-text-twolines {
-    font-weight: 700;
-    font-size: 12px;
-    line-height: 1.2;
-    text-align: center;
-}
+        .pill-text-twolines {
+            font-weight: 700;
+            font-size: 12px;
+            line-height: 1.2;
+            text-align: center;
+        }
         
-.status-pill-harmonized-twolines:hover {
-    border-color: #3b82f6;
-    background: #f0f9ff;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-}
-.status-pill-harmonized-twolines.active {
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    color: white;
-    border-color: #3b82f6;
-    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-    transform: translateY(-2px);
-}        
+        .status-pill-harmonized-twolines:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+        }
+        
+        .status-pill-harmonized-twolines.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+        
         /* Catégorie active ET pré-sélectionnée */
-.status-pill-harmonized-twolines.active.preselected-category {
-    background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
-}
+        .status-pill-harmonized-twolines.active.preselected-category {
+            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+        }
         
-.status-pill-harmonized-twolines.active .pill-count-twolines {
-    background: rgba(255, 255, 255, 0.3);
-    color: white;
-}
+        .status-pill-harmonized-twolines.active .pill-count-twolines {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
         
-.status-pill-harmonized-twolines.active .pill-star-inline {
-    color: white;
-    filter: brightness(1.5);
-}
         /* Container des emails */
         .tasks-container-harmonized {
             background: transparent;
@@ -3154,17 +3137,12 @@ addHarmonizedEmailStyles() {
                 min-width: 150px;
             }
             
-            .star-slot {
-                width: 16px;
-                height: 16px;
-                top: 2px;
-                right: 2px;
-            }
-            
-            .star-slot.has-star .preselected-star {
+            .preselected-star {
                 width: 16px;
                 height: 16px;
                 font-size: 9px;
+                top: -6px;
+                right: -6px;
             }
         }
         
@@ -3174,10 +3152,6 @@ addHarmonizedEmailStyles() {
                 min-width: 60px;
                 max-width: 110px;
                 height: 44px;
-            }
-            
-            .pill-wrapper-with-star {
-                padding-right: 24px;
             }
             
             .action-buttons-harmonized {
