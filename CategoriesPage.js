@@ -1,4 +1,4 @@
-// CategoriesPage.js - Version moderne et joyeuse
+// CategoriesPage.js - Version moderne optimisée
 class CategoriesPage {
     constructor() {
         this.editingCategoryId = null;
@@ -100,7 +100,8 @@ class CategoriesPage {
         return `
             <div class="category-card ${!isActive ? 'inactive' : ''}" 
                  data-id="${id}"
-                 style="--cat-color: ${category.color}">
+                 style="--cat-color: ${category.color}"
+                 onclick="window.categoriesPage.openModal('${id}')">
                 
                 <div class="card-header">
                     <div class="cat-emoji">${category.icon}</div>
@@ -118,16 +119,16 @@ class CategoriesPage {
                     ` : ''}
                 </div>
                 
-                <div class="card-actions">
+                <div class="card-actions" onclick="event.stopPropagation()">
                     <button class="btn-action ${isActive ? 'active' : ''}" 
                             onclick="window.categoriesPage.toggleCategory('${id}')"
                             title="${isActive ? 'Actif' : 'Inactif'}">
-                        <i class="fas fa-toggle-${isActive ? 'on' : 'off'}"></i>
+                        <i class="fas fa-power-off"></i>
                     </button>
                     <button class="btn-action" 
                             onclick="window.categoriesPage.openModal('${id}')"
                             title="Configurer">
-                        <i class="fas fa-sliders-h"></i>
+                        <i class="fas fa-cog"></i>
                     </button>
                 </div>
             </div>
@@ -146,6 +147,10 @@ class CategoriesPage {
         
         const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
             absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
+            includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
         };
         
         const modalHTML = `
@@ -192,28 +197,100 @@ class CategoriesPage {
                         <!-- Tab Filtres -->
                         <div class="tab-panel" id="tab-filters">
                             <div class="filters-layout">
-                                <div class="filter-box">
-                                    <h4><i class="fas fa-globe"></i> Domaines inclus</h4>
-                                    <p class="filter-hint">Emails provenant uniquement de ces domaines</p>
-                                    <div class="input-modern">
-                                        <input type="text" id="include-domain" placeholder="exemple.com">
-                                        <button onclick="window.categoriesPage.addFilter('includeDomains')">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                                <div class="filter-section">
+                                    <h3>Filtres d'inclusion</h3>
+                                    
+                                    <div class="filter-box">
+                                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
+                                        <p class="filter-hint">Accepter uniquement les emails de ces domaines</p>
+                                        <div class="input-modern">
+                                            <input type="text" id="include-domain" placeholder="exemple.com">
+                                            <button onclick="window.categoriesPage.addFilter('includeDomains')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="tags" id="includeDomains-items">
+                                            ${filters.includeDomains.map(d => `
+                                                <span class="tag filter-tag">
+                                                    <i class="fas fa-globe"></i>
+                                                    ${d}
+                                                    <button onclick="window.categoriesPage.removeItem('includeDomains', '${d}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>
+                                            `).join('')}
+                                        </div>
                                     </div>
-                                    <div class="tags" id="includeDomains-items"></div>
+                                    
+                                    <div class="filter-box">
+                                        <h4><i class="fas fa-at"></i> Emails autorisés</h4>
+                                        <p class="filter-hint">Accepter uniquement les emails de ces adresses</p>
+                                        <div class="input-modern">
+                                            <input type="text" id="include-email" placeholder="contact@exemple.com">
+                                            <button onclick="window.categoriesPage.addFilter('includeEmails')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="tags" id="includeEmails-items">
+                                            ${filters.includeEmails.map(e => `
+                                                <span class="tag filter-tag">
+                                                    <i class="fas fa-at"></i>
+                                                    ${e}
+                                                    <button onclick="window.categoriesPage.removeItem('includeEmails', '${e}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                <div class="filter-box">
-                                    <h4><i class="fas fa-at"></i> Emails inclus</h4>
-                                    <p class="filter-hint">Emails provenant uniquement de ces adresses</p>
-                                    <div class="input-modern">
-                                        <input type="text" id="include-email" placeholder="contact@exemple.com">
-                                        <button onclick="window.categoriesPage.addFilter('includeEmails')">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                                <div class="filter-section">
+                                    <h3>Filtres d'exclusion</h3>
+                                    
+                                    <div class="filter-box">
+                                        <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
+                                        <p class="filter-hint">Ignorer les emails de ces domaines</p>
+                                        <div class="input-modern">
+                                            <input type="text" id="exclude-domain" placeholder="spam.com">
+                                            <button onclick="window.categoriesPage.addFilter('excludeDomains')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="tags" id="excludeDomains-items">
+                                            ${filters.excludeDomains.map(d => `
+                                                <span class="tag exclude-tag">
+                                                    <i class="fas fa-ban"></i>
+                                                    ${d}
+                                                    <button onclick="window.categoriesPage.removeItem('excludeDomains', '${d}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>
+                                            `).join('')}
+                                        </div>
                                     </div>
-                                    <div class="tags" id="includeEmails-items"></div>
+                                    
+                                    <div class="filter-box">
+                                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
+                                        <p class="filter-hint">Ignorer les emails de ces adresses</p>
+                                        <div class="input-modern">
+                                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com">
+                                            <button onclick="window.categoriesPage.addFilter('excludeEmails')">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                        <div class="tags" id="excludeEmails-items">
+                                            ${filters.excludeEmails.map(e => `
+                                                <span class="tag exclude-tag">
+                                                    <i class="fas fa-user-slash"></i>
+                                                    ${e}
+                                                    <button onclick="window.categoriesPage.removeItem('excludeEmails', '${e}')">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -250,8 +327,6 @@ class CategoriesPage {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
         this.currentModal = true;
-        
-        this.loadModalData(categoryId);
     }
 
     renderKeywordBox(type, title, keywords, color, icon, description) {
@@ -263,7 +338,8 @@ class CategoriesPage {
                 </div>
                 <p class="box-description">${description}</p>
                 <div class="input-modern">
-                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé...">
+                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé..." 
+                           onkeypress="if(event.key === 'Enter') window.categoriesPage.addKeyword('${type}', '${color}')">
                     <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}', '${color}')">
                         <i class="fas fa-plus"></i>
                     </button>
@@ -425,7 +501,9 @@ class CategoriesPage {
     }
 
     addFilter(type) {
-        const inputId = type.includes('Domain') ? 'include-domain' : 'include-email';
+        const inputId = type.includes('Domain') ? 
+            (type.includes('exclude') ? 'exclude-domain' : 'include-domain') : 
+            (type.includes('exclude') ? 'exclude-email' : 'include-email');
         const input = document.getElementById(inputId);
         if (!input?.value.trim()) return;
         
@@ -434,9 +512,14 @@ class CategoriesPage {
         
         if (!container) return;
         
+        const isExclude = type.includes('exclude');
+        const icon = type.includes('Domain') ? 
+            (isExclude ? 'ban' : 'globe') : 
+            (isExclude ? 'user-slash' : 'at');
+        
         container.insertAdjacentHTML('beforeend', `
-            <span class="tag filter-tag">
-                <i class="fas fa-${type.includes('Domain') ? 'globe' : 'at'}"></i>
+            <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}">
+                <i class="fas fa-${icon}"></i>
                 ${value}
                 <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">
                     <i class="fas fa-times"></i>
@@ -532,8 +615,8 @@ class CategoriesPage {
             const filters = {
                 includeDomains: getItems('includeDomains-items'),
                 includeEmails: getItems('includeEmails-items'),
-                excludeDomains: [],
-                excludeEmails: []
+                excludeDomains: getItems('excludeDomains-items'),
+                excludeEmails: getItems('excludeEmails-items')
             };
             
             window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
@@ -558,42 +641,6 @@ class CategoriesPage {
             this.closeModal();
             this.showToast('🗑️ Catégorie supprimée');
             this.refreshPage();
-        }
-    }
-
-    loadModalData(categoryId) {
-        const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
-            includeDomains: [], includeEmails: []
-        };
-        
-        if (filters.includeDomains.length > 0) {
-            const container = document.getElementById('includeDomains-items');
-            if (container) {
-                container.innerHTML = filters.includeDomains.map(d => `
-                    <span class="tag filter-tag">
-                        <i class="fas fa-globe"></i>
-                        ${d}
-                        <button onclick="window.categoriesPage.removeItem('includeDomains', '${d}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </span>
-                `).join('');
-            }
-        }
-        
-        if (filters.includeEmails.length > 0) {
-            const container = document.getElementById('includeEmails-items');
-            if (container) {
-                container.innerHTML = filters.includeEmails.map(e => `
-                    <span class="tag filter-tag">
-                        <i class="fas fa-at"></i>
-                        ${e}
-                        <button onclick="window.categoriesPage.removeItem('includeEmails', '${e}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </span>
-                `).join('');
-            }
         }
     }
 
@@ -857,16 +904,16 @@ class CategoriesPage {
             /* Grille de catégories */
             .categories-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-                gap: 16px;
+                grid-template-columns: repeat(6, 1fr);
+                gap: 12px;
                 padding: 0 8px;
             }
             
             /* Carte de catégorie */
             .category-card {
                 background: var(--surface);
-                border-radius: 16px;
-                padding: 20px;
+                border-radius: 12px;
+                padding: 12px;
                 border: 2px solid var(--border);
                 transition: all 0.3s;
                 cursor: pointer;
@@ -903,41 +950,44 @@ class CategoriesPage {
             .card-header {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                margin-bottom: 12px;
+                gap: 8px;
+                margin-bottom: 8px;
             }
             
             .cat-emoji {
-                font-size: 28px;
-                width: 48px;
-                height: 48px;
+                font-size: 24px;
+                width: 36px;
+                height: 36px;
                 background: var(--cat-color)15;
-                border-radius: 12px;
+                border-radius: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                flex-shrink: 0;
             }
             
             .cat-name {
-                font-size: 18px;
+                font-size: 15px;
                 font-weight: 600;
                 flex: 1;
+                line-height: 1.2;
             }
             
             .card-stats {
                 display: flex;
-                gap: 8px;
-                margin-bottom: 16px;
+                gap: 6px;
+                margin-bottom: 10px;
+                flex-wrap: wrap;
             }
             
             .stat-badge {
                 display: inline-flex;
                 align-items: center;
-                gap: 4px;
-                padding: 4px 10px;
+                gap: 3px;
+                padding: 2px 6px;
                 background: var(--bg);
-                border-radius: 20px;
-                font-size: 12px;
+                border-radius: 12px;
+                font-size: 11px;
                 color: var(--text-secondary);
             }
             
@@ -949,20 +999,21 @@ class CategoriesPage {
             
             .card-actions {
                 display: flex;
-                gap: 8px;
+                gap: 6px;
             }
             
             .btn-action {
                 flex: 1;
-                padding: 8px;
+                padding: 6px;
                 border: 2px solid var(--border);
                 background: var(--surface);
-                border-radius: 10px;
+                border-radius: 8px;
                 cursor: pointer;
                 transition: all 0.3s;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                font-size: 12px;
             }
             
             .btn-action:hover {
@@ -975,6 +1026,18 @@ class CategoriesPage {
                 background: var(--success);
                 color: white;
                 border-color: var(--success);
+            }
+            
+            .btn-action:not(.active):first-child {
+                background: #FEE2E2;
+                color: var(--danger);
+                border-color: #FECACA;
+            }
+            
+            .btn-action:not(.active):first-child:hover {
+                background: var(--danger);
+                color: white;
+                border-color: var(--danger);
             }
             
             /* Modal moderne */
@@ -1003,7 +1066,7 @@ class CategoriesPage {
                 background: var(--surface);
                 border-radius: 24px;
                 width: 100%;
-                max-width: 720px;
+                max-width: 820px;
                 max-height: 85vh;
                 display: flex;
                 flex-direction: column;
@@ -1126,7 +1189,7 @@ class CategoriesPage {
             /* Layout mots-clés */
             .keywords-layout {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
                 gap: 24px;
             }
             
@@ -1165,9 +1228,10 @@ class CategoriesPage {
             }
             
             .box-description {
-                font-size: 13px;
+                font-size: 14px;
                 color: var(--text-secondary);
                 margin: 0 0 16px 0;
+                line-height: 1.4;
             }
             
             /* Input moderne */
@@ -1179,10 +1243,10 @@ class CategoriesPage {
             
             .input-modern input {
                 flex: 1;
-                padding: 10px 16px;
+                padding: 12px 16px;
                 border: 2px solid var(--border);
                 border-radius: 10px;
-                font-size: 14px;
+                font-size: 15px;
                 transition: all 0.3s;
             }
             
@@ -1193,8 +1257,8 @@ class CategoriesPage {
             }
             
             .input-modern button {
-                width: 40px;
-                height: 40px;
+                width: 44px;
+                height: 44px;
                 border: none;
                 border-radius: 10px;
                 color: white;
@@ -1221,9 +1285,9 @@ class CategoriesPage {
                 display: inline-flex;
                 align-items: center;
                 gap: 8px;
-                padding: 6px 12px;
+                padding: 8px 14px;
                 border-radius: 20px;
-                font-size: 14px;
+                font-size: 15px;
                 font-weight: 500;
                 transition: all 0.3s;
             }
@@ -1250,16 +1314,36 @@ class CategoriesPage {
                 color: var(--primary);
             }
             
+            .exclude-tag {
+                background: var(--danger)10;
+                color: var(--danger);
+            }
+            
             /* Layout filtres */
             .filters-layout {
                 display: grid;
-                gap: 24px;
+                gap: 32px;
+            }
+            
+            .filter-section {
+                background: var(--bg);
+                border-radius: 16px;
+                padding: 24px;
+            }
+            
+            .filter-section h3 {
+                font-size: 18px;
+                font-weight: 600;
+                margin: 0 0 20px 0;
+                color: var(--text);
             }
             
             .filter-box {
-                background: var(--bg);
-                border-radius: 16px;
-                padding: 20px;
+                margin-bottom: 24px;
+            }
+            
+            .filter-box:last-child {
+                margin-bottom: 0;
             }
             
             .filter-box h4 {
@@ -1528,9 +1612,15 @@ class CategoriesPage {
             }
             
             /* Responsive */
+            @media (max-width: 1200px) {
+                .categories-grid {
+                    grid-template-columns: repeat(4, 1fr);
+                }
+            }
+            
             @media (max-width: 768px) {
                 .categories-grid {
-                    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                    grid-template-columns: repeat(2, 1fr);
                     gap: 12px;
                 }
                 
@@ -1555,7 +1645,7 @@ class CategoriesPage {
                 }
                 
                 .cat-name {
-                    font-size: 16px;
+                    font-size: 14px;
                 }
             }
             
