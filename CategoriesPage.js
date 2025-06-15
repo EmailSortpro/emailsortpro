@@ -96,6 +96,8 @@ class CategoriesPage {
     renderCategoryCard(id, category, activeCategories) {
         const isActive = activeCategories === null || activeCategories.includes(id);
         const stats = this.getCategoryStats(id);
+        const settings = this.loadSettings();
+        const isPreselected = settings.preselectedCategories?.includes(id) || false;
         
         return `
             <div class="category-card ${!isActive ? 'inactive' : ''}" 
@@ -124,6 +126,11 @@ class CategoriesPage {
                             onclick="window.categoriesPage.toggleCategory('${id}')"
                             title="${isActive ? 'Actif' : 'Inactif'}">
                         <i class="fas fa-power-off"></i>
+                    </button>
+                    <button class="btn-action ${isPreselected ? 'preselected' : ''}" 
+                            onclick="window.categoriesPage.togglePreselection('${id}')"
+                            title="${isPreselected ? 'Pré-sélectionné' : 'Non pré-sélectionné'}">
+                        <i class="fas fa-check-square"></i>
                     </button>
                     <button class="btn-action" 
                             onclick="window.categoriesPage.openModal('${id}')"
@@ -186,11 +193,74 @@ class CategoriesPage {
                     <div class="modal-content">
                         <!-- Tab Mots-clés -->
                         <div class="tab-panel active" id="tab-keywords">
-                            <div class="keywords-layout">
-                                ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#FF6B6B', 'fa-star', 'Déclenchent toujours la catégorie')}
-                                ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#FECA57', 'fa-bolt', 'Poids élevé dans la détection')}
-                                ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#54A0FF', 'fa-feather', 'Poids modéré dans la détection')}
-                                ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#A29BFE', 'fa-ban', 'Empêchent la détection')}
+                            <div class="keywords-main-layout">
+                                <div class="keywords-left-section">
+                                    <div class="keywords-grid">
+                                        ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#FF6B6B', 'fa-star', 'Déclenchent toujours la catégorie')}
+                                        ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#FECA57', 'fa-bolt', 'Poids élevé dans la détection')}
+                                        ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#54A0FF', 'fa-feather', 'Poids modéré dans la détection')}
+                                        ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#A29BFE', 'fa-ban', 'Empêchent la détection')}
+                                    </div>
+                                </div>
+                                <div class="keywords-right-section">
+                                    <div class="filter-compact-box">
+                                        <h3><i class="fas fa-filter"></i> Filtres rapides</h3>
+                                        
+                                        <div class="filter-compact-section">
+                                            <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
+                                            <div class="input-modern compact">
+                                                <input type="text" id="quick-include-domain" placeholder="exemple.com">
+                                                <button onclick="window.categoriesPage.addFilter('includeDomains')">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                            <div class="tags compact" id="quick-includeDomains">
+                                                ${filters.includeDomains.map(d => `
+                                                    <span class="tag filter-tag">
+                                                        ${d}
+                                                        <button onclick="window.categoriesPage.removeFilter('includeDomains', '${d}')">×</button>
+                                                    </span>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="filter-compact-section">
+                                            <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
+                                            <div class="input-modern compact">
+                                                <input type="text" id="quick-exclude-domain" placeholder="spam.com">
+                                                <button onclick="window.categoriesPage.addFilter('excludeDomains')">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                            <div class="tags compact" id="quick-excludeDomains">
+                                                ${filters.excludeDomains.map(d => `
+                                                    <span class="tag exclude-tag">
+                                                        ${d}
+                                                        <button onclick="window.categoriesPage.removeFilter('excludeDomains', '${d}')">×</button>
+                                                    </span>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="filter-compact-section">
+                                            <h4><i class="fas fa-at"></i> Emails autorisés</h4>
+                                            <div class="input-modern compact">
+                                                <input type="text" id="quick-include-email" placeholder="contact@exemple.com">
+                                                <button onclick="window.categoriesPage.addFilter('includeEmails')">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                            <div class="tags compact" id="quick-includeEmails">
+                                                ${filters.includeEmails.map(e => `
+                                                    <span class="tag filter-tag">
+                                                        ${e}
+                                                        <button onclick="window.categoriesPage.removeFilter('includeEmails', '${e}')">×</button>
+                                                    </span>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
@@ -501,34 +571,64 @@ class CategoriesPage {
     }
 
     addFilter(type) {
-        const inputId = type.includes('Domain') ? 
-            (type.includes('exclude') ? 'exclude-domain' : 'include-domain') : 
-            (type.includes('exclude') ? 'exclude-email' : 'include-email');
+        // Gérer les deux types d'inputs (modal complet et sidebar)
+        let inputId;
+        if (type.includes('Domain')) {
+            inputId = document.getElementById('quick-include-domain') ? 'quick-include-domain' : 
+                     (type.includes('exclude') ? 'exclude-domain' : 'include-domain');
+        } else {
+            inputId = document.getElementById('quick-include-email') ? 'quick-include-email' :
+                     (type.includes('exclude') ? 'exclude-email' : 'include-email');
+        }
+        
         const input = document.getElementById(inputId);
         if (!input?.value.trim()) return;
         
         const value = input.value.trim().toLowerCase();
-        const container = document.getElementById(`${type}-items`);
         
-        if (!container) return;
+        // Mise à jour dans les deux endroits si nécessaire
+        const containers = [
+            document.getElementById(`${type}-items`),
+            document.getElementById(`quick-${type}`)
+        ].filter(Boolean);
         
         const isExclude = type.includes('exclude');
         const icon = type.includes('Domain') ? 
             (isExclude ? 'ban' : 'globe') : 
             (isExclude ? 'user-slash' : 'at');
         
-        container.insertAdjacentHTML('beforeend', `
-            <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}">
-                <i class="fas fa-${icon}"></i>
-                ${value}
-                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </span>
-        `);
+        containers.forEach(container => {
+            if (!container.querySelector(`[data-value="${value}"]`)) {
+                container.insertAdjacentHTML('beforeend', `
+                    <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}" data-value="${value}">
+                        ${type.includes('Domain') || type.includes('Email') ? '' : `<i class="fas fa-${icon}"></i>`}
+                        ${value}
+                        <button onclick="window.categoriesPage.removeFilter('${type}', '${value}')">×</button>
+                    </span>
+                `);
+            }
+        });
         
         input.value = '';
         input.focus();
+    }
+    
+    removeFilter(type, value) {
+        // Supprimer de tous les conteneurs
+        const containers = [
+            document.getElementById(`${type}-items`),
+            document.getElementById(`quick-${type}`)
+        ].filter(Boolean);
+        
+        containers.forEach(container => {
+            const tags = container.querySelectorAll('.tag');
+            tags.forEach(tag => {
+                if (tag.getAttribute('data-value') === value || 
+                    tag.textContent.trim().replace('×', '').trim() === value) {
+                    tag.remove();
+                }
+            });
+        });
     }
 
     removeItem(type, value) {
@@ -544,23 +644,23 @@ class CategoriesPage {
         });
     }
 
-    toggleCategory(categoryId) {
+    togglePreselection(categoryId) {
         const settings = this.loadSettings();
-        let activeCategories = settings.activeCategories || Object.keys(window.categoryManager?.getCategories() || {});
+        let preselectedCategories = settings.preselectedCategories || [];
         
-        const isActive = activeCategories.includes(categoryId);
+        const isPreselected = preselectedCategories.includes(categoryId);
         
-        if (isActive) {
-            activeCategories = activeCategories.filter(id => id !== categoryId);
+        if (isPreselected) {
+            preselectedCategories = preselectedCategories.filter(id => id !== categoryId);
         } else {
-            activeCategories.push(categoryId);
+            preselectedCategories.push(categoryId);
         }
         
-        settings.activeCategories = activeCategories;
+        settings.preselectedCategories = preselectedCategories;
         this.saveSettings(settings);
         
         this.updateCategoriesDisplay();
-        this.showToast(isActive ? '🔴 Catégorie désactivée' : '🟢 Catégorie activée');
+        this.showToast(isPreselected ? '☐ Pré-sélection désactivée' : '☑️ Pré-sélection activée');
     }
 
     createCategory() {
@@ -1031,6 +1131,17 @@ class CategoriesPage {
                 border-color: var(--success);
             }
             
+            .btn-action.preselected {
+                background: var(--primary);
+                color: white;
+                border-color: var(--primary);
+            }
+            
+            .btn-action.preselected:hover {
+                background: #5558E3;
+                border-color: #5558E3;
+            }
+            
             .btn-action:not(.active):first-child {
                 background: #FEE2E2;
                 color: var(--danger);
@@ -1185,19 +1296,98 @@ class CategoriesPage {
                 background: var(--surface);
             }
             
+            /* Tab panel fond opaque */
             .tab-panel {
                 display: none;
+                background: #FFFFFF;
+                border-radius: 0 0 16px 16px;
+                min-height: 400px;
             }
             
             .tab-panel.active {
                 display: block;
             }
             
-            /* Layout mots-clés */
-            .keywords-layout {
+            /* Layout mots-clés avec sidebar */
+            .keywords-main-layout {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                grid-template-columns: 1fr 320px;
                 gap: 24px;
+                height: 100%;
+            }
+            
+            .keywords-left-section {
+                overflow-y: auto;
+                padding-right: 12px;
+            }
+            
+            .keywords-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 20px;
+            }
+            
+            .keywords-right-section {
+                border-left: 2px solid var(--border);
+                padding-left: 24px;
+                overflow-y: auto;
+            }
+            
+            .filter-compact-box {
+                background: #FAFBFC;
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                padding: 20px;
+                position: sticky;
+                top: 0;
+            }
+            
+            .filter-compact-box h3 {
+                font-size: 16px;
+                font-weight: 600;
+                margin: 0 0 20px 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--text);
+            }
+            
+            .filter-compact-section {
+                margin-bottom: 20px;
+            }
+            
+            .filter-compact-section:last-child {
+                margin-bottom: 0;
+            }
+            
+            .filter-compact-section h4 {
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0 0 10px 0;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                color: var(--text-secondary);
+            }
+            
+            .input-modern.compact input {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            .input-modern.compact button {
+                width: 36px;
+                height: 36px;
+            }
+            
+            .tags.compact {
+                gap: 6px;
+                min-height: 30px;
+            }
+            
+            .tags.compact .tag {
+                padding: 4px 10px;
+                font-size: 13px;
             }
             
             .keyword-box {
