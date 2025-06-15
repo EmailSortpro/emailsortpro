@@ -1000,15 +1000,15 @@ class CategoriesPage {
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             
-            /* Grille de catégories ultra-compacte */
+            /* Grille de catégories avec colonnes fixes */
             .categories-grid {
                 display: grid;
-                grid-template-columns: repeat(6, 1fr);
+                grid-template-columns: repeat(6, minmax(0, 1fr));
                 gap: 10px;
                 padding: 0;
             }
             
-            /* Carte de catégorie minimaliste */
+            /* Carte de catégorie avec hauteur minimale */
             .category-card {
                 background: var(--surface);
                 border-radius: 10px;
@@ -1020,6 +1020,9 @@ class CategoriesPage {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
+                width: 100%;
+                box-sizing: border-box;
+                min-height: 120px;
             }
             
             .category-card:hover {
@@ -1037,6 +1040,7 @@ class CategoriesPage {
                 display: flex;
                 align-items: center;
                 gap: 10px;
+                width: 100%;
             }
             
             .cat-emoji {
@@ -1054,15 +1058,22 @@ class CategoriesPage {
             .cat-info {
                 flex: 1;
                 min-width: 0;
+                overflow: hidden;
             }
             
             .cat-name {
                 font-size: 16px;
                 font-weight: 600;
                 color: var(--text);
-                white-space: nowrap;
+                line-height: 1.3;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+                hyphens: auto;
+                max-height: 2.6em; /* 2 lignes max */
                 overflow: hidden;
-                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
             }
             
             .cat-meta {
@@ -1084,9 +1095,11 @@ class CategoriesPage {
             }
             
             .card-actions {
-                display: flex;
+                display: grid;
+                grid-template-columns: repeat(3, 32px);
                 gap: 3px;
-                justify-content: flex-start;
+                justify-content: start;
+                margin-top: auto; /* Pousse les boutons en bas */
             }
             
             /* Boutons minimalistes uniformes */
@@ -1832,16 +1845,16 @@ class CategoriesPage {
                 background: var(--danger);
             }
             
-            /* Responsive minimaliste */
+            /* Responsive avec colonnes fixes */
             @media (max-width: 1200px) {
                 .categories-grid {
-                    grid-template-columns: repeat(4, 1fr);
+                    grid-template-columns: repeat(4, minmax(0, 1fr));
                 }
             }
             
             @media (max-width: 768px) {
                 .categories-grid {
-                    grid-template-columns: repeat(2, 1fr);
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
                     gap: 8px;
                 }
                 
