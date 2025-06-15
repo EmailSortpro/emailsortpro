@@ -545,73 +545,6 @@ debugPreselection() {
     };
 }
 
-forceUpdatePreselection() {
-    console.log('[PageManager] 🔄 === FORCE UPDATE PRÉ-SÉLECTION ===');
-    
-    // 1. Forcer la synchronisation des catégories
-    const freshCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
-    console.log('[PageManager] 📋 Catégories fraîches depuis CategoryManager:', freshCategories);
-    
-    // 2. Mettre à jour EmailScanner
-    if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
-        window.emailScanner.updateTaskPreselectedCategories(freshCategories);
-        console.log('[PageManager] ✅ EmailScanner mis à jour');
-    }
-    
-    // 3. Mettre à jour les emails
-    const emails = window.emailScanner?.getAllEmails() || [];
-    let updated = 0;
-    let added = 0;
-    let removed = 0;
-    
-    emails.forEach(email => {
-        const shouldBePreselected = freshCategories.includes(email.category);
-        const currentlyPreselected = email.isPreselectedForTasks === true;
-        
-        if (shouldBePreselected && !currentlyPreselected) {
-            email.isPreselectedForTasks = true;
-            updated++;
-            added++;
-            console.log(`[PageManager] ➕ Ajout pré-sélection:`, {
-                subject: email.subject?.substring(0, 40),
-                category: email.category
-            });
-        } else if (!shouldBePreselected && currentlyPreselected) {
-            email.isPreselectedForTasks = false;
-            updated++;
-            removed++;
-            console.log(`[PageManager] ➖ Retrait pré-sélection:`, {
-                subject: email.subject?.substring(0, 40),
-                category: email.category
-            });
-        }
-    });
-    
-    console.log(`[PageManager] 📊 Résultat: ${updated} emails mis à jour (${added} ajoutés, ${removed} retirés)`);
-    
-    // 4. Rafraîchir l'affichage
-    if (updated > 0 || this.currentPage === 'emails') {
-        this.refreshEmailsView();
-        console.log('[PageManager] 🖼️ Affichage rafraîchi');
-    }
-    
-    // 5. Déclencher un événement pour notifier les autres modules
-    setTimeout(() => {
-        this.dispatchEvent('preselectionUpdated', {
-            categories: freshCategories,
-            updated: updated,
-            added: added,
-            removed: removed
-        });
-    }, 100);
-    
-    return {
-        categories: freshCategories,
-        emailsUpdated: updated,
-        added: added,
-        removed: removed
-    };
-}
 
 // Méthode utilitaire pour dispatcher des événements
 dispatchEvent(eventName, detail) {
@@ -712,8 +645,6 @@ dispatchEvent(eventName, detail) {
         }
     }
 
-// PageManager.js - Méthode buildTwoLinesCategoryTabs() complète corrigée (remplacer vers ligne 970)
-
 buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     // Récupérer les catégories pré-sélectionnées
     const preselectedCategories = this.getTaskPreselectedCategories();
@@ -761,7 +692,7 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         });
     }
     
-    // Générer le HTML avec mise en évidence
+    // Générer le HTML avec espace réservé pour l'étoile
     return tabs.map(tab => {
         const isCurrentCategory = this.currentCategory === tab.id;
         const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''}`;
@@ -769,38 +700,38 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         // Ajouter des classes et styles spéciaux pour les catégories pré-sélectionnées
         let extraClasses = '';
         let extraStyles = '';
-        let preselectedBadge = '';
         
         if (tab.isPreselected && !isCurrentCategory) {
             extraClasses = ' preselected-category';
             extraStyles = `style="border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};"`;
-            preselectedBadge = '<span class="preselected-star">⭐</span>';
         } else if (tab.isPreselected && isCurrentCategory) {
             // Si c'est à la fois actif et pré-sélectionné
             extraStyles = `style="box-shadow: 0 0 0 3px ${tab.color || '#8b5cf6'}40;"`;
-            preselectedBadge = '<span class="preselected-star">⭐</span>';
         }
         
         return `
             <button class="${baseClasses}${extraClasses}" 
                     ${extraStyles}
                     onclick="window.pageManager.filterByCategory('${tab.id}')"
+                    data-category-id="${tab.id}"
                     title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
                 <div class="pill-content-twolines">
                     <div class="pill-first-line-twolines">
                         <span class="pill-icon-twolines">${tab.icon}</span>
                         <span class="pill-count-twolines">${tab.count}</span>
-                        ${preselectedBadge}
                     </div>
                     <div class="pill-second-line-twolines">
                         <span class="pill-text-twolines">${tab.name}</span>
+                    </div>
+                    <!-- Espace réservé pour l'étoile, toujours présent mais visible seulement si pré-sélectionné -->
+                    <div class="preselected-star-container ${tab.isPreselected ? 'visible' : ''}">
+                        <span class="preselected-star">⭐</span>
                     </div>
                 </div>
             </button>
         `;
     }).join('');
 }
-
     filterByCategory(categoryId) {
         this.currentCategory = categoryId;
         this.refreshEmailsView();
@@ -1029,34 +960,82 @@ debugPreselection() {
     };
 }
 
-// Ajouter aussi cette méthode pour forcer la mise à jour
 forceUpdatePreselection() {
-    console.log('[PageManager] 🔄 Force mise à jour pré-sélection...');
+    console.log('[PageManager] 🔄 === FORCE UPDATE PRÉ-SÉLECTION ===');
     
-    const categories = this.getTaskPreselectedCategories();
+    // 1. Forcer la synchronisation des catégories
+    const freshCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
+    console.log('[PageManager] 📋 Catégories fraîches depuis CategoryManager:', freshCategories);
+    
+    // 2. Mettre à jour EmailScanner
+    if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+        window.emailScanner.updateTaskPreselectedCategories(freshCategories);
+        console.log('[PageManager] ✅ EmailScanner mis à jour');
+    }
+    
+    // 3. Mettre à jour les emails
     const emails = window.emailScanner?.getAllEmails() || [];
-    
     let updated = 0;
+    let added = 0;
+    let removed = 0;
+    
     emails.forEach(email => {
-        const shouldBePreselected = categories.includes(email.category);
-        if (shouldBePreselected && !email.isPreselectedForTasks) {
+        const shouldBePreselected = freshCategories.includes(email.category);
+        const currentlyPreselected = email.isPreselectedForTasks === true;
+        
+        if (shouldBePreselected && !currentlyPreselected) {
             email.isPreselectedForTasks = true;
             updated++;
-        } else if (!shouldBePreselected && email.isPreselectedForTasks) {
+            added++;
+        } else if (!shouldBePreselected && currentlyPreselected) {
             email.isPreselectedForTasks = false;
             updated++;
+            removed++;
         }
     });
     
-    console.log(`[PageManager] ✅ ${updated} emails mis à jour`);
+    console.log(`[PageManager] 📊 Résultat: ${updated} emails mis à jour (${added} ajoutés, ${removed} retirés)`);
     
-    if (updated > 0) {
-        this.refreshEmailsView();
+    // 4. Mettre à jour les boutons de catégories sans reconstruction complète
+    document.querySelectorAll('.status-pill-harmonized-twolines').forEach(button => {
+        const categoryId = button.dataset.categoryId;
+        if (categoryId && categoryId !== 'all') {
+            const starContainer = button.querySelector('.preselected-star-container');
+            if (starContainer) {
+                if (freshCategories.includes(categoryId)) {
+                    starContainer.classList.add('visible');
+                    button.classList.add('preselected-category');
+                } else {
+                    starContainer.classList.remove('visible');
+                    button.classList.remove('preselected-category');
+                }
+            }
+        }
+    });
+    
+    // 5. Rafraîchir seulement la liste des emails
+    const emailsContainer = document.querySelector('.tasks-container-harmonized');
+    if (emailsContainer && this.currentPage === 'emails') {
+        emailsContainer.innerHTML = this.renderEmailsList();
     }
     
-    return updated;
+    // 6. Déclencher un événement pour notifier les autres modules
+    setTimeout(() => {
+        this.dispatchEvent('preselectionUpdated', {
+            categories: freshCategories,
+            updated: updated,
+            added: added,
+            removed: removed
+        });
+    }, 100);
+    
+    return {
+        categories: freshCategories,
+        emailsUpdated: updated,
+        added: added,
+        removed: removed
+    };
 }
-
     renderHarmonizedEmailActions(email) {
         const hasTask = this.createdTasks.has(email.id);
         const actions = [];
@@ -1973,11 +1952,6 @@ forceUpdatePreselection() {
         }
     }
 
-    // ================================================
-    // STYLES HARMONISÉS AVEC BADGE PRÉ-SÉLECTIONNÉ
-    // ================================================
-// PageManager.js - Fonction addHarmonizedEmailStyles() complète (remplacer vers ligne 2320)
-
 addHarmonizedEmailStyles() {
     if (document.getElementById('harmonizedEmailStyles')) return;
     
@@ -2368,7 +2342,7 @@ addHarmonizedEmailStyles() {
             margin: 8px 0;
         }
         
-        /* ===== FILTRES DE CATÉGORIES AVEC PRÉ-SÉLECTION ===== */
+        /* ===== FILTRES DE CATÉGORIES AVEC PRÉ-SÉLECTION FIXE ===== */
         .status-filters-harmonized-twolines {
             display: flex;
             gap: var(--gap-small);
@@ -2404,7 +2378,6 @@ addHarmonizedEmailStyles() {
         .status-pill-harmonized-twolines.preselected-category {
             animation: pulsePreselected 3s ease-in-out infinite;
             border-width: 2px;
-            position: relative;
         }
         
         .status-pill-harmonized-twolines.preselected-category::before {
@@ -2452,7 +2425,6 @@ addHarmonizedEmailStyles() {
             align-items: center;
             gap: 4px;
             margin-bottom: 4px;
-            position: relative;
         }
         
         .pill-icon-twolines {
@@ -2469,15 +2441,31 @@ addHarmonizedEmailStyles() {
             text-align: center;
         }
         
-        /* Étoile de pré-sélection */
-        .preselected-star {
+        /* Container d'étoile avec espace réservé fixe */
+        .preselected-star-container {
             position: absolute;
             top: -8px;
             right: -8px;
-            background: var(--preselect-color);
-            color: white;
             width: 20px;
             height: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        
+        .preselected-star-container.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .preselected-star {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            background: var(--preselect-color);
+            color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -2486,7 +2474,6 @@ addHarmonizedEmailStyles() {
             border: 2px solid white;
             box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
             animation: starPulse 2s ease-in-out infinite;
-            z-index: 1;
         }
         
         @keyframes starPulse {
@@ -3156,12 +3143,17 @@ addHarmonizedEmailStyles() {
                 min-width: 150px;
             }
             
+            .preselected-star-container {
+                width: 16px;
+                height: 16px;
+                top: -6px;
+                right: -6px;
+            }
+            
             .preselected-star {
                 width: 16px;
                 height: 16px;
                 font-size: 9px;
-                top: -6px;
-                right: -6px;
             }
         }
         
@@ -3221,6 +3213,7 @@ addHarmonizedEmailStyles() {
     
     document.head.appendChild(styles);
 }
+
 }
 
 // Créer l'instance globale
