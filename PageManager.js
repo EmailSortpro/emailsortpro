@@ -692,7 +692,7 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         });
     }
     
-    // Générer le HTML avec espace réservé pour l'étoile
+    // Générer le HTML avec structure fixe
     return tabs.map(tab => {
         const isCurrentCategory = this.currentCategory === tab.id;
         const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''}`;
@@ -705,7 +705,7 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
             extraClasses = ' preselected-category';
             extraStyles = `style="border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};"`;
         } else if (tab.isPreselected && isCurrentCategory) {
-            // Si c'est à la fois actif et pré-sélectionné
+            extraClasses = ' preselected-category';
             extraStyles = `style="box-shadow: 0 0 0 3px ${tab.color || '#8b5cf6'}40;"`;
         }
         
@@ -715,17 +715,20 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
                     onclick="window.pageManager.filterByCategory('${tab.id}')"
                     data-category-id="${tab.id}"
                     title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                <div class="pill-content-twolines">
-                    <div class="pill-first-line-twolines">
-                        <span class="pill-icon-twolines">${tab.icon}</span>
-                        <span class="pill-count-twolines">${tab.count}</span>
+                <!-- Structure avec padding pour l'étoile -->
+                <div class="pill-wrapper-with-star">
+                    <div class="pill-content-twolines">
+                        <div class="pill-first-line-twolines">
+                            <span class="pill-icon-twolines">${tab.icon}</span>
+                            <span class="pill-count-twolines">${tab.count}</span>
+                        </div>
+                        <div class="pill-second-line-twolines">
+                            <span class="pill-text-twolines">${tab.name}</span>
+                        </div>
                     </div>
-                    <div class="pill-second-line-twolines">
-                        <span class="pill-text-twolines">${tab.name}</span>
-                    </div>
-                    <!-- Espace réservé pour l'étoile, toujours présent mais visible seulement si pré-sélectionné -->
-                    <div class="preselected-star-container ${tab.isPreselected ? 'visible' : ''}">
-                        <span class="preselected-star">⭐</span>
+                    <!-- Container d'étoile toujours présent -->
+                    <div class="star-slot ${tab.isPreselected ? 'has-star' : ''}">
+                        ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
                     </div>
                 </div>
             </button>
