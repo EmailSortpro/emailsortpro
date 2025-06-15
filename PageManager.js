@@ -691,7 +691,7 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         });
     }
     
-    // Générer le HTML - SANS POSITION ABSOLUE
+    // Générer le HTML
     return tabs.map(tab => {
         const isCurrentCategory = this.currentCategory === tab.id;
         const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
@@ -716,16 +716,15 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
                         <span class="pill-count-twolines">${tab.count}</span>
                     </div>
                     <div class="pill-second-line-twolines">
-                        <span class="pill-text-twolines">
-                            ${tab.name}
-                            ${tab.isPreselected ? '<span class="star-indicator">⭐</span>' : ''}
-                        </span>
+                        <span class="pill-text-twolines">${tab.name}${tab.isPreselected ? ' ⭐' : ''}</span>
                     </div>
                 </div>
             </button>
         `;
     }).join('');
 }
+
+
     filterByCategory(categoryId) {
         this.currentCategory = categoryId;
         this.refreshEmailsView();
