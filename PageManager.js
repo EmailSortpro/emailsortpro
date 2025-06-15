@@ -239,86 +239,101 @@ async renderEmails(container) {
                     </div>
                 ` : ''}
 
-                <!-- Barre de contrôles FIXÉE et COMPACTE -->
-                <div class="controls-bar-harmonized">
-                    <!-- Section recherche -->
-                    <div class="search-section-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
+                <!-- Barre de contrôles optimisée avec tous les boutons dans le cadre -->
+                <div class="controls-bar-harmonized" style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(255, 255, 255, 0.95); border-radius: 12px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); margin-bottom: 12px;">
+                    
+                    <!-- Section recherche (flex: 0 1 auto pour s'adapter) -->
+                    <div class="search-section-harmonized" style="flex: 0 1 280px; min-width: 200px;">
+                        <div class="search-box-harmonized" style="position: relative; width: 100%; height: 44px;">
+                            <i class="fas fa-search search-icon-harmonized" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af;"></i>
                             <input type="text" 
                                    class="search-input-harmonized" 
                                    id="emailSearchInput"
-                                   placeholder="Rechercher emails..." 
-                                   value="${this.searchTerm}">
+                                   placeholder="Rechercher..." 
+                                   value="${this.searchTerm}"
+                                   style="width: 100%; height: 100%; padding: 0 12px 0 40px; border: 1px solid #d1d5db; border-radius: 10px; font-size: 13px;">
                             ${this.searchTerm ? `
-                                <button class="search-clear-harmonized" onclick="window.pageManager.clearSearch()">
-                                    <i class="fas fa-times"></i>
+                                <button class="search-clear-harmonized" 
+                                        onclick="window.pageManager.clearSearch()"
+                                        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-times" style="font-size: 11px;"></i>
                                 </button>
                             ` : ''}
                         </div>
                     </div>
                     
-                    <!-- Modes de vue -->
-                    <div class="view-modes-harmonized">
+                    <!-- Modes de vue (flex: 0 0 auto pour taille fixe) -->
+                    <div class="view-modes-harmonized" style="flex: 0 0 auto; display: flex; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 4px; gap: 2px; height: 44px;">
                         <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
                                 onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                title="Par domaine">
+                                title="Par domaine"
+                                style="padding: 0 16px; border: none; background: ${this.currentViewMode === 'grouped-domain' ? 'white' : 'transparent'}; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: ${this.currentViewMode === 'grouped-domain' ? '#1f2937' : '#6b7280'};">
                             <i class="fas fa-globe"></i>
                             <span>Domaine</span>
                         </button>
                         <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
                                 onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                title="Par expéditeur">
+                                title="Par expéditeur"
+                                style="padding: 0 16px; border: none; background: ${this.currentViewMode === 'grouped-sender' ? 'white' : 'transparent'}; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: ${this.currentViewMode === 'grouped-sender' ? '#1f2937' : '#6b7280'};">
                             <i class="fas fa-user"></i>
                             <span>Expéditeur</span>
                         </button>
                         <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
                                 onclick="window.pageManager.changeViewMode('flat')"
-                                title="Liste complète">
+                                title="Liste complète"
+                                style="padding: 0 16px; border: none; background: ${this.currentViewMode === 'flat' ? 'white' : 'transparent'}; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: ${this.currentViewMode === 'flat' ? '#1f2937' : '#6b7280'};">
                             <i class="fas fa-list"></i>
                             <span>Liste</span>
                         </button>
                     </div>
                     
-                    <!-- Actions principales COMPACTES -->
-                    <div class="action-buttons-harmonized">
-                        <!-- Bouton Sélectionner tout -->
+                    <!-- Espaceur flexible pour pousser les boutons à droite -->
+                    <div style="flex: 1 1 auto;"></div>
+                    
+                    <!-- Actions principales (flex: 0 0 auto pour éviter la compression) -->
+                    <div class="action-buttons-harmonized" style="flex: 0 0 auto; display: flex; align-items: center; gap: 8px;">
+                        
+                        <!-- Sélectionner tout -->
                         <button class="btn-harmonized btn-selection-toggle" 
                                 onclick="window.pageManager.toggleAllSelection()"
-                                title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
+                                title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}"
+                                style="height: 44px; padding: 0 16px; background: #f0f9ff; color: #0369a1; border: 1px solid #0ea5e9; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;">
                             <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
-                            <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
-                            ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
+                            <span>${visibleEmails.length}</span>
                         </button>
                         
-                        <!-- Bouton Créer tâches (avec nombre intégré) -->
+                        <!-- Créer tâches -->
                         ${selectedCount > 0 ? `
                             <button class="btn-harmonized btn-primary" 
-                                    onclick="window.pageManager.createTasksFromSelection()">
+                                    onclick="window.pageManager.createTasksFromSelection()"
+                                    style="height: 44px; padding: 0 20px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);">
                                 <i class="fas fa-tasks"></i>
                                 <span>Créer ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</span>
                             </button>
                             
-                            <!-- Bouton clear selection -->
                             <button class="btn-harmonized btn-clear-selection" 
                                     onclick="window.pageManager.clearSelection()"
-                                    title="Effacer la sélection">
+                                    title="Effacer la sélection"
+                                    style="width: 44px; height: 44px; background: #f3f4f6; color: #6b7280; border: none; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i class="fas fa-times"></i>
                             </button>
                         ` : `
-                            <button class="btn-harmonized btn-primary disabled" disabled>
+                            <button class="btn-harmonized btn-primary disabled" 
+                                    disabled
+                                    style="height: 44px; padding: 0 20px; background: #e5e7eb; color: #9ca3af; border: none; border-radius: 10px; cursor: not-allowed; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;">
                                 <i class="fas fa-tasks"></i>
                                 <span>Créer tâches</span>
                             </button>
                         `}
                         
-                        <!-- Bouton Actions -->
-                        <div class="dropdown-action-harmonized">
+                        <!-- Actions dropdown -->
+                        <div class="dropdown-action-harmonized" style="position: relative;">
                             <button class="btn-harmonized btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
                                     onclick="window.pageManager.toggleBulkActions(event)"
-                                    ${selectedCount === 0 ? 'disabled' : ''}>
+                                    ${selectedCount === 0 ? 'disabled' : ''}
+                                    title="Actions"
+                                    style="height: 44px; padding: 0 12px; background: #f8fafc; color: ${selectedCount === 0 ? '#9ca3af' : '#475569'}; border: 1px solid #e2e8f0; border-radius: 10px; cursor: ${selectedCount === 0 ? 'not-allowed' : 'pointer'}; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600;">
                                 <i class="fas fa-ellipsis-v"></i>
-                                <span>Actions</span>
                             </button>
                             <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
                                 <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
@@ -341,10 +356,12 @@ async renderEmails(container) {
                             </div>
                         </div>
                         
-                        <!-- Bouton Actualiser -->
-                        <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
+                        <!-- Actualiser -->
+                        <button class="btn-harmonized btn-secondary" 
+                                onclick="window.pageManager.refreshEmails()"
+                                title="Actualiser"
+                                style="height: 44px; padding: 0 12px; background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-sync-alt"></i>
-                            <span>Actualiser</span>
                         </button>
                     </div>
                 </div>
@@ -2024,25 +2041,26 @@ addHarmonizedEmailStyles() {
         }
         
         /* Barre de contrôles */
-        .controls-bar-harmonized {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: var(--gap-large);
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: var(--card-border-radius);
-            padding: var(--gap-medium);
-            margin-bottom: var(--gap-medium);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
-        }
-        
-        .search-section-harmonized {
-            flex: 0 0 300px;
-            height: var(--btn-height);
-        }
+.controls-bar-harmonized {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gap-medium);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--card-border-radius);
+    padding: var(--gap-medium);
+    margin-bottom: var(--gap-medium);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
+    width: 100%;
+    box-sizing: border-box;
+    overflow: visible; /* Permettre le débordement si nécessaire */
+}
+ .search-section-harmonized {
+        flex: 0 1 240px;
+    }
         
         .search-box-harmonized {
             position: relative;
@@ -2109,23 +2127,10 @@ addHarmonizedEmailStyles() {
             height: var(--btn-height);
         }
         
-        .view-mode-harmonized {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--btn-gap);
-            padding: 0 var(--btn-padding-horizontal);
-            height: calc(var(--btn-height) - 8px);
-            border: none;
-            background: transparent;
-            color: #6b7280;
-            border-radius: calc(var(--btn-border-radius) - 2px);
-            cursor: pointer;
-            transition: all var(--transition-speed) ease;
-            font-size: var(--btn-font-size);
-            font-weight: var(--btn-font-weight);
-            min-width: 120px;
-        }
+    .view-mode-harmonized {
+        min-width: auto;
+        padding: 0 var(--gap-small);
+    }
         
         .view-mode-harmonized:hover {
             background: rgba(255, 255, 255, 0.8);
@@ -2139,31 +2144,40 @@ addHarmonizedEmailStyles() {
             font-weight: 700;
         }
         
-        .action-buttons-harmonized {
-            display: flex;
-            align-items: center;
-            gap: var(--gap-small);
-            height: var(--btn-height);
-            flex-shrink: 0;
-        }
+.action-buttons-harmonized {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-small);
+    height: var(--btn-height);
+    flex-shrink: 1; /* Permettre la réduction si nécessaire */
+    flex-wrap: nowrap; /* Garder tous les boutons sur une ligne */
+    min-width: 0; /* Permettre la réduction */
+}
         
-        .btn-harmonized {
-            height: var(--btn-height);
-            background: white;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-            border-radius: var(--btn-border-radius);
-            padding: 0 var(--btn-padding-horizontal);
-            font-size: var(--btn-font-size);
-            font-weight: var(--btn-font-weight);
-            cursor: pointer;
-            transition: all var(--transition-speed) ease;
-            display: flex;
-            align-items: center;
-            gap: var(--btn-gap);
-            box-shadow: var(--shadow-base);
-            position: relative;
-        }
+.btn-harmonized {
+    height: var(--btn-height);
+    background: white;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--btn-border-radius);
+    padding: 0 calc(var(--btn-padding-horizontal) - 2px); /* Réduire légèrement le padding */
+    font-size: var(--btn-font-size);
+    font-weight: var(--btn-font-weight);
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    gap: var(--btn-gap);
+    box-shadow: var(--shadow-base);
+    position: relative;
+    white-space: nowrap; /* Empêcher le retour à la ligne */
+    flex-shrink: 0; /* Ne pas réduire les boutons */
+}
+    @media (max-width: 1400px) {
+    .controls-bar-harmonized {
+        gap: var(--gap-small);
+        padding: var(--gap-small) var(--gap-medium);
+    }
         
         .btn-harmonized:hover {
             background: #f9fafb;
@@ -3057,12 +3071,11 @@ addHarmonizedEmailStyles() {
         }
         
         /* RESPONSIVE */
-        @media (max-width: 1200px) {
-            :root {
-                --btn-height: 42px;
-                --card-height: 84px;
-                --action-btn-size: 34px;
-            }
+@media (max-width: 1200px) {
+    /* Masquer les labels des modes de vue */
+    .view-mode-harmonized span {
+        display: none;
+    }
             
             .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                 flex: 0 1 calc(20% - var(--gap-small));
@@ -3080,25 +3093,30 @@ addHarmonizedEmailStyles() {
                 padding: var(--gap-large);
             }
             
-            .search-section-harmonized {
-                flex: none;
-                width: 100%;
-                order: 1;
-            }
-            
-            .view-modes-harmonized {
-                width: 100%;
-                justify-content: space-around;
-                order: 2;
-            }
-            
-            .action-buttons-harmonized {
-                width: 100%;
-                justify-content: center;
-                flex-wrap: wrap;
-                order: 3;
-            }
-            
+.search-section-harmonized {
+    flex: 0 1 280px; /* Réduire légèrement la largeur */
+    height: var(--btn-height);
+    min-width: 200px; /* Largeur minimale */
+}
+.view-modes-harmonized {
+    display: flex;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: var(--btn-border-radius);
+    padding: 4px;
+    gap: 2px;
+    height: var(--btn-height);
+    flex-shrink: 0; /* Ne pas réduire */
+}
+    .dropdown-toggle span {
+        display: none;
+    }           
+    .action-buttons-harmonized {
+        gap: 4px;
+    }
+        .btn-harmonized {
+        padding: 0 var(--gap-small);
+    }        
             .dropdown-menu-harmonized {
                 right: auto;
                 left: 0;
