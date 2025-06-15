@@ -2345,7 +2345,7 @@ addHarmonizedEmailStyles() {
             margin: 8px 0;
         }
         
-        /* ===== FILTRES DE CATÉGORIES AVEC PRÉ-SÉLECTION FIXE ===== */
+        /* ===== FILTRES DE CATÉGORIES AVEC STRUCTURE FIXE ===== */
         .status-filters-harmonized-twolines {
             display: flex;
             gap: var(--gap-small);
@@ -2356,7 +2356,7 @@ addHarmonizedEmailStyles() {
         
         .status-pill-harmonized-twolines {
             height: 60px;
-            padding: var(--gap-small);
+            padding: 0;
             font-size: 12px;
             font-weight: 700;
             flex: 0 1 calc(16.666% - var(--gap-small));
@@ -2374,7 +2374,19 @@ addHarmonizedEmailStyles() {
             border: 1px solid #e5e7eb;
             cursor: pointer;
             position: relative;
-            overflow: visible;
+            overflow: hidden;
+        }
+        
+        /* Wrapper interne avec padding pour l'étoile */
+        .pill-wrapper-with-star {
+            width: 100%;
+            height: 100%;
+            padding: var(--gap-small);
+            padding-right: 28px; /* Espace réservé pour l'étoile */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
         }
         
         /* Style pour les catégories pré-sélectionnées */
@@ -2420,14 +2432,13 @@ addHarmonizedEmailStyles() {
             gap: 4px;
             width: 100%;
             height: 100%;
-            position: relative;
+            justify-content: center;
         }
         
         .pill-first-line-twolines {
             display: flex;
             align-items: center;
             gap: 4px;
-            margin-bottom: 4px;
         }
         
         .pill-icon-twolines {
@@ -2444,27 +2455,19 @@ addHarmonizedEmailStyles() {
             text-align: center;
         }
         
-        /* Container d'étoile avec espace réservé fixe */
-        .preselected-star-container {
+        /* Slot pour l'étoile - toujours présent */
+        .star-slot {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: 4px;
+            right: 4px;
             width: 20px;
             height: 20px;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .preselected-star-container.visible {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .preselected-star {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .star-slot.has-star .preselected-star {
             width: 20px;
             height: 20px;
             background: var(--preselect-color);
@@ -3146,14 +3149,14 @@ addHarmonizedEmailStyles() {
                 min-width: 150px;
             }
             
-            .preselected-star-container {
+            .star-slot {
                 width: 16px;
                 height: 16px;
-                top: -6px;
-                right: -6px;
+                top: 2px;
+                right: 2px;
             }
             
-            .preselected-star {
+            .star-slot.has-star .preselected-star {
                 width: 16px;
                 height: 16px;
                 font-size: 9px;
@@ -3166,6 +3169,10 @@ addHarmonizedEmailStyles() {
                 min-width: 60px;
                 max-width: 110px;
                 height: 44px;
+            }
+            
+            .pill-wrapper-with-star {
+                padding-right: 24px;
             }
             
             .action-buttons-harmonized {
