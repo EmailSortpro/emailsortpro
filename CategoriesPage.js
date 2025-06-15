@@ -1161,8 +1161,8 @@ class CategoriesPage {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.7);
-                backdrop-filter: blur(8px);
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1177,16 +1177,17 @@ class CategoriesPage {
             }
             
             .modal-modern {
-                background: var(--surface);
+                background: #FFFFFF;
                 border-radius: 24px;
                 width: 100%;
                 max-width: 900px;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+                box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4);
                 animation: slideUp 0.3s;
-                border: 1px solid var(--border);
+                border: 2px solid var(--border);
+                overflow: hidden;
             }
             
             @keyframes slideUp {
@@ -1293,15 +1294,17 @@ class CategoriesPage {
                 padding: 28px;
                 overflow-y: auto;
                 flex: 1;
-                background: var(--surface);
+                background: #F5F6F7;
+                position: relative;
             }
             
             /* Tab panel fond opaque */
             .tab-panel {
                 display: none;
-                background: #FFFFFF;
+                background: #F5F6F7;
                 border-radius: 0 0 16px 16px;
                 min-height: 400px;
+                padding: 4px;
             }
             
             .tab-panel.active {
@@ -1319,6 +1322,9 @@ class CategoriesPage {
             .keywords-left-section {
                 overflow-y: auto;
                 padding-right: 12px;
+                background: #F5F6F7;
+                border-radius: 12px;
+                padding: 16px;
             }
             
             .keywords-grid {
@@ -1331,15 +1337,20 @@ class CategoriesPage {
                 border-left: 2px solid var(--border);
                 padding-left: 24px;
                 overflow-y: auto;
+                background: #F5F6F7;
+                margin-left: -12px;
+                padding: 16px 16px 16px 24px;
+                border-radius: 12px;
             }
             
             .filter-compact-box {
-                background: #FAFBFC;
-                border: 1px solid var(--border);
+                background: #FFFFFF;
+                border: 2px solid var(--border);
                 border-radius: 16px;
                 padding: 20px;
                 position: sticky;
                 top: 0;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
             
             .filter-compact-box h3 {
@@ -1383,6 +1394,7 @@ class CategoriesPage {
             .tags.compact {
                 gap: 6px;
                 min-height: 30px;
+                padding: 6px;
             }
             
             .tags.compact .tag {
@@ -1391,11 +1403,12 @@ class CategoriesPage {
             }
             
             .keyword-box {
-                background: var(--bg);
-                border: 1px solid var(--border);
+                background: #FFFFFF;
+                border: 2px solid var(--border);
                 border-radius: 16px;
                 padding: 24px;
                 transition: all 0.3s;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
             
             .keyword-box:hover {
@@ -1477,6 +1490,10 @@ class CategoriesPage {
                 flex-wrap: wrap;
                 gap: 8px;
                 min-height: 40px;
+                background: #FAFBFC;
+                padding: 8px;
+                border-radius: 8px;
+                border: 1px solid #E5E7EB;
             }
             
             .tag {
