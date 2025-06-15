@@ -107,35 +107,28 @@ class CategoriesPage {
                 
                 <div class="card-header">
                     <div class="cat-emoji">${category.icon}</div>
-                    <div class="cat-name">${category.name}</div>
-                </div>
-                
-                <div class="card-stats">
-                    <span class="stat-badge">
-                        <i class="fas fa-key"></i> ${stats.keywords}
-                    </span>
-                    ${stats.absolute > 0 ? `
-                        <span class="stat-badge special">
-                            <i class="fas fa-star"></i> ${stats.absolute}
-                        </span>
-                    ` : ''}
+                    <div class="cat-info">
+                        <div class="cat-name">${category.name}</div>
+                        <div class="cat-meta">
+                            <span class="meta-count">${stats.keywords}</span>
+                            ${stats.absolute > 0 ? `<span class="meta-star">★ ${stats.absolute}</span>` : ''}
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="card-actions" onclick="event.stopPropagation()">
-                    <button class="btn-action ${isActive ? 'active' : ''}" 
-                            onclick="window.categoriesPage.toggleCategory('${id}')"
-                            title="${isActive ? 'Actif' : 'Inactif'}">
-                        <i class="fas fa-power-off"></i>
+                    <button class="btn-minimal ${isActive ? 'on' : 'off'}" 
+                            onclick="window.categoriesPage.toggleCategory('${id}')">
+                        ${isActive ? 'ON' : 'OFF'}
                     </button>
-                    <button class="btn-action ${isPreselected ? 'preselected' : ''}" 
+                    <button class="btn-minimal ${isPreselected ? 'task-on' : 'task-off'}" 
                             onclick="window.categoriesPage.togglePreselection('${id}')"
-                            title="${isPreselected ? 'Pré-sélectionné' : 'Non pré-sélectionné'}">
-                        <i class="fas fa-check-square"></i>
+                            title="${isPreselected ? 'Tâches pré-cochées' : 'Tâches non cochées'}">
+                        <i class="fas fa-${isPreselected ? 'check-square' : 'square'}"></i>
                     </button>
-                    <button class="btn-action" 
-                            onclick="window.categoriesPage.openModal('${id}')"
-                            title="Configurer">
-                        <i class="fas fa-cog"></i>
+                    <button class="btn-minimal config" 
+                            onclick="window.categoriesPage.openModal('${id}')">
+                        <i class="fas fa-ellipsis-h"></i>
                     </button>
                 </div>
             </div>
@@ -1007,157 +1000,157 @@ class CategoriesPage {
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             
-            /* Grille de catégories */
+            /* Grille de catégories ultra-compacte */
             .categories-grid {
                 display: grid;
                 grid-template-columns: repeat(6, 1fr);
-                gap: 12px;
-                padding: 0 8px;
+                gap: 10px;
+                padding: 0;
             }
             
-            /* Carte de catégorie */
+            /* Carte de catégorie minimaliste */
             .category-card {
                 background: var(--surface);
-                border-radius: 12px;
+                border-radius: 10px;
                 padding: 12px;
-                border: 2px solid var(--border);
-                transition: all 0.3s;
+                border: 1px solid var(--border);
+                transition: all 0.2s;
                 cursor: pointer;
                 position: relative;
-                overflow: hidden;
-            }
-            
-            .category-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(135deg, var(--cat-color)10, transparent);
-                opacity: 0;
-                transition: opacity 0.3s;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
             }
             
             .category-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
                 border-color: var(--cat-color);
             }
             
-            .category-card:hover::before {
-                opacity: 1;
-            }
-            
             .category-card.inactive {
-                opacity: 0.5;
+                opacity: 0.6;
+                background: #F5F5F5;
             }
             
             .card-header {
                 display: flex;
                 align-items: center;
                 gap: 10px;
-                margin-bottom: 10px;
             }
             
             .cat-emoji {
-                font-size: 28px;
-                width: 42px;
-                height: 42px;
+                font-size: 24px;
+                width: 40px;
+                height: 40px;
                 background: var(--cat-color)15;
-                border-radius: 12px;
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
             }
             
-            .cat-name {
-                font-size: 18px;
-                font-weight: 600;
+            .cat-info {
                 flex: 1;
-                line-height: 1.2;
+                min-width: 0;
+            }
+            
+            .cat-name {
+                font-size: 16px;
+                font-weight: 600;
                 color: var(--text);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             
-            .card-stats {
+            .cat-meta {
                 display: flex;
-                gap: 6px;
-                margin-bottom: 10px;
-                flex-wrap: wrap;
-            }
-            
-            .stat-badge {
-                display: inline-flex;
                 align-items: center;
-                gap: 4px;
-                padding: 4px 8px;
-                background: var(--bg);
-                border-radius: 12px;
-                font-size: 13px;
-                color: var(--text-secondary);
-                font-weight: 500;
+                gap: 8px;
+                margin-top: 2px;
             }
             
-            .stat-badge.special {
-                background: linear-gradient(135deg, #FEF3C7, #FDE68A);
-                color: #92400E;
+            .meta-count {
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+            
+            .meta-star {
+                font-size: 12px;
+                color: #F59E0B;
                 font-weight: 600;
             }
             
             .card-actions {
                 display: flex;
-                gap: 6px;
+                gap: 4px;
             }
             
-            .btn-action {
-                flex: 1;
-                padding: 8px 12px;
-                border: 2px solid var(--border);
-                background: var(--surface);
-                border-radius: 8px;
+            /* Boutons minimalistes */
+            .btn-minimal {
+                padding: 6px 10px;
+                border: 1px solid var(--border);
+                background: white;
+                border-radius: 6px;
                 cursor: pointer;
-                transition: all 0.3s;
+                font-size: 11px;
+                font-weight: 600;
+                transition: all 0.2s;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 14px;
-                min-width: 48px;
+                height: 28px;
             }
             
-            .btn-action:hover {
-                border-color: var(--primary);
-                background: var(--primary)10;
-                color: var(--primary);
+            .btn-minimal:hover {
+                transform: scale(1.05);
             }
             
-            .btn-action.active {
-                background: var(--success);
+            /* Bouton ON/OFF */
+            .btn-minimal.on {
+                background: #10B981;
                 color: white;
-                border-color: var(--success);
+                border-color: #10B981;
             }
             
-            .btn-action.preselected {
+            .btn-minimal.off {
+                background: #EF4444;
+                color: white;
+                border-color: #EF4444;
+            }
+            
+            /* Bouton tâche */
+            .btn-minimal.task-on {
                 background: var(--primary);
                 color: white;
                 border-color: var(--primary);
             }
             
-            .btn-action.preselected:hover {
-                background: #5558E3;
-                border-color: #5558E3;
+            .btn-minimal.task-off {
+                background: white;
+                color: #9CA3AF;
+                border-color: #E5E7EB;
             }
             
-            .btn-action:not(.active):first-child {
-                background: #FEE2E2;
-                color: var(--danger);
-                border-color: #FECACA;
+            .btn-minimal.task-off:hover {
+                color: var(--primary);
+                border-color: var(--primary);
             }
             
-            .btn-action:not(.active):first-child:hover {
-                background: var(--danger);
-                color: white;
-                border-color: var(--danger);
+            /* Bouton config */
+            .btn-minimal.config {
+                background: white;
+                color: #6B7280;
+                border-color: #E5E7EB;
+                width: 28px;
+                padding: 0;
+            }
+            
+            .btn-minimal.config:hover {
+                color: var(--text);
+                border-color: var(--text);
             }
             
             /* Modal moderne */
@@ -1842,7 +1835,7 @@ class CategoriesPage {
                 background: var(--danger);
             }
             
-            /* Responsive */
+            /* Responsive minimaliste */
             @media (max-width: 1200px) {
                 .categories-grid {
                     grid-template-columns: repeat(4, 1fr);
@@ -1852,7 +1845,7 @@ class CategoriesPage {
             @media (max-width: 768px) {
                 .categories-grid {
                     grid-template-columns: repeat(2, 1fr);
-                    gap: 12px;
+                    gap: 8px;
                 }
                 
                 .stats-bar {
@@ -1877,6 +1870,11 @@ class CategoriesPage {
                 
                 .cat-name {
                     font-size: 14px;
+                }
+                
+                .btn-minimal {
+                    font-size: 10px;
+                    padding: 4px 8px;
                 }
             }
             
