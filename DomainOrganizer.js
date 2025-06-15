@@ -3065,7 +3065,6 @@ class ModernDomainOrganizer {
             throw new Error('Impossible de lire la configuration');
         }
     }
-
 async loadAllFolders() {
     try {
         console.log('[ModernDomainOrganizer] 🚀 Chargement COMPLET de tous les dossiers...');
@@ -3077,8 +3076,17 @@ async loadAllFolders() {
         const accessToken = await window.authService.getAccessToken();
         this.allFolders.clear();
         
-        // Charger tous les dossiers récursivement
-        await this.loadFoldersRecursively(accessToken);
+        // Charger d'abord tous les dossiers racine avec pagination
+        await this.loadAllRootFolders(accessToken);
+        
+        // Puis charger récursivement les sous-dossiers pour chaque dossier racine
+        const rootFolders = Array.from(this.allFolders.values()).filter(f => !f.parentFolderId);
+        
+        for (const rootFolder of rootFolders) {
+            if (rootFolder.childFolderCount > 0) {
+                await this.loadFoldersRecursively(accessToken, rootFolder.id, 1);
+            }
+        }
         
         console.log(`[ModernDomainOrganizer] 🎉 Total chargé: ${this.allFolders.size} dossiers`);
         this.updateStat('existingFolders', this.allFolders.size);
@@ -3088,6 +3096,73 @@ async loadAllFolders() {
     } catch (error) {
         console.error('[ModernDomainOrganizer] ❌ Erreur chargement dossiers:', error);
         throw new Error('Impossible de charger les dossiers: ' + error.message);
+    }
+}
+
+// Nouvelle fonction pour charger tous les dossiers racine avec pagination
+async loadAllRootFolders(accessToken) {
+    try {
+        let hasMore = true;
+        let nextLink = 'https://graph.microsoft.com/v1.0/me/mailFolders?$top=100';
+        let totalLoaded = 0;
+        
+        while (hasMore) {
+            console.log(`[ModernDomainOrganizer] 📁 Chargement des dossiers racine (page ${Math.floor(totalLoaded / 100) + 1})...`);
+            
+            const response = await fetch(nextLink, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[ModernDomainOrganizer] ❌ Erreur API:', errorText);
+                break;
+            }
+            
+            const data = await response.json();
+            
+            // Ajouter tous les dossiers de cette page
+            for (const folder of data.value) {
+                const folderKey = folder.displayName.toLowerCase().trim();
+                
+                // Éviter les doublons en utilisant l'ID comme clé de sécurité
+                const uniqueKey = this.allFolders.has(folderKey) 
+                    ? `${folderKey}_${folder.id.slice(-8)}`
+                    : folderKey;
+                
+                this.allFolders.set(uniqueKey, {
+                    id: folder.id,
+                    displayName: folder.displayName,
+                    totalItemCount: folder.totalItemCount || 0,
+                    parentFolderId: null, // Les dossiers racine n'ont pas de parent
+                    childFolderCount: folder.childFolderCount || 0,
+                    wellKnownName: folder.wellKnownName,
+                    depth: 0,
+                    fullPath: folder.displayName
+                });
+                
+                totalLoaded++;
+                console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}" (racine)`);
+            }
+            
+            // Vérifier s'il y a plus de pages
+            if (data['@odata.nextLink']) {
+                nextLink = data['@odata.nextLink'];
+                // Petite pause pour éviter le rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        console.log(`[ModernDomainOrganizer] ✅ ${totalLoaded} dossiers racine chargés`);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur chargement dossiers racine:', error);
+        throw error;
     }
 }
 
@@ -3133,14 +3208,14 @@ async loadFoldersRecursively(accessToken, parentId = null, depth = 0) {
                 id: folder.id,
                 displayName: folder.displayName,
                 totalItemCount: folder.totalItemCount || 0,
-                parentFolderId: folder.parentFolderId || parentId,
+                parentFolderId: parentId, // Utiliser parentId au lieu de folder.parentFolderId
                 childFolderCount: folder.childFolderCount || 0,
                 wellKnownName: folder.wellKnownName,
                 depth: depth,
                 fullPath: this.buildFolderPath(folder.displayName, parentId)
             });
             
-            console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}" (niveau ${depth})`);
+            console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}" (niveau ${depth}, parent: ${parentId || 'racine'})`);
             
             // Charger récursivement les sous-dossiers si ils existent
             if (folder.childFolderCount > 0) {
@@ -3156,7 +3231,36 @@ async loadFoldersRecursively(accessToken, parentId = null, depth = 0) {
         console.error(`[ModernDomainOrganizer] ❌ Erreur chargement niveau ${depth}:`, error);
     }
 }
+buildFolderPath(folderName, parentId) {
+    try {
+        if (!parentId) {
+            return folderName;
+        }
+        
+        // Trouver le parent dans les dossiers déjà chargés par ID
+        const parent = Array.from(this.allFolders.values()).find(f => f.id === parentId);
+        if (parent) {
+            return `${parent.fullPath || parent.displayName} > ${folderName}`;
+        }
+        
+        return folderName;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur construction chemin:', error);
+        return folderName;
+    }
+}
 
+// Fonction helper pour compter tous les enfants
+countAllChildren(folder) {
+    let count = folder.children ? folder.children.length : 0;
+    if (folder.children) {
+        folder.children.forEach(child => {
+            count += this.countAllChildren(child);
+        });
+    }
+    return count;
+}
 buildFolderPath(folderName, parentId) {
     try {
         if (!parentId) {
@@ -3614,7 +3718,6 @@ getFolderDepth(parentFolderId) {
     
     return depth;
 }
-
 buildFolderHierarchy() {
     try {
         console.log('[ModernDomainOrganizer] 🌳 Construction de la hiérarchie complète des dossiers...');
@@ -3625,7 +3728,12 @@ buildFolderHierarchy() {
         
         console.log(`[ModernDomainOrganizer] 📊 Total de dossiers à organiser: ${folders.length}`);
         
-        // Première passe : créer tous les nœuds
+        // Debug: afficher quelques dossiers pour vérifier leur structure
+        if (folders.length > 0) {
+            console.log('[ModernDomainOrganizer] 🔍 Exemple de structure de dossier:', folders[0]);
+        }
+        
+        // Première passe : créer tous les nœuds avec une Map par ID
         folders.forEach(folder => {
             folderMap.set(folder.id, {
                 ...folder,
@@ -3639,21 +3747,22 @@ buildFolderHierarchy() {
         folders.forEach(folder => {
             const folderNode = folderMap.get(folder.id);
             
-            if (!folder.parentFolderId) {
+            if (!folder.parentFolderId || folder.parentFolderId === null) {
                 // Dossier racine
                 rootFolders.set(folder.id, folderNode);
-                console.log(`[ModernDomainOrganizer] 🌳 Racine: "${folder.displayName}"`);
+                console.log(`[ModernDomainOrganizer] 🌳 Racine: "${folder.displayName}" (ID: ${folder.id})`);
             } else {
-                // Dossier enfant
+                // Dossier enfant - chercher le parent par ID
                 const parent = folderMap.get(folder.parentFolderId);
                 if (parent) {
                     parent.children.push(folderNode);
                     folderNode.level = parent.level + 1;
                     folderNode.path = `${parent.path} > ${folder.displayName}`;
+                    console.log(`[ModernDomainOrganizer] 📁 Enfant: "${folder.displayName}" -> Parent: "${parent.displayName}"`);
                 } else {
                     // Parent non trouvé, traiter comme racine
                     rootFolders.set(folder.id, folderNode);
-                    console.warn(`[ModernDomainOrganizer] ⚠️ Orphelin (parent non trouvé): "${folder.displayName}"`);
+                    console.warn(`[ModernDomainOrganizer] ⚠️ Orphelin (parent ${folder.parentFolderId} non trouvé): "${folder.displayName}"`);
                 }
             }
         });
