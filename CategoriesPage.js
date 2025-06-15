@@ -157,7 +157,7 @@ class CategoriesPage {
             <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
                 <div class="modal-modern">
                     <!-- Header avec gradient -->
-                    <div class="modal-header" style="background: linear-gradient(135deg, ${category.color}20, ${category.color}10)">
+                    <div class="modal-header">
                         <div class="modal-title">
                             <span class="modal-icon">${category.icon}</span>
                             <h2>${category.name}</h2>
@@ -950,16 +950,16 @@ class CategoriesPage {
             .card-header {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                margin-bottom: 8px;
+                gap: 10px;
+                margin-bottom: 10px;
             }
             
             .cat-emoji {
-                font-size: 24px;
-                width: 36px;
-                height: 36px;
+                font-size: 28px;
+                width: 42px;
+                height: 42px;
                 background: var(--cat-color)15;
-                border-radius: 10px;
+                border-radius: 12px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -967,10 +967,11 @@ class CategoriesPage {
             }
             
             .cat-name {
-                font-size: 15px;
+                font-size: 18px;
                 font-weight: 600;
                 flex: 1;
                 line-height: 1.2;
+                color: var(--text);
             }
             
             .card-stats {
@@ -983,12 +984,13 @@ class CategoriesPage {
             .stat-badge {
                 display: inline-flex;
                 align-items: center;
-                gap: 3px;
-                padding: 2px 6px;
+                gap: 4px;
+                padding: 4px 8px;
                 background: var(--bg);
                 border-radius: 12px;
-                font-size: 11px;
+                font-size: 13px;
                 color: var(--text-secondary);
+                font-weight: 500;
             }
             
             .stat-badge.special {
@@ -1004,7 +1006,7 @@ class CategoriesPage {
             
             .btn-action {
                 flex: 1;
-                padding: 6px;
+                padding: 8px 12px;
                 border: 2px solid var(--border);
                 background: var(--surface);
                 border-radius: 8px;
@@ -1013,7 +1015,8 @@ class CategoriesPage {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
+                font-size: 14px;
+                min-width: 48px;
             }
             
             .btn-action:hover {
@@ -1047,8 +1050,8 @@ class CategoriesPage {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(4px);
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(8px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1066,12 +1069,13 @@ class CategoriesPage {
                 background: var(--surface);
                 border-radius: 24px;
                 width: 100%;
-                max-width: 820px;
-                max-height: 85vh;
+                max-width: 900px;
+                max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+                box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
                 animation: slideUp 0.3s;
+                border: 1px solid var(--border);
             }
             
             @keyframes slideUp {
@@ -1085,11 +1089,13 @@ class CategoriesPage {
             
             .modal-header,
             .create-header {
-                padding: 24px;
-                border-bottom: 1px solid var(--border);
+                padding: 28px;
+                border-bottom: 2px solid var(--border);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                background: var(--bg);
+                border-radius: 24px 24px 0 0;
             }
             
             .modal-title {
@@ -1130,10 +1136,10 @@ class CategoriesPage {
             /* Tabs modernes */
             .tabs-modern {
                 display: flex;
-                padding: 0 24px;
+                padding: 0 28px;
                 gap: 32px;
-                border-bottom: 1px solid var(--border);
-                background: var(--bg);
+                border-bottom: 2px solid var(--border);
+                background: #FFFFFF;
             }
             
             .tab {
@@ -1173,9 +1179,10 @@ class CategoriesPage {
             /* Contenu modal */
             .modal-content,
             .create-content {
-                padding: 24px;
+                padding: 28px;
                 overflow-y: auto;
                 flex: 1;
+                background: var(--surface);
             }
             
             .tab-panel {
@@ -1195,8 +1202,9 @@ class CategoriesPage {
             
             .keyword-box {
                 background: var(--bg);
+                border: 1px solid var(--border);
                 border-radius: 16px;
-                padding: 20px;
+                padding: 24px;
                 transition: all 0.3s;
             }
             
@@ -1326,9 +1334,11 @@ class CategoriesPage {
             }
             
             .filter-section {
-                background: var(--bg);
-                border-radius: 16px;
-                padding: 24px;
+                background: #FFFFFF;
+                border: 1px solid var(--border);
+                border-radius: 20px;
+                padding: 28px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             }
             
             .filter-section h3 {
@@ -1413,12 +1423,13 @@ class CategoriesPage {
             
             /* Footer modal */
             .modal-footer {
-                padding: 20px 24px;
-                border-top: 1px solid var(--border);
+                padding: 24px 28px;
+                border-top: 2px solid var(--border);
                 display: flex;
                 justify-content: flex-end;
                 gap: 12px;
                 background: var(--bg);
+                border-radius: 0 0 24px 24px;
             }
             
             /* Boutons modernes */
