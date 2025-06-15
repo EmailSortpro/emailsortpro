@@ -3623,6 +3623,8 @@ buildFolderHierarchy() {
         const folderMap = new Map();
         const rootFolders = new Map();
         
+        console.log(`[ModernDomainOrganizer] 📊 Total de dossiers à organiser: ${folders.length}`);
+        
         // Première passe : créer tous les nœuds
         folders.forEach(folder => {
             folderMap.set(folder.id, {
@@ -3651,7 +3653,7 @@ buildFolderHierarchy() {
                 } else {
                     // Parent non trouvé, traiter comme racine
                     rootFolders.set(folder.id, folderNode);
-                    console.warn(`[ModernDomainOrganizer] ⚠️ Orphelin: "${folder.displayName}"`);
+                    console.warn(`[ModernDomainOrganizer] ⚠️ Orphelin (parent non trouvé): "${folder.displayName}"`);
                 }
             }
         });
@@ -3659,13 +3661,36 @@ buildFolderHierarchy() {
         // Trier les dossiers racine et leurs enfants
         this.sortFolderHierarchy(rootFolders);
         
-        console.log(`[ModernDomainOrganizer] ✅ Hiérarchie: ${rootFolders.size} racines, ${folders.length} total`);
+        console.log(`[ModernDomainOrganizer] ✅ Hiérarchie construite: ${rootFolders.size} racines, ${folders.length} total`);
+        
+        // Log détaillé de la structure
+        let totalWithChildren = 0;
+        rootFolders.forEach(root => {
+            const childCount = this.countAllChildren(root);
+            if (childCount > 0) {
+                totalWithChildren++;
+                console.log(`[ModernDomainOrganizer] 📂 "${root.displayName}": ${childCount} enfants`);
+            }
+        });
+        console.log(`[ModernDomainOrganizer] 📊 ${totalWithChildren} dossiers ont des sous-dossiers`);
+        
         return rootFolders;
         
     } catch (error) {
         console.error('[ModernDomainOrganizer] ❌ Erreur construction hiérarchie:', error);
         return new Map();
     }
+}
+
+// Fonction helper pour compter tous les enfants
+countAllChildren(folder) {
+    let count = folder.children ? folder.children.length : 0;
+    if (folder.children) {
+        folder.children.forEach(child => {
+            count += this.countAllChildren(child);
+        });
+    }
+    return count;
 }
 
 sortFolderHierarchy(rootFolders) {
@@ -3680,7 +3705,8 @@ sortFolderHierarchy(rootFolders) {
                 'deleteditems': 3, 'éléments supprimés': 3, 'deleted items': 3,
                 'junkemail': 4, 'courrier indésirable': 4, 'junk email': 4,
                 'archive': 5, 'archives': 5,
-                'outbox': 6
+                'outbox': 6,
+                'notes': 7
             };
             
             const aName = a.wellKnownName?.toLowerCase() || a.displayName.toLowerCase();
@@ -3704,11 +3730,12 @@ sortFolderHierarchy(rootFolders) {
             this.sortChildren(folder);
         });
         
+        console.log(`[ModernDomainOrganizer] ✅ Hiérarchie triée: ${rootFolders.size} dossiers racine`);
+        
     } catch (error) {
         console.error('[ModernDomainOrganizer] Erreur tri hiérarchie:', error);
     }
 }
-
 sortChildren(folder) {
     if (folder.children && folder.children.length > 0) {
         folder.children.sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -3910,7 +3937,6 @@ createFolderSelectModal(domain, emailId, currentFolder) {
     }
 }
 
-
 generateHierarchicalFolderTree(hierarchy, currentFolder) {
     try {
         console.log('[ModernDomainOrganizer] 🎨 Génération de l\'arbre hiérarchique complet');
@@ -4105,6 +4131,7 @@ generateFolderTreeHTML(hierarchy, flatFolders, currentFolder) {
         return '<div class="error-folders">Erreur lors du chargement de l\'arborescence des dossiers</div>';
     }
 }
+
 generateFolderNodeHTML(folder, currentFolder, level) {
     try {
         const isSelected = currentFolder === folder.displayName;
@@ -4173,6 +4200,7 @@ generateFolderNodeHTML(folder, currentFolder, level) {
         return `<div class="error-folder-node">Erreur: ${folder?.displayName || 'Dossier inconnu'}</div>`;
     }
 }
+
 getFolderIcon(folderName, wellKnownName) {
     try {
         // Icônes basées sur le nom bien connu en priorité
@@ -4186,6 +4214,9 @@ getFolderIcon(folderName, wellKnownName) {
                 case 'outbox': return '📮';
                 case 'archive': return '📦';
                 case 'notes': return '📓';
+                case 'tasks': return '✓';
+                case 'calendar': return '📅';
+                case 'contacts': return '👥';
                 default: return '📁';
             }
         }
@@ -4222,6 +4253,16 @@ getFolderIcon(folderName, wellKnownName) {
         if (name.includes('bank') || name.includes('banque')) return '🏦';
         if (name.includes('health') || name.includes('santé')) return '🏥';
         if (name.includes('education') || name.includes('école')) return '🎓';
+        if (name.includes('project') || name.includes('projet')) return '📊';
+        if (name.includes('personal') || name.includes('personnel')) return '👤';
+        if (name.includes('family') || name.includes('famille')) return '👨‍👩‍👧‍👦';
+        if (name.includes('finance')) return '💰';
+        if (name.includes('urgent')) return '🚨';
+        if (name.includes('meeting') || name.includes('réunion')) return '👥';
+        if (name.includes('invoice') || name.includes('facture')) return '🧾';
+        if (name.includes('receipt') || name.includes('reçu')) return '🧾';
+        if (name.includes('order') || name.includes('commande')) return '📦';
+        if (name.includes('subscription') || name.includes('abonnement')) return '🔄';
         
         return '📁';
         
@@ -4230,7 +4271,6 @@ getFolderIcon(folderName, wellKnownName) {
         return '📁';
     }
 }
-
 
 getFolderIcon(folderName) {
     try {
@@ -4353,7 +4393,6 @@ showCustomFolderInput() {
     }
 }
 
-
 filterFolders(searchTerm) {
     try {
         const term = searchTerm.toLowerCase().trim();
@@ -4424,7 +4463,6 @@ filterFolders(searchTerm) {
         console.error('[ModernDomainOrganizer] ❌ Erreur filtrage:', error);
     }
 }
-
 expandMatchedFolders(matchedFolders) {
     try {
         matchedFolders.forEach(folderId => {
@@ -4500,7 +4538,6 @@ showParentFolders(option) {
         console.error('[ModernDomainOrganizer] Erreur affichage parents:', error);
     }
 }
-
 expandAllVisibleFolders() {
     try {
         const visibleFolders = document.querySelectorAll('.folder-option:not([style*="display: none"])');
