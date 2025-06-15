@@ -1,6 +1,6 @@
-// StartScan.js - Version 9.1 - SANS CategoriesPage (qui est dans un fichier séparé)
+// StartScan.js - Version 9.0 - Mise en évidence des catégories pré-sélectionnées
 
-console.log('[StartScan] 🚀 Loading StartScan.js v9.1 (Scanner uniquement)...');
+console.log('[StartScan] 🚀 Loading StartScan.js v9.0...');
 
 class MinimalScanModule {
     constructor() {
@@ -15,7 +15,7 @@ class MinimalScanModule {
         this.taskPreselectedCategories = [];
         this.lastSettingsSync = 0;
         
-        console.log('[MinimalScan] Scanner v9.1 initialized - Module scanner uniquement');
+        console.log('[MinimalScan] Scanner v9.0 initialized - Mise en évidence des catégories');
         this.loadSettingsFromCategoryManager();
         this.addMinimalStyles();
     }
@@ -153,7 +153,7 @@ class MinimalScanModule {
         const styles = document.createElement('style');
         styles.id = 'minimal-scan-styles';
         styles.textContent = `
-            /* Scanner Ultra-Minimaliste v9.1 */
+            /* Scanner Ultra-Minimaliste v9.0 */
             .minimal-scanner {
                 height: calc(100vh - 140px);
                 display: flex;
@@ -544,11 +544,11 @@ class MinimalScanModule {
         
         document.head.appendChild(styles);
         this.stylesAdded = true;
-        console.log('[MinimalScan] ✅ Styles v9.1 ajoutés');
+        console.log('[MinimalScan] ✅ Styles v9.0 ajoutés');
     }
 
     async render(container) {
-        console.log('[MinimalScan] 🎯 Rendu du scanner v9.1...');
+        console.log('[MinimalScan] 🎯 Rendu du scanner v9.0...');
         
         try {
             this.addMinimalStyles();
@@ -565,7 +565,7 @@ class MinimalScanModule {
             this.initializeEvents();
             this.isInitialized = true;
             
-            console.log('[MinimalScan] ✅ Scanner v9.1 rendu avec succès');
+            console.log('[MinimalScan] ✅ Scanner v9.0 rendu avec succès');
             
         } catch (error) {
             console.error('[MinimalScan] ❌ Erreur lors du rendu:', error);
@@ -1062,14 +1062,4 @@ window.MinimalScanModule = MinimalScanModule;
 window.minimalScanModule = new MinimalScanModule();
 window.scanStartModule = window.minimalScanModule;
 
-// S'assurer que le module est accessible sous tous les noms attendus
-window.scanStartModule.isReady = true;
-window.scanStartModule.stylesAdded = true;
-
-console.log('[StartScan] ✅ Scanner v9.1 chargé - Module scanner uniquement (sans CategoriesPage)!');
-console.log('[StartScan] 📊 Modules disponibles:', {
-    minimalScanModule: !!window.minimalScanModule,
-    scanStartModule: !!window.scanStartModule,
-    render: typeof window.scanStartModule.render,
-    isReady: window.scanStartModule.isReady
-});
+console.log('[StartScan] ✅ Scanner v9.0 chargé - Mise en évidence des catégories pré-sélectionnées!');
