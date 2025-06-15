@@ -1008,7 +1008,7 @@ class CategoriesPage {
                 padding: 0;
             }
             
-            /* Carte de catégorie avec hauteur minimale */
+            /* Carte de catégorie avec largeur uniforme */
             .category-card {
                 background: var(--surface);
                 border-radius: 10px;
@@ -1022,7 +1022,6 @@ class CategoriesPage {
                 gap: 10px;
                 width: 100%;
                 box-sizing: border-box;
-                min-height: 120px;
             }
             
             .category-card:hover {
@@ -1065,15 +1064,9 @@ class CategoriesPage {
                 font-size: 16px;
                 font-weight: 600;
                 color: var(--text);
-                line-height: 1.3;
-                word-wrap: break-word;
-                overflow-wrap: break-word;
-                hyphens: auto;
-                max-height: 2.6em; /* 2 lignes max */
+                white-space: nowrap;
                 overflow: hidden;
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
+                text-overflow: ellipsis;
             }
             
             .cat-meta {
@@ -1099,7 +1092,6 @@ class CategoriesPage {
                 grid-template-columns: repeat(3, 32px);
                 gap: 3px;
                 justify-content: start;
-                margin-top: auto; /* Pousse les boutons en bas */
             }
             
             /* Boutons minimalistes uniformes */
