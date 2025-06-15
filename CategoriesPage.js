@@ -792,9 +792,15 @@ class CategoriesPage {
     loadSettings() {
         try {
             const saved = localStorage.getItem('categorySettings');
-            return saved ? JSON.parse(saved) : { activeCategories: null };
+            return saved ? JSON.parse(saved) : { 
+                activeCategories: null,
+                preselectedCategories: []
+            };
         } catch (error) {
-            return { activeCategories: null };
+            return { 
+                activeCategories: null,
+                preselectedCategories: []
+            };
         }
     }
 
@@ -1199,14 +1205,15 @@ class CategoriesPage {
                 max-width: 480px;
             }
             
+            /* Modal header opaque */
             .modal-header,
             .create-header {
                 padding: 28px;
-                border-bottom: 2px solid var(--border);
+                border-bottom: 2px solid #D1D5DB;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                background: var(--bg);
+                background: #FFFFFF;
                 border-radius: 24px 24px 0 0;
             }
             
@@ -1245,12 +1252,12 @@ class CategoriesPage {
                 color: var(--danger);
             }
             
-            /* Tabs modernes */
+            /* Tabs modernes avec fond solide */
             .tabs-modern {
                 display: flex;
                 padding: 0 28px;
                 gap: 32px;
-                border-bottom: 2px solid var(--border);
+                border-bottom: 2px solid #D1D5DB;
                 background: #FFFFFF;
             }
             
@@ -1288,23 +1295,37 @@ class CategoriesPage {
                 border-radius: 3px 3px 0 0;
             }
             
+            /* Modal body wrapper */
+            .modal-body-wrapper {
+                background: #E8EAED;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+            
             /* Contenu modal */
-            .modal-content,
+            .modal-content {
+                padding: 0;
+                overflow-y: auto;
+                flex: 1;
+                background: #E8EAED;
+                position: relative;
+            }
+            
             .create-content {
                 padding: 28px;
                 overflow-y: auto;
                 flex: 1;
-                background: #F5F6F7;
-                position: relative;
+                background: #FFFFFF;
             }
             
             /* Tab panel fond opaque */
             .tab-panel {
                 display: none;
-                background: #F5F6F7;
-                border-radius: 0 0 16px 16px;
+                background: #E8EAED;
                 min-height: 400px;
-                padding: 4px;
+                padding: 24px;
             }
             
             .tab-panel.active {
@@ -1321,10 +1342,7 @@ class CategoriesPage {
             
             .keywords-left-section {
                 overflow-y: auto;
-                padding-right: 12px;
-                background: #F5F6F7;
-                border-radius: 12px;
-                padding: 16px;
+                padding-right: 20px;
             }
             
             .keywords-grid {
@@ -1334,13 +1352,8 @@ class CategoriesPage {
             }
             
             .keywords-right-section {
-                border-left: 2px solid var(--border);
                 padding-left: 24px;
                 overflow-y: auto;
-                background: #F5F6F7;
-                margin-left: -12px;
-                padding: 16px 16px 16px 24px;
-                border-radius: 12px;
             }
             
             .filter-compact-box {
@@ -1628,14 +1641,14 @@ class CategoriesPage {
                 transform: scale(1.02);
             }
             
-            /* Footer modal */
+            /* Footer modal opaque */
             .modal-footer {
                 padding: 24px 28px;
-                border-top: 2px solid var(--border);
+                border-top: 2px solid #D1D5DB;
                 display: flex;
                 justify-content: flex-end;
                 gap: 12px;
-                background: var(--bg);
+                background: #FFFFFF;
                 border-radius: 0 0 24px 24px;
             }
             
