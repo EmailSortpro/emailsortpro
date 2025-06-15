@@ -1086,6 +1086,7 @@ class CategoriesPage {
             .card-actions {
                 display: flex;
                 gap: 4px;
+                justify-content: flex-start;
             }
             
             /* Boutons minimalistes */
@@ -1102,13 +1103,19 @@ class CategoriesPage {
                 align-items: center;
                 justify-content: center;
                 height: 28px;
+                min-width: 28px;
             }
             
             .btn-minimal:hover {
                 transform: scale(1.05);
             }
             
-            /* Bouton ON/OFF */
+            /* Bouton ON/OFF - largeur fixe */
+            .btn-minimal.on,
+            .btn-minimal.off {
+                width: 42px;
+            }
+            
             .btn-minimal.on {
                 background: #10B981;
                 color: white;
@@ -1121,7 +1128,13 @@ class CategoriesPage {
                 border-color: #EF4444;
             }
             
-            /* Bouton tâche */
+            /* Bouton tâche - largeur fixe */
+            .btn-minimal.task-on,
+            .btn-minimal.task-off {
+                width: 28px;
+                padding: 0;
+            }
+            
             .btn-minimal.task-on {
                 background: var(--primary);
                 color: white;
@@ -1139,7 +1152,7 @@ class CategoriesPage {
                 border-color: var(--primary);
             }
             
-            /* Bouton config */
+            /* Bouton config - largeur fixe */
             .btn-minimal.config {
                 background: white;
                 color: #6B7280;
