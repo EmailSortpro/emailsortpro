@@ -644,7 +644,6 @@ dispatchEvent(eventName, detail) {
             }, 100);
         }
     }
-
 buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     // Récupérer les catégories pré-sélectionnées
     const preselectedCategories = this.getTaskPreselectedCategories();
@@ -692,12 +691,12 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         });
     }
     
-    // Générer le HTML avec structure fixe
+    // Générer le HTML - SANS POSITION ABSOLUE
     return tabs.map(tab => {
         const isCurrentCategory = this.currentCategory === tab.id;
         const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
         
-        // Styles spéciaux pour les catégories pré-sélectionnées
+        // Styles inline pour les catégories pré-sélectionnées
         let extraStyles = '';
         if (tab.isPreselected && !isCurrentCategory) {
             extraStyles = `style="border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};"`;
@@ -715,10 +714,12 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
                     <div class="pill-first-line-twolines">
                         <span class="pill-icon-twolines">${tab.icon}</span>
                         <span class="pill-count-twolines">${tab.count}</span>
-                        ${tab.isPreselected ? '<span class="pill-star-inline">⭐</span>' : ''}
                     </div>
                     <div class="pill-second-line-twolines">
-                        <span class="pill-text-twolines">${tab.name}</span>
+                        <span class="pill-text-twolines">
+                            ${tab.name}
+                            ${tab.isPreselected ? '<span class="star-indicator">⭐</span>' : ''}
+                        </span>
                     </div>
                 </div>
             </button>
