@@ -121,7 +121,7 @@ class CategoriesPage {
                             onclick="window.categoriesPage.toggleCategory('${id}')">
                         ${isActive ? 'ON' : 'OFF'}
                     </button>
-                    <button class="btn-minimal ${isPreselected ? 'task-on' : 'task-off'}" 
+                    <button class="btn-minimal task ${isPreselected ? 'selected' : ''}" 
                             onclick="window.categoriesPage.togglePreselection('${id}')"
                             title="${isPreselected ? 'Tâches pré-cochées' : 'Tâches non cochées'}">
                         <i class="fas fa-${isPreselected ? 'check-square' : 'square'}"></i>
@@ -1085,14 +1085,16 @@ class CategoriesPage {
             
             .card-actions {
                 display: flex;
-                gap: 4px;
+                gap: 3px;
                 justify-content: flex-start;
             }
             
-            /* Boutons minimalistes */
+            /* Boutons minimalistes uniformes */
             .btn-minimal {
-                padding: 6px 10px;
-                border: 1px solid var(--border);
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: 1px solid #E5E7EB;
                 background: white;
                 border-radius: 6px;
                 cursor: pointer;
@@ -1102,20 +1104,14 @@ class CategoriesPage {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                height: 28px;
-                min-width: 28px;
+                flex-shrink: 0;
             }
             
             .btn-minimal:hover {
                 transform: scale(1.05);
             }
             
-            /* Bouton ON/OFF - largeur fixe */
-            .btn-minimal.on,
-            .btn-minimal.off {
-                width: 42px;
-            }
-            
+            /* Bouton ON/OFF */
             .btn-minimal.on {
                 background: #10B981;
                 color: white;
@@ -1128,37 +1124,25 @@ class CategoriesPage {
                 border-color: #EF4444;
             }
             
-            /* Bouton tâche - largeur fixe */
-            .btn-minimal.task-on,
-            .btn-minimal.task-off {
-                width: 28px;
-                padding: 0;
+            /* Bouton tâche */
+            .btn-minimal.task {
+                color: #9CA3AF;
             }
             
-            .btn-minimal.task-on {
+            .btn-minimal.task.selected {
                 background: var(--primary);
                 color: white;
                 border-color: var(--primary);
             }
             
-            .btn-minimal.task-off {
-                background: white;
-                color: #9CA3AF;
-                border-color: #E5E7EB;
-            }
-            
-            .btn-minimal.task-off:hover {
+            .btn-minimal.task:not(.selected):hover {
                 color: var(--primary);
                 border-color: var(--primary);
             }
             
-            /* Bouton config - largeur fixe */
+            /* Bouton config */
             .btn-minimal.config {
-                background: white;
                 color: #6B7280;
-                border-color: #E5E7EB;
-                width: 28px;
-                padding: 0;
             }
             
             .btn-minimal.config:hover {
