@@ -695,40 +695,30 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     // Générer le HTML avec structure fixe
     return tabs.map(tab => {
         const isCurrentCategory = this.currentCategory === tab.id;
-        const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''}`;
+        const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
         
-        // Ajouter des classes et styles spéciaux pour les catégories pré-sélectionnées
-        let extraClasses = '';
+        // Styles spéciaux pour les catégories pré-sélectionnées
         let extraStyles = '';
-        
         if (tab.isPreselected && !isCurrentCategory) {
-            extraClasses = ' preselected-category';
             extraStyles = `style="border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};"`;
         } else if (tab.isPreselected && isCurrentCategory) {
-            extraClasses = ' preselected-category';
             extraStyles = `style="box-shadow: 0 0 0 3px ${tab.color || '#8b5cf6'}40;"`;
         }
         
         return `
-            <button class="${baseClasses}${extraClasses}" 
+            <button class="${baseClasses}" 
                     ${extraStyles}
                     onclick="window.pageManager.filterByCategory('${tab.id}')"
                     data-category-id="${tab.id}"
                     title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                <!-- Structure avec padding pour l'étoile -->
-                <div class="pill-wrapper-with-star">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">${tab.icon}</span>
-                            <span class="pill-count-twolines">${tab.count}</span>
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines">${tab.name}</span>
-                        </div>
+                <div class="pill-content-twolines">
+                    <div class="pill-first-line-twolines">
+                        <span class="pill-icon-twolines">${tab.icon}</span>
+                        <span class="pill-count-twolines">${tab.count}</span>
+                        ${tab.isPreselected ? '<span class="pill-star-inline">⭐</span>' : ''}
                     </div>
-                    <!-- Container d'étoile toujours présent -->
-                    <div class="star-slot ${tab.isPreselected ? 'has-star' : ''}">
-                        ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+                    <div class="pill-second-line-twolines">
+                        <span class="pill-text-twolines">${tab.name}</span>
                     </div>
                 </div>
             </button>
@@ -2346,36 +2336,36 @@ addHarmonizedEmailStyles() {
         }
         
         /* ===== FILTRES DE CATÉGORIES AVEC STRUCTURE FIXE ===== */
-        .status-filters-harmonized-twolines {
-            display: flex;
-            gap: var(--gap-small);
-            margin-bottom: var(--gap-medium);
-            flex-wrap: wrap;
-            width: 100%;
-        }
+.status-filters-harmonized-twolines {
+    display: flex;
+    gap: var(--gap-small);
+    margin-bottom: var(--gap-medium);
+    flex-wrap: wrap;
+    width: 100%;
+}
         
-        .status-pill-harmonized-twolines {
-            height: 60px;
-            padding: 0;
-            font-size: 12px;
-            font-weight: 700;
-            flex: 0 1 calc(16.666% - var(--gap-small));
-            min-width: 120px;
-            max-width: 180px;
-            border-radius: var(--btn-border-radius);
-            box-shadow: var(--shadow-base);
-            transition: all var(--transition-speed) ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: white;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
+.status-pill-harmonized-twolines {
+    height: 60px;
+    padding: var(--gap-small);
+    font-size: 12px;
+    font-weight: 700;
+    flex: 0 1 calc(16.666% - var(--gap-small));
+    min-width: 120px;
+    max-width: 180px;
+    border-radius: var(--btn-border-radius);
+    box-shadow: var(--shadow-base);
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: white;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
         
         /* Wrapper interne avec padding pour l'étoile */
         .pill-wrapper-with-star {
@@ -2390,70 +2380,70 @@ addHarmonizedEmailStyles() {
         }
         
         /* Style pour les catégories pré-sélectionnées */
-        .status-pill-harmonized-twolines.preselected-category {
-            animation: pulsePreselected 3s ease-in-out infinite;
-            border-width: 2px;
-        }
+.status-pill-harmonized-twolines.preselected-category {
+    animation: pulsePreselected 3s ease-in-out infinite;
+    border-width: 2px;
+}
         
-        .status-pill-harmonized-twolines.preselected-category::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border-radius: inherit;
-            background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
-            background-size: 300% 300%;
-            animation: gradientShift 4s ease infinite;
-            z-index: -1;
-            opacity: 0.3;
-        }
+.status-pill-harmonized-twolines.preselected-category::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: inherit;
+    background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
+    background-size: 300% 300%;
+    animation: gradientShift 4s ease infinite;
+    z-index: -1;
+    opacity: 0.3;
+}
         
-        @keyframes pulsePreselected {
-            0%, 100% { 
-                transform: scale(1);
-            }
-            50% { 
-                transform: scale(1.03);
-            }
-        }
+@keyframes pulsePreselected {
+    0%, 100% { 
+        transform: scale(1);
+    }
+    50% { 
+        transform: scale(1.03);
+    }
+}
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
         
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+.pill-content-twolines {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+}
+.pill-first-line-twolines {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 20px; /* Hauteur fixe pour éviter les variations */
+}
         
-        .pill-content-twolines {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            width: 100%;
-            height: 100%;
-            justify-content: center;
-        }
+.pill-icon-twolines {
+    font-size: 16px;
+}
+
         
-        .pill-first-line-twolines {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .pill-icon-twolines {
-            font-size: 16px;
-        }
-        
-        .pill-count-twolines {
-            background: rgba(0, 0, 0, 0.1);
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: 800;
-            min-width: 18px;
-            text-align: center;
-        }
+.pill-count-twolines {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    min-width: 18px;
+    text-align: center;
+}
         
         /* Slot pour l'étoile - toujours présent */
         .star-slot {
@@ -2492,40 +2482,61 @@ addHarmonizedEmailStyles() {
                 box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
             }
         }
+
+        .pill-star-inline {
+    font-size: 12px;
+    margin-left: 2px;
+    filter: brightness(1.2);
+    animation: starGlow 2s ease-in-out infinite;
+}
+
+
+@keyframes starGlow {
+    0%, 100% { 
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 1;
+        transform: scale(1.1);
+    }
+}
         
-        .pill-text-twolines {
-            font-weight: 700;
-            font-size: 12px;
-            line-height: 1.2;
-            text-align: center;
-        }
+.pill-text-twolines {
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1.2;
+    text-align: center;
+}
         
-        .status-pill-harmonized-twolines:hover {
-            border-color: #3b82f6;
-            background: #f0f9ff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-        }
-        
-        .status-pill-harmonized-twolines.active {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-            border-color: #3b82f6;
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-            transform: translateY(-2px);
-        }
-        
+.status-pill-harmonized-twolines:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+}
+.status-pill-harmonized-twolines.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+}        
         /* Catégorie active ET pré-sélectionnée */
-        .status-pill-harmonized-twolines.active.preselected-category {
-            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
-        }
+.status-pill-harmonized-twolines.active.preselected-category {
+    background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+    box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+}
         
-        .status-pill-harmonized-twolines.active .pill-count-twolines {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
+.status-pill-harmonized-twolines.active .pill-count-twolines {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
         
+.status-pill-harmonized-twolines.active .pill-star-inline {
+    color: white;
+    filter: brightness(1.5);
+}
         /* Container des emails */
         .tasks-container-harmonized {
             background: transparent;
