@@ -1,20 +1,21 @@
-// app.js - Application avec gestion intelligente du scroll et navigation dashboard via module
+// app.js - Application avec gestion dual provider (Microsoft + Google) et navigation dashboard
 
 class App {
     constructor() {
         this.user = null;
         this.isAuthenticated = false;
+        this.activeProvider = null; // 'microsoft' ou 'google'
         this.initializationAttempts = 0;
         this.maxInitAttempts = 3;
         this.isInitializing = false;
         this.initializationPromise = null;
-        this.currentPage = 'dashboard'; // Suivre la page actuelle
+        this.currentPage = 'dashboard';
         
-        console.log('[App] Constructor - Application starting...');
+        console.log('[App] Constructor - Application starting with dual provider support...');
     }
 
     async init() {
-        console.log('[App] Initializing...');
+        console.log('[App] Initializing dual provider application...');
         
         if (this.initializationPromise) {
             console.log('[App] Already initializing, waiting...');
@@ -39,16 +40,46 @@ class App {
                 return;
             }
 
-            console.log('[App] Initializing auth service...');
+            console.log('[App] Initializing auth services...');
             
             const initTimeout = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Initialization timeout')), 20000)
+                setTimeout(() => reject(new Error('Initialization timeout')), 30000)
             );
             
-            const initPromise = window.authService.initialize();
-            await Promise.race([initPromise, initTimeout]);
+            // Initialiser les deux services d'authentification en parallèle
+            const authPromises = [];
             
-            console.log('[App] Auth service initialized');
+            if (window.authService) {
+                authPromises.push(
+                    window.authService.initialize().then(() => {
+                        console.log('[App] ✅ Microsoft auth service initialized');
+                        return 'microsoft';
+                    }).catch(error => {
+                        console.warn('[App] ⚠️ Microsoft auth service failed:', error.message);
+                        return null;
+                    })
+                );
+            }
+            
+            if (window.googleAuthService) {
+                authPromises.push(
+                    window.googleAuthService.initialize().then(() => {
+                        console.log('[App] ✅ Google auth service initialized');
+                        return 'google';
+                    }).catch(error => {
+                        console.warn('[App] ⚠️ Google auth service failed:', error.message);
+                        return null;
+                    })
+                );
+            }
+            
+            // Attendre au moins un service d'auth
+            const initResults = await Promise.race([
+                Promise.allSettled(authPromises),
+                initTimeout
+            ]);
+            
+            console.log('[App] Auth services initialization results:', initResults);
             
             // INITIALISER LES MODULES CRITIQUES
             await this.initializeCriticalModules();
@@ -105,7 +136,6 @@ class App {
         // Fonction pour vérifier si le scroll est nécessaire - AVEC PROTECTION CONTRE LES BOUCLES
         this.checkScrollNeeded = () => {
             if (scrollCheckInProgress) {
-                console.log('[SCROLL_MANAGER] Check already in progress, skipping...');
                 return;
             }
             
@@ -127,14 +157,6 @@ class App {
                     lastContentHeight = contentHeight;
                     lastViewportHeight = viewportHeight;
                     
-                    console.log('[SCROLL_MANAGER]', {
-                        currentPage,
-                        contentHeight,
-                        viewportHeight,
-                        dimensionsChanged,
-                        needsScroll: contentHeight > viewportHeight + 100
-                    });
-                    
                     // Dashboard: JAMAIS de scroll
                     if (currentPage === 'dashboard') {
                         const newState = 'dashboard-no-scroll';
@@ -144,7 +166,6 @@ class App {
                             body.style.overflowY = 'hidden';
                             body.style.overflowX = 'hidden';
                             lastScrollState = newState;
-                            console.log('[SCROLL_MANAGER] Dashboard - scroll disabled');
                         }
                         scrollCheckInProgress = false;
                         return;
@@ -162,17 +183,13 @@ class App {
                             body.style.overflow = '';
                             body.style.overflowY = '';
                             body.style.overflowX = '';
-                            console.log('[SCROLL_MANAGER] Scroll enabled for', currentPage);
                         } else {
                             body.classList.remove('needs-scroll');
                             body.style.overflow = 'hidden';
                             body.style.overflowY = 'hidden';
                             body.style.overflowX = 'hidden';
-                            console.log('[SCROLL_MANAGER] Scroll disabled for', currentPage);
                         }
                         lastScrollState = newState;
-                    } else {
-                        console.log('[SCROLL_MANAGER] No state change needed for', currentPage);
                     }
                     
                 } catch (error) {
@@ -180,13 +197,12 @@ class App {
                 } finally {
                     scrollCheckInProgress = false;
                 }
-            }, 150); // Délai augmenté pour plus de stabilité
+            }, 150);
         };
 
         // Fonction pour définir le mode de page - OPTIMISÉE
         window.setPageMode = (pageName) => {
             if (!pageName || this.currentPage === pageName) {
-                console.log('[PAGE_MODE] Same page or invalid page name, skipping...');
                 return;
             }
             
@@ -195,8 +211,6 @@ class App {
             // Mettre à jour la page actuelle
             const previousPage = this.currentPage;
             this.currentPage = pageName;
-            
-            console.log(`[PAGE_MODE] Switching from ${previousPage} to ${pageName}`);
             
             // Nettoyer les anciennes classes de page
             body.classList.remove(
@@ -219,13 +233,12 @@ class App {
                 body.style.overflowY = 'hidden';
                 body.style.overflowX = 'hidden';
                 lastScrollState = 'dashboard-no-scroll';
-                console.log('[PAGE_MODE] Dashboard - scroll immediately disabled');
                 return;
             }
             
             // Autres pages: vérifier après stabilisation du contenu
             setTimeout(() => {
-                if (this.currentPage === pageName) { // Vérifier qu'on est toujours sur la même page
+                if (this.currentPage === pageName) {
                     this.checkScrollNeeded();
                 }
             }, 300);
@@ -237,27 +250,23 @@ class App {
             let pendingMutations = false;
             
             const contentObserver = new MutationObserver((mutations) => {
-                // Ignorer pour le dashboard
                 if (this.currentPage === 'dashboard') {
                     return;
                 }
                 
-                // Filtrer les mutations importantes
                 const significantChanges = mutations.some(mutation => {
-                    // Ignorer les changements de style/classe liés au scroll
                     if (mutation.type === 'attributes') {
                         const attrName = mutation.attributeName;
                         const target = mutation.target;
                         
                         if (attrName === 'style' && target === document.body) {
-                            return false; // Ignorer les changements de style sur body
+                            return false;
                         }
                         if (attrName === 'class' && target === document.body) {
-                            return false; // Ignorer les changements de classe sur body
+                            return false;
                         }
                     }
                     
-                    // Considérer les ajouts/suppressions d'éléments
                     if (mutation.type === 'childList') {
                         return mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0;
                     }
@@ -271,7 +280,6 @@ class App {
                     
                     observerTimeout = setTimeout(() => {
                         if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
-                            console.log('[SCROLL_MANAGER] Significant content change detected');
                             this.checkScrollNeeded();
                         }
                         pendingMutations = false;
@@ -279,7 +287,6 @@ class App {
                 }
             });
 
-            // Observer avec configuration optimisée
             contentObserver.observe(document.body, {
                 childList: true,
                 subtree: true,
@@ -287,8 +294,6 @@ class App {
                 attributeFilter: ['style', 'class'],
                 attributeOldValue: false
             });
-
-            console.log('[SCROLL_MANAGER] Optimized content observer initialized');
         }
 
         // Gestionnaire de redimensionnement optimisé
@@ -298,7 +303,6 @@ class App {
         window.addEventListener('resize', () => {
             const currentSize = { width: window.innerWidth, height: window.innerHeight };
             
-            // Vérifier si la taille a réellement changé de manière significative
             const sizeChanged = 
                 Math.abs(currentSize.width - lastWindowSize.width) > 10 ||
                 Math.abs(currentSize.height - lastWindowSize.height) > 10;
@@ -312,7 +316,6 @@ class App {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
                 if (this.currentPage !== 'dashboard' && !scrollCheckInProgress) {
-                    console.log('[SCROLL_MANAGER] Window resized significantly');
                     this.checkScrollNeeded();
                 }
             }, 300);
@@ -507,8 +510,8 @@ class App {
             return false;
         }
 
-        if (!window.authService) {
-            console.error('[App] AuthService not available');
+        if (!window.authService && !window.googleAuthService) {
+            console.error('[App] No authentication service available');
             this.showError('Authentication service not available. Please refresh the page.');
             return false;
         }
@@ -516,34 +519,58 @@ class App {
         return true;
     }
 
+    // =====================================
+    // VÉRIFICATION DE L'AUTHENTIFICATION DUAL PROVIDER
+    // =====================================
     async checkAuthenticationStatus() {
-        if (window.authService.isAuthenticated()) {
+        console.log('[App] Checking authentication status for both providers...');
+        
+        // Vérifier Microsoft d'abord
+        if (window.authService && window.authService.isAuthenticated()) {
             const account = window.authService.getAccount();
             if (account) {
-                console.log('[App] Getting user info...');
+                console.log('[App] Microsoft authentication found, getting user info...');
                 try {
                     this.user = await window.authService.getUserInfo();
+                    this.user.provider = 'microsoft';
                     this.isAuthenticated = true;
-                    console.log('[App] User authenticated:', this.user.displayName || this.user.mail);
+                    this.activeProvider = 'microsoft';
+                    console.log('[App] ✅ Microsoft user authenticated:', this.user.displayName || this.user.mail);
                     this.showAppWithTransition();
+                    return;
                 } catch (userInfoError) {
-                    console.error('[App] Error getting user info:', userInfoError);
+                    console.error('[App] Error getting Microsoft user info:', userInfoError);
                     if (userInfoError.message.includes('401') || userInfoError.message.includes('403')) {
-                        console.log('[App] Token seems invalid, clearing auth and showing login');
+                        console.log('[App] Microsoft token seems invalid, clearing auth');
                         await window.authService.reset();
-                        this.showLogin();
-                    } else {
-                        this.showLogin();
                     }
                 }
-            } else {
-                console.log('[App] No active account found');
-                this.showLogin();
             }
-        } else {
-            console.log('[App] User not authenticated');
-            this.showLogin();
         }
+        
+        // Vérifier Google ensuite
+        if (window.googleAuthService && window.googleAuthService.isAuthenticated()) {
+            const account = window.googleAuthService.getAccount();
+            if (account) {
+                console.log('[App] Google authentication found, getting user info...');
+                try {
+                    this.user = await window.googleAuthService.getUserInfo();
+                    this.user.provider = 'google';
+                    this.isAuthenticated = true;
+                    this.activeProvider = 'google';
+                    console.log('[App] ✅ Google user authenticated:', this.user.displayName || this.user.email);
+                    this.showAppWithTransition();
+                    return;
+                } catch (userInfoError) {
+                    console.error('[App] Error getting Google user info:', userInfoError);
+                    await window.googleAuthService.reset();
+                }
+            }
+        }
+        
+        // Aucune authentification trouvée
+        console.log('[App] No valid authentication found');
+        this.showLogin();
     }
 
     async handleInitializationError(error) {
@@ -581,32 +608,32 @@ class App {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="hero-container">
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
+                <div class="login-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: #1f2937;">
                         <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
                             <i class="fas fa-exclamation-triangle" style="color: #fbbf24;"></i>
                         </div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Configuration requise</h1>
-                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
+                        <h1 style="font-size: 2.5rem; margin-bottom: 20px; color: #1f2937;">Configuration requise</h1>
+                        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); padding: 30px; border-radius: 20px; margin: 30px 0; text-align: left;">
                             <h3 style="color: #fbbf24; margin-bottom: 15px;">Problèmes détectés :</h3>
                             <ul style="margin-left: 20px;">
                                 ${issues.map(issue => `<li style="margin: 8px 0;">${issue}</li>`).join('')}
                             </ul>
-                            <div style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+                            <div style="margin-top: 20px; padding: 20px; background: rgba(251, 191, 36, 0.05); border-radius: 10px;">
                                 <h4 style="margin-bottom: 10px;">Pour résoudre :</h4>
                                 <ol style="margin-left: 20px;">
                                     <li>Cliquez sur "Configurer l'application"</li>
                                     <li>Suivez l'assistant de configuration</li>
-                                    <li>Entrez votre Azure Client ID</li>
+                                    <li>Entrez vos Client IDs Azure et Google</li>
                                 </ol>
                             </div>
                         </div>
                         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <a href="setup.html" class="cta-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
+                            <a href="setup.html" class="login-button" style="background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: white;">
                                 <i class="fas fa-cog"></i>
                                 Configurer l'application
                             </a>
-                            <button onclick="location.reload()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
+                            <button onclick="location.reload()" class="login-button" style="background: rgba(107, 114, 128, 0.2); color: #374151; border: 1px solid rgba(107, 114, 128, 0.3);">
                                 <i class="fas fa-refresh"></i>
                                 Actualiser
                             </button>
@@ -622,14 +649,6 @@ class App {
     setupEventListeners() {
         console.log('[App] Setting up event listeners...');
         
-        const loginBtn = document.getElementById('loginBtn');
-        if (loginBtn) {
-            const newLoginBtn = loginBtn.cloneNode(true);
-            loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
-            
-            newLoginBtn.addEventListener('click', () => this.login());
-        }
-
         // NAVIGATION CORRIGÉE - UTILISER LE DASHBOARD MODULE
         document.querySelectorAll('.nav-item').forEach(item => {
             const newItem = item.cloneNode(true);
@@ -700,31 +719,36 @@ class App {
         });
     }
 
+    // =====================================
+    // MÉTHODES DE CONNEXION DUAL PROVIDER
+    // =====================================
+
+    // Méthode de connexion unifiée (backward compatibility)
     async login() {
-        console.log('[App] Login attempted...');
+        console.log('[App] Unified login attempted - defaulting to Microsoft...');
+        return this.loginMicrosoft();
+    }
+
+    // Connexion Microsoft spécifique
+    async loginMicrosoft() {
+        console.log('[App] Microsoft login attempted...');
         
         try {
-            const loginBtn = document.getElementById('loginBtn');
-            if (loginBtn) {
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion en cours...';
-            }
-            
             this.showModernLoading('Connexion à Outlook...');
             
             if (!window.authService.isInitialized) {
-                console.log('[App] AuthService not initialized, initializing...');
+                console.log('[App] Microsoft AuthService not initialized, initializing...');
                 await window.authService.initialize();
             }
             
             await window.authService.login();
             
         } catch (error) {
-            console.error('[App] Login error:', error);
+            console.error('[App] Microsoft login error:', error);
             
             this.hideModernLoading();
             
-            let errorMessage = 'Échec de la connexion. Veuillez réessayer.';
+            let errorMessage = 'Échec de la connexion Microsoft. Veuillez réessayer.';
             
             if (error.errorCode) {
                 const errorCode = error.errorCode;
@@ -733,10 +757,10 @@ class App {
                 } else {
                     switch (errorCode) {
                         case 'popup_window_error':
-                            errorMessage = 'Popup bloqué. Autorisez les popups et réessayez.';
+                            errorMessage = 'Popup bloqué. Autorisez les popups pour Outlook et réessayez.';
                             break;
                         case 'user_cancelled':
-                            errorMessage = 'Connexion annulée.';
+                            errorMessage = 'Connexion Outlook annulée.';
                             break;
                         case 'network_error':
                             errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
@@ -745,7 +769,7 @@ class App {
                             errorMessage = 'Configuration incorrecte. Vérifiez votre Azure Client ID.';
                             break;
                         default:
-                            errorMessage = `Erreur: ${errorCode}`;
+                            errorMessage = `Erreur Microsoft: ${errorCode}`;
                     }
                 }
             } else if (error.message.includes('unauthorized_client')) {
@@ -756,11 +780,61 @@ class App {
                 window.uiManager.showToast(errorMessage, 'error', 8000);
             }
             
-            const loginBtn = document.getElementById('loginBtn');
-            if (loginBtn) {
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
+            throw error;
+        }
+    }
+
+    // Connexion Google spécifique
+    async loginGoogle() {
+        console.log('[App] Google login attempted...');
+        
+        try {
+            this.showModernLoading('Connexion à Gmail...');
+            
+            if (!window.googleAuthService.isInitialized) {
+                console.log('[App] Google AuthService not initialized, initializing...');
+                await window.googleAuthService.initialize();
             }
+            
+            await window.googleAuthService.login();
+            
+        } catch (error) {
+            console.error('[App] Google login error:', error);
+            
+            this.hideModernLoading();
+            
+            let errorMessage = 'Échec de la connexion Gmail. Veuillez réessayer.';
+            
+            if (error.error) {
+                const errorCode = error.error;
+                switch (errorCode) {
+                    case 'popup_closed_by_user':
+                        errorMessage = 'Connexion Gmail annulée par l\'utilisateur.';
+                        break;
+                    case 'access_denied':
+                        errorMessage = 'Accès Gmail refusé. Veuillez accepter les permissions.';
+                        break;
+                    case 'popup_blocked_by_browser':
+                        errorMessage = 'Popup bloqué. Autorisez les popups pour Gmail et réessayez.';
+                        break;
+                    case 'invalid_client':
+                        errorMessage = 'Configuration Google incorrecte. Vérifiez votre Client ID.';
+                        break;
+                    case 'redirect_uri_mismatch':
+                        errorMessage = 'URI de redirection Google incorrecte.';
+                        break;
+                    default:
+                        errorMessage = `Erreur Google: ${errorCode}`;
+                }
+            } else if (error.message.includes('origin')) {
+                errorMessage = 'Erreur de domaine Google. Vérifiez la configuration dans Google Console.';
+            }
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(errorMessage, 'error', 8000);
+            }
+            
+            throw error;
         }
     }
 
@@ -773,9 +847,19 @@ class App {
             
             this.showModernLoading('Déconnexion...');
             
-            if (window.authService) {
+            // Déconnexion selon le provider actif
+            if (this.activeProvider === 'microsoft' && window.authService) {
                 await window.authService.logout();
+            } else if (this.activeProvider === 'google' && window.googleAuthService) {
+                await window.googleAuthService.logout();
             } else {
+                // Fallback: essayer les deux
+                if (window.authService) {
+                    try { await window.authService.logout(); } catch (e) {}
+                }
+                if (window.googleAuthService) {
+                    try { await window.googleAuthService.logout(); } catch (e) {}
+                }
                 this.forceCleanup();
             }
             
@@ -790,18 +874,25 @@ class App {
     }
 
     forceCleanup() {
-        console.log('[App] Force cleanup...');
+        console.log('[App] Force cleanup dual provider...');
         
         this.user = null;
         this.isAuthenticated = false;
+        this.activeProvider = null;
         this.isInitializing = false;
         this.initializationPromise = null;
         this.currentPage = 'dashboard';
         
+        // Nettoyer les deux services d'authentification
         if (window.authService) {
             window.authService.forceCleanup();
         }
         
+        if (window.googleAuthService) {
+            window.googleAuthService.forceCleanup();
+        }
+        
+        // Nettoyer le localStorage sélectivement
         const keysToKeep = ['emailsort_categories', 'emailsort_tasks', 'emailsortpro_client_id'];
         const allKeys = Object.keys(localStorage);
         
@@ -839,7 +930,7 @@ class App {
     }
 
     showAppWithTransition() {
-        console.log('[App] Showing application with transition');
+        console.log('[App] Showing application with transition - Provider:', this.activeProvider);
         
         this.hideModernLoading();
         
@@ -880,9 +971,14 @@ class App {
             console.log('[App] Page content displayed');
         }
         
-        // Mettre à jour l'interface utilisateur
+        // Mettre à jour l'interface utilisateur avec le provider
         if (window.uiManager) {
             window.uiManager.updateAuthStatus(this.user);
+        }
+        
+        // Mettre à jour l'affichage utilisateur avec badge provider
+        if (window.updateUserDisplay) {
+            window.updateUserDisplay(this.user);
         }
         
         // INITIALISATION DASHBOARD VIA MODULE
@@ -901,7 +997,7 @@ class App {
             console.log('[App] Loading dashboard via dashboardModule...');
             setTimeout(() => {
                 window.dashboardModule.render();
-                console.log('[App] Dashboard loaded via module');
+                console.log('[App] Dashboard loaded via module for provider:', this.activeProvider);
             }, 100);
         } else {
             console.warn('[App] Dashboard module not available, will retry...');
@@ -915,7 +1011,7 @@ class App {
         // Forcer l'affichage avec CSS
         this.forceAppDisplay();
         
-        console.log('[App] ✅ Application fully displayed with dashboard module');
+        console.log(`[App] ✅ Application fully displayed with ${this.activeProvider} provider`);
     }
 
     forceAppDisplay() {
@@ -979,21 +1075,21 @@ class App {
         const loginPage = document.getElementById('loginPage');
         if (loginPage) {
             loginPage.innerHTML = `
-                <div class="hero-container">
-                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: white;">
+                <div class="login-container">
+                    <div style="max-width: 600px; margin: 0 auto; text-align: center; color: #1f2937;">
                         <div style="font-size: 4rem; margin-bottom: 20px; animation: pulse 2s infinite;">
                             <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
                         </div>
                         <h1 style="font-size: 2.5rem; margin-bottom: 20px;">Erreur d'application</h1>
-                        <div style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); padding: 30px; border-radius: 20px; margin: 30px 0;">
-                            <p style="font-size: 1.2rem; line-height: 1.6;">${message}</p>
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 30px; border-radius: 20px; margin: 30px 0;">
+                            <p style="font-size: 1.2rem; line-height: 1.6; color: #1f2937;">${message}</p>
                         </div>
                         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                            <button onclick="location.reload()" class="cta-button">
+                            <button onclick="location.reload()" class="login-button">
                                 <i class="fas fa-refresh"></i>
                                 Actualiser la page
                             </button>
-                            <button onclick="window.app.forceCleanup()" class="cta-button" style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3);">
+                            <button onclick="window.app.forceCleanup()" class="login-button" style="background: rgba(107, 114, 128, 0.2); color: #374151; border: 1px solid rgba(107, 114, 128, 0.3);">
                                 <i class="fas fa-undo"></i>
                                 Réinitialiser
                             </button>
@@ -1005,6 +1101,32 @@ class App {
         }
         
         this.hideModernLoading();
+    }
+
+    // =====================================
+    // DIAGNOSTIC ET INFORMATIONS
+    // =====================================
+    getDiagnosticInfo() {
+        return {
+            isAuthenticated: this.isAuthenticated,
+            activeProvider: this.activeProvider,
+            user: this.user ? {
+                name: this.user.displayName || this.user.name,
+                email: this.user.mail || this.user.email,
+                provider: this.user.provider
+            } : null,
+            currentPage: this.currentPage,
+            isInitialized: !this.isInitializing,
+            microsoftAuthService: window.authService ? {
+                isInitialized: window.authService.isInitialized,
+                isAuthenticated: window.authService.isAuthenticated()
+            } : null,
+            googleAuthService: window.googleAuthService ? {
+                isInitialized: window.googleAuthService.isInitialized,
+                isAuthenticated: window.googleAuthService.isAuthenticated()
+            } : null,
+            services: window.checkServices ? window.checkServices() : null
+        };
     }
 
     checkScanStartModule() {
@@ -1078,17 +1200,24 @@ window.forceShowApp = function() {
 };
 
 // =====================================
-// VÉRIFICATION DES SERVICES
+// VÉRIFICATION DES SERVICES DUAL PROVIDER
 // =====================================
 function checkServicesReady() {
-    const requiredServices = ['authService', 'uiManager'];
+    const requiredServices = ['uiManager'];
+    const authServices = ['authService', 'googleAuthService'];
     const optionalServices = ['mailService', 'emailScanner', 'categoryManager', 'dashboardModule'];
     
     const missingRequired = requiredServices.filter(service => !window[service]);
+    const availableAuthServices = authServices.filter(service => window[service]);
     const missingOptional = optionalServices.filter(service => !window[service]);
     
     if (missingRequired.length > 0) {
         console.error('[App] Missing REQUIRED services:', missingRequired);
+        return false;
+    }
+    
+    if (availableAuthServices.length === 0) {
+        console.error('[App] No authentication services available:', authServices);
         return false;
     }
     
@@ -1101,15 +1230,16 @@ function checkServicesReady() {
         return false;
     }
     
+    console.log('[App] Available auth services:', availableAuthServices);
     return true;
 }
 
 // =====================================
-// INITIALISATION PRINCIPALE
+// INITIALISATION PRINCIPALE DUAL PROVIDER
 // =====================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[App] DOM loaded, creating app instance...');
+    console.log('[App] DOM loaded, creating dual provider app instance...');
     
     document.body.classList.add('login-mode');
     
@@ -1119,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxAttempts = 50;
         
         if (checkServicesReady()) {
-            console.log('[App] All required services ready, initializing...');
+            console.log('[App] All required services ready, initializing dual provider app...');
             
             const scanStartStatus = window.app.checkScanStartModule();
             console.log('[App] ScanStart status:', scanStartStatus);
@@ -1160,4 +1290,4 @@ window.addEventListener('load', () => {
     }, 5000);
 });
 
-console.log('✅ App loaded - DASHBOARD VIA MODULE dashboard.js');
+console.log('✅ App loaded - DUAL PROVIDER (Microsoft + Google) with Dashboard via module');
