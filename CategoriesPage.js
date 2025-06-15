@@ -639,26 +639,18 @@ class CategoriesPage {
 
     togglePreselection(categoryId) {
         const settings = this.loadSettings();
-        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
+        let preselectedCategories = settings.preselectedCategories || [];
         
-        const isPreselected = taskPreselectedCategories.includes(categoryId);
+        const isPreselected = preselectedCategories.includes(categoryId);
         
         if (isPreselected) {
-            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
+            preselectedCategories = preselectedCategories.filter(id => id !== categoryId);
         } else {
-            taskPreselectedCategories.push(categoryId);
+            preselectedCategories.push(categoryId);
         }
         
-        settings.taskPreselectedCategories = taskPreselectedCategories;
+        settings.preselectedCategories = preselectedCategories;
         this.saveSettings(settings);
-        
-        // Synchroniser avec CategoryManager si disponible
-        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
-            window.categoryManager.updateTaskPreselectedCategories(taskPreselectedCategories);
-        }
-        
-        // Émettre un événement pour notifier les autres modules
-        this.emitSettingsChangedEvent('taskPreselectedCategories', taskPreselectedCategories);
         
         this.updateCategoriesDisplay();
         this.showToast(isPreselected ? '☐ Pré-sélection désactivée' : '☑️ Pré-sélection activée');
@@ -776,44 +768,6 @@ class CategoriesPage {
         };
     }
 
-    // Méthode pour émettre des événements
-    emitSettingsChangedEvent(type, value) {
-        try {
-            // Événement générique
-            window.dispatchEvent(new CustomEvent('settingsChanged', {
-                detail: {
-                    type: type,
-                    value: value,
-                    source: 'CategoriesPage',
-                    timestamp: Date.now()
-                }
-            }));
-            
-            // Événement spécifique pour les catégories
-            if (type === 'taskPreselectedCategories') {
-                window.dispatchEvent(new CustomEvent('categorySettingsChanged', {
-                    detail: {
-                        settings: {
-                            taskPreselectedCategories: value
-                        },
-                        source: 'CategoriesPage',
-                        timestamp: Date.now()
-                    }
-                }));
-            }
-            
-            console.log(`[CategoriesPage] 📢 Événement émis: ${type}`, value);
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur émission événement:', error);
-        }
-    }
-    
-    // Méthode pour récupérer les catégories pré-sélectionnées
-    getTaskPreselectedCategories() {
-        const settings = this.loadSettings();
-        return settings.taskPreselectedCategories || [];
-    }
-
     getActiveCount(categories, activeCategories) {
         if (!activeCategories) return Object.keys(categories).length;
         return activeCategories.filter(id => categories[id]).length;
@@ -833,14 +787,12 @@ class CategoriesPage {
             const saved = localStorage.getItem('categorySettings');
             return saved ? JSON.parse(saved) : { 
                 activeCategories: null,
-                preselectedCategories: [],
-                taskPreselectedCategories: []
+                preselectedCategories: []
             };
         } catch (error) {
             return { 
                 activeCategories: null,
-                preselectedCategories: [],
-                taskPreselectedCategories: []
+                preselectedCategories: []
             };
         }
     }
