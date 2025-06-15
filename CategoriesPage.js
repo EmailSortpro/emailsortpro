@@ -884,6 +884,11 @@ class CategoriesPage {
         `;
     }
 
+    // Méthode pour le rendu depuis PageManager (alias)
+    renderSettings(container) {
+        this.render(container);
+    }
+
     // ================================================
     // STYLES MODERNES
     // ================================================
