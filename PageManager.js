@@ -691,33 +691,23 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         });
     }
     
-    // Générer le HTML
+    // Générer le HTML - Structure simple et claire
     return tabs.map(tab => {
         const isCurrentCategory = this.currentCategory === tab.id;
         const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
         
-        // Styles inline pour les catégories pré-sélectionnées
-        let extraStyles = '';
-        if (tab.isPreselected && !isCurrentCategory) {
-            extraStyles = `style="border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};"`;
-        } else if (tab.isPreselected && isCurrentCategory) {
-            extraStyles = `style="box-shadow: 0 0 0 3px ${tab.color || '#8b5cf6'}40;"`;
-        }
-        
         return `
             <button class="${baseClasses}" 
-                    ${extraStyles}
                     onclick="window.pageManager.filterByCategory('${tab.id}')"
                     data-category-id="${tab.id}"
-                    title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                <div class="pill-content-twolines">
-                    <div class="pill-first-line-twolines">
-                        <span class="pill-icon-twolines">${tab.icon}</span>
-                        <span class="pill-count-twolines">${tab.count}</span>
-                    </div>
-                    <div class="pill-second-line-twolines">
-                        <span class="pill-text-twolines">${tab.name}${tab.isPreselected ? ' ⭐' : ''}</span>
-                    </div>
+                    title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}"
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; min-width: 120px; height: 60px; cursor: pointer; ${tab.isPreselected && !isCurrentCategory ? `border: 2px solid ${tab.color || '#8b5cf6'}; background: ${tab.color ? tab.color + '10' : '#f3e8ff'};` : ''}">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="font-size: 16px;">${tab.icon}</span>
+                    <span style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 800;">${tab.count}</span>
+                </div>
+                <div style="font-size: 12px; font-weight: 700; margin-top: 4px;">
+                    ${tab.name}${tab.isPreselected ? ' ⭐' : ''}
                 </div>
             </button>
         `;
