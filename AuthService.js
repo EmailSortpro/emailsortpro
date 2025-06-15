@@ -1,4 +1,4 @@
-// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour emailsortpro.netlify.app v3.1
+// AuthService.js - Service d'authentification Microsoft Graph CORRIGÉ pour emailsortpro.netlify.app v4.0
 
 class AuthService {
     constructor() {
@@ -9,6 +9,7 @@ class AuthService {
         this.configWaitAttempts = 0;
         this.maxConfigWaitAttempts = 50; // 5 secondes max
         this.expectedDomain = 'emailsortpro.netlify.app';
+        this.provider = 'microsoft';
         
         console.log('[AuthService] Constructor called - Enhanced support for emailsortpro.netlify.app');
         
@@ -283,7 +284,8 @@ class AuthService {
             hasAccount: !!this.account,
             isInitialized: this.isInitialized,
             result: authenticated,
-            domain: window.location.hostname
+            domain: window.location.hostname,
+            provider: this.provider
         });
         return authenticated;
     }
@@ -293,7 +295,7 @@ class AuthService {
     }
 
     async login() {
-        console.log('[AuthService] Login attempt started for emailsortpro.netlify.app...');
+        console.log('[AuthService] Microsoft login attempt started for emailsortpro.netlify.app...');
         
         if (!this.isInitialized) {
             console.log('[AuthService] Not initialized, initializing first...');
@@ -323,7 +325,7 @@ class AuthService {
                 prompt: 'select_account'
             };
 
-            console.log('[AuthService] Login request prepared for emailsortpro.netlify.app:', {
+            console.log('[AuthService] Microsoft login request prepared for emailsortpro.netlify.app:', {
                 scopes: loginRequest.scopes,
                 prompt: loginRequest.prompt,
                 clientId: this.msalInstance?.getConfiguration()?.auth?.clientId ? '✅ Present in MSAL' : '❌ Missing in MSAL',
@@ -345,7 +347,7 @@ class AuthService {
                 throw new Error(`CRITICAL: redirectUri does not match expected domain ${this.expectedDomain}`);
             }
 
-            console.log('[AuthService] Initiating login redirect for emailsortpro.netlify.app...');
+            console.log('[AuthService] Initiating Microsoft login redirect for emailsortpro.netlify.app...');
             console.log('[AuthService] MSAL instance config verified:', {
                 clientId: msalConfig.auth.clientId.substring(0, 8) + '...',
                 authority: msalConfig.auth.authority,
@@ -358,10 +360,10 @@ class AuthService {
             // Note: La redirection va se produire, pas de code après cette ligne
             
         } catch (error) {
-            console.error('[AuthService] ❌ Login error for emailsortpro.netlify.app:', error);
+            console.error('[AuthService] ❌ Microsoft login error for emailsortpro.netlify.app:', error);
             
             // Gestion d'erreurs spécifiques avec logging détaillé
-            let userMessage = 'Erreur de connexion';
+            let userMessage = 'Erreur de connexion Microsoft';
             
             if (error.errorCode) {
                 const errorCode = error.errorCode;
@@ -420,7 +422,7 @@ class AuthService {
     }
 
     async logout() {
-        console.log('[AuthService] Logout initiated for emailsortpro.netlify.app...');
+        console.log('[AuthService] Microsoft logout initiated for emailsortpro.netlify.app...');
         
         if (!this.isInitialized) {
             console.warn('[AuthService] Not initialized for logout, force cleanup');
@@ -434,12 +436,12 @@ class AuthService {
                 postLogoutRedirectUri: `https://${this.expectedDomain}/`
             };
 
-            console.log('[AuthService] Logout request for emailsortpro.netlify.app:', logoutRequest);
+            console.log('[AuthService] Microsoft logout request for emailsortpro.netlify.app:', logoutRequest);
             await this.msalInstance.logoutRedirect(logoutRequest);
             // La redirection va se produire
             
         } catch (error) {
-            console.error('[AuthService] Logout error for emailsortpro.netlify.app:', error);
+            console.error('[AuthService] Microsoft logout error for emailsortpro.netlify.app:', error);
             // Force cleanup même en cas d'erreur
             this.forceCleanup();
         }
@@ -458,11 +460,11 @@ class AuthService {
                 forceRefresh: false
             };
 
-            console.log('[AuthService] Requesting access token for scopes:', tokenRequest.scopes);
+            console.log('[AuthService] Requesting Microsoft access token for scopes:', tokenRequest.scopes);
             const response = await this.msalInstance.acquireTokenSilent(tokenRequest);
             
             if (response && response.accessToken) {
-                console.log('[AuthService] ✅ Token acquired successfully for emailsortpro.netlify.app');
+                console.log('[AuthService] ✅ Microsoft token acquired successfully for emailsortpro.netlify.app');
                 return response.accessToken;
             } else {
                 throw new Error('No access token in response');
@@ -489,7 +491,7 @@ class AuthService {
         }
 
         try {
-            console.log('[AuthService] Fetching user info from Graph API for emailsortpro.netlify.app...');
+            console.log('[AuthService] Fetching user info from Microsoft Graph API for emailsortpro.netlify.app...');
             const response = await fetch('https://graph.microsoft.com/v1.0/me', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -504,8 +506,8 @@ class AuthService {
             }
 
             const userInfo = await response.json();
-            console.log('[AuthService] ✅ User info retrieved for emailsortpro.netlify.app:', userInfo.displayName);
-            return userInfo;
+            console.log('[AuthService] ✅ Microsoft user info retrieved for emailsortpro.netlify.app:', userInfo.displayName);
+            return { ...userInfo, provider: 'microsoft' };
 
         } catch (error) {
             console.error('[AuthService] Error getting user info:', error);
@@ -514,7 +516,7 @@ class AuthService {
     }
 
     async reset() {
-        console.log('[AuthService] Resetting authentication for emailsortpro.netlify.app...');
+        console.log('[AuthService] Resetting Microsoft authentication for emailsortpro.netlify.app...');
         
         try {
             if (this.msalInstance && this.account) {
@@ -558,7 +560,7 @@ class AuthService {
             });
         }
         
-        console.log('[AuthService] ✅ Cleanup complete for emailsortpro.netlify.app');
+        console.log('[AuthService] ✅ Microsoft cleanup complete for emailsortpro.netlify.app');
     }
 
     // Méthode de diagnostic améliorée pour le nouveau domaine
@@ -572,6 +574,7 @@ class AuthService {
             expectedDomain: this.expectedDomain,
             currentDomain: window.location.hostname,
             domainMatch: window.location.hostname === this.expectedDomain,
+            provider: this.provider,
             msalConfig: this.msalInstance ? {
                 clientId: this.msalInstance.getConfiguration()?.auth?.clientId?.substring(0, 8) + '...',
                 authority: this.msalInstance.getConfiguration()?.auth?.authority,
@@ -598,13 +601,14 @@ class AuthService {
 // Créer l'instance globale avec gestion d'erreur renforcée
 try {
     window.authService = new AuthService();
-    console.log('[AuthService] ✅ Global instance created successfully for emailsortpro.netlify.app');
+    console.log('[AuthService] ✅ Global Microsoft instance created successfully for emailsortpro.netlify.app');
 } catch (error) {
     console.error('[AuthService] ❌ Failed to create global instance:', error);
     
     // Créer une instance de fallback plus informative
     window.authService = {
         isInitialized: false,
+        provider: 'microsoft',
         initialize: () => Promise.reject(new Error('AuthService failed to initialize: ' + error.message)),
         login: () => Promise.reject(new Error('AuthService not available: ' + error.message)),
         isAuthenticated: () => false,
@@ -613,7 +617,8 @@ try {
             environment: window.AppConfig?.app?.environment || 'unknown',
             configExists: !!window.AppConfig,
             expectedDomain: 'emailsortpro.netlify.app',
-            currentDomain: window.location.hostname
+            currentDomain: window.location.hostname,
+            provider: 'microsoft'
         })
     };
 }
@@ -632,6 +637,7 @@ window.diagnoseMSAL = function() {
         console.log('🌐 Current URL:', window.location.href);
         console.log('🎯 Expected domain:', authDiag.expectedDomain);
         console.log('✅ Domain match:', authDiag.domainMatch);
+        console.log('🔌 Provider:', authDiag.provider);
         console.log('💾 LocalStorage keys:', Object.keys(localStorage).filter(k => k.includes('msal') || k.includes('auth')));
         
         // Validation spécifique des URIs
@@ -662,20 +668,20 @@ setTimeout(() => {
         const expectedDomain = 'emailsortpro.netlify.app';
         
         if (!validation.valid) {
-            console.warn('🚨 WARNING: Configuration invalid for emailsortpro.netlify.app');
+            console.warn('🚨 WARNING: Microsoft configuration invalid for emailsortpro.netlify.app');
             console.log('Issues:', validation.issues);
         }
         
         // Vérification spécifique du domaine
         if (window.AppConfig.msal?.redirectUri && 
             !window.AppConfig.msal.redirectUri.includes(expectedDomain)) {
-            console.error('🚨 CRITICAL: Redirect URI does not match expected domain!');
+            console.error('🚨 CRITICAL: Microsoft Redirect URI does not match expected domain!');
             console.error('Expected:', `https://${expectedDomain}/auth-callback.html`);
             console.error('Configured:', window.AppConfig.msal.redirectUri);
         }
         
-        console.log('Use diagnoseMSAL() for detailed diagnostic');
+        console.log('Use diagnoseMSAL() for detailed Microsoft diagnostic');
     }
 }, 2000);
 
-console.log('✅ AuthService loaded with enhanced support for emailsortpro.netlify.app v3.1');
+console.log('✅ AuthService loaded with enhanced Microsoft support for emailsortpro.netlify.app v4.0');
