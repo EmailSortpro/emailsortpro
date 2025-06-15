@@ -20,118 +20,1473 @@
     <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📧</text></svg>">
-
-    <link rel="stylesheet" href="style.css">
     
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-
-    <script src="https://alcdn.msauth.net/browser/2.30.0/msal-browser.min.js"></script>
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
-    <script src="https://apis.google.com/js/api.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <script src="config.template.js"></script> 
 
-    <script src="config.js"></script>
+    <style>
+        /* Reset et styles de base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f8fafc;
+            overflow-x: hidden;
+            overflow-y: auto;
+            transition: all 0.15s ease;
+        }
+
+        /* Mode login initial */
+        body.login-mode {
+            overflow: hidden !important;
+        }
+
+        /* === STYLES POUR LA PAGE DE LOGIN SOBRE === */
+        .login-page-styles {
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 40px 32px;
+            text-align: center;
+            max-width: 440px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .login-header {
+            margin-bottom: 32px;
+        }
+
+        .login-logo {
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            color: white;
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin: 0 auto 20px;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .login-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+            margin-bottom: 32px;
+            line-height: 1.5;
+        }
+
+        .login-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            margin-bottom: 24px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .login-button:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .login-security {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 32px;
+        }
+
+        /* Section Comment ça marche sobre */
+        .how-it-works {
+            margin-top: 24px;
+            text-align: left;
+        }
+
+        .how-it-works-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .step {
+            text-align: center;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin: 0 auto 10px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        .step-icon {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #4F46E5;
+        }
+
+        .step-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 6px;
+        }
+
+        .step-description {
+            font-size: 0.75rem;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        /* Section sécurité sobre */
+        .security-section {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .security-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .security-description {
+            font-size: 0.75rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        /* === STYLES POUR L'APPLICATION SOBRE === */
+        /* Header Application */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            color: white;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            color: white;
+        }
+
+        .ai-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white !important;
+            font-size: 14px;
+        }
+
+        .user-info .user-name {
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+        }
+
+        .user-info .user-email {
+            color: white !important;
+            font-size: 12px !important;
+            opacity: 0.9 !important;
+            margin: 0 !important;
+            line-height: 1.2 !important;
+        }
+
+        .user-info .user-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            color: white !important;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2) !important;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        /* Forcer le texte blanc pour tous les éléments dans auth-status */
+        .auth-status * {
+            color: white !important;
+        }
+
+        .auth-status .text-muted {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        /* Forcer spécifiquement pour le header */
+        .app-header .auth-status,
+        .app-header .auth-status *,
+        .app-header .user-info,
+        .app-header .user-info *,
+        .app-header .user-name,
+        .app-header .user-email,
+        .app-header .user-details,
+        .app-header .user-details * {
+            color: white !important;
+        }
+
+        /* Styles spécifiques pour les données utilisateur */
+        .header-content .user-name {
+            color: white !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+        }
+
+        .header-content .user-email {
+            color: white !important;
+            font-size: 12px !important;
+            opacity: 0.9 !important;
+        }
+
+        .header-content .user-info div {
+            color: white !important;
+        }
+
+        /* Navigation sobre */
+        .app-nav {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 999;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            display: none;
+        }
+
+        .app-nav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        #mainNav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            padding: 0 20px;
+            height: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            white-space: nowrap;
+        }
+
+        #mainNav::-webkit-scrollbar {
+            display: none !important;
+        }
+
+        /* BOUTONS DE NAVIGATION SOBRES */
+        .nav-item {
+            background: transparent;
+            border: none;
+            min-width: 100px;
+            max-width: 140px;
+            height: 40px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-decoration: none;
+        }
+
+        .nav-item i {
+            font-size: 16px !important;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: inherit;
+            flex-shrink: 0;
+        }
+
+        .nav-item span {
+            font-size: 14px;
+            font-weight: 500;
+            color: inherit;
+            flex-shrink: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 90px;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        /* ÉTAT ACTIF SOBRE - FOND BLEU CLAIR QUI VA BIEN AVEC LE TEXTE */
+        .nav-item.active {
+            background: #E0E7FF;
+            color: #3730A3;
+            font-weight: 600;
+        }
+
+        .nav-item.active:hover {
+            background: #E0E7FF;
+            color: #3730A3;
+        }
+
+        .nav-item:focus {
+            outline: 2px solid #4F46E5;
+            outline-offset: 2px;
+        }
+
+        /* Contenu principal */
+        .app-main {
+            margin-top: 0;
+            min-height: 100vh;
+            padding: 0;
+            overflow-y: visible;
+        }
+
+        #pageContent {
+            display: none;
+            opacity: 0;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 20px 20px;
+            min-height: auto;
+        }
+
+        /* Classes pour l'état actif de l'app */
+        body.app-active {
+            background: #f8fafc;
+        }
+
+        body.app-active #loginPage {
+            display: none !important;
+        }
+
+        body.app-active .app-header {
+            display: block !important;
+        }
+
+        body.app-active .app-nav {
+            display: block !important;
+        }
+
+        body.app-active .app-main {
+            margin-top: 120px !important;
+            padding-top: 0 !important;
+            padding-left: 0;
+            padding-right: 0;
+            padding-bottom: 0;
+        }
+
+        body.app-active #pageContent {
+            display: block !important;
+            opacity: 1 !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+        }
+
+        /* === DASHBOARD SOBRE === */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 48px 20px 20px 20px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .quick-guide {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .guide-intro {
+            font-size: 16px;
+            color: #0f172a;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .guide-steps {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .guide-step {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 16px;
+            border-radius: 8px;
+            flex-basis: calc(33.333% - 8px);
+            min-width: 150px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: transform 0.1s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .guide-step:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        .guide-step-icon {
+            font-size: 24px;
+            color: #4F46E5;
+            margin-bottom: 10px;
+        }
+
+        .guide-step-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 6px;
+        }
+
+        .guide-step-description {
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        /* Messages d'état globaux */
+        #globalStatusMessage {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 10000;
+            display: none;
+            font-size: 14px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Loader */
+        #globalLoader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+            opacity: 0; /* Caché par défaut */
+            visibility: hidden;
+        }
+
+        #globalLoader.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loader-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4F46E5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Message d'erreur d'initialisation */
+        #initializationError {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 99, 71, 0.95); /* Tomato red */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 20px;
+            text-align: center;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        #initializationError h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+        }
+
+        #initializationError p {
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+
+        #initializationError pre {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-width: 90%;
+            overflow-x: auto;
+        }
+
+        #initializationError button {
+            background: white;
+            color: #FF6347;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        #initializationError button:hover {
+            background: #f0f0f0;
+        }
+
+        /* Autres styles de page */
+        .page-header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-subtitle {
+            font-size: 1rem;
+            color: #6b7280;
+            line-height: 1.5;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Container de carte générique */
+        .card-container {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            font-size: 1.5rem;
+            color: #4F46E5;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-button {
+            background: #eff6ff;
+            color: #4F46E5;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .card-button:hover {
+            background: #e0e7ff;
+        }
+
+        .card-content {
+            font-size: 1rem;
+            color: #374151;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        /* Tableaux sobres */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px; /* Espacement entre les lignes */
+            margin-top: -8px; /* Compense le premier espacement */
+        }
+
+        .data-table thead th {
+            background: #e2e8f0;
+            color: #475569;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px 16px;
+            border-top: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+        }
+
+        .data-table thead th:first-child {
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .data-table thead th:last-child {
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .data-table tbody td {
+            background: white;
+            padding: 12px 16px;
+            font-size: 0.875rem;
+            color: #374151;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .data-table tbody tr {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Légère ombre pour les lignes */
+        }
+
+        .data-table tbody tr:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .data-table tbody tr:first-child td:first-child {
+            border-top-left-radius: 8px;
+        }
+
+        .data-table tbody tr:first-child td:last-child {
+            border-top-right-radius: 8px;
+        }
+
+        .data-table tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 8px;
+        }
+
+        .data-table tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 8px;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background: #eff6ff;
+            color: #4F46E5;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #e0e7ff;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination span {
+            font-size: 14px;
+            color: #475569;
+        }
+
+        /* Formulaires */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #374151;
+            background: white;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .form-button {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .form-button:hover {
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .form-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Alertes */
+        .alert {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .alert-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .alert-info .alert-icon {
+            color: #3b82f6;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-success .alert-icon {
+            color: #10b981;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .alert-warning .alert-icon {
+            color: #f59e0b;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-error .alert-icon {
+            color: #ef4444;
+        }
+
+        /* Modals (example structure) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 90%;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .modal-close-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .modal-body {
+            font-size: 1rem;
+            color: #374151;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Utilitaires de texte et de couleur */
+        .text-center {
+            text-align: center;
+        }
+        .text-left {
+            text-align: left;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-primary {
+            color: #4F46E5;
+        }
+        .text-success {
+            color: #10b981;
+        }
+        .text-warning {
+            color: #f59e0b;
+        }
+        .text-error {
+            color: #ef4444;
+        }
+        .text-muted {
+            color: #6b7280;
+        }
+        .font-bold {
+            font-weight: bold;
+        }
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+        .mt-4 {
+            margin-top: 16px;
+        }
+        .py-2 {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+        .px-4 {
+            padding-left: 16px;
+            padding-right: 16px;
+        }
+        .block {
+            display: block;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content, .app-nav #mainNav, .dashboard-container, #pageContent {
+                padding-left: 15px;
+                padding-right: 15px;
+            }
+            .login-container {
+                padding: 30px 20px;
+            }
+            .login-title {
+                font-size: 1.75rem;
+            }
+            .login-subtitle {
+                font-size: 0.9rem;
+            }
+            .steps-container {
+                grid-template-columns: 1fr;
+            }
+            .guide-step {
+                flex-basis: 100%;
+            }
+            .app-main {
+                margin-top: 120px; /* Adjust for header/nav */
+            }
+            .page-title {
+                font-size: 1.75rem;
+            }
+            .page-subtitle {
+                font-size: 0.9rem;
+            }
+            .card-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
-<body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="logo">
-                <h1>EmailSortProAI</h1>
-                <p>Scanner d'Emails Intelligent</p>
-            </div>
-            <nav class="main-nav">
-                <ul>
-                    <li data-page="dashboard" class="active"><a href="#"><i class="fas fa-tachometer-alt"></i> Tableau de Bord</a></li>
-                    <li data-page="inbox"><a href="#"><i class="fas fa-inbox"></i> Boîte de Réception</a></li>
-                    <li data-page="sent"><a href="#"><i class="fas fa-paper-plane"></i> Éléments Envoyés</a></li>
-                    <li data-page="drafts"><a href="#"><i class="fas fa-file-alt"></i> Brouillons</a></li>
-                    <li data-page="archive"><a href="#"><i class="fas fa-archive"></i> Archives</a></li>
-                    <li data-page="junk"><a href="#"><i class="fas fa-trash"></i> Courrier Indésirable</a></li>
-                    <li data-page="settings"><a href="#"><i class="fas fa-cog"></i> Paramètres</a></li>
-                    <li data-page="help"><a href="#"><i class="fas fa-question-circle"></i> Aide</a></li>
-                </ul>
-            </nav>
-            <div id="authStatus" class="auth-status">
-                <p>Non connecté.</p>
-            </div>
-            <div class="auth-buttons">
-                <button id="outlookLoginButton" class="btn btn-primary btn-block">Se connecter à Outlook</button>
-                <button id="gmailLoginButton" class="btn btn-primary btn-block">Se connecter à Gmail</button>
-                <button id="logoutButton" class="btn btn-secondary btn-block" style="display: none;">Déconnexion</button>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <header class="header">
-                <div class="search-bar">
-                    <input type="text" placeholder="Rechercher des emails..." class="search-input">
-                    <button class="btn btn-search"><i class="fas fa-search"></i></button>
-                </div>
-                <div class="user-profile">
-                    <span id="headerUserDisplayName">Guest</span>
-                    <i class="fas fa-user-circle"></i>
-                </div>
-            </header>
-
-            <section id="dashboardPage" class="page-content active">
-                <h2>Tableau de Bord</h2>
-                <div class="dashboard-widgets">
-                    <div class="widget">Statistiques d'Emails</div>
-                    <div class="widget">Catégories Principales</div>
-                </div>
-            </section>
-
-            <section id="inboxPage" class="page-content">
-                <h2>Boîte de Réception</h2>
-                <div class="email-list" id="inboxEmailList">
-                    </div>
-            </section>
-            
-            <section id="sentPage" class="page-content">
-                <h2>Éléments Envoyés</h2>
-                <div class="email-list" id="sentEmailList"></div>
-            </section>
-
-            <section id="draftsPage" class="page-content">
-                <h2>Brouillons</h2>
-                <div class="email-list" id="draftsEmailList"></div>
-            </section>
-
-            <section id="archivePage" class="page-content">
-                <h2>Archives</h2>
-                <div class="email-list" id="archiveEmailList"></div>
-            </section>
-
-            <section id="junkPage" class="page-content">
-                <h2>Courrier Indésirable</h2>
-                <div class="email-list" id="junkEmailList"></div>
-            </section>
-
-            <section id="settingsPage" class="page-content">
-                <h2>Paramètres</h2>
-                <p>Gérez vos préférences ici.</p>
-            </section>
-
-            <section id="helpPage" class="page-content">
-                <h2>Aide</h2>
-                <p>Trouvez de l'aide et des informations sur l'application.</p>
-            </section>
-
-        </main>
+<body class="login-mode">
+    <div id="globalLoader" class="active">
+        <div class="loader-spinner"></div>
     </div>
+
+    <div id="initializationError" style="display: none;">
+        <h2>Oops! Configuration Error</h2>
+        <p>The application could not load its configuration properly. This usually happens if the environment variables or client IDs are not set up correctly.</p>
+        <p>Please ensure that:</p>
+        <ul>
+            <li>For Netlify deployments, your `VITE_AZURE_CLIENT_ID` and `VITE_GOOGLE_CLIENT_ID` environment variables are set in Netlify site settings.</li>
+            <li>For localhost, you have updated `config.template.js` (or a `config.js` copy) with your development Client IDs.</li>
+            <li>Your Google Cloud Console "Authorized JavaScript origins" and Azure AD "Redirect URIs" are correctly configured for your domain (`https://emailsortpro.netlify.app` and `http://localhost:8080`).</li>
+        </ul>
+        <pre id="errorDetails"></pre>
+        <button onclick="window.location.reload()">Reload Application</button>
+    </div>
+
+    <div id="loginPage" class="login-page-styles">
+        <div class="login-container">
+            <div class="login-header">
+                <div class="login-logo">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <h1 class="login-title">EmailSortProAI</h1>
+                <p class="login-subtitle">Organisez vos emails Outlook et Gmail intelligemment avec l'IA. Catégorisation automatique, suppression des spams et organisation par domaine.</p>
+            </div>
+            
+            <button id="msalLoginButton" class="login-button">
+                <i class="fab fa-microsoft"></i> Continuer avec Microsoft
+            </button>
+            <button id="googleLoginButton" class="login-button">
+                <i class="fab fa-google"></i> Continuer avec Google
+            </button>
+            
+            <p class="login-security">
+                <i class="fas fa-lock"></i> Connexion sécurisée via Microsoft et Google OAuth
+            </p>
+
+            <div class="how-it-works">
+                <h2 class="how-it-works-title">Comment ça marche ?</h2>
+                <div class="steps-container">
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <i class="step-icon fas fa-user-shield"></i>
+                        <h3 class="step-title">Connectez-vous</h3>
+                        <p class="step-description">Connectez-vous de manière sécurisée avec votre compte Microsoft ou Google.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <i class="step-icon fas fa-cogs"></i>
+                        <h3 class="step-title">Configurez</h3>
+                        <p class="step-description">Définissez vos règles de tri et vos préférences.</p>
+                    </div>
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <i class="step-icon fas fa-robot"></i>
+                        <h3 class="step-title">Laissez l'IA faire</h3>
+                        <p class="step-description">Notre IA organise et nettoie vos boîtes de réception.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="security-section">
+                <p class="security-title"><i class="fas fa-info-circle"></i> Votre vie privée est notre priorité</p>
+                <p class="security-description">EmailSortProAI accède uniquement aux données nécessaires pour son fonctionnement et ne stocke jamais le contenu de vos emails. Toutes les données sensibles restent sur votre appareil.</p>
+            </div>
+        </div>
+    </div>
+
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-envelope-open-text"></i> EmailSortPro<span class="ai-badge">AI</span>
+            </div>
+            <div class="auth-status">
+                <span class="text-muted" id="authStatus">Non connecté</span>
+            </div>
+        </div>
+    </header>
+
+    <nav class="app-nav">
+        <div id="mainNav">
+            <button class="nav-item active" data-page="dashboard"><i class="fas fa-tachometer-alt"></i> <span>Tableau de bord</span></button>
+            <button class="nav-item" data-page="inbox"><i class="fas fa-inbox"></i> <span>Boîte de réception</span></button>
+            <button class="nav-item" data-page="scan"><i class="fas fa-robot"></i> <span>Analyse IA</span></button>
+            <button class="nav-item" data-page="rules"><i class="fas fa-clipboard-list"></i> <span>Règles</span></button>
+            <button class="nav-item" data-page="categories"><i class="fas fa-tags"></i> <span>Catégories</span></button>
+            <button class="nav-item" data-page="settings"><i class="fas fa-cog"></i> <span>Paramètres</span></button>
+            <button class="nav-item" data-page="help"><i class="fas fa-question-circle"></i> <span>Aide</span></button>
+            <button class="nav-item" id="logoutButton"><i class="fas fa-sign-out-alt"></i> <span>Déconnexion</span></button>
+        </div>
+    </nav>
+
+    <main class="app-main">
+        <div id="pageContent">
+            <section id="dashboardPage" class="dashboard-container page active">
+                <div class="dashboard-header">
+                    <h2 class="page-title"><i class="fas fa-tachometer-alt"></i> Bienvenue sur votre Tableau de Bord</h2>
+                    <p class="page-subtitle">Organisez et gérez vos emails plus efficacement que jamais.</p>
+                </div>
+                <div class="quick-guide">
+                    <p class="guide-intro">Démarrez rapidement en suivant ces étapes :</p>
+                    <div class="guide-steps">
+                        <div class="guide-step">
+                            <i class="guide-step-icon fas fa-inbox"></i>
+                            <h3 class="guide-step-title">Boîte de réception</h3>
+                            <p class="guide-step-description">Accédez à vos emails et préparez-les pour l'analyse.</p>
+                        </div>
+                        <div class="guide-step">
+                            <i class="guide-step-icon fas fa-robot"></i>
+                            <h3 class="guide-step-title">Analyse IA</h3>
+                            <p class="guide-step-description">Laissez notre IA catégoriser et proposer des actions.</p>
+                        </div>
+                        <div class="guide-step">
+                            <i class="guide-step-icon fas fa-clipboard-list"></i>
+                            <h3 class="guide-step-title">Règles</h3>
+                            <p class="guide-step-description">Créez des règles personnalisées pour automatiser le tri.</p>
+                        </div>
+                    </div>
+                </div>
+                </section>
+
+            <section id="inboxPage" class="page">
+                <h2 class="page-title"><i class="fas fa-inbox"></i> Boîte de Réception</h2>
+                <p class="page-subtitle">Visualisez et gérez vos emails. Sélectionnez des emails pour l'analyse IA.</p>
+                </section>
+
+            <section id="scanPage" class="page">
+                <h2 class="page-title"><i class="fas fa-robot"></i> Analyse IA</h2>
+                <p class="page-subtitle">Lancez l'analyse intelligente de vos emails et appliquez les suggestions de tri.</p>
+                </section>
+
+            <section id="rulesPage" class="page">
+                <h2 class="page-title"><i class="fas fa-clipboard-list"></i> Règles de Tri</h2>
+                <p class="page-subtitle">Créez et gérez vos règles de tri personnalisées pour automatiser l'organisation de vos emails.</p>
+                </section>
+
+            <section id="categoriesPage" class="page">
+                <h2 class="page-title"><i class="fas fa-tags"></i> Gestion des Catégories</h2>
+                <p class="page-subtitle">Organisez vos emails par catégories définies pour un accès rapide.</p>
+                </section>
+
+            <section id="settingsPage" class="page">
+                <h2 class="page-title"><i class="fas fa-cog"></i> Paramètres</h2>
+                <p class="page-subtitle">Ajustez les préférences de l'application et la configuration des comptes.</p>
+                </section>
+
+            <section id="helpPage" class="page">
+                <h2 class="page-title"><i class="fas fa-question-circle"></i> Aide et Support</h2>
+                <p class="page-subtitle">Trouvez des réponses à vos questions et obtenez de l'aide.</p>
+                </section>
+        </div>
+    </main>
 
     <script src="AuthService.js"></script>
     <script src="MailService.js"></script>
     <script>
-        // Global utility function to update authentication status in UI
-        window.updateAuthStatusUI = function(userName, userEmail, provider = null) {
-            const authStatus = document.getElementById('authStatus');
-            const outlookLoginButton = document.getElementById('outlookLoginButton');
-            const gmailLoginButton = document.getElementById('gmailLoginButton');
-            const logoutButton = document.getElementById('logoutButton');
-            const headerUserDisplayName = document.getElementById('headerUserDisplayName');
+        // Utilitaire pour afficher les messages de diagnostic
+        function showGlobalStatusMessage(message, duration = 3000) {
+            const statusMessageElement = document.getElementById('globalStatusMessage');
+            if (statusMessageElement) {
+                statusMessageElement.textContent = message;
+                statusMessageElement.style.display = 'block';
+                setTimeout(() => {
+                    statusMessageElement.style.display = 'none';
+                }, duration);
+            }
+        }
 
-            if (userName && userEmail) {
+        function showInitializationError(error) {
+            document.getElementById('globalLoader').classList.remove('active');
+            const errorDiv = document.getElementById('initializationError');
+            const errorDetailsPre = document.getElementById('errorDetails');
+            errorDetailsPre.textContent = error;
+            errorDiv.style.display = 'flex';
+            console.error('Initialization Error:', error);
+        }
+
+        // Logic to hide login page and show app content
+        function showAppContent() {
+            document.body.classList.add('app-active');
+            document.body.classList.remove('login-mode');
+            document.getElementById('globalLoader').classList.remove('active');
+        }
+
+        function showLoginPage() {
+            document.body.classList.remove('app-active');
+            document.body.classList.add('login-mode');
+            document.getElementById('globalLoader').classList.remove('active');
+        }
+
+        // Initialize services and event listeners
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('[App] DOM Content Loaded');
+            document.getElementById('globalLoader').classList.add('active');
+
+            try {
+                // Ensure AppConfig is available from config.template.js
+                if (typeof window.AppConfig === 'undefined' || !window.AppConfig.validate().valid) {
+                    const validationResult = window.AppConfig ? window.AppConfig.validate() : { issues: ['AppConfig object is missing or invalid.'] };
+                    throw new Error('AppConfig failed validation: ' + JSON.stringify(validationResult.issues));
+                }
+
+                console.log('[App] AppConfig validated successfully.');
+                window.AppConfig.diagnoseAppConfig(); // Run diagnostic from config.template.js
+
+                // Initialize AuthService (which now handles its own AppConfig waiting)
+                await window.authService.initialize();
+                console.log('[App] AuthService initialized.');
+
+                // Initialize MailService
+                if (window.authService.isAuthenticated()) {
+                    await window.mailService.initialize();
+                    console.log('[App] MailService initialized.');
+                }
+
+                // Check authentication status and update UI
+                const isAuthenticated = window.authService.isAuthenticated();
+                if (isAuthenticated) {
+                    showAppContent();
+                    updateAuthStatusUI(window.authService.getAccount());
+                } else {
+                    showLoginPage();
+                }
+
+                // Event Listeners for login buttons
+                document.getElementById('msalLoginButton').addEventListener('click', async () => {
+                    document.getElementById('globalLoader').classList.add('active');
+                    try {
+                        await window.authService.login('msal');
+                        showAppContent();
+                        updateAuthStatusUI(window.authService.getAccount());
+                        await window.mailService.initialize(); // Initialize MailService after successful login
+                    } catch (error) {
+                        console.error('Microsoft login failed:', error);
+                        showGlobalStatusMessage('Microsoft login failed: ' + error.message, 5000);
+                        showLoginPage();
+                    } finally {
+                        document.getElementById('globalLoader').classList.remove('active');
+                    }
+                });
+
+                document.getElementById('googleLoginButton').addEventListener('click', async () => {
+                    document.getElementById('globalLoader').classList.add('active');
+                    try {
+                        await window.authService.login('google');
+                        showAppContent();
+                        updateAuthStatusUI(window.authService.getAccount());
+                        await window.mailService.initialize(); // Initialize MailService after successful login
+                    } catch (error) {
+                        console.error('Gmail login failed:', error);
+                        showGlobalStatusMessage('Gmail login failed: ' + error.message, 5000);
+                        showLoginPage();
+                    } finally {
+                        document.getElementById('globalLoader').classList.remove('active');
+                    }
+                });
+
+                // Logout button
+                document.getElementById('logoutButton').addEventListener('click', async () => {
+                    document.getElementById('globalLoader').classList.add('active');
+                    try {
+                        await window.authService.logout();
+                        showLoginPage();
+                        document.getElementById('authStatus').textContent = 'Non connecté';
+                    } catch (error) {
+                        console.error('Logout failed:', error);
+                        showGlobalStatusMessage('Logout failed: ' + error.message, 5000);
+                    } finally {
+                        document.getElementById('globalLoader').classList.remove('active');
+                    }
+                });
+
+                // Navigation buttons
+                document.querySelectorAll('.nav-item').forEach(button => {
+                    button.addEventListener('click', function() {
+                        document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                        const targetPageId = this.dataset.page + 'Page';
+                        const targetPage = document.getElementById(targetPageId);
+                        if (targetPage) {
+                            targetPage.classList.add('active');
+                        }
+                    });
+                });
+
+            } catch (initError) {
+                console.error('[App] Critical Initialization Failure:', initError);
+                showInitializationError(initError.message || initError.toString());
+            } finally {
+                document.getElementById('globalLoader').classList.remove('active');
+            }
+        });
+
+        // Function to update authentication status UI
+        const updateAuthStatusUI = (account) => {
+            const authStatus = document.getElementById('authStatus');
+            if (account) {
+                const userName = account.name || account.username;
+                const userEmail = account.username || account.email;
                 const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
                 
                 authStatus.innerHTML = `
@@ -142,126 +1497,22 @@
                         </div>
                         <div class="user-avatar">${initials}</div>
                     </div>
-                    <p>Connecté via ${provider || 'inconnu'}</p>
                 `;
-                outlookLoginButton.style.display = 'none';
-                gmailLoginButton.style.display = 'none';
-                logoutButton.style.display = 'block';
-                headerUserDisplayName.textContent = userName;
-            } else {
-                authStatus.innerHTML = '<p>Non connecté.</p>';
-                outlookLoginButton.style.display = 'block';
-                gmailLoginButton.style.display = 'block';
-                logoutButton.style.display = 'none';
-                headerUserDisplayName.textContent = 'Guest';
             }
         };
-
-        // Event Listeners for login/logout buttons
-        document.getElementById('outlookLoginButton').addEventListener('click', async () => {
-            if (window.authService) {
-                try {
-                    await window.authService.login('outlook');
-                    const account = window.authService.getAccount();
-                    if (account) {
-                        window.updateAuthStatusUI(account.name, account.username, 'Outlook');
-                        // Initialize MailService for Outlook
-                        if (window.mailService) {
-                            await window.mailService.initialize('outlook');
-                            console.log('MailService initialized for Outlook.');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Outlook login failed:', error);
-                    alert('Échec de la connexion Outlook. Vérifiez la console pour plus de détails.');
-                }
-            } else {
-                console.error('AuthService not available.');
-            }
-        });
-
-        document.getElementById('gmailLoginButton').addEventListener('click', async () => {
-            if (window.authService) {
-                try {
-                    await window.authService.login('gmail');
-                    const account = window.authService.getAccount(); // This will return Google user info
-                    if (account) {
-                        window.updateAuthStatusUI(account.name, account.email, 'Gmail');
-                        // Initialize MailService for Gmail
-                        if (window.mailService) {
-                            await window.mailService.initialize('gmail');
-                            console.log('MailService initialized for Gmail.');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Gmail login failed:', error);
-                    alert('Échec de la connexion Gmail. Vérifiez la console pour plus de détails.');
-                }
-            } else {
-                console.error('AuthService not available.');
-            }
-        });
-
-        document.getElementById('logoutButton').addEventListener('click', async () => {
-            if (window.authService) {
-                await window.authService.logout();
-                window.updateAuthStatusUI(null, null); // Clear UI
-                // Potentially reset MailService or set it to an uninitialized state
-                if (window.mailService) {
-                    window.mailService.reset(); // A new method to reset MailService state
-                }
-                alert('Déconnecté.');
-            } else {
-                console.error('AuthService not available.');
-            }
-        });
-
-        // Initial check on page load
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Ensure AuthService is initialized before checking authentication
-            if (window.authService) {
-                await window.authService.waitForConfig(); // Wait for config to be ready
-                await window.authService.initializeMsal(); // Ensure MSAL is initialized for silent login attempts
-                await window.authService.initializeGapi(); // Ensure GAPI is initialized
-
-                // Check for authenticated user from either provider
-                let account = null;
-                let provider = null;
-
-                if (window.authService.isAuthenticated('outlook')) {
-                    account = window.authService.getAccount('outlook');
-                    provider = 'Outlook';
-                } else if (window.authService.isAuthenticated('gmail')) {
-                    account = window.authService.getAccount('gmail');
-                    provider = 'Gmail';
-                }
-
-                if (account) {
-                    window.updateAuthStatusUI(account.name, account.email || account.username, provider);
-                     // Initialize MailService based on detected provider
-                    if (window.mailService) {
-                        await window.mailService.initialize(provider.toLowerCase());
-                        console.log(`MailService initialized for ${provider}.`);
-                    }
-                } else {
-                    window.updateAuthStatusUI(null, null);
-                }
-            }
-        });
-
 
         // Fonction de diagnostic accessible globalement (silencieuse par défaut)
         window.checkServices = function() {
             return {
                 AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
                 authService: window.authService ? 'OK' : 'MANQUANT',
-                mailService: window.mailService ? (window.mailService.isInitialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
-                uiManager: typeof window.uiManager !== 'undefined' ? 'OK' : 'MANQUANT', // Assuming UIManager is present
-                taskManager: typeof window.taskManager !== 'undefined' ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT', // Assuming TaskManager
-                tasksView: typeof window.tasksView !== 'undefined' ? 'OK' : 'MANQUANT', // Assuming TasksView
-                pageManager: typeof window.pageManager !== 'undefined' ? 'OK' : 'MANQUANT', // Assuming PageManager
-                categoryManager: typeof window.categoryManager !== 'undefined' ? 'OK' : 'MANQUANT', // Assuming CategoryManager
-                dashboardModule: typeof window.dashboardModule !== 'undefined' ? 'OK' : 'MANQUANT', // Assuming DashboardModule
+                mailService: window.mailService ? 'OK' : 'MANQUANT',
+                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
+                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
+                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
+                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
+                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
                 hostname: window.location.hostname,
                 expectedHostname: 'emailsortpro.netlify.app'
             };
