@@ -1,5 +1,13 @@
-// CategoriesPage.js - Version moderne optimisée
-class CategoriesPage {
+// CategoriesPage.js - Version 21.0 - Synchronisation complète fixée
+console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v21.0...');
+
+// Nettoyer toute instance précédente
+if (window.categoriesPage) {
+    console.log('[CategoriesPage] 🧹 Nettoyage instance précédente...');
+    delete window.categoriesPage;
+}
+
+class CategoriesPageV21 {
     constructor() {
         this.editingCategoryId = null;
         this.currentModal = null;
@@ -9,14 +17,17 @@ class CategoriesPage {
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
             '#FF9FF3', '#54A0FF', '#48DBFB', '#A29BFE', '#FD79A8'
         ];
-        console.log('[CategoriesPage] 🎨 Interface moderne initialisée');
+        console.log('[CategoriesPage] 🎨 Interface moderne v21.0 initialisée');
     }
 
     // ================================================
-    // RENDU PRINCIPAL
+    // RENDU PRINCIPAL - AVEC INTÉGRATION CORRECTE
     // ================================================
     render(container) {
-        if (!container) return;
+        if (!container) {
+            console.error('[CategoriesPage] ❌ Container manquant');
+            return;
+        }
 
         try {
             const categories = window.categoryManager?.getCategories() || {};
@@ -30,7 +41,7 @@ class CategoriesPage {
                             <h1>Catégories <span class="emoji">✨</span></h1>
                             <p class="subtitle">Organisez vos emails avec style</p>
                         </div>
-                        <button class="btn-create" onclick="window.categoriesPage.showCreateModal()">
+                        <button class="btn-create" onclick="window.categoriesPageV21.showCreateModal()">
                             <i class="fas fa-plus"></i>
                             <span>Créer</span>
                         </button>
@@ -54,7 +65,7 @@ class CategoriesPage {
                             <i class="fas fa-search"></i>
                             <input type="text" 
                                    placeholder="Rechercher..." 
-                                   onkeyup="window.categoriesPage.handleSearch(this.value)">
+                                   onkeyup="window.categoriesPageV21.handleSearch(this.value)">
                         </div>
                     </div>
                     
@@ -71,6 +82,17 @@ class CategoriesPage {
             console.error('[CategoriesPage] Erreur:', error);
             container.innerHTML = this.renderError();
         }
+    }
+
+    // Rendu pour la page Settings/Paramètres
+    renderSettings(container) {
+        if (!container) {
+            console.error('[CategoriesPage] ❌ Container manquant pour settings');
+            return;
+        }
+        
+        // Simplement appeler render() qui gère déjà tout
+        this.render(container);
     }
 
     // ================================================
@@ -97,13 +119,13 @@ class CategoriesPage {
         const isActive = activeCategories === null || activeCategories.includes(id);
         const stats = this.getCategoryStats(id);
         const settings = this.loadSettings();
-        const isPreselected = settings.preselectedCategories?.includes(id) || false;
+        const isPreselected = settings.taskPreselectedCategories?.includes(id) || false;
         
         return `
             <div class="category-card ${!isActive ? 'inactive' : ''}" 
                  data-id="${id}"
                  style="--cat-color: ${category.color}"
-                 onclick="window.categoriesPage.openModal('${id}')">
+                 onclick="window.categoriesPageV21.openModal('${id}')">
                 
                 <div class="card-header">
                     <div class="cat-emoji">${category.icon}</div>
@@ -118,16 +140,16 @@ class CategoriesPage {
                 
                 <div class="card-actions" onclick="event.stopPropagation()">
                     <button class="btn-minimal ${isActive ? 'on' : 'off'}" 
-                            onclick="window.categoriesPage.toggleCategory('${id}')">
+                            onclick="window.categoriesPageV21.toggleCategory('${id}')">
                         ${isActive ? 'ON' : 'OFF'}
                     </button>
                     <button class="btn-minimal task ${isPreselected ? 'selected' : ''}" 
-                            onclick="window.categoriesPage.togglePreselection('${id}')"
+                            onclick="window.categoriesPageV21.togglePreselection('${id}')"
                             title="${isPreselected ? 'Tâches pré-cochées' : 'Tâches non cochées'}">
                         <i class="fas fa-${isPreselected ? 'check-square' : 'square'}"></i>
                     </button>
                     <button class="btn-minimal config" 
-                            onclick="window.categoriesPage.openModal('${id}')">
+                            onclick="window.categoriesPageV21.openModal('${id}')">
                         <i class="fas fa-ellipsis-h"></i>
                     </button>
                 </div>
@@ -136,7 +158,158 @@ class CategoriesPage {
     }
 
     // ================================================
-    // MODAL MODERNE
+    // GESTION DES CATÉGORIES ACTIVÉES/DÉSACTIVÉES
+    // ================================================
+    toggleCategory(categoryId) {
+        const settings = this.loadSettings();
+        let activeCategories = settings.activeCategories || null;
+        
+        if (activeCategories === null) {
+            const allCategories = Object.keys(window.categoryManager?.getCategories() || {});
+            activeCategories = allCategories.filter(id => id !== categoryId);
+        } else {
+            if (activeCategories.includes(categoryId)) {
+                activeCategories = activeCategories.filter(id => id !== categoryId);
+            } else {
+                activeCategories.push(categoryId);
+            }
+        }
+        
+        settings.activeCategories = activeCategories;
+        this.saveSettings(settings);
+        
+        // Notifier CategoryManager
+        if (window.categoryManager) {
+            window.categoryManager.updateActiveCategories(activeCategories);
+        }
+        
+        this.updateCategoriesDisplay();
+        this.showToast('État de la catégorie mis à jour');
+    }
+
+    // ================================================
+    // GESTION DE LA PRÉ-SÉLECTION POUR TÂCHES - CORRIGÉE
+    // ================================================
+    togglePreselection(categoryId) {
+        console.log('[CategoriesPage] 🔄 Toggle pré-sélection pour:', categoryId);
+        
+        const settings = this.loadSettings();
+        let taskPreselectedCategories = settings.taskPreselectedCategories || [];
+        
+        const isPreselected = taskPreselectedCategories.includes(categoryId);
+        
+        if (isPreselected) {
+            taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
+            console.log('[CategoriesPage] ➖ Retrait pré-sélection:', categoryId);
+        } else {
+            taskPreselectedCategories.push(categoryId);
+            console.log('[CategoriesPage] ➕ Ajout pré-sélection:', categoryId);
+        }
+        
+        // Sauvegarder dans les settings
+        settings.taskPreselectedCategories = taskPreselectedCategories;
+        this.saveSettings(settings);
+        
+        // SYNCHRONISATION COMPLÈTE
+        this.syncTaskPreselectedCategories(taskPreselectedCategories);
+        
+        // Mettre à jour l'affichage
+        this.updateCategoriesDisplay();
+        
+        // Toast avec icône appropriée
+        const category = window.categoryManager?.getCategory(categoryId);
+        const message = isPreselected ? 
+            `☐ ${category?.name || categoryId} - Pré-sélection désactivée` : 
+            `☑️ ${category?.name || categoryId} - Pré-sélection activée`;
+        this.showToast(message);
+    }
+
+    // ================================================
+    // SYNCHRONISATION COMPLÈTE DES MODULES
+    // ================================================
+    syncTaskPreselectedCategories(categories) {
+        console.log('[CategoriesPage] 🔄 === SYNCHRONISATION GLOBALE ===');
+        console.log('[CategoriesPage] 📋 Catégories à synchroniser:', categories);
+        
+        // 1. CategoryManager
+        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
+            window.categoryManager.updateTaskPreselectedCategories(categories);
+            console.log('[CategoriesPage] ✅ CategoryManager synchronisé');
+        }
+        
+        // 2. EmailScanner
+        if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+            window.emailScanner.updateTaskPreselectedCategories(categories);
+            console.log('[CategoriesPage] ✅ EmailScanner synchronisé');
+        }
+        
+        // 3. PageManager
+        if (window.pageManager && typeof window.pageManager.updateSettings === 'function') {
+            window.pageManager.updateSettings({
+                taskPreselectedCategories: categories
+            });
+            console.log('[CategoriesPage] ✅ PageManager synchronisé');
+        }
+        
+        // 4. StartScan/MinimalScanModule
+        if (window.minimalScanModule && typeof window.minimalScanModule.updateSettings === 'function') {
+            window.minimalScanModule.updateSettings({
+                taskPreselectedCategories: categories
+            });
+            console.log('[CategoriesPage] ✅ MinimalScanModule synchronisé');
+        }
+        
+        // 5. AITaskAnalyzer
+        if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+            window.aiTaskAnalyzer.updatePreselectedCategories(categories);
+            console.log('[CategoriesPage] ✅ AITaskAnalyzer synchronisé');
+        }
+        
+        // 6. Dispatcher des événements pour les autres modules
+        this.dispatchSettingsChanged({
+            type: 'taskPreselectedCategories',
+            value: categories,
+            settings: this.loadSettings()
+        });
+        
+        console.log('[CategoriesPage] ✅ Synchronisation terminée');
+    }
+
+    // Dispatcher d'événements
+    dispatchSettingsChanged(detail) {
+        try {
+            // Événement spécifique pour les catégories
+            window.dispatchEvent(new CustomEvent('categorySettingsChanged', { 
+                detail: {
+                    ...detail,
+                    source: 'CategoriesPage',
+                    timestamp: Date.now()
+                }
+            }));
+            
+            // Événement générique
+            window.dispatchEvent(new CustomEvent('settingsChanged', { 
+                detail: {
+                    ...detail,
+                    source: 'CategoriesPage',
+                    timestamp: Date.now()
+                }
+            }));
+            
+            console.log('[CategoriesPage] 📨 Événements dispatched');
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur dispatch événements:', error);
+        }
+    }
+
+    // Méthode pour récupérer les catégories pré-sélectionnées
+    getTaskPreselectedCategories() {
+        const settings = this.loadSettings();
+        return settings.taskPreselectedCategories || [];
+    }
+
+    // ================================================
+    // MODAL MODERNE - STRUCTURE EXISTANTE
     // ================================================
     openModal(categoryId) {
         const category = window.categoryManager?.getCategory(categoryId);
@@ -154,7 +327,7 @@ class CategoriesPage {
         };
         
         const modalHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV21.closeModal()">
                 <div class="modal-modern">
                     <!-- Header avec gradient -->
                     <div class="modal-header">
@@ -162,21 +335,21 @@ class CategoriesPage {
                             <span class="modal-icon">${category.icon}</span>
                             <h2>${category.name}</h2>
                         </div>
-                        <button class="btn-close" onclick="window.categoriesPage.closeModal()">
+                        <button class="btn-close" onclick="window.categoriesPageV21.closeModal()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
                     <!-- Tabs modernes -->
                     <div class="tabs-modern">
-                        <button class="tab active" data-tab="keywords" onclick="window.categoriesPage.switchTab('keywords')">
+                        <button class="tab active" data-tab="keywords" onclick="window.categoriesPageV21.switchTab('keywords')">
                             <i class="fas fa-key"></i> Mots-clés
                         </button>
-                        <button class="tab" data-tab="filters" onclick="window.categoriesPage.switchTab('filters')">
+                        <button class="tab" data-tab="filters" onclick="window.categoriesPageV21.switchTab('filters')">
                             <i class="fas fa-filter"></i> Filtres
                         </button>
                         ${category.isCustom ? `
-                            <button class="tab" data-tab="settings" onclick="window.categoriesPage.switchTab('settings')">
+                            <button class="tab" data-tab="settings" onclick="window.categoriesPageV21.switchTab('settings')">
                                 <i class="fas fa-cog"></i> Paramètres
                             </button>
                         ` : ''}
@@ -203,7 +376,7 @@ class CategoriesPage {
                                             <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
                                             <div class="input-modern compact">
                                                 <input type="text" id="quick-include-domain" placeholder="exemple.com">
-                                                <button onclick="window.categoriesPage.addFilter('includeDomains')">
+                                                <button onclick="window.categoriesPageV21.addFilter('includeDomains')">
                                                     <i class="fas fa-plus"></i>
                                                 </button>
                                             </div>
@@ -211,7 +384,7 @@ class CategoriesPage {
                                                 ${filters.includeDomains.map(d => `
                                                     <span class="tag filter-tag">
                                                         ${d}
-                                                        <button onclick="window.categoriesPage.removeFilter('includeDomains', '${d}')">×</button>
+                                                        <button onclick="window.categoriesPageV21.removeFilter('includeDomains', '${d}')">×</button>
                                                     </span>
                                                 `).join('')}
                                             </div>
@@ -221,7 +394,7 @@ class CategoriesPage {
                                             <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
                                             <div class="input-modern compact">
                                                 <input type="text" id="quick-exclude-domain" placeholder="spam.com">
-                                                <button onclick="window.categoriesPage.addFilter('excludeDomains')">
+                                                <button onclick="window.categoriesPageV21.addFilter('excludeDomains')">
                                                     <i class="fas fa-plus"></i>
                                                 </button>
                                             </div>
@@ -229,7 +402,7 @@ class CategoriesPage {
                                                 ${filters.excludeDomains.map(d => `
                                                     <span class="tag exclude-tag">
                                                         ${d}
-                                                        <button onclick="window.categoriesPage.removeFilter('excludeDomains', '${d}')">×</button>
+                                                        <button onclick="window.categoriesPageV21.removeFilter('excludeDomains', '${d}')">×</button>
                                                     </span>
                                                 `).join('')}
                                             </div>
@@ -239,7 +412,7 @@ class CategoriesPage {
                                             <h4><i class="fas fa-at"></i> Emails autorisés</h4>
                                             <div class="input-modern compact">
                                                 <input type="text" id="quick-include-email" placeholder="contact@exemple.com">
-                                                <button onclick="window.categoriesPage.addFilter('includeEmails')">
+                                                <button onclick="window.categoriesPageV21.addFilter('includeEmails')">
                                                     <i class="fas fa-plus"></i>
                                                 </button>
                                             </div>
@@ -247,7 +420,7 @@ class CategoriesPage {
                                                 ${filters.includeEmails.map(e => `
                                                     <span class="tag filter-tag">
                                                         ${e}
-                                                        <button onclick="window.categoriesPage.removeFilter('includeEmails', '${e}')">×</button>
+                                                        <button onclick="window.categoriesPageV21.removeFilter('includeEmails', '${e}')">×</button>
                                                     </span>
                                                 `).join('')}
                                             </div>
@@ -259,103 +432,7 @@ class CategoriesPage {
                         
                         <!-- Tab Filtres -->
                         <div class="tab-panel" id="tab-filters">
-                            <div class="filters-layout">
-                                <div class="filter-section">
-                                    <h3>Filtres d'inclusion</h3>
-                                    
-                                    <div class="filter-box">
-                                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
-                                        <p class="filter-hint">Accepter uniquement les emails de ces domaines</p>
-                                        <div class="input-modern">
-                                            <input type="text" id="include-domain" placeholder="exemple.com">
-                                            <button onclick="window.categoriesPage.addFilter('includeDomains')">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
-                                        <div class="tags" id="includeDomains-items">
-                                            ${filters.includeDomains.map(d => `
-                                                <span class="tag filter-tag">
-                                                    <i class="fas fa-globe"></i>
-                                                    ${d}
-                                                    <button onclick="window.categoriesPage.removeItem('includeDomains', '${d}')">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </span>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="filter-box">
-                                        <h4><i class="fas fa-at"></i> Emails autorisés</h4>
-                                        <p class="filter-hint">Accepter uniquement les emails de ces adresses</p>
-                                        <div class="input-modern">
-                                            <input type="text" id="include-email" placeholder="contact@exemple.com">
-                                            <button onclick="window.categoriesPage.addFilter('includeEmails')">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
-                                        <div class="tags" id="includeEmails-items">
-                                            ${filters.includeEmails.map(e => `
-                                                <span class="tag filter-tag">
-                                                    <i class="fas fa-at"></i>
-                                                    ${e}
-                                                    <button onclick="window.categoriesPage.removeItem('includeEmails', '${e}')">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </span>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="filter-section">
-                                    <h3>Filtres d'exclusion</h3>
-                                    
-                                    <div class="filter-box">
-                                        <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
-                                        <p class="filter-hint">Ignorer les emails de ces domaines</p>
-                                        <div class="input-modern">
-                                            <input type="text" id="exclude-domain" placeholder="spam.com">
-                                            <button onclick="window.categoriesPage.addFilter('excludeDomains')">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
-                                        <div class="tags" id="excludeDomains-items">
-                                            ${filters.excludeDomains.map(d => `
-                                                <span class="tag exclude-tag">
-                                                    <i class="fas fa-ban"></i>
-                                                    ${d}
-                                                    <button onclick="window.categoriesPage.removeItem('excludeDomains', '${d}')">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </span>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="filter-box">
-                                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
-                                        <p class="filter-hint">Ignorer les emails de ces adresses</p>
-                                        <div class="input-modern">
-                                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com">
-                                            <button onclick="window.categoriesPage.addFilter('excludeEmails')">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
-                                        <div class="tags" id="excludeEmails-items">
-                                            ${filters.excludeEmails.map(e => `
-                                                <span class="tag exclude-tag">
-                                                    <i class="fas fa-user-slash"></i>
-                                                    ${e}
-                                                    <button onclick="window.categoriesPage.removeItem('excludeEmails', '${e}')">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                </span>
-                                            `).join('')}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            ${this.renderFiltersTab(filters)}
                         </div>
                         
                         <!-- Tab Paramètres -->
@@ -365,7 +442,7 @@ class CategoriesPage {
                                     <div class="danger-zone">
                                         <h4><i class="fas fa-exclamation-triangle"></i> Zone dangereuse</h4>
                                         <p>Cette action est irréversible</p>
-                                        <button class="btn-danger" onclick="window.categoriesPage.deleteCategory('${categoryId}')">
+                                        <button class="btn-danger" onclick="window.categoriesPageV21.deleteCategory('${categoryId}')">
                                             <i class="fas fa-trash"></i> Supprimer la catégorie
                                         </button>
                                     </div>
@@ -376,10 +453,10 @@ class CategoriesPage {
                     
                     <!-- Footer -->
                     <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
+                        <button class="btn-modern secondary" onclick="window.categoriesPageV21.closeModal()">
                             Annuler
                         </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPage.save()">
+                        <button class="btn-modern primary" onclick="window.categoriesPageV21.save()">
                             <i class="fas fa-check"></i> Enregistrer
                         </button>
                     </div>
@@ -402,8 +479,8 @@ class CategoriesPage {
                 <p class="box-description">${description}</p>
                 <div class="input-modern">
                     <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé..." 
-                           onkeypress="if(event.key === 'Enter') window.categoriesPage.addKeyword('${type}', '${color}')">
-                    <button style="background: ${color}" onclick="window.categoriesPage.addKeyword('${type}', '${color}')">
+                           onkeypress="if(event.key === 'Enter') window.categoriesPageV21.addKeyword('${type}', '${color}')">
+                    <button style="background: ${color}" onclick="window.categoriesPageV21.addKeyword('${type}', '${color}')">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -411,11 +488,113 @@ class CategoriesPage {
                     ${keywords.map(k => `
                         <span class="tag" style="background: ${color}15; color: ${color}">
                             ${k}
-                            <button onclick="window.categoriesPage.removeItem('${type}', '${k}')">
+                            <button onclick="window.categoriesPageV21.removeItem('${type}', '${k}')">
                                 <i class="fas fa-times"></i>
                             </button>
                         </span>
                     `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderFiltersTab(filters) {
+        return `
+            <div class="filters-layout">
+                <div class="filter-section">
+                    <h3>Filtres d'inclusion</h3>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
+                        <p class="filter-hint">Accepter uniquement les emails de ces domaines</p>
+                        <div class="input-modern">
+                            <input type="text" id="include-domain" placeholder="exemple.com">
+                            <button onclick="window.categoriesPageV21.addFilter('includeDomains')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="includeDomains-items">
+                            ${filters.includeDomains.map(d => `
+                                <span class="tag filter-tag">
+                                    <i class="fas fa-globe"></i>
+                                    ${d}
+                                    <button onclick="window.categoriesPageV21.removeItem('includeDomains', '${d}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-at"></i> Emails autorisés</h4>
+                        <p class="filter-hint">Accepter uniquement les emails de ces adresses</p>
+                        <div class="input-modern">
+                            <input type="text" id="include-email" placeholder="contact@exemple.com">
+                            <button onclick="window.categoriesPageV21.addFilter('includeEmails')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="includeEmails-items">
+                            ${filters.includeEmails.map(e => `
+                                <span class="tag filter-tag">
+                                    <i class="fas fa-at"></i>
+                                    ${e}
+                                    <button onclick="window.categoriesPageV21.removeItem('includeEmails', '${e}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="filter-section">
+                    <h3>Filtres d'exclusion</h3>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
+                        <p class="filter-hint">Ignorer les emails de ces domaines</p>
+                        <div class="input-modern">
+                            <input type="text" id="exclude-domain" placeholder="spam.com">
+                            <button onclick="window.categoriesPageV21.addFilter('excludeDomains')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="excludeDomains-items">
+                            ${filters.excludeDomains.map(d => `
+                                <span class="tag exclude-tag">
+                                    <i class="fas fa-ban"></i>
+                                    ${d}
+                                    <button onclick="window.categoriesPageV21.removeItem('excludeDomains', '${d}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="filter-box">
+                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
+                        <p class="filter-hint">Ignorer les emails de ces adresses</p>
+                        <div class="input-modern">
+                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com">
+                            <button onclick="window.categoriesPageV21.addFilter('excludeEmails')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="tags" id="excludeEmails-items">
+                            ${filters.excludeEmails.map(e => `
+                                <span class="tag exclude-tag">
+                                    <i class="fas fa-user-slash"></i>
+                                    ${e}
+                                    <button onclick="window.categoriesPageV21.removeItem('excludeEmails', '${e}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -428,11 +607,11 @@ class CategoriesPage {
         this.closeModal();
         
         const modalHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPage.closeModal()">
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV21.closeModal()">
                 <div class="modal-modern modal-create">
                     <div class="create-header">
                         <h2>Nouvelle catégorie ✨</h2>
-                        <button class="btn-close" onclick="window.categoriesPage.closeModal()">
+                        <button class="btn-close" onclick="window.categoriesPageV21.closeModal()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -449,7 +628,7 @@ class CategoriesPage {
                             <div class="emoji-grid">
                                 ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌', '🌟', '🚀', '💎', '🎨', '🔥'].map(emoji => 
                                     `<button class="emoji-option ${emoji === '📁' ? 'selected' : ''}" 
-                                             onclick="window.categoriesPage.selectIcon('${emoji}')">${emoji}</button>`
+                                             onclick="window.categoriesPageV21.selectIcon('${emoji}')">${emoji}</button>`
                                 ).join('')}
                             </div>
                             <input type="hidden" id="new-icon" value="📁">
@@ -461,7 +640,7 @@ class CategoriesPage {
                                 ${this.colors.map((color, i) => 
                                     `<button class="color-option ${i === 0 ? 'selected' : ''}" 
                                              style="background: ${color}"
-                                             onclick="window.categoriesPage.selectColor('${color}')"></button>`
+                                             onclick="window.categoriesPageV21.selectColor('${color}')"></button>`
                                 ).join('')}
                             </div>
                             <input type="hidden" id="new-color" value="${this.colors[0]}">
@@ -469,10 +648,10 @@ class CategoriesPage {
                     </div>
                     
                     <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPage.closeModal()">
+                        <button class="btn-modern secondary" onclick="window.categoriesPageV21.closeModal()">
                             Annuler
                         </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPage.createCategory()">
+                        <button class="btn-modern primary" onclick="window.categoriesPageV21.createCategory()">
                             <i class="fas fa-sparkles"></i> Créer
                         </button>
                     </div>
@@ -553,7 +732,7 @@ class CategoriesPage {
         container.insertAdjacentHTML('beforeend', `
             <span class="tag" style="background: ${color}15; color: ${color}">
                 ${value}
-                <button onclick="window.categoriesPage.removeItem('${type}', '${value}')">
+                <button onclick="window.categoriesPageV21.removeItem('${type}', '${value}')">
                     <i class="fas fa-times"></i>
                 </button>
             </span>
@@ -564,7 +743,6 @@ class CategoriesPage {
     }
 
     addFilter(type) {
-        // Gérer les deux types d'inputs (modal complet et sidebar)
         let inputId;
         if (type.includes('Domain')) {
             inputId = document.getElementById('quick-include-domain') ? 'quick-include-domain' : 
@@ -579,7 +757,6 @@ class CategoriesPage {
         
         const value = input.value.trim().toLowerCase();
         
-        // Mise à jour dans les deux endroits si nécessaire
         const containers = [
             document.getElementById(`${type}-items`),
             document.getElementById(`quick-${type}`)
@@ -596,7 +773,7 @@ class CategoriesPage {
                     <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}" data-value="${value}">
                         ${type.includes('Domain') || type.includes('Email') ? '' : `<i class="fas fa-${icon}"></i>`}
                         ${value}
-                        <button onclick="window.categoriesPage.removeFilter('${type}', '${value}')">×</button>
+                        <button onclick="window.categoriesPageV21.removeFilter('${type}', '${value}')">×</button>
                     </span>
                 `);
             }
@@ -607,7 +784,6 @@ class CategoriesPage {
     }
     
     removeFilter(type, value) {
-        // Supprimer de tous les conteneurs
         const containers = [
             document.getElementById(`${type}-items`),
             document.getElementById(`quick-${type}`)
@@ -635,25 +811,6 @@ class CategoriesPage {
                 tag.remove();
             }
         });
-    }
-
-    togglePreselection(categoryId) {
-        const settings = this.loadSettings();
-        let preselectedCategories = settings.preselectedCategories || [];
-        
-        const isPreselected = preselectedCategories.includes(categoryId);
-        
-        if (isPreselected) {
-            preselectedCategories = preselectedCategories.filter(id => id !== categoryId);
-        } else {
-            preselectedCategories.push(categoryId);
-        }
-        
-        settings.preselectedCategories = preselectedCategories;
-        this.saveSettings(settings);
-        
-        this.updateCategoriesDisplay();
-        this.showToast(isPreselected ? '☐ Pré-sélection désactivée' : '☑️ Pré-sélection activée');
     }
 
     createCategory() {
@@ -747,7 +904,8 @@ class CategoriesPage {
     refreshPage() {
         const container = document.querySelector('.settings-container') || 
                         document.querySelector('.main-content') ||
-                        document.querySelector('.content');
+                        document.querySelector('.content') ||
+                        document.getElementById('pageContent');
         if (container) {
             this.render(container);
         }
@@ -787,12 +945,12 @@ class CategoriesPage {
             const saved = localStorage.getItem('categorySettings');
             return saved ? JSON.parse(saved) : { 
                 activeCategories: null,
-                preselectedCategories: []
+                taskPreselectedCategories: []
             };
         } catch (error) {
             return { 
                 activeCategories: null,
-                preselectedCategories: []
+                taskPreselectedCategories: []
             };
         }
     }
@@ -837,13 +995,13 @@ class CategoriesPage {
     }
 
     // ================================================
-    // STYLES MODERNES
+    // STYLES MODERNES (existants)
     // ================================================
     addStyles() {
-        if (document.getElementById('categoriesModernStyles')) return;
+        if (document.getElementById('categoriesModernStylesV21')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'categoriesModernStyles';
+        styles.id = 'categoriesModernStylesV21';
         styles.textContent = `
             /* Base et variables */
             .categories-modern {
@@ -1069,7 +1227,7 @@ class CategoriesPage {
                 word-wrap: break-word;
                 overflow-wrap: break-word;
                 hyphens: auto;
-                max-height: 2.6em; /* 2 lignes max */
+                max-height: 2.6em;
                 overflow: hidden;
                 display: -webkit-box;
                 -webkit-line-clamp: 2;
@@ -1099,7 +1257,7 @@ class CategoriesPage {
                 grid-template-columns: repeat(3, 32px);
                 gap: 3px;
                 justify-content: start;
-                margin-top: auto; /* Pousse les boutons en bas */
+                margin-top: auto;
             }
             
             /* Boutons minimalistes uniformes */
@@ -1904,14 +2062,34 @@ class CategoriesPage {
     }
 }
 
-// Créer l'instance
-window.categoriesPage = new CategoriesPage();
+// ================================================
+// INTÉGRATION GLOBALE
+// ================================================
 
-// Intégration PageManager
+// Créer l'instance avec un nom unique
+window.categoriesPageV21 = new CategoriesPageV21();
+
+// Créer un alias pour maintenir la compatibilité
+window.categoriesPage = window.categoriesPageV21;
+
+// Intégration avec PageManager
 if (window.pageManager?.pages) {
+    // Pour la page settings/paramètres
     window.pageManager.pages.settings = (container) => {
-        window.categoriesPage.render(container);
+        window.categoriesPageV21.render(container);
+    };
+    
+    // Pour la page categories si elle existe
+    window.pageManager.pages.categories = (container) => {
+        window.categoriesPageV21.render(container);
     };
 }
 
-console.log('🎨 CategoriesPage moderne chargée');
+// S'assurer que StartScan peut accéder aux catégories pré-sélectionnées
+if (!window.categoriesPage.getTaskPreselectedCategories) {
+    window.categoriesPage.getTaskPreselectedCategories = function() {
+        return window.categoriesPageV21.getTaskPreselectedCategories();
+    };
+}
+
+console.log('[CategoriesPage] ✅ CategoriesPage v21.0 chargée - Synchronisation complète fixée!');
