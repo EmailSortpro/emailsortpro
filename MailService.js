@@ -1,304 +1,623 @@
-// MailService.js - Service de récupération des emails Microsoft Graph et Google API v3.1
-// CORRIGÉ avec support multi-provider
+// MailService.js - Service de récupération des emails Microsoft Graph CORRIGÉ v3.1
 
 class MailService {
     constructor() {
         this.isInitialized = false;
         this.cache = new Map();
-        this.folders = new Map(); // Stores folder IDs by display name (for Outlook)
+        this.folders = new Map();
         this.folderMapping = {
             'inbox': 'inbox',
-            'junkemail': 'junkemail',
+            'junkemail': 'junkemail', 
             'sentitems': 'sentitems',
             'drafts': 'drafts',
-            'archive': 'archive',
-            // Gmail specific folder mappings might be added here, or handled dynamically
+            'archive': 'archive'
         };
-        this.currentMailProvider = null; // 'outlook' or 'gmail'
-
+        
         console.log('[MailService] Constructor - Service de récupération des emails réels');
     }
 
-    async initialize(provider) {
-        console(`[MailService] Initializing for provider: ${provider}...`);
-
-        if (this.isInitialized && this.currentMailProvider === provider) {
-            console.log(`[MailService] Already initialized for ${provider}`);
+    async initialize() {
+        console.log('[MailService] Initializing...');
+        
+        if (this.isInitialized) {
+            console.log('[MailService] Already initialized');
             return;
         }
 
         try {
+            // Vérifier que AuthService est disponible et initialisé
             if (!window.authService) {
                 throw new Error('AuthService not available');
             }
 
-            if (!window.authService.isAuthenticated(provider)) {
-                console.warn(`[MailService] User not authenticated for ${provider}, cannot initialize.`);
-                // Throw an error or return gracefully if not authenticated
-                throw new Error(`User not authenticated for ${provider}`);
+            if (!window.authService.isAuthenticated()) {
+                console.warn('[MailService] User not authenticated, cannot initialize');
+                return;
             }
 
-            this.currentMailProvider = provider;
-            this.cache.clear(); // Clear cache on provider change
-            this.folders.clear(); // Clear folders on provider change
+            // Charger les dossiers de messagerie
+            console.log('[MailService] Loading mail folders...');
+            await this.loadMailFolders();
 
-            if (provider === 'outlook') {
-                await this.loadOutlookMailFolders();
-            } else if (provider === 'gmail') {
-                await this.loadGmailMailLabels(); // Gmail uses "labels" instead of "folders"
-            } else {
-                throw new Error(`Unsupported mail provider: ${provider}`);
-            }
-
-            console.log(`[MailService] ✅ Initialization complete for ${provider}`);
+            console.log('[MailService] ✅ Initialization complete');
             this.isInitialized = true;
 
         } catch (error) {
-            console.error(`[MailService] ❌ Initialization failed for ${provider}:`, error);
-            this.isInitialized = false;
-            this.currentMailProvider = null; // Reset provider on failure
+            console.error('[MailService] ❌ Initialization failed:', error);
             throw error;
         }
     }
 
+    // ================================================
+    // CHARGEMENT DES DOSSIERS
+    // ================================================
+    async loadMailFolders() {
+        try {
+            const accessToken = await window.authService.getAccessToken();
+            if (!accessToken) {
+                throw new Error('Unable to get access token');
+            }
+
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const folders = data.value || [];
+
+            console.log(`[MailService] ✅ Loaded ${folders.length} folders`);
+            
+            // Stocker les dossiers avec leurs ID réels
+            folders.forEach(folder => {
+                this.folders.set(folder.displayName.toLowerCase(), folder);
+                
+                // Mapping des noms standards
+                if (folder.displayName.toLowerCase().includes('inbox') || 
+                    folder.displayName.toLowerCase().includes('boîte de réception')) {
+                    this.folders.set('inbox', folder);
+                }
+                if (folder.displayName.toLowerCase().includes('junk') || 
+                    folder.displayName.toLowerCase().includes('courrier indésirable')) {
+                    this.folders.set('junkemail', folder);
+                }
+                if (folder.displayName.toLowerCase().includes('sent') || 
+                    folder.displayName.toLowerCase().includes('éléments envoyés')) {
+                    this.folders.set('sentitems', folder);
+                }
+            });
+
+            return folders;
+
+        } catch (error) {
+            console.error('[MailService] Error loading folders:', error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // MÉTHODE PRINCIPALE : RÉCUPÉRATION DES EMAILS
+    // ================================================
+    async getEmailsFromFolder(folderName, options = {}) {
+        console.log(`[MailService] Getting emails from folder: ${folderName}`);
+        
+        try {
+            // Initialiser si nécessaire
+            if (!this.isInitialized) {
+                await this.initialize();
+            }
+
+            // Vérifier l'authentification
+            if (!window.authService.isAuthenticated()) {
+                throw new Error('User not authenticated');
+            }
+
+            // Obtenir le token d'accès
+            const accessToken = await window.authService.getAccessToken();
+            if (!accessToken) {
+                throw new Error('Unable to get access token');
+            }
+
+            // Obtenir l'ID réel du dossier
+            const folderId = await this.resolveFolderId(folderName);
+            
+            // Construire l'URL de l'API Microsoft Graph
+            const graphUrl = this.buildGraphUrl(folderId, options);
+            console.log(`[MailService] Query endpoint: ${graphUrl}`);
+
+            // Effectuer la requête
+            const response = await fetch(graphUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[MailService] ❌ Graph API error:', response.status, errorText);
+                throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            const emails = data.value || [];
+
+            console.log(`[MailService] ✅ Retrieved ${emails.length} emails`);
+            
+            // Traiter et enrichir les emails
+            const processedEmails = this.processEmails(emails, folderName);
+            
+            return processedEmails;
+
+        } catch (error) {
+            console.error(`[MailService] ❌ Error getting emails from ${folderName}:`, error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // RÉSOLUTION DE L'ID DU DOSSIER
+    // ================================================
+    async resolveFolderId(folderName) {
+        // Si c'est déjà un ID complet, l'utiliser directement
+        if (folderName.includes('AAM') || folderName.length > 20) {
+            return folderName;
+        }
+
+        // Chercher dans le cache des dossiers
+        const folder = this.folders.get(folderName.toLowerCase());
+        if (folder) {
+            console.log(`[MailService] Resolved folder ${folderName} to ID: ${folder.id}`);
+            return folder.id;
+        }
+
+        // Pour la boîte de réception, utiliser l'endpoint spécial
+        if (folderName === 'inbox') {
+            return 'inbox'; // Utiliser l'endpoint /me/mailFolders/inbox
+        }
+
+        // Fallback: rechercher par nom de dossier
+        console.warn(`[MailService] Folder ${folderName} not found in cache, using as-is`);
+        return folderName;
+    }
+
+    // ================================================
+    // CONSTRUCTION DE L'URL MICROSOFT GRAPH AMÉLIORÉE
+    // ================================================
+    buildGraphUrl(folderId, options) {
+        const {
+            startDate,
+            endDate,
+            top = 100,
+            orderBy = 'receivedDateTime desc'
+        } = options;
+
+        // Base URL adaptée selon le type d'ID
+        let baseUrl;
+        if (folderId === 'inbox') {
+            // Utiliser l'endpoint spécial pour la boîte de réception
+            baseUrl = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages';
+        } else if (folderId.includes('AAM') || folderId.length > 20) {
+            // ID complet de dossier
+            baseUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
+        } else {
+            // Nom de dossier
+            baseUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
+        }
+
+        // Paramètres de requête
+        const params = new URLSearchParams();
+        
+        // Nombre d'emails à récupérer (limité à 1000 max par Microsoft)
+        params.append('$top', Math.min(top, 1000).toString());
+        
+        // Tri par date de réception décroissante
+        params.append('$orderby', orderBy);
+        
+        // Sélection des champs nécessaires optimisée
+        params.append('$select', [
+            'id',
+            'subject', 
+            'bodyPreview',
+            'body',
+            'from',
+            'toRecipients',
+            'ccRecipients',
+            'receivedDateTime',
+            'sentDateTime',
+            'isRead',
+            'importance',
+            'hasAttachments',
+            'flag',
+            'categories',
+            'parentFolderId',
+            'webLink'
+        ].join(','));
+
+        // Filtre par dates si spécifié
+        if (startDate || endDate) {
+            const filters = [];
+            
+            if (startDate) {
+                const startISO = new Date(startDate).toISOString();
+                filters.push(`receivedDateTime ge ${startISO}`);
+            }
+            
+            if (endDate) {
+                // S'assurer que endDate inclut toute la journée
+                const endDateObj = new Date(endDate);
+                endDateObj.setHours(23, 59, 59, 999);
+                const endISO = endDateObj.toISOString();
+                filters.push(`receivedDateTime le ${endISO}`);
+            }
+            
+            if (filters.length > 0) {
+                params.append('$filter', filters.join(' and '));
+            }
+        }
+
+        return `${baseUrl}?${params.toString()}`;
+    }
+
+    // ================================================
+    // TRAITEMENT ET ENRICHISSEMENT DES EMAILS
+    // ================================================
+    processEmails(emails, folderName) {
+        console.log(`[MailService] 🔄 Processing ${emails.length} emails from ${folderName}`);
+        
+        return emails.map(email => {
+            try {
+                // Email de base avec métadonnées ajoutées
+                const processedEmail = {
+                    // Champs originaux de Microsoft Graph
+                    id: email.id,
+                    subject: email.subject || 'Sans sujet',
+                    bodyPreview: email.bodyPreview || '',
+                    body: email.body,
+                    from: email.from,
+                    toRecipients: email.toRecipients || [],
+                    ccRecipients: email.ccRecipients || [],
+                    receivedDateTime: email.receivedDateTime,
+                    sentDateTime: email.sentDateTime,
+                    isRead: email.isRead,
+                    importance: email.importance,
+                    hasAttachments: email.hasAttachments,
+                    flag: email.flag,
+                    categories: email.categories || [],
+                    parentFolderId: email.parentFolderId,
+                    webLink: email.webLink,
+                    
+                    // Métadonnées ajoutées par notre service
+                    sourceFolder: folderName,
+                    retrievedAt: new Date().toISOString(),
+                    
+                    // Champs préparés pour la catégorisation
+                    emailText: this.extractEmailText(email),
+                    senderDomain: this.extractSenderDomain(email.from),
+                    recipientCount: (email.toRecipients?.length || 0) + (email.ccRecipients?.length || 0)
+                };
+
+                return processedEmail;
+
+            } catch (error) {
+                console.warn('[MailService] ⚠️ Error processing email:', email.id, error);
+                return email; // Retourner l'email original en cas d'erreur
+            }
+        });
+    }
+
+    // ================================================
+    // EXTRACTION DU TEXTE DE L'EMAIL AMÉLIORÉE
+    // ================================================
+    extractEmailText(email) {
+        let text = '';
+        
+        // Ajouter le sujet (avec poids important)
+        if (email.subject) {
+            text += email.subject + ' ';
+        }
+        
+        // Ajouter les noms et adresses des expéditeurs
+        if (email.from?.emailAddress) {
+            if (email.from.emailAddress.name) {
+                text += email.from.emailAddress.name + ' ';
+            }
+            if (email.from.emailAddress.address) {
+                text += email.from.emailAddress.address + ' ';
+            }
+        }
+        
+        // Ajouter l'aperçu du corps
+        if (email.bodyPreview) {
+            text += email.bodyPreview + ' ';
+        }
+        
+        // Ajouter le corps si disponible
+        if (email.body && email.body.content) {
+            // Nettoyer le HTML si c'est du HTML
+            if (email.body.contentType === 'html') {
+                const cleanText = email.body.content
+                    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Supprimer scripts
+                    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Supprimer styles
+                    .replace(/<[^>]*>/g, ' ') // Supprimer les balises HTML
+                    .replace(/&nbsp;/g, ' ') // Remplacer &nbsp;
+                    .replace(/&[^;]+;/g, ' ') // Remplacer autres entités HTML
+                    .replace(/\s+/g, ' ') // Normaliser les espaces
+                    .trim();
+                text += cleanText;
+            } else {
+                text += email.body.content;
+            }
+        }
+        
+        return text.trim();
+    }
+
+    // ================================================
+    // EXTRACTION DU DOMAINE DE L'EXPÉDITEUR
+    // ================================================
+    extractSenderDomain(fromField) {
+        try {
+            if (!fromField || !fromField.emailAddress || !fromField.emailAddress.address) {
+                return 'unknown';
+            }
+            
+            const email = fromField.emailAddress.address;
+            const domain = email.split('@')[1];
+            return domain ? domain.toLowerCase() : 'unknown';
+            
+        } catch (error) {
+            console.warn('[MailService] Error extracting sender domain:', error);
+            return 'unknown';
+        }
+    }
+
+    // ================================================
+    // RÉCUPÉRATION D'UN EMAIL SPÉCIFIQUE
+    // ================================================
+    async getEmailById(emailId) {
+        console.log(`[MailService] Getting email by ID: ${emailId}`);
+        
+        try {
+            const accessToken = await window.authService.getAccessToken();
+            if (!accessToken) {
+                throw new Error('Unable to get access token');
+            }
+
+            const response = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${emailId}`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const email = await response.json();
+            console.log('[MailService] ✅ Email retrieved');
+            
+            return email;
+
+        } catch (error) {
+            console.error('[MailService] ❌ Error getting email by ID:', error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // RÉCUPÉRATION DES DOSSIERS PUBLIQUE
+    // ================================================
+    async getFolders() {
+        console.log('[MailService] Getting mail folders');
+        
+        try {
+            const accessToken = await window.authService.getAccessToken();
+            if (!accessToken) {
+                throw new Error('Unable to get access token');
+            }
+
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const folders = data.value || [];
+
+            console.log(`[MailService] ✅ Retrieved ${folders.length} folders`);
+            return folders;
+
+        } catch (error) {
+            console.error('[MailService] ❌ Error getting folders:', error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // STATISTIQUES D'EMAIL
+    // ================================================
+    async getEmailStats(folderName = 'inbox') {
+        console.log(`[MailService] Getting email stats for ${folderName}`);
+        
+        try {
+            const accessToken = await window.authService.getAccessToken();
+            if (!accessToken) {
+                throw new Error('Unable to get access token');
+            }
+
+            // Résoudre l'ID du dossier
+            const folderId = await this.resolveFolderId(folderName);
+
+            // Requête pour obtenir le nombre total d'emails
+            const endpoint = folderId === 'inbox' ? 
+                'https://graph.microsoft.com/v1.0/me/mailFolders/inbox' :
+                `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}`;
+
+            const response = await fetch(
+                `${endpoint}?$select=totalItemCount,unreadItemCount`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const stats = await response.json();
+            console.log('[MailService] ✅ Email stats retrieved');
+            
+            return {
+                totalEmails: stats.totalItemCount || 0,
+                unreadEmails: stats.unreadItemCount || 0,
+                folderName: folderName
+            };
+
+        } catch (error) {
+            console.error('[MailService] ❌ Error getting email stats:', error);
+            return {
+                totalEmails: 0,
+                unreadEmails: 0,
+                folderName: folderName,
+                error: error.message
+            };
+        }
+    }
+
+    // ================================================
+    // RECHERCHE D'EMAILS
+    // ================================================
+    async searchEmails(query, options = {}) {
+        console.log(`[MailService] Searching emails with query: ${query}`);
+        
+        try {
+            const accessToken = await window.authService.getAccessToken();
+            if (!accessToken) {
+                throw new Error('Unable to get access token');
+            }
+
+            const {
+                top = 50,
+                folderName = 'inbox'
+            } = options;
+
+            const folderId = await this.resolveFolderId(folderName);
+            
+            const params = new URLSearchParams();
+            params.append('$search', `"${query}"`);
+            params.append('$top', top.toString());
+            params.append('$orderby', 'receivedDateTime desc');
+            params.append('$select', [
+                'id', 'subject', 'bodyPreview', 'from', 
+                'receivedDateTime', 'importance', 'hasAttachments'
+            ].join(','));
+
+            const endpoint = folderId === 'inbox' ? 
+                'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages' :
+                `https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages`;
+
+            const response = await fetch(`${endpoint}?${params.toString()}`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const emails = data.value || [];
+
+            console.log(`[MailService] ✅ Found ${emails.length} emails matching query`);
+            return this.processEmails(emails, folderName);
+
+        } catch (error) {
+            console.error('[MailService] ❌ Error searching emails:', error);
+            throw error;
+        }
+    }
+
+    // ================================================
+    // MÉTHODES DE DIAGNOSTIC AMÉLIORÉES
+    // ================================================
+    async testConnection() {
+        console.log('[MailService] Testing Graph API connection...');
+        
+        try {
+            // Test simple avec l'endpoint utilisateur
+            const accessToken = await window.authService.getAccessToken();
+            if (!accessToken) {
+                throw new Error('No access token available');
+            }
+
+            const response = await fetch('https://graph.microsoft.com/v1.0/me', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const user = await response.json();
+            console.log('[MailService] ✅ Connection test successful:', user.displayName);
+            
+            return {
+                success: true,
+                user: user.displayName,
+                email: user.mail || user.userPrincipalName
+            };
+
+        } catch (error) {
+            console.error('[MailService] ❌ Connection test failed:', error);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    // ================================================
+    // NETTOYAGE ET RESET
+    // ================================================
     reset() {
-        console.log('[MailService] Resetting MailService state.');
+        console.log('[MailService] Resetting service...');
         this.isInitialized = false;
         this.cache.clear();
         this.folders.clear();
-        this.currentMailProvider = null;
     }
 
-    async loadOutlookMailFolders() {
-        console.log('[MailService] Loading Outlook mail folders...');
-        const accessToken = await window.authService.getAccessToken('outlook');
-        if (!accessToken) {
-            throw new Error('No Outlook access token available.');
-        }
-
-        try {
-            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders?$top=50', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to fetch Outlook mail folders: ${response.status} - ${errorText}`);
-            }
-
-            const data = await response.json();
-            data.value.forEach(folder => {
-                // Store by lowercase displayName for easier lookup and consistency
-                this.folders.set(folder.displayName.toLowerCase(), {
-                    id: folder.id,
-                    displayName: folder.displayName,
-                    wellKnownName: folder.wellKnownName // Use this for standard folders like 'inbox', 'sentitems'
-                });
-            });
-            console.log('[MailService] Outlook mail folders loaded:', Array.from(this.folders.keys()));
-        } catch (error) {
-            console.error('[MailService] Error loading Outlook mail folders:', error);
-            throw error;
-        }
-    }
-
-    async loadGmailMailLabels() {
-        console.log('[MailService] Loading Gmail mail labels...');
-        const accessToken = await window.authService.getAccessToken('gmail');
-        if (!accessToken) {
-            throw new Error('No Gmail access token available.');
-        }
-
-        try {
-            await gapi.client.gmail.users.labels.list({
-                'userId': 'me'
-            }); // Ensure Gmail API client is loaded and ready
-
-            const response = await gapi.client.gmail.users.labels.list({
-                'userId': 'me'
-            });
-
-            if (response.status !== 200) {
-                throw new Error(`Failed to fetch Gmail labels: ${response.status} - ${response.body}`);
-            }
-
-            response.result.labels.forEach(label => {
-                // Gmail uses 'labels', map them to a similar structure as folders
-                // Use the name directly, as Gmail labels can be custom
-                this.folders.set(label.name.toLowerCase(), {
-                    id: label.id,
-                    displayName: label.name,
-                    type: label.type // 'system' or 'user'
-                });
-            });
-            console.log('[MailService] Gmail labels loaded:', Array.from(this.folders.keys()));
-        } catch (error) {
-            console.error('[MailService] Error loading Gmail labels:', error);
-            throw error;
-        }
-    }
-
-    async getEmailsFromFolder(folderName, page = 1, pageSize = 10) {
-        if (!this.isInitialized || !this.currentMailProvider) {
-            console.warn('[MailService] Service not initialized or provider not set.');
-            return { emails: [], totalCount: 0 };
-        }
-
-        const offset = (page - 1) * pageSize;
-        const lowerCaseFolderName = folderName.toLowerCase();
-
-        if (this.currentMailProvider === 'outlook') {
-            const folder = this.folders.get(lowerCaseFolderName);
-            if (!folder) {
-                console.warn(`[MailService] Outlook folder "${folderName}" not found.`);
-                return { emails: [], totalCount: 0 };
-            }
-            return this.getOutlookEmails(folder.id, offset, pageSize);
-        } else if (this.currentMailProvider === 'gmail') {
-            const label = this.folders.get(lowerCaseFolderName);
-            if (!label) {
-                console.warn(`[MailService] Gmail label "${folderName}" not found.`);
-                return { emails: [], totalCount: 0 };
-            }
-            return this.getGmailEmails(label.id, offset, pageSize);
-        } else {
-            console.error('[MailService] No mail provider selected or recognized.');
-            return { emails: [], totalCount: 0 };
-        }
-    }
-
-    async getOutlookEmails(folderId, skip = 0, top = 10) {
-        console.log(`[MailService] Fetching Outlook emails from folder ID: ${folderId}, Skip: ${skip}, Top: ${top}`);
-        const accessToken = await window.authService.getAccessToken('outlook');
-        if (!accessToken) {
-            throw new Error('No Outlook access token available.');
-        }
-
-        try {
-            const response = await fetch(`https://graph.microsoft.com/v1.0/me/mailFolders/${folderId}/messages?$top=${top}&$skip=${skip}&$select=id,subject,from,toRecipients,receivedDateTime,isRead,bodyPreview,hasAttachments`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to fetch Outlook emails: ${response.status} - ${errorText}`);
-            }
-
-            const data = await response.json();
-            const emails = data.value.map(email => ({
-                id: email.id,
-                subject: email.subject,
-                from: email.from?.emailAddress?.address || 'Unknown',
-                fromName: email.from?.emailAddress?.name || '',
-                to: email.toRecipients.map(r => r.emailAddress.address),
-                receivedDateTime: email.receivedDateTime,
-                isRead: email.isRead,
-                bodyPreview: email.bodyPreview,
-                hasAttachments: email.hasAttachments,
-                // Add more fields as needed
-            }));
-            // Outlook doesn't directly provide total count in simple queries,
-            // so we might need to adjust this or make another call for accurate total.
-            // For now, let's assume `data['@odata.count']` if available, otherwise estimate.
-            const totalCount = data['@odata.count'] || (emails.length === top ? skip + top + 1 : skip + emails.length);
-
-            return { emails, totalCount };
-
-        } catch (error) {
-            console.error('[MailService] Error fetching Outlook emails:', error);
-            throw error;
-        }
-    }
-
-    async getGmailEmails(labelId, offset = 0, limit = 10) {
-        console.log(`[MailService] Fetching Gmail emails from label ID: ${labelId}, Offset: ${offset}, Limit: ${limit}`);
-        const accessToken = await window.authService.getAccessToken('gmail');
-        if (!accessToken) {
-            throw new Error('No Gmail access token available.');
-        }
-
-        try {
-            // Ensure GAPI is loaded and authenticated
-            if (!gapi.client || !gapi.client.gmail) {
-                console.warn('GAPI Gmail client not ready. Attempting to load...');
-                await window.authService.initializeGapi(); // Re-initialize GAPI if not ready
-                if (!gapi.client.gmail) {
-                    throw new Error('Gmail API client could not be loaded.');
-                }
-            }
-
-            const response = await gapi.client.gmail.users.messages.list({
-                'userId': 'me',
-                'labelIds': [labelId],
-                'maxResults': limit,
-                // Gmail uses pageToken for pagination, not offset directly.
-                // This means 'offset' as a concept needs to be adapted or
-                // we fetch all and paginate client-side, which is inefficient.
-                // For simplicity here, we'll assume the first 'limit' messages.
-                // A full implementation would involve managing `nextPageToken`.
-            });
-
-            if (response.status !== 200) {
-                throw new Error(`Failed to fetch Gmail messages: ${response.status} - ${response.body}`);
-            }
-
-            const messages = response.result.messages || [];
-            const totalCount = response.result.resultSizeEstimate || messages.length; // Gmail provides resultSizeEstimate
-
-            const emailPromises = messages.map(message =>
-                gapi.client.gmail.users.messages.get({
-                    'userId': 'me',
-                    'id': message.id,
-                    'format': 'metadata', // 'full', 'raw', 'minimal'
-                    'metadataHeaders': ['From', 'Subject', 'Date', 'To', 'Cc', 'Bcc']
-                })
-            );
-
-            const emailDetails = await Promise.all(emailPromises);
-
-            const emails = emailDetails.map(detail => {
-                const headers = detail.result.payload.headers;
-                const getHeader = (name) => headers.find(h => h.name === name)?.value;
-
-                return {
-                    id: detail.result.id,
-                    subject: getHeader('Subject') || '(No Subject)',
-                    from: getHeader('From') || 'Unknown',
-                    fromName: getHeader('From')?.split('<')[0]?.trim() || '',
-                    to: (getHeader('To')?.split(',') || []).map(email => email.trim()),
-                    receivedDateTime: getHeader('Date') ? new Date(getHeader('Date')).toISOString() : null,
-                    isRead: !detail.result.labelIds.includes('UNREAD'), // Assuming 'UNREAD' label indicates unread
-                    bodyPreview: detail.result.snippet || '', // Gmail provides snippet
-                    hasAttachments: detail.result.payload.mimeType.includes('multipart') && detail.result.payload.parts?.some(p => p.filename && p.filename.length > 0)
-                    // Add more fields as needed, may require 'full' format for body content
-                };
-            });
-
-            return { emails, totalCount };
-
-        } catch (error) {
-            console.error('[MailService] Error fetching Gmail emails:', error);
-            throw error;
-        }
-    }
-
-    // Helper to get a specific folder/label ID
-    getFolderId(name) {
-        return this.folders.get(name.toLowerCase())?.id;
-    }
-
-    getDiagnosticInfo() {
+    // ================================================
+    // INFORMATIONS DE DIAGNOSTIC AMÉLIORÉES
+    // ================================================
+    getDebugInfo() {
         return {
             isInitialized: this.isInitialized,
-            currentProvider: this.currentMailProvider,
-            authServiceAvailable: !!window.authService,
-            userAuthenticatedOutlook: window.authService ? window.authService.isAuthenticated('outlook') : false,
-            userAuthenticatedGmail: window.authService ? window.authService.isAuthenticated('gmail') : false,
-            foldersCount: this.folders.size,
+            hasToken: window.authService ? !!window.authService.getAccessToken : false,
+            foldersCount: this.folders.size * 2, // Cache + mappings
             cacheSize: this.cache.size,
             folders: Array.from(this.folders.entries()).map(([name, folder]) => ({
                 name,
@@ -315,24 +634,22 @@ try {
     console.log('[MailService] ✅ Global instance created successfully');
 } catch (error) {
     console.error('[MailService] ❌ Failed to create global instance:', error);
-
+    
     // Instance de fallback plus robuste
     window.mailService = {
         isInitialized: false,
         getEmailsFromFolder: async () => {
             throw new Error('MailService not available - Check console for errors');
         },
-        initialize: async (provider) => {
-            throw new Error(`MailService failed to initialize for ${provider} - Check AuthService`);
+        initialize: async () => {
+            throw new Error('MailService failed to initialize - Check AuthService');
         },
-        getDiagnosticInfo: () => ({
+        getDiagnosticInfo: () => ({ 
             error: 'MailService failed to create',
             authServiceAvailable: !!window.authService,
-            userAuthenticatedOutlook: window.authService ? window.authService.isAuthenticated('outlook') : false,
-            userAuthenticatedGmail: window.authService ? window.authService.isAuthenticated('gmail') : false
-        }),
-        reset: () => { console.warn('MailService not available, cannot reset.'); }
+            userAuthenticated: window.authService ? window.authService.isAuthenticated() : false
+        })
     };
 }
 
-console.log('✅ MailService v3.1 loaded - Enhanced with better folder resolution and error handling and Gmail support');
+console.log('✅ MailService v3.1 loaded - Enhanced with better folder resolution and error handling');
