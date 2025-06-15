@@ -34,235 +34,419 @@
             width: 50px;
             height: 50px;
             border: 5px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #fff;
+            border-top: 5px solid white;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 1.5rem;
         }
         
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
-        .message-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
+        .success-icon {
+            font-size: 4rem;
+            color: #10b981;
+            margin-bottom: 1.5rem;
+            animation: pulse 1.5s ease-in-out infinite;
         }
         
-        h1 {
-            font-size: 2em;
-            margin-bottom: 15px;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .error-message {
+            background: rgba(239, 68, 68, 0.25);
+            border: 1px solid rgba(239, 68, 68, 0.6);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .countdown {
+            font-size: 1rem;
+            opacity: 0.85;
+            margin-top: 1.5rem;
+        }
+        
+        .btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
         }
         
         p {
-            font-size: 1.1em;
-            line-height: 1.6;
-            margin-bottom: 30px;
-        }
-        
-        .error-details {
-            background: rgba(255, 0, 0, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 0.9em;
-            text-align: left;
-            word-break: break-all;
-        }
-        .debug-info {
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 0.8em;
-            text-align: left;
-            margin-top: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-            word-break: break-all;
+            font-size: 1.1rem;
+            line-height: 1.5;
         }
     </style>
-    <script async defer src="https://accounts.google.com/gsi/client"></script>
 </head>
 <body>
     <div class="callback-container">
-        <div id="loading-state" style="display: block;">
+        <div id="loading-state">
             <div class="spinner"></div>
-            <h1>Authentification en cours...</h1>
-            <p>Veuillez patienter pendant que nous vérifions vos informations.</p>
+            <h2>Authentification en cours...</h2>
+            <p>Traitement de votre connexion, veuillez patienter...</p>
         </div>
-
+        
         <div id="success-state" style="display: none;">
-            <div class="message-icon">✅</div>
-            <h1>Authentification Réussie !</h1>
-            <p>Vous allez être redirigé(e) vers l'application.</p>
+            <div class="success-icon">
+                <i>✅</i>
+            </div>
+            <h2>Authentification réussie !</h2>
+            <p id="welcome-message">Bienvenue</p>
+            <div class="countdown" id="countdown">Redirection dans <span id="countdown-number">3</span> secondes...</div>
         </div>
-
+        
         <div id="error-state" style="display: none;">
-            <div class="message-icon">❌</div>
-            <h1>Erreur d'Authentification</h1>
-            <p id="error-message">Une erreur inconnue est survenue.</p>
-            <div class="error-details" id="error-details"></div>
-            <p>Veuillez réessayer ou contacter le support.</p>
-            <button onclick="window.location.href='https://emailsortpro.netlify.app/'" style="margin-top: 20px; padding: 10px 20px; border: none; border-radius: 5px; background-color: #764ba2; color: white; cursor: pointer;">Retour à l'accueil</button>
+            <div class="error-message">
+                <h3>❌ Erreur d'authentification</h3>
+                <p id="error-message">Une erreur s'est produite pendant l'authentification.</p>
+                <button class="btn" onclick="redirectToApp()">
+                    Retourner à l'application
+                </button>
+                <button class="btn" onclick="location.reload()">
+                    Réessayer
+                </button>
+            </div>
         </div>
     </div>
 
-    <script>
-        const CONFIG = {
-            clientId: '436941729211-00tc5fdl74l0hc3q1qotfknh0v86h72i.apps.googleusercontent.com',
-            redirectUri: 'https://emailsortpro.netlify.app/auth-callback.html',
-            scopes: [
-                'https://www.googleapis.com/auth/userinfo.email',
-                'https://www.googleapis.com/auth/userinfo.profile',
-                'https://www.googleapis.com/auth/gmail.modify'
-            ].join(' '),
-            environment: 'development',
-            basePath: 'https://emailsortpro.netlify.app',
-            apiEndpoint: 'https://api.emailsortpro.com'
-        };
-        window.AppConfig = CONFIG;
-    </script>
+    <!-- MSAL Library -->
+    <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
-    <script src="js/utils/localStorageManager.js"></script>
-
     <script>
-        // Fonction pour obtenir les paramètres d'URL
-        function getQueryParams() {
-            const params = {};
-            window.location.search.substring(1).split('&').forEach(param => {
-                const parts = param.split('=');
-                params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1] || '');
-            });
-            return params;
+        console.log('[Auth Callback] ✅ Starting enhanced authentication callback processing...');
+        
+        // Configuration centralisée et robuste pour tous les environnements
+        const CONFIG = {
+            // Client ID par défaut - fonctionne pour Netlify, GitHub Pages et localhost
+            DEFAULT_CLIENT_ID: '8fec3ae1-78e3-4b5d-a425-00b8f20516f7',
+            
+            // Détection de l'environnement
+            environment: {
+                isNetlify: window.location.hostname.includes('netlify'),
+                isGitHubPages: window.location.hostname.includes('github.io'),
+                isLocalhost: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            },
+            
+            // URL de base selon l'environnement
+            basePath: window.location.hostname.includes('github.io') ? '/emailsortpro' : ''
+        };
+        
+        console.log('[Auth Callback] Environment detected:', CONFIG.environment);
+        console.log('[Auth Callback] Base path:', CONFIG.basePath);
+
+        // Fonction robuste pour obtenir le Client ID
+        function getClientId() {
+            // 1. Essayer le localStorage (configuration personnalisée)
+            try {
+                const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                if (savedClientId && 
+                    savedClientId !== 'VOTRE_CLIENT_ID_ICI' && 
+                    savedClientId !== 'CONFIGURATION_REQUIRED' &&
+                    savedClientId.length >= 30 &&
+                    /^[a-f0-9-]{36}$/i.test(savedClientId)) {
+                    console.log('[Auth Callback] ✅ Using saved client ID from localStorage');
+                    return savedClientId;
+                }
+            } catch (e) {
+                console.warn('[Auth Callback] Cannot access localStorage:', e);
+            }
+            
+            // 2. Utiliser le Client ID par défaut
+            console.log('[Auth Callback] ✅ Using default client ID');
+            return CONFIG.DEFAULT_CLIENT_ID;
         }
 
-        // Fonction pour afficher l'état
-        function showState(stateId) {
+        // Fonction pour rediriger vers l'application
+        function redirectToApp() {
+            const appUrl = window.location.origin + CONFIG.basePath;
+            console.log('[Auth Callback] Redirecting to app:', appUrl);
+            window.location.href = appUrl;
+        }
+
+        // Fonction pour afficher le succès avec animation améliorée
+        function showSuccess(account) {
             document.getElementById('loading-state').style.display = 'none';
-            document.getElementById('success-state').style.display = 'none';
-            document.getElementById('error-state').style.display = 'none';
-            document.getElementById(stateId).style.display = 'block';
+            document.getElementById('success-state').style.display = 'block';
+            
+            const welcomeMsg = document.getElementById('welcome-message');
+            const userName = account.name || account.username || 'Utilisateur';
+            welcomeMsg.textContent = `Bienvenue ${userName} !`;
+            
+            // Compteur de redirection amélioré
+            let countdown = 3;
+            const countdownElement = document.getElementById('countdown-number');
+            
+            const timer = setInterval(() => {
+                countdown--;
+                countdownElement.textContent = countdown;
+                
+                if (countdown <= 0) {
+                    clearInterval(timer);
+                    redirectToApp();
+                }
+            }, 1000);
         }
 
-        // Fonction pour gérer la réponse OAuth
-        function handleOAuthResponse() {
-            const params = getQueryParams();
-            console.log('[Auth Callback] URL Parameters:', params);
+        // Fonction pour afficher l'erreur avec gestion améliorée
+        function showError(message) {
+            console.error('[Auth Callback] ❌ Showing error:', message);
+            
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('error-state').style.display = 'block';
+            
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            
+            // Redirection automatique après 15 secondes en cas d'erreur
+            setTimeout(() => {
+                console.log('[Auth Callback] Auto-redirecting after error...');
+                redirectToApp();
+            }, 15000);
+        }
 
-            if (params.code) {
-                // Un code d'autorisation a été reçu
-                console.log('[Auth Callback] Code received:', params.code.substring(0, 20) + '...');
+        // Fonction principale de traitement du callback - AMÉLIORÉE
+        async function processAuthCallback() {
+            try {
+                console.log('[Auth Callback] 🚀 Processing authentication callback...');
                 
-                // Utiliser la fonction du SDK Google pour échanger le code contre un jeton
-                // Le initCodeClient est appelé ici avec un callback. Quand le code est dans l'URL,
-                // le GSI le détecte et exécute le callback directement avec la réponse du jeton.
-                const client = google.accounts.oauth2.initCodeClient({
-                    client_id: AppConfig.clientId,
-                    scope: AppConfig.scopes,
-                    redirect_uri: AppConfig.redirectUri,
-                    callback: (tokenResponse) => { // Ce callback est appelé APRES l'échange du code par GSI
-                        console.log('[Auth Callback] Token Response:', tokenResponse);
-                        if (tokenResponse.error) {
-                            showErrorState('Échange de jeton échoué', tokenResponse.error + ': ' + tokenResponse.error_description);
-                        } else if (tokenResponse.access_token) {
-                            // Échange réussi, nous avons un access_token
-                            console.log('[Auth Callback] Access Token received. Fetching user info...');
-                            // Maintenant, nous devons récupérer les informations de l'utilisateur avec ce jeton
-                            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                                headers: {
-                                    'Authorization': `Bearer ${tokenResponse.access_token}`
-                                }
-                            })
-                            .then(response => response.json())
-                            .then(profile => {
-                                console.log('[Auth Callback] User Profile:', profile);
-                                if (profile.email) {
-                                    // Stocker les données d'authentification et de profil
-                                    localStorageManager.setAuthData({
-                                        accessToken: tokenResponse.access_token,
-                                        refreshToken: tokenResponse.refresh_token, // Le refresh token peut ne pas être renvoyé pour les flux client-side sans PKCE
-                                        expiresIn: tokenResponse.expires_in,
-                                        issuedAt: Date.now(), 
-                                        profile: {
-                                            id: profile.sub,
-                                            name: profile.name,
-                                            email: profile.email,
-                                            picture: profile.picture
-                                        }
-                                    });
-                                    showState('success-state');
-                                    // Rediriger vers la page principale après un court délai
-                                    setTimeout(() => {
-                                        window.location.href = AppConfig.basePath + '#dashboard';
-                                    }, 1500);
-                                } else {
-                                    showErrorState('Impossible de récupérer le profil utilisateur.', JSON.stringify(profile));
-                                }
-                            })
-                            .catch(error => {
-                                console.error('[Auth Callback] Error fetching user profile:', error);
-                                showErrorState('Erreur lors de la récupération du profil utilisateur', error.message || error);
-                            });
-                        } else {
-                            showErrorState('Réponse de jeton inattendue.', JSON.stringify(tokenResponse));
-                        }
+                // Vérifier que MSAL est chargé
+                if (typeof msal === 'undefined') {
+                    throw new Error('MSAL library not loaded - check internet connection');
+                }
+                
+                // Obtenir le Client ID avec validation
+                const clientId = getClientId();
+                if (!clientId || clientId.length < 30) {
+                    throw new Error('Invalid Client ID format');
+                }
+                console.log('[Auth Callback] Using Client ID:', clientId.substring(0, 8) + '...');
+                
+                // Configuration MSAL robuste
+                const msalConfig = {
+                    auth: {
+                        clientId: clientId,
+                        authority: 'https://login.microsoftonline.com/common',
+                        redirectUri: window.location.origin + CONFIG.basePath + '/auth-callback.html'
+                    },
+                    cache: {
+                        cacheLocation: 'localStorage',
+                        storeAuthStateInCookie: CONFIG.environment.isNetlify || CONFIG.environment.isGitHubPages
+                    },
+                    system: {
+                        loggerOptions: {
+                            loggerCallback: (level, message) => {
+                                console.log(`[MSAL ${level}] ${message}`);
+                            },
+                            piiLoggingEnabled: false,
+                            logLevel: msal.LogLevel.Warning
+                        },
+                        allowNativeBroker: false,
+                        allowRedirectInIframe: false
                     }
+                };
+                
+                console.log('[Auth Callback] MSAL config created:', {
+                    authority: msalConfig.auth.authority,
+                    redirectUri: msalConfig.auth.redirectUri,
+                    cacheLocation: msalConfig.cache.cacheLocation,
+                    environment: CONFIG.environment
                 });
-                // Note: requestCode() n'est pas appelé ici car on gère une réponse entrante, pas une nouvelle requête.
-            } else if (params.error) {
-                // Une erreur a été signalée par Google
-                showErrorState(`Accès refusé ou erreur: ${params.error}`, params.error_description || 'Pas de description fournie.');
-            } else {
-                // Ni code ni erreur dans l'URL - situation inattendue
-                showErrorState('URL de rappel invalide', 'Aucun paramètre "code" ou "error" trouvé.');
+                
+                // Créer l'instance MSAL avec gestion d'erreur robuste
+                const msalInstance = new msal.PublicClientApplication(msalConfig);
+                await msalInstance.initialize();
+                
+                console.log('[Auth Callback] ✅ MSAL instance initialized successfully');
+                
+                // Traiter la réponse de redirection avec timeout
+                const responseTimeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Response handling timeout')), 20000)
+                );
+                
+                const responsePromise = msalInstance.handleRedirectPromise();
+                const response = await Promise.race([responsePromise, responseTimeout]);
+                
+                if (response && response.account) {
+                    console.log('[Auth Callback] ✅ Authentication successful!');
+                    console.log('[Auth Callback] Account info:', {
+                        username: response.account.username,
+                        name: response.account.name,
+                        homeAccountId: response.account.homeAccountId
+                    });
+                    
+                    // Sauvegarder le Client ID utilisé avec succès
+                    try {
+                        localStorage.setItem('emailsortpro_client_id', clientId);
+                        console.log('[Auth Callback] ✅ Client ID saved for future use');
+                    } catch (e) {
+                        console.warn('[Auth Callback] Could not save client ID:', e);
+                    }
+                    
+                    // Vérifier que le compte est valide
+                    if (!response.account.username || !response.account.homeAccountId) {
+                        throw new Error('Account information incomplete');
+                    }
+                    
+                    // Afficher le succès
+                    showSuccess(response.account);
+                    
+                } else if (response === null) {
+                    console.log('[Auth Callback] No response from handleRedirectPromise');
+                    console.log('[Auth Callback] Possibly direct navigation to callback page');
+                    
+                    // Vérifier s'il y a des comptes dans le cache
+                    const accounts = msalInstance.getAllAccounts();
+                    if (accounts.length > 0) {
+                        console.log('[Auth Callback] Found existing account in cache');
+                        showSuccess(accounts[0]);
+                    } else {
+                        // Redirection immédiate si pas de réponse et pas de compte
+                        setTimeout(() => {
+                            redirectToApp();
+                        }, 2000);
+                    }
+                } else {
+                    console.warn('[Auth Callback] Unexpected response format:', response);
+                    throw new Error('Unexpected authentication response');
+                }
+                
+            } catch (error) {
+                console.error('[Auth Callback] ❌ Error processing callback:', error);
+                
+                let errorMessage = 'Erreur inconnue d\'authentification';
+                
+                // Messages d'erreur spécifiques et détaillés
+                if (error.errorCode) {
+                    const errorCode = error.errorCode;
+                    console.log('[Auth Callback] MSAL Error details:', {
+                        errorCode: error.errorCode,
+                        errorMessage: error.errorMessage,
+                        subError: error.subError,
+                        correlationId: error.correlationId
+                    });
+                    
+                    switch (errorCode) {
+                        case 'user_cancelled':
+                            errorMessage = 'Authentification annulée par l\'utilisateur';
+                            break;
+                        case 'access_denied':
+                            errorMessage = 'Accès refusé - Vérifiez vos permissions';
+                            break;
+                        case 'invalid_client':
+                        case 'unauthorized_client':
+                            errorMessage = 'Configuration Client ID incorrecte - Vérifiez votre configuration Azure';
+                            break;
+                        case 'interaction_required':
+                            errorMessage = 'Interaction utilisateur requise - Veuillez réessayer';
+                            break;
+                        case 'consent_required':
+                            errorMessage = 'Consentement requis - Acceptez les permissions demandées';
+                            break;
+                        case 'login_required':
+                            errorMessage = 'Connexion requise - Session expirée';
+                            break;
+                        default:
+                            errorMessage = `Erreur d'authentification: ${errorCode}`;
+                    }
+                } else if (error.message) {
+                    if (error.message.includes('MSAL')) {
+                        errorMessage = 'Erreur de la bibliothèque d\'authentification Microsoft';
+                    } else if (error.message.includes('network') || error.message.includes('timeout')) {
+                        errorMessage = 'Erreur réseau ou timeout - Vérifiez votre connexion internet';
+                    } else if (error.message.includes('Client ID')) {
+                        errorMessage = 'Configuration Client ID invalide - Contactez l\'administrateur';
+                    } else {
+                        errorMessage = `Erreur: ${error.message}`;
+                    }
+                }
+                
+                showError(errorMessage);
             }
         }
 
-        // Fonction pour afficher l'état d'erreur
-        function showErrorState(message, details = '') {
-            showState('error-state');
-            document.getElementById('error-message').innerText = message;
-            document.getElementById('error-details').innerText = details;
-            console.error('Authentication Error:', message, details);
+        // Attendre que MSAL soit chargé puis traiter le callback
+        function waitForMSALAndProcess() {
+            if (typeof msal === 'undefined') {
+                console.log('[Auth Callback] Waiting for MSAL to load...');
+                setTimeout(waitForMSALAndProcess, 100);
+                return;
+            }
+            
+            console.log('[Auth Callback] ✅ MSAL loaded, processing callback...');
+            processAuthCallback();
         }
 
+        // Démarrer le processus quand la page est chargée
         document.addEventListener('DOMContentLoaded', () => {
-            // S'assurer que la bibliothèque GSI est chargée avant d'appeler initCodeClient
-            if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-                handleOAuthResponse();
-            } else {
-                // Si la lib n'est pas encore chargée (par exemple si async defer est lent), on attend
-                const script = document.createElement('script');
-                script.src = 'https://accounts.google.com/gsi/client';
-                script.onload = () => {
-                    if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-                        handleOAuthResponse();
-                    } else {
-                        showErrorState('Erreur de chargement', 'La bibliothèque Google Sign-In n\'a pas pu être chargée correctement.');
-                    }
-                };
-                script.onerror = () => {
-                    showErrorState('Erreur réseau', 'Impossible de charger la bibliothèque Google Sign-In depuis accounts.google.com.');
-                };
-                document.head.appendChild(script);
+            console.log('[Auth Callback] ✅ DOM loaded, starting enhanced callback process...');
+            waitForMSALAndProcess();
+        });
+
+        // Timeout de sécurité augmenté
+        setTimeout(() => {
+            const loadingState = document.getElementById('loading-state');
+            if (loadingState && loadingState.style.display !== 'none') {
+                console.warn('[Auth Callback] ⏰ Timeout after 45 seconds - redirecting to app');
+                showError('Timeout d\'authentification - Redirection automatique en cours...');
+            }
+        }, 45000); // 45 secondes
+
+        // Gestionnaire d'erreur global
+        window.addEventListener('error', (event) => {
+            console.error('[Auth Callback] Global error:', event.error);
+            if (event.error && event.error.message) {
+                showError(`Erreur système: ${event.error.message}`);
             }
         });
 
-        // Fonctions de diagnostic existantes, à conserver
-        function getClientId() { return AppConfig.clientId; }
+        // Gestionnaire de promesses rejetées
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('[Auth Callback] Unhandled promise rejection:', event.reason);
+            if (event.reason && event.reason.message) {
+                showError(`Erreur de promesse: ${event.reason.message}`);
+            }
+        });
 
+        // Debug global amélioré
         window.authCallbackDebug = function() {
-            console.group('Auth Callback Debug Info');
-            console.log('AppConfig:', AppConfig);
-            console.log('Environment:', AppConfig.environment);
+            console.group('=== AUTH CALLBACK DEBUG DÉTAILLÉ ===');
+            console.log('Environment:', CONFIG.environment);
             console.log('Current URL:', window.location.href);
             console.log('Client ID:', getClientId().substring(0, 8) + '...');
-            console.log('Base path:', AppConfig.basePath);
-            console.log('Google loaded:', typeof google !== 'undefined' && google.accounts && google.accounts.oauth2 ? 'OK' : 'MANQUANT');
+            console.log('Base path:', CONFIG.basePath);
+            console.log('MSAL loaded:', typeof msal !== 'undefined');
             console.log('LocalStorage available:', typeof Storage !== 'undefined');
             console.log('User agent:', navigator.userAgent);
             
+            // Test de localStorage
             try {
                 const testKey = 'test_' + Date.now();
                 localStorage.setItem(testKey, 'test');
@@ -272,6 +456,7 @@
                 console.log('LocalStorage: ❌ Error -', e.message);
             }
             
+            // État du DOM
             console.log('DOM states:', {
                 loading: document.getElementById('loading-state').style.display !== 'none',
                 success: document.getElementById('success-state').style.display !== 'none',
