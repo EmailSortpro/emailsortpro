@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
+    <title>EmailSortProAI - Scanner d'Emails Intelligent avec IA</title>
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
@@ -13,13 +13,13 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://emailsortpro.netlify.app/">
-    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="og:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
-    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
+    <meta property="twitter:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
     <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Favicon -->
@@ -28,24 +28,20 @@
     <!-- MSAL Library -->
     <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
     
-    <!-- Google API Library -->
-    <script src="https://apis.google.com/js/api.js"></script>
-    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY SÉCURISÉE -->
+    <!-- CONFIGURATION NETLIFY -->
     <script>
         console.log('[INDEX] 🚀 Loading Netlify configuration for emailsortpro.netlify.app...');
         
-        // Client IDs SÉCURISÉS (SANS CLIENT SECRETS)
+        // Client ID par défaut fonctionnel pour le nouveau domaine
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-        window.GOOGLE_CLIENT_ID = '436941729211-2dr129lfjnc22k1k7f42ofisjbfthmr2.apps.googleusercontent.com';
         
-        console.log('[INDEX] ✅ Netlify Client IDs configured for new domain - SECURE VERSION');
+        console.log('[INDEX] ✅ Netlify Client ID configured for new domain');
         
         // Détection de l'environnement
         (function() {
@@ -62,69 +58,52 @@
                 origin: window.location.origin
             });
             
-            // Fonction pour obtenir les Client IDs
+            // Fonction pour obtenir le Client ID
             function getClientIdForEnvironment() {
-                const config = {
-                    microsoft: window.NETLIFY_CLIENT_ID,
-                    google: window.GOOGLE_CLIENT_ID
-                };
-                
-                if (isNetlify) {
-                    console.log('[INDEX] ✅ Using configured Netlify client IDs for new domain');
-                    return config;
+                if (isNetlify && window.NETLIFY_CLIENT_ID) {
+                    console.log('[INDEX] ✅ Using configured Netlify client ID for new domain');
+                    return window.NETLIFY_CLIENT_ID;
                 }
                 
                 try {
-                    const savedMicrosoftId = localStorage.getItem('emailsortpro_client_id');
-                    const savedGoogleId = localStorage.getItem('emailsortpro_google_client_id');
-                    
-                    if (savedMicrosoftId && savedMicrosoftId !== 'VOTRE_CLIENT_ID_ICI' && savedMicrosoftId !== 'CONFIGURATION_REQUIRED') {
-                        console.log('[INDEX] ✅ Using saved Microsoft client ID from localStorage');
-                        config.microsoft = savedMicrosoftId;
-                    }
-                    
-                    if (savedGoogleId && savedGoogleId !== 'VOTRE_GOOGLE_CLIENT_ID_ICI' && savedGoogleId !== 'CONFIGURATION_REQUIRED') {
-                        console.log('[INDEX] ✅ Using saved Google client ID from localStorage');
-                        config.google = savedGoogleId;
+                    const savedClientId = localStorage.getItem('emailsortpro_client_id');
+                    if (savedClientId && savedClientId !== 'VOTRE_CLIENT_ID_ICI' && savedClientId !== 'CONFIGURATION_REQUIRED') {
+                        console.log('[INDEX] ✅ Using saved client ID from localStorage');
+                        return savedClientId;
                     }
                 } catch (e) {
                     console.warn('[INDEX] Cannot access localStorage:', e);
                 }
                 
                 if (isLocalhost) {
-                    console.log('[INDEX] Using localhost development client IDs');
-                    return config;
+                    console.log('[INDEX] Using localhost development client ID');
+                    return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
                 }
                 
                 if (isGitHubPages) {
                     console.log('[INDEX] GitHub Pages - configuration requise');
-                    return {
-                        microsoft: 'CONFIGURATION_REQUIRED',
-                        google: 'CONFIGURATION_REQUIRED'
-                    };
+                    return 'CONFIGURATION_REQUIRED';
                 }
                 
-                console.log('[INDEX] ✅ Netlify with default client IDs for new domain');
-                return config;
+                console.log('[INDEX] ✅ Netlify with default client ID for new domain');
+                return '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
             }
             
-            // Fonction pour créer la configuration SÉCURISÉE
-            function createConfig(clientIds) {
+            // Fonction pour créer la configuration
+            function createConfig(clientId) {
                 const basePath = '';
                 const redirectUri = 'https://emailsortpro.netlify.app/auth-callback.html';
                 const postLogoutRedirectUri = 'https://emailsortpro.netlify.app/';
                 
-                console.log('[INDEX] Creating SECURE config with corrected URIs:', {
+                console.log('[INDEX] Creating config with corrected URIs:', {
                     redirectUri,
                     postLogoutRedirectUri,
-                    microsoftClientId: clientIds.microsoft.substring(0, 8) + '...',
-                    googleClientId: clientIds.google.substring(0, 15) + '...',
-                    secureMode: true
+                    clientId: clientId.substring(0, 8) + '...'
                 });
                 
                 window.AppConfig = {
                     msal: {
-                        clientId: clientIds.microsoft,
+                        clientId: clientId,
                         authority: 'https://login.microsoftonline.com/common',
                         redirectUri: redirectUri,
                         postLogoutRedirectUri: postLogoutRedirectUri,
@@ -145,23 +124,6 @@
                             allowNativeBroker: false
                         }
                     },
-                    google: {
-                        clientId: clientIds.google,
-                        // PAS DE CLIENT SECRET - SÉCURISÉ !
-                        scopes: [
-                            'https://www.googleapis.com/auth/gmail.readonly',
-                            'https://www.googleapis.com/auth/gmail.modify',
-                            'https://www.googleapis.com/auth/userinfo.email',
-                            'https://www.googleapis.com/auth/userinfo.profile'
-                        ],
-                        discoveryDocs: [
-                            'https://gmail.googleapis.com/$discovery/rest?version=v1',
-                            'https://www.googleapis.com/discovery/v1/apis/oauth2/v2/rest'
-                        ],
-                        // Configuration pour flow sécurisé
-                        responseType: 'token',
-                        accessType: 'online'
-                    },
                     scopes: {
                         login: [
                             'https://graph.microsoft.com/User.Read',
@@ -175,12 +137,11 @@
                         ]
                     },
                     app: {
-                        name: 'EmailSortPro',
-                        version: '3.0.2',
+                        name: 'EmailSortProAI',
+                        version: '3.0.1',
                         debug: isLocalhost,
                         environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-                        domain: 'emailsortpro.netlify.app',
-                        securityMode: 'secure'
+                        domain: 'emailsortpro.netlify.app'
                     },
                     email: {
                         defaultFolder: 'inbox',
@@ -201,11 +162,7 @@
                     validate() {
                         const issues = [];
                         if (!this.msal.clientId || this.msal.clientId === 'VOTRE_CLIENT_ID_ICI' || this.msal.clientId === 'CONFIGURATION_REQUIRED') {
-                            issues.push('Client ID Microsoft non configuré pour emailsortpro.netlify.app');
-                        }
-                        
-                        if (!this.google.clientId || this.google.clientId === 'VOTRE_GOOGLE_CLIENT_ID_ICI' || this.google.clientId === 'CONFIGURATION_REQUIRED') {
-                            issues.push('Client ID Google non configuré pour emailsortpro.netlify.app');
+                            issues.push('Client ID non configuré pour emailsortpro.netlify.app');
                         }
                         
                         if (!this.msal.redirectUri.includes('emailsortpro.netlify.app')) {
@@ -227,31 +184,27 @@
                             environment: this.app.environment,
                             domain: this.app.domain,
                             configValid: this.validate().valid,
-                            microsoftClientId: this.msal.clientId.substring(0, 8) + '...',
-                            googleClientId: this.google.clientId.substring(0, 15) + '...',
+                            clientId: this.msal.clientId.substring(0, 8) + '...',
                             redirectUri: this.msal.redirectUri,
                             postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
                             isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
-                            securityMode: this.app.securityMode,
                             timestamp: new Date().toISOString()
                         };
                     }
                 };
                 
-                console.log('[INDEX] ✅ SECURE Configuration créée pour le nouveau domaine:', {
+                console.log('[INDEX] ✅ Configuration créée pour le nouveau domaine:', {
                     environment: window.AppConfig.app.environment,
                     domain: window.AppConfig.app.domain,
-                    microsoftClientId: clientIds.microsoft.substring(0, 8) + '...',
-                    googleClientId: clientIds.google.substring(0, 15) + '...',
+                    clientId: clientId.substring(0, 8) + '...',
                     redirectUri: window.AppConfig.msal.redirectUri,
-                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
-                    securityMode: window.AppConfig.app.securityMode
+                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app'
                 });
             }
             
             // Créer la configuration
-            const clientIds = getClientIdForEnvironment();
-            createConfig(clientIds);
+            const clientId = getClientIdForEnvironment();
+            createConfig(clientId);
             
             // Vérification spéciale pour le nouveau domaine
             if (window.location.hostname !== 'emailsortpro.netlify.app' && !isLocalhost) {
@@ -266,7 +219,7 @@
             }
             
             // Vérification et redirection si nécessaire
-            if (clientIds.microsoft === 'CONFIGURATION_REQUIRED' || clientIds.google === 'CONFIGURATION_REQUIRED') {
+            if (clientId === 'CONFIGURATION_REQUIRED') {
                 console.log('[INDEX] ⚠️ Configuration requise pour le nouveau domaine');
                 
                 if (isGitHubPages && window.location.pathname !== '/emailsortpro/setup.html') {
@@ -281,12 +234,11 @@
                     }, 1000);
                 }
             } else {
-                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app - SECURE MODE');
+                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app');
             }
         })();
     </script>
 
-    <!-- Styles intégrés pour l'application sobre -->
     <style>
         /* Reset et styles de base */
         * {
@@ -373,14 +325,6 @@
             line-height: 1.5;
         }
 
-        /* === BOUTONS DE CONNEXION DUAL === */
-        .auth-buttons-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
         .login-button {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
@@ -396,6 +340,7 @@
             align-items: center;
             gap: 10px;
             text-decoration: none;
+            margin-bottom: 24px;
             width: 100%;
             justify-content: center;
         }
@@ -408,17 +353,6 @@
         .login-button:disabled {
             opacity: 0.7;
             cursor: not-allowed;
-        }
-
-        /* Bouton Google spécifique */
-        .login-button.google {
-            background: linear-gradient(135deg, #ea4335 0%, #d33b2c 100%);
-            box-shadow: 0 4px 16px rgba(234, 67, 53, 0.3);
-        }
-
-        .login-button.google:hover {
-            box-shadow: 0 6px 20px rgba(234, 67, 53, 0.4);
-            background: linear-gradient(135deg, #d33b2c 0%, #b52d20 100%);
         }
 
         .login-security {
@@ -516,39 +450,6 @@
             line-height: 1.4;
         }
 
-        /* FOOTER LÉGAL - NOUVEAU */
-        .legal-footer {
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(107, 114, 128, 0.2);
-            text-align: center;
-        }
-
-        .legal-links {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            margin-bottom: 8px;
-        }
-
-        .legal-link {
-            color: #6b7280;
-            font-size: 0.75rem;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .legal-link:hover {
-            color: #4F46E5;
-        }
-
-        .copyright {
-            font-size: 0.7rem;
-            color: #94a3b8;
-            margin-top: 8px;
-        }
-
         /* === STYLES POUR L'APPLICATION SOBRE === */
         /* Header Application */
         .app-header {
@@ -594,7 +495,7 @@
         .auth-status {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
         }
 
         .user-info {
@@ -639,33 +540,36 @@
             justify-content: center;
             font-weight: 500;
             font-size: 13px;
-            position: relative;
         }
 
-        /* Badge provider sur l'avatar */
-        .provider-badge {
-            position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            border: 2px solid white;
+        .logout-button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white !important;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 12px;
+            font-weight: 500;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 8px;
-            font-weight: 600;
+            gap: 6px;
+            text-decoration: none;
         }
 
-        .provider-badge.microsoft {
-            background: #00a1f1;
-            color: white;
+        .logout-button:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+            color: white !important;
         }
 
-        .provider-badge.google {
-            background: #ea4335;
-            color: white;
+        .logout-button:active {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .logout-button i {
+            font-size: 11px;
         }
 
         /* Forcer le texte blanc pour tous les éléments dans auth-status */
@@ -862,58 +766,6 @@
             opacity: 1 !important;
             padding-top: 0 !important;
             margin-top: 0 !important;
-        }
-
-        /* Footer de l'application - NOUVEAU */
-        .app-footer {
-            background: #f8fafc;
-            border-top: 1px solid #e2e8f0;
-            padding: 40px 20px 20px;
-            margin-top: 60px;
-            display: none;
-        }
-
-        body.app-active .app-footer {
-            display: block;
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 32px;
-            flex-wrap: wrap;
-            margin-bottom: 24px;
-        }
-
-        .footer-link {
-            color: #64748b;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .footer-link:hover {
-            color: #4F46E5;
-        }
-
-        .footer-info {
-            color: #94a3b8;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .footer-info strong {
-            color: #64748b;
         }
 
         /* === DASHBOARD SOBRE === */
@@ -1195,16 +1047,6 @@
                 flex-shrink: 0;
             }
 
-            .legal-links {
-                flex-direction: column;
-                gap: 8px;
-            }
-
-            .footer-links {
-                flex-direction: column;
-                gap: 16px;
-            }
-
             .app-nav {
                 height: 60px;
                 padding: 0 10px;
@@ -1288,6 +1130,16 @@
             .guide-step {
                 min-width: auto;
             }
+
+            .logout-button {
+                font-size: 11px;
+                padding: 4px 8px;
+                gap: 4px;
+            }
+
+            .logout-button i {
+                font-size: 10px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1361,7 +1213,7 @@
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
-                    <span>EmailSortPro</span>
+                    <span>EmailSortProAI</span>
                     <span class="ai-badge">AI</span>
                 </div>
                 <div id="authStatus" class="auth-status">
@@ -1413,25 +1265,17 @@
                         <h1 class="login-title">EmailSortPro</h1>
                         
                         <p class="login-subtitle">
-                            Assistant IA pour Outlook et Gmail : analysez et organisez vos emails automatiquement
+                            Assistant IA pour Outlook : analysez et organisez vos emails automatiquement
                         </p>
 
-                        <!-- BOUTONS DE CONNEXION DUAL -->
-                        <div class="auth-buttons-container">
-                            <button id="loginBtn" class="login-button">
-                                <i class="fab fa-microsoft"></i>
-                                Se connecter à Outlook
-                            </button>
-                            
-                            <button id="googleLoginBtn" class="login-button google">
-                                <i class="fab fa-google"></i>
-                                Se connecter à Gmail
-                            </button>
-                        </div>
+                        <button id="loginBtn" class="login-button">
+                            <i class="fab fa-microsoft"></i>
+                            Se connecter à Outlook
+                        </button>
 
                         <div class="login-security">
                             <i class="fas fa-shield-alt"></i>
-                            Connexions sécurisées Microsoft & Google
+                            Connexion sécurisée Microsoft
                         </div>
                     </div>
 
@@ -1446,7 +1290,7 @@
                                         <i class="fas fa-plug"></i>
                                     </div>
                                     <div class="step-title">Connexion</div>
-                                    <div class="step-description">Connectez-vous à Outlook ou Gmail</div>
+                                    <div class="step-description">Connectez-vous à Outlook</div>
                                 </div>
                             </div>
                             
@@ -1482,21 +1326,6 @@
                                 Vos emails ne sont jamais stockés. Traitement entièrement local.
                             </div>
                         </div>
-
-                        <!-- Footer légal dans la page de connexion -->
-                        <div class="legal-footer">
-                            <div class="legal-links">
-                                <a href="/privacy-policy.html" class="legal-link">
-                                    🔒 Politique de confidentialité
-                                </a>
-                                <a href="/terms-of-service.html" class="legal-link">
-                                    📋 Conditions d'utilisation
-                                </a>
-                            </div>
-                            <div class="copyright">
-                                © 2025 EmailSortPro - VH (Vianney Hastings) - Tous droits réservés
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1505,41 +1334,14 @@
             <div id="pageContent">
                 <!-- Le dashboard sera généré par dashboard.js -->
             </div>
-
-            <!-- Footer de l'application -->
-            <footer class="app-footer">
-                <div class="footer-content">
-                    <div class="footer-links">
-                        <a href="/privacy-policy.html" class="footer-link">
-                            <i class="fas fa-shield-alt"></i>
-                            Politique de confidentialité
-                        </a>
-                        <a href="/terms-of-service.html" class="footer-link">
-                            <i class="fas fa-file-contract"></i>
-                            Conditions d'utilisation
-                        </a>
-                        <a href="mailto:vianneyhastings@emailsortpro.fr" class="footer-link">
-                            <i class="fas fa-envelope"></i>
-                            Support
-                        </a>
-                    </div>
-                    <div class="footer-info">
-                        <strong>EmailSortPro</strong> - Assistant IA pour Outlook et Gmail<br>
-                        Développé par <strong>VH (Vianney Hastings)</strong> • Version 3.0.2<br>
-                        <span style="font-size: 12px; color: #94a3b8;">
-                            🔐 100% RGPD • 📧 Données privées • 🚀 Traitement local
-                        </span>
-                    </div>
-                </div>
-            </footer>
         </main>
 
         <!-- Overlay de Chargement sobre -->
         <div id="loadingOverlay" class="login-loading-overlay">
             <div class="login-spinner"></div>
             <div class="login-loading-text">
-                <div>Connexion en cours...</div>
-                <div style="font-size: 14px; opacity: 0.8; margin-top: 8px;">Authentification sécurisée</div>
+                <div>Connexion à Outlook...</div>
+                <div style="font-size: 14px; opacity: 0.8; margin-top: 8px;">Authentification en cours</div>
             </div>
         </div>
 
@@ -1553,51 +1355,46 @@
     <script src="MailService.js"></script>
     <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
 
-    <!-- 2. GoogleAuthService - SÉCURISÉ -->
-    <script src="GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
-
-    <!-- 3. CategoryManager -->
+    <!-- 2. CategoryManager -->
     <script src="CategoryManager.js" onerror="console.error('CategoryManager.js manquant')"></script>
     
-    <!-- 4. TaskManager AVANT PageManager -->
+    <!-- 3. TaskManager AVANT PageManager -->
     <script src="TaskManager.js" onerror="console.error('TaskManager.js manquant')"></script>
     
-    <!-- 5. Autres Managers -->
+    <!-- 4. Autres Managers -->
     <script src="EmailScanner.js" onerror="console.error('EmailScanner.js manquant')"></script>
     <script src="AITaskAnalyzer.js" onerror="console.error('AITaskAnalyzer.js manquant')"></script>
     
-    <!-- 6. DASHBOARD MODULE - NOUVEAU -->
+    <!-- 5. DASHBOARD MODULE - NOUVEAU -->
     <script src="dashboard.js" onerror="console.error('dashboard.js manquant')"></script>
     
-    <!-- 7. Page Manager APRÈS Dashboard et TaskManager -->
+    <!-- 6. Page Manager APRÈS Dashboard et TaskManager -->
     <script src="PageManager.js" onerror="console.error('PageManager.js manquant')"></script>
     
-    <!-- 8. Modules de pages -->
+    <!-- 7. Modules de pages -->
     <script src="startscan.js" onerror="console.error('startscan.js manquant')"></script>
     <script src="DomainOrganizer.js" onerror="console.error('DomainOrganizer.js manquant')"></script>
     <script src="CategoriesPage.js" onerror="console.error('CategoriesPage.js manquant')"></script>
     
-    <!-- 9. Modules Optionnels -->
+    <!-- 8. Modules Optionnels -->
     <script src="Onboarding.js" onerror="console.error('Onboarding.js manquant')"></script>
     
-    <!-- 10. Application Principal EN DERNIER -->
+    <!-- 9. Application Principal EN DERNIER -->
     <script src="app.js"></script>
     
     <!-- Scripts de gestion des événements -->
     <script>
-        // Variable pour éviter les vérifications multiples
+        // Variables globales
         let authCheckInProgress = false;
         let appAlreadyShown = false;
 
-        // Vérification précoce IMMÉDIATE de l'authentification
+        // Vérification précoce d'authentification
         const earlyAuthCheck = () => {
             try {
                 const msalAccount = localStorage.getItem('msal.account.keys');
                 const msalToken = localStorage.getItem('msal.token.keys');
-                const googleAccount = localStorage.getItem('google.account.keys');
-                const googleToken = localStorage.getItem('google.token.keys');
                 
-                if ((msalAccount && msalToken) || (googleAccount && googleToken)) {
+                if (msalAccount && msalToken) {
                     console.log('[EARLY_AUTH] App mode activated immediately');
                     return true;
                 }
@@ -1608,7 +1405,7 @@
             return false;
         };
 
-        // Exécuter la vérification précoce TOUT DE SUITE
+        // Exécuter la vérification précoce
         earlyAuthCheck();
 
         // Fonction pour forcer l'affichage de l'app
@@ -1631,7 +1428,7 @@
             console.log('[FORCE] App display activated');
         };
 
-        // Fonction pour masquer le loading et afficher l'app
+        // Fonction pour afficher l'app après connexion
         window.showApp = function() {
             console.log('[SHOW_APP] Switching to app interface...');
             
@@ -1654,10 +1451,10 @@
                 loginPage.style.display = 'none';
             }
             
-            // UTILISER LE NOUVEAU MODULE DASHBOARD
+            // Utiliser le module dashboard
             window.setPageMode('dashboard');
             
-            // Charger le dashboard via le module
+            // Charger le dashboard
             if (window.dashboardModule) {
                 console.log('[SHOW_APP] Loading dashboard via dashboardModule...');
                 window.dashboardModule.render();
@@ -1678,14 +1475,12 @@
             console.log('[SHOW_APP] App interface activated with dashboard module');
         };
 
-        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
+        // Fonction pour vérifier le scroll
         window.checkScrollNeeded = function() {
-            // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
             
-            // Éviter les appels multiples
             if (window.scrollCheckInProgress) return;
             window.scrollCheckInProgress = true;
             
@@ -1708,13 +1503,12 @@
             }, 50);
         };
 
-        // Ajouter une classe pour le mode login initial
+        // Mode login initial
         document.body.classList.add('login-mode');
 
-        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
+        // Gestion du redimensionnement
         let resizeTimeout;
         window.addEventListener('resize', () => {
-            // Si l'app est active, laisser app.js gérer le resize
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
@@ -1723,9 +1517,8 @@
             resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
         });
 
-        // Gestion des modes d'affichage pour les pages - SILENCIEUX
+        // Gestion des modes d'affichage pour les pages
         window.setPageMode = function(pageName) {
-            // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
@@ -1749,7 +1542,7 @@
                 body.classList.add(`page-${pageName}`);
             }
             
-            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
+            // Gestion du scroll si l'app n'est pas encore active
             if (!document.body.classList.contains('app-active')) {
                 clearTimeout(window.scrollCheckTimeout);
                 window.scrollCheckTimeout = setTimeout(() => {
@@ -1776,11 +1569,9 @@
                 const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
                 
                 window.pageManager.loadPage = function(pageName, ...args) {
-                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
                     window.setPageMode(pageName);
                     
                     if (pageName === 'dashboard') {
-                        // Mettre à jour la navigation pour marquer dashboard comme actif
                         const navItems = document.querySelectorAll('.nav-item');
                         navItems.forEach(item => {
                             item.classList.remove('active');
@@ -1789,7 +1580,6 @@
                             }
                         });
                         
-                        // UTILISER LE MODULE DASHBOARD
                         if (window.dashboardModule) {
                             const pageContent = document.getElementById('pageContent');
                             if (pageContent) {
@@ -1797,13 +1587,11 @@
                                 pageContent.style.opacity = '1';
                             }
                             
-                            // Render dashboard via module
                             window.dashboardModule.render();
                         } else {
                             return originalLoadPage(pageName, ...args);
                         }
                         
-                        // Vérifier le scroll après affichage du dashboard
                         setTimeout(() => {
                             if (window.app && window.app.checkScrollNeeded) {
                                 window.app.checkScrollNeeded();
@@ -1814,7 +1602,6 @@
                         
                         return Promise.resolve();
                     } else {
-                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
                         const pageContent = document.getElementById('pageContent');
                         if (pageContent && window.dashboardModule) {
                             window.dashboardModule.hide();
@@ -1828,10 +1615,74 @@
             }
         };
 
+        // Fonction pour mettre à jour l'affichage utilisateur dans le header AVEC BOUTON DE DÉCONNEXION
+        window.updateUserDisplay = function(user) {
+            const authStatus = document.getElementById('authStatus');
+            if (authStatus && user) {
+                const userName = user.displayName || 'Vianney Hastings';
+                const userEmail = user.mail || user.userPrincipalName || 'vianney.hastings@hotmail.fr';
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+                
+                authStatus.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-details">
+                            <div class="user-name">${userName}</div>
+                            <div class="user-email">${userEmail}</div>
+                        </div>
+                        <div class="user-avatar">${initials}</div>
+                    </div>
+                    <button id="logoutBtn" class="logout-button" onclick="window.handleLogout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Déconnexion
+                    </button>
+                `;
+            }
+        };
+
+        // Fonction pour gérer la déconnexion
+        window.handleLogout = function() {
+            if (window.app && typeof window.app.logout === 'function') {
+                if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                    console.log('[LOGOUT] User confirmed logout');
+                    window.app.logout();
+                }
+            } else {
+                console.warn('[LOGOUT] App logout method not available');
+                if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+                    localStorage.clear();
+                    window.location.reload();
+                }
+            }
+        };
+
+        // Fonction pour le succès d'authentification
+        window.onAuthSuccess = function() {
+            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                window.showApp();
+            }
+        };
+
+        // Fonction de diagnostic
+        window.checkServices = function() {
+            return {
+                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
+                authService: window.authService ? 'OK' : 'MANQUANT',
+                mailService: window.mailService ? 'OK' : 'MANQUANT',
+                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
+                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
+                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
+                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
+                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                hostname: window.location.hostname,
+                expectedHostname: 'emailsortpro.netlify.app'
+            };
+        };
+
         // Lancer l'interception du dashboard
         setTimeout(window.interceptDashboardLoad, 1000);
 
-        // Gestion des boutons de connexion DUAL SÉCURISÉ
+        // Gestion du DOM chargé
         document.addEventListener('DOMContentLoaded', function() {
             if (appAlreadyShown) {
                 return;
@@ -1849,17 +1700,8 @@
                 }
                 
                 try {
-                    // Vérifier Microsoft
                     if (window.authService && typeof window.authService.isAuthenticated === 'function') {
                         if (window.authService.isAuthenticated()) {
-                            window.showApp();
-                            return true;
-                        }
-                    }
-                    
-                    // Vérifier Google
-                    if (window.googleAuthService && typeof window.googleAuthService.isAuthenticated === 'function') {
-                        if (window.googleAuthService.isAuthenticated()) {
                             window.showApp();
                             return true;
                         }
@@ -1886,7 +1728,7 @@
                 }
             }, 200);
             
-            // BOUTON MICROSOFT
+            // Gestion du bouton de connexion
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
@@ -1896,31 +1738,15 @@
                     
                     authCheckInProgress = true;
                     
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion à Outlook...';
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion...';
                     this.disabled = true;
                     
                     const loadingOverlay = document.getElementById('loadingOverlay');
                     if (loadingOverlay) {
                         loadingOverlay.classList.add('active');
-                        const loadingText = loadingOverlay.querySelector('.login-loading-text div');
-                        if (loadingText) {
-                            loadingText.textContent = 'Connexion à Outlook...';
-                        }
                     }
                     
-                    if (window.app && window.app.loginMicrosoft) {
-                        window.app.loginMicrosoft().then(() => {
-                            window.showApp();
-                            authCheckInProgress = false;
-                        }).catch((error) => {
-                            authCheckInProgress = false;
-                            this.innerHTML = '<i class="fab fa-microsoft"></i> Se connecter à Outlook';
-                            this.disabled = false;
-                            if (loadingOverlay) {
-                                loadingOverlay.classList.remove('active');
-                            }
-                        });
-                    } else if (window.app && window.app.login) {
+                    if (window.app && window.app.login) {
                         window.app.login().then(() => {
                             window.showApp();
                             authCheckInProgress = false;
@@ -1943,60 +1769,7 @@
                 });
             }
             
-            // BOUTON GOOGLE - SÉCURISÉ
-            const googleLoginBtn = document.getElementById('googleLoginBtn');
-            if (googleLoginBtn) {
-                googleLoginBtn.addEventListener('click', function() {
-                    if (authCheckInProgress) {
-                        return;
-                    }
-                    
-                    authCheckInProgress = true;
-                    
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion à Gmail...';
-                    this.disabled = true;
-                    
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    if (loadingOverlay) {
-                        loadingOverlay.classList.add('active');
-                        const loadingText = loadingOverlay.querySelector('.login-loading-text div');
-                        if (loadingText) {
-                            loadingText.textContent = 'Connexion à Gmail...';
-                        }
-                    }
-                    
-                    if (window.app && window.app.loginGoogle) {
-                        window.app.loginGoogle().then(() => {
-                            window.showApp();
-                            authCheckInProgress = false;
-                        }).catch((error) => {
-                            authCheckInProgress = false;
-                            this.innerHTML = '<i class="fab fa-google"></i> Se connecter à Gmail';
-                            this.disabled = false;
-                            if (loadingOverlay) {
-                                loadingOverlay.classList.remove('active');
-                            }
-                        });
-                    } else {
-                        authCheckInProgress = false;
-                        this.innerHTML = '<i class="fab fa-google"></i> Se connecter à Gmail';
-                        this.disabled = false;
-                        if (loadingOverlay) {
-                            loadingOverlay.classList.remove('active');
-                        }
-                        
-                        if (window.uiManager) {
-                            window.uiManager.showToast(
-                                'Service Google non disponible. Veuillez réessayer.',
-                                'error',
-                                5000
-                            );
-                        }
-                    }
-                });
-            }
-            
-            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
+            // Gestionnaire d'événements pour le bouton Dashboard
             const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
             if (dashboardBtn) {
                 dashboardBtn.addEventListener('click', function(e) {
@@ -2020,7 +1793,7 @@
                 });
             }
             
-            // Vérifier la configuration après le chargement du DOM
+            // Vérification de la configuration après le chargement du DOM
             setTimeout(function() {
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
@@ -2030,10 +1803,10 @@
                         errorBanner.className = 'config-error-banner';
                         errorBanner.innerHTML = `
                             <div>
-                                ⚠️ <strong>CONFIGURATION:</strong> Configuration manquante pour emailsortpro.netlify.app
+                                ⚠️ <strong>CONFIGURATION:</strong> URI de redirection invalide pour emailsortpro.netlify.app
                             </div>
                             <div>
-                                Vérifiez votre configuration Azure App Registration et Google Console
+                                Vérifiez votre configuration Azure App Registration
                             </div>
                             <div class="config-error-actions">
                                 <button class="config-error-btn" onclick="this.parentElement.parentElement.remove()">Masquer</button>
@@ -2046,129 +1819,6 @@
                 }
             }, 1000);
         });
-        
-        // Fonction globale pour basculer vers l'app après connexion
-        window.onAuthSuccess = function() {
-            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
-                window.showApp();
-            }
-        };
-
-        // Fonction pour mettre à jour l'affichage utilisateur dans le header avec badge provider
-        window.updateUserDisplay = function(user) {
-            const authStatus = document.getElementById('authStatus');
-            if (authStatus && user) {
-                // Utiliser le nom et email spécifiés ou ceux du profil
-                const userName = user.displayName || user.name || 'Utilisateur';
-                const userEmail = user.mail || user.email || user.userPrincipalName || 'email@exemple.com';
-                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
-                
-                // Déterminer le provider et son badge
-                const provider = user.provider || 'unknown';
-                let providerBadge = '';
-                
-                if (provider === 'microsoft') {
-                    providerBadge = '<div class="provider-badge microsoft">⊞</div>';
-                } else if (provider === 'google') {
-                    providerBadge = '<div class="provider-badge google">G</div>';
-                }
-                
-                authStatus.innerHTML = `
-                    <div class="user-info">
-                        <div class="user-details">
-                            <div class="user-name">${userName}</div>
-                            <div class="user-email">${userEmail}</div>
-                        </div>
-                        <div class="user-avatar">
-                            ${initials}
-                            ${providerBadge}
-                        </div>
-                    </div>
-                `;
-            }
-        };
-
-        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
-        window.checkServices = function() {
-            return {
-                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
-                authService: window.authService ? 'OK' : 'MANQUANT',
-                googleAuthService: window.googleAuthService ? 'OK' : 'MANQUANT',
-                mailService: window.mailService ? 'OK' : 'MANQUANT',
-                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
-                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
-                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
-                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
-                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
-                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
-                hostname: window.location.hostname,
-                expectedHostname: 'emailsortpro.netlify.app',
-                securityMode: 'SECURE',
-                providers: {
-                    microsoft: {
-                        clientId: window.AppConfig?.msal?.clientId?.substring(0, 8) + '...' || 'N/A',
-                        configured: !!(window.AppConfig?.msal?.clientId && window.AppConfig.msal.clientId !== 'CONFIGURATION_REQUIRED')
-                    },
-                    google: {
-                        clientId: window.AppConfig?.google?.clientId?.substring(0, 15) + '...' || 'N/A',
-                        configured: !!(window.AppConfig?.google?.clientId && window.AppConfig.google.clientId !== 'CONFIGURATION_REQUIRED'),
-                        hasClientSecret: false // ✅ SÉCURISÉ
-                    }
-                }
-            };
-        };
-
-        // Fonction pour diagnostiquer les deux providers
-        window.diagnoseDualAuth = function() {
-            console.group('🔍 DIAGNOSTIC DUAL AUTH SÉCURISÉ - EmailSortPro');
-            
-            const services = window.checkServices();
-            console.log('📊 Services Status:', services);
-            
-            // Microsoft
-            console.log('🔵 Microsoft Status:');
-            if (window.authService) {
-                console.log('  Service:', 'Available');
-                console.log('  Initialized:', window.authService.isInitialized || false);
-                console.log('  Authenticated:', window.authService.isAuthenticated ? window.authService.isAuthenticated() : false);
-                if (window.authService.getDiagnosticInfo) {
-                    console.log('  Details:', window.authService.getDiagnosticInfo());
-                }
-            } else {
-                console.log('  Service:', 'Missing');
-            }
-            
-            // Google
-            console.log('🔴 Google Status (SÉCURISÉ):');
-            if (window.googleAuthService) {
-                console.log('  Service:', 'Available');
-                console.log('  Initialized:', window.googleAuthService.isInitialized || false);
-                console.log('  Authenticated:', window.googleAuthService.isAuthenticated ? window.googleAuthService.isAuthenticated() : false);
-                console.log('  🔒 Client Secret:', 'ABSENT (sécurisé)');
-                if (window.googleAuthService.getDiagnosticInfo) {
-                    console.log('  Details:', window.googleAuthService.getDiagnosticInfo());
-                }
-            } else {
-                console.log('  Service:', 'Missing');
-            }
-            
-            // Configuration
-            console.log('⚙️ Configuration:');
-            if (window.AppConfig) {
-                const validation = window.AppConfig.validate();
-                console.log('  Valid:', validation.valid);
-                if (!validation.valid) {
-                    console.log('  Issues:', validation.issues);
-                }
-                console.log('  Security Mode:', window.AppConfig.app?.securityMode || 'Unknown');
-                console.log('  Debug Info:', window.AppConfig.getDebugInfo());
-            } else {
-                console.log('  AppConfig:', 'Missing');
-            }
-            
-            console.groupEnd();
-            return services;
-        };
     </script>
 </body>
 </html>
