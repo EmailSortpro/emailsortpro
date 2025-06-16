@@ -206,6 +206,10 @@ class PageManager {
             }
         });
     }
+
+    // PageManager.js - Fonction renderEmails() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 300
+
 async renderEmails(container) {
     // Récupérer les emails depuis EmailScanner centralisé
     const emails = window.emailScanner?.getAllEmails() || [];
@@ -223,7 +227,6 @@ async renderEmails(container) {
         const totalEmails = emails.length;
         const selectedCount = this.selectedEmails.size;
         const visibleEmails = this.getVisibleEmails();
-        const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
         
         container.innerHTML = `
             <div class="tasks-page-modern">
@@ -286,15 +289,6 @@ async renderEmails(container) {
                         
                         <!-- Actions principales -->
                         <div class="action-buttons-expanded">
-                            <!-- Bouton Sélectionner tout -->
-                            <button class="btn-expanded btn-selection-toggle" 
-                                    onclick="window.pageManager.toggleAllSelection()"
-                                    title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
-                                <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
-                                <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
-                                ${visibleEmails.length > 0 ? `<span class="count-badge-expanded">${visibleEmails.length}</span>` : ''}
-                            </button>
-                            
                             <!-- Bouton Créer tâches -->
                             <button class="btn-expanded btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
                                     onclick="window.pageManager.createTasksFromSelection()"
@@ -340,7 +334,15 @@ async renderEmails(container) {
                                 <span>Actualiser</span>
                             </button>
                             
-
+                            <!-- Bouton Effacer sélection (uniquement si des emails sont sélectionnés) -->
+                            ${selectedCount > 0 ? `
+                                <button class="btn-expanded btn-clear-selection" 
+                                        onclick="window.pageManager.clearSelection()"
+                                        title="Effacer la sélection">
+                                    <i class="fas fa-times"></i>
+                                    <span>Effacer (${selectedCount})</span>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -407,6 +409,8 @@ async renderEmails(container) {
             return [];
         }
     }
+
+    
 
     // Ajouter ces méthodes dans PageManager.js après getTaskPreselectedCategories()
 
@@ -623,36 +627,20 @@ toggleEmailSelection(emailId) {
     console.log('[PageManager] Sélection mise à jour. Total sélectionnés:', this.selectedEmails.size);
 }
 
+// PageManager.js - Fonction updateControlsBarOnly() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 800
+
 updateControlsBarOnly() {
     const selectedCount = this.selectedEmails.size;
     const visibleEmails = this.getVisibleEmails();
-    const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
     
-    // Mettre à jour le bouton "Sélectionner tout"
-    const selectAllBtn = document.querySelector('.btn-selection-toggle');
-    if (selectAllBtn) {
-        const icon = selectAllBtn.querySelector('i');
-        const span = selectAllBtn.querySelector('span');
-        const countBadge = selectAllBtn.querySelector('.count-badge-small');
-        
-        if (icon) {
-            icon.className = allVisible ? 'fas fa-square-check' : 'fas fa-square';
-        }
-        if (span) {
-            span.textContent = allVisible ? 'Désélectionner' : 'Sélectionner';
-        }
-        if (countBadge) {
-            countBadge.textContent = visibleEmails.length;
-        }
-        
-        selectAllBtn.title = allVisible ? 'Désélectionner tout' : 'Sélectionner tout';
-    }
+    console.log('[PageManager] Mise à jour contrôles uniquement -', selectedCount, 'sélectionnés');
     
     // Mettre à jour le bouton "Créer tâches"
     const createTaskBtn = document.querySelector('.btn-primary[onclick*="createTasksFromSelection"]');
     if (createTaskBtn) {
         const span = createTaskBtn.querySelector('span');
-        const countBadge = createTaskBtn.querySelector('.count-badge-harmonized');
+        const countBadge = createTaskBtn.querySelector('.count-badge-main');
         
         if (selectedCount === 0) {
             createTaskBtn.classList.add('disabled');
@@ -673,6 +661,12 @@ updateControlsBarOnly() {
             } else {
                 countBadge.style.display = 'none';
             }
+        } else if (selectedCount > 0) {
+            // Créer le badge s'il n'existe pas
+            const newBadge = document.createElement('span');
+            newBadge.className = 'count-badge-main';
+            newBadge.textContent = selectedCount;
+            createTaskBtn.appendChild(newBadge);
         }
     }
     
@@ -688,30 +682,33 @@ updateControlsBarOnly() {
         }
     }
     
-    // Mettre à jour l'indicateur de sélection
-    const selectionInfo = document.querySelector('.selection-info-harmonized');
-    const actionButtons = document.querySelector('.action-buttons-harmonized');
+    // Gérer le bouton "Effacer sélection"
+    const existingClearBtn = document.querySelector('.btn-clear-selection');
+    const actionButtonsContainer = document.querySelector('.action-buttons-expanded');
     
     if (selectedCount > 0) {
-        if (!selectionInfo && actionButtons) {
-            const selectionHTML = `
-                <div class="selection-info-harmonized">
-                    <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
-                    <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
+        if (!existingClearBtn && actionButtonsContainer) {
+            // Créer le bouton "Effacer sélection"
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'btn-expanded btn-clear-selection';
+            clearBtn.onclick = () => window.pageManager.clearSelection();
+            clearBtn.title = 'Effacer la sélection';
+            clearBtn.innerHTML = `
+                <i class="fas fa-times"></i>
+                <span>Effacer (${selectedCount})</span>
             `;
-            actionButtons.insertAdjacentHTML('beforeend', selectionHTML);
-        } else if (selectionInfo) {
-            const countSpan = selectionInfo.querySelector('.selection-count-harmonized');
-            if (countSpan) {
-                countSpan.textContent = `${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}`;
+            actionButtonsContainer.appendChild(clearBtn);
+        } else if (existingClearBtn) {
+            // Mettre à jour le texte du bouton existant
+            const span = existingClearBtn.querySelector('span');
+            if (span) {
+                span.textContent = `Effacer (${selectedCount})`;
             }
         }
     } else {
-        if (selectionInfo) {
-            selectionInfo.remove();
+        // Supprimer le bouton si aucune sélection
+        if (existingClearBtn) {
+            existingClearBtn.remove();
         }
     }
     
@@ -1045,9 +1042,10 @@ renderEmptyState() {
     }
 
     
-// Fonction de rendu d'une ligne d'email avec gestion correcte des événements
+// PageManager.js - Fonction renderHarmonizedEmailRow() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1600
+
 renderHarmonizedEmailRow(email) {
-    const isSelected = this.selectedEmails.has(email.id);
     const hasTask = this.createdTasks.has(email.id);
     const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
     const senderEmail = email.from?.emailAddress?.address || '';
@@ -1062,6 +1060,14 @@ renderHarmonizedEmailRow(email) {
     if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
         isPreselectedForTasks = true;
         email.isPreselectedForTasks = true;
+    }
+    
+    // CORRECTION CRITIQUE: Un email pré-sélectionné doit être automatiquement sélectionné pour création de tâche
+    const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
+    
+    // Si l'email est pré-sélectionné mais pas encore dans la sélection, l'ajouter
+    if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
+        this.selectedEmails.add(email.id);
     }
     
     // Classes CSS pour l'email
@@ -1467,22 +1473,88 @@ toggleGroup(groupKey, event) {
         this.refreshEmailsView();
     }
 
-    // ================================================
-    // ACTIONS GROUPÉES
-    // ================================================
-    toggleBulkActions(event) {
-        event.stopPropagation();
-        const menu = document.getElementById('bulkActionsMenu');
-        if (menu) {
-            menu.classList.toggle('show');
+// PageManager.js - Fonction toggleBulkActions() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1500
+
+toggleBulkActions(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    const menu = document.getElementById('bulkActionsMenu');
+    if (!menu) return;
+    
+    const isCurrentlyVisible = menu.classList.contains('show');
+    
+    // Fermer tous les autres dropdowns
+    document.querySelectorAll('.dropdown-menu-expanded.show').forEach(dropdown => {
+        if (dropdown !== menu) {
+            dropdown.classList.remove('show');
         }
-        
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.dropdown-action-harmonized')) {
-                menu?.classList.remove('show');
-            }
-        }, { once: true });
+    });
+    
+    // Supprimer l'overlay existant
+    const existingOverlay = document.querySelector('.dropdown-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
     }
+    
+    if (isCurrentlyVisible) {
+        // Fermer le menu
+        menu.classList.remove('show');
+        console.log('[PageManager] Dropdown Actions fermé');
+    } else {
+        // Ouvrir le menu
+        menu.classList.add('show');
+        console.log('[PageManager] Dropdown Actions ouvert');
+        
+        // Créer un overlay pour détecter les clics à l'extérieur
+        const overlay = document.createElement('div');
+        overlay.className = 'dropdown-overlay show';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1999;
+            background: transparent;
+            cursor: default;
+        `;
+        
+        // Fermer le dropdown quand on clique sur l'overlay
+        overlay.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.remove('show');
+            overlay.remove();
+            console.log('[PageManager] Dropdown fermé via overlay');
+        });
+        
+        // Ajouter l'overlay au body
+        document.body.appendChild(overlay);
+        
+        // Fermer avec Escape
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                menu.classList.remove('show');
+                overlay.remove();
+                document.removeEventListener('keydown', handleEscape);
+                console.log('[PageManager] Dropdown fermé via Escape');
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+        // Auto-fermeture après 10 secondes
+        setTimeout(() => {
+            if (menu.classList.contains('show')) {
+                menu.classList.remove('show');
+                if (overlay.parentNode) {
+                    overlay.remove();
+                }
+                console.log('[PageManager] Dropdown fermé automatiquement');
+            }
+        }, 10000);
+    }
+}
 
     async bulkMarkAsRead() {
         const selectedEmails = Array.from(this.selectedEmails);
@@ -2678,20 +2750,19 @@ addExpandedEmailStyles() {
             50% { transform: scale(1.1); }
         }
         
-        .btn-expanded.btn-clear-selection {
-            background: #f3f4f6;
-            color: #6b7280;
-            border: none;
-            width: var(--btn-height);
-            min-width: var(--btn-height);
-            padding: 0;
-            justify-content: center;
-        }
+.btn-expanded.btn-clear-selection {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    font-weight: 600;
+}
         
-        .btn-expanded.btn-clear-selection:hover {
-            background: #e5e7eb;
-            color: #374151;
-        }
+.btn-expanded.btn-clear-selection:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+    transform: translateY(-1px);
+}
         
         .selection-info-expanded {
             height: var(--btn-height);
@@ -2714,33 +2785,36 @@ addExpandedEmailStyles() {
         }
         
         /* Dropdown étendu */
-        .dropdown-action-expanded {
-            position: relative;
-            display: inline-block;
-        }
+.dropdown-action-expanded {
+    position: relative;
+    display: inline-block;
+    z-index: 1001; /* AUGMENTÉ pour être au-dessus des emails */
+}
         
-        .dropdown-menu-expanded {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: white;
-            border: 1px solid #e5e7eb;
-            border-radius: var(--btn-border-radius);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-            min-width: 220px;
-            z-index: 1000;
-            padding: 8px 0;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.2s ease;
-        }
-        
-        .dropdown-menu-expanded.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
+.dropdown-menu-expanded {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--btn-border-radius);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    min-width: 220px;
+    z-index: 2000; /* TRÈS ÉLEVÉ pour être au-dessus de tout */
+    padding: 8px 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px); /* Ajout d'un flou d'arrière-plan */
+}
+  .dropdown-menu-expanded.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25); /* Ombre plus forte quand visible */
+}
+
         
         .dropdown-item-expanded {
             display: flex;
@@ -2947,21 +3021,22 @@ addExpandedEmailStyles() {
         }
         
         /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
-        .task-harmonized-card {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0;
-            padding: var(--card-padding);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            min-height: var(--card-height);
-            max-height: var(--card-height);
-            border-bottom: 1px solid #e5e7eb;
-        }
+  .task-harmonized-card {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    padding: var(--card-padding);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: var(--card-height);
+    max-height: var(--card-height);
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 1; /* BAS pour permettre aux dropdowns de passer par-dessus */
+}
         
         .task-harmonized-card:first-child {
             border-top-left-radius: var(--card-border-radius);
@@ -2975,23 +3050,23 @@ addExpandedEmailStyles() {
             border-bottom: 1px solid #e5e7eb;
         }
         
-        .task-harmonized-card:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            border-color: rgba(99, 102, 241, 0.2);
-            border-left: 3px solid #6366f1;
-            z-index: 1;
-        }
+.task-harmonized-card:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: rgba(99, 102, 241, 0.2);
+    border-left: 3px solid #6366f1;
+    z-index: 2; /* Légèrement plus haut au hover mais toujours sous les dropdowns */
+}
         
-        .task-harmonized-card.selected {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border-left: 4px solid #3b82f6;
-            border-color: #3b82f6;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-            z-index: 2;
-        }
+.task-harmonized-card.selected {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6;
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+    z-index: 3; /* Plus haut pour les sélectionnés mais toujours sous les dropdowns */
+}
         
         .task-harmonized-card.has-task {
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
@@ -3182,30 +3257,34 @@ addExpandedEmailStyles() {
             }
         }
         
-        .task-actions-harmonized {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-left: var(--gap-medium);
-            flex-shrink: 0;
-        }
+       .task-actions-harmonized {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: var(--gap-medium);
+    flex-shrink: 0;
+    z-index: 10; /* Plus haut que la carte parent */
+    position: relative;
+}
         
-        .action-btn-harmonized {
-            width: var(--action-btn-size);
-            height: var(--action-btn-size);
-            border: 2px solid transparent;
-            border-radius: var(--btn-border-radius);
-            background: rgba(255, 255, 255, 0.9);
-            color: #6b7280;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            font-size: 13px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        }
+ .action-btn-harmonized {
+    width: var(--action-btn-size);
+    height: var(--action-btn-size);
+    border: 2px solid transparent;
+    border-radius: var(--btn-border-radius);
+    background: rgba(255, 255, 255, 0.9);
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 13px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    z-index: 11; /* Encore plus haut */
+    position: relative;
+}
         
         .action-btn-harmonized:hover {
             background: white;
@@ -3262,32 +3341,48 @@ addExpandedEmailStyles() {
             gap: 0;
         }
         
-        .task-group-harmonized {
-            background: transparent;
-            border: none;
-            border-radius: 0;
-            overflow: visible;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .group-header-harmonized {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0;
-            padding: var(--card-padding);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            min-height: var(--card-height);
-            max-height: var(--card-height);
-            border-bottom: 1px solid #e5e7eb;
-            gap: var(--gap-medium);
-        }
-        
+.task-group-harmonized {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    z-index: 1; /* Même niveau que les cartes d'emails */
+}
+.group-header-harmonized {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    padding: var(--card-padding);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: var(--card-height);
+    max-height: var(--card-height);
+    border-bottom: 1px solid #e5e7eb;
+    gap: var(--gap-medium);
+    z-index: 1; /* Même niveau que les cartes */
+}
+
+
+.dropdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1999; /* Juste sous le dropdown mais au-dessus de tout le reste */
+    background: transparent;
+    display: none;
+}
+
+.dropdown-overlay.show {
+    display: block;
+}
         .group-avatar-harmonized {
             width: 40px;
             height: 40px;
@@ -3416,10 +3511,20 @@ addExpandedEmailStyles() {
         }
         
         @media (max-width: 1024px) {
-            .controls-bar-harmonized-expanded {
-                padding: var(--gap-medium);
-            }
-            
+   .controls-bar-harmonized-expanded {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--card-border-radius);
+    padding: var(--gap-large);
+    margin-bottom: var(--gap-medium);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-large);
+    position: relative;
+    z-index: 100; /* Haut pour toute la barre de contrôles */
+}
             .buttons-line-full {
                 flex-direction: column;
                 gap: var(--gap-medium);
