@@ -797,7 +797,7 @@ class TasksView {
                     
                     <div class="task-info">
                         <span class="task-title">${this.escapeHtml(task.title)}</span>
-                        <span class="task-client">${this.escapeHtml(task.client)}</span>
+                        <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                     </div>
                     
                     <div class="task-meta">
@@ -860,11 +860,9 @@ class TasksView {
                         
                         <div class="task-details">
                             <span class="task-client">
-                                <i class="fas fa-building"></i>
-                                ${this.escapeHtml(task.client)}
+                                ${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}
                             </span>
                             <span class="task-deadline ${dueDateInfo.className}">
-                                <i class="fas fa-calendar"></i>
                                 ${dueDateInfo.text || 'Pas d\'échéance'}
                             </span>
                         </div>
@@ -917,11 +915,9 @@ class TasksView {
                     
                     <div class="task-meta-grid">
                         <div class="meta-item">
-                            <i class="fas fa-building"></i>
-                            <span>${this.escapeHtml(task.client)}</span>
+                            <span>${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                         </div>
                         <div class="meta-item ${dueDateInfo.className}">
-                            <i class="fas fa-calendar"></i>
                             <span>${dueDateInfo.text || 'Pas d\'échéance'}</span>
                         </div>
                         ${task.hasEmail ? `
