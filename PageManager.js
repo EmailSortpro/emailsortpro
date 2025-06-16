@@ -646,316 +646,79 @@ dispatchEvent(eventName, detail) {
             }, 100);
         }
     }
-
-    buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
+buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     // Récupérer les catégories pré-sélectionnées
     const preselectedCategories = this.getTaskPreselectedCategories();
     console.log('[PageManager] 📌 Catégories pré-sélectionnées pour l\'affichage:', preselectedCategories);
     
-    // Créer le conteneur principal avec le fond gris agrandi
-    let html = `
-        <div style="
-            background: #f3f4f6;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        ">
-            <!-- Première ligne avec les boutons Tous et Marketing & News -->
-            <div style="
-                display: flex;
-                gap: 12px;
-                margin-bottom: 16px;
-                align-items: center;
-            ">
-                <!-- Bouton Tous -->
-                <button class="status-pill-harmonized-twolines ${this.currentCategory === 'all' ? 'active' : ''}" 
-                        onclick="window.pageManager.filterByCategory('all')"
-                        data-category-id="all"
-                        style="
-                            flex: 0 0 auto;
-                            min-width: 140px;
-                            height: 48px;
-                        ">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">📧</span>
-                            <span class="pill-count-twolines">${totalEmails}</span>
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines">Tous</span>
-                        </div>
-                    </div>
-                </button>
-                
-                <!-- Bouton Marketing & News -->
-                <button class="status-pill-harmonized-twolines" 
-                        onclick="window.pageManager.showMarketingNews()"
-                        style="
-                            flex: 0 0 auto;
-                            min-width: 180px;
-                            height: 48px;
-                            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-                            color: white;
-                            border: none;
-                        ">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">📰</span>
-                            <span class="pill-count-twolines" style="background: rgba(255,255,255,0.3);">
-                                ${categoryCounts['marketing'] || 0}
-                            </span>
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines" style="font-weight: 700;">Marketing & News</span>
-                        </div>
-                    </div>
-                </button>
-            </div>
-            
-            <!-- Deuxième ligne avec les catégories -->
-            <div style="
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-            ">
-    `;
+    const tabs = [
+        { 
+            id: 'all', 
+            name: 'Tous', 
+            icon: '📧', 
+            count: totalEmails,
+            isPreselected: false 
+        }
+    ];
     
     // Ajouter les catégories avec emails
     Object.entries(categories).forEach(([catId, category]) => {
         const count = categoryCounts[catId] || 0;
         if (count > 0) {
             const isPreselected = preselectedCategories.includes(catId);
-            const isCurrentCategory = this.currentCategory === catId;
+            tabs.push({
+                id: catId,
+                name: category.name,
+                icon: category.icon,
+                color: category.color,
+                count: count,
+                isPreselected: isPreselected
+            });
             
-            html += `
-                <button class="status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${isPreselected ? 'preselected-category' : ''}" 
-                        onclick="window.pageManager.filterByCategory('${catId}')"
-                        data-category-id="${catId}"
-                        title="${isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                    <div class="pill-content-twolines">
-                        <div class="pill-first-line-twolines">
-                            <span class="pill-icon-twolines">${category.icon}</span>
-                            <span class="pill-count-twolines">${count}</span>
-                        </div>
-                        <div class="pill-second-line-twolines">
-                            <span class="pill-text-twolines">${category.name}</span>
-                        </div>
-                    </div>
-                    ${isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
-                </button>
-            `;
+            if (isPreselected) {
+                console.log(`[PageManager] ⭐ Catégorie pré-sélectionnée: ${category.name} (${count} emails)`);
+            }
         }
     });
     
     // Ajouter "Autre" si nécessaire
     const otherCount = categoryCounts.other || 0;
     if (otherCount > 0) {
-        html += `
-            <button class="status-pill-harmonized-twolines ${this.currentCategory === 'other' ? 'active' : ''}" 
-                    onclick="window.pageManager.filterByCategory('other')"
-                    data-category-id="other">
+        tabs.push({
+            id: 'other',
+            name: 'Autre',
+            icon: '📌',
+            count: otherCount,
+            isPreselected: false
+        });
+    }
+    
+    // Générer le HTML avec étoile TOUJOURS visible
+    return tabs.map(tab => {
+        const isCurrentCategory = this.currentCategory === tab.id;
+        const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
+        
+        return `
+            <button class="${baseClasses}" 
+                    onclick="window.pageManager.filterByCategory('${tab.id}')"
+                    data-category-id="${tab.id}"
+                    title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
                 <div class="pill-content-twolines">
                     <div class="pill-first-line-twolines">
-                        <span class="pill-icon-twolines">📌</span>
-                        <span class="pill-count-twolines">${otherCount}</span>
+                        <span class="pill-icon-twolines">${tab.icon}</span>
+                        <span class="pill-count-twolines">${tab.count}</span>
                     </div>
                     <div class="pill-second-line-twolines">
-                        <span class="pill-text-twolines">Autre</span>
+                        <span class="pill-text-twolines">${tab.name}</span>
                     </div>
                 </div>
+                ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
             </button>
         `;
-    }
-    
-    html += `
-            </div>
-        </div>
-    `;
-    
-    return html;
+    }).join('');
 }
 
-showMarketingNews() {
-    console.log('[PageManager] Affichage Marketing & News');
-    
-    // Récupérer tous les emails de la catégorie marketing
-    const emails = window.emailScanner?.getAllEmails() || [];
-    const marketingEmails = emails.filter(email => email.category === 'marketing');
-    
-    if (marketingEmails.length === 0) {
-        window.uiManager?.showToast('Aucun email marketing trouvé', 'info');
-        return;
-    }
-    
-    // Créer et afficher une modale avec les emails marketing
-    const modalId = 'marketing_news_modal_' + Date.now();
-    const modalHTML = `
-        <div id="${modalId}" 
-             style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-                    background: rgba(0,0,0,0.75); z-index: 99999999; 
-                    display: flex; align-items: center; justify-content: center; 
-                    padding: 20px; backdrop-filter: blur(4px);">
-            <div style="background: white; border-radius: 16px; max-width: 900px; 
-                        width: 100%; max-height: 90vh; display: flex; 
-                        flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
-                
-                <!-- Header -->
-                <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; 
-                            display: flex; justify-content: space-between; align-items: center;
-                            background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
-                            border-radius: 16px 16px 0 0;">
-                    <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: white;">
-                        📰 Marketing & News
-                    </h2>
-                    <button onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';"
-                            style="background: rgba(255,255,255,0.2); border: none; 
-                                   width: 36px; height: 36px; border-radius: 50%; 
-                                   cursor: pointer; color: white; font-size: 20px;
-                                   display: flex; align-items: center; justify-content: center;
-                                   transition: all 0.2s ease;">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                
-                <!-- Content -->
-                <div style="padding: 24px; overflow-y: auto; flex: 1;">
-                    <div style="margin-bottom: 16px; padding: 16px; 
-                                background: #fff7ed; border: 1px solid #fed7aa; 
-                                border-radius: 12px;">
-                        <p style="margin: 0; color: #c2410c; font-weight: 600;">
-                            <i class="fas fa-info-circle"></i>
-                            ${marketingEmails.length} emails marketing et newsletters détectés
-                        </p>
-                    </div>
-                    
-                    <!-- Liste des emails -->
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        ${marketingEmails.slice(0, 20).map(email => `
-                            <div style="background: #f9fafb; border: 1px solid #e5e7eb; 
-                                        border-radius: 12px; padding: 16px; 
-                                        cursor: pointer; transition: all 0.2s ease;"
-                                 onmouseover="this.style.background='#f3f4f6'; this.style.transform='translateY(-1px)'"
-                                 onmouseout="this.style.background='#f9fafb'; this.style.transform='translateY(0)'"
-                                 onclick="document.getElementById('${modalId}').remove(); window.pageManager.showEmailModal('${email.id}')">
-                                <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px;">
-                                    <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 8px 0; color: #1f2937; font-weight: 600;">
-                                            ${this.escapeHtml(email.subject || 'Sans sujet')}
-                                        </h4>
-                                        <div style="color: #6b7280; font-size: 13px;">
-                                            <span style="font-weight: 600;">
-                                                ${email.from?.emailAddress?.name || 'Expéditeur inconnu'}
-                                            </span>
-                                            <span style="margin: 0 8px;">•</span>
-                                            <span>${this.formatEmailDate(email.receivedDateTime)}</span>
-                                        </div>
-                                    </div>
-                                    <button style="background: #f59e0b; color: white; 
-                                                   border: none; padding: 8px 16px; 
-                                                   border-radius: 8px; font-size: 12px; 
-                                                   font-weight: 600; cursor: pointer;
-                                                   transition: all 0.2s ease;"
-                                            onmouseover="this.style.background='#dc2626'"
-                                            onmouseout="this.style.background='#f59e0b'"
-                                            onclick="event.stopPropagation(); window.pageManager.unsubscribeEmail('${email.id}')">
-                                        Se désabonner
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    ${marketingEmails.length > 20 ? `
-                        <div style="text-align: center; margin-top: 20px; color: #6b7280;">
-                            ... et ${marketingEmails.length - 20} autres emails marketing
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <!-- Footer -->
-                <div style="padding: 24px; border-top: 1px solid #e5e7eb; 
-                            display: flex; justify-content: space-between; align-items: center;">
-                    <button onclick="window.pageManager.bulkUnsubscribe()"
-                            style="padding: 12px 20px; background: #dc2626; 
-                                   color: white; border: none; border-radius: 8px; 
-                                   cursor: pointer; font-weight: 600;">
-                        <i class="fas fa-ban"></i> Se désabonner de tous
-                    </button>
-                    <button onclick="document.getElementById('${modalId}').remove(); document.body.style.overflow = 'auto';"
-                            style="padding: 12px 20px; background: #f3f4f6; 
-                                   border: 1px solid #d1d5db; border-radius: 8px; 
-                                   cursor: pointer; font-weight: 600;">
-                        Fermer
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    document.body.style.overflow = 'hidden';
-}
 
-unsubscribeEmail(emailId) {
-    const email = this.getEmailById(emailId);
-    if (!email) return;
-    
-    console.log('[PageManager] Désabonnement email:', emailId);
-    
-    // Simuler le désabonnement
-    window.uiManager?.showToast(
-        `Désabonnement de ${email.from?.emailAddress?.name || 'cet expéditeur'} en cours...`, 
-        'info'
-    );
-    
-    // Marquer l'email pour suppression ou archivage
-    setTimeout(() => {
-        if (window.emailScanner) {
-            window.emailScanner.performBatchAction([emailId], 'archive');
-        }
-        window.uiManager?.showToast('Désabonnement effectué', 'success');
-        
-        // Rafraîchir la vue si on est toujours sur la page emails
-        if (this.currentPage === 'emails') {
-            this.refreshEmailsView();
-        }
-    }, 1500);
-}
-
-bulkUnsubscribe() {
-    const emails = window.emailScanner?.getAllEmails() || [];
-    const marketingEmails = emails.filter(email => email.category === 'marketing');
-    
-    if (marketingEmails.length === 0) return;
-    
-    if (confirm(`Voulez-vous vraiment vous désabonner de ${marketingEmails.length} expéditeurs marketing ?\n\nCette action archivera tous les emails marketing.`)) {
-        window.uiManager?.showLoading('Désabonnement en cours...');
-        
-        const emailIds = marketingEmails.map(email => email.id);
-        
-        setTimeout(() => {
-            if (window.emailScanner) {
-                window.emailScanner.performBatchAction(emailIds, 'archive');
-            }
-            
-            window.uiManager?.hideLoading();
-            window.uiManager?.showToast(
-                `Désabonné de ${marketingEmails.length} expéditeurs marketing`, 
-                'success'
-            );
-            
-            // Fermer toutes les modales
-            document.querySelectorAll('[id^="marketing_news_modal_"]').forEach(modal => {
-                modal.remove();
-            });
-            document.body.style.overflow = 'auto';
-            
-            // Rafraîchir la vue
-            this.refreshEmailsView();
-        }, 2000);
-    }
-}
     filterByCategory(categoryId) {
         this.currentCategory = categoryId;
         this.refreshEmailsView();
