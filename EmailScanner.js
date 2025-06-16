@@ -2059,11 +2059,3 @@ window.forceEmailScannerSync = function() {
 };
 
 console.log('✅ EmailScanner v8.0 loaded - Synchronisation complètement fixée');  // À la fin de EmailScanner.js, après la création de l'instance
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        if (window.emailDeduplicationManager && typeof window.integrateEmailDeduplication === 'function') {
-            window.integrateEmailDeduplication();
-            console.log('[EmailScanner] ✅ Déduplication auto-intégrée');
-        }
-    }, 500);
-});
