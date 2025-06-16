@@ -1304,7 +1304,6 @@ initializeWeightedDetection() {
     console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
 }
 // CategoryManager.js - Remplacer complètement analyzeEmail()
-
 analyzeEmail(email) {
     if (!email) return { category: 'other', score: 0, confidence: 0 };
     
@@ -1319,9 +1318,8 @@ analyzeEmail(email) {
         return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
     }
     
-    // NOUVEAU: Détecter les emails familiaux/personnels AVANT tout
+    // Détecter les emails familiaux/personnels AVANT tout
     if (this.isPersonalEmail(content, email)) {
-        // Si une catégorie "personal" existe, l'utiliser
         if (this.categories.personal || this.customCategories.personal) {
             return {
                 category: 'personal',
@@ -1332,7 +1330,6 @@ analyzeEmail(email) {
                 isPersonal: true
             };
         } else {
-            // Sinon, exclure l'email
             return { category: 'excluded', score: 0, confidence: 0, isExcluded: true, reason: 'personal' };
         }
     }
@@ -1355,16 +1352,12 @@ analyzeEmail(email) {
             };
         }
         
-        // Sinon, analyser normalement mais avec une préférence pour CC
         const allResults = this.analyzeAllCategories(content);
-        
-        // Si une autre catégorie a un score très élevé, la privilégier
         const bestNonCC = Object.values(allResults)
             .filter(r => r.category !== 'cc')
             .sort((a, b) => b.score - a.score)[0];
         
         if (bestNonCC && bestNonCC.score >= 100 && bestNonCC.hasAbsolute) {
-            // Une autre catégorie est très pertinente
             return {
                 category: bestNonCC.category,
                 score: bestNonCC.score,
@@ -1375,7 +1368,6 @@ analyzeEmail(email) {
             };
         }
         
-        // Sinon, catégoriser comme CC
         return {
             category: 'cc',
             score: 100,
@@ -1387,7 +1379,21 @@ analyzeEmail(email) {
     }
     
     const allResults = this.analyzeAllCategories(content);
-    return this.selectByPriorityWithThreshold(allResults);
+    const selectedResult = this.selectByPriorityWithThreshold(allResults);
+    
+    // CORRECTION CRITIQUE: Si aucune catégorie trouvée, retourner explicitement 'other'
+    if (!selectedResult || selectedResult.category === 'other' || selectedResult.score === 0) {
+        return {
+            category: 'other',
+            score: 0,
+            confidence: 0,
+            matchedPatterns: [],
+            hasAbsolute: false,
+            reason: 'no_category_matched'
+        };
+    }
+    
+    return selectedResult;
 }
 
 // NOUVELLE méthode pour détecter les emails personnels/familiaux
