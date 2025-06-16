@@ -572,85 +572,72 @@ class TasksView {
         
         container.innerHTML = `
             <div class="tasks-page-modern">
-                <!-- RECTANGLE BLANC ÉTENDU -->
-                <div class="controls-section-extended">
-                    <!-- Ligne 1 : Recherche -->
-                    <div class="search-line-extended">
-                        <div class="search-box-extended">
-                            <i class="fas fa-search search-icon-extended"></i>
+                <!-- RECTANGLE BLANC COMPACT -->
+                <div class="controls-section-compact">
+                    <!-- Ligne 1 : Recherche + Boutons actions -->
+                    <div class="top-line-compact">
+                        <div class="search-box-compact">
+                            <i class="fas fa-search search-icon-compact"></i>
                             <input type="text" 
-                                   class="search-input-extended" 
+                                   class="search-input-compact" 
                                    id="taskSearchInput"
-                                   placeholder="Rechercher tâches..." 
+                                   placeholder="Rechercher..." 
                                    value="${this.currentFilters.search}">
                             ${this.currentFilters.search ? `
-                                <button class="search-clear-extended" onclick="window.tasksView.clearSearch()">
+                                <button class="search-clear-compact" onclick="window.tasksView.clearSearch()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             ` : ''}
                         </div>
-                    </div>
 
-                    <!-- Ligne 2 : Boutons actions -->
-                    <div class="buttons-line-extended">
-                        <!-- Sélection et actions -->
-                        <div class="selection-section">
-                            ${selectedCount > 0 ? `
-                                <div class="selection-info-extended">
-                                    <span class="selection-count-extended">${selectedCount} sélectionné(s)</span>
-                                    <button class="btn-clear-selection-extended" onclick="window.tasksView.clearSelection()">
+                        <div class="controls-right-compact">
+                            <!-- Modes de vue compacts -->
+                            <div class="view-modes-compact">
+                                <button class="view-mode-compact ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
+                                        onclick="window.tasksView.changeViewMode('minimal')" title="Minimal">
+                                    M
+                                </button>
+                                <button class="view-mode-compact ${this.currentViewMode === 'normal' ? 'active' : ''}" 
+                                        onclick="window.tasksView.changeViewMode('normal')" title="Normal">
+                                    N
+                                </button>
+                                <button class="view-mode-compact ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                        onclick="window.tasksView.changeViewMode('detailed')" title="Détaillé">
+                                    D
+                                </button>
+                            </div>
+
+                            <!-- Actions compactes -->
+                            <div class="actions-compact">
+                                ${selectedCount > 0 ? `
+                                    <button class="btn-compact selection-compact" onclick="window.tasksView.bulkActions()">
+                                        <i class="fas fa-check-square"></i>
+                                        <span class="count-badge-compact">${selectedCount}</span>
+                                    </button>
+                                    <button class="btn-compact clear-compact" onclick="window.tasksView.clearSelection()">
                                         <i class="fas fa-times"></i>
                                     </button>
-                                </div>
-                                <button class="btn-extended btn-primary" onclick="window.tasksView.bulkActions()">
-                                    Actions
-                                    <span class="count-badge-extended">${selectedCount}</span>
+                                ` : ''}
+                                
+                                <button class="btn-compact" onclick="window.tasksView.refreshTasks()">
+                                    <i class="fas fa-sync-alt"></i>
                                 </button>
-                            ` : ''}
-                        </div>
-
-                        <!-- Actions principales -->
-                        <div class="action-buttons-section">
-                            <button class="btn-extended btn-secondary" onclick="window.tasksView.refreshTasks()">
-                                Actualiser
-                            </button>
-                            
-                            <button class="btn-extended btn-primary" onclick="window.tasksView.showCreateModal()">
-                                Nouvelle
-                            </button>
-                            
-                            <button class="btn-extended filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
-                                    onclick="window.tasksView.toggleAdvancedFilters()">
-                                Filtres
-                                <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
-                            </button>
+                                
+                                <button class="btn-compact btn-primary-compact" onclick="window.tasksView.showCreateModal()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                                
+                                <button class="btn-compact filters-toggle-compact ${this.showAdvancedFilters ? 'active' : ''}" 
+                                        onclick="window.tasksView.toggleAdvancedFilters()">
+                                    <i class="fas fa-filter"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
-                    <!-- Ligne 3 : Modes de vue -->
-                    <div class="view-modes-line">
-                        <div class="view-modes-extended">
-                            <button class="view-mode-extended ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('minimal')"
-                                    title="Vue minimaliste">
-                                Minimal
-                            </button>
-                            <button class="view-mode-extended ${this.currentViewMode === 'normal' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('normal')"
-                                    title="Vue normale">
-                                Normal
-                            </button>
-                            <button class="view-mode-extended ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                    onclick="window.tasksView.changeViewMode('detailed')"
-                                    title="Vue détaillée">
-                                Détaillé
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Ligne 4 : Filtres de statut -->
-                    <div class="status-filters-extended">
-                        ${this.buildExtendedStatusPills(stats)}
+                    <!-- Ligne 2 : Filtres de statut compacts -->
+                    <div class="status-filters-compact">
+                        ${this.buildCompactStatusPills(stats)}
                     </div>
                 </div>
 
@@ -714,23 +701,22 @@ class TasksView {
         console.log('[TasksView] Interface alignée en colonnes rendue');
     }
 
-    buildExtendedStatusPills(stats) {
+    buildCompactStatusPills(stats) {
         const pills = [
             { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
             { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
-            { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
-            { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
-            { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
+            { id: 'overdue', name: 'Retard', icon: '⚠️', count: stats.overdue },
+            { id: 'needsReply', name: 'Répondre', icon: '📧', count: stats.needsReply },
+            { id: 'completed', name: 'Fini', icon: '✅', count: stats.completed }
         ];
 
         return pills.map(pill => `
-            <button class="status-pill-extended ${this.isFilterActive(pill.id) ? 'active' : ''}" 
-                    data-filter="${pill.id}"
+            <button class="status-pill-compact ${this.isFilterActive(pill.id) ? 'active' : ''}" 
                     onclick="window.tasksView.quickFilter('${pill.id}')">
-                <span class="pill-icon-extended">${pill.icon}</span>
-                <span class="pill-text-extended">${pill.name}</span>
-                <span class="pill-count-extended">${pill.count}</span>
+                <span class="pill-icon-compact">${pill.icon}</span>
+                <span class="pill-text-compact">${pill.name}</span>
+                <span class="pill-count-compact">${pill.count}</span>
             </button>
         `).join('');
     }
@@ -1457,8 +1443,8 @@ class TasksView {
         
         // Mettre à jour les stats dans les pills
         const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters-extended').forEach(container => {
-            container.innerHTML = this.buildExtendedStatusPills(stats);
+        document.querySelectorAll('.status-filters-compact').forEach(container => {
+            container.innerHTML = this.buildCompactStatusPills(stats);
         });
     }
 
@@ -2010,370 +1996,266 @@ class TasksView {
     }
 
     addExtendedTaskStyles() {
-        if (document.getElementById('extendedTaskStylesV10_1')) return;
+        if (document.getElementById('compactTaskStylesV10_1')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'extendedTaskStylesV10_1';
+        styles.id = 'compactTaskStylesV10_1';
         styles.textContent = `
-            /* Variables CSS pour TaskManager v10.1 - Interface Alignée */
+            /* Variables CSS pour TaskManager v10.1 - Interface Compacte */
             :root {
-                --btn-height: 42px;
-                --btn-padding-horizontal: 16px;
-                --btn-font-size: 13px;
-                --btn-border-radius: 10px;
-                --btn-font-weight: 600;
-                --btn-gap: 8px;
-                --card-height: 76px;
-                --card-padding: 14px;
-                --card-border-radius: 12px;
-                --action-btn-size: 32px;
-                --gap-small: 8px;
-                --gap-medium: 12px;
-                --gap-large: 16px;
+                --btn-height-compact: 32px;
+                --btn-padding-compact: 8px;
+                --btn-font-size-compact: 12px;
+                --btn-border-radius-compact: 6px;
+                --gap-compact: 6px;
                 --transition-speed: 0.2s;
-                --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
-                --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             
             .tasks-page-modern {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
                 min-height: 100vh;
-                padding: var(--gap-large);
-                font-size: var(--btn-font-size);
+                padding: 12px;
+                font-size: var(--btn-font-size-compact);
             }
 
-            /* RECTANGLE BLANC ÉTENDU STRUCTURE REVISITÉE */
-            .controls-section-extended {
+            /* RECTANGLE BLANC COMPACT */
+            .controls-section-compact {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: 20px;
-                margin-bottom: var(--gap-medium);
+                border-radius: 10px;
+                padding: 12px;
+                margin-bottom: 12px;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
                 display: flex;
                 flex-direction: column;
-                gap: 16px;
+                gap: 10px;
             }
 
-            /* LIGNE 1 : Recherche */
-            .search-line-extended {
-                width: 100%;
+            /* LIGNE 1 : Recherche + Actions */
+            .top-line-compact {
                 display: flex;
-                justify-content: center;
                 align-items: center;
+                gap: 12px;
+                width: 100%;
+                height: 36px;
             }
             
-            .search-box-extended {
+            .search-box-compact {
                 position: relative;
-                width: 100%;
-                max-width: 600px;
-                height: 50px;
+                flex: 1;
+                max-width: 400px;
+                height: 36px;
                 display: flex;
                 align-items: center;
             }
             
-            .search-input-extended {
+            .search-input-compact {
                 width: 100%;
                 height: 100%;
-                padding: 0 20px 0 56px;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                font-size: 15px;
+                padding: 0 12px 0 36px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 13px;
                 background: #f9fafb;
                 transition: all var(--transition-speed) ease;
                 outline: none;
-                font-weight: 500;
+                font-weight: 400;
                 color: #374151;
-                box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-                line-height: 1;
             }
             
-            .search-input-extended:focus {
+            .search-input-compact:focus {
                 border-color: #3b82f6;
                 background: white;
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05);
-                transform: translateY(-1px);
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
             }
             
-            .search-input-extended::placeholder {
-                color: #9ca3af;
-                font-weight: 400;
-            }
-            
-            .search-icon-extended {
+            .search-icon-compact {
                 position: absolute;
-                left: 20px;
+                left: 12px;
                 color: #6b7280;
                 pointer-events: none;
-                font-size: 18px;
+                font-size: 14px;
                 z-index: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100%;
             }
             
-            .search-input-extended:focus + .search-icon-extended {
-                color: #3b82f6;
-            }
-            
-            .search-clear-extended {
+            .search-clear-compact {
                 position: absolute;
-                right: 15px;
+                right: 8px;
                 background: #ef4444;
                 color: white;
                 border: none;
-                width: 32px;
-                height: 32px;
+                width: 20px;
+                height: 20px;
                 border-radius: 50%;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
+                font-size: 10px;
                 transition: all var(--transition-speed) ease;
-                box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
             }
             
-            .search-clear-extended:hover {
+            .search-clear-compact:hover {
                 background: #dc2626;
                 transform: scale(1.1);
-                box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
             }
 
-            /* LIGNE 2 : Boutons actions - RÉORGANISÉS */
-            .buttons-line-extended {
+            .controls-right-compact {
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                gap: 20px;
-                width: 100%;
-                height: 44px;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            /* MODES DE VUE COMPACTS */
+            .view-modes-compact {
+                display: flex;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                padding: 2px;
+                gap: 1px;
+                height: 32px;
             }
             
-            .selection-section {
+            .view-mode-compact {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                flex: 0 0 auto;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border: none;
+                background: transparent;
+                color: #6b7280;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: all var(--transition-speed) ease;
+                font-size: 11px;
+                font-weight: 600;
             }
             
-            .action-buttons-section {
+            .view-mode-compact:hover {
+                background: rgba(255, 255, 255, 0.8);
+                color: #374151;
+            }
+            
+            .view-mode-compact.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                font-weight: 700;
+            }
+
+            /* ACTIONS COMPACTES */
+            .actions-compact {
                 display: flex;
                 align-items: center;
-                gap: 12px;
-                flex: 0 0 auto;
+                gap: 4px;
             }
             
-            .btn-extended {
-                height: 44px;
+            .btn-compact {
+                width: 32px;
+                height: 32px;
                 background: white;
                 color: #374151;
                 border: 1px solid #e5e7eb;
-                border-radius: 10px;
-                padding: 0 20px;
-                font-size: 13px;
-                font-weight: 600;
+                border-radius: 6px;
                 cursor: pointer;
                 transition: all var(--transition-speed) ease;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                font-size: 12px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
                 position: relative;
-                white-space: nowrap;
                 flex-shrink: 0;
-                line-height: 1;
-                text-align: center;
-                min-height: 44px;
             }
             
-            .btn-extended:hover {
+            .btn-compact:hover {
                 background: #f9fafb;
                 border-color: #6366f1;
                 color: #1f2937;
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
             }
             
-            .btn-extended.btn-primary {
+            .btn-compact.btn-primary-compact {
                 background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
                 color: white;
                 border-color: transparent;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
-                font-weight: 700;
+                box-shadow: 0 2px 6px rgba(99, 102, 241, 0.25);
             }
             
-            .btn-extended.btn-primary:hover {
+            .btn-compact.btn-primary-compact:hover {
                 background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
-            }
-            
-            .btn-extended.btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-            
-            .btn-extended.btn-secondary:hover {
-                background: #f1f5f9;
-                color: #334155;
-                border-color: #cbd5e1;
-            }
-            
-            .selection-info-extended {
-                height: 44px;
-                padding: 0 16px;
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border: 1px solid #93c5fd;
-                border-radius: 10px;
-                font-size: 13px;
-                font-weight: 600;
-                color: #1e40af;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                line-height: 1;
-                text-align: center;
-                white-space: nowrap;
-            }
-            
-            .btn-clear-selection-extended {
-                background: #f3f4f6;
-                color: #6b7280;
-                border: none;
-                width: 44px;
-                min-width: 44px;
-                height: 44px;
-                padding: 0;
-                border-radius: 10px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all var(--transition-speed) ease;
-                line-height: 1;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-            
-            .btn-clear-selection-extended:hover {
-                background: #e5e7eb;
-                color: #374151;
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 3px 8px rgba(99, 102, 241, 0.35);
+            }
+
+            .btn-compact.selection-compact {
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                color: #1e40af;
+                border-color: #93c5fd;
+                width: auto;
+                padding: 0 8px;
+                min-width: 32px;
+            }
+
+            .btn-compact.clear-compact {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .btn-compact.clear-compact:hover {
+                background: #fee2e2;
+                border-color: #fca5a5;
             }
             
-            .count-badge-extended {
+            .count-badge-compact {
                 position: absolute;
-                top: -8px;
-                right: -8px;
+                top: -6px;
+                right: -6px;
                 background: #ef4444;
                 color: white;
-                font-size: 10px;
+                font-size: 9px;
                 font-weight: 700;
-                padding: 3px 6px;
-                border-radius: 10px;
-                min-width: 18px;
+                padding: 2px 4px;
+                border-radius: 6px;
+                min-width: 14px;
                 text-align: center;
-                border: 2px solid white;
-                animation: badgePulse 2s ease-in-out infinite;
+                border: 1px solid white;
                 line-height: 1;
             }
             
-            @keyframes badgePulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-            }
-            
-            .filters-toggle {
-                position: relative;
-            }
-            
-            .filters-toggle.active {
+            .filters-toggle-compact.active {
                 background: #eff6ff;
                 color: #1e40af;
                 border-color: #3b82f6;
             }
 
-            /* LIGNE 3 : Modes de vue */
-            .view-modes-line {
+            /* LIGNE 2 : Filtres de statut compacts */
+            .status-filters-compact {
                 display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
-            }
-            
-            .view-modes-extended {
-                display: flex;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 10px;
-                padding: 3px;
-                gap: 1px;
-                height: 44px;
-                flex-shrink: 0;
-                align-items: center;
-            }
-            
-            .view-mode-extended {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0 20px;
-                height: 38px;
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                font-size: 13px;
-                font-weight: 600;
-                min-width: 90px;
-                white-space: nowrap;
-                line-height: 1;
-                text-align: center;
-            }
-            
-            .view-mode-extended:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
-                transform: translateY(-1px);
-            }
-            
-            .view-mode-extended.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-                font-weight: 700;
-                transform: translateY(-1px);
-            }
-
-            /* LIGNE 4 : Filtres de statut */
-            .status-filters-extended {
-                display: flex;
-                gap: 10px;
+                gap: 6px;
                 flex-wrap: wrap;
                 width: 100%;
                 justify-content: center;
                 align-items: center;
             }
             
-            .status-pill-extended {
-                height: 50px;
-                padding: 8px 16px;
-                font-size: 12px;
-                font-weight: 700;
-                flex: 0 1 calc(16.666% - 8px);
-                min-width: 140px;
-                max-width: 180px;
-                border-radius: 10px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            .status-pill-compact {
+                height: 32px;
+                padding: 4px 8px;
+                font-size: 11px;
+                font-weight: 600;
+                flex: 0 1 auto;
+                min-width: 80px;
+                max-width: 120px;
+                border-radius: 6px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
                 transition: all var(--transition-speed) ease;
                 display: flex;
                 align-items: center;
@@ -2385,115 +2267,106 @@ class TasksView {
                 cursor: pointer;
                 position: relative;
                 line-height: 1;
+                gap: 4px;
             }
             
-            .status-pill-extended:hover {
+            .status-pill-compact:hover {
                 border-color: #3b82f6;
                 background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
             }
             
-            .status-pill-extended.active {
+            .status-pill-compact.active {
                 background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
                 color: white;
                 border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+                transform: translateY(-1px);
             }
             
-            .status-pill-extended.active .pill-count-extended {
+            .status-pill-compact.active .pill-count-compact {
                 background: rgba(255, 255, 255, 0.3);
                 color: white;
             }
             
-            .pill-icon-extended {
-                font-size: 16px;
-                flex-shrink: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 20px;
-                height: 20px;
-            }
-            
-            .pill-text-extended {
-                font-weight: 700;
+            .pill-icon-compact {
                 font-size: 12px;
-                line-height: 1;
-                text-align: center;
-                flex: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin: 0 8px;
+                flex-shrink: 0;
             }
             
-            .pill-count-extended {
+            .pill-text-compact {
+                font-weight: 600;
+                font-size: 10px;
+                line-height: 1;
+                flex: 1;
+                text-align: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .pill-count-compact {
                 background: rgba(0, 0, 0, 0.1);
-                padding: 4px 8px;
-                border-radius: 8px;
-                font-size: 11px;
-                font-weight: 800;
-                min-width: 24px;
+                padding: 2px 4px;
+                border-radius: 4px;
+                font-size: 9px;
+                font-weight: 700;
+                min-width: 16px;
                 text-align: center;
                 flex-shrink: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 line-height: 1;
-                height: 20px;
             }
 
-            /* FILTRES AVANCÉS */
+            /* FILTRES AVANCÉS COMPACTS */
             .advanced-filters-panel {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                margin-bottom: var(--gap-large);
+                border-radius: 8px;
+                margin-bottom: 12px;
                 max-height: 0;
                 overflow: hidden;
                 transition: all 0.3s ease;
                 opacity: 0;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
             }
             
             .advanced-filters-panel.show {
-                max-height: 200px;
+                max-height: 120px;
                 opacity: 1;
-                padding: var(--gap-large);
+                padding: 12px;
             }
             
             .advanced-filters-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: var(--gap-medium);
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 8px;
                 align-items: end;
             }
             
             .filter-group {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-small);
+                gap: 4px;
             }
             
             .filter-label {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 4px;
                 font-weight: 600;
-                font-size: 12px;
+                font-size: 11px;
                 color: #374151;
             }
             
             .filter-select {
-                height: var(--btn-height);
-                padding: 0 var(--gap-medium);
+                height: 32px;
+                padding: 0 8px;
                 border: 1px solid #d1d5db;
-                border-radius: var(--btn-border-radius);
+                border-radius: 6px;
                 background: white;
-                font-size: var(--btn-font-size);
+                font-size: 11px;
                 color: #374151;
                 cursor: pointer;
                 transition: all 0.2s ease;
@@ -2505,14 +2378,73 @@ class TasksView {
                 border-color: #6366f1;
                 box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
             }
-            
-            .filter-actions {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: var(--gap-small);
+
+            /* RESPONSIVE COMPACT */
+            @media (max-width: 768px) {
+                .top-line-compact {
+                    flex-direction: column;
+                    height: auto;
+                    gap: 8px;
+                }
+
+                .search-box-compact {
+                    max-width: none;
+                    width: 100%;
+                }
+
+                .controls-right-compact {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+
+                .status-pill-compact {
+                    min-width: 70px;
+                    max-width: 100px;
+                    height: 28px;
+                    font-size: 10px;
+                }
+
+                .pill-text-compact {
+                    font-size: 9px;
+                }
+
+                .pill-count-compact {
+                    font-size: 8px;
+                    padding: 1px 3px;
+                }
             }
 
+            @media (max-width: 480px) {
+                .status-filters-compact {
+                    gap: 4px;
+                }
+
+                .status-pill-compact {
+                    min-width: 60px;
+                    max-width: 80px;
+                    height: 26px;
+                    padding: 2px 6px;
+                }
+
+                .actions-compact {
+                    gap: 2px;
+                }
+
+                .btn-compact {
+                    width: 28px;
+                    height: 28px;
+                    font-size: 11px;
+                }
+
+                .view-mode-compact {
+                    width: 24px;
+                    height: 24px;
+                    font-size: 10px;
+                }
+            }
+
+            /* Conserve tous les autres styles existants pour les tableaux et modales... */
+            
             /* TÂCHES EN FORMAT TABLEAU ALIGNÉ */
             .tasks-container-harmonized {
                 background: transparent;
@@ -2522,7 +2454,7 @@ class TasksView {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
+                border-radius: 10px;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
                 overflow: hidden;
             }
@@ -2808,8 +2740,8 @@ class TasksView {
             }
 
             .action-btn {
-                width: var(--action-btn-size);
-                height: var(--action-btn-size);
+                width: 28px;
+                height: 28px;
                 border: 1px solid #d1d5db;
                 border-radius: 6px;
                 background: white;
@@ -2853,21 +2785,21 @@ class TasksView {
                 color: #3b82f6;
             }
 
-            /* VUE DÉTAILLÉE */
+            /* VUE DÉTAILLÉE CONSERVÉE */
             .tasks-detailed-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-                gap: var(--gap-large);
+                gap: 16px;
             }
 
             .task-detailed-card {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
                 border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-large);
+                border-radius: 10px;
+                padding: 16px;
                 transition: all 0.3s ease;
-                box-shadow: var(--shadow-base);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
                 min-height: 200px;
                 display: flex;
                 flex-direction: column;
@@ -2875,7 +2807,7 @@ class TasksView {
 
             .task-detailed-card:hover {
                 transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
                 border-color: rgba(99, 102, 241, 0.3);
             }
 
@@ -2894,8 +2826,8 @@ class TasksView {
             .task-detailed-header {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
+                gap: 8px;
+                margin-bottom: 12px;
             }
 
             .task-checkbox-detailed {
@@ -2957,14 +2889,14 @@ class TasksView {
 
             .task-detailed-content {
                 flex: 1;
-                margin-bottom: var(--gap-medium);
+                margin-bottom: 12px;
             }
 
             .task-title-detailed {
                 font-size: 18px;
                 font-weight: 700;
                 color: #1f2937;
-                margin: 0 0 var(--gap-small) 0;
+                margin: 0 0 8px 0;
                 line-height: 1.3;
                 cursor: pointer;
                 transition: color 0.2s ease;
@@ -2978,21 +2910,21 @@ class TasksView {
                 font-size: 14px;
                 color: #6b7280;
                 line-height: 1.5;
-                margin: 0 0 var(--gap-medium) 0;
+                margin: 0 0 12px 0;
             }
 
             .task-meta-detailed {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
+                gap: 8px;
+                margin-bottom: 12px;
             }
 
             .task-client-detailed,
             .task-deadline-detailed {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 8px;
                 font-size: 13px;
                 font-weight: 500;
             }
@@ -3031,37 +2963,27 @@ class TasksView {
             .task-email-info {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 8px;
                 font-size: 13px;
                 color: #6b7280;
-                padding: var(--gap-small);
+                padding: 8px;
                 background: #f8fafc;
                 border-radius: 6px;
                 border: 1px solid #e2e8f0;
             }
 
-            .reply-needed {
-                background: #fef3c7;
-                color: #d97706;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 11px;
-                font-weight: 500;
-                border: 1px solid #fde68a;
-            }
-
             .task-detailed-actions {
                 display: flex;
-                gap: var(--gap-small);
+                gap: 8px;
                 flex-wrap: wrap;
             }
 
             .btn-detailed {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 6px;
                 padding: 8px 14px;
-                border-radius: var(--btn-border-radius);
+                border-radius: 6px;
                 font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
@@ -3105,7 +3027,7 @@ class TasksView {
                 border-color: #9ca3af;
             }
 
-            /* MODALES */
+            /* MODALES - STYLES COMPLETS */
             .modal-overlay {
                 position: fixed;
                 top: 0;
@@ -3139,6 +3061,242 @@ class TasksView {
             .modal-header {
                 padding: 24px;
                 border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .modal-header h2 {
+                margin: 0;
+                font-size: 20px;
+                font-weight: 700;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                color: #6b7280;
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+            }
+
+            .modal-close:hover {
+                background: #f3f4f6;
+                color: #374151;
+            }
+
+            .modal-content {
+                padding: 24px;
+                overflow-y: auto;
+                flex: 1;
+            }
+
+            .modal-footer {
+                padding: 24px;
+                border-top: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }
+
+            .btn-modal {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid;
+                white-space: nowrap;
+            }
+
+            .btn-modal.btn-primary {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+
+            .btn-modal.btn-primary:hover {
+                background: #2563eb;
+                border-color: #2563eb;
+                transform: translateY(-1px);
+            }
+
+            .btn-modal.btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+
+            .btn-modal.btn-secondary:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+
+            .btn-modal.btn-success {
+                background: #16a34a;
+                color: white;
+                border-color: #16a34a;
+            }
+
+            .btn-modal.btn-success:hover {
+                background: #15803d;
+                border-color: #15803d;
+                transform: translateY(-1px);
+            }
+
+            .btn-modal.btn-info {
+                background: #0ea5e9;
+                color: white;
+                border-color: #0ea5e9;
+            }
+
+            .btn-modal.btn-info:hover {
+                background: #0284c7;
+                border-color: #0284c7;
+                transform: translateY(-1px);
+            }
+
+            /* FORMULAIRES */
+            .edit-form,
+            .create-form {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .form-row .form-group:only-child {
+                grid-column: 1 / -1;
+            }
+
+            .form-group {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .form-group label {
+                font-weight: 600;
+                color: #374151;
+                font-size: 14px;
+            }
+
+            .form-input,
+            .form-select,
+            .form-textarea {
+                padding: 12px 16px;
+                border: 2px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 14px;
+                background: white;
+                transition: border-color 0.2s ease;
+                font-family: inherit;
+            }
+
+            .form-input:focus,
+            .form-select:focus,
+            .form-textarea:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+            .form-textarea {
+                resize: vertical;
+                min-height: 80px;
+                font-family: inherit;
+            }
+
+            .form-section {
+                margin-top: 16px;
+                padding-top: 16px;
+                border-top: 1px solid #e5e7eb;
+            }
+
+            .form-section h3 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .email-info-readonly {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 14px;
+                color: #374151;
+            }
+
+            .email-info-readonly > div {
+                margin-bottom: 8px;
+            }
+
+            .email-info-readonly > div:last-child {
+                margin-bottom: 0;
+            }
+
+            /* ÉTAT VIDE */
+            .empty-state-harmonized {
+                text-align: center;
+                padding: 60px 30px;
+                background: rgba(255, 255, 255, 0.8);
+                backdrop-filter: blur(20px);
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .empty-state-icon-harmonized {
+                font-size: 48px;
+                margin-bottom: 20px;
+                color: #d1d5db;
+            }
+
+            .empty-state-title-harmonized {
+                font-size: 22px;
+                font-weight: 700;
+                color: #374151;
+                margin-bottom: 12px;
+            }
+
+            .empty-state-text-harmonized {
+                font-size: 15px;
+                margin-bottom: 24px;
+                max-width: 400px;
+                line-height: 1.6;
+                color: #6b7280;
+                font-weight: 500;
+            }
+        `;eb;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
