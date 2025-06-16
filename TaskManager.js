@@ -1132,19 +1132,15 @@ render(container) {
                     </button>
                 </div>
                 
-                <!-- Actions principales harmonisées -->
+                <!-- Actions principales harmonisées SANS bouton de sélection -->
                 <div class="action-buttons-harmonized">
                     ${selectedCount > 0 ? `
-                        <div class="selection-info-harmonized">
-                            <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
-                            <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
                         <button class="btn-harmonized btn-primary" onclick="window.tasksView.bulkActions()">
                             <i class="fas fa-cog"></i>
-                            <span>Actions</span>
-                            <span class="count-badge-harmonized">${selectedCount}</span>
+                            <span>Actions sur ${selectedCount} tâche${selectedCount > 1 ? 's' : ''}</span>
+                        </button>
+                        <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
+                            <i class="fas fa-times"></i>
                         </button>
                     ` : ''}
                     
@@ -1229,7 +1225,6 @@ render(container) {
     this.setupEventListeners();
     console.log('[TasksView] Interface harmonisée rendue');
 }
-
 buildHarmonizedStatusPills(stats) {
     const pills = [
         { id: 'all', name: 'Tous', icon: '📧', count: stats.total },
