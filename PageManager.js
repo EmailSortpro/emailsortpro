@@ -600,14 +600,123 @@ dispatchEvent(eventName, detail) {
         this.refreshEmailsView();
     }
 
-    toggleEmailSelection(emailId) {
-        if (this.selectedEmails.has(emailId)) {
-            this.selectedEmails.delete(emailId);
-        } else {
-            this.selectedEmails.add(emailId);
-        }
-        this.refreshEmailsView();
+toggleEmailSelection(emailId) {
+    console.log('[PageManager] Toggle sélection email:', emailId);
+    
+    if (this.selectedEmails.has(emailId)) {
+        this.selectedEmails.delete(emailId);
+        console.log('[PageManager] Email désélectionné:', emailId);
+    } else {
+        this.selectedEmails.add(emailId);
+        console.log('[PageManager] Email sélectionné:', emailId);
     }
+    
+    // Mise à jour immédiate de la checkbox spécifique
+    const checkbox = document.querySelector(`[data-email-id="${emailId}"] .task-checkbox-harmonized`);
+    if (checkbox) {
+        checkbox.checked = this.selectedEmails.has(emailId);
+    }
+    
+    // Mise à jour des compteurs et boutons SANS reconstruire toute la liste
+    this.updateControlsBarOnly();
+    
+    console.log('[PageManager] Sélection mise à jour. Total sélectionnés:', this.selectedEmails.size);
+}
+
+updateControlsBarOnly() {
+    const selectedCount = this.selectedEmails.size;
+    const visibleEmails = this.getVisibleEmails();
+    const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+    
+    // Mettre à jour le bouton "Sélectionner tout"
+    const selectAllBtn = document.querySelector('.btn-selection-toggle');
+    if (selectAllBtn) {
+        const icon = selectAllBtn.querySelector('i');
+        const span = selectAllBtn.querySelector('span');
+        const countBadge = selectAllBtn.querySelector('.count-badge-small');
+        
+        if (icon) {
+            icon.className = allVisible ? 'fas fa-square-check' : 'fas fa-square';
+        }
+        if (span) {
+            span.textContent = allVisible ? 'Désélectionner' : 'Sélectionner';
+        }
+        if (countBadge) {
+            countBadge.textContent = visibleEmails.length;
+        }
+        
+        selectAllBtn.title = allVisible ? 'Désélectionner tout' : 'Sélectionner tout';
+    }
+    
+    // Mettre à jour le bouton "Créer tâches"
+    const createTaskBtn = document.querySelector('.btn-primary[onclick*="createTasksFromSelection"]');
+    if (createTaskBtn) {
+        const span = createTaskBtn.querySelector('span');
+        const countBadge = createTaskBtn.querySelector('.count-badge-harmonized');
+        
+        if (selectedCount === 0) {
+            createTaskBtn.classList.add('disabled');
+            createTaskBtn.disabled = true;
+        } else {
+            createTaskBtn.classList.remove('disabled');
+            createTaskBtn.disabled = false;
+        }
+        
+        if (span) {
+            span.textContent = `Créer tâche${selectedCount > 1 ? 's' : ''}`;
+        }
+        
+        if (countBadge) {
+            if (selectedCount > 0) {
+                countBadge.textContent = selectedCount;
+                countBadge.style.display = 'block';
+            } else {
+                countBadge.style.display = 'none';
+            }
+        }
+    }
+    
+    // Mettre à jour le bouton "Actions"
+    const actionsBtn = document.querySelector('.dropdown-toggle[onclick*="toggleBulkActions"]');
+    if (actionsBtn) {
+        if (selectedCount === 0) {
+            actionsBtn.classList.add('disabled');
+            actionsBtn.disabled = true;
+        } else {
+            actionsBtn.classList.remove('disabled');
+            actionsBtn.disabled = false;
+        }
+    }
+    
+    // Mettre à jour l'indicateur de sélection
+    const selectionInfo = document.querySelector('.selection-info-harmonized');
+    const actionButtons = document.querySelector('.action-buttons-harmonized');
+    
+    if (selectedCount > 0) {
+        if (!selectionInfo && actionButtons) {
+            const selectionHTML = `
+                <div class="selection-info-harmonized">
+                    <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                    <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            actionButtons.insertAdjacentHTML('beforeend', selectionHTML);
+        } else if (selectionInfo) {
+            const countSpan = selectionInfo.querySelector('.selection-count-harmonized');
+            if (countSpan) {
+                countSpan.textContent = `${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}`;
+            }
+        }
+    } else {
+        if (selectionInfo) {
+            selectionInfo.remove();
+        }
+    }
+    
+    console.log('[PageManager] Contrôles mis à jour -', selectedCount, 'sélectionnés');
+}
 
     clearSelection() {
         this.selectedEmails.clear();
@@ -616,14 +725,60 @@ dispatchEvent(eventName, detail) {
     }
 
     refreshEmailsView() {
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
+    console.log('[PageManager] Rafraîchissement vue emails...');
+    
+    // Sauvegarder l'état des groupes ouverts
+    const expandedGroups = new Set();
+    document.querySelectorAll('.task-group-harmonized.expanded').forEach(group => {
+        const groupKey = group.dataset.groupKey;
+        if (groupKey) {
+            expandedGroups.add(groupKey);
         }
+    });
+    
+    // Sauvegarder l'état de recherche
+    const searchInput = document.getElementById('emailSearchInput');
+    const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
+    
+    // Mettre à jour seulement le contenu des emails
+    const emailsContainer = document.querySelector('.tasks-container-harmonized');
+    if (emailsContainer) {
+        emailsContainer.innerHTML = this.renderEmailsList();
         
-        this.updateControlsBar();
+        // Restaurer l'état des groupes ouverts
+        expandedGroups.forEach(groupKey => {
+            const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+            if (group) {
+                const content = group.querySelector('.group-content-harmonized');
+                const icon = group.querySelector('.group-expand-harmonized i');
+                const header = group.querySelector('.group-header-harmonized');
+                
+                if (content && icon && header) {
+                    content.style.display = 'block';
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                    group.classList.add('expanded');
+                    header.classList.add('expanded-header');
+                }
+            }
+        });
+        
+        console.log('[PageManager] Groupes restaurés:', expandedGroups.size);
     }
-
+    
+    // Mettre à jour seulement les contrôles
+    this.updateControlsBarOnly();
+    
+    // Restaurer la recherche
+    setTimeout(() => {
+        const newSearchInput = document.getElementById('emailSearchInput');
+        if (newSearchInput && currentSearchValue && newSearchInput.value !== currentSearchValue) {
+            newSearchInput.value = currentSearchValue;
+        }
+    }, 50);
+    
+    console.log('[PageManager] Vue emails rafraîchie avec', this.selectedEmails.size, 'sélectionnés');
+}
     updateControlsBar() {
         const container = document.getElementById('pageContent');
         if (container && this.currentPage === 'emails') {
@@ -716,61 +871,170 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
 }
 
 
-    filterByCategory(categoryId) {
-        this.currentCategory = categoryId;
-        this.refreshEmailsView();
+// PageManager.js - Fonction filterByCategory() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1050
+
+filterByCategory(categoryId) {
+    console.log(`[PageManager] 🔍 Filtrage par catégorie: ${categoryId}`);
+    
+    this.currentCategory = categoryId;
+    
+    // Debug du filtrage
+    const emails = window.emailScanner?.getAllEmails() || [];
+    let filteredEmails;
+    
+    if (categoryId === 'all') {
+        filteredEmails = emails;
+        console.log(`[PageManager] 📧 Affichage de tous les emails: ${emails.length}`);
+    } else if (categoryId === 'other') {
+        // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
+        filteredEmails = emails.filter(email => {
+            const cat = email.category;
+            return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+        });
+        console.log(`[PageManager] 📌 Emails "Autre" trouvés: ${filteredEmails.length}`);
+        
+        // Debug des emails "Autre"
+        if (filteredEmails.length > 0) {
+            console.log('[PageManager] 🔍 Échantillon emails "Autre":', 
+                filteredEmails.slice(0, 3).map(e => ({
+                    subject: e.subject?.substring(0, 40),
+                    category: e.category,
+                    categoryType: typeof e.category,
+                    from: e.from?.emailAddress?.address
+                }))
+            );
+        }
+    } else {
+        filteredEmails = emails.filter(email => email.category === categoryId);
+        console.log(`[PageManager] 🏷️ Emails dans catégorie "${categoryId}": ${filteredEmails.length}`);
+    }
+    
+    // Mettre à jour l'affichage
+    this.refreshEmailsView();
+    
+    // Mettre à jour visuellement le bouton actif
+    document.querySelectorAll('.status-pill-harmonized-twolines').forEach(pill => {
+        const pillCategoryId = pill.dataset.categoryId;
+        if (pillCategoryId === categoryId) {
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+        }
+    });
+}
+// PageManager.js - Fonction renderEmailsList() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1100
+
+renderEmailsList() {
+    const emails = window.emailScanner?.getAllEmails() || [];
+    let filteredEmails = emails;
+    
+    console.log(`[PageManager] 📧 Rendu liste emails: ${emails.length} total, catégorie: ${this.currentCategory}`);
+    
+    // Appliquer le filtre de catégorie
+    if (this.currentCategory && this.currentCategory !== 'all') {
+        if (this.currentCategory === 'other') {
+            // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
+            filteredEmails = filteredEmails.filter(email => {
+                const cat = email.category;
+                const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                return isOther;
+            });
+            console.log(`[PageManager] 📌 Emails "Autre" filtrés: ${filteredEmails.length}`);
+        } else {
+            filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            console.log(`[PageManager] 🏷️ Emails catégorie "${this.currentCategory}": ${filteredEmails.length}`);
+        }
+    }
+    
+    // Appliquer le filtre de recherche
+    if (this.searchTerm) {
+        const beforeSearch = filteredEmails.length;
+        filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} (était ${beforeSearch})`);
+    }
+    
+    // Affichage si aucun email trouvé
+    if (filteredEmails.length === 0) {
+        console.log('[PageManager] 📭 Aucun email à afficher');
+        return this.renderEmptyState();
     }
 
-    // ================================================
-    // RENDU DES EMAILS
-    // ================================================
-    renderEmailsList() {
-        const emails = window.emailScanner?.getAllEmails() || [];
-        let filteredEmails = emails;
-        
-        // Appliquer les filtres
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
-        }
-        
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        if (filteredEmails.length === 0) {
-            return this.renderEmptyState();
-        }
-
-        switch (this.currentViewMode) {
-            case 'flat':
-                return this.renderFlatView(filteredEmails);
-            case 'grouped-domain':
-            case 'grouped-sender':
-                return this.renderGroupedView(filteredEmails, this.currentViewMode);
-            default:
-                return this.renderFlatView(filteredEmails);
-        }
+    // Rendu selon le mode de vue
+    switch (this.currentViewMode) {
+        case 'flat':
+            return this.renderFlatView(filteredEmails);
+        case 'grouped-domain':
+        case 'grouped-sender':
+            return this.renderGroupedView(filteredEmails, this.currentViewMode);
+        default:
+            return this.renderFlatView(filteredEmails);
     }
+}
 
-    renderEmptyState() {
-        return `
-            <div class="empty-state-harmonized">
-                <div class="empty-state-icon-harmonized">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
-                <p class="empty-state-text-harmonized">
-                    ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
-                </p>
-                ${this.searchTerm ? `
-                    <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
-                        <i class="fas fa-undo"></i>
-                        <span>Effacer la recherche</span>
-                    </button>
-                ` : ''}
-            </div>
+// PageManager.js - Fonction renderEmptyState() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1180
+
+renderEmptyState() {
+    console.log(`[PageManager] 📭 Rendu état vide - Catégorie: ${this.currentCategory}, Recherche: "${this.searchTerm}"`);
+    
+    let title, text, action = '';
+    
+    if (this.searchTerm) {
+        // État vide à cause de la recherche
+        title = 'Aucun résultat trouvé';
+        text = `Aucun email ne correspond à votre recherche "${this.searchTerm}"`;
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
+                <i class="fas fa-undo"></i>
+                <span>Effacer la recherche</span>
+            </button>
+        `;
+    } else if (this.currentCategory === 'other') {
+        // État vide pour la catégorie "Autre"
+        title = 'Aucun email non catégorisé';
+        text = 'Tous vos emails ont été correctement catégorisés ! 🎉';
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                <i class="fas fa-list"></i>
+                <span>Voir tous les emails</span>
+            </button>
+        `;
+    } else if (this.currentCategory && this.currentCategory !== 'all') {
+        // État vide pour une catégorie spécifique
+        const categoryName = this.getCategoryName(this.currentCategory);
+        title = `Aucun email dans "${categoryName}"`;
+        text = 'Cette catégorie ne contient aucun email pour le moment.';
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                <i class="fas fa-list"></i>
+                <span>Voir tous les emails</span>
+            </button>
+        `;
+    } else {
+        // État vide général (aucun email du tout)
+        title = 'Aucun email trouvé';
+        text = 'Utilisez le scanner pour récupérer et analyser vos emails.';
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                <i class="fas fa-search"></i>
+                <span>Aller au scanner</span>
+            </button>
         `;
     }
+    
+    return `
+        <div class="empty-state-harmonized">
+            <div class="empty-state-icon-harmonized">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h3 class="empty-state-title-harmonized">${title}</h3>
+            <p class="empty-state-text-harmonized">${text}</p>
+            ${action}
+        </div>
+    `;
+}
 
     renderFlatView(emails) {
         return `
@@ -781,8 +1045,7 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     }
 
     
-// PageManager.js - Méthode renderHarmonizedEmailRow() complète corrigée (remplacer vers ligne 1230)
-
+// Fonction de rendu d'une ligne d'email avec gestion correcte des événements
 renderHarmonizedEmailRow(email) {
     const isSelected = this.selectedEmails.has(email.id);
     const hasTask = this.createdTasks.has(email.id);
@@ -799,25 +1062,12 @@ renderHarmonizedEmailRow(email) {
     if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
         isPreselectedForTasks = true;
         email.isPreselectedForTasks = true;
-        
-        const category = window.categoryManager?.getCategory(email.category);
-        console.log(`[PageManager] 🔧 Correction flag pré-sélection pour email:`, {
-            subject: email.subject?.substring(0, 40),
-            category: email.category,
-            categoryName: category?.name || email.category,
-            categoryIcon: category?.icon || '📂'
-        });
-    }
-    
-    // Auto-sélection si pré-sélectionné et pas encore de tâche
-    if (isPreselectedForTasks && !isSelected && !hasTask && this.autoSelectPreselected !== false) {
-        this.selectedEmails.add(email.id);
     }
     
     // Classes CSS pour l'email
     const cardClasses = [
         'task-harmonized-card',
-        isSelected || (isPreselectedForTasks && !hasTask) ? 'selected' : '',
+        isSelected ? 'selected' : '',
         hasTask ? 'has-task' : '',
         isPreselectedForTasks ? 'preselected-task' : ''
     ].filter(Boolean).join(' ');
@@ -829,11 +1079,11 @@ renderHarmonizedEmailRow(email) {
              data-preselected="${isPreselectedForTasks}"
              onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
             
-            <!-- Checkbox de sélection -->
+            <!-- Checkbox de sélection avec gestion d'événement corrigée -->
             <input type="checkbox" 
                    class="task-checkbox-harmonized" 
-                   ${(isSelected || (isPreselectedForTasks && !hasTask)) ? 'checked' : ''}
-                   onclick="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+                   ${isSelected ? 'checked' : ''}
+                   onchange="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
             
             <!-- Indicateur de priorité avec couleur spéciale si pré-sélectionné -->
             <div class="priority-bar-harmonized" 
@@ -1063,43 +1313,77 @@ forceUpdatePreselection() {
         `;
     }
 
-    renderEmailGroup(group, groupType) {
-        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
-        const avatarColor = this.generateAvatarColor(group.name);
-        
-        return `
-            <div class="task-group-harmonized" data-group-key="${group.key}">
-                <div class="group-header-harmonized" onclick="window.pageManager.toggleGroup('${group.key}')">
-                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
-                        ${groupType === 'grouped-domain' ? 
-                            '<i class="fas fa-globe"></i>' : 
-                            group.name.charAt(0).toUpperCase()
-                        }
-                    </div>
-                    <div class="group-info-harmonized">
-                        <div class="group-name-harmonized">${displayName}</div>
-                        <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
-                    </div>
-                    <div class="group-expand-harmonized">
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
+renderEmailGroup(group, groupType) {
+    const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+    const avatarColor = this.generateAvatarColor(group.name);
+    
+    return `
+        <div class="task-group-harmonized" data-group-key="${group.key}">
+            <div class="group-header-harmonized" onclick="event.preventDefault(); event.stopPropagation(); window.pageManager.toggleGroup('${group.key}', event)">
+                <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+                    ${groupType === 'grouped-domain' ? 
+                        '<i class="fas fa-globe"></i>' : 
+                        group.name.charAt(0).toUpperCase()
+                    }
                 </div>
-                
-                <div class="group-content-harmonized" style="display: none;">
-                    ${group.emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+                <div class="group-info-harmonized">
+                    <div class="group-name-harmonized">${displayName}</div>
+                    <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
+                </div>
+                <div class="group-expand-harmonized" onclick="event.preventDefault(); event.stopPropagation();">
+                    <i class="fas fa-chevron-down"></i>
                 </div>
             </div>
-        `;
+            
+            <div class="group-content-harmonized" style="display: none;">
+                ${group.emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+            </div>
+        </div>
+    `;
+}
+handleEmailClick(event, emailId) {
+    // Empêcher la propagation si c'est un clic sur checkbox
+    if (event.target.type === 'checkbox') {
+        console.log('[PageManager] Clic checkbox détecté, arrêt propagation');
+        return;
     }
-
-    // ================================================
-    // ÉVÉNEMENTS ET HANDLERS
-    // ================================================
-    handleEmailClick(event, emailId) {
-        if (event.target.type === 'checkbox') return;
-        if (event.target.closest('.task-actions-harmonized')) return;
-        this.showEmailModal(emailId);
+    
+    // Empêcher la propagation si c'est un clic sur les actions
+    if (event.target.closest('.task-actions-harmonized')) {
+        console.log('[PageManager] Clic action détecté, arrêt propagation');
+        return;
     }
+    
+    // Empêcher la propagation si c'est un clic dans un groupe header
+    if (event.target.closest('.group-header-harmonized')) {
+        console.log('[PageManager] Clic dans group header, arrêt propagation');
+        return;
+    }
+    
+    // Vérifier si c'est un double-clic pour sélection
+    const now = Date.now();
+    const lastClick = this.lastEmailClick || 0;
+    
+    if (now - lastClick < 300) {
+        // Double-clic = toggle sélection
+        console.log('[PageManager] Double-clic détecté, toggle sélection');
+        event.preventDefault();
+        event.stopPropagation();
+        this.toggleEmailSelection(emailId);
+        this.lastEmailClick = 0;
+        return;
+    }
+    
+    this.lastEmailClick = now;
+    
+    // Simple clic = ouvrir modal après délai pour permettre double-clic
+    setTimeout(() => {
+        if (Date.now() - this.lastEmailClick >= 250) {
+            console.log('[PageManager] Simple clic confirmé, ouverture modal');
+            this.showEmailModal(emailId);
+        }
+    }, 250);
+}
 
     changeViewMode(mode) {
         this.currentViewMode = mode;
@@ -1112,28 +1396,50 @@ forceUpdatePreselection() {
         this.refreshEmailsView();
     }
 
-    toggleGroup(groupKey) {
-        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
-        if (!group) return;
-        
-        const content = group.querySelector('.group-content-harmonized');
-        const icon = group.querySelector('.group-expand-harmonized i');
-        const header = group.querySelector('.group-header-harmonized');
-        
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-            group.classList.add('expanded');
-            header.classList.add('expanded-header');
-        } else {
-            content.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-            group.classList.remove('expanded');
-            header.classList.remove('expanded-header');
-        }
+toggleGroup(groupKey, event) {
+    // Arrêter la propagation pour éviter les conflits
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
     }
+    
+    console.log('[PageManager] Toggle groupe:', groupKey);
+    
+    const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+    if (!group) {
+        console.error('[PageManager] Groupe non trouvé:', groupKey);
+        return;
+    }
+    
+    const content = group.querySelector('.group-content-harmonized');
+    const icon = group.querySelector('.group-expand-harmonized i');
+    const header = group.querySelector('.group-header-harmonized');
+    
+    if (!content || !icon || !header) {
+        console.error('[PageManager] Éléments du groupe manquants');
+        return;
+    }
+    
+    const isExpanded = content.style.display !== 'none';
+    
+    if (isExpanded) {
+        // Fermer le groupe
+        content.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        group.classList.remove('expanded');
+        header.classList.remove('expanded-header');
+        console.log('[PageManager] Groupe fermé:', groupKey);
+    } else {
+        // Ouvrir le groupe
+        content.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        group.classList.add('expanded');
+        header.classList.add('expanded-header');
+        console.log('[PageManager] Groupe ouvert:', groupKey);
+    }
+}
 
     setupEmailsEventListeners() {
         const searchInput = document.getElementById('emailSearchInput');
@@ -1657,20 +1963,40 @@ forceUpdatePreselection() {
         return window.emailScanner?.getEmailById(emailId) || null;
     }
 
-    getVisibleEmails() {
-        const emails = window.emailScanner?.getAllEmails() || [];
-        let filteredEmails = emails;
-        
-        if (this.currentCategory && this.currentCategory !== 'all') {
-            filteredEmails = filteredEmails.filter(email => (email.category || 'other') === this.currentCategory);
+// PageManager.js - Fonction getVisibleEmails() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1750
+
+getVisibleEmails() {
+    const emails = window.emailScanner?.getAllEmails() || [];
+    let filteredEmails = emails;
+    
+    console.log(`[PageManager] 👁️ Calcul emails visibles: ${emails.length} total, catégorie: ${this.currentCategory}`);
+    
+    // Appliquer le filtre de catégorie
+    if (this.currentCategory && this.currentCategory !== 'all') {
+        if (this.currentCategory === 'other') {
+            // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
+            filteredEmails = filteredEmails.filter(email => {
+                const cat = email.category;
+                const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                return isOther;
+            });
+            console.log(`[PageManager] 📌 Emails "Autre" visibles: ${filteredEmails.length}`);
+        } else {
+            filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            console.log(`[PageManager] 🏷️ Emails catégorie "${this.currentCategory}" visibles: ${filteredEmails.length}`);
         }
-        
-        if (this.searchTerm) {
-            filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
-        }
-        
-        return filteredEmails;
     }
+    
+    // Appliquer le filtre de recherche
+    if (this.searchTerm) {
+        const beforeSearch = filteredEmails.length;
+        filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} visibles (était ${beforeSearch})`);
+    }
+    
+    return filteredEmails;
+}
 
     matchesSearch(email, searchTerm) {
         if (!searchTerm) return true;
@@ -1687,14 +2013,63 @@ forceUpdatePreselection() {
                preview.includes(search);
     }
 
-    calculateCategoryCounts(emails) {
-        const counts = {};
-        emails.forEach(email => {
-            const cat = email.category || 'other';
+// PageManager.js - Fonction calculateCategoryCounts() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1800
+
+calculateCategoryCounts(emails) {
+    console.log('[PageManager] 📊 Calcul des comptages de catégories...');
+    
+    const counts = {};
+    let uncategorizedCount = 0;
+    
+    emails.forEach(email => {
+        const cat = email.category;
+        
+        // Si l'email a une catégorie valide
+        if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
             counts[cat] = (counts[cat] || 0) + 1;
-        });
-        return counts;
+        } else {
+            // Email non catégorisé -> dans "other"
+            uncategorizedCount++;
+        }
+    });
+    
+    // CORRECTION CRITIQUE: Toujours inclure "other" si il y a des emails non catégorisés
+    if (uncategorizedCount > 0) {
+        counts.other = uncategorizedCount;
+        console.log(`[PageManager] 📌 ${uncategorizedCount} emails dans la catégorie "Autre"`);
     }
+    
+    // Debug des comptages
+    console.log('[PageManager] 📊 Comptages finaux:', {
+        categories: counts,
+        totalEmails: emails.length,
+        sumCounts: Object.values(counts).reduce((sum, count) => sum + count, 0)
+    });
+    
+    // Vérification de cohérence
+    const totalCounted = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    if (totalCounted !== emails.length) {
+        console.error(`[PageManager] ❌ ERREUR COMPTAGE: ${totalCounted} comptés vs ${emails.length} emails totaux`);
+        
+        // Debug détaillé pour trouver le problème
+        const emailsWithoutCategory = emails.filter(e => !e.category || e.category === 'other' || e.category === '');
+        const emailsWithCategory = emails.filter(e => e.category && e.category !== 'other' && e.category !== '');
+        
+        console.error('[PageManager] Debug détaillé:', {
+            emailsWithoutCategory: emailsWithoutCategory.length,
+            emailsWithCategory: emailsWithCategory.length,
+            categories: [...new Set(emails.map(e => e.category || 'undefined'))],
+            sampleUncategorized: emailsWithoutCategory.slice(0, 3).map(e => ({
+                subject: e.subject?.substring(0, 40),
+                category: e.category,
+                categoryType: typeof e.category
+            }))
+        });
+    }
+    
+    return counts;
+}
 
     createEmailGroups(emails, groupMode) {
         const groups = {};
