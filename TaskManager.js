@@ -2249,16 +2249,17 @@ class TasksView {
                 box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
             }
 
-            /* LIGNE 2 : Boutons harmonisés SANS icônes */
+            /* LIGNE 2 : Boutons harmonisés SANS icônes - ALIGNEMENT CORRIGÉ */
             .buttons-line-extended {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
                 gap: var(--gap-large);
                 width: 100%;
+                min-height: var(--btn-height);
             }
             
-            /* Modes de vue étendus SANS icônes */
+            /* Modes de vue étendus SANS icônes - ALIGNEMENT PARFAIT */
             .view-modes-extended {
                 display: flex;
                 background: #f8fafc;
@@ -2268,6 +2269,7 @@ class TasksView {
                 gap: 2px;
                 height: var(--btn-height);
                 flex-shrink: 0;
+                align-items: center;
             }
             
             .view-mode-extended {
@@ -2286,6 +2288,8 @@ class TasksView {
                 font-weight: var(--btn-font-weight);
                 min-width: 100px;
                 white-space: nowrap;
+                line-height: 1;
+                text-align: center;
             }
             
             .view-mode-extended:hover {
@@ -2302,13 +2306,14 @@ class TasksView {
                 transform: translateY(-1px);
             }
             
-            /* Actions étendues SANS icônes */
+            /* Actions étendues SANS icônes - ALIGNEMENT PARFAIT */
             .action-buttons-extended {
                 display: flex;
                 align-items: center;
                 gap: var(--gap-medium);
                 flex: 1;
                 justify-content: flex-end;
+                height: var(--btn-height);
             }
             
             .btn-extended {
@@ -2324,11 +2329,15 @@ class TasksView {
                 transition: all var(--transition-speed) ease;
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--btn-gap);
                 box-shadow: var(--shadow-base);
                 position: relative;
                 white-space: nowrap;
                 flex-shrink: 0;
+                line-height: 1;
+                text-align: center;
+                min-height: var(--btn-height);
             }
             
             .btn-extended:hover {
@@ -2376,7 +2385,10 @@ class TasksView {
                 color: #1e40af;
                 display: flex;
                 align-items: center;
+                justify-content: center;
                 gap: var(--btn-gap);
+                line-height: 1;
+                text-align: center;
             }
             
             .btn-clear-selection-extended {
@@ -2385,6 +2397,7 @@ class TasksView {
                 border: none;
                 width: var(--btn-height);
                 min-width: var(--btn-height);
+                height: var(--btn-height);
                 padding: 0;
                 border-radius: var(--btn-border-radius);
                 cursor: pointer;
@@ -2392,6 +2405,7 @@ class TasksView {
                 align-items: center;
                 justify-content: center;
                 transition: all var(--transition-speed) ease;
+                line-height: 1;
             }
             
             .btn-clear-selection-extended:hover {
@@ -2430,13 +2444,14 @@ class TasksView {
                 border-color: #3b82f6;
             }
 
-            /* LIGNE 3 : Filtres de statut étendus */
+            /* LIGNE 3 : Filtres de statut étendus - ALIGNEMENT PARFAIT */
             .status-filters-extended {
                 display: flex;
                 gap: var(--gap-small);
                 flex-wrap: wrap;
                 width: 100%;
                 justify-content: center;
+                align-items: center;
             }
             
             .status-pill-extended {
@@ -2460,19 +2475,26 @@ class TasksView {
                 cursor: pointer;
                 position: relative;
                 gap: var(--gap-small);
+                line-height: 1;
             }
             
             .pill-icon-extended {
                 font-size: 14px;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .pill-text-extended {
                 font-weight: 700;
                 font-size: 12px;
-                line-height: 1.2;
+                line-height: 1;
                 text-align: center;
                 flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .pill-count-extended {
@@ -2484,6 +2506,10 @@ class TasksView {
                 min-width: 20px;
                 text-align: center;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                line-height: 1;
             }
             
             .status-pill-extended:hover {
