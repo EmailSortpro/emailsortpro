@@ -1968,12 +1968,33 @@ addHarmonizedEmailStyles() {
             --preselect-color-dark: #7c3aed;
         }
         
+        /* Container principal élargi pour bien centrer le contenu */
         .tasks-page-modern {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             padding: var(--gap-large);
             font-size: var(--btn-font-size);
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        /* Ajustement pour le container principal de page */
+        #pageContent {
+            background: transparent;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        
+        #pageContent > * {
+            width: 100%;
+            max-width: 1400px;
         }
 
         .explanation-text-harmonized {
@@ -1991,6 +2012,8 @@ addHarmonizedEmailStyles() {
             line-height: 1.5;
             backdrop-filter: blur(10px);
             position: relative;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .explanation-text-harmonized i {
@@ -2022,7 +2045,7 @@ addHarmonizedEmailStyles() {
             transform: scale(1.1);
         }
         
-        /* Barre de contrôles */
+        /* Barre de contrôles - centrée et alignée */
         .controls-bar-harmonized {
             display: flex;
             align-items: center;
@@ -2036,6 +2059,8 @@ addHarmonizedEmailStyles() {
             margin-bottom: var(--gap-medium);
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
             min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .search-section-harmonized {
@@ -2061,6 +2086,7 @@ addHarmonizedEmailStyles() {
             background: #f9fafb;
             transition: all var(--transition-speed) ease;
             outline: none;
+            box-sizing: border-box;
         }
         
         .search-input-harmonized:focus {
@@ -2124,6 +2150,7 @@ addHarmonizedEmailStyles() {
             font-size: var(--btn-font-size);
             font-weight: var(--btn-font-weight);
             min-width: 120px;
+            white-space: nowrap;
         }
         
         .view-mode-harmonized:hover {
@@ -2162,6 +2189,7 @@ addHarmonizedEmailStyles() {
             gap: var(--btn-gap);
             box-shadow: var(--shadow-base);
             position: relative;
+            white-space: nowrap;
         }
         
         .btn-harmonized:hover {
@@ -2349,13 +2377,15 @@ addHarmonizedEmailStyles() {
             margin: 8px 0;
         }
         
-        /* ===== FILTRES DE CATÉGORIES AVEC ÉTOILE FIXE ===== */
+        /* ===== FILTRES DE CATÉGORIES - Alignement corrigé ===== */
         .status-filters-harmonized-twolines {
             display: flex;
             gap: var(--gap-small);
             margin-bottom: var(--gap-medium);
             flex-wrap: wrap;
             width: 100%;
+            justify-content: flex-start;
+            align-items: center;
         }
         
         .status-pill-harmonized-twolines {
@@ -2378,7 +2408,8 @@ addHarmonizedEmailStyles() {
             border: 1px solid #e5e7eb;
             cursor: pointer;
             position: relative;
-            overflow: visible !important; /* Important pour l'étoile */
+            overflow: visible !important;
+            box-sizing: border-box;
         }
         
         /* Style pour les catégories pré-sélectionnées */
@@ -2513,15 +2544,23 @@ addHarmonizedEmailStyles() {
             color: white;
         }
         
-        /* Container des emails */
+        /* Container des emails - zone grise élargie */
         .tasks-container-harmonized {
-            background: transparent;
+            background: rgba(241, 245, 249, 0.5);
+            border-radius: var(--card-border-radius);
+            padding: var(--gap-medium);
+            width: 100%;
+            box-sizing: border-box;
         }
         
         .tasks-harmonized-list {
             display: flex;
             flex-direction: column;
             gap: 0;
+            background: white;
+            border-radius: var(--card-border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-base);
         }
         
         /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
@@ -2852,16 +2891,18 @@ addHarmonizedEmailStyles() {
         .tasks-grouped-harmonized {
             display: flex;
             flex-direction: column;
-            gap: 0;
+            gap: var(--gap-medium);
+            background: transparent;
         }
         
         .task-group-harmonized {
-            background: transparent;
-            border: none;
-            border-radius: 0;
-            overflow: visible;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--card-border-radius);
+            overflow: hidden;
             margin: 0;
             padding: 0;
+            box-shadow: var(--shadow-base);
         }
         
         .group-header-harmonized {
@@ -2869,8 +2910,6 @@ addHarmonizedEmailStyles() {
             align-items: center;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0;
             padding: var(--card-padding);
             cursor: pointer;
             transition: all 0.3s ease;
@@ -2881,36 +2920,18 @@ addHarmonizedEmailStyles() {
             gap: var(--gap-medium);
         }
         
-        .task-group-harmonized:first-child .group-header-harmonized {
-            border-top-left-radius: var(--card-border-radius);
-            border-top-right-radius: var(--card-border-radius);
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .task-group-harmonized:last-child .group-header-harmonized:not(.expanded-header) {
-            border-bottom-left-radius: var(--card-border-radius);
-            border-bottom-right-radius: var(--card-border-radius);
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
         .group-header-harmonized:hover {
             background: white;
             transform: translateY(-1px);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            border-color: rgba(99, 102, 241, 0.2);
-            border-left: 3px solid #6366f1;
             z-index: 1;
         }
         
         .task-group-harmonized.expanded .group-header-harmonized {
             background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
             border-left: 4px solid #3b82f6;
-            border-color: #3b82f6;
-            transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
             z-index: 2;
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
         }
         
         .group-avatar-harmonized {
@@ -3005,9 +3026,7 @@ addHarmonizedEmailStyles() {
         }
         
         .group-content-harmonized .task-harmonized-card:last-child {
-            border-bottom-left-radius: var(--card-border-radius);
-            border-bottom-right-radius: var(--card-border-radius);
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: none;
         }
         
         /* État vide */
@@ -3063,6 +3082,10 @@ addHarmonizedEmailStyles() {
                 --action-btn-size: 34px;
             }
             
+            .tasks-page-modern {
+                max-width: 1200px;
+            }
+            
             .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                 flex: 0 1 calc(20% - var(--gap-small));
                 min-width: 100px;
@@ -3072,6 +3095,11 @@ addHarmonizedEmailStyles() {
         }
         
         @media (max-width: 1024px) {
+            .tasks-page-modern {
+                max-width: 100%;
+                padding: var(--gap-medium);
+            }
+            
             .controls-bar-harmonized {
                 flex-direction: column;
                 gap: var(--gap-medium);
@@ -3146,6 +3174,10 @@ addHarmonizedEmailStyles() {
         }
         
         @media (max-width: 480px) {
+            .tasks-page-modern {
+                padding: var(--gap-small);
+            }
+            
             .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
                 flex: 0 1 calc(50% - 4px);
                 min-width: 60px;
@@ -3201,7 +3233,6 @@ addHarmonizedEmailStyles() {
     
     document.head.appendChild(styles);
 }
-
 }
 
 // Créer l'instance globale
