@@ -182,36 +182,47 @@ renderCategories(categories, activeCategories) {
     return categoryCards + otherCard;
 }
 
-// CategoriesPage.js - Fonction calculateEmailStats() NOUVELLE À AJOUTER
-// Ajouter cette fonction dans CategoriesPage.js après la fonction renderCategories
-
 calculateEmailStats() {
     const emails = window.emailScanner?.getAllEmails() || [];
     const stats = {};
-    let otherCount = 0;
     
     console.log('[CategoriesPage] 📊 Calcul statistiques emails...');
     
-    emails.forEach(email => {
+    emails.forEach((email, index) => {
         const cat = email.category;
         
-        if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
-            stats[cat] = (stats[cat] || 0) + 1;
+        // Debug pour les premiers emails
+        if (index < 5) {
+            console.log(`[CategoriesPage] 🔍 Email ${index} stats:`, {
+                subject: email.subject?.substring(0, 30),
+                category: cat,
+                categoryType: typeof cat
+            });
+        }
+        
+        // CORRECTION CRITIQUE: Traiter tous les cas explicitement
+        if (cat === null || cat === undefined || cat === '') {
+            // Emails sans catégorie -> les forcer à "other"
+            email.category = 'other'; // Correction directe
+            stats.other = (stats.other || 0) + 1;
         } else {
-            otherCount++;
+            // Tous les autres emails (y compris ceux déjà marqués "other")
+            stats[cat] = (stats[cat] || 0) + 1;
         }
     });
     
-    // Toujours inclure "other" si il y a des emails non catégorisés
-    if (otherCount > 0) {
-        stats.other = otherCount;
-    }
-    
     console.log('[CategoriesPage] 📊 Statistiques calculées:', {
+        totalCategories: Object.keys(stats).length,
         categories: stats,
         totalEmails: emails.length,
-        otherCount: otherCount
+        otherCount: stats.other || 0
     });
+    
+    // Vérification de cohérence
+    const totalCounted = Object.values(stats).reduce((sum, count) => sum + count, 0);
+    if (totalCounted !== emails.length) {
+        console.error(`[CategoriesPage] ❌ ERREUR COMPTAGE: ${totalCounted} comptés vs ${emails.length} emails totaux`);
+    }
     
     return stats;
 }
