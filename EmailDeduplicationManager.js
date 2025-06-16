@@ -871,4 +871,13 @@ window.debugEmailConversations = function() {
     return { stats, duplicates };
 };
 
-console.log('✅ EmailDeduplicationManager v1.0 loaded - Module de gestion des conversations et doublons');
+console.log('✅ EmailDeduplicationManager v1.0 loaded - Module de gestion des conversations et doublons');  // À la fin du fichier EmailDeduplicationManager.js
+window.addEventListener('DOMContentLoaded', () => {
+    // Attendre que tous les modules soient chargés
+    setTimeout(() => {
+        if (window.emailScanner && window.emailDeduplicationManager) {
+            window.integrateEmailDeduplication();
+            console.log('✅ Déduplication automatiquement activée');
+        }
+    }, 1000);
+});
