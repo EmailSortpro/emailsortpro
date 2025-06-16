@@ -2607,37 +2607,6 @@ class TasksView {
                 flex-shrink: 0;
             }
 
-            .task-priority {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                flex-shrink: 0;
-            }
-
-            .task-priority.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-            }
-
-            .task-priority.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-            }
-
-            .task-priority.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-            }
-
-            .task-priority.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-            }
-
             .task-info {
                 flex: 1;
                 display: flex;
@@ -2647,8 +2616,8 @@ class TasksView {
             }
 
             .task-title {
-                font-weight: 600;
-                color: var(--text-primary);
+                font-weight: 700;
+                color: #1e293b;
                 font-size: 14px;
                 white-space: nowrap;
                 overflow: hidden;
@@ -2657,9 +2626,9 @@ class TasksView {
             }
 
             .task-client {
-                font-size: 12px;
-                color: var(--text-secondary);
-                font-weight: 500;
+                font-size: 13px;
+                color: #475569;
+                font-weight: 600;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -2671,39 +2640,59 @@ class TasksView {
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
+                min-width: 120px;
             }
 
             .task-deadline {
-                font-size: 12px;
-                font-weight: 500;
+                font-size: 13px;
+                font-weight: 600;
                 white-space: nowrap;
                 text-align: center;
+                padding: 4px 8px;
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.8);
             }
 
             .task-deadline.deadline-overdue {
-                color: var(--danger-color);
-                font-weight: 600;
+                color: #dc2626;
+                font-weight: 700;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
             }
 
             .task-deadline.deadline-today {
-                color: var(--warning-color);
-                font-weight: 600;
+                color: #d97706;
+                font-weight: 700;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
             }
 
             .task-deadline.deadline-tomorrow {
-                color: var(--warning-color);
+                color: #d97706;
+                font-weight: 600;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
             }
 
             .task-deadline.deadline-week {
-                color: var(--primary-color);
+                color: #2563eb;
+                font-weight: 600;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
             }
 
             .task-deadline.deadline-normal {
-                color: var(--text-secondary);
+                color: #059669;
+                font-weight: 600;
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
             }
 
             .task-deadline.no-deadline {
-                color: #9ca3af;
+                color: #64748b;
+                font-weight: 500;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
                 font-style: italic;
             }
 
@@ -2849,77 +2838,13 @@ class TasksView {
             .task-normal .task-title {
                 font-size: 15px;
                 font-weight: 700;
-                color: var(--text-primary);
+                color: #0f172a;
                 margin: 0;
                 line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 flex: 1;
-            }
-
-            .task-badges {
-                display: flex;
-                gap: 6px;
-                flex-shrink: 0;
-            }
-
-            .priority-badge,
-            .status-badge,
-            .reply-badge {
-                padding: 3px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
-                border: 1px solid;
-            }
-
-            .priority-badge.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-
-            .priority-badge.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-
-            .priority-badge.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-
-            .priority-badge.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-                border-color: #bbf7d0;
-            }
-
-            .status-badge.status-todo {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-
-            .status-badge.status-in-progress {
-                background: #eff6ff;
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-
-            .status-badge.status-completed {
-                background: #f0fdf4;
-                color: #16a34a;
-                border-color: #bbf7d0;
-            }
-
-            .reply-badge {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
             }
 
             .task-details {
@@ -2935,6 +2860,43 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 gap: 4px;
+            }
+
+            .task-normal .task-client {
+                color: #475569;
+                font-weight: 600;
+            }
+
+            .task-normal .task-deadline {
+                font-size: 13px;
+                font-weight: 600;
+                padding: 4px 8px;
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.8);
+            }
+
+            .task-normal .task-deadline.deadline-overdue {
+                color: #dc2626;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+            }
+
+            .task-normal .task-deadline.deadline-today {
+                color: #d97706;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+            }
+
+            .task-normal .task-deadline.deadline-week {
+                color: #2563eb;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+            }
+
+            .task-normal .task-deadline.deadline-normal {
+                color: #059669;
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
             }
 
             /* VUE DÉTAILLÉE - GRILLE DE CARTES */
@@ -2993,7 +2955,7 @@ class TasksView {
             .task-detailed .task-title {
                 font-size: 16px;
                 font-weight: 700;
-                color: var(--text-primary);
+                color: #0f172a;
                 margin: 0 0 8px 0;
                 line-height: 1.3;
                 cursor: pointer;
@@ -3006,15 +2968,60 @@ class TasksView {
 
             .task-description {
                 font-size: 13px;
-                color: var(--text-secondary);
+                color: #475569;
                 line-height: 1.5;
                 margin: 0 0 12px 0;
             }
 
             .task-meta-grid {
                 display: flex;
-                flex-direction: column;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .meta-item {
+                display: flex;
+                align-items: center;
                 gap: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                color: #475569;
+            }
+
+            .meta-item.deadline-centered {
+                flex: 1;
+                text-align: center;
+                justify-content: center;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 4px 8px;
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.8);
+            }
+
+            .meta-item.deadline-centered.deadline-overdue {
+                color: #dc2626;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+            }
+
+            .meta-item.deadline-centered.deadline-today {
+                color: #d97706;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+            }
+
+            .meta-item.deadline-centered.deadline-week {
+                color: #2563eb;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+            }
+
+            .meta-item.deadline-centered.deadline-normal {
+                color: #059669;
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
             }
 
             .meta-item {
