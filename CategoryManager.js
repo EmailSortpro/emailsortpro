@@ -1539,12 +1539,12 @@ isEmptyKeywords(keywords) {
     );
 }
 
-// CategoryManager.js - Remplacer selectByPriorityWithThreshold() vers ligne 1600
+// CategoryManager.js - Remplacer selectByPriorityWithThreshold() complètement
 
 selectByPriorityWithThreshold(results) {
-    // SEUILS TRÈS BAS pour capturer plus d'emails
-    const MIN_SCORE_THRESHOLD = 10; // Réduit de 20 à 10
-    const MIN_CONFIDENCE_THRESHOLD = 0.3; // Réduit de 0.4 à 0.3
+    // SEUILS AJUSTÉS pour avoir des emails "other"
+    const MIN_SCORE_THRESHOLD = 30; // Augmenté pour être plus sélectif
+    const MIN_CONFIDENCE_THRESHOLD = 0.5; // Augmenté pour plus de précision
     
     const sortedResults = Object.values(results)
         .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
@@ -1572,6 +1572,7 @@ selectByPriorityWithThreshold(results) {
     const bestResult = sortedResults[0];
     
     if (bestResult) {
+        console.log(`[CategoryManager] ✅ Catégorie sélectionnée: ${bestResult.category} (${bestResult.score}pts, ${Math.round(bestResult.confidence * 100)}%)`);
         return {
             category: bestResult.category,
             score: bestResult.score,
@@ -1581,14 +1582,15 @@ selectByPriorityWithThreshold(results) {
         };
     }
     
-    // Si aucun résultat au-dessus du seuil, prendre le meilleur même en dessous
+    // CORRECTION CRITIQUE: Si aucun résultat au-dessus du seuil, vérifier si fallback possible
     const allSorted = Object.values(results)
         .filter(r => r.score > 0)
         .sort((a, b) => b.score - a.score);
     
-    if (allSorted.length > 0 && allSorted[0].score > 5) {
+    // NOUVEAU: Fallback plus strict - seulement si score >= 20 ET confiance >= 0.4
+    if (allSorted.length > 0 && allSorted[0].score >= 20 && allSorted[0].confidence >= 0.4) {
         const fallback = allSorted[0];
-        console.log(`[CategoryManager] 📌 Utilisation fallback: ${fallback.category} (${fallback.score}pts)`);
+        console.log(`[CategoryManager] 📌 Utilisation fallback: ${fallback.category} (${fallback.score}pts, ${Math.round(fallback.confidence * 100)}%)`);
         return {
             category: fallback.category,
             score: fallback.score,
@@ -1598,15 +1600,17 @@ selectByPriorityWithThreshold(results) {
         };
     }
     
+    // CORRECTION FINALE: Retourner explicitement "other" si rien ne correspond
+    console.log('[CategoryManager] 📌 Aucune catégorie correspondante, classification "other"');
     return {
         category: 'other',
         score: 0,
         confidence: 0,
         matchedPatterns: [],
-        hasAbsolute: false
+        hasAbsolute: false,
+        reason: 'below_threshold'
     };
 }
-
     detectByDomain(results) {
     // Mapping domaine -> catégorie pour les cas courants
     const domainMappings = {
