@@ -239,112 +239,118 @@ async renderEmails(container) {
                     </div>
                 ` : ''}
 
-                <!-- Barre de contrôles avec boutons TOUJOURS VISIBLES -->
-                <div class="controls-bar-harmonized">
-                    <!-- Section recherche -->
-                    <div class="search-section-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
+                <!-- Barre de contrôles réorganisée sur 2 lignes -->
+                <div class="controls-bar-harmonized-expanded">
+                    <!-- PREMIÈRE LIGNE : Barre de recherche étendue -->
+                    <div class="search-line-full">
+                        <div class="search-box-full">
+                            <i class="fas fa-search search-icon-full"></i>
                             <input type="text" 
-                                   class="search-input-harmonized" 
+                                   class="search-input-full" 
                                    id="emailSearchInput"
-                                   placeholder="Rechercher emails..." 
+                                   placeholder="Rechercher dans vos emails (expéditeur, sujet, contenu)..." 
                                    value="${this.searchTerm}">
                             ${this.searchTerm ? `
-                                <button class="search-clear-harmonized" onclick="window.pageManager.clearSearch()">
+                                <button class="search-clear-full" onclick="window.pageManager.clearSearch()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             ` : ''}
                         </div>
                     </div>
                     
-                    <!-- Modes de vue -->
-                    <div class="view-modes-harmonized">
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                title="Par domaine">
-                            <i class="fas fa-globe"></i>
-                            <span>Domaine</span>
-                        </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                title="Par expéditeur">
-                            <i class="fas fa-user"></i>
-                            <span>Expéditeur</span>
-                        </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                onclick="window.pageManager.changeViewMode('flat')"
-                                title="Liste complète">
-                            <i class="fas fa-list"></i>
-                            <span>Liste</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Actions principales TOUJOURS VISIBLES -->
-                    <div class="action-buttons-harmonized">
-                        <!-- Bouton Sélectionner tout TOUJOURS VISIBLE -->
-                        <button class="btn-harmonized btn-selection-toggle" 
-                                onclick="window.pageManager.toggleAllSelection()"
-                                title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
-                            <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
-                            <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
-                            ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
-                        </button>
-                        
-                        <!-- Bouton Créer tâches TOUJOURS VISIBLE (désactivé si pas de sélection) -->
-                        <button class="btn-harmonized btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                onclick="window.pageManager.createTasksFromSelection()"
-                                ${selectedCount === 0 ? 'disabled' : ''}>
-                            <i class="fas fa-tasks"></i>
-                            <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                            ${selectedCount > 0 ? `<span class="count-badge-harmonized">${selectedCount}</span>` : ''}
-                        </button>
-                        
-                        <!-- Bouton Actions TOUJOURS VISIBLE (désactivé si pas de sélection) -->
-                        <div class="dropdown-action-harmonized">
-                            <button class="btn-harmonized btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
-                                    onclick="window.pageManager.toggleBulkActions(event)"
-                                    ${selectedCount === 0 ? 'disabled' : ''}>
-                                <i class="fas fa-ellipsis-v"></i>
-                                <span>Actions</span>
-                                <i class="fas fa-chevron-down"></i>
+                    <!-- SECONDE LIGNE : Tous les boutons -->
+                    <div class="buttons-line-full">
+                        <!-- Modes de vue -->
+                        <div class="view-modes-expanded">
+                            <button class="view-mode-expanded ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                    title="Par domaine">
+                                <i class="fas fa-globe"></i>
+                                <span>Domaine</span>
                             </button>
-                            <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
-                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
-                                    <i class="fas fa-eye"></i>
-                                    <span>Marquer comme lu</span>
-                                </button>
-                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkArchive()">
-                                    <i class="fas fa-archive"></i>
-                                    <span>Archiver</span>
-                                </button>
-                                <button class="dropdown-item-harmonized danger" onclick="window.pageManager.bulkDelete()">
-                                    <i class="fas fa-trash"></i>
-                                    <span>Supprimer</span>
-                                </button>
-                                <div class="dropdown-divider"></div>
-                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkExport()">
-                                    <i class="fas fa-download"></i>
-                                    <span>Exporter</span>
-                                </button>
-                            </div>
+                            <button class="view-mode-expanded ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                    title="Par expéditeur">
+                                <i class="fas fa-user"></i>
+                                <span>Expéditeur</span>
+                            </button>
+                            <button class="view-mode-expanded ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('flat')"
+                                    title="Liste complète">
+                                <i class="fas fa-list"></i>
+                                <span>Liste</span>
+                            </button>
                         </div>
                         
-                        <!-- Bouton Actualiser TOUJOURS VISIBLE -->
-                        <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
-                            <i class="fas fa-sync-alt"></i>
-                            <span>Actualiser</span>
-                        </button>
+                        <!-- Séparateur visuel -->
+                        <div class="buttons-separator"></div>
                         
-                        <!-- Indicateur de sélection (si emails sélectionnés) -->
-                        ${selectedCount > 0 ? `
-                            <div class="selection-info-harmonized">
-                                <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
-                                <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
-                                    <i class="fas fa-times"></i>
+                        <!-- Actions principales -->
+                        <div class="action-buttons-expanded">
+                            <!-- Bouton Sélectionner tout -->
+                            <button class="btn-expanded btn-selection-toggle" 
+                                    onclick="window.pageManager.toggleAllSelection()"
+                                    title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
+                                <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
+                                <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
+                                ${visibleEmails.length > 0 ? `<span class="count-badge-expanded">${visibleEmails.length}</span>` : ''}
+                            </button>
+                            
+                            <!-- Bouton Créer tâches -->
+                            <button class="btn-expanded btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                                    onclick="window.pageManager.createTasksFromSelection()"
+                                    ${selectedCount === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-tasks"></i>
+                                <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                                ${selectedCount > 0 ? `<span class="count-badge-main">${selectedCount}</span>` : ''}
+                            </button>
+                            
+                            <!-- Bouton Actions -->
+                            <div class="dropdown-action-expanded">
+                                <button class="btn-expanded btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
+                                        onclick="window.pageManager.toggleBulkActions(event)"
+                                        ${selectedCount === 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-ellipsis-v"></i>
+                                    <span>Actions</span>
+                                    <i class="fas fa-chevron-down"></i>
                                 </button>
+                                <div class="dropdown-menu-expanded" id="bulkActionsMenu">
+                                    <button class="dropdown-item-expanded" onclick="window.pageManager.bulkMarkAsRead()">
+                                        <i class="fas fa-eye"></i>
+                                        <span>Marquer comme lu</span>
+                                    </button>
+                                    <button class="dropdown-item-expanded" onclick="window.pageManager.bulkArchive()">
+                                        <i class="fas fa-archive"></i>
+                                        <span>Archiver</span>
+                                    </button>
+                                    <button class="dropdown-item-expanded danger" onclick="window.pageManager.bulkDelete()">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Supprimer</span>
+                                    </button>
+                                    <div class="dropdown-divider"></div>
+                                    <button class="dropdown-item-expanded" onclick="window.pageManager.bulkExport()">
+                                        <i class="fas fa-download"></i>
+                                        <span>Exporter</span>
+                                    </button>
+                                </div>
                             </div>
-                        ` : ''}
+                            
+                            <!-- Bouton Actualiser -->
+                            <button class="btn-expanded btn-secondary" onclick="window.pageManager.refreshEmails()">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Actualiser</span>
+                            </button>
+                            
+                            <!-- Indicateur de sélection (si emails sélectionnés) -->
+                            ${selectedCount > 0 ? `
+                                <div class="selection-info-expanded">
+                                    <span class="selection-count-expanded">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                                    <button class="btn-expanded btn-clear-selection" onclick="window.pageManager.clearSelection()">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
 
@@ -360,7 +366,7 @@ async renderEmails(container) {
             </div>
         `;
 
-        this.addHarmonizedEmailStyles();
+        this.addExpandedEmailStyles();
         this.setupEmailsEventListeners();
     };
 
@@ -1938,6 +1944,1207 @@ forceUpdatePreselection() {
             `;
         }
     }
+
+addExpandedEmailStyles() {
+    if (document.getElementById('expandedEmailStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'expandedEmailStyles';
+    styles.textContent = `
+        /* Variables CSS étendues */
+        :root {
+            --btn-height: 44px;
+            --btn-padding-horizontal: 16px;
+            --btn-font-size: 13px;
+            --btn-border-radius: 10px;
+            --btn-font-weight: 600;
+            --btn-gap: 8px;
+            --card-height: 76px;
+            --card-padding: 14px;
+            --card-border-radius: 12px;
+            --action-btn-size: 36px;
+            --gap-small: 8px;
+            --gap-medium: 12px;
+            --gap-large: 16px;
+            --transition-speed: 0.2s;
+            --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --preselect-color: #8b5cf6;
+            --preselect-color-light: #a78bfa;
+            --preselect-color-dark: #7c3aed;
+        }
+        
+        .tasks-page-modern {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: var(--gap-large);
+            font-size: var(--btn-font-size);
+        }
+
+        .explanation-text-harmonized {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: var(--card-border-radius);
+            padding: var(--gap-medium);
+            margin-bottom: var(--gap-medium);
+            display: flex;
+            align-items: center;
+            gap: var(--gap-medium);
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.5;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .explanation-text-harmonized i {
+            font-size: 16px;
+            color: #3b82f6;
+            flex-shrink: 0;
+        }
+        
+        .explanation-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .explanation-close-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.1);
+        }
+        
+        /* ===== BARRE DE CONTRÔLES ÉTENDUE SUR 2 LIGNES ===== */
+        .controls-bar-harmonized-expanded {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--card-border-radius);
+            padding: var(--gap-large);
+            margin-bottom: var(--gap-medium);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap-large);
+        }
+        
+        /* PREMIÈRE LIGNE : Recherche étendue */
+        .search-line-full {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .search-box-full {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: calc(var(--btn-height) + 8px);
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input-full {
+            width: 100%;
+            height: 100%;
+            padding: 0 var(--gap-large) 0 56px;
+            border: 2px solid #e5e7eb;
+            border-radius: calc(var(--btn-border-radius) + 4px);
+            font-size: calc(var(--btn-font-size) + 2px);
+            background: #f9fafb;
+            transition: all var(--transition-speed) ease;
+            outline: none;
+            font-weight: 500;
+            color: #374151;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-input-full:focus {
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+        
+        .search-input-full::placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+        
+        .search-icon-full {
+            position: absolute;
+            left: var(--gap-large);
+            color: #6b7280;
+            pointer-events: none;
+            font-size: 18px;
+            z-index: 1;
+        }
+        
+        .search-input-full:focus + .search-icon-full {
+            color: #3b82f6;
+        }
+        
+        .search-clear-full {
+            position: absolute;
+            right: var(--gap-medium);
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all var(--transition-speed) ease;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+        }
+        
+        .search-clear-full:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* SECONDE LIGNE : Tous les boutons */
+        .buttons-line-full {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--gap-large);
+            width: 100%;
+        }
+        
+        /* Modes de vue étendus */
+        .view-modes-expanded {
+            display: flex;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--btn-border-radius);
+            padding: 4px;
+            gap: 2px;
+            height: var(--btn-height);
+            flex-shrink: 0;
+        }
+        
+        .view-mode-expanded {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--btn-gap);
+            padding: 0 var(--btn-padding-horizontal);
+            height: calc(var(--btn-height) - 8px);
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            border-radius: calc(var(--btn-border-radius) - 2px);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            min-width: 120px;
+            white-space: nowrap;
+        }
+        
+        .view-mode-expanded:hover {
+            background: rgba(255, 255, 255, 0.8);
+            color: #374151;
+            transform: translateY(-1px);
+        }
+        
+        .view-mode-expanded.active {
+            background: white;
+            color: #1f2937;
+            box-shadow: var(--shadow-base);
+            font-weight: 700;
+            transform: translateY(-1px);
+        }
+        
+        /* Séparateur visuel */
+        .buttons-separator {
+            width: 1px;
+            height: calc(var(--btn-height) - 8px);
+            background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
+            flex-shrink: 0;
+        }
+        
+        /* Actions étendues */
+        .action-buttons-expanded {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-medium);
+            flex: 1;
+            justify-content: flex-end;
+        }
+        
+        .btn-expanded {
+            height: var(--btn-height);
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--btn-border-radius);
+            padding: 0 var(--btn-padding-horizontal);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap);
+            box-shadow: var(--shadow-base);
+            position: relative;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .btn-expanded:hover {
+            background: #f9fafb;
+            border-color: #6366f1;
+            color: #1f2937;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        /* Boutons désactivés */
+        .btn-expanded.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+        
+        .btn-expanded.disabled:hover {
+            transform: none !important;
+            box-shadow: var(--shadow-base) !important;
+            background: white !important;
+            border-color: #e5e7eb !important;
+        }
+        
+        .btn-expanded.btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            font-weight: 700;
+        }
+        
+        .btn-expanded.btn-primary:hover {
+            background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        }
+        
+        .btn-expanded.btn-primary.disabled {
+            background: #e5e7eb !important;
+            color: #9ca3af !important;
+            box-shadow: var(--shadow-base) !important;
+        }
+        
+        .btn-expanded.btn-secondary {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #e2e8f0;
+        }
+        
+        .btn-expanded.btn-secondary:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        
+        .btn-expanded.btn-selection-toggle {
+            background: #f0f9ff;
+            color: #0369a1;
+            border-color: #0ea5e9;
+        }
+        
+        .btn-expanded.btn-selection-toggle:hover {
+            background: #e0f2fe;
+            color: #0c4a6e;
+            border-color: #0284c7;
+        }
+        
+        .count-badge-expanded {
+            background: #0ea5e9;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 8px;
+            margin-left: 4px;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .count-badge-main {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            border: 2px solid white;
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .btn-expanded.btn-clear-selection {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: none;
+            width: var(--btn-height);
+            min-width: var(--btn-height);
+            padding: 0;
+            justify-content: center;
+        }
+        
+        .btn-expanded.btn-clear-selection:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .selection-info-expanded {
+            height: var(--btn-height);
+            padding: 0 var(--btn-padding-horizontal);
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: var(--btn-border-radius);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            color: #1e40af;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap);
+            box-shadow: var(--shadow-base);
+            white-space: nowrap;
+        }
+        
+        .selection-count-expanded {
+            font-weight: 700;
+        }
+        
+        /* Dropdown étendu */
+        .dropdown-action-expanded {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-menu-expanded {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--btn-border-radius);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            min-width: 220px;
+            z-index: 1000;
+            padding: 8px 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-menu-expanded.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-item-expanded {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-medium);
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            color: #374151;
+            font-size: var(--btn-font-size);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-item-expanded:hover {
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        
+        .dropdown-item-expanded.danger {
+            color: #dc2626;
+        }
+        
+        .dropdown-item-expanded.danger:hover {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 8px 0;
+        }
+        
+        /* ===== FILTRES DE CATÉGORIES (inchangés) ===== */
+        .status-filters-harmonized-twolines {
+            display: flex;
+            gap: var(--gap-small);
+            margin-bottom: var(--gap-medium);
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        .status-pill-harmonized-twolines {
+            height: 60px;
+            padding: var(--gap-small);
+            font-size: 12px;
+            font-weight: 700;
+            flex: 0 1 calc(16.666% - var(--gap-small));
+            min-width: 120px;
+            max-width: 180px;
+            border-radius: var(--btn-border-radius);
+            box-shadow: var(--shadow-base);
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            position: relative;
+            overflow: visible !important;
+        }
+        
+        .status-pill-harmonized-twolines.preselected-category {
+            animation: pulsePreselected 3s ease-in-out infinite;
+            border-width: 2px;
+        }
+        
+        .status-pill-harmonized-twolines.preselected-category::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: inherit;
+            background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
+            background-size: 300% 300%;
+            animation: gradientShift 4s ease infinite;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        @keyframes pulsePreselected {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .pill-content-twolines {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+        }
+        
+        .pill-first-line-twolines {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .pill-icon-twolines {
+            font-size: 16px;
+        }
+        
+        .pill-count-twolines {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .preselected-star {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background: var(--preselect-color);
+            color: white;
+            border-radius: 50%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+            animation: starPulse 2s ease-in-out infinite;
+            z-index: 10;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        @keyframes starPulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+            }
+            50% { 
+                transform: scale(1.15);
+                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
+            }
+        }
+        
+        .pill-text-twolines {
+            font-weight: 700;
+            font-size: 12px;
+            line-height: 1.2;
+            text-align: center;
+        }
+        
+        .status-pill-harmonized-twolines:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+        }
+        
+        .status-pill-harmonized-twolines.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .status-pill-harmonized-twolines.active.preselected-category {
+            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+        }
+        
+        .status-pill-harmonized-twolines.active .pill-count-twolines {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        
+        /* Container des emails */
+        .tasks-container-harmonized {
+            background: transparent;
+        }
+        
+        .tasks-harmonized-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
+        .task-harmonized-card {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0;
+            padding: var(--card-padding);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: var(--card-height);
+            max-height: var(--card-height);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .task-harmonized-card:first-child {
+            border-top-left-radius: var(--card-border-radius);
+            border-top-right-radius: var(--card-border-radius);
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .task-harmonized-card:last-child {
+            border-bottom-left-radius: var(--card-border-radius);
+            border-bottom-right-radius: var(--card-border-radius);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .task-harmonized-card:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-color: rgba(99, 102, 241, 0.2);
+            border-left: 3px solid #6366f1;
+            z-index: 1;
+        }
+        
+        .task-harmonized-card.selected {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+            z-index: 2;
+        }
+        
+        .task-harmonized-card.has-task {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 3px solid #22c55e;
+        }
+        
+        .task-harmonized-card.preselected-task {
+            background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+            border-left: 3px solid var(--preselect-color);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .task-harmonized-card.preselected-task:hover {
+            border-left: 4px solid var(--preselect-color);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+        
+        .task-harmonized-card.preselected-task.selected {
+            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+            border-left: 4px solid var(--preselect-color);
+            border-color: var(--preselect-color);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+        }
+        
+        .task-checkbox-harmonized {
+            margin-right: var(--gap-medium);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid #d1d5db;
+            background: white;
+            transition: all var(--transition-speed) ease;
+            flex-shrink: 0;
+            appearance: none;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .task-checkbox-harmonized:checked {
+            background: #6366f1;
+            border-color: #6366f1;
+        }
+        
+        .task-harmonized-card.preselected-task .task-checkbox-harmonized:checked {
+            background: var(--preselect-color);
+            border-color: var(--preselect-color);
+        }
+        
+        .task-checkbox-harmonized:checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        
+        .priority-bar-harmonized {
+            width: 4px;
+            height: 56px;
+            border-radius: 2px;
+            margin-right: var(--gap-medium);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .task-main-content-harmonized {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+        
+        .task-header-harmonized {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--gap-medium);
+            margin-bottom: 4px;
+        }
+        
+        .task-title-harmonized {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.3;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .task-meta-harmonized {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-small);
+            flex-shrink: 0;
+        }
+        
+        .task-type-badge-harmonized,
+        .deadline-badge-harmonized,
+        .confidence-badge-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: #f8fafc;
+            color: #64748b;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        
+        .confidence-badge-harmonized {
+            background: #f0fdf4;
+            color: #16a34a;
+            border-color: #bbf7d0;
+        }
+        
+        .preselected-badge-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+            color: white !important;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700 !important;
+            border: none !important;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        
+        .task-recipient-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .recipient-name-harmonized {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .reply-indicator-harmonized {
+            color: #dc2626;
+            font-weight: 600;
+            font-size: 10px;
+        }
+        
+        .category-indicator-harmonized {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            transition: all 0.2s ease;
+        }
+        
+        .task-harmonized-card.preselected-task .category-indicator-harmonized {
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+            animation: categoryGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes categoryGlow {
+            0%, 100% { 
+                box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
+            }
+        }
+        
+        .task-actions-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: var(--gap-medium);
+            flex-shrink: 0;
+        }
+        
+        .action-btn-harmonized {
+            width: var(--action-btn-size);
+            height: var(--action-btn-size);
+            border: 2px solid transparent;
+            border-radius: var(--btn-border-radius);
+            background: rgba(255, 255, 255, 0.9);
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .action-btn-harmonized:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-btn-harmonized.create-task {
+            color: #3b82f6;
+        }
+        
+        .action-btn-harmonized.create-task:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #3b82f6;
+            color: #2563eb;
+        }
+        
+        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task {
+            color: var(--preselect-color);
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task:hover {
+            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+            border-color: var(--preselect-color);
+            color: var(--preselect-color-dark);
+        }
+        
+        .action-btn-harmonized.view-task {
+            color: #16a34a;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        }
+        
+        .action-btn-harmonized.view-task:hover {
+            background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        
+        .action-btn-harmonized.details {
+            color: #8b5cf6;
+        }
+        
+        .action-btn-harmonized.details:hover {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-color: #8b5cf6;
+            color: #7c3aed;
+        }
+        
+        /* Vue groupée (inchangée) */
+        .tasks-grouped-harmonized {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .task-group-harmonized {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            overflow: visible;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .group-header-harmonized {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0;
+            padding: var(--card-padding);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: var(--card-height);
+            max-height: var(--card-height);
+            border-bottom: 1px solid #e5e7eb;
+            gap: var(--gap-medium);
+        }
+        
+        .group-avatar-harmonized {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .group-info-harmonized {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+        
+        .group-name-harmonized {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .group-meta-harmonized {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .group-expand-harmonized {
+            width: var(--action-btn-size);
+            height: var(--action-btn-size);
+            border: 2px solid transparent;
+            border-radius: var(--btn-border-radius);
+            background: rgba(255, 255, 255, 0.9);
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+        
+        /* État vide harmonisé */
+        .empty-state-harmonized {
+            text-align: center;
+            padding: 60px 30px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .empty-state-icon-harmonized {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #d1d5db;
+        }
+        
+        .empty-state-title-harmonized {
+            font-size: 22px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+        
+        .empty-state-text-harmonized {
+            font-size: 15px;
+            margin-bottom: 24px;
+            max-width: 400px;
+            line-height: 1.6;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        /* RESPONSIVE ÉTENDU */
+        @media (max-width: 1400px) {
+            .search-box-full {
+                max-width: 700px;
+            }
+            
+            .buttons-line-full {
+                gap: var(--gap-medium);
+            }
+            
+            .action-buttons-expanded {
+                gap: var(--gap-small);
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .search-box-full {
+                max-width: 600px;
+            }
+            
+            .view-mode-expanded {
+                min-width: 100px;
+                padding: 0 12px;
+            }
+            
+            .btn-expanded {
+                padding: 0 12px;
+            }
+        }
+        
+        @media (max-width: 1024px) {
+            .controls-bar-harmonized-expanded {
+                padding: var(--gap-medium);
+            }
+            
+            .buttons-line-full {
+                flex-direction: column;
+                gap: var(--gap-medium);
+                align-items: stretch;
+            }
+            
+            .view-modes-expanded {
+                width: 100%;
+                justify-content: space-around;
+            }
+            
+            .action-buttons-expanded {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .search-box-full {
+                max-width: 100%;
+            }
+            
+            .buttons-separator {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .view-mode-expanded span,
+            .btn-expanded span {
+                display: none;
+            }
+            
+            .view-mode-expanded {
+                min-width: 44px;
+                padding: 0;
+                justify-content: center;
+            }
+            
+            .btn-expanded {
+                padding: 0 var(--gap-small);
+            }
+            
+            .search-input-full {
+                font-size: var(--btn-font-size);
+                padding: 0 var(--gap-medium) 0 48px;
+            }
+            
+            .search-icon-full {
+                left: var(--gap-medium);
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .controls-bar-harmonized-expanded {
+                padding: var(--gap-small);
+                gap: var(--gap-medium);
+            }
+            
+            .action-buttons-expanded {
+                flex-direction: column;
+                gap: var(--gap-small);
+                align-items: stretch;
+            }
+            
+            .action-buttons-expanded > * {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .dropdown-menu-expanded {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90vw;
+                max-width: 300px;
+            }
+            
+            .search-box-full {
+                height: calc(var(--btn-height) + 4px);
+            }
+            
+            .search-input-full {
+                padding: 0 var(--gap-small) 0 40px;
+            }
+        }
+    `;
+    
+    document.head.appendChild(styles);
+}
 
 addHarmonizedEmailStyles() {
     if (document.getElementById('harmonizedEmailStyles')) return;
