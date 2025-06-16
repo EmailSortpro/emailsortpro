@@ -2632,8 +2632,8 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: var(--btn-gap);
-                padding: 8px 16px;
+                gap: 6px;
+                padding: 8px 12px;
                 height: 36px;
                 border: none;
                 background: transparent;
@@ -2641,13 +2641,15 @@ class TasksView {
                 border-radius: calc(var(--btn-border-radius) - 2px);
                 cursor: pointer;
                 transition: var(--transition);
-                font-size: var(--btn-font-size);
+                font-size: 13px;
                 font-weight: var(--btn-font-weight);
                 white-space: nowrap;
+                min-width: 80px;
             }
             
             .view-mode-unified i {
                 font-size: var(--icon-size-md);
+                flex-shrink: 0;
             }
             
             .view-mode-unified:hover {
@@ -2672,14 +2674,15 @@ class TasksView {
             .action-btn-unified {
                 display: flex;
                 align-items: center;
-                gap: var(--btn-gap);
+                justify-content: center;
+                gap: 6px;
                 height: var(--btn-height);
-                padding: var(--btn-padding);
+                padding: 0 14px;
                 background: white;
                 color: var(--text-color);
                 border: 1px solid var(--border-color);
                 border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
+                font-size: 13px;
                 font-weight: var(--btn-font-weight);
                 cursor: pointer;
                 transition: var(--transition);
@@ -2690,6 +2693,7 @@ class TasksView {
             
             .action-btn-unified i {
                 font-size: var(--icon-size-md);
+                flex-shrink: 0;
             }
             
             .action-btn-unified:hover:not(.disabled) {
@@ -2958,19 +2962,21 @@ class TasksView {
             }
             
             .priority-indicator-unified {
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
+                width: 24px;
+                height: 24px;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-weight: 600;
                 border: 2px solid;
                 transition: var(--transition);
+                flex-shrink: 0;
             }
             
             .priority-indicator-unified i {
-                font-size: var(--icon-size-sm);
+                font-size: 12px;
+                line-height: 1;
             }
             
             .priority-indicator-unified.priority-urgent {
@@ -3136,10 +3142,10 @@ class TasksView {
             }
             
             .action-btn-icon-unified {
-                width: 36px;
-                height: 36px;
+                width: 32px;
+                height: 32px;
                 border: 1px solid var(--border-color);
-                border-radius: var(--btn-border-radius);
+                border-radius: 6px;
                 background: white;
                 color: var(--text-muted);
                 cursor: pointer;
@@ -3148,10 +3154,12 @@ class TasksView {
                 justify-content: center;
                 transition: var(--transition);
                 box-shadow: var(--card-shadow);
+                flex-shrink: 0;
             }
             
             .action-btn-icon-unified i {
                 font-size: var(--icon-size-sm);
+                line-height: 1;
             }
             
             .action-btn-icon-unified:hover {
@@ -3476,19 +3484,21 @@ class TasksView {
             }
             
             .status-indicator-unified {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                border-radius: 4px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 background: var(--color-gray-light);
                 color: var(--color-gray);
                 border: 1px solid var(--border-color);
+                flex-shrink: 0;
             }
             
             .status-indicator-unified i {
-                font-size: 12px;
+                font-size: 10px;
+                line-height: 1;
             }
             
             .task-detailed-content {
