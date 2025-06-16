@@ -1,4 +1,4 @@
-// TaskManager Pro v11.0 - Design Chaleureux & Excel Import/Export
+// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v11.0 - Design chaleureux & Excel...');
+            console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -408,407 +408,6 @@ class TaskManager {
     }
 
     // ================================================
-    // EXPORT/IMPORT EXCEL - NOUVEAU
-    // ================================================
-    
-    async exportToExcel() {
-        try {
-            // Créer un workbook
-            const workbook = {
-                SheetNames: ['Tâches'],
-                Sheets: {}
-            };
-
-            // Préparer les données
-            const exportData = this.tasks.map(task => ({
-                'ID': task.id,
-                'Titre': task.title,
-                'Description': task.description,
-                'Priorité': this.getPriorityLabel(task.priority),
-                'Statut': this.getStatusLabel(task.status),
-                'Client/Projet': task.client,
-                'Catégorie': task.category,
-                'Date d\'échéance': task.dueDate ? new Date(task.dueDate).toLocaleDateString('fr-FR') : '',
-                'A un email': task.hasEmail ? 'Oui' : 'Non',
-                'Expéditeur': task.emailFromName || task.emailFrom || '',
-                'Sujet email': task.emailSubject || '',
-                'Réponse requise': task.needsReply ? 'Oui' : 'Non',
-                'Email répondu': task.emailReplied ? 'Oui' : 'Non',
-                'Date de création': new Date(task.createdAt).toLocaleDateString('fr-FR'),
-                'Dernière modification': new Date(task.updatedAt).toLocaleDateString('fr-FR'),
-                'Date de completion': task.completedAt ? new Date(task.completedAt).toLocaleDateString('fr-FR') : '',
-                'Méthode de création': task.method,
-                'Tags': task.tags.join(', '),
-                'Résumé': task.summary,
-                'Actions requises': task.actions.map(a => a.text).join('; '),
-                'Informations clés': task.keyInfo.join('; '),
-                'Points d\'attention': task.risks.join('; ')
-            }));
-
-            // Créer la feuille
-            workbook.Sheets['Tâches'] = this.jsonToWorksheet(exportData);
-
-            // Générer le fichier Excel
-            const excelBuffer = this.writeWorkbook(workbook);
-            
-            // Télécharger le fichier
-            const blob = new Blob([excelBuffer], { 
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-            });
-            
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.xlsx`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            return { success: true, message: 'Export Excel terminé avec succès' };
-        } catch (error) {
-            console.error('[TaskManager] Export Excel error:', error);
-            return { success: false, message: 'Erreur lors de l\'export Excel: ' + error.message };
-        }
-    }
-
-    async importFromExcel(file) {
-        try {
-            const arrayBuffer = await this.readFileAsArrayBuffer(file);
-            const workbook = this.readWorkbook(arrayBuffer);
-            
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
-            const jsonData = this.worksheetToJson(worksheet);
-            
-            if (!jsonData || jsonData.length === 0) {
-                return { success: false, message: 'Aucune donnée trouvée dans le fichier Excel' };
-            }
-
-            let imported = 0;
-            let updated = 0;
-            let errors = 0;
-
-            for (const row of jsonData) {
-                try {
-                    const taskData = this.parseExcelRowToTask(row);
-                    
-                    if (!taskData.title) {
-                        errors++;
-                        continue;
-                    }
-
-                    // Vérifier si la tâche existe déjà
-                    const existingTask = this.tasks.find(t => t.id === taskData.id);
-                    
-                    if (existingTask) {
-                        // Mettre à jour la tâche existante
-                        this.updateTask(taskData.id, taskData);
-                        updated++;
-                    } else {
-                        // Créer une nouvelle tâche
-                        this.createTask(taskData);
-                        imported++;
-                    }
-                } catch (error) {
-                    console.error('[TaskManager] Error importing row:', error);
-                    errors++;
-                }
-            }
-
-            const message = `Import terminé: ${imported} nouvelles tâches, ${updated} mises à jour, ${errors} erreurs`;
-            return { success: true, message, imported, updated, errors };
-
-        } catch (error) {
-            console.error('[TaskManager] Import Excel error:', error);
-            return { success: false, message: 'Erreur lors de l\'import Excel: ' + error.message };
-        }
-    }
-
-    parseExcelRowToTask(row) {
-        return {
-            id: row['ID'] || this.generateId(),
-            title: row['Titre'] || '',
-            description: row['Description'] || '',
-            priority: this.parsePriorityFromLabel(row['Priorité']) || 'medium',
-            status: this.parseStatusFromLabel(row['Statut']) || 'todo',
-            client: row['Client/Projet'] || 'Interne',
-            category: row['Catégorie'] || 'work',
-            dueDate: this.parseExcelDate(row['Date d\'échéance']),
-            hasEmail: row['A un email'] === 'Oui',
-            emailFromName: row['Expéditeur'] || null,
-            emailFrom: row['Expéditeur'] || null,
-            emailSubject: row['Sujet email'] || null,
-            needsReply: row['Réponse requise'] === 'Oui',
-            emailReplied: row['Email répondu'] === 'Oui',
-            method: row['Méthode de création'] || 'manual',
-            tags: row['Tags'] ? row['Tags'].split(', ').filter(t => t.trim()) : [],
-            summary: row['Résumé'] || '',
-            actions: row['Actions requises'] ? row['Actions requises'].split('; ').map(text => ({ text: text.trim(), deadline: null })) : [],
-            keyInfo: row['Informations clés'] ? row['Informations clés'].split('; ').filter(i => i.trim()) : [],
-            risks: row['Points d\'attention'] ? row['Points d\'attention'].split('; ').filter(r => r.trim()) : []
-        };
-    }
-
-    parsePriorityFromLabel(label) {
-        const priorities = {
-            'Basse': 'low',
-            'Normale': 'medium', 
-            'Haute': 'high',
-            'Urgente': 'urgent'
-        };
-        return priorities[label] || 'medium';
-    }
-
-    parseStatusFromLabel(label) {
-        const statuses = {
-            'À faire': 'todo',
-            'En cours': 'in-progress',
-            'Terminé': 'completed'
-        };
-        return statuses[label] || 'todo';
-    }
-
-    parseExcelDate(dateStr) {
-        if (!dateStr || dateStr.trim() === '') return null;
-        
-        try {
-            // Essayer de parser différents formats de date
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-                // Format DD/MM/YYYY
-                const day = parseInt(parts[0]);
-                const month = parseInt(parts[1]) - 1; // Les mois commencent à 0
-                const year = parseInt(parts[2]);
-                const date = new Date(year, month, day);
-                return date.toISOString().split('T')[0];
-            }
-            return null;
-        } catch (error) {
-            console.error('Error parsing date:', dateStr);
-            return null;
-        }
-    }
-
-    // Utilitaires Excel basiques (simulation des fonctions XLSX)
-    jsonToWorksheet(jsonData) {
-        if (!jsonData || jsonData.length === 0) return {};
-        
-        const worksheet = {};
-        const headers = Object.keys(jsonData[0]);
-        
-        // Headers
-        headers.forEach((header, colIndex) => {
-            const cellRef = this.encodeCellAddress(0, colIndex);
-            worksheet[cellRef] = { v: header, t: 's' };
-        });
-        
-        // Data rows
-        jsonData.forEach((row, rowIndex) => {
-            headers.forEach((header, colIndex) => {
-                const cellRef = this.encodeCellAddress(rowIndex + 1, colIndex);
-                const cellValue = row[header];
-                
-                if (cellValue !== null && cellValue !== undefined) {
-                    worksheet[cellRef] = { v: cellValue, t: 's' };
-                }
-            });
-        });
-        
-        // Range
-        const lastRow = jsonData.length;
-        const lastCol = headers.length - 1;
-        worksheet['!ref'] = `A1:${this.encodeCellAddress(lastRow, lastCol)}`;
-        
-        return worksheet;
-    }
-
-    worksheetToJson(worksheet) {
-        if (!worksheet || !worksheet['!ref']) return [];
-        
-        const range = this.decodeRange(worksheet['!ref']);
-        const jsonData = [];
-        
-        if (range.e.r < 1) return []; // Pas de données
-        
-        // Lire les headers
-        const headers = [];
-        for (let col = range.s.c; col <= range.e.c; col++) {
-            const cellRef = this.encodeCellAddress(0, col);
-            const cell = worksheet[cellRef];
-            headers.push(cell ? cell.v : `Col${col}`);
-        }
-        
-        // Lire les données
-        for (let row = 1; row <= range.e.r; row++) {
-            const rowData = {};
-            let hasData = false;
-            
-            for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellRef = this.encodeCellAddress(row, col);
-                const cell = worksheet[cellRef];
-                const header = headers[col - range.s.c];
-                
-                if (cell && cell.v !== undefined) {
-                    rowData[header] = cell.v;
-                    hasData = true;
-                } else {
-                    rowData[header] = '';
-                }
-            }
-            
-            if (hasData) {
-                jsonData.push(rowData);
-            }
-        }
-        
-        return jsonData;
-    }
-
-    writeWorkbook(workbook) {
-        // Simulation simplifiée d'export Excel
-        // Dans un vrai projet, utiliser la libraire SheetJS
-        const csvContent = this.workbookToCSV(workbook);
-        return new TextEncoder().encode(csvContent);
-    }
-
-    readWorkbook(arrayBuffer) {
-        // Simulation simplifiée d'import Excel
-        // Dans un vrai projet, utiliser la libraire SheetJS
-        const text = new TextDecoder().decode(arrayBuffer);
-        return this.csvToWorkbook(text);
-    }
-
-    workbookToCSV(workbook) {
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        
-        if (!worksheet['!ref']) return '';
-        
-        const range = this.decodeRange(worksheet['!ref']);
-        const csvRows = [];
-        
-        for (let row = range.s.r; row <= range.e.r; row++) {
-            const csvRow = [];
-            for (let col = range.s.c; col <= range.e.c; col++) {
-                const cellRef = this.encodeCellAddress(row, col);
-                const cell = worksheet[cellRef];
-                const value = cell ? cell.v : '';
-                csvRow.push(`"${String(value).replace(/"/g, '""')}"`);
-            }
-            csvRows.push(csvRow.join(','));
-        }
-        
-        return csvRows.join('\n');
-    }
-
-    csvToWorkbook(csvText) {
-        const lines = csvText.split('\n');
-        const worksheet = {};
-        
-        lines.forEach((line, rowIndex) => {
-            if (line.trim()) {
-                const cells = this.parseCSVLine(line);
-                cells.forEach((cell, colIndex) => {
-                    const cellRef = this.encodeCellAddress(rowIndex, colIndex);
-                    worksheet[cellRef] = { v: cell, t: 's' };
-                });
-            }
-        });
-        
-        if (lines.length > 0) {
-            const maxCols = Math.max(...lines.map(line => this.parseCSVLine(line).length));
-            worksheet['!ref'] = `A1:${this.encodeCellAddress(lines.length - 1, maxCols - 1)}`;
-        }
-        
-        return {
-            SheetNames: ['Sheet1'],
-            Sheets: { 'Sheet1': worksheet }
-        };
-    }
-
-    parseCSVLine(line) {
-        const cells = [];
-        let current = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            
-            if (char === '"') {
-                if (inQuotes && line[i + 1] === '"') {
-                    current += '"';
-                    i++; // Skip next quote
-                } else {
-                    inQuotes = !inQuotes;
-                }
-            } else if (char === ',' && !inQuotes) {
-                cells.push(current);
-                current = '';
-            } else {
-                current += char;
-            }
-        }
-        
-        cells.push(current);
-        return cells;
-    }
-
-    encodeCellAddress(row, col) {
-        let colStr = '';
-        col++;
-        while (col > 0) {
-            col--;
-            colStr = String.fromCharCode(65 + (col % 26)) + colStr;
-            col = Math.floor(col / 26);
-        }
-        return colStr + (row + 1);
-    }
-
-    decodeRange(rangeStr) {
-        const [start, end] = rangeStr.split(':');
-        return {
-            s: this.decodeCellAddress(start),
-            e: this.decodeCellAddress(end)
-        };
-    }
-
-    decodeCellAddress(cellStr) {
-        const colMatch = cellStr.match(/[A-Z]+/);
-        const rowMatch = cellStr.match(/\d+/);
-        
-        let col = 0;
-        const colStr = colMatch[0];
-        for (let i = 0; i < colStr.length; i++) {
-            col = col * 26 + (colStr.charCodeAt(i) - 64);
-        }
-        col--;
-        
-        const row = parseInt(rowMatch[0]) - 1;
-        
-        return { r: row, c: col };
-    }
-
-    readFileAsArrayBuffer(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(file);
-        });
-    }
-
-    getPriorityLabel(priority) {
-        const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
-        return labels[priority] || 'Normale';
-    }
-
-    getStatusLabel(status) {
-        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
-        return labels[status] || 'À faire';
-    }
-
-    // ================================================
     // MÉTHODES UTILITAIRES
     // ================================================
     
@@ -921,7 +520,7 @@ class TaskManager {
 }
 
 // =====================================
-// TASKS VIEW - DESIGN CHALEUREUX
+// TASKS VIEW - INTERFACE HARMONISÉE CORRIGÉE
 // =====================================
 class TasksView {
     constructor() {
@@ -972,17 +571,17 @@ class TasksView {
         const selectedCount = this.selectedTasks.size;
         
         container.innerHTML = `
-            <div class="tasks-page-warm">
-                <!-- PANNEAU DE CONTRÔLE CHALEUREUX -->
-                <div class="controls-section-warm">
-                    <!-- Ligne 1 : Recherche + Actions principales -->
+            <div class="tasks-page-corrected">
+                <!-- RECTANGLE BLANC HARMONISÉ - DEUX LIGNES SEULEMENT -->
+                <div class="controls-section-corrected">
+                    <!-- Ligne 1 : Recherche + Actions principales sur une seule ligne -->
                     <div class="main-controls-line">
                         <!-- Recherche -->
                         <div class="search-section">
-                            <div class="search-box-warm">
+                            <div class="search-box-corrected">
                                 <i class="fas fa-search search-icon"></i>
                                 <input type="text" 
-                                       class="search-input-warm" 
+                                       class="search-input-corrected" 
                                        id="taskSearchInput"
                                        placeholder="Rechercher tâches..." 
                                        value="${this.currentFilters.search}">
@@ -994,7 +593,7 @@ class TasksView {
                             </div>
                         </div>
 
-                        <!-- Actions principales -->
+                        <!-- Actions principales centrées -->
                         <div class="main-actions">
                             <!-- Sélection info et actions -->
                             ${selectedCount > 0 ? `
@@ -1009,17 +608,6 @@ class TasksView {
                                     </button>
                                 </div>
                             ` : ''}
-                            
-                            <!-- Import/Export Excel -->
-                            <button class="btn-action btn-import" onclick="window.tasksView.showImportModal()" title="Importer depuis Excel">
-                                <i class="fas fa-file-import"></i>
-                                Importer
-                            </button>
-                            
-                            <button class="btn-action btn-export" onclick="window.tasksView.exportToExcel()" title="Exporter vers Excel">
-                                <i class="fas fa-file-export"></i>
-                                Exporter
-                            </button>
                             
                             <!-- Bouton Sélectionner tout -->
                             <button class="btn-action btn-select-all" onclick="window.tasksView.selectAllVisible()" title="Sélectionner toutes les tâches visibles">
@@ -1076,7 +664,7 @@ class TasksView {
                     </div>
                 </div>
 
-                <!-- Filtres avancés -->
+                <!-- Filtres avancés (masqués par défaut) -->
                 <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
                     <div class="advanced-filters-grid">
                         <div class="filter-group">
@@ -1132,9 +720,9 @@ class TasksView {
             </div>
         `;
 
-        this.addWarmStyles();
+        this.addCorrectedStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Interface chaleureuse rendue avec Excel I/O');
+        console.log('[TasksView] Interface harmonisée corrigée rendue');
     }
 
     buildStatusPills(stats) {
@@ -1253,6 +841,9 @@ class TasksView {
                     <div class="task-main">
                         <div class="task-header">
                             <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
+                            <div class="task-badges">
+                                <!-- Badges supprimés - affichage épuré -->
+                            </div>
                         </div>
                         
                         <div class="task-details">
@@ -1295,6 +886,10 @@ class TasksView {
                            class="task-checkbox" 
                            ${isSelected ? 'checked' : ''}
                            onclick="window.tasksView.toggleTaskSelection('${task.id}')">
+                    
+                    <div class="task-badges-group">
+                        <!-- Badges supprimés - affichage épuré -->
+                    </div>
                 </div>
                 
                 <div class="task-detailed-content">
@@ -1393,228 +988,7 @@ class TasksView {
     }
 
     // ================================================
-    // EXPORT/IMPORT EXCEL - NOUVEAU
-    // ================================================
-
-    async exportToExcel() {
-        try {
-            this.showToast('Export Excel en cours...', 'info');
-            const result = await window.taskManager.exportToExcel();
-            
-            if (result.success) {
-                this.showToast(result.message, 'success');
-            } else {
-                this.showToast(result.message, 'error');
-            }
-        } catch (error) {
-            console.error('[TasksView] Export error:', error);
-            this.showToast('Erreur lors de l\'export Excel', 'error');
-        }
-    }
-
-    showImportModal() {
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'import_excel_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
-                <div class="modal-container">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-file-import"></i> Importer depuis Excel</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-content">
-                        <div class="import-instructions">
-                            <div class="instruction-item">
-                                <i class="fas fa-info-circle"></i>
-                                <div>
-                                    <strong>Format attendu:</strong> Fichier Excel (.xlsx) ou CSV
-                                </div>
-                            </div>
-                            <div class="instruction-item">
-                                <i class="fas fa-table"></i>
-                                <div>
-                                    <strong>Colonnes supportées:</strong> Titre, Description, Priorité, Statut, Client/Projet, etc.
-                                </div>
-                            </div>
-                            <div class="instruction-item">
-                                <i class="fas fa-download"></i>
-                                <div>
-                                    <strong>Astuce:</strong> Exportez d'abord vos tâches pour voir le format exact
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="file-upload-zone" id="fileUploadZone">
-                            <div class="upload-icon">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                            </div>
-                            <div class="upload-text">
-                                <p><strong>Glissez-déposez votre fichier ici</strong></p>
-                                <p>ou cliquez pour sélectionner</p>
-                            </div>
-                            <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display: none;">
-                        </div>
-                        
-                        <div id="importPreview" class="import-preview" style="display: none;">
-                            <h4>Aperçu du fichier</h4>
-                            <div id="previewContent"></div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            Annuler
-                        </button>
-                        <button class="btn-modal btn-primary" id="importButton" onclick="window.tasksView.importExcelFile('${uniqueId}')" disabled>
-                            <i class="fas fa-file-import"></i> Importer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        
-        this.setupImportModal(uniqueId);
-    }
-
-    setupImportModal(modalId) {
-        const fileInput = document.getElementById('excelFileInput');
-        const uploadZone = document.getElementById('fileUploadZone');
-        const importButton = document.getElementById('importButton');
-        
-        // Click to select file
-        uploadZone.addEventListener('click', () => {
-            fileInput.click();
-        });
-        
-        // Drag and drop
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.classList.add('dragover');
-        });
-        
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.classList.remove('dragover');
-        });
-        
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadZone.classList.remove('dragover');
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                this.handleFileSelection(files[0], modalId);
-            }
-        });
-        
-        // File input change
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                this.handleFileSelection(e.target.files[0], modalId);
-            }
-        });
-    }
-
-    async handleFileSelection(file, modalId) {
-        const uploadZone = document.getElementById('fileUploadZone');
-        const preview = document.getElementById('importPreview');
-        const importButton = document.getElementById('importButton');
-        
-        // Validate file type
-        const allowedTypes = [
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-excel',
-            'text/csv'
-        ];
-        
-        if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.csv')) {
-            this.showToast('Type de fichier non supporté. Utilisez .xlsx, .xls ou .csv', 'error');
-            return;
-        }
-        
-        try {
-            // Update UI
-            uploadZone.innerHTML = `
-                <div class="file-selected">
-                    <i class="fas fa-file-excel"></i>
-                    <span>${file.name}</span>
-                    <small>${this.formatFileSize(file.size)}</small>
-                </div>
-            `;
-            
-            // Store file for import
-            this.selectedFile = file;
-            
-            // Show preview (simplified)
-            preview.style.display = 'block';
-            preview.innerHTML = `
-                <h4>Fichier sélectionné</h4>
-                <div class="file-info">
-                    <div><strong>Nom:</strong> ${file.name}</div>
-                    <div><strong>Taille:</strong> ${this.formatFileSize(file.size)}</div>
-                    <div><strong>Type:</strong> ${file.type || 'CSV'}</div>
-                </div>
-                <p class="preview-note">
-                    <i class="fas fa-info-circle"></i>
-                    Le fichier sera traité lors de l'import. Les tâches existantes avec le même ID seront mises à jour.
-                </p>
-            `;
-            
-            importButton.disabled = false;
-            
-        } catch (error) {
-            console.error('[TasksView] File handling error:', error);
-            this.showToast('Erreur lors de la lecture du fichier', 'error');
-        }
-    }
-
-    async importExcelFile(modalId) {
-        if (!this.selectedFile) {
-            this.showToast('Aucun fichier sélectionné', 'warning');
-            return;
-        }
-
-        try {
-            const importButton = document.getElementById('importButton');
-            importButton.disabled = true;
-            importButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Import en cours...';
-            
-            const result = await window.taskManager.importFromExcel(this.selectedFile);
-            
-            if (result.success) {
-                this.showToast(result.message, 'success');
-                this.closeModal(modalId);
-                this.refreshView();
-            } else {
-                this.showToast(result.message, 'error');
-                importButton.disabled = false;
-                importButton.innerHTML = '<i class="fas fa-file-import"></i> Importer';
-            }
-            
-        } catch (error) {
-            console.error('[TasksView] Import error:', error);
-            this.showToast('Erreur lors de l\'import', 'error');
-            
-            const importButton = document.getElementById('importButton');
-            importButton.disabled = false;
-            importButton.innerHTML = '<i class="fas fa-file-import"></i> Importer';
-        }
-    }
-
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    // ================================================
-    // MÉTHODES D'INTERACTION (inchangées)
+    // MÉTHODES D'INTERACTION
     // ================================================
 
     selectAllVisible() {
@@ -1626,6 +1000,7 @@ class TasksView {
             return;
         }
 
+        // Si toutes les tâches visibles sont déjà sélectionnées, on les désélectionne
         const allSelected = filteredTasks.every(task => this.selectedTasks.has(task.id));
         
         if (allSelected) {
@@ -1662,7 +1037,7 @@ class TasksView {
             'Changer la priorité',
             'Changer le statut',
             'Supprimer',
-            'Exporter sélection'
+            'Exporter'
         ];
         
         const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
@@ -1721,7 +1096,7 @@ class TasksView {
                 }
                 break;
                 
-            case 4: // Exporter sélection
+            case 4: // Exporter
                 this.exportSelectedTasks();
                 break;
         }
@@ -1747,18 +1122,18 @@ class TasksView {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `taches_selection_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        this.showToast('Export de la sélection terminé', 'success');
+        this.showToast('Export terminé', 'success');
         this.clearSelection();
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES (inchangées mais optimisées)
+    // MÉTHODES UTILITAIRES (inchangées)
     // ================================================
 
     changeViewMode(mode) {
@@ -1897,6 +1272,7 @@ class TasksView {
         const mainActionsDiv = document.querySelector('.main-actions');
         
         if (mainActionsDiv) {
+            // Rechercher le panneau de sélection existant
             const existingPanel = mainActionsDiv.querySelector('.selection-panel');
             
             if (selectedCount > 0) {
@@ -2059,14 +1435,8 @@ class TasksView {
     }
 
     getPriorityColor(priority) {
-        // Couleurs plus chaleureuses et professionnelles
-        const colors = { 
-            urgent: '#e74c3c',    // Rouge chaleureux
-            high: '#f39c12',      // Orange doré
-            medium: '#3498db',    // Bleu confiance
-            low: '#27ae60'        // Vert nature
-        };
-        return colors[priority] || '#3498db';
+        const colors = { urgent: '#ef4444', high: '#f97316', medium: '#3b82f6', low: '#10b981' };
+        return colors[priority] || '#3b82f6';
     }
 
     getPriorityLabel(priority) {
@@ -2139,7 +1509,7 @@ class TasksView {
     }
 
     // ================================================
-    // MODALES COMPLÈTES (méthodes existantes...)
+    // MODALES COMPLÈTES AVEC INTERFACE GRAPHIQUE
     // ================================================
 
     showCreateModal() {
@@ -2780,131 +2150,105 @@ class TasksView {
         document.body.style.overflow = 'auto';
     }
 
-    addWarmStyles() {
-        if (document.getElementById('warmTaskStyles')) return;
+    addCorrectedStyles() {
+        if (document.getElementById('correctedTaskStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'warmTaskStyles';
+        styles.id = 'correctedTaskStyles';
         styles.textContent = `
-            /* Variables CSS chaleureux pour TaskManager v11.0 */
+            /* Variables CSS pour TaskManager v10.1 Corrigé */
             :root {
-                --primary-warm: #2c3e50;      /* Bleu ardoise chaleureux */
-                --primary-hover: #34495e;     /* Bleu ardoise plus sombre */
-                --success-warm: #27ae60;      /* Vert émeraude */
-                --warning-warm: #f39c12;      /* Orange doré */
-                --danger-warm: #e74c3c;       /* Rouge chaleureux */
-                --info-warm: #3498db;         /* Bleu ciel */
-                
-                /* Couleurs de texte chaleureuses */
-                --text-primary-warm: #2c3e50;    /* Bleu ardoise profond */
-                --text-secondary-warm: #7f8c8d;  /* Gris ardoise moyen */
-                --text-muted-warm: #95a5a6;      /* Gris clair chaleureux */
-                
-                /* Arrière-plans chaleureux */
-                --bg-primary-warm: #ffffff;
-                --bg-secondary-warm: #ecf0f1;    /* Gris très clair */
-                --bg-accent-warm: #f8f9fa;       /* Blanc cassé */
-                
-                /* Couleurs d'accentuation chaleureuses */
-                --accent-coral: #ff6b6b;         /* Corail */
-                --accent-mint: #51cf66;          /* Menthe */
-                --accent-lavender: #9775fa;      /* Lavande */
-                --accent-peach: #ffa726;         /* Pêche */
-                
-                /* Bordures et ombres */
-                --border-warm: #bdc3c7;
-                --shadow-warm: 0 2px 8px rgba(44, 62, 80, 0.1);
-                --shadow-hover: 0 4px 16px rgba(44, 62, 80, 0.15);
-                
-                --border-radius: 12px;
-                --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                --primary-color: #3b82f6;
+                --primary-hover: #2563eb;
+                --success-color: #10b981;
+                --warning-color: #f59e0b;
+                --danger-color: #ef4444;
+                --text-primary: #1f2937;
+                --text-secondary: #6b7280;
+                --bg-primary: #ffffff;
+                --bg-secondary: #f8fafc;
+                --border-color: #e5e7eb;
+                --border-radius: 8px;
+                --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+                --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+                --transition: all 0.2s ease;
             }
 
-            .tasks-page-warm {
-                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            .tasks-page-corrected {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
                 min-height: 100vh;
-                padding: 20px;
+                padding: 16px;
                 font-size: 14px;
-                color: var(--text-primary-warm);
             }
 
-            /* PANNEAU DE CONTRÔLE CHALEUREUX */
-            .controls-section-warm {
+            /* RECTANGLE BLANC PRINCIPAL - 2 LIGNES SEULEMENT */
+            .controls-section-corrected {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
-                border: 1px solid rgba(189, 195, 199, 0.3);
-                border-radius: var(--border-radius);
-                padding: 24px;
-                margin-bottom: 20px;
-                box-shadow: var(--shadow-warm);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 16px;
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 16px;
             }
 
             /* LIGNE 1 : Recherche + Actions principales */
             .main-controls-line {
                 display: flex;
                 align-items: center;
-                gap: 24px;
+                gap: 20px;
                 width: 100%;
             }
 
             .search-section {
                 flex: 1;
-                max-width: 450px;
+                max-width: 400px;
             }
 
-            .search-box-warm {
+            .search-box-corrected {
                 position: relative;
                 display: flex;
                 align-items: center;
-                height: 48px;
+                height: 44px;
             }
 
-            .search-input-warm {
+            .search-input-corrected {
                 width: 100%;
-                height: 48px;
-                padding: 0 20px 0 50px;
-                border: 2px solid var(--border-warm);
-                border-radius: var(--border-radius);
-                font-size: 15px;
+                height: 44px;
+                padding: 0 16px 0 44px;
+                border: 2px solid var(--border-color);
+                border-radius: 10px;
+                font-size: 14px;
                 background: white;
                 transition: var(--transition);
                 outline: none;
-                color: var(--text-primary-warm);
-                font-weight: 500;
             }
 
-            .search-input-warm:focus {
-                border-color: var(--primary-warm);
-                box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
-                transform: translateY(-1px);
-            }
-
-            .search-input-warm::placeholder {
-                color: var(--text-secondary-warm);
-                font-weight: 400;
+            .search-input-corrected:focus {
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
 
             .search-icon {
                 position: absolute;
-                left: 18px;
-                color: var(--text-secondary-warm);
+                left: 16px;
+                color: var(--text-secondary);
                 pointer-events: none;
                 z-index: 1;
-                font-size: 16px;
             }
 
             .search-clear {
                 position: absolute;
-                right: 15px;
-                background: var(--danger-warm);
+                right: 12px;
+                background: var(--danger-color);
                 color: white;
                 border: none;
-                width: 30px;
-                height: 30px;
+                width: 28px;
+                height: 28px;
                 border-radius: 50%;
                 cursor: pointer;
                 display: flex;
@@ -2915,7 +2259,7 @@ class TasksView {
             }
 
             .search-clear:hover {
-                background: #c0392b;
+                background: #dc2626;
                 transform: scale(1.1);
             }
 
@@ -2929,15 +2273,14 @@ class TasksView {
             .selection-panel {
                 display: flex;
                 align-items: center;
-                gap: 10px;
-                background: linear-gradient(135deg, #e8f4fd 0%, #d6eafc 100%);
-                border: 1px solid var(--info-warm);
-                border-radius: 10px;
-                padding: 10px 16px;
-                color: var(--primary-warm);
-                font-weight: 700;
+                gap: 8px;
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border: 1px solid #93c5fd;
+                border-radius: 8px;
+                padding: 8px 12px;
+                color: #1e40af;
+                font-weight: 600;
                 font-size: 13px;
-                box-shadow: var(--shadow-warm);
             }
 
             .selection-count {
@@ -2945,137 +2288,108 @@ class TasksView {
             }
 
             .btn-action {
-                height: 48px;
-                padding: 0 20px;
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
+                height: 44px;
+                padding: 0 16px;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
                 background: white;
-                color: var(--text-primary-warm);
-                font-size: 14px;
+                color: var(--text-primary);
+                font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: var(--transition);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 8px;
+                gap: 6px;
                 white-space: nowrap;
                 position: relative;
-                box-shadow: var(--shadow-warm);
             }
 
             .btn-action:hover {
-                background: var(--bg-secondary-warm);
-                border-color: var(--primary-warm);
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
+                background: var(--bg-secondary);
+                border-color: var(--primary-color);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
             }
 
             .btn-action.btn-new {
-                background: linear-gradient(135deg, var(--primary-warm) 0%, #34495e 100%);
+                background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
                 color: white;
                 border-color: transparent;
             }
 
             .btn-action.btn-new:hover {
-                background: linear-gradient(135deg, var(--primary-hover) 0%, #2c3e50 100%);
-                transform: translateY(-2px) scale(1.02);
-            }
-
-            .btn-action.btn-export {
-                background: linear-gradient(135deg, var(--success-warm) 0%, #2ecc71 100%);
-                color: white;
-                border-color: transparent;
-            }
-
-            .btn-action.btn-export:hover {
-                background: linear-gradient(135deg, #229954 0%, var(--success-warm) 100%);
-                transform: translateY(-2px) scale(1.02);
-            }
-
-            .btn-action.btn-import {
-                background: linear-gradient(135deg, var(--info-warm) 0%, #5dade2 100%);
-                color: white;
-                border-color: transparent;
-            }
-
-            .btn-action.btn-import:hover {
-                background: linear-gradient(135deg, #2e86ab 0%, var(--info-warm) 100%);
-                transform: translateY(-2px) scale(1.02);
+                background: linear-gradient(135deg, var(--primary-hover) 0%, #5856eb 100%);
             }
 
             .btn-action.btn-bulk {
-                background: var(--accent-coral);
+                background: var(--success-color);
                 color: white;
                 border-color: transparent;
             }
 
             .btn-action.btn-bulk:hover {
-                background: #ff5252;
-                transform: translateY(-2px) scale(1.02);
+                background: #059669;
             }
 
             .btn-action.btn-clear {
-                width: 48px;
+                width: 44px;
                 padding: 0;
-                background: var(--bg-secondary-warm);
-                color: var(--text-secondary-warm);
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
             }
 
             .btn-action.btn-clear:hover {
-                background: var(--danger-warm);
+                background: var(--danger-color);
                 color: white;
-                transform: translateY(-2px) scale(1.05);
             }
 
             .btn-action.btn-filters.active {
-                background: #f8f9fa;
-                color: var(--primary-warm);
-                border-color: var(--primary-warm);
-                box-shadow: inset 0 2px 4px rgba(44, 62, 80, 0.1);
+                background: #eff6ff;
+                color: var(--primary-color);
+                border-color: var(--primary-color);
             }
 
             .count-badge {
                 position: absolute;
-                top: -8px;
-                right: -8px;
-                background: var(--danger-warm);
+                top: -6px;
+                right: -6px;
+                background: var(--danger-color);
                 color: white;
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 700;
-                padding: 3px 8px;
-                border-radius: 12px;
-                min-width: 20px;
+                padding: 2px 6px;
+                border-radius: 10px;
+                min-width: 16px;
                 text-align: center;
                 border: 2px solid white;
-                box-shadow: var(--shadow-warm);
             }
 
             /* LIGNE 2 : Modes de vue + Filtres de statut */
             .views-filters-line {
                 display: flex;
                 align-items: center;
-                gap: 24px;
+                gap: 20px;
                 width: 100%;
             }
 
             .view-modes {
                 display: flex;
-                background: var(--bg-secondary-warm);
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
-                padding: 4px;
-                gap: 4px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 3px;
+                gap: 2px;
                 flex-shrink: 0;
-                box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
             }
 
             .view-mode {
-                padding: 10px 18px;
+                padding: 8px 16px;
                 border: none;
                 background: transparent;
-                color: var(--text-secondary-warm);
-                border-radius: 8px;
+                color: var(--text-secondary);
+                border-radius: 6px;
                 cursor: pointer;
                 transition: var(--transition);
                 font-size: 13px;
@@ -3085,20 +2399,18 @@ class TasksView {
 
             .view-mode:hover {
                 background: rgba(255, 255, 255, 0.8);
-                color: var(--text-primary-warm);
-                transform: translateY(-1px);
+                color: var(--text-primary);
             }
 
             .view-mode.active {
                 background: white;
-                color: var(--text-primary-warm);
-                box-shadow: var(--shadow-warm);
-                transform: translateY(-1px);
+                color: var(--text-primary);
+                box-shadow: var(--shadow-sm);
             }
 
             .status-filters {
                 display: flex;
-                gap: 10px;
+                gap: 8px;
                 flex: 1;
                 flex-wrap: wrap;
                 justify-content: center;
@@ -3107,123 +2419,116 @@ class TasksView {
             .status-pill {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 10px 16px;
+                gap: 6px;
+                padding: 8px 12px;
                 background: white;
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
                 cursor: pointer;
                 transition: var(--transition);
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 600;
-                color: var(--text-primary-warm);
-                min-width: 110px;
+                color: var(--text-primary);
+                min-width: 100px;
                 justify-content: space-between;
-                box-shadow: var(--shadow-warm);
             }
 
             .status-pill:hover {
-                border-color: var(--primary-warm);
-                background: var(--bg-accent-warm);
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
+                border-color: var(--primary-color);
+                background: #f0f9ff;
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-sm);
             }
 
             .status-pill.active {
-                background: linear-gradient(135deg, var(--primary-warm) 0%, #34495e 100%);
+                background: linear-gradient(135deg, var(--primary-color) 0%, #6366f1 100%);
                 color: white;
-                border-color: var(--primary-warm);
-                box-shadow: var(--shadow-hover);
-                transform: translateY(-1px);
+                border-color: var(--primary-color);
+                box-shadow: var(--shadow-md);
             }
 
             .status-pill.active .pill-count {
-                background: rgba(255, 255, 255, 0.25);
+                background: rgba(255, 255, 255, 0.3);
                 color: white;
             }
 
             .pill-icon {
-                font-size: 16px;
+                font-size: 14px;
             }
 
             .pill-text {
                 flex: 1;
                 text-align: center;
-                font-size: 12px;
-                font-weight: 700;
+                font-size: 11px;
             }
 
             .pill-count {
-                background: var(--bg-secondary-warm);
-                padding: 3px 8px;
-                border-radius: 8px;
-                font-size: 11px;
+                background: rgba(0, 0, 0, 0.1);
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 10px;
                 font-weight: 700;
-                min-width: 24px;
+                min-width: 20px;
                 text-align: center;
-                color: var(--text-primary-warm);
             }
 
             /* FILTRES AVANCÉS */
             .advanced-filters-panel {
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(20px);
-                border: 2px solid var(--border-warm);
-                border-radius: var(--border-radius);
-                margin-bottom: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 12px;
+                margin-bottom: 16px;
                 max-height: 0;
                 overflow: hidden;
-                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: all 0.3s ease;
                 opacity: 0;
-                box-shadow: var(--shadow-warm);
             }
 
             .advanced-filters-panel.show {
-                max-height: 250px;
+                max-height: 200px;
                 opacity: 1;
-                padding: 24px;
+                padding: 20px;
             }
 
             .advanced-filters-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-                gap: 20px;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
                 align-items: end;
             }
 
             .filter-group {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 6px;
             }
 
             .filter-label {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-weight: 700;
-                font-size: 13px;
-                color: var(--text-primary-warm);
+                gap: 6px;
+                font-weight: 600;
+                font-size: 12px;
+                color: var(--text-primary);
             }
 
             .filter-select {
-                height: 48px;
-                padding: 0 16px;
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
+                height: 44px;
+                padding: 0 12px;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
                 background: white;
-                font-size: 14px;
-                color: var(--text-primary-warm);
+                font-size: 13px;
+                color: var(--text-primary);
                 cursor: pointer;
                 transition: var(--transition);
-                font-weight: 500;
             }
 
             .filter-select:focus {
                 outline: none;
-                border-color: var(--primary-warm);
-                box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
-                transform: translateY(-1px);
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
             }
 
             .filter-actions {
@@ -3232,13 +2537,13 @@ class TasksView {
             }
 
             .btn-reset {
-                background: var(--bg-secondary-warm);
-                color: var(--text-secondary-warm);
+                background: var(--bg-secondary);
+                color: var(--text-secondary);
             }
 
             .btn-reset:hover {
-                background: var(--border-warm);
-                color: var(--text-primary-warm);
+                background: var(--border-color);
+                color: var(--text-primary);
             }
 
             /* CONTENEUR DES TÂCHES */
@@ -3246,20 +2551,20 @@ class TasksView {
                 background: transparent;
             }
 
-            /* VUE MINIMALISTE CHALEUREUSE */
+            /* VUE MINIMALISTE - UNE LIGNE PAR TÂCHE */
             .tasks-minimal-list {
                 display: flex;
                 flex-direction: column;
-                gap: 3px;
-                background: rgba(255, 255, 255, 0.9);
-                border-radius: var(--border-radius);
+                gap: 2px;
+                background: rgba(255, 255, 255, 0.8);
+                border-radius: 12px;
                 overflow: hidden;
-                box-shadow: var(--shadow-warm);
+                box-shadow: var(--shadow-sm);
             }
 
             .task-minimal {
                 background: white;
-                border-bottom: 1px solid #ecf0f1;
+                border-bottom: 1px solid #f3f4f6;
                 cursor: pointer;
                 transition: var(--transition);
             }
@@ -3269,66 +2574,92 @@ class TasksView {
             }
 
             .task-minimal:hover {
-                background: var(--bg-accent-warm);
-                transform: translateX(4px);
-                box-shadow: var(--shadow-hover);
+                background: var(--bg-secondary);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
             }
 
             .task-minimal.selected {
-                background: linear-gradient(135deg, #e8f4fd 0%, #d6eafc 100%);
-                border-left: 4px solid var(--primary-warm);
-                box-shadow: inset 4px 0 0 var(--primary-warm);
+                background: #eff6ff;
+                border-left: 3px solid var(--primary-color);
             }
 
             .task-minimal.completed {
-                opacity: 0.7;
-                background: linear-gradient(135deg, #d5f4e6 0%, #c8e6c9 100%);
+                opacity: 0.6;
             }
 
             .task-minimal.completed .task-title {
                 text-decoration: line-through;
-                color: var(--text-secondary-warm);
             }
 
             .task-content-line {
                 display: flex;
                 align-items: center;
-                padding: 16px 20px;
-                gap: 16px;
-                min-height: 60px;
+                padding: 12px 16px;
+                gap: 12px;
+                height: 56px;
             }
 
             .task-checkbox {
-                width: 20px;
-                height: 20px;
+                width: 18px;
+                height: 18px;
                 cursor: pointer;
                 flex-shrink: 0;
-                accent-color: var(--primary-warm);
+            }
+
+            .task-priority {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+
+            .task-priority.priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .task-priority.priority-high {
+                background: #fef3c7;
+                color: #d97706;
+            }
+
+            .task-priority.priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .task-priority.priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
             }
 
             .task-info {
                 flex: 1;
                 display: flex;
                 align-items: center;
-                gap: 20px;
+                gap: 16px;
                 min-width: 0;
             }
 
             .task-title {
-                font-weight: 700;
-                color: var(--text-primary-warm);
-                font-size: 15px;
+                font-weight: 600;
+                color: var(--text-primary);
+                font-size: 14px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 flex: 2;
-                line-height: 1.4;
             }
 
             .task-client {
-                font-size: 13px;
-                color: var(--text-secondary-warm);
-                font-weight: 600;
+                font-size: 12px;
+                color: var(--text-secondary);
+                font-weight: 500;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -3343,166 +2674,160 @@ class TasksView {
             }
 
             .task-deadline {
-                font-size: 13px;
-                font-weight: 600;
+                font-size: 12px;
+                font-weight: 500;
                 white-space: nowrap;
                 text-align: center;
-                padding: 4px 8px;
-                border-radius: 6px;
             }
 
             .task-deadline.deadline-overdue {
-                color: white;
-                background: var(--danger-warm);
-                font-weight: 700;
+                color: var(--danger-color);
+                font-weight: 600;
             }
 
             .task-deadline.deadline-today {
-                color: white;
-                background: var(--warning-warm);
-                font-weight: 700;
+                color: var(--warning-color);
+                font-weight: 600;
             }
 
             .task-deadline.deadline-tomorrow {
-                color: var(--warning-warm);
-                background: #fef3c7;
-                font-weight: 600;
+                color: var(--warning-color);
             }
 
             .task-deadline.deadline-week {
-                color: var(--info-warm);
-                background: #eff6ff;
-                font-weight: 600;
+                color: var(--primary-color);
             }
 
             .task-deadline.deadline-normal {
-                color: var(--text-secondary-warm);
-                background: var(--bg-secondary-warm);
+                color: var(--text-secondary);
             }
 
             .task-deadline.no-deadline {
-                color: var(--text-muted-warm);
-                background: transparent;
+                color: #9ca3af;
                 font-style: italic;
+            }
+
+            .email-badge {
+                background: #eff6ff;
+                color: var(--primary-color);
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
             }
 
             .task-actions {
                 display: flex;
-                gap: 6px;
+                gap: 4px;
                 flex-shrink: 0;
             }
 
             .action-btn {
-                width: 36px;
-                height: 36px;
-                border: 2px solid var(--border-warm);
-                border-radius: 8px;
+                width: 32px;
+                height: 32px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
                 background: white;
-                color: var(--text-secondary-warm);
+                color: var(--text-secondary);
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 transition: var(--transition);
-                font-size: 13px;
+                font-size: 12px;
             }
 
             .action-btn:hover {
-                background: var(--bg-secondary-warm);
-                border-color: var(--text-secondary-warm);
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-warm);
+                background: var(--bg-secondary);
+                border-color: var(--text-secondary);
+                transform: translateY(-1px);
             }
 
             .action-btn.complete:hover {
-                background: var(--success-warm);
-                border-color: var(--success-warm);
-                color: white;
+                background: #dcfce7;
+                border-color: var(--success-color);
+                color: var(--success-color);
             }
 
             .action-btn.edit:hover {
-                background: var(--warning-warm);
-                border-color: var(--warning-warm);
-                color: white;
+                background: #fef3c7;
+                border-color: var(--warning-color);
+                color: var(--warning-color);
             }
 
             .action-btn.details:hover {
-                background: var(--accent-lavender);
-                border-color: var(--accent-lavender);
-                color: white;
+                background: #f3e8ff;
+                border-color: #8b5cf6;
+                color: #8b5cf6;
             }
 
             .action-btn.reply:hover {
-                background: var(--info-warm);
-                border-color: var(--info-warm);
-                color: white;
+                background: #eff6ff;
+                border-color: var(--primary-color);
+                color: var(--primary-color);
             }
 
-            /* VUE NORMALE CHALEUREUSE */
+            /* VUE NORMALE - UNE LIGNE PAR TÂCHE AMÉLIORÉE */
             .tasks-normal-list {
                 display: flex;
                 flex-direction: column;
                 gap: 0;
-                border-radius: var(--border-radius);
-                overflow: hidden;
-                box-shadow: var(--shadow-warm);
             }
 
             .task-normal {
                 background: rgba(255, 255, 255, 0.95);
-                border-bottom: 1px solid var(--border-warm);
+                border-bottom: 1px solid var(--border-color);
                 cursor: pointer;
                 transition: var(--transition);
             }
 
             .task-normal:first-child {
-                border-top-left-radius: var(--border-radius);
-                border-top-right-radius: var(--border-radius);
+                border-top-left-radius: 12px;
+                border-top-right-radius: 12px;
             }
 
             .task-normal:last-child {
-                border-bottom-left-radius: var(--border-radius);
-                border-bottom-right-radius: var(--border-radius);
+                border-bottom-left-radius: 12px;
+                border-bottom-right-radius: 12px;
                 border-bottom: none;
             }
 
             .task-normal:hover {
                 background: white;
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
-                border-color: rgba(44, 62, 80, 0.2);
+                transform: translateY(-1px);
+                box-shadow: var(--shadow-md);
+                border-color: rgba(59, 130, 246, 0.2);
                 z-index: 1;
                 position: relative;
             }
 
             .task-normal.selected {
-                background: linear-gradient(135deg, #e8f4fd 0%, #d6eafc 100%);
-                border-left: 4px solid var(--primary-warm);
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-left: 4px solid var(--primary-color);
                 z-index: 2;
                 position: relative;
-                box-shadow: var(--shadow-hover);
             }
 
             .task-normal.completed {
-                opacity: 0.8;
-                background: linear-gradient(135deg, #d5f4e6 0%, #c8e6c9 100%);
+                opacity: 0.75;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             }
 
             .task-normal.completed .task-title {
                 text-decoration: line-through;
-                color: var(--text-secondary-warm);
+                color: var(--text-secondary);
             }
 
             .task-normal .task-content-line {
-                padding: 20px;
-                min-height: 80px;
+                padding: 16px;
+                height: 72px;
             }
 
             .priority-bar {
-                width: 5px;
-                height: 56px;
-                border-radius: 3px;
-                margin-right: 16px;
+                width: 4px;
+                height: 48px;
+                border-radius: 2px;
+                margin-right: 12px;
                 flex-shrink: 0;
             }
 
@@ -3510,7 +2835,7 @@ class TasksView {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
+                gap: 8px;
                 min-width: 0;
             }
 
@@ -3518,112 +2843,179 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 16px;
+                gap: 12px;
             }
 
             .task-normal .task-title {
-                font-size: 16px;
+                font-size: 15px;
                 font-weight: 700;
-                color: var(--text-primary-warm);
+                color: var(--text-primary);
                 margin: 0;
-                line-height: 1.4;
+                line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 flex: 1;
             }
 
+            .task-badges {
+                display: flex;
+                gap: 6px;
+                flex-shrink: 0;
+            }
+
+            .priority-badge,
+            .status-badge,
+            .reply-badge {
+                padding: 3px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
+                border: 1px solid;
+            }
+
+            .priority-badge.priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .priority-badge.priority-high {
+                background: #fef3c7;
+                color: #d97706;
+                border-color: #fde68a;
+            }
+
+            .priority-badge.priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+                border-color: #bfdbfe;
+            }
+
+            .priority-badge.priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+
+            .status-badge.status-todo {
+                background: #fef3c7;
+                color: #d97706;
+                border-color: #fde68a;
+            }
+
+            .status-badge.status-in-progress {
+                background: #eff6ff;
+                color: #2563eb;
+                border-color: #bfdbfe;
+            }
+
+            .status-badge.status-completed {
+                background: #f0fdf4;
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+
+            .reply-badge {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
             .task-details {
                 display: flex;
                 align-items: center;
-                gap: 20px;
-                font-size: 13px;
-                color: var(--text-secondary-warm);
-                font-weight: 600;
+                gap: 16px;
+                font-size: 12px;
+                color: var(--text-secondary);
             }
 
             .task-client,
             .task-normal .task-deadline {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 4px;
             }
 
-            /* VUE DÉTAILLÉE CHALEUREUSE */
+            /* VUE DÉTAILLÉE - GRILLE DE CARTES */
             .tasks-detailed-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-                gap: 20px;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 16px;
             }
 
             .task-detailed {
                 background: rgba(255, 255, 255, 0.95);
-                border: 2px solid rgba(189, 195, 199, 0.3);
-                border-radius: var(--border-radius);
-                padding: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 12px;
+                padding: 16px;
                 transition: var(--transition);
-                box-shadow: var(--shadow-warm);
+                box-shadow: var(--shadow-sm);
                 display: flex;
                 flex-direction: column;
-                min-height: 220px;
+                min-height: 200px;
             }
 
             .task-detailed:hover {
-                transform: translateY(-4px);
-                box-shadow: var(--shadow-hover);
-                border-color: rgba(44, 62, 80, 0.3);
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+                border-color: rgba(59, 130, 246, 0.3);
             }
 
             .task-detailed.selected {
-                background: linear-gradient(135deg, #e8f4fd 0%, #d6eafc 100%);
-                border-color: var(--primary-warm);
-                box-shadow: var(--shadow-hover);
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border-color: var(--primary-color);
             }
 
             .task-detailed.completed {
-                opacity: 0.85;
-                background: linear-gradient(135deg, #d5f4e6 0%, #c8e6c9 100%);
+                opacity: 0.8;
+                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             }
 
             .task-detailed-header {
                 display: flex;
                 align-items: center;
-                gap: 16px;
-                margin-bottom: 16px;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+
+            .task-badges-group {
+                display: flex;
+                gap: 6px;
+                flex: 1;
             }
 
             .task-detailed-content {
                 flex: 1;
-                margin-bottom: 16px;
+                margin-bottom: 12px;
             }
 
             .task-detailed .task-title {
-                font-size: 18px;
+                font-size: 16px;
                 font-weight: 700;
-                color: var(--text-primary-warm);
-                margin: 0 0 10px 0;
+                color: var(--text-primary);
+                margin: 0 0 8px 0;
                 line-height: 1.3;
                 cursor: pointer;
-                transition: color 0.3s ease;
+                transition: color 0.2s ease;
             }
 
             .task-detailed .task-title:hover {
-                color: var(--primary-warm);
+                color: var(--primary-color);
             }
 
             .task-description {
-                font-size: 14px;
-                color: var(--text-secondary-warm);
-                line-height: 1.6;
-                margin: 0 0 16px 0;
-                font-weight: 500;
+                font-size: 13px;
+                color: var(--text-secondary);
+                line-height: 1.5;
+                margin: 0 0 12px 0;
             }
 
             .task-meta-grid {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                gap: 16px;
+                gap: 12px;
             }
 
             .meta-item.deadline-centered {
@@ -3635,75 +3027,85 @@ class TasksView {
             .meta-item {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 13px;
-                font-weight: 600;
-                color: var(--text-primary-warm);
+                gap: 6px;
+                font-size: 12px;
+                font-weight: 500;
+            }
+
+            .meta-item.email-meta {
+                color: var(--primary-color);
+            }
+
+            .reply-needed {
+                background: #fef3c7;
+                color: #d97706;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 500;
+                margin-left: 4px;
             }
 
             .task-detailed-actions {
                 display: flex;
-                gap: 10px;
+                gap: 8px;
                 flex-wrap: wrap;
             }
 
             .btn-detailed {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 10px 16px;
-                border-radius: 8px;
-                font-size: 13px;
+                gap: 6px;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: var(--transition);
-                border: 2px solid;
+                border: 1px solid;
                 white-space: nowrap;
             }
 
             .btn-detailed.complete {
-                background: var(--success-warm);
+                background: var(--success-color);
                 color: white;
-                border-color: var(--success-warm);
+                border-color: var(--success-color);
             }
 
             .btn-detailed.complete:hover {
-                background: #229954;
-                border-color: #229954;
-                transform: translateY(-2px);
+                background: #059669;
+                border-color: #059669;
             }
 
             .btn-detailed.edit {
-                background: var(--primary-warm);
+                background: var(--primary-color);
                 color: white;
-                border-color: var(--primary-warm);
+                border-color: var(--primary-color);
             }
 
             .btn-detailed.edit:hover {
                 background: var(--primary-hover);
                 border-color: var(--primary-hover);
-                transform: translateY(-2px);
             }
 
             .btn-detailed.details {
-                background: var(--bg-secondary-warm);
-                color: var(--text-primary-warm);
-                border-color: var(--border-warm);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                border-color: var(--border-color);
             }
 
             .btn-detailed.details:hover {
-                background: var(--border-warm);
-                border-color: var(--text-secondary-warm);
-                transform: translateY(-2px);
+                background: var(--border-color);
+                border-color: var(--text-secondary);
             }
 
-            /* ÉTAT VIDE CHALEUREUX */
+            /* ÉTAT VIDE */
             .empty-state {
                 text-align: center;
-                padding: 80px 40px;
-                background: rgba(255, 255, 255, 0.9);
-                border-radius: 20px;
-                box-shadow: var(--shadow-warm);
+                padding: 60px 30px;
+                background: rgba(255, 255, 255, 0.8);
+                border-radius: 16px;
+                box-shadow: var(--shadow-sm);
                 display: flex;
                 flex-direction: column;
                 align-items: center;
@@ -3711,88 +3113,84 @@ class TasksView {
             }
 
             .empty-state-icon {
-                font-size: 64px;
-                margin-bottom: 24px;
-                color: var(--text-muted-warm);
+                font-size: 48px;
+                margin-bottom: 20px;
+                color: #d1d5db;
             }
 
             .empty-state-title {
-                font-size: 24px;
+                font-size: 20px;
                 font-weight: 700;
-                color: var(--text-primary-warm);
-                margin-bottom: 16px;
+                color: var(--text-primary);
+                margin-bottom: 12px;
             }
 
             .empty-state-text {
-                font-size: 16px;
-                margin-bottom: 32px;
-                max-width: 500px;
+                font-size: 14px;
+                margin-bottom: 24px;
+                max-width: 400px;
                 line-height: 1.6;
-                color: var(--text-secondary-warm);
-                font-weight: 500;
+                color: var(--text-secondary);
             }
 
-            /* MODALES CHALEUREUSES */
+            /* MODALES COMPLÈTES */
             .modal-overlay {
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background: rgba(44, 62, 80, 0.8);
+                background: rgba(0, 0, 0, 0.75);
                 z-index: 99999999;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                padding: 24px;
-                backdrop-filter: blur(8px);
+                padding: 20px;
+                backdrop-filter: blur(4px);
             }
             
             .modal-container {
                 background: white;
-                border-radius: 20px;
-                max-width: 850px;
+                border-radius: 16px;
+                max-width: 800px;
                 width: 100%;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                box-shadow: 0 20px 60px rgba(44, 62, 80, 0.3);
-                border: 2px solid var(--border-warm);
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             }
             
             .modal-container.modal-large {
-                max-width: 1100px;
+                max-width: 1000px;
             }
             
             .modal-header {
-                padding: 28px;
-                border-bottom: 2px solid var(--border-warm);
+                padding: 24px;
+                border-bottom: 1px solid var(--border-color);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                background: var(--bg-accent-warm);
-                border-radius: 18px 18px 0 0;
             }
             
             .modal-header h2 {
                 margin: 0;
-                font-size: 22px;
+                font-size: 20px;
                 font-weight: 700;
-                color: var(--text-primary-warm);
+                color: var(--text-primary);
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
             }
             
             .modal-close {
                 background: none;
                 border: none;
-                font-size: 22px;
+                font-size: 20px;
                 cursor: pointer;
-                color: var(--text-secondary-warm);
-                width: 36px;
-                height: 36px;
-                border-radius: 8px;
+                color: var(--text-secondary);
+                width: 32px;
+                height: 32px;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -3800,104 +3198,97 @@ class TasksView {
             }
             
             .modal-close:hover {
-                background: var(--bg-secondary-warm);
-                color: var(--text-primary-warm);
-                transform: scale(1.1);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
             }
             
             .modal-content {
-                padding: 28px;
+                padding: 24px;
                 overflow-y: auto;
                 flex: 1;
             }
             
             .modal-footer {
-                padding: 28px;
-                border-top: 2px solid var(--border-warm);
+                padding: 24px;
+                border-top: 1px solid var(--border-color);
                 display: flex;
                 justify-content: flex-end;
-                gap: 16px;
-                background: var(--bg-accent-warm);
-                border-radius: 0 0 18px 18px;
+                gap: 12px;
             }
             
             .btn-modal {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 14px 24px;
-                border-radius: 10px;
-                font-size: 15px;
+                gap: 6px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: var(--transition);
-                border: 2px solid;
+                border: 1px solid;
                 white-space: nowrap;
             }
             
             .btn-modal.btn-primary {
-                background: var(--primary-warm);
+                background: var(--primary-color);
                 color: white;
-                border-color: var(--primary-warm);
+                border-color: var(--primary-color);
             }
             
             .btn-modal.btn-primary:hover {
                 background: var(--primary-hover);
                 border-color: var(--primary-hover);
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
+                transform: translateY(-1px);
             }
             
             .btn-modal.btn-secondary {
-                background: var(--bg-secondary-warm);
-                color: var(--text-primary-warm);
-                border-color: var(--border-warm);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                border-color: var(--border-color);
             }
             
             .btn-modal.btn-secondary:hover {
-                background: var(--border-warm);
-                border-color: var(--text-secondary-warm);
-                transform: translateY(-2px);
+                background: var(--border-color);
+                border-color: var(--text-secondary);
             }
             
             .btn-modal.btn-success {
-                background: var(--success-warm);
+                background: var(--success-color);
                 color: white;
-                border-color: var(--success-warm);
+                border-color: var(--success-color);
             }
             
             .btn-modal.btn-success:hover {
-                background: #229954;
-                border-color: #229954;
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
+                background: #059669;
+                border-color: #059669;
+                transform: translateY(-1px);
             }
             
             .btn-modal.btn-info {
-                background: var(--info-warm);
+                background: #0ea5e9;
                 color: white;
-                border-color: var(--info-warm);
+                border-color: #0ea5e9;
             }
             
             .btn-modal.btn-info:hover {
-                background: #2e86ab;
-                border-color: #2e86ab;
-                transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
+                background: #0284c7;
+                border-color: #0284c7;
+                transform: translateY(-1px);
             }
 
-            /* FORMULAIRES CHALEUREUX */
+            /* FORMULAIRES */
             .edit-form,
             .create-form {
                 display: flex;
                 flex-direction: column;
-                gap: 24px;
+                gap: 20px;
             }
             
             .form-row {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 20px;
+                gap: 16px;
             }
             
             .form-row .form-group:only-child {
@@ -3907,227 +3298,574 @@ class TasksView {
             .form-group {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 6px;
             }
             
             .form-group label {
-                font-weight: 700;
-                color: var(--text-primary-warm);
-                font-size: 15px;
+                font-weight: 600;
+                color: var(--text-primary);
+                font-size: 14px;
             }
             
             .form-input,
             .form-select,
             .form-textarea {
-                padding: 14px 18px;
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
-                font-size: 15px;
+                padding: 12px 16px;
+                border: 2px solid var(--border-color);
+                border-radius: 8px;
+                font-size: 14px;
                 background: white;
-                transition: border-color 0.3s ease, transform 0.2s ease;
+                transition: border-color 0.2s ease;
                 font-family: inherit;
-                color: var(--text-primary-warm);
-                font-weight: 500;
             }
             
             .form-input:focus,
             .form-select:focus,
             .form-textarea:focus {
                 outline: none;
-                border-color: var(--primary-warm);
-                box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
-                transform: translateY(-1px);
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
             .form-textarea {
                 resize: vertical;
-                min-height: 100px;
+                min-height: 80px;
                 font-family: inherit;
-                line-height: 1.6;
             }
             
             .form-section {
-                margin-top: 28px;
-                padding-top: 24px;
-                border-top: 2px solid var(--border-warm);
+                margin-top: 20px;
+                padding-top: 20px;
+                border-top: 1px solid var(--border-color);
             }
             
             .form-section h3 {
-                margin: 0 0 16px 0;
-                font-size: 18px;
-                font-weight: 700;
-                color: var(--text-primary-warm);
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text-primary);
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 8px;
             }
             
             .email-info-readonly {
-                background: var(--bg-accent-warm);
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
-                padding: 20px;
-                font-size: 15px;
-                color: var(--text-primary-warm);
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 16px;
+                font-size: 14px;
+                color: var(--text-primary);
             }
             
             .email-info-readonly > div {
-                margin-bottom: 12px;
-                font-weight: 500;
+                margin-bottom: 8px;
             }
             
             .email-info-readonly > div:last-child {
                 margin-bottom: 0;
             }
 
-            /* IMPORT/EXPORT STYLES */
-            .import-instructions {
-                background: var(--bg-accent-warm);
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
-                padding: 20px;
+            /* DÉTAILS DES TÂCHES */
+            .task-details-content {
+                max-width: none;
+            }
+            
+            .details-header {
                 margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid var(--border-color);
             }
-
-            .instruction-item {
+            
+            .task-title-details {
+                font-size: 24px;
+                font-weight: 700;
+                color: var(--text-primary);
+                margin: 0 0 12px 0;
+                line-height: 1.3;
+            }
+            
+            .task-meta-badges {
                 display: flex;
-                align-items: flex-start;
                 gap: 12px;
-                margin-bottom: 16px;
+                flex-wrap: wrap;
+            }
+            
+            .priority-badge-details,
+            .status-badge-details,
+            .deadline-badge-details {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 8px;
                 font-size: 14px;
-                line-height: 1.5;
-            }
-
-            .instruction-item:last-child {
-                margin-bottom: 0;
-            }
-
-            .instruction-item i {
-                color: var(--primary-warm);
-                font-size: 16px;
-                margin-top: 2px;
-            }
-
-            .file-upload-zone {
-                border: 3px dashed var(--border-warm);
-                border-radius: var(--border-radius);
-                padding: 40px 20px;
-                text-align: center;
-                cursor: pointer;
-                transition: var(--transition);
-                background: var(--bg-accent-warm);
-            }
-
-            .file-upload-zone:hover {
-                border-color: var(--primary-warm);
-                background: #f8f9fa;
-                transform: translateY(-2px);
-            }
-
-            .file-upload-zone.dragover {
-                border-color: var(--success-warm);
-                background: #d5f4e6;
-                transform: scale(1.02);
-            }
-
-            .upload-icon {
-                font-size: 48px;
-                color: var(--primary-warm);
-                margin-bottom: 16px;
-            }
-
-            .upload-text p {
-                margin: 8px 0;
-                color: var(--text-primary-warm);
                 font-weight: 600;
             }
-
-            .upload-text p:first-child {
+            
+            .priority-badge-details.priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .priority-badge-details.priority-high {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .priority-badge-details.priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .priority-badge-details.priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .status-badge-details.status-todo {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .status-badge-details.status-in-progress {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .status-badge-details.status-completed {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .deadline-badge-details.deadline-overdue {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .deadline-badge-details.deadline-today {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .deadline-badge-details.deadline-tomorrow {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .deadline-badge-details.deadline-week {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .deadline-badge-details.deadline-normal {
+                background: var(--bg-secondary);
+                color: #64748b;
+                border: 1px solid var(--border-color);
+            }
+            
+            .deadline-badge-details.no-deadline {
+                background: var(--bg-secondary);
+                color: #9ca3af;
+                border: 1px solid #d1d5db;
+                font-style: italic;
+            }
+            
+            .details-section {
+                margin-bottom: 24px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .details-section h3 {
+                margin: 0;
+                padding: 16px 20px;
+                background: white;
+                border-bottom: 1px solid var(--border-color);
                 font-size: 16px;
-                font-weight: 700;
-            }
-
-            .upload-text p:last-child {
-                color: var(--text-secondary-warm);
-                font-size: 14px;
-            }
-
-            .file-selected {
+                font-weight: 600;
+                color: var(--text-primary);
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 gap: 8px;
-                padding: 20px;
-                background: var(--success-warm);
+            }
+            
+            .description-content {
+                padding: 16px 20px;
+            }
+            
+            .structured-description {
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 13px;
+                line-height: 1.6;
+                background: white;
+                padding: 16px;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+            }
+            
+            .simple-description {
+                font-size: 14px;
+                line-height: 1.6;
+                color: var(--text-primary);
+            }
+            
+            .info-grid {
+                padding: 16px 20px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 12px;
+            }
+            
+            .info-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 14px;
+                color: var(--text-primary);
+                line-height: 1.4;
+            }
+            
+            .info-item strong {
+                min-width: 120px;
+                color: var(--text-primary);
+            }
+            
+            .email-details-grid {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .email-detail-item {
+                display: flex;
+                gap: 12px;
+                font-size: 14px;
+            }
+            
+            .email-detail-item strong {
+                min-width: 80px;
+                color: var(--text-primary);
+            }
+            
+            .email-content-section {
+                padding: 16px 20px;
+            }
+            
+            .email-content-section h4 {
+                margin: 0 0 12px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+            
+            .email-content-box {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 16px;
+                max-height: 300px;
+                overflow-y: auto;
+            }
+            
+            .email-content-viewer {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+            }
+            
+            .email-original-content {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: var(--text-primary);
+                white-space: pre-wrap;
+            }
+            
+            .email-original-content strong {
+                color: var(--text-primary);
+                font-weight: 600;
+            }
+            
+            .actions-list-details {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .action-item-details {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 10px 12px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+            }
+            
+            .action-number {
+                width: 24px;
+                height: 24px;
+                background: #667eea;
                 color: white;
-                border-radius: 10px;
-            }
-
-            .file-selected i {
-                font-size: 32px;
-                margin-bottom: 8px;
-            }
-
-            .file-selected span {
-                font-weight: 700;
-                font-size: 16px;
-            }
-
-            .file-selected small {
-                opacity: 0.9;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 font-size: 12px;
+                font-weight: 600;
+                flex-shrink: 0;
             }
-
-            .import-preview {
-                background: var(--bg-accent-warm);
-                border: 2px solid var(--border-warm);
-                border-radius: 10px;
-                padding: 20px;
-                margin-top: 20px;
+            
+            .action-text {
+                flex: 1;
+                font-size: 14px;
+                color: var(--text-primary);
             }
-
-            .import-preview h4 {
-                margin: 0 0 16px 0;
-                color: var(--text-primary-warm);
-                font-weight: 700;
+            
+            .action-deadline {
+                font-size: 12px;
+                color: #dc2626;
+                font-weight: 600;
+                background: #fef2f2;
+                padding: 4px 8px;
+                border-radius: 4px;
+                border: 1px solid #fecaca;
             }
-
-            .file-info {
+            
+            .key-info-grid {
+                padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
                 gap: 8px;
-                margin-bottom: 16px;
             }
-
-            .file-info div {
-                font-size: 14px;
-                color: var(--text-primary-warm);
-                font-weight: 500;
-            }
-
-            .preview-note {
-                background: #e8f4fd;
-                color: var(--primary-warm);
-                padding: 12px 16px;
-                border-radius: 8px;
-                font-size: 13px;
-                margin: 0;
+            
+            .key-info-item {
                 display: flex;
                 align-items: flex-start;
                 gap: 8px;
-                line-height: 1.5;
+                font-size: 14px;
+                color: var(--text-primary);
+                line-height: 1.4;
             }
-
-            .preview-note i {
+            
+            .attention-section {
+                background: #fef3c7;
+                border-color: #fbbf24;
+            }
+            
+            .attention-section h3 {
+                background: #fef9e8;
+                border-bottom-color: #fbbf24;
+                color: #92400e;
+            }
+            
+            .attention-list {
+                padding: 16px 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .attention-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                background: #fffbeb;
+                border: 1px solid #fde68a;
+                border-radius: 6px;
+                padding: 10px 12px;
+            }
+            
+            .attention-item i {
+                font-size: 14px;
+                color: #f59e0b;
                 margin-top: 2px;
-                flex-shrink: 0;
+            }
+            
+            .attention-item span {
+                flex: 1;
+                font-size: 13px;
+                color: #92400e;
+                line-height: 1.4;
             }
 
-            /* RESPONSIVE CHALEUREUX */
+            /* SUGGESTIONS DE RÉPONSE */
+            .ai-suggestions-info {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #7dd3fc;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .ai-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #0ea5e9;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            
+            .ai-suggestions-info p {
+                margin: 0;
+                color: #075985;
+                font-size: 14px;
+            }
+            
+            .replies-list {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .reply-suggestion-card {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 16px;
+                transition: var(--transition);
+            }
+            
+            .reply-suggestion-card:hover {
+                border-color: var(--primary-color);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+            }
+            
+            .reply-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .reply-tone-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 4px 12px;
+                border-radius: 16px;
+                font-size: 12px;
+                font-weight: 600;
+                text-transform: capitalize;
+            }
+            
+            .reply-tone-badge.professionnel,
+            .reply-tone-badge.formel {
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+            }
+            
+            .reply-tone-badge.urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .reply-tone-badge.neutre {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .reply-tone-badge.amical {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .reply-tone-badge.détaillé {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .reply-card-actions {
+                display: flex;
+                gap: 8px;
+            }
+            
+            .btn-sm {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: var(--transition);
+                border: 1px solid;
+            }
+            
+            .btn-sm.btn-secondary {
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                border-color: var(--border-color);
+            }
+            
+            .btn-sm.btn-secondary:hover {
+                background: var(--border-color);
+                border-color: var(--text-secondary);
+            }
+            
+            .btn-sm.btn-primary {
+                background: var(--primary-color);
+                color: white;
+                border-color: var(--primary-color);
+            }
+            
+            .btn-sm.btn-primary:hover {
+                background: var(--primary-hover);
+                border-color: var(--primary-hover);
+                transform: translateY(-1px);
+            }
+            
+            .reply-subject-line {
+                font-size: 13px;
+                color: #4b5563;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .reply-content-preview {
+                font-size: 13px;
+                color: var(--text-primary);
+                line-height: 1.6;
+                white-space: pre-wrap;
+                background: var(--bg-secondary);
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+                max-height: 150px;
+                overflow-y: auto;
+            }
             @media (max-width: 1024px) {
                 .main-controls-line {
                     flex-direction: column;
-                    gap: 16px;
+                    gap: 12px;
                     align-items: stretch;
                 }
 
@@ -4142,7 +3880,7 @@ class TasksView {
 
                 .views-filters-line {
                     flex-direction: column;
-                    gap: 16px;
+                    gap: 12px;
                     align-items: stretch;
                 }
 
@@ -4155,7 +3893,7 @@ class TasksView {
                 }
 
                 .status-pill {
-                    min-width: 100px;
+                    min-width: 90px;
                 }
 
                 .tasks-detailed-grid {
@@ -4164,34 +3902,40 @@ class TasksView {
             }
 
             @media (max-width: 768px) {
-                .controls-section-warm {
-                    padding: 20px;
+                .controls-section-corrected {
+                    padding: 16px;
                 }
 
                 .task-content-line {
-                    padding: 16px;
-                    min-height: 60px;
+                    padding: 12px;
+                    height: auto;
+                    min-height: 56px;
                 }
 
                 .task-info {
                     flex-direction: column;
                     align-items: flex-start;
-                    gap: 6px;
+                    gap: 4px;
                 }
 
                 .task-normal .task-content-line {
-                    min-height: 80px;
+                    height: auto;
+                    min-height: 72px;
                 }
 
                 .task-header {
                     flex-direction: column;
                     align-items: flex-start;
-                    gap: 10px;
+                    gap: 8px;
+                }
+
+                .task-badges {
+                    align-self: flex-end;
                 }
 
                 .main-actions {
                     flex-direction: column;
-                    gap: 10px;
+                    gap: 8px;
                 }
 
                 .selection-panel {
@@ -4200,7 +3944,7 @@ class TasksView {
 
                 .status-filters {
                     flex-direction: column;
-                    gap: 8px;
+                    gap: 6px;
                 }
 
                 .status-pill {
@@ -4211,35 +3955,35 @@ class TasksView {
             }
 
             @media (max-width: 480px) {
-                .tasks-page-warm {
-                    padding: 12px;
+                .tasks-page-corrected {
+                    padding: 8px;
                 }
 
-                .controls-section-warm {
-                    padding: 16px;
-                    gap: 16px;
+                .controls-section-corrected {
+                    padding: 12px;
+                    gap: 12px;
                 }
 
                 .btn-action {
-                    height: 44px;
-                    font-size: 13px;
-                    padding: 0 16px;
+                    height: 40px;
+                    font-size: 12px;
+                    padding: 0 12px;
                 }
 
                 .task-content-line {
-                    padding: 12px;
-                    gap: 10px;
+                    padding: 8px;
+                    gap: 8px;
                 }
 
                 .task-actions {
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 2px;
                 }
 
                 .action-btn {
-                    width: 32px;
-                    height: 32px;
-                    font-size: 12px;
+                    width: 28px;
+                    height: 28px;
+                    font-size: 11px;
                 }
             }
         `;
@@ -4252,8 +3996,8 @@ class TasksView {
 // GLOBAL INITIALIZATION
 // =====================================
 
-function initializeTaskManagerV11Warm() {
-    console.log('[TaskManager] Initializing v11.0 - Design chaleureux & Excel I/O...');
+function initializeTaskManagerV10Corrected() {
+    console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -4276,15 +4020,15 @@ function initializeTaskManagerV11Warm() {
         }
     });
     
-    console.log('✅ TaskManager v11.0 loaded - Design chaleureux & Excel Import/Export');
+    console.log('✅ TaskManager v10.1 loaded - Interface harmonisée avec alignement corrigé');
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
-initializeTaskManagerV11Warm();
+initializeTaskManagerV10Corrected();
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManagerV11Warm();
+    initializeTaskManagerV10Corrected();
 });
 
 // Fallback sur window.load
@@ -4292,7 +4036,7 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
             console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManagerV11Warm();
+            initializeTaskManagerV10Corrected();
         }
     }, 1000);
-});
+})
