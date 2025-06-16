@@ -1059,7 +1059,7 @@ class TasksView {
         });
     }
 
-// MÉTHODE RENDER AVEC CORRECTION MINIMALE - Juste barre de recherche étendue + boutons sur nouvelle ligne
+// MÉTHODE RENDER CORRIGÉE - Garde exactement la même structure HTML avec juste la barre de recherche étendue
 render(container) {
     if (!container) {
         console.error('[TasksView] No container provided');
@@ -1086,36 +1086,34 @@ render(container) {
 
     const stats = window.taskManager.getStats();
     
-    // INTERFACE MODIFIÉE MINIMALEMENT - Même structure mais barre de recherche étendue
+    // GARDE EXACTEMENT LA MÊME STRUCTURE QUE DANS LE CODE ORIGINAL
     container.innerHTML = `
         <div class="tasks-page-modern">
-            <!-- Barre de titre avec recherche étendue -->
-            <div class="tasks-main-toolbar-modified">
-                <div class="toolbar-title-section">
-                    <h1 class="tasks-title">Tâches</h1>
-                    <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
-                </div>
-                
-                <!-- Barre de recherche pleine largeur -->
-                <div class="toolbar-search-full">
-                    <div class="search-wrapper-large">
-                        <i class="fas fa-search search-icon-large"></i>
-                        <input type="text" 
-                               class="search-input-large-extended" 
-                               id="taskSearchInput"
-                               placeholder="Rechercher dans les tâches..." 
-                               value="${this.currentFilters.search}">
-                        <button class="search-clear-large" id="searchClearBtn" 
-                                style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
-                                onclick="window.tasksView.clearSearch()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
+            <!-- Titre et compteur sur une ligne -->
+            <div class="tasks-title-section">
+                <h1 class="tasks-title">Tâches</h1>
+                <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
+            </div>
+
+            <!-- Barre de recherche pleine largeur -->
+            <div class="tasks-search-section-full">
+                <div class="search-wrapper-large">
+                    <i class="fas fa-search search-icon-large"></i>
+                    <input type="text" 
+                           class="search-input-large" 
+                           id="taskSearchInput"
+                           placeholder="Rechercher dans les tâches..." 
+                           value="${this.currentFilters.search}">
+                    <button class="search-clear-large" id="searchClearBtn" 
+                            style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                            onclick="window.tasksView.clearSearch()">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
             </div>
 
             <!-- Ligne des boutons de contrôle -->
-            <div class="tasks-controls-toolbar">
+            <div class="tasks-buttons-section">
                 <div class="toolbar-left">
                     <div class="view-modes-large">
                         <button class="btn-large ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
@@ -1251,136 +1249,12 @@ render(container) {
         </div>
     `;
 
-    // Ajouter uniquement les styles pour les modifications minimales
-    this.addMinimalLayoutStyles();
+    // GARDE LA MÉTHODE ORIGINALE mais ajoute juste nos petites corrections
+    this.addModernTaskStyles();
+    this.addLayoutFixStyles(); // Ajoute juste nos corrections par-dessus
     this.setupEventListeners();
-    console.log('[TasksView] Minimal layout modification applied - Extended search + buttons on new line');
+    console.log('[TasksView] Layout fixed - Extended search preserved');
 }
-
-// STYLES MINIMAUX POUR LE NOUVEAU LAYOUT - Garde tout le reste intact
-addMinimalLayoutStyles() {
-    if (document.getElementById('minimalLayoutStyles')) return;
-    
-    const styles = document.createElement('style');
-    styles.id = 'minimalLayoutStyles';
-    styles.textContent = `
-        /* STYLES MINIMAUX - Juste pour la barre de recherche étendue et les boutons sur nouvelle ligne */
-        
-        /* Nouvelle toolbar modifiée */
-        .tasks-main-toolbar-modified {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 4px 0 2px 0;
-            border: none;
-            margin: 0 0 4px 0;
-            background: transparent;
-        }
-        
-        /* Section titre */
-        .toolbar-title-section {
-            display: flex;
-            align-items: baseline;
-            gap: 8px;
-        }
-        
-        /* Section recherche pleine largeur */
-        .toolbar-search-full {
-            width: 100%;
-        }
-        
-        /* Input de recherche étendu */
-        .search-input-large-extended {
-            width: 100% !important;
-            padding: 14px 18px 14px 48px;
-            border: 1px solid #d1d5db;
-            border-radius: 12px;
-            font-size: 15px;
-            background: white;
-            transition: all 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            box-sizing: border-box;
-        }
-        
-        .search-input-large-extended:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        /* Toolbar des contrôles sur nouvelle ligne */
-        .tasks-controls-toolbar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            min-height: 48px;
-            background: transparent;
-            margin-bottom: 4px;
-        }
-        
-        .tasks-controls-toolbar .toolbar-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        
-        .tasks-controls-toolbar .toolbar-center {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-        }
-        
-        .tasks-controls-toolbar .toolbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        
-        /* Responsive pour mobile */
-        @media (max-width: 768px) {
-            .tasks-main-toolbar-modified {
-                gap: 8px;
-                padding: 4px 0;
-                margin: 0 0 6px 0;
-            }
-            
-            .toolbar-title-section {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 4px;
-            }
-            
-            .tasks-controls-toolbar {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-            }
-            
-            .tasks-controls-toolbar .toolbar-left,
-            .tasks-controls-toolbar .toolbar-center,
-            .tasks-controls-toolbar .toolbar-right {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .tasks-controls-toolbar .toolbar-right {
-                justify-content: flex-end;
-            }
-            
-            .search-input-large-extended {
-                font-size: 16px; /* Évite le zoom sur iOS */
-            }
-        }
-    `;
-    
-    document.head.appendChild(styles);
-    console.log('[TasksView] Minimal layout styles added - Search bar extended + buttons on new line');
-}
-
     // MÉTHODES IDENTIQUES À PAGEMANAGER
     buildLargeStatusPills(stats) {
         const pills = [
@@ -1419,7 +1293,102 @@ addMinimalLayoutStyles() {
                 return this.renderCondensedView(filteredTasks);
         }
     }
-
+// STYLES DE CORRECTION MINIMAUX - S'ajoutent par-dessus les styles existants sans les casser
+addLayoutFixStyles() {
+    if (document.getElementById('layoutFixStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'layoutFixStyles';
+    styles.textContent = `
+        /* CORRECTIONS MINIMALES - S'ajoutent aux styles existants sans les remplacer */
+        
+        /* Section titre */
+        .tasks-title-section {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        /* Section recherche pleine largeur */
+        .tasks-search-section-full {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        
+        .tasks-search-section-full .search-wrapper-large {
+            width: 100%;
+            max-width: none !important;
+        }
+        
+        .tasks-search-section-full .search-input-large {
+            width: 100% !important;
+            max-width: none !important;
+        }
+        
+        /* Section boutons sur nouvelle ligne */
+        .tasks-buttons-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            min-height: 48px;
+        }
+        
+        .tasks-buttons-section .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        .tasks-buttons-section .toolbar-center {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .tasks-buttons-section .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tasks-title-section {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .tasks-buttons-section {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+                margin-bottom: 12px;
+            }
+            
+            .tasks-buttons-section .toolbar-left,
+            .tasks-buttons-section .toolbar-center,
+            .tasks-buttons-section .toolbar-right {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .tasks-buttons-section .toolbar-right {
+                justify-content: flex-end;
+            }
+        }
+    `;
+    
+    document.head.appendChild(styles);
+    console.log('[TasksView] Layout fix styles added - Minimal corrections applied');
+}
     renderEmptyState() {
         return `
             <div class="empty-state-modern">
