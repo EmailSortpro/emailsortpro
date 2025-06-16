@@ -1,20 +1,4 @@
-.task-normal .task-title {
-                font-size: 15px;
-                font-weight: 700;
-                color: #0f172a;
-                margin: 0;
-                line-height: 1.3;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-
-            .task-normal .task-client {
-                color: #475569;
-                font-weight: 600;
-                font-size: 12px;
-                flex: 1;
-            }// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
+// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -32,22 +16,11 @@ class TaskManager {
             console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
             await this.loadTasks();
             this.initialized = true;
-            
-            // Signal que TaskManager est prêt
-            window.dispatchEvent(new CustomEvent('taskManagerReady', {
-                detail: { version: 'v10.1', tasksCount: this.tasks.length }
-            }));
-            
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
         } catch (error) {
             console.error('[TaskManager] Initialization error:', error);
             this.tasks = [];
             this.initialized = true;
-            
-            // Signal même en cas d'erreur
-            window.dispatchEvent(new CustomEvent('taskManagerReady', {
-                detail: { version: 'v10.1', error: error.message }
-            }));
         }
     }
 
@@ -564,18 +537,10 @@ class TasksView {
         this.currentViewMode = 'normal'; // normal, minimal, detailed
         this.showCompleted = false;
         this.showAdvancedFilters = false;
-        this.initialized = true; // TasksView s'initialise immédiatement
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
         });
-        
-        // Signal que TasksView est prêt
-        setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('tasksViewReady', {
-                detail: { version: 'v10.1', viewMode: this.currentViewMode }
-            }));
-        }, 100);
     }
 
     render(container) {
@@ -831,13 +796,14 @@ class TasksView {
                         <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                     </div>
                     
-                    <div class="task-meta-right">
+                    <div class="task-meta">
                         <span class="task-deadline ${dueDateInfo.className}">
                             ${dueDateInfo.text || 'Pas d\'échéance'}
                         </span>
-                        <div class="task-actions">
-                            ${this.renderTaskActions(task)}
-                        </div>
+                    </div>
+                    
+                    <div class="task-actions">
+                        ${this.renderTaskActions(task)}
                     </div>
                 </div>
             </div>
@@ -875,19 +841,17 @@ class TasksView {
                     <div class="task-main">
                         <div class="task-header">
                             <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
-                            <div class="task-right-section">
-                                <span class="task-deadline-inline ${dueDateInfo.className}">
-                                    ${dueDateInfo.text || 'Pas d\'échéance'}
-                                </span>
-                                <div class="task-actions">
-                                    ${this.renderTaskActions(task)}
-                                </div>
+                            <div class="task-badges">
+                                <!-- Badges supprimés - affichage épuré -->
                             </div>
                         </div>
                         
-                        <div class="task-details-simple">
+                        <div class="task-details">
                             <span class="task-client">
                                 ${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}
+                            </span>
+                            <span class="task-deadline ${dueDateInfo.className}">
+                                ${dueDateInfo.text || 'Pas d\'échéance'}
                             </span>
                         </div>
                     </div>
@@ -2643,21 +2607,113 @@ class TasksView {
                 flex-shrink: 0;
             }
 
-            .task-info {
-                flex: 2;
+            .task-priority {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
                 display: flex;
-                flex-direction: column;
+                align-items: center;
                 justify-content: center;
-                gap: 4px;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+
+            .task-priority.priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+            }
+
+            .task-priority.priority-high {
+                background: #fef3c7;
+                color: #d97706;
+            }
+
+            .task-priority.priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .task-priority.priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
+            .task-info {
+                flex: 1;
+                display: flex;
+                align-items: center;
+                gap: 16px;
                 min-width: 0;
             }
 
-            .task-meta-right {
-                flex: 0 0 auto;
+            .task-title {
+                font-weight: 600;
+                color: var(--text-primary);
+                font-size: 14px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                flex: 2;
+            }
+
+            .task-client {
+                font-size: 12px;
+                color: var(--text-secondary);
+                font-weight: 500;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                flex: 1;
+            }
+
+            .task-meta {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                justify-content: center;
                 flex-shrink: 0;
+            }
+
+            .task-deadline {
+                font-size: 12px;
+                font-weight: 500;
+                white-space: nowrap;
+                text-align: center;
+            }
+
+            .task-deadline.deadline-overdue {
+                color: var(--danger-color);
+                font-weight: 600;
+            }
+
+            .task-deadline.deadline-today {
+                color: var(--warning-color);
+                font-weight: 600;
+            }
+
+            .task-deadline.deadline-tomorrow {
+                color: var(--warning-color);
+            }
+
+            .task-deadline.deadline-week {
+                color: var(--primary-color);
+            }
+
+            .task-deadline.deadline-normal {
+                color: var(--text-secondary);
+            }
+
+            .task-deadline.no-deadline {
+                color: #9ca3af;
+                font-style: italic;
+            }
+
+            .email-badge {
+                background: #eff6ff;
+                color: var(--primary-color);
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: 600;
             }
 
             .task-actions {
@@ -2790,130 +2846,95 @@ class TasksView {
                 gap: 12px;
             }
 
-            .task-title {
+            .task-normal .task-title {
+                font-size: 15px;
                 font-weight: 700;
-                color: #1e293b;
-                font-size: 14px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                color: var(--text-primary);
                 margin: 0;
-            }
-
-            .task-client {
-                font-size: 12px;
-                color: #475569;
-                font-weight: 600;
-                white-space: nowrap;
+                line-height: 1.3;
                 overflow: hidden;
                 text-overflow: ellipsis;
-            }
-
-            .task-deadline {
-                font-size: 13px;
-                font-weight: 600;
                 white-space: nowrap;
-                text-align: center;
-                padding: 4px 8px;
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.8);
+                flex: 1;
             }
 
-            .task-deadline.deadline-overdue {
-                color: #dc2626;
-                font-weight: 700;
-                background: #fef2f2;
-                border: 1px solid #fecaca;
-            }
-
-            .task-deadline.deadline-today {
-                color: #d97706;
-                font-weight: 700;
-                background: #fef3c7;
-                border: 1px solid #fde68a;
-            }
-
-            .task-deadline.deadline-tomorrow {
-                color: #d97706;
-                font-weight: 600;
-                background: #fef3c7;
-                border: 1px solid #fde68a;
-            }
-
-            .task-deadline.deadline-week {
-                color: #2563eb;
-                font-weight: 600;
-                background: #eff6ff;
-                border: 1px solid #bfdbfe;
-            }
-
-            .task-deadline.deadline-normal {
-                color: #059669;
-                font-weight: 600;
-                background: #f0fdf4;
-                border: 1px solid #bbf7d0;
-            }
-
-            .task-deadline.no-deadline {
-                color: #64748b;
-                font-weight: 500;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                font-style: italic;
-            }
-
-            .task-header {
+            .task-badges {
                 display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 12px;
-            }
-
-            .task-right-section {
-                display: flex;
-                align-items: center;
-                gap: 8px;
+                gap: 6px;
                 flex-shrink: 0;
             }
 
-            .task-deadline-inline {
-                font-size: 13px;
+            .priority-badge,
+            .status-badge,
+            .reply-badge {
+                padding: 3px 6px;
+                border-radius: 4px;
+                font-size: 10px;
                 font-weight: 600;
-                white-space: nowrap;
-                text-align: center;
-                padding: 4px 8px;
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.8);
+                border: 1px solid;
             }
 
-            .task-deadline-inline.deadline-overdue {
-                color: #dc2626;
+            .priority-badge.priority-urgent {
                 background: #fef2f2;
-                border: 1px solid #fecaca;
+                color: #dc2626;
+                border-color: #fecaca;
             }
 
-            .task-deadline-inline.deadline-today {
-                color: #d97706;
+            .priority-badge.priority-high {
                 background: #fef3c7;
-                border: 1px solid #fde68a;
+                color: #d97706;
+                border-color: #fde68a;
             }
 
-            .task-deadline-inline.deadline-week {
-                color: #2563eb;
+            .priority-badge.priority-medium {
                 background: #eff6ff;
-                border: 1px solid #bfdbfe;
+                color: #2563eb;
+                border-color: #bfdbfe;
             }
 
-            .task-deadline-inline.deadline-normal {
-                color: #059669;
+            .priority-badge.priority-low {
                 background: #f0fdf4;
-                border: 1px solid #bbf7d0;
+                color: #16a34a;
+                border-color: #bbf7d0;
             }
 
-            .task-details-simple {
+            .status-badge.status-todo {
+                background: #fef3c7;
+                color: #d97706;
+                border-color: #fde68a;
+            }
+
+            .status-badge.status-in-progress {
+                background: #eff6ff;
+                color: #2563eb;
+                border-color: #bfdbfe;
+            }
+
+            .status-badge.status-completed {
+                background: #f0fdf4;
+                color: #16a34a;
+                border-color: #bbf7d0;
+            }
+
+            .reply-badge {
+                background: #fef2f2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+
+            .task-details {
                 display: flex;
                 align-items: center;
+                gap: 16px;
                 font-size: 12px;
+                color: var(--text-secondary);
+            }
+
+            .task-client,
+            .task-normal .task-deadline {
+                display: flex;
+                align-items: center;
+                gap: 4px;
             }
 
             /* VUE DÉTAILLÉE - GRILLE DE CARTES */
@@ -2972,7 +2993,7 @@ class TasksView {
             .task-detailed .task-title {
                 font-size: 16px;
                 font-weight: 700;
-                color: #0f172a;
+                color: var(--text-primary);
                 margin: 0 0 8px 0;
                 line-height: 1.3;
                 cursor: pointer;
@@ -2985,7 +3006,7 @@ class TasksView {
 
             .task-description {
                 font-size: 13px;
-                color: #475569;
+                color: var(--text-secondary);
                 line-height: 1.5;
                 margin: 0 0 12px 0;
             }
@@ -2997,48 +3018,10 @@ class TasksView {
                 gap: 12px;
             }
 
-            .meta-item {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                font-size: 12px;
-                font-weight: 600;
-                color: #475569;
-            }
-
             .meta-item.deadline-centered {
                 flex: 1;
                 text-align: center;
                 justify-content: center;
-                font-size: 13px;
-                font-weight: 600;
-                padding: 4px 8px;
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.8);
-            }
-
-            .meta-item.deadline-centered.deadline-overdue {
-                color: #dc2626;
-                background: #fef2f2;
-                border: 1px solid #fecaca;
-            }
-
-            .meta-item.deadline-centered.deadline-today {
-                color: #d97706;
-                background: #fef3c7;
-                border: 1px solid #fde68a;
-            }
-
-            .meta-item.deadline-centered.deadline-week {
-                color: #2563eb;
-                background: #eff6ff;
-                border: 1px solid #bfdbfe;
-            }
-
-            .meta-item.deadline-centered.deadline-normal {
-                color: #059669;
-                background: #f0fdf4;
-                border: 1px solid #bbf7d0;
             }
 
             .meta-item {
@@ -4013,7 +3996,7 @@ class TasksView {
 // GLOBAL INITIALIZATION
 // =====================================
 
-function initializeTaskManagerV10() {
+function initializeTaskManagerV10Corrected() {
     console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
@@ -4041,11 +4024,11 @@ function initializeTaskManagerV10() {
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
-initializeTaskManagerV10();
+initializeTaskManagerV10Corrected();
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManagerV10();
+    initializeTaskManagerV10Corrected();
 });
 
 // Fallback sur window.load
@@ -4053,7 +4036,7 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
             console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManagerV10();
+            initializeTaskManagerV10Corrected();
         }
     }, 1000);
 });
