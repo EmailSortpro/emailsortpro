@@ -227,145 +227,140 @@ async renderEmails(container) {
         const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
         
         container.innerHTML = `
-            <div class="emails-page-container">
-                <!-- Container principal avec fond gris uniforme -->
-                <div class="emails-content-wrapper">
-                    
-                    <!-- Texte explicatif avec possibilité de fermer -->
-                    ${!this.hideExplanation ? `
-                        <div class="explanation-text-harmonized">
-                            <i class="fas fa-info-circle"></i>
-                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
-                            <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    ` : ''}
+            <div class="tasks-page-modern">
+                <!-- Texte explicatif avec possibilité de fermer -->
+                ${!this.hideExplanation ? `
+                    <div class="explanation-text-harmonized">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                        <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                ` : ''}
 
-                    <!-- Barre de contrôles avec boutons PARFAITEMENT ALIGNÉS -->
-                    <div class="controls-bar-fixed">
-                        <!-- Section recherche - Zone 1 -->
-                        <div class="search-section-fixed">
-                            <div class="search-box-fixed">
-                                <i class="fas fa-search search-icon-fixed"></i>
-                                <input type="text" 
-                                       class="search-input-fixed" 
-                                       id="emailSearchInput"
-                                       placeholder="Rechercher emails..." 
-                                       value="${this.searchTerm}">
-                                ${this.searchTerm ? `
-                                    <button class="search-clear-fixed" onclick="window.pageManager.clearSearch()">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-                        
-                        <!-- Modes de vue - Zone 2 -->
-                        <div class="view-modes-fixed">
-                            <button class="view-mode-btn-fixed ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                    title="Par domaine">
-                                <i class="fas fa-globe"></i>
-                                <span>Domaine</span>
-                            </button>
-                            <button class="view-mode-btn-fixed ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                    title="Par expéditeur">
-                                <i class="fas fa-user"></i>
-                                <span>Expéditeur</span>
-                            </button>
-                            <button class="view-mode-btn-fixed ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                    onclick="window.pageManager.changeViewMode('flat')"
-                                    title="Liste complète">
-                                <i class="fas fa-list"></i>
-                                <span>Liste</span>
-                            </button>
-                        </div>
-                        
-                        <!-- Actions principales - Zone 3 -->
-                        <div class="actions-section-fixed">
-                            <!-- Bouton Sélectionner tout -->
-                            <button class="action-btn-fixed btn-selection" 
-                                    onclick="window.pageManager.toggleAllSelection()"
-                                    title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
-                                <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
-                                <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
-                                ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
-                            </button>
-                            
-                            <!-- Bouton Créer tâches -->
-                            <button class="action-btn-fixed btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                    onclick="window.pageManager.createTasksFromSelection()"
-                                    ${selectedCount === 0 ? 'disabled' : ''}>
-                                <i class="fas fa-tasks"></i>
-                                <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                                ${selectedCount > 0 ? `<span class="count-badge-primary">${selectedCount}</span>` : ''}
-                            </button>
-                            
-                            <!-- Menu Actions -->
-                            <div class="dropdown-wrapper-fixed">
-                                <button class="action-btn-fixed btn-secondary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                        onclick="window.pageManager.toggleBulkActions(event)"
-                                        ${selectedCount === 0 ? 'disabled' : ''}>
-                                    <i class="fas fa-ellipsis-v"></i>
-                                    <span>Actions</span>
-                                    <i class="fas fa-chevron-down"></i>
+                <!-- Barre de contrôles avec boutons TOUJOURS VISIBLES -->
+                <div class="controls-bar-harmonized">
+                    <!-- Section recherche -->
+                    <div class="search-section-harmonized">
+                        <div class="search-box-harmonized">
+                            <i class="fas fa-search search-icon-harmonized"></i>
+                            <input type="text" 
+                                   class="search-input-harmonized" 
+                                   id="emailSearchInput"
+                                   placeholder="Rechercher emails..." 
+                                   value="${this.searchTerm}">
+                            ${this.searchTerm ? `
+                                <button class="search-clear-harmonized" onclick="window.pageManager.clearSearch()">
+                                    <i class="fas fa-times"></i>
                                 </button>
-                                <div class="dropdown-menu-fixed" id="bulkActionsMenu">
-                                    <button class="dropdown-item-fixed" onclick="window.pageManager.bulkMarkAsRead()">
-                                        <i class="fas fa-eye"></i>
-                                        <span>Marquer comme lu</span>
-                                    </button>
-                                    <button class="dropdown-item-fixed" onclick="window.pageManager.bulkArchive()">
-                                        <i class="fas fa-archive"></i>
-                                        <span>Archiver</span>
-                                    </button>
-                                    <button class="dropdown-item-fixed danger" onclick="window.pageManager.bulkDelete()">
-                                        <i class="fas fa-trash"></i>
-                                        <span>Supprimer</span>
-                                    </button>
-                                    <div class="dropdown-divider"></div>
-                                    <button class="dropdown-item-fixed" onclick="window.pageManager.bulkExport()">
-                                        <i class="fas fa-download"></i>
-                                        <span>Exporter</span>
-                                    </button>
-                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- Modes de vue -->
+                    <div class="view-modes-harmonized">
+                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                title="Par domaine">
+                            <i class="fas fa-globe"></i>
+                            <span>Domaine</span>
+                        </button>
+                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                title="Par expéditeur">
+                            <i class="fas fa-user"></i>
+                            <span>Expéditeur</span>
+                        </button>
+                        <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                onclick="window.pageManager.changeViewMode('flat')"
+                                title="Liste complète">
+                            <i class="fas fa-list"></i>
+                            <span>Liste</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Actions principales TOUJOURS VISIBLES -->
+                    <div class="action-buttons-harmonized">
+                        <!-- Bouton Sélectionner tout TOUJOURS VISIBLE -->
+                        <button class="btn-harmonized btn-selection-toggle" 
+                                onclick="window.pageManager.toggleAllSelection()"
+                                title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
+                            <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
+                            <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
+                            ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
+                        </button>
+                        
+                        <!-- Bouton Créer tâches TOUJOURS VISIBLE (désactivé si pas de sélection) -->
+                        <button class="btn-harmonized btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                                onclick="window.pageManager.createTasksFromSelection()"
+                                ${selectedCount === 0 ? 'disabled' : ''}>
+                            <i class="fas fa-tasks"></i>
+                            <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                            ${selectedCount > 0 ? `<span class="count-badge-harmonized">${selectedCount}</span>` : ''}
+                        </button>
+                        
+                        <!-- Bouton Actions TOUJOURS VISIBLE (désactivé si pas de sélection) -->
+                        <div class="dropdown-action-harmonized">
+                            <button class="btn-harmonized btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
+                                    onclick="window.pageManager.toggleBulkActions(event)"
+                                    ${selectedCount === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-ellipsis-v"></i>
+                                <span>Actions</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
+                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
+                                    <i class="fas fa-eye"></i>
+                                    <span>Marquer comme lu</span>
+                                </button>
+                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkArchive()">
+                                    <i class="fas fa-archive"></i>
+                                    <span>Archiver</span>
+                                </button>
+                                <button class="dropdown-item-harmonized danger" onclick="window.pageManager.bulkDelete()">
+                                    <i class="fas fa-trash"></i>
+                                    <span>Supprimer</span>
+                                </button>
+                                <div class="dropdown-divider"></div>
+                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkExport()">
+                                    <i class="fas fa-download"></i>
+                                    <span>Exporter</span>
+                                </button>
                             </div>
-                            
-                            <!-- Bouton Actualiser -->
-                            <button class="action-btn-fixed btn-secondary" onclick="window.pageManager.refreshEmails()">
-                                <i class="fas fa-sync-alt"></i>
-                                <span>Actualiser</span>
-                            </button>
                         </div>
+                        
+                        <!-- Bouton Actualiser TOUJOURS VISIBLE -->
+                        <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Actualiser</span>
+                        </button>
+                        
+                        <!-- Indicateur de sélection (si emails sélectionnés) -->
+                        ${selectedCount > 0 ? `
+                            <div class="selection-info-harmonized">
+                                <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                                <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
+                </div>
 
-                    <!-- Indicateur de sélection (si emails sélectionnés) -->
-                    ${selectedCount > 0 ? `
-                        <div class="selection-indicator-fixed">
-                            <span class="selection-count">${selectedCount} email${selectedCount > 1 ? 's' : ''} sélectionné${selectedCount > 1 ? 's' : ''}</span>
-                            <button class="clear-selection-btn" onclick="window.pageManager.clearSelection()">
-                                <i class="fas fa-times"></i>
-                                <span>Effacer</span>
-                            </button>
-                        </div>
-                    ` : ''}
+                <!-- Filtres de catégories -->
+                <div class="status-filters-harmonized-twolines">
+                    ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
+                </div>
 
-                    <!-- Filtres de catégories -->
-                    <div class="categories-filters-fixed">
-                        ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
-                    </div>
-
-                    <!-- CONTENU DES EMAILS -->
-                    <div class="emails-list-container-fixed">
-                        ${this.renderEmailsList()}
-                    </div>
+                <!-- CONTENU DES EMAILS -->
+                <div class="tasks-container-harmonized">
+                    ${this.renderEmailsList()}
                 </div>
             </div>
         `;
 
-        this.addFixedEmailStyles();
+        this.addHarmonizedEmailStyles();
         this.setupEmailsEventListeners();
     };
 
@@ -568,121 +563,23 @@ dispatchEvent(eventName, detail) {
     }
 }
 
-renderEmptyEmailsState() {
-    return `
-        <div class="emails-page-container">
-            <div class="emails-content-wrapper">
-                <div class="empty-state-fixed">
-                    <div class="empty-state-icon-fixed">
-                        <i class="fas fa-inbox"></i>
-                    </div>
-                    <h3 class="empty-state-title-fixed">Aucun email trouvé</h3>
-                    <p class="empty-state-text-fixed">
-                        Utilisez le scanner pour récupérer et analyser vos emails.
-                    </p>
-                    <button class="empty-state-btn-fixed" onclick="window.pageManager.loadPage('scanner')">
-                        <i class="fas fa-search"></i>
-                        <span>Aller au scanner</span>
-                    </button>
+    renderEmptyEmailsState() {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
                 </div>
+                <h3 class="empty-state-title">Aucun email trouvé</h3>
+                <p class="empty-state-text">
+                    Utilisez le scanner pour récupérer et analyser vos emails.
+                </p>
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <i class="fas fa-search"></i>
+                    Aller au scanner
+                </button>
             </div>
-        </div>
-        
-        <style>
-            .empty-state-fixed {
-                text-align: center;
-                padding: 80px 40px;
-                background: rgba(248, 250, 252, 0.5);
-                border: 2px dashed #cbd5e1;
-                border-radius: 16px;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 400px;
-            }
-            
-            .empty-state-icon-fixed {
-                font-size: 64px;
-                margin-bottom: 24px;
-                color: #cbd5e1;
-                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            }
-            
-            .empty-state-title-fixed {
-                font-size: 28px;
-                font-weight: 700;
-                color: #334155;
-                margin-bottom: 16px;
-                background: linear-gradient(135deg, #334155 0%, #475569 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            }
-            
-            .empty-state-text-fixed {
-                font-size: 16px;
-                margin-bottom: 32px;
-                max-width: 400px;
-                line-height: 1.6;
-                color: #64748b;
-                font-weight: 500;
-            }
-            
-            .empty-state-btn-fixed {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border: none;
-                padding: 16px 32px;
-                border-radius: 12px;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
-            }
-            
-            .empty-state-btn-fixed:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
-            }
-            
-            @media (max-width: 768px) {
-                .empty-state-fixed {
-                    padding: 60px 20px;
-                    min-height: 300px;
-                }
-                
-                .empty-state-icon-fixed {
-                    font-size: 48px;
-                    margin-bottom: 20px;
-                }
-                
-                .empty-state-title-fixed {
-                    font-size: 24px;
-                    margin-bottom: 12px;
-                }
-                
-                .empty-state-text-fixed {
-                    font-size: 14px;
-                    margin-bottom: 24px;
-                }
-                
-                .empty-state-btn-fixed {
-                    padding: 14px 28px;
-                    font-size: 14px;
-                }
-            }
-        </style>
-    `;
-}
+        `;
+    }
 
     // ================================================
     // MÉTHODES DE SÉLECTION
@@ -730,32 +627,25 @@ renderEmptyEmailsState() {
         this.updateControlsBar();
     }
 
-updateControlsBar() {
-    const container = document.getElementById('pageContent');
-    if (container && this.currentPage === 'emails') {
-        // Sauvegarder l'état de recherche
-        const searchInput = document.getElementById('emailSearchInput');
-        const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
-        
-        // Sauvegarder l'état de scroll
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        
-        // Re-render avec la nouvelle structure
-        this.renderEmails(container);
-        
-        // Restaurer la recherche et le scroll
-        setTimeout(() => {
-            const newSearchInput = document.getElementById('emailSearchInput');
-            if (newSearchInput && currentSearchValue) {
-                newSearchInput.value = currentSearchValue;
-                newSearchInput.focus();
-            }
+    updateControlsBar() {
+        const container = document.getElementById('pageContent');
+        if (container && this.currentPage === 'emails') {
+            // Sauvegarder l'état de recherche
+            const searchInput = document.getElementById('emailSearchInput');
+            const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
             
-            // Restaurer le scroll
-            window.scrollTo(0, scrollTop);
-        }, 100);
+            // Re-render
+            this.renderEmails(container);
+            
+            // Restaurer la recherche
+            setTimeout(() => {
+                const newSearchInput = document.getElementById('emailSearchInput');
+                if (newSearchInput && currentSearchValue) {
+                    newSearchInput.value = currentSearchValue;
+                }
+            }, 100);
+        }
     }
-}
 buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     // Récupérer les catégories pré-sélectionnées
     const preselectedCategories = this.getTaskPreselectedCategories();
@@ -803,30 +693,31 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         });
     }
     
-    // Générer le HTML avec un style uniforme et aligné
+    // Générer le HTML avec étoile TOUJOURS visible
     return tabs.map(tab => {
         const isCurrentCategory = this.currentCategory === tab.id;
-        const baseClasses = `category-tab-fixed ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected' : ''}`;
+        const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
         
         return `
             <button class="${baseClasses}" 
                     onclick="window.pageManager.filterByCategory('${tab.id}')"
                     data-category-id="${tab.id}"
                     title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
-                <div class="category-content-fixed">
-                    <div class="category-top-line">
-                        <span class="category-icon-fixed">${tab.icon}</span>
-                        <span class="category-count-fixed">${tab.count}</span>
+                <div class="pill-content-twolines">
+                    <div class="pill-first-line-twolines">
+                        <span class="pill-icon-twolines">${tab.icon}</span>
+                        <span class="pill-count-twolines">${tab.count}</span>
                     </div>
-                    <div class="category-bottom-line">
-                        <span class="category-name-fixed">${tab.name}</span>
+                    <div class="pill-second-line-twolines">
+                        <span class="pill-text-twolines">${tab.name}</span>
                     </div>
                 </div>
-                ${tab.isPreselected ? '<div class="preselected-star-fixed">⭐</div>' : ''}
+                ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
             </button>
         `;
     }).join('');
 }
+
 
     filterByCategory(categoryId) {
         this.currentCategory = categoryId;
@@ -863,123 +754,26 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
                 return this.renderFlatView(filteredEmails);
         }
     }
-renderEmptyState() {
-    return `
-        <div class="empty-state-filter-fixed">
-            <div class="empty-state-content-fixed">
-                <div class="empty-state-icon-small-fixed">
-                    <i class="fas fa-search"></i>
+
+    renderEmptyState() {
+        return `
+            <div class="empty-state-harmonized">
+                <div class="empty-state-icon-harmonized">
+                    <i class="fas fa-inbox"></i>
                 </div>
-                <h3 class="empty-state-title-small-fixed">Aucun email trouvé</h3>
-                <p class="empty-state-text-small-fixed">
+                <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
+                <p class="empty-state-text-harmonized">
                     ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
                 </p>
                 ${this.searchTerm ? `
-                    <button class="empty-state-clear-btn-fixed" onclick="window.pageManager.clearSearch()">
+                    <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
                         <i class="fas fa-undo"></i>
                         <span>Effacer la recherche</span>
                     </button>
                 ` : ''}
             </div>
-        </div>
-        
-        <style>
-            .empty-state-filter-fixed {
-                padding: 60px 40px;
-                text-align: center;
-                background: rgba(248, 250, 252, 0.5);
-                border: 1px dashed #cbd5e1;
-                border-radius: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-height: 300px;
-            }
-            
-            .empty-state-content-fixed {
-                max-width: 400px;
-            }
-            
-            .empty-state-icon-small-fixed {
-                font-size: 48px;
-                margin-bottom: 20px;
-                color: #cbd5e1;
-                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            }
-            
-            .empty-state-title-small-fixed {
-                font-size: 22px;
-                font-weight: 700;
-                color: #334155;
-                margin-bottom: 12px;
-                background: linear-gradient(135deg, #334155 0%, #475569 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            }
-            
-            .empty-state-text-small-fixed {
-                font-size: 15px;
-                margin-bottom: 24px;
-                line-height: 1.6;
-                color: #64748b;
-                font-weight: 500;
-            }
-            
-            .empty-state-clear-btn-fixed {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border: none;
-                padding: 12px 24px;
-                border-radius: 10px;
-                font-size: 14px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                box-shadow: 0 3px 12px rgba(99, 102, 241, 0.25);
-            }
-            
-            .empty-state-clear-btn-fixed:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 5px 16px rgba(99, 102, 241, 0.35);
-            }
-            
-            @media (max-width: 768px) {
-                .empty-state-filter-fixed {
-                    padding: 40px 20px;
-                    min-height: 250px;
-                }
-                
-                .empty-state-icon-small-fixed {
-                    font-size: 36px;
-                    margin-bottom: 16px;
-                }
-                
-                .empty-state-title-small-fixed {
-                    font-size: 18px;
-                    margin-bottom: 10px;
-                }
-                
-                .empty-state-text-small-fixed {
-                    font-size: 13px;
-                    margin-bottom: 20px;
-                }
-                
-                .empty-state-clear-btn-fixed {
-                    padding: 10px 20px;
-                    font-size: 12px;
-                }
-            }
-        </style>
-    `;
-}
+        `;
+    }
 
     renderFlatView(emails) {
         return `
