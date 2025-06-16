@@ -206,7 +206,6 @@ class PageManager {
             }
         });
     }
-
 async renderEmails(container) {
     // Récupérer les emails depuis EmailScanner centralisé
     const emails = window.emailScanner?.getAllEmails() || [];
@@ -341,15 +340,7 @@ async renderEmails(container) {
                                 <span>Actualiser</span>
                             </button>
                             
-                            <!-- Indicateur de sélection (si emails sélectionnés) -->
-                            ${selectedCount > 0 ? `
-                                <div class="selection-info-expanded">
-                                    <span class="selection-count-expanded">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
-                                    <button class="btn-expanded btn-clear-selection" onclick="window.pageManager.clearSelection()">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            ` : ''}
+
                         </div>
                     </div>
                 </div>
