@@ -239,7 +239,7 @@ async renderEmails(container) {
                     </div>
                 ` : ''}
 
-                <!-- Barre de contrôles avec boutons TOUJOURS VISIBLES -->
+                <!-- Barre de contrôles harmonisée avec boutons TOUJOURS VISIBLES -->
                 <div class="controls-bar-harmonized">
                     <!-- Section recherche -->
                     <div class="search-section-harmonized">
@@ -258,7 +258,7 @@ async renderEmails(container) {
                         </div>
                     </div>
                     
-                    <!-- Modes de vue -->
+                    <!-- Modes de vue harmonisés -->
                     <div class="view-modes-harmonized">
                         <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
                                 onclick="window.pageManager.changeViewMode('grouped-domain')"
@@ -282,7 +282,7 @@ async renderEmails(container) {
                     
                     <!-- Actions principales TOUJOURS VISIBLES -->
                     <div class="action-buttons-harmonized">
-                        <!-- Bouton Sélectionner tout TOUJOURS VISIBLE -->
+                        <!-- Sélection - TOUJOURS VISIBLE -->
                         <button class="btn-harmonized btn-selection-toggle" 
                                 onclick="window.pageManager.toggleAllSelection()"
                                 title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
@@ -291,7 +291,7 @@ async renderEmails(container) {
                             ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
                         </button>
                         
-                        <!-- Bouton Créer tâches TOUJOURS VISIBLE (désactivé si pas de sélection) -->
+                        <!-- Créer tâches - TOUJOURS VISIBLE -->
                         <button class="btn-harmonized btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
                                 onclick="window.pageManager.createTasksFromSelection()"
                                 ${selectedCount === 0 ? 'disabled' : ''}>
@@ -300,7 +300,7 @@ async renderEmails(container) {
                             ${selectedCount > 0 ? `<span class="count-badge-harmonized">${selectedCount}</span>` : ''}
                         </button>
                         
-                        <!-- Bouton Actions TOUJOURS VISIBLE (désactivé si pas de sélection) -->
+                        <!-- Actions - TOUJOURS VISIBLE -->
                         <div class="dropdown-action-harmonized">
                             <button class="btn-harmonized btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
                                     onclick="window.pageManager.toggleBulkActions(event)"
@@ -330,13 +330,13 @@ async renderEmails(container) {
                             </div>
                         </div>
                         
-                        <!-- Bouton Actualiser TOUJOURS VISIBLE -->
+                        <!-- Actualiser - TOUJOURS VISIBLE -->
                         <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
                             <i class="fas fa-sync-alt"></i>
                             <span>Actualiser</span>
                         </button>
                         
-                        <!-- Indicateur de sélection (si emails sélectionnés) -->
+                        <!-- Indicateur de sélection si nécessaire -->
                         ${selectedCount > 0 ? `
                             <div class="selection-info-harmonized">
                                 <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
@@ -348,9 +348,9 @@ async renderEmails(container) {
                     </div>
                 </div>
 
-                <!-- Filtres de catégories -->
-                <div class="status-filters-harmonized-twolines">
-                    ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
+                <!-- Filtres de catégories harmonisés -->
+                <div class="status-filters-harmonized">
+                    ${this.buildHarmonizedCategoryTabs(categoryCounts, totalEmails, categories)}
                 </div>
 
                 <!-- CONTENU DES EMAILS -->
@@ -372,7 +372,6 @@ async renderEmails(container) {
         console.log('[PageManager] 🤖 Catégories pré-sélectionnées pour analyse:', preselectedCategories);
         
         if (preselectedCategories && preselectedCategories.length > 0) {
-            // Filtrer les emails selon les catégories pré-sélectionnées
             const emailsToAnalyze = emails.filter(email => 
                 preselectedCategories.includes(email.category)
             ).slice(0, 5);
@@ -412,7 +411,71 @@ async renderEmails(container) {
     }
 
     // Ajouter ces méthodes dans PageManager.js après getTaskPreselectedCategories()
-
+buildHarmonizedCategoryTabs(categoryCounts, totalEmails, categories) {
+    // Récupérer les catégories pré-sélectionnées
+    const preselectedCategories = this.getTaskPreselectedCategories();
+    console.log('[PageManager] 📌 Catégories pré-sélectionnées pour l\'affichage:', preselectedCategories);
+    
+    const tabs = [
+        { 
+            id: 'all', 
+            name: 'Tous', 
+            icon: '📧', 
+            count: totalEmails,
+            isPreselected: false 
+        }
+    ];
+    
+    // Ajouter les catégories avec emails
+    Object.entries(categories).forEach(([catId, category]) => {
+        const count = categoryCounts[catId] || 0;
+        if (count > 0) {
+            const isPreselected = preselectedCategories.includes(catId);
+            tabs.push({
+                id: catId,
+                name: category.name,
+                icon: category.icon,
+                color: category.color,
+                count: count,
+                isPreselected: isPreselected
+            });
+            
+            if (isPreselected) {
+                console.log(`[PageManager] ⭐ Catégorie pré-sélectionnée: ${category.name} (${count} emails)`);
+            }
+        }
+    });
+    
+    // Ajouter "Autre" si nécessaire
+    const otherCount = categoryCounts.other || 0;
+    if (otherCount > 0) {
+        tabs.push({
+            id: 'other',
+            name: 'Autre',
+            icon: '📌',
+            count: otherCount,
+            isPreselected: false
+        });
+    }
+    
+    // Générer le HTML avec harmonisation parfaite
+    return tabs.map(tab => {
+        const isCurrentCategory = this.currentCategory === tab.id;
+        const baseClasses = `status-pill-harmonized ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
+        
+        return `
+            <button class="${baseClasses}" 
+                    onclick="window.pageManager.filterByCategory('${tab.id}')"
+                    data-category-id="${tab.id}"
+                    title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                <span class="pill-icon-harmonized">${tab.icon}</span>
+                <span class="pill-text-harmonized">${tab.name}</span>
+                <span class="pill-count-harmonized">${tab.count}</span>
+                ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+            </button>
+        `;
+    }).join('');
+}
 debugPreselection() {
     console.group('🔍 DEBUG PRÉ-SÉLECTION COMPLÈTE');
     
@@ -563,23 +626,23 @@ dispatchEvent(eventName, detail) {
     }
 }
 
-    renderEmptyEmailsState() {
-        return `
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title">Aucun email trouvé</h3>
-                <p class="empty-state-text">
-                    Utilisez le scanner pour récupérer et analyser vos emails.
-                </p>
-                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
-                    <i class="fas fa-search"></i>
-                    Aller au scanner
-                </button>
+renderEmptyEmailsState() {
+    return `
+        <div class="empty-state-harmonized">
+            <div class="empty-state-icon-harmonized">
+                <i class="fas fa-inbox"></i>
             </div>
-        `;
-    }
+            <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
+            <p class="empty-state-text-harmonized">
+                Utilisez le scanner pour récupérer et analyser vos emails.
+            </p>
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                <i class="fas fa-search"></i>
+                <span>Aller au scanner</span>
+            </button>
+        </div>
+    `;
+}
 
     // ================================================
     // MÉTHODES DE SÉLECTION
@@ -755,25 +818,25 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
         }
     }
 
-    renderEmptyState() {
-        return `
-            <div class="empty-state-harmonized">
-                <div class="empty-state-icon-harmonized">
-                    <i class="fas fa-inbox"></i>
-                </div>
-                <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
-                <p class="empty-state-text-harmonized">
-                    ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
-                </p>
-                ${this.searchTerm ? `
-                    <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
-                        <i class="fas fa-undo"></i>
-                        <span>Effacer la recherche</span>
-                    </button>
-                ` : ''}
+renderEmptyState() {
+    return `
+        <div class="empty-state-harmonized">
+            <div class="empty-state-icon-harmonized">
+                <i class="fas fa-inbox"></i>
             </div>
-        `;
-    }
+            <h3 class="empty-state-title-harmonized">Aucun email trouvé</h3>
+            <p class="empty-state-text-harmonized">
+                ${this.searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun email dans cette catégorie'}
+            </p>
+            ${this.searchTerm ? `
+                <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
+                    <i class="fas fa-undo"></i>
+                    <span>Effacer la recherche</span>
+                </button>
+            ` : ''}
+        </div>
+    `;
+}
 
     renderFlatView(emails) {
         return `
@@ -784,8 +847,6 @@ buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     }
 
     
-// PageManager.js - Méthode renderHarmonizedEmailRow() complète corrigée (remplacer vers ligne 1230)
-
 renderHarmonizedEmailRow(email) {
     const isSelected = this.selectedEmails.has(email.id);
     const hasTask = this.createdTasks.has(email.id);
@@ -817,7 +878,7 @@ renderHarmonizedEmailRow(email) {
         this.selectedEmails.add(email.id);
     }
     
-    // Classes CSS pour l'email
+    // Classes CSS pour l'email - IDENTIQUES AUX TÂCHES
     const cardClasses = [
         'task-harmonized-card',
         isSelected || (isPreselectedForTasks && !hasTask) ? 'selected' : '',
@@ -832,7 +893,7 @@ renderHarmonizedEmailRow(email) {
              data-preselected="${isPreselectedForTasks}"
              onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
             
-            <!-- Checkbox de sélection -->
+            <!-- Checkbox de sélection identique tâches -->
             <input type="checkbox" 
                    class="task-checkbox-harmonized" 
                    ${(isSelected || (isPreselectedForTasks && !hasTask)) ? 'checked' : ''}
@@ -840,54 +901,53 @@ renderHarmonizedEmailRow(email) {
             
             <!-- Indicateur de priorité avec couleur spéciale si pré-sélectionné -->
             <div class="priority-bar-harmonized" 
-                 style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
-            
-            <!-- Contenu principal -->
-            <div class="task-main-content-harmonized">
-                <div class="task-header-harmonized">
-                    <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
-                    <div class="task-meta-harmonized">
-                        <span class="task-type-badge-harmonized">📧 Email</span>
-                        <span class="deadline-badge-harmonized">
-                            📅 ${this.formatEmailDate(email.receivedDateTime)}
-                        </span>
-                        ${email.categoryScore ? `
-                            <span class="confidence-badge-harmonized">
-                                🎯 ${Math.round(email.categoryConfidence * 100)}%
-                            </span>
-                        ` : ''}
-                        ${isPreselectedForTasks ? `
-                            <span class="preselected-badge-harmonized">
-                                ⭐ Pré-sélectionné
-                            </span>
-                        ` : ''}
-                    </div>
-                </div>
-                
-                <div class="task-recipient-harmonized">
-                    <i class="fas fa-envelope"></i>
-                    <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
-                    ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
-                    ${email.category && email.category !== 'other' ? `
-                        <span class="category-indicator-harmonized" 
-                              style="background: ${this.getCategoryColor(email.category)}20; 
-                                     color: ${this.getCategoryColor(email.category)};
-                                     ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
-                            ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
-                            ${isPreselectedForTasks ? ' ⭐' : ''}
-                        </span>
-                    ` : ''}
-                </div>
-            </div>
-            
-            <!-- Actions rapides -->
-            <div class="task-actions-harmonized">
-                ${this.renderHarmonizedEmailActions(email)}
-            </div>
-        </div>
-    `;
+style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
+           
+           <!-- Contenu principal identique aux tâches -->
+           <div class="task-main-content-harmonized">
+               <div class="task-header-harmonized">
+                   <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                   <div class="task-meta-harmonized">
+                       <span class="task-type-badge-harmonized">📧 Email</span>
+                       <span class="deadline-badge-harmonized">
+                           📅 ${this.formatEmailDate(email.receivedDateTime)}
+                       </span>
+                       ${email.categoryScore ? `
+                           <span class="confidence-badge-harmonized">
+                               🎯 ${Math.round(email.categoryConfidence * 100)}%
+                           </span>
+                       ` : ''}
+                       ${isPreselectedForTasks ? `
+                           <span class="preselected-badge-harmonized">
+                               ⭐ Pré-sélectionné
+                           </span>
+                       ` : ''}
+                   </div>
+               </div>
+               
+               <div class="task-recipient-harmonized">
+                   <i class="fas fa-envelope"></i>
+                   <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
+                   ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
+                   ${email.category && email.category !== 'other' ? `
+                       <span class="category-indicator-harmonized" 
+                             style="background: ${this.getCategoryColor(email.category)}20; 
+                                    color: ${this.getCategoryColor(email.category)};
+                                    ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
+                           ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                           ${isPreselectedForTasks ? ' ⭐' : ''}
+                       </span>
+                   ` : ''}
+               </div>
+           </div>
+           
+           <!-- Actions rapides identiques aux tâches -->
+           <div class="task-actions-harmonized">
+               ${this.renderHarmonizedEmailActions(email)}
+           </div>
+       </div>
+   `;
 }
-
 // Ajouter cette méthode dans PageManager.js après la méthode getTaskPreselectedCategories()
 
 debugPreselection() {
@@ -1023,39 +1083,38 @@ forceUpdatePreselection() {
         removed: removed
     };
 }
-    renderHarmonizedEmailActions(email) {
-        const hasTask = this.createdTasks.has(email.id);
-        const actions = [];
-        
-        if (!hasTask) {
-            actions.push(`
-                <button class="action-btn-harmonized create-task" 
-                        onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
-                        title="Créer une tâche">
-                    <i class="fas fa-tasks"></i>
-                </button>
-            `);
-        } else {
-            actions.push(`
-                <button class="action-btn-harmonized view-task" 
-                        onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
-                        title="Voir la tâche">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-            `);
-        }
-        
+renderHarmonizedEmailActions(email) {
+    const hasTask = this.createdTasks.has(email.id);
+    const actions = [];
+    
+    if (!hasTask) {
         actions.push(`
-            <button class="action-btn-harmonized details" 
-                    onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
-                    title="Voir l'email">
-                <i class="fas fa-eye"></i>
+            <button class="action-btn-harmonized create-task" 
+                    onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
+                    title="Créer une tâche">
+                <i class="fas fa-tasks"></i>
             </button>
         `);
-        
-        return actions.join('');
+    } else {
+        actions.push(`
+            <button class="action-btn-harmonized view-task" 
+                    onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
+                    title="Voir la tâche">
+                <i class="fas fa-check-circle"></i>
+            </button>
+        `);
     }
-
+    
+    actions.push(`
+        <button class="action-btn-harmonized details" 
+                onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
+                title="Voir l'email">
+            <i class="fas fa-eye"></i>
+        </button>
+    `);
+    
+    return actions.join('');
+}
     renderGroupedView(emails, groupMode) {
         const groups = this.createEmailGroups(emails, groupMode);
         
