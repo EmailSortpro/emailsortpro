@@ -1058,7 +1058,6 @@ class TasksView {
             this.refreshView();
         });
     }
-
 render(container) {
     if (!container) {
         console.error('[TasksView] No container provided');
