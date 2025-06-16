@@ -1,4 +1,4 @@
-// TaskManager Pro v9.0 - Version Complète avec Édition et Vue Minimaliste
+// TaskManager Pro v10.0 - Version Complète Réécrite avec Harmonisation et Contenu Email Complet
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v9.0 - Version complète...');
+            console.log('[TaskManager] Initializing v10.0 - Version complète réécrite...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -58,7 +58,7 @@ class TaskManager {
             client: task.client || 'Interne',
             tags: Array.isArray(task.tags) ? task.tags : [],
             
-            // Email info
+            // Email info - ENRICHIES
             hasEmail: task.hasEmail || false,
             emailId: task.emailId || null,
             emailFrom: task.emailFrom || null,
@@ -66,6 +66,9 @@ class TaskManager {
             emailSubject: task.emailSubject || null,
             emailContent: task.emailContent || '',
             emailHtmlContent: task.emailHtmlContent || '',
+            emailImages: Array.isArray(task.emailImages) ? task.emailImages : [],
+            emailAttachments: Array.isArray(task.emailAttachments) ? task.emailAttachments : [],
+            emailConversation: Array.isArray(task.emailConversation) ? task.emailConversation : [],
             emailDomain: task.emailDomain || null,
             emailDate: task.emailDate || null,
             emailReplied: task.emailReplied || false,
@@ -79,7 +82,7 @@ class TaskManager {
             risks: Array.isArray(task.risks) ? task.risks : [],
             aiAnalysis: task.aiAnalysis || null,
             
-            // Suggestions de réponse IA (obligatoires)
+            // Suggestions de réponse IA
             suggestedReplies: Array.isArray(task.suggestedReplies) ? task.suggestedReplies : this.generateBasicReplies(task),
             aiRepliesGenerated: task.aiRepliesGenerated || false,
             aiRepliesGeneratedAt: task.aiRepliesGeneratedAt || null,
@@ -136,6 +139,23 @@ class TaskManager {
                 emailDate: '2025-06-06T09:15:00Z',
                 emailDomain: 'acme-corp.com',
                 emailContent: `Email de: Sarah Martin <sarah.martin@acme-corp.com>\nDate: ${new Date().toLocaleString('fr-FR')}\nSujet: Validation campagne marketing Q2\n\nBonjour,\n\nJ'espère que vous allez bien. Je vous contacte concernant notre campagne marketing Q2 qui nécessite votre validation.\n\nNous avons préparé les éléments suivants :\n- Visuels créatifs pour les réseaux sociaux\n- Budget détaillé de 50k€\n- Calendrier de lancement\n\nPourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner avec l'équipe commerciale pour le lancement.\n\nMerci d'avance,\nSarah Martin`,
+                emailImages: [
+                    {
+                        name: 'campagne-visuel-1.jpg',
+                        url: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200" viewBox="0 0 300 200"><rect width="300" height="200" fill="#f0f9ff"/><text x="150" y="100" text-anchor="middle" fill="#3b82f6" font-family="Arial" font-size="16">Visuel Campagne Q2</text></svg>'),
+                        size: '245 KB',
+                        type: 'image/jpeg'
+                    }
+                ],
+                emailConversation: [
+                    {
+                        from: 'sarah.martin@acme-corp.com',
+                        fromName: 'Sarah Martin',
+                        date: '2025-06-06T09:15:00Z',
+                        subject: 'Validation campagne marketing Q2',
+                        content: 'Bonjour,\n\nJ\'espère que vous allez bien. Je vous contacte concernant notre campagne marketing Q2 qui nécessite votre validation.\n\nNous avons préparé les éléments suivants :\n- Visuels créatifs pour les réseaux sociaux\n- Budget détaillé de 50k€\n- Calendrier de lancement\n\nPourriez-vous valider ces éléments avant vendredi ?\n\nMerci d\'avance,\nSarah Martin'
+                    }
+                ],
                 tags: ['marketing', 'validation', 'q2'],
                 client: 'ACME Corp',
                 dueDate: '2025-06-20',
@@ -181,21 +201,39 @@ class TaskManager {
             },
             {
                 id: 'sample_3',
-                title: 'Répondre à Jean Dupont - Devis urgent',
-                description: 'Jean Dupont demande un devis pour un projet de refonte website',
-                priority: 'urgent',
+                title: 'Répondre à Trainline - Offres Trenitalia',
+                description: '📧 RÉSUMÉ EXÉCUTIF\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDe: Trainline <no-reply@comms.trainline.com>\nObjet: 20 % offerts sur les nouveaux trajets Trenitalia !\n📮 Email marketing\n\n🎯 ACTIONS REQUISES:\n1. Évaluer l\'offre promotionnelle\n2. Planifier voyage en Italie si pertinent\n\n💡 INFORMATIONS CLÉS:\n• Réduction de 20% sur trajets Trenitalia\n• Promotion limitée dans le temps\n• Nouveaux trajets uniquement',
+                priority: 'low',
                 status: 'todo',
                 category: 'email',
                 hasEmail: true,
-                emailFrom: 'jean.dupont@example.com',
-                emailFromName: 'Jean Dupont',
-                emailSubject: 'Demande de devis - Refonte site web',
-                emailDate: '2025-06-15T14:30:00Z',
-                emailDomain: 'example.com',
-                client: 'Jean Dupont',
-                dueDate: '2025-06-17',
-                needsReply: true,
-                summary: 'Demande de devis urgent pour refonte complète du site web',
+                emailFrom: 'no-reply@comms.trainline.com',
+                emailFromName: 'Trainline',
+                emailSubject: '20 % offerts sur les nouveaux trajets Trenitalia !',
+                emailDate: '2025-06-16T10:20:03Z',
+                emailDomain: 'trainline.com',
+                emailContent: `Email de: Trainline <no-reply@comms.trainline.com>\nDate: 16/06/2025 10:20:03\nSujet: 20 % offerts sur les nouveaux trajets Trenitalia !\n\nBonjour,\n\nNous avons le plaisir de vous annoncer une offre exceptionnelle sur les trajets Trenitalia !\n\nBénéficiez de 20% de réduction sur tous les nouveaux trajets en Italie.\n\nCette offre est valable pour une durée limitée, ne la manquez pas !\n\nRéservez dès maintenant sur notre site ou application.\n\nL'équipe Trainline`,
+                emailImages: [
+                    {
+                        name: 'paris-banner.jpg',
+                        url: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200"><defs><linearGradient id="sunset" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" /><stop offset="100%" style="stop-color:#f97316;stop-opacity:1" /></linearGradient></defs><rect width="400" height="200" fill="url(#sunset)"/><polygon points="200,50 210,180 190,180" fill="#8b4513"/><circle cx="200" cy="40" r="8" fill="#d97706"/><text x="200" y="170" text-anchor="middle" fill="white" font-family="Georgia" font-size="24" font-weight="bold">Paris</text></svg>'),
+                        size: '156 KB',
+                        type: 'image/jpeg'
+                    }
+                ],
+                emailConversation: [
+                    {
+                        from: 'no-reply@comms.trainline.com',
+                        fromName: 'Trainline',
+                        date: '2025-06-16T10:20:03Z',
+                        subject: '20 % offerts sur les nouveaux trajets Trenitalia !',
+                        content: 'Bonjour,\n\nNous avons le plaisir de vous annoncer une offre exceptionnelle sur les trajets Trenitalia !\n\nBénéficiez de 20% de réduction sur tous les nouveaux trajets en Italie.\n\nCette offre est valable pour une durée limitée, ne la manquez pas !\n\nRéservez dès maintenant sur notre site ou application.\n\nL\'équipe Trainline'
+                    }
+                ],
+                client: 'Trainline',
+                dueDate: '2025-06-30',
+                needsReply: false,
+                summary: 'Offre promotionnelle Trainline pour trajets Trenitalia avec 20% de réduction',
                 method: 'ai'
             }
         ];
@@ -230,15 +268,13 @@ class TaskManager {
     createTaskFromEmail(taskData, email = null) {
         console.log('[TaskManager] Creating task from email:', taskData.title);
         
-        const fullEmailContent = this.extractFullEmailContent(email, taskData);
-        const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
+        const enrichedData = this.extractCompleteEmailData(email, taskData);
         
         const task = this.ensureTaskProperties({
             ...taskData,
+            ...enrichedData,
             id: taskData.id || this.generateId(),
             hasEmail: true,
-            emailContent: fullEmailContent,
-            emailHtmlContent: htmlEmailContent,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         });
@@ -249,6 +285,107 @@ class TaskManager {
         
         console.log('[TaskManager] Email task created successfully:', task.id);
         return task;
+    }
+
+    extractCompleteEmailData(email, taskData) {
+        if (!email) return taskData;
+
+        const enrichedData = {
+            ...taskData,
+            emailContent: this.extractFullEmailContent(email, taskData),
+            emailHtmlContent: this.extractHtmlEmailContent(email, taskData),
+            emailImages: this.extractEmailImages(email),
+            emailAttachments: this.extractEmailAttachments(email),
+            emailConversation: this.extractEmailConversation(email)
+        };
+
+        return enrichedData;
+    }
+
+    extractEmailImages(email) {
+        const images = [];
+        
+        if (email?.attachments) {
+            email.attachments.forEach(attachment => {
+                if (attachment.contentType && attachment.contentType.startsWith('image/')) {
+                    images.push({
+                        name: attachment.name || 'image.jpg',
+                        url: attachment.contentBytes ? `data:${attachment.contentType};base64,${attachment.contentBytes}` : null,
+                        size: attachment.size ? this.formatFileSize(attachment.size) : 'Taille inconnue',
+                        type: attachment.contentType,
+                        id: attachment.id || `img_${Date.now()}`
+                    });
+                }
+            });
+        }
+
+        // Extraire les images inline du HTML
+        if (email?.body?.content && email.body.contentType === 'html') {
+            const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/gi;
+            let match;
+            while ((match = imgRegex.exec(email.body.content)) !== null) {
+                const src = match[1];
+                if (src.startsWith('data:image/')) {
+                    images.push({
+                        name: `inline_image_${images.length + 1}.jpg`,
+                        url: src,
+                        size: 'Inline',
+                        type: src.split(';')[0].split(':')[1],
+                        id: `inline_${Date.now()}_${images.length}`
+                    });
+                }
+            }
+        }
+
+        return images;
+    }
+
+    extractEmailAttachments(email) {
+        const attachments = [];
+        
+        if (email?.attachments) {
+            email.attachments.forEach(attachment => {
+                if (!attachment.contentType || !attachment.contentType.startsWith('image/')) {
+                    attachments.push({
+                        name: attachment.name || 'fichier',
+                        size: attachment.size ? this.formatFileSize(attachment.size) : 'Taille inconnue',
+                        type: attachment.contentType || 'application/octet-stream',
+                        id: attachment.id || `att_${Date.now()}`
+                    });
+                }
+            });
+        }
+
+        return attachments;
+    }
+
+    extractEmailConversation(email) {
+        const conversation = [];
+        
+        // Email principal
+        if (email) {
+            conversation.push({
+                from: email.from?.emailAddress?.address || '',
+                fromName: email.from?.emailAddress?.name || '',
+                date: email.receivedDateTime || new Date().toISOString(),
+                subject: email.subject || '',
+                content: this.extractFullEmailContent(email, {}),
+                isReply: false
+            });
+        }
+
+        // TODO: Extraire les réponses précédentes du thread si disponible
+        // Ceci nécessiterait une analyse du contenu pour détecter les réponses quotées
+
+        return conversation;
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
 
     updateTask(id, updates) {
@@ -520,7 +657,7 @@ class TaskManager {
 }
 
 // =====================================
-// TASKS VIEW - INTERFACE COMPLÈTE
+// TASKS VIEW - INTERFACE COMPLÈTE RÉÉCRITE
 // =====================================
 class TasksView {
     constructor() {
@@ -551,8 +688,8 @@ class TasksView {
 
         if (!window.taskManager || !window.taskManager.initialized) {
             container.innerHTML = `
-                <div class="loading-state">
-                    <div class="loading-icon">
+                <div class="loading-state-unified">
+                    <div class="loading-icon-unified">
                         <i class="fas fa-spinner fa-spin"></i>
                     </div>
                     <p>Chargement des tâches...</p>
@@ -569,46 +706,45 @@ class TasksView {
 
         const stats = window.taskManager.getStats();
         const selectedCount = this.selectedTasks.size;
+        const visibleTasks = this.getVisibleTasks();
+        const visibleCount = visibleTasks.length;
         
         container.innerHTML = `
-            <div class="tasks-page-modern">
-                <!-- Barre de contrôles harmonisée -->
-                <div class="controls-bar-harmonized">
-                    <!-- Section recherche -->
-                    <div class="search-section-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
-                            <input type="text" 
-                                   class="search-input-harmonized" 
-                                   id="taskSearchInput"
-                                   placeholder="Rechercher tâches..." 
-                                   value="${this.currentFilters.search}">
-                            ${this.currentFilters.search ? `
-                                <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : ''}
-                        </div>
+            <div class="tasks-page-unified">
+                <!-- Barre de recherche unifiée -->
+                <div class="search-bar-unified">
+                    <div class="search-container-unified">
+                        <i class="fas fa-search search-icon-unified"></i>
+                        <input type="text" 
+                               class="search-input-unified" 
+                               id="taskSearchInput"
+                               placeholder="Rechercher tâches, clients, contenus..." 
+                               value="${this.currentFilters.search}">
+                        ${this.currentFilters.search ? `
+                            <button class="search-clear-unified" onclick="window.tasksView.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
 
-                <!-- DEUXIÈME LIGNE : Modes de vue + Actions -->
-                <div class="second-line-controls-harmonized">
-                    <!-- Modes de vue harmonisés -->
-                    <div class="view-modes-harmonized">
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
+                <!-- Barre d'actions unifiée -->
+                <div class="actions-bar-unified">
+                    <!-- Modes de vue avec icônes unifiées -->
+                    <div class="view-modes-unified">
+                        <button class="view-mode-unified ${this.currentViewMode === 'minimal' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('minimal')"
                                 title="Vue minimaliste">
                             <i class="fas fa-th-list"></i>
                             <span>Minimal</span>
                         </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'normal' ? 'active' : ''}" 
+                        <button class="view-mode-unified ${this.currentViewMode === 'normal' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('normal')"
                                 title="Vue normale">
                             <i class="fas fa-list"></i>
                             <span>Normal</span>
                         </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                        <button class="view-mode-unified ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
                                 onclick="window.tasksView.changeViewMode('detailed')"
                                 title="Vue détaillée">
                             <i class="fas fa-th-large"></i>
@@ -616,33 +752,46 @@ class TasksView {
                         </button>
                     </div>
                     
-                    <!-- Actions principales harmonisées -->
-                    <div class="action-buttons-harmonized">
+                    <!-- Actions principales avec icônes unifiées -->
+                    <div class="main-actions-unified">
                         ${selectedCount > 0 ? `
-                            <div class="selection-info-harmonized">
-                                <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
-                                <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
+                            <div class="selection-info-unified">
+                                <i class="fas fa-check-square"></i>
+                                <span>${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                                <button class="clear-selection-unified" onclick="window.tasksView.clearSelection()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
-                            <button class="btn-harmonized btn-primary" onclick="window.tasksView.bulkActions()">
-                                <i class="fas fa-cog"></i>
-                                <span>Actions</span>
-                                <span class="count-badge-harmonized">${selectedCount}</span>
-                            </button>
                         ` : ''}
                         
-                        <button class="btn-harmonized btn-secondary" onclick="window.tasksView.refreshTasks()">
+                        <button class="action-btn-unified ${visibleCount === 0 ? 'disabled' : ''}" 
+                                onclick="window.tasksView.selectAllVisible()"
+                                ${visibleCount === 0 ? 'disabled' : ''}
+                                title="Sélectionner toutes les tâches affichées">
+                            <i class="fas fa-check-double"></i>
+                            <span>Tout sélectionner</span>
+                            ${visibleCount > 0 ? `<span class="count-badge-unified">${visibleCount}</span>` : ''}
+                        </button>
+                        
+                        <button class="action-btn-unified" onclick="window.tasksView.refreshTasks()">
                             <i class="fas fa-sync-alt"></i>
                             <span>Actualiser</span>
                         </button>
                         
-                        <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
+                        ${selectedCount > 0 ? `
+                            <button class="action-btn-unified primary" onclick="window.tasksView.showBulkActions()">
+                                <i class="fas fa-cog"></i>
+                                <span>Actions</span>
+                                <span class="count-badge-unified">${selectedCount}</span>
+                            </button>
+                        ` : ''}
+                        
+                        <button class="action-btn-unified primary" onclick="window.tasksView.showCreateModal()">
                             <i class="fas fa-plus"></i>
                             <span>Nouvelle</span>
                         </button>
                         
-                        <button class="btn-harmonized filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                        <button class="action-btn-unified filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
                                 onclick="window.tasksView.toggleAdvancedFilters()">
                             <i class="fas fa-filter"></i>
                             <span>Filtres</span>
@@ -651,18 +800,19 @@ class TasksView {
                     </div>
                 </div>
 
-                <!-- Filtres de statut harmonisés -->
-                <div class="status-filters-harmonized-twolines">
-                    ${this.buildHarmonizedStatusPills(stats)}
+                <!-- Filtres de statut unifiés -->
+                <div class="status-filters-unified">
+                    ${this.buildUnifiedStatusPills(stats)}
                 </div>
                 
-                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
-                    <div class="advanced-filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">
+                <!-- Panneau de filtres avancés -->
+                <div class="advanced-filters-panel-unified ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                    <div class="filters-grid-unified">
+                        <div class="filter-group-unified">
+                            <label class="filter-label-unified">
                                 <i class="fas fa-flag"></i> Priorité
                             </label>
-                            <select class="filter-select" id="priorityFilter" 
+                            <select class="filter-select-unified" id="priorityFilter" 
                                     onchange="window.tasksView.updateFilter('priority', this.value)">
                                 <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
                                 <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
@@ -672,21 +822,21 @@ class TasksView {
                             </select>
                         </div>
 
-                        <div class="filter-group">
-                            <label class="filter-label">
+                        <div class="filter-group-unified">
+                            <label class="filter-label-unified">
                                 <i class="fas fa-building"></i> Client
                             </label>
-                            <select class="filter-select" id="clientFilter" 
+                            <select class="filter-select-unified" id="clientFilter" 
                                     onchange="window.tasksView.updateFilter('client', this.value)">
                                 ${this.buildClientFilterOptions()}
                             </select>
                         </div>
 
-                        <div class="filter-group">
-                            <label class="filter-label">
+                        <div class="filter-group-unified">
+                            <label class="filter-label-unified">
                                 <i class="fas fa-sort"></i> Trier par
                             </label>
-                            <select class="filter-select" id="sortByFilter" 
+                            <select class="filter-select-unified" id="sortByFilter" 
                                     onchange="window.tasksView.updateFilter('sortBy', this.value)">
                                 <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
                                 <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
@@ -696,74 +846,79 @@ class TasksView {
                             </select>
                         </div>
 
-                        <div class="filter-actions">
-                            <button class="btn-harmonized btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                        <div class="filter-actions-unified">
+                            <button class="action-btn-unified secondary" onclick="window.tasksView.resetAllFilters()">
                                 <i class="fas fa-undo"></i> Réinitialiser
                             </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="tasks-container-harmonized" id="tasksContainer">
+                <!-- Container des tâches -->
+                <div class="tasks-container-unified" id="tasksContainer">
                     ${this.renderTasksList()}
                 </div>
             </div>
         `;
 
-        this.addHarmonizedTaskStyles();
+        this.addUnifiedTaskStyles();
         this.setupEventListeners();
-        console.log('[TasksView] Interface harmonisée rendue');
+        console.log('[TasksView] Interface unifiée rendue avec', visibleCount, 'tâches visibles');
     }
 
-    buildHarmonizedStatusPills(stats) {
+    buildUnifiedStatusPills(stats) {
         const pills = [
-            { id: 'all', name: 'Tous', icon: '📋', count: stats.total },
-            { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
-            { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
-            { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
-            { id: 'needsReply', name: 'À répondre', icon: '📧', count: stats.needsReply },
-            { id: 'completed', name: 'Terminées', icon: '✅', count: stats.completed }
+            { id: 'all', name: 'Tous', icon: 'fas fa-list', count: stats.total },
+            { id: 'todo', name: 'À faire', icon: 'fas fa-clock', count: stats.todo },
+            { id: 'in-progress', name: 'En cours', icon: 'fas fa-play-circle', count: stats.inProgress },
+            { id: 'overdue', name: 'En retard', icon: 'fas fa-exclamation-triangle', count: stats.overdue },
+            { id: 'needsReply', name: 'À répondre', icon: 'fas fa-reply', count: stats.needsReply },
+            { id: 'completed', name: 'Terminées', icon: 'fas fa-check-circle', count: stats.completed }
         ];
 
         return pills.map(pill => `
-            <button class="status-pill-harmonized-twolines ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+            <button class="status-pill-unified ${this.isFilterActive(pill.id) ? 'active' : ''}" 
                     data-filter="${pill.id}"
                     onclick="window.tasksView.quickFilter('${pill.id}')">
-                <div class="pill-content-twolines">
-                    <div class="pill-first-line-twolines">
-                        <span class="pill-icon-twolines">${pill.icon}</span>
-                        <span class="pill-count-twolines">${pill.count}</span>
-                    </div>
-                    <div class="pill-second-line-twolines">
-                        <span class="pill-text-twolines">${pill.name}</span>
-                    </div>
+                <div class="pill-header-unified">
+                    <i class="${pill.icon}"></i>
+                    <span class="pill-count-unified">${pill.count}</span>
                 </div>
+                <div class="pill-label-unified">${pill.name}</div>
             </button>
         `).join('');
     }
 
     renderTasksList() {
-        const tasks = window.taskManager.filterTasks(this.currentFilters);
-        const filteredTasks = this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
+        const tasks = this.getVisibleTasks();
         
-        if (filteredTasks.length === 0) {
+        if (tasks.length === 0) {
             return this.renderEmptyState();
         }
 
         switch (this.currentViewMode) {
             case 'minimal':
-                return this.renderMinimalView(filteredTasks);
+                return this.renderMinimalView(tasks);
             case 'detailed':
-                return this.renderDetailedView(filteredTasks);
+                return this.renderDetailedView(tasks);
             case 'normal':
             default:
-                return this.renderNormalView(filteredTasks);
+                return this.renderNormalView(tasks);
         }
     }
 
+    getVisibleTasks() {
+        const tasks = window.taskManager.filterTasks(this.currentFilters);
+        return this.showCompleted ? tasks : tasks.filter(task => task.status !== 'completed');
+    }
+
+    // ================================================
+    // VUE MINIMALISTE UNIFIÉE
+    // ================================================
+    
     renderMinimalView(tasks) {
         return `
-            <div class="tasks-minimal-list">
+            <div class="tasks-minimal-unified">
                 ${tasks.map(task => this.renderMinimalTaskItem(task)).join('')}
             </div>
         `;
@@ -772,29 +927,37 @@ class TasksView {
     renderMinimalTaskItem(task) {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
-        const priorityIcon = this.getPriorityIcon(task.priority);
+        const priorityInfo = this.getPriorityInfo(task.priority);
         const dueDateInfo = this.formatDueDate(task.dueDate);
         
         return `
-            <div class="task-minimal ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+            <div class="task-minimal-item ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-task-id="${task.id}"
                  onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
                 
                 <input type="checkbox" 
-                       class="task-checkbox-minimal" 
+                       class="task-checkbox-unified" 
                        ${isSelected ? 'checked' : ''}
                        onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                 
-                <div class="task-priority-minimal priority-${task.priority}" title="Priorité ${task.priority}">
-                    ${priorityIcon}
+                <div class="priority-indicator-unified priority-${task.priority}" 
+                     title="Priorité ${priorityInfo.label}">
+                    <i class="${priorityInfo.icon}"></i>
                 </div>
                 
                 <div class="task-content-minimal">
-                    <span class="task-title-minimal">${this.escapeHtml(task.title)}</span>
-                    <span class="task-client-minimal">${this.escapeHtml(task.client)}</span>
-                    <span class="task-deadline-minimal ${dueDateInfo.className}">
-                        ${dueDateInfo.text || 'Pas d\'échéance'}
-                    </span>
+                    <div class="task-title-minimal">${this.escapeHtml(task.title)}</div>
+                    <div class="task-meta-minimal">
+                        <span class="task-client-minimal">
+                            <i class="fas fa-building"></i>
+                            ${this.escapeHtml(task.client)}
+                        </span>
+                        <span class="task-deadline-minimal ${dueDateInfo.className}">
+                            <i class="fas fa-calendar"></i>
+                            ${dueDateInfo.text || 'Pas d\'échéance'}
+                        </span>
+                        ${task.hasEmail ? '<span class="email-indicator-minimal"><i class="fas fa-envelope"></i></span>' : ''}
+                    </div>
                 </div>
                 
                 <div class="task-actions-minimal">
@@ -804,9 +967,13 @@ class TasksView {
         `;
     }
 
+    // ================================================
+    // VUE NORMALE UNIFIÉE
+    // ================================================
+    
     renderNormalView(tasks) {
         return `
-            <div class="tasks-harmonized-list">
+            <div class="tasks-normal-unified">
                 ${tasks.map(task => this.renderNormalTaskItem(task)).join('')}
             </div>
         `;
@@ -815,54 +982,81 @@ class TasksView {
     renderNormalTaskItem(task) {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusIcon = this.getStatusIcon(task.status);
+        const priorityInfo = this.getPriorityInfo(task.priority);
+        const statusInfo = this.getStatusInfo(task.status);
         const dueDateInfo = this.formatDueDate(task.dueDate);
         
         return `
-            <div class="task-harmonized-card ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+            <div class="task-normal-item ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-task-id="${task.id}"
                  onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
                 
                 <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
+                       class="task-checkbox-unified" 
                        ${isSelected ? 'checked' : ''}
                        onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                 
-                <div class="priority-bar-harmonized" 
-                     style="background-color: ${this.getPriorityColor(task.priority)}"></div>
+                <div class="priority-bar-unified priority-${task.priority}"></div>
                 
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(task.title)}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">
-                                ${task.hasEmail ? '📧 Email' : '📋 Tâche'}
+                <div class="task-main-content">
+                    <div class="task-header-normal">
+                        <h3 class="task-title-normal">${this.escapeHtml(task.title)}</h3>
+                        <div class="task-badges-normal">
+                            <span class="type-badge-unified">
+                                <i class="${task.hasEmail ? 'fas fa-envelope' : 'fas fa-tasks'}"></i>
+                                ${task.hasEmail ? 'Email' : 'Tâche'}
                             </span>
-                            <span class="deadline-badge-harmonized ${dueDateInfo.className}">
-                                ${dueDateInfo.html || '<span class="no-deadline">Pas d\'échéance</span>'}
+                            <span class="deadline-badge-unified ${dueDateInfo.className}">
+                                <i class="fas fa-calendar"></i>
+                                ${dueDateInfo.text || 'Pas d\'échéance'}
+                            </span>
+                            <span class="priority-badge-unified priority-${task.priority}">
+                                <i class="${priorityInfo.icon}"></i>
+                                ${priorityInfo.label}
                             </span>
                         </div>
                     </div>
                     
-                    <div class="task-recipient-harmonized">
-                        <i class="fas fa-building"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(task.client)}</span>
-                        ${task.hasEmail && task.needsReply ? '<span class="reply-indicator-harmonized">• Réponse requise</span>' : ''}
-                        ${task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0 ? '<span class="has-suggestions">• Suggestions IA</span>' : ''}
+                    <div class="task-meta-normal">
+                        <div class="client-info-normal">
+                            <i class="fas fa-building"></i>
+                            <span>${this.escapeHtml(task.client)}</span>
+                        </div>
+                        ${task.hasEmail && task.emailFromName ? `
+                            <div class="sender-info-normal">
+                                <i class="fas fa-user"></i>
+                                <span>${this.escapeHtml(task.emailFromName)}</span>
+                            </div>
+                        ` : ''}
+                        ${task.hasEmail && task.needsReply ? `
+                            <div class="reply-needed-normal">
+                                <i class="fas fa-reply"></i>
+                                <span>Réponse requise</span>
+                            </div>
+                        ` : ''}
+                        ${task.hasEmail && task.emailImages && task.emailImages.length > 0 ? `
+                            <div class="has-images-normal">
+                                <i class="fas fa-image"></i>
+                                <span>${task.emailImages.length} image${task.emailImages.length > 1 ? 's' : ''}</span>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
                 
-                <div class="task-actions-harmonized">
+                <div class="task-actions-normal">
                     ${this.renderNormalActions(task)}
                 </div>
             </div>
         `;
     }
 
+    // ================================================
+    // VUE DÉTAILLÉE UNIFIÉE
+    // ================================================
+    
     renderDetailedView(tasks) {
         return `
-            <div class="tasks-detailed-grid">
+            <div class="tasks-detailed-unified">
                 ${tasks.map(task => this.renderDetailedTaskItem(task)).join('')}
             </div>
         `;
@@ -871,51 +1065,77 @@ class TasksView {
     renderDetailedTaskItem(task) {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusIcon = this.getStatusIcon(task.status);
+        const priorityInfo = this.getPriorityInfo(task.priority);
+        const statusInfo = this.getStatusInfo(task.status);
         const dueDateInfo = this.formatDueDate(task.dueDate);
         
         return `
-            <div class="task-detailed-card ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+            <div class="task-detailed-item ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-task-id="${task.id}">
                 
                 <div class="task-detailed-header">
                     <input type="checkbox" 
-                           class="task-checkbox-detailed" 
+                           class="task-checkbox-unified" 
                            ${isSelected ? 'checked' : ''}
                            onclick="window.tasksView.toggleTaskSelection('${task.id}')">
                     
-                    <div class="task-priority-detailed priority-${task.priority}">
-                        ${priorityIcon}
-                    </div>
-                    
-                    <div class="task-status-detailed status-${task.status}">
-                        ${statusIcon}
+                    <div class="task-indicators-detailed">
+                        <div class="priority-indicator-unified priority-${task.priority}" 
+                             title="Priorité ${priorityInfo.label}">
+                            <i class="${priorityInfo.icon}"></i>
+                        </div>
+                        <div class="status-indicator-unified status-${task.status}" 
+                             title="Statut ${statusInfo.label}">
+                            <i class="${statusInfo.icon}"></i>
+                        </div>
                     </div>
                 </div>
                 
                 <div class="task-detailed-content">
                     <h3 class="task-title-detailed" onclick="window.tasksView.showTaskDetails('${task.id}')">${this.escapeHtml(task.title)}</h3>
-                    <p class="task-description-detailed">${this.escapeHtml(task.description.substring(0, 100))}${task.description.length > 100 ? '...' : ''}</p>
+                    ${task.description ? `
+                        <p class="task-description-detailed">${this.escapeHtml(task.description.substring(0, 150))}${task.description.length > 150 ? '...' : ''}</p>
+                    ` : ''}
                     
-                    <div class="task-meta-detailed">
-                        <div class="task-client-detailed">
-                            <i class="fas fa-building"></i>
-                            ${this.escapeHtml(task.client)}
-                        </div>
-                        <div class="task-deadline-detailed ${dueDateInfo.className}">
+                    <div class="task-badges-detailed">
+                        <span class="type-badge-unified">
+                            <i class="${task.hasEmail ? 'fas fa-envelope' : 'fas fa-tasks'}"></i>
+                            ${task.hasEmail ? 'Email' : 'Tâche'}
+                        </span>
+                        <span class="deadline-badge-unified ${dueDateInfo.className}">
                             <i class="fas fa-calendar"></i>
                             ${dueDateInfo.text || 'Pas d\'échéance'}
-                        </div>
+                        </span>
+                        <span class="priority-badge-unified priority-${task.priority}">
+                            <i class="${priorityInfo.icon}"></i>
+                            ${priorityInfo.label}
+                        </span>
                     </div>
                     
-                    ${task.hasEmail ? `
-                        <div class="task-email-info">
-                            <i class="fas fa-envelope"></i>
-                            <span>${task.emailFromName || 'Email'}</span>
-                            ${task.needsReply ? '<span class="reply-needed">Réponse requise</span>' : ''}
+                    <div class="task-meta-detailed">
+                        <div class="meta-item-detailed">
+                            <i class="fas fa-building"></i>
+                            <span>${this.escapeHtml(task.client)}</span>
                         </div>
-                    ` : ''}
+                        ${task.hasEmail && task.emailFromName ? `
+                            <div class="meta-item-detailed">
+                                <i class="fas fa-user"></i>
+                                <span>${this.escapeHtml(task.emailFromName)}</span>
+                            </div>
+                        ` : ''}
+                        ${task.hasEmail && task.needsReply ? `
+                            <div class="meta-item-detailed reply-needed">
+                                <i class="fas fa-reply"></i>
+                                <span>Réponse requise</span>
+                            </div>
+                        ` : ''}
+                        ${task.hasEmail && task.emailImages && task.emailImages.length > 0 ? `
+                            <div class="meta-item-detailed has-images">
+                                <i class="fas fa-image"></i>
+                                <span>${task.emailImages.length} image${task.emailImages.length > 1 ? 's' : ''}</span>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
                 
                 <div class="task-detailed-actions">
@@ -926,7 +1146,7 @@ class TasksView {
     }
 
     // ================================================
-    // ACTIONS POUR CHAQUE VUE
+    // ACTIONS POUR CHAQUE VUE - UNIFIÉES
     // ================================================
     
     renderMinimalActions(task) {
@@ -934,7 +1154,7 @@ class TasksView {
         
         if (task.status !== 'completed') {
             actions.push(`
-                <button class="action-btn-minimal complete" 
+                <button class="action-btn-icon-unified complete" 
                         onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
                         title="Marquer comme terminé">
                     <i class="fas fa-check"></i>
@@ -943,7 +1163,7 @@ class TasksView {
         }
         
         actions.push(`
-            <button class="action-btn-minimal edit" 
+            <button class="action-btn-icon-unified edit" 
                     onclick="event.stopPropagation(); window.tasksView.showEditModal('${task.id}')"
                     title="Modifier">
                 <i class="fas fa-edit"></i>
@@ -958,7 +1178,7 @@ class TasksView {
         
         if (task.status !== 'completed') {
             actions.push(`
-                <button class="action-btn-harmonized complete" 
+                <button class="action-btn-icon-unified complete" 
                         onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
                         title="Marquer comme terminé">
                     <i class="fas fa-check"></i>
@@ -967,15 +1187,15 @@ class TasksView {
         }
         
         actions.push(`
-            <button class="action-btn-harmonized edit" 
+            <button class="action-btn-icon-unified edit" 
                     onclick="event.stopPropagation(); window.tasksView.showEditModal('${task.id}')"
-                    title="Modifier la tâche">
+                    title="Modifier">
                 <i class="fas fa-edit"></i>
             </button>
         `);
         
         actions.push(`
-            <button class="action-btn-harmonized details" 
+            <button class="action-btn-icon-unified details" 
                     onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
                     title="Voir les détails">
                 <i class="fas fa-eye"></i>
@@ -984,7 +1204,7 @@ class TasksView {
         
         if (task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0) {
             actions.push(`
-                <button class="action-btn-harmonized reply" 
+                <button class="action-btn-icon-unified reply" 
                         onclick="event.stopPropagation(); window.tasksView.showSuggestedReplies('${task.id}')"
                         title="Suggestions de réponse">
                     <i class="fas fa-reply"></i>
@@ -1000,27 +1220,27 @@ class TasksView {
         
         if (task.status !== 'completed') {
             actions.push(`
-                <button class="btn-detailed btn-success" 
+                <button class="action-btn-unified success" 
                         onclick="window.tasksView.markComplete('${task.id}')">
                     <i class="fas fa-check"></i>
-                    Terminé
+                    <span>Terminé</span>
                 </button>
             `);
         }
         
         actions.push(`
-            <button class="btn-detailed btn-primary" 
+            <button class="action-btn-unified primary" 
                     onclick="window.tasksView.showEditModal('${task.id}')">
                 <i class="fas fa-edit"></i>
-                Modifier
+                <span>Modifier</span>
             </button>
         `);
         
         actions.push(`
-            <button class="btn-detailed btn-secondary" 
+            <button class="action-btn-unified secondary" 
                     onclick="window.tasksView.showTaskDetails('${task.id}')">
                 <i class="fas fa-eye"></i>
-                Détails
+                <span>Détails</span>
             </button>
         `);
         
@@ -1028,7 +1248,591 @@ class TasksView {
     }
 
     // ================================================
-    // MODALES - ÉDITION ET DÉTAILS
+    // MODALES - DÉTAILS AVEC CONTENU EMAIL ENRICHI
+    // ================================================
+    
+    showTaskDetails(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        const uniqueId = 'task_details_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-overlay">
+                <div class="modal-container modal-xl">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-eye"></i> Détails de la tâche</h2>
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-content">
+                        ${this.buildEnrichedTaskDetailsContent(task)}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
+                            Fermer
+                        </button>
+                        ${task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                            <button class="btn-modal btn-info" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
+                                <i class="fas fa-reply"></i> Voir suggestions
+                            </button>
+                        ` : ''}
+                        <button class="btn-modal btn-primary" onclick="window.tasksView.closeModal('${uniqueId}'); window.tasksView.showEditModal('${task.id}')">
+                            <i class="fas fa-edit"></i> Modifier
+                        </button>
+                        ${task.status !== 'completed' ? `
+                            <button class="btn-modal btn-success" onclick="window.tasksView.markComplete('${task.id}'); window.tasksView.closeModal('${uniqueId}')">
+                                <i class="fas fa-check"></i> Terminé
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    buildEnrichedTaskDetailsContent(task) {
+        const priorityInfo = this.getPriorityInfo(task.priority);
+        const statusInfo = this.getStatusInfo(task.status);
+        const dueDateInfo = this.formatDueDate(task.dueDate);
+        
+        return `
+            <div class="task-details-enriched">
+                <!-- En-tête de la tâche -->
+                <div class="details-header-enriched">
+                    <h1 class="task-title-enriched">${this.escapeHtml(task.title)}</h1>
+                    <div class="task-badges-enriched">
+                        <span class="priority-badge-unified priority-${task.priority}">
+                            <i class="${priorityInfo.icon}"></i>
+                            ${priorityInfo.label}
+                        </span>
+                        <span class="status-badge-unified status-${task.status}">
+                            <i class="${statusInfo.icon}"></i>
+                            ${statusInfo.label}
+                        </span>
+                        <span class="deadline-badge-unified ${dueDateInfo.className}">
+                            <i class="fas fa-calendar"></i>
+                            ${dueDateInfo.text || 'Pas d\'échéance'}
+                        </span>
+                        ${task.hasEmail ? `
+                            <span class="type-badge-unified email">
+                                <i class="fas fa-envelope"></i>
+                                Email
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+
+                ${task.description ? `
+                    <div class="details-section-enriched">
+                        <h3><i class="fas fa-align-left"></i> Description</h3>
+                        <div class="description-content-enriched">
+                            ${this.formatDescription(task.description)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Informations générales -->
+                <div class="details-section-enriched">
+                    <h3><i class="fas fa-info-circle"></i> Informations Générales</h3>
+                    <div class="info-grid-enriched">
+                        <div class="info-item-enriched">
+                            <strong>Client/Projet:</strong>
+                            <span>${this.escapeHtml(task.client)}</span>
+                        </div>
+                        <div class="info-item-enriched">
+                            <strong>Créé le:</strong>
+                            <span>${new Date(task.createdAt).toLocaleString('fr-FR')}</span>
+                        </div>
+                        <div class="info-item-enriched">
+                            <strong>Dernière modification:</strong>
+                            <span>${new Date(task.updatedAt).toLocaleString('fr-FR')}</span>
+                        </div>
+                        ${task.completedAt ? `
+                            <div class="info-item-enriched">
+                                <strong>Terminé le:</strong>
+                                <span>${new Date(task.completedAt).toLocaleString('fr-FR')}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                ${task.hasEmail ? `
+                    <!-- Section Email Enrichie -->
+                    <div class="details-section-enriched email-section">
+                        <h3><i class="fas fa-envelope"></i> Contenu Email Complet</h3>
+                        
+                        <!-- Informations de base -->
+                        <div class="email-info-enriched">
+                            <div class="email-header-enriched">
+                                <div class="sender-info-enriched">
+                                    <div class="sender-avatar-enriched">
+                                        ${task.emailFromName ? task.emailFromName.charAt(0).toUpperCase() : 'E'}
+                                    </div>
+                                    <div class="sender-details-enriched">
+                                        <div class="sender-name-enriched">${this.escapeHtml(task.emailFromName || 'Expéditeur inconnu')}</div>
+                                        <div class="sender-email-enriched">${this.escapeHtml(task.emailFrom || '')}</div>
+                                    </div>
+                                </div>
+                                <div class="email-meta-enriched">
+                                    <div class="email-date-enriched">
+                                        <i class="fas fa-clock"></i>
+                                        ${task.emailDate ? new Date(task.emailDate).toLocaleString('fr-FR') : 'Date inconnue'}
+                                    </div>
+                                    <div class="email-domain-enriched">
+                                        <i class="fas fa-globe"></i>
+                                        ${task.emailDomain || 'Domaine inconnu'}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="email-subject-enriched">
+                                <strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}
+                            </div>
+                            
+                            <div class="email-flags-enriched">
+                                ${task.needsReply ? `
+                                    <span class="email-flag-enriched reply-needed">
+                                        <i class="fas fa-reply"></i>
+                                        Réponse requise
+                                    </span>
+                                ` : ''}
+                                ${task.emailReplied ? `
+                                    <span class="email-flag-enriched replied">
+                                        <i class="fas fa-check"></i>
+                                        Répondu
+                                    </span>
+                                ` : ''}
+                                ${task.hasAttachments ? `
+                                    <span class="email-flag-enriched has-attachments">
+                                        <i class="fas fa-paperclip"></i>
+                                        Pièces jointes
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Images de l'email -->
+                        ${task.emailImages && task.emailImages.length > 0 ? `
+                            <div class="email-images-enriched">
+                                <h4><i class="fas fa-image"></i> Images (${task.emailImages.length})</h4>
+                                <div class="images-grid-enriched">
+                                    ${task.emailImages.map((img, idx) => `
+                                        <div class="image-item-enriched" onclick="window.tasksView.showImageModal('${task.id}', ${idx})">
+                                            <img src="${img.url}" alt="${img.name}" class="email-image-thumb" />
+                                            <div class="image-info-enriched">
+                                                <div class="image-name-enriched">${this.escapeHtml(img.name)}</div>
+                                                <div class="image-size-enriched">${img.size}</div>
+                                            </div>
+                                            <div class="image-overlay-enriched">
+                                                <i class="fas fa-search-plus"></i>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- Pièces jointes -->
+                        ${task.emailAttachments && task.emailAttachments.length > 0 ? `
+                            <div class="email-attachments-enriched">
+                                <h4><i class="fas fa-paperclip"></i> Pièces jointes (${task.emailAttachments.length})</h4>
+                                <div class="attachments-list-enriched">
+                                    ${task.emailAttachments.map(att => `
+                                        <div class="attachment-item-enriched">
+                                            <i class="fas fa-file"></i>
+                                            <span class="attachment-name-enriched">${this.escapeHtml(att.name)}</span>
+                                            <span class="attachment-size-enriched">${att.size}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- Conversation complète -->
+                        ${task.emailConversation && task.emailConversation.length > 0 ? `
+                            <div class="email-conversation-enriched">
+                                <h4><i class="fas fa-comments"></i> Conversation (${task.emailConversation.length} message${task.emailConversation.length > 1 ? 's' : ''})</h4>
+                                <div class="conversation-thread-enriched">
+                                    ${task.emailConversation.map((msg, idx) => `
+                                        <div class="conversation-message-enriched ${idx === 0 ? 'latest' : ''}">
+                                            <div class="message-header-enriched">
+                                                <div class="message-sender-enriched">
+                                                    <div class="message-avatar-enriched">
+                                                        ${msg.fromName ? msg.fromName.charAt(0).toUpperCase() : 'E'}
+                                                    </div>
+                                                    <div class="message-details-enriched">
+                                                        <span class="message-from-enriched">${this.escapeHtml(msg.fromName || msg.from || 'Expéditeur')}</span>
+                                                        <span class="message-date-enriched">${new Date(msg.date).toLocaleString('fr-FR')}</span>
+                                                    </div>
+                                                </div>
+                                                ${idx === 0 ? '<span class="latest-indicator-enriched">Le plus récent</span>' : ''}
+                                            </div>
+                                            <div class="message-content-enriched">
+                                                ${this.formatEmailContent(msg.content)}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <!-- Contenu HTML complet de l'email -->
+                        ${task.emailHtmlContent ? `
+                            <div class="email-html-content-enriched">
+                                <h4><i class="fas fa-code"></i> Contenu HTML Complet</h4>
+                                <div class="html-content-viewer-enriched" onclick="window.tasksView.toggleHtmlExpansion(this)">
+                                    <div class="html-content-preview">
+                                        ${task.emailHtmlContent}
+                                    </div>
+                                    <div class="expand-html-button">
+                                        <i class="fas fa-expand"></i>
+                                        Cliquer pour agrandir
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+
+                ${task.actions && task.actions.length > 0 ? `
+                    <div class="details-section-enriched">
+                        <h3><i class="fas fa-tasks"></i> Actions Requises (${task.actions.length})</h3>
+                        <div class="actions-list-enriched">
+                            ${task.actions.map((action, idx) => `
+                                <div class="action-item-enriched">
+                                    <div class="action-number-enriched">${idx + 1}</div>
+                                    <div class="action-content-enriched">
+                                        <span class="action-text-enriched">${this.escapeHtml(action.text)}</span>
+                                        ${action.deadline ? `
+                                            <span class="action-deadline-enriched">
+                                                <i class="fas fa-calendar"></i>
+                                                ${this.formatDeadline(action.deadline)}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.keyInfo && task.keyInfo.length > 0 ? `
+                    <div class="details-section-enriched">
+                        <h3><i class="fas fa-lightbulb"></i> Informations Clés (${task.keyInfo.length})</h3>
+                        <div class="key-info-grid-enriched">
+                            ${task.keyInfo.map(info => `
+                                <div class="key-info-item-enriched">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>${this.escapeHtml(info)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.risks && task.risks.length > 0 ? `
+                    <div class="details-section-enriched attention">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention (${task.risks.length})</h3>
+                        <div class="risks-list-enriched">
+                            ${task.risks.map(risk => `
+                                <div class="risk-item-enriched">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>${this.escapeHtml(risk)}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
+                    <div class="details-section-enriched suggestions">
+                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse (${task.suggestedReplies.length})</h3>
+                        <div class="suggestions-preview-enriched">
+                            <p>Cette tâche contient ${task.suggestedReplies.length} suggestion${task.suggestedReplies.length > 1 ? 's' : ''} de réponse personnalisée${task.suggestedReplies.length > 1 ? 's' : ''}.</p>
+                            <button class="action-btn-unified primary" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
+                                <i class="fas fa-eye"></i>
+                                <span>Voir toutes les suggestions</span>
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // ================================================
+    // INTERACTIONS ET SÉLECTIONS
+    // ================================================
+    
+    selectAllVisible() {
+        const visibleTasks = this.getVisibleTasks();
+        const allSelected = visibleTasks.length > 0 && visibleTasks.every(task => this.selectedTasks.has(task.id));
+        
+        if (allSelected) {
+            // Tout désélectionner
+            visibleTasks.forEach(task => {
+                this.selectedTasks.delete(task.id);
+            });
+            this.showToast(`${visibleTasks.length} tâches désélectionnées`, 'info');
+        } else {
+            // Tout sélectionner
+            visibleTasks.forEach(task => {
+                this.selectedTasks.add(task.id);
+            });
+            this.showToast(`${visibleTasks.length} tâches sélectionnées`, 'success');
+        }
+        
+        this.refreshView();
+    }
+
+    toggleTaskSelection(taskId) {
+        if (this.selectedTasks.has(taskId)) {
+            this.selectedTasks.delete(taskId);
+        } else {
+            this.selectedTasks.add(taskId);
+        }
+        
+        this.updateSelectionUI();
+        this.updateActionBar();
+    }
+
+    clearSelection() {
+        this.selectedTasks.clear();
+        this.refreshView();
+        this.showToast('Sélection effacée', 'info');
+    }
+
+    handleTaskClick(event, taskId) {
+        // Empêcher la propagation si c'est un clic sur checkbox ou actions
+        if (event.target.type === 'checkbox' || event.target.closest('.task-actions-minimal, .task-actions-normal, .task-detailed-actions')) {
+            return;
+        }
+        
+        // Double-clic pour sélection, simple clic pour détails
+        const now = Date.now();
+        const lastClick = this.lastTaskClick || 0;
+        
+        if (now - lastClick < 300) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.toggleTaskSelection(taskId);
+            this.lastTaskClick = 0;
+            return;
+        }
+        
+        this.lastTaskClick = now;
+        
+        setTimeout(() => {
+            if (Date.now() - this.lastTaskClick >= 250) {
+                this.showTaskDetails(taskId);
+            }
+        }, 250);
+    }
+
+    // ================================================
+    // MODALES ADDITIONNELLES
+    // ================================================
+    
+    showImageModal(taskId, imageIndex) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.emailImages || !task.emailImages[imageIndex]) return;
+
+        const image = task.emailImages[imageIndex];
+        const uniqueId = 'image_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-overlay image-modal-overlay" onclick="window.tasksView.closeModal('${uniqueId}')">
+                <div class="image-modal-container" onclick="event.stopPropagation()">
+                    <div class="image-modal-header">
+                        <h3>${this.escapeHtml(image.name)}</h3>
+                        <div class="image-modal-info">
+                            <span>${image.size}</span>
+                            <span>${image.type}</span>
+                        </div>
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="image-modal-content">
+                        <img src="${image.url}" alt="${image.name}" class="modal-image" />
+                    </div>
+                    <div class="image-modal-footer">
+                        ${imageIndex > 0 ? `
+                            <button class="btn-modal btn-secondary" onclick="window.tasksView.showImageModal('${taskId}', ${imageIndex - 1})">
+                                <i class="fas fa-chevron-left"></i> Précédente
+                            </button>
+                        ` : ''}
+                        ${imageIndex < task.emailImages.length - 1 ? `
+                            <button class="btn-modal btn-secondary" onclick="window.tasksView.showImageModal('${taskId}', ${imageIndex + 1})">
+                                Suivante <i class="fas fa-chevron-right"></i>
+                            </button>
+                        ` : ''}
+                        <button class="btn-modal btn-primary" onclick="window.tasksView.downloadImage('${image.url}', '${image.name}')">
+                            <i class="fas fa-download"></i> Télécharger
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    downloadImage(imageUrl, imageName) {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = imageName;
+        link.click();
+    }
+
+    toggleHtmlExpansion(element) {
+        element.classList.toggle('expanded');
+        const button = element.querySelector('.expand-html-button');
+        const icon = button.querySelector('i');
+        
+        if (element.classList.contains('expanded')) {
+            icon.className = 'fas fa-compress';
+            button.innerHTML = '<i class="fas fa-compress"></i> Cliquer pour réduire';
+        } else {
+            icon.className = 'fas fa-expand';
+            button.innerHTML = '<i class="fas fa-expand"></i> Cliquer pour agrandir';
+        }
+    }
+
+    // ================================================
+    // ACTIONS EN MASSE
+    // ================================================
+    
+    showBulkActions() {
+        if (this.selectedTasks.size === 0) return;
+        
+        const uniqueId = 'bulk_actions_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-overlay">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-cog"></i> Actions pour ${this.selectedTasks.size} tâche${this.selectedTasks.size > 1 ? 's' : ''}</h2>
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-content">
+                        <div class="bulk-actions-grid">
+                            <button class="bulk-action-btn" onclick="window.tasksView.bulkComplete('${uniqueId}')">
+                                <i class="fas fa-check-circle"></i>
+                                <div class="bulk-action-info">
+                                    <h4>Marquer comme terminé</h4>
+                                    <p>Terminer toutes les tâches sélectionnées</p>
+                                </div>
+                            </button>
+                            
+                            <button class="bulk-action-btn" onclick="window.tasksView.bulkChangePriority('${uniqueId}')">
+                                <i class="fas fa-flag"></i>
+                                <div class="bulk-action-info">
+                                    <h4>Changer la priorité</h4>
+                                    <p>Modifier la priorité des tâches</p>
+                                </div>
+                            </button>
+                            
+                            <button class="bulk-action-btn" onclick="window.tasksView.bulkChangeStatus('${uniqueId}')">
+                                <i class="fas fa-tasks"></i>
+                                <div class="bulk-action-info">
+                                    <h4>Changer le statut</h4>
+                                    <p>Modifier le statut des tâches</p>
+                                </div>
+                            </button>
+                            
+                            <button class="bulk-action-btn" onclick="window.tasksView.bulkExport('${uniqueId}')">
+                                <i class="fas fa-download"></i>
+                                <div class="bulk-action-info">
+                                    <h4>Exporter</h4>
+                                    <p>Télécharger en CSV</p>
+                                </div>
+                            </button>
+                            
+                            <button class="bulk-action-btn danger" onclick="window.tasksView.bulkDelete('${uniqueId}')">
+                                <i class="fas fa-trash"></i>
+                                <div class="bulk-action-info">
+                                    <h4>Supprimer</h4>
+                                    <p>Supprimer définitivement</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    bulkComplete(modalId) {
+        this.selectedTasks.forEach(taskId => {
+            window.taskManager.updateTask(taskId, { 
+                status: 'completed',
+                completedAt: new Date().toISOString()
+            });
+        });
+        
+        this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
+        this.clearSelection();
+        this.closeModal(modalId);
+    }
+
+    bulkDelete(modalId) {
+        if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
+            this.selectedTasks.forEach(taskId => {
+                window.taskManager.deleteTask(taskId);
+            });
+            
+            this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
+            this.clearSelection();
+            this.closeModal(modalId);
+        }
+    }
+
+    bulkExport(modalId) {
+        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
+        
+        const csvContent = [
+            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Email', 'Créé le'].join(','),
+            ...tasks.map(task => [
+                `"${task.title}"`,
+                `"${task.description || ''}"`,
+                task.priority,
+                task.status,
+                task.dueDate || '',
+                task.client || '',
+                task.hasEmail ? 'Oui' : 'Non',
+                new Date(task.createdAt).toLocaleDateString('fr-FR')
+            ].join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        this.showToast('Export terminé', 'success');
+        this.clearSelection();
+        this.closeModal(modalId);
+    }
+
+    // ================================================
+    // MÉTHODES D'ÉDITION ET CRÉATION
     // ================================================
     
     showEditModal(taskId) {
@@ -1048,7 +1852,7 @@ class TasksView {
                         </button>
                     </div>
                     <div class="modal-content">
-                        ${this.buildEditForm(task)}
+                        ${this.buildTaskForm(task)}
                     </div>
                     <div class="modal-footer">
                         <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
@@ -1072,67 +1876,141 @@ class TasksView {
         }, 100);
     }
 
-    buildEditForm(task) {
+    showCreateModal() {
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        const uniqueId = 'create_task_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" class="modal-overlay">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-plus"></i> Créer une nouvelle tâche</h2>
+                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-content">
+                        ${this.buildTaskForm()}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
+                            Annuler
+                        </button>
+                        <button class="btn-modal btn-primary" onclick="window.tasksView.createNewTask('${uniqueId}')">
+                            <i class="fas fa-plus"></i> Créer la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        
+        // Focus sur le premier champ
+        setTimeout(() => {
+            const titleInput = document.getElementById('task-title');
+            if (titleInput) titleInput.focus();
+        }, 100);
+    }
+
+    buildTaskForm(task = null) {
+        const isEdit = !!task;
+        
         return `
-            <div class="edit-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Titre de la tâche *</label>
-                        <input type="text" id="edit-title" class="form-input" 
-                               value="${this.escapeHtml(task.title)}" required />
+            <div class="task-form-unified">
+                <div class="form-row-unified">
+                    <div class="form-group-unified">
+                        <label class="form-label-unified">
+                            <i class="fas fa-heading"></i>
+                            Titre de la tâche *
+                        </label>
+                        <input type="text" 
+                               id="task-title" 
+                               class="form-input-unified" 
+                               placeholder="Titre de la tâche" 
+                               value="${isEdit ? this.escapeHtml(task.title) : ''}" 
+                               required />
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="edit-description" class="form-textarea" rows="4">${this.escapeHtml(task.description)}</textarea>
+                <div class="form-row-unified">
+                    <div class="form-group-unified">
+                        <label class="form-label-unified">
+                            <i class="fas fa-align-left"></i>
+                            Description
+                        </label>
+                        <textarea id="task-description" 
+                                  class="form-textarea-unified" 
+                                  rows="4" 
+                                  placeholder="Description détaillée...">${isEdit ? this.escapeHtml(task.description) : ''}</textarea>
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Priorité</label>
-                        <select id="edit-priority" class="form-select">
-                            <option value="low" ${task.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                            <option value="high" ${task.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                            <option value="urgent" ${task.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                <div class="form-row-unified">
+                    <div class="form-group-unified">
+                        <label class="form-label-unified">
+                            <i class="fas fa-flag"></i>
+                            Priorité
+                        </label>
+                        <select id="task-priority" class="form-select-unified">
+                            <option value="low" ${isEdit && task.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            <option value="medium" ${isEdit && task.priority === 'medium' ? 'selected' : (!isEdit ? 'selected' : '')}>📌 Normale</option>
+                            <option value="high" ${isEdit && task.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="urgent" ${isEdit && task.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Statut</label>
-                        <select id="edit-status" class="form-select">
-                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>⏳ À faire</option>
-                            <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
-                            <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
+                    <div class="form-group-unified">
+                        <label class="form-label-unified">
+                            <i class="fas fa-tasks"></i>
+                            Statut
+                        </label>
+                        <select id="task-status" class="form-select-unified">
+                            <option value="todo" ${isEdit && task.status === 'todo' ? 'selected' : (!isEdit ? 'selected' : '')}>⏳ À faire</option>
+                            <option value="in-progress" ${isEdit && task.status === 'in-progress' ? 'selected' : ''}>🔄 En cours</option>
+                            <option value="completed" ${isEdit && task.status === 'completed' ? 'selected' : ''}>✅ Terminé</option>
                         </select>
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Client/Projet</label>
-                        <input type="text" id="edit-client" class="form-input" 
-                               value="${this.escapeHtml(task.client)}" />
+                <div class="form-row-unified">
+                    <div class="form-group-unified">
+                        <label class="form-label-unified">
+                            <i class="fas fa-building"></i>
+                            Client/Projet
+                        </label>
+                        <input type="text" 
+                               id="task-client" 
+                               class="form-input-unified" 
+                               placeholder="Nom du client ou projet" 
+                               value="${isEdit ? this.escapeHtml(task.client) : 'Interne'}" />
                     </div>
-                    <div class="form-group">
-                        <label>Date d'échéance</label>
-                        <input type="date" id="edit-duedate" class="form-input" 
-                               value="${task.dueDate || ''}" />
+                    <div class="form-group-unified">
+                        <label class="form-label-unified">
+                            <i class="fas fa-calendar"></i>
+                            Date d'échéance
+                        </label>
+                        <input type="date" 
+                               id="task-duedate" 
+                               class="form-input-unified" 
+                               value="${isEdit && task.dueDate ? task.dueDate : ''}" />
                     </div>
                 </div>
                 
-                ${task.hasEmail ? `
-                    <div class="form-section">
+                ${isEdit && task.hasEmail ? `
+                    <div class="form-section-unified">
                         <h3><i class="fas fa-envelope"></i> Informations Email</h3>
-                        <div class="email-info-readonly">
-                            <div><strong>De:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</div>
-                            <div><strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}</div>
-                            <div>
-                                <label>
-                                    <input type="checkbox" id="edit-needs-reply" ${task.needsReply ? 'checked' : ''} />
-                                    Réponse requise
+                        <div class="email-info-readonly-unified">
+                            <div class="readonly-item-unified">
+                                <strong>De:</strong> ${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}
+                            </div>
+                            <div class="readonly-item-unified">
+                                <strong>Sujet:</strong> ${this.escapeHtml(task.emailSubject || 'Sans sujet')}
+                            </div>
+                            <div class="readonly-item-unified">
+                                <label class="checkbox-label-unified">
+                                    <input type="checkbox" id="task-needs-reply" ${task.needsReply ? 'checked' : ''} />
+                                    <span class="checkbox-text-unified">Réponse requise</span>
                                 </label>
                             </div>
                         </div>
@@ -1143,13 +2021,13 @@ class TasksView {
     }
 
     saveTaskChanges(taskId, modalId) {
-        const title = document.getElementById('edit-title')?.value?.trim();
-        const description = document.getElementById('edit-description')?.value?.trim();
-        const priority = document.getElementById('edit-priority')?.value;
-        const status = document.getElementById('edit-status')?.value;
-        const client = document.getElementById('edit-client')?.value?.trim();
-        const dueDate = document.getElementById('edit-duedate')?.value;
-        const needsReply = document.getElementById('edit-needs-reply')?.checked;
+        const title = document.getElementById('task-title')?.value?.trim();
+        const description = document.getElementById('task-description')?.value?.trim();
+        const priority = document.getElementById('task-priority')?.value;
+        const status = document.getElementById('task-status')?.value;
+        const client = document.getElementById('task-client')?.value?.trim();
+        const dueDate = document.getElementById('task-duedate')?.value;
+        const needsReply = document.getElementById('task-needs-reply')?.checked;
 
         if (!title) {
             this.showToast('Le titre est requis', 'warning');
@@ -1177,419 +2055,12 @@ class TasksView {
         }
     }
 
-    showTaskDetails(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task) return;
-
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'task_details_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
-                <div class="modal-container modal-large">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-eye"></i> Détails de la tâche</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-content">
-                        ${this.buildTaskDetailsContent(task)}
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            Fermer
-                        </button>
-                        ${task.hasEmail && task.suggestedReplies && task.suggestedReplies.length > 0 ? `
-                            <button class="btn-modal btn-info" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
-                                <i class="fas fa-reply"></i> Voir suggestions de réponse
-                            </button>
-                        ` : ''}
-                        <button class="btn-modal btn-primary" onclick="window.tasksView.closeModal('${uniqueId}'); window.tasksView.showEditModal('${task.id}')">
-                            <i class="fas fa-edit"></i> Modifier
-                        </button>
-                        ${task.status !== 'completed' ? `
-                            <button class="btn-modal btn-success" onclick="window.tasksView.markComplete('${task.id}'); window.tasksView.closeModal('${uniqueId}')">
-                                <i class="fas fa-check"></i> Marquer terminé
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    buildTaskDetailsContent(task) {
-        const priorityIcon = this.getPriorityIcon(task.priority);
-        const statusLabel = this.getStatusLabel(task.status);
-        const dueDateInfo = this.formatDueDate(task.dueDate);
-        
-        return `
-            <div class="task-details-content">
-                <div class="details-header">
-                    <h1 class="task-title-details">${this.escapeHtml(task.title)}</h1>
-                    <div class="task-meta-badges">
-                        <span class="priority-badge priority-${task.priority}">
-                            ${priorityIcon} ${this.getPriorityLabel(task.priority)}
-                        </span>
-                        <span class="status-badge status-${task.status}">
-                            ${this.getStatusIcon(task.status)} ${statusLabel}
-                        </span>
-                        <span class="deadline-badge ${dueDateInfo.className}">
-                            <i class="fas fa-calendar"></i>
-                            ${dueDateInfo.text || 'Pas d\'échéance définie'}
-                        </span>
-                    </div>
-                </div>
-
-                ${task.description ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-align-left"></i> Description</h3>
-                        <div class="description-content">
-                            ${this.formatDescription(task.description)}
-                        </div>
-                    </div>
-                ` : ''}
-
-                <div class="details-section">
-                    <h3><i class="fas fa-info-circle"></i> Informations Générales</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <strong>Client/Projet:</strong>
-                            <span>${this.escapeHtml(task.client)}</span>
-                        </div>
-                        <div class="info-item">
-                            <strong>Créé le:</strong>
-                            <span>${new Date(task.createdAt).toLocaleString('fr-FR')}</span>
-                        </div>
-                        <div class="info-item">
-                            <strong>Dernière modification:</strong>
-                            <span>${new Date(task.updatedAt).toLocaleString('fr-FR')}</span>
-                        </div>
-                        ${task.completedAt ? `
-                            <div class="info-item">
-                                <strong>Terminé le:</strong>
-                                <span>${new Date(task.completedAt).toLocaleString('fr-FR')}</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-
-                ${task.hasEmail ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
-                        <div class="email-details-grid">
-                            <div class="email-detail-item">
-                                <strong>Expéditeur:</strong>
-                                <span>${this.escapeHtml(task.emailFromName || task.emailFrom || 'Inconnu')}</span>
-                            </div>
-                            ${task.emailFrom ? `
-                                <div class="email-detail-item">
-                                    <strong>Email:</strong>
-                                    <span>${this.escapeHtml(task.emailFrom)}</span>
-                                </div>
-                            ` : ''}
-                            ${task.emailSubject ? `
-                                <div class="email-detail-item">
-                                    <strong>Sujet:</strong>
-                                    <span>${this.escapeHtml(task.emailSubject)}</span>
-                                </div>
-                            ` : ''}
-                            <div class="email-detail-item">
-                                <strong>Réponse requise:</strong>
-                                <span>${task.needsReply ? '✅ Oui' : '❌ Non'}</span>
-                            </div>
-                        </div>
-                        
-                        ${task.emailContent && task.emailContent.length > 100 ? `
-                            <div class="email-content-section">
-                                <h4>Contenu de l'email</h4>
-                                <div class="email-content-box">
-                                    ${task.emailHtmlContent || this.formatEmailContent(task.emailContent)}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                ` : ''}
-
-                ${task.actions && task.actions.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-tasks"></i> Actions Requises</h3>
-                        <div class="actions-list-details">
-                            ${task.actions.map((action, idx) => `
-                                <div class="action-item-details">
-                                    <span class="action-number">${idx + 1}</span>
-                                    <span class="action-text">${this.escapeHtml(action.text)}</span>
-                                    ${action.deadline ? `
-                                        <span class="action-deadline">${this.formatDeadline(action.deadline)}</span>
-                                    ` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${task.keyInfo && task.keyInfo.length > 0 ? `
-                    <div class="details-section">
-                        <h3><i class="fas fa-lightbulb"></i> Informations Clés</h3>
-                        <div class="key-info-grid">
-                            ${task.keyInfo.map(info => `
-                                <div class="key-info-item">
-                                    <i class="fas fa-chevron-right"></i>
-                                    <span>${this.escapeHtml(info)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${task.risks && task.risks.length > 0 ? `
-                    <div class="details-section attention-section">
-                        <h3><i class="fas fa-exclamation-triangle"></i> Points d'Attention</h3>
-                        <div class="attention-list">
-                            ${task.risks.map(risk => `
-                                <div class="attention-item">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    <span>${this.escapeHtml(risk)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
-                    <div class="details-section suggested-replies-section">
-                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse</h3>
-                        <div class="suggested-replies-preview">
-                            <p>Cette tâche contient ${task.suggestedReplies.length} suggestion(s) de réponse personnalisée(s).</p>
-                            <button class="btn-preview" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
-                                <i class="fas fa-eye"></i> Voir toutes les suggestions
-                            </button>
-                        </div>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
-
-    showSuggestedReplies(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
-
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'replies_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
-                <div class="modal-container modal-large">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-content">
-                        <div class="ai-suggestions-info">
-                            <div class="ai-badge">
-                                <i class="fas fa-robot"></i>
-                                <span>Suggestions générées automatiquement</span>
-                            </div>
-                            <p>Réponses personnalisées pour l'email de <strong>${task.emailFromName || 'l\'expéditeur'}</strong></p>
-                            ${task.aiRepliesGeneratedAt ? `
-                                <p class="ai-generation-time">
-                                    <i class="fas fa-clock"></i>
-                                    Générées le ${new Date(task.aiRepliesGeneratedAt).toLocaleString('fr-FR')}
-                                </p>
-                            ` : ''}
-                        </div>
-                        
-                        <div class="replies-list">
-                            ${task.suggestedReplies.map((reply, idx) => `
-                                <div class="reply-suggestion-card">
-                                    <div class="reply-card-header">
-                                        <div class="reply-tone-badge ${reply.tone}">
-                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
-                                        </div>
-                                        <div class="reply-card-actions">
-                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
-                                                <i class="fas fa-copy"></i> Copier
-                                            </button>
-                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
-                                                <i class="fas fa-paper-plane"></i> Utiliser
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="reply-subject-line">
-                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
-                                    </div>
-                                    <div class="reply-content-preview">
-                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            Fermer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-    }
-
-    // ================================================
-    // GESTION DES SUGGESTIONS DE RÉPONSE
-    // ================================================
-    
-    async copyReplyToClipboard(replyIndex, taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
-
-        const reply = task.suggestedReplies[replyIndex];
-        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
-        
-        try {
-            await navigator.clipboard.writeText(text);
-            this.showToast('Réponse copiée dans le presse-papiers', 'success');
-        } catch (error) {
-            console.error('Error copying to clipboard:', error);
-            this.showToast('Erreur lors de la copie', 'error');
-        }
-    }
-
-    useReply(taskId, replyIndex) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
-
-        const reply = task.suggestedReplies[replyIndex];
-        const subject = reply.subject;
-        const body = reply.content;
-        const to = task.emailFrom;
-        
-        // Créer le lien mailto
-        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        // Ouvrir le client email
-        window.open(mailtoLink);
-        
-        // Marquer comme répondu
-        window.taskManager.updateTask(taskId, { 
-            emailReplied: true,
-            needsReply: false,
-            status: task.status === 'todo' ? 'in-progress' : task.status
-        });
-        
-        this.showToast('Email de réponse ouvert dans votre client email', 'success');
-        
-        // Fermer les modals
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        document.body.style.overflow = 'auto';
-        
-        this.refreshView();
-    }
-
-    // ================================================
-    // MODAL DE CRÉATION DE TÂCHE
-    // ================================================
-    
-    showCreateModal() {
-        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
-        
-        const uniqueId = 'create_task_modal_' + Date.now();
-        const modalHTML = `
-            <div id="${uniqueId}" class="modal-overlay">
-                <div class="modal-container">
-                    <div class="modal-header">
-                        <h2><i class="fas fa-plus"></i> Créer une nouvelle tâche</h2>
-                        <button class="modal-close" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-content">
-                        ${this.buildCreateForm()}
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn-modal btn-secondary" onclick="window.tasksView.closeModal('${uniqueId}')">
-                            Annuler
-                        </button>
-                        <button class="btn-modal btn-primary" onclick="window.tasksView.createNewTask('${uniqueId}')">
-                            <i class="fas fa-plus"></i> Créer la tâche
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        
-        // Focus sur le premier champ
-        setTimeout(() => {
-            const titleInput = document.getElementById('new-task-title');
-            if (titleInput) titleInput.focus();
-        }, 100);
-    }
-
-    buildCreateForm() {
-        return `
-            <div class="create-form">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Titre de la tâche *</label>
-                        <input type="text" id="new-task-title" class="form-input" 
-                               placeholder="Titre de la tâche" required />
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea id="new-task-description" class="form-textarea" rows="4" 
-                                  placeholder="Description détaillée..."></textarea>
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Priorité</label>
-                        <select id="new-task-priority" class="form-select">
-                            <option value="low">📄 Basse</option>
-                            <option value="medium" selected>📌 Normale</option>
-                            <option value="high">⚡ Haute</option>
-                            <option value="urgent">🚨 Urgente</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Date d'échéance</label>
-                        <input type="date" id="new-task-duedate" class="form-input" />
-                    </div>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Client/Projet</label>
-                        <input type="text" id="new-task-client" class="form-input" 
-                               placeholder="Nom du client ou projet" value="Interne" />
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
     createNewTask(modalId) {
-        const title = document.getElementById('new-task-title')?.value?.trim();
-        const description = document.getElementById('new-task-description')?.value?.trim();
-        const priority = document.getElementById('new-task-priority')?.value;
-        const dueDate = document.getElementById('new-task-duedate')?.value;
-        const client = document.getElementById('new-task-client')?.value?.trim();
+        const title = document.getElementById('task-title')?.value?.trim();
+        const description = document.getElementById('task-description')?.value?.trim();
+        const priority = document.getElementById('task-priority')?.value;
+        const dueDate = document.getElementById('task-duedate')?.value;
+        const client = document.getElementById('task-client')?.value?.trim();
 
         if (!title) {
             this.showToast('Le titre est requis', 'warning');
@@ -1619,124 +2090,119 @@ class TasksView {
     }
 
     // ================================================
-    // UTILITAIRES POUR LES MODALES
+    // MÉTHODES UTILITAIRES ET FORMATAGE
     // ================================================
     
-    closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.remove();
-        }
-        document.body.style.overflow = 'auto';
+    getPriorityInfo(priority) {
+        const priorities = {
+            urgent: { label: 'Urgente', icon: 'fas fa-exclamation-circle', color: '#ef4444' },
+            high: { label: 'Haute', icon: 'fas fa-arrow-up', color: '#f97316' },
+            medium: { label: 'Normale', icon: 'fas fa-minus', color: '#3b82f6' },
+            low: { label: 'Basse', icon: 'fas fa-arrow-down', color: '#10b981' }
+        };
+        return priorities[priority] || priorities.medium;
     }
 
-    renderEmptyState() {
-        let title, text, action = '';
+    getStatusInfo(status) {
+        const statuses = {
+            todo: { label: 'À faire', icon: 'fas fa-clock' },
+            'in-progress': { label: 'En cours', icon: 'fas fa-play-circle' },
+            completed: { label: 'Terminé', icon: 'fas fa-check-circle' }
+        };
+        return statuses[status] || statuses.todo;
+    }
+
+    formatDueDate(dateString) {
+        if (!dateString) {
+            return { text: '', className: 'no-deadline' };
+        }
         
-        if (this.currentFilters.search) {
-            title = 'Aucun résultat trouvé';
-            text = `Aucune tâche ne correspond à votre recherche "${this.currentFilters.search}"`;
-            action = `
-                <button class="btn-harmonized btn-primary" onclick="window.tasksView.clearSearch()">
-                    <i class="fas fa-undo"></i>
-                    <span>Effacer la recherche</span>
-                </button>
-            `;
-        } else if (this.hasActiveFilters()) {
-            title = 'Aucune tâche trouvée';
-            text = 'Aucune tâche ne correspond à vos critères de filtrage.';
-            action = `
-                <button class="btn-harmonized btn-primary" onclick="window.tasksView.resetAllFilters()">
-                    <i class="fas fa-undo"></i>
-                    <span>Réinitialiser les filtres</span>
-                </button>
-            `;
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'deadline-normal';
+        let text = '';
+        
+        if (diffDays < 0) {
+            className = 'deadline-overdue';
+            text = `En retard de ${Math.abs(diffDays)}j`;
+        } else if (diffDays === 0) {
+            className = 'deadline-today';
+            text = 'Aujourd\'hui';
+        } else if (diffDays === 1) {
+            className = 'deadline-tomorrow';
+            text = 'Demain';
+        } else if (diffDays <= 7) {
+            className = 'deadline-week';
+            text = `${diffDays}j`;
         } else {
-            title = 'Aucune tâche';
-            text = 'Vous n\'avez aucune tâche pour le moment.';
-            action = `
-                <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
-                    <i class="fas fa-plus"></i>
-                    <span>Créer votre première tâche</span>
-                </button>
-            `;
+            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
         }
         
-        return `
-            <div class="empty-state-harmonized">
-                <div class="empty-state-icon-harmonized">
-                    <i class="fas fa-tasks"></i>
-                </div>
-                <h3 class="empty-state-title-harmonized">${title}</h3>
-                <p class="empty-state-text-harmonized">${text}</p>
-                ${action}
-            </div>
-        `;
+        return { text, className };
     }
 
-    // ================================================
-    // INTERACTIONS ET ÉVÉNEMENTS
-    // ================================================
-    
-    handleTaskClick(event, taskId) {
-        // Empêcher la propagation si c'est un clic sur checkbox ou actions
-        if (event.target.type === 'checkbox' || event.target.closest('.task-actions-harmonized, .task-actions-minimal, .task-detailed-actions')) {
-            return;
+    formatDescription(description) {
+        if (!description) return '';
+        
+        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
+            return `<div class="structured-description-unified">${description.replace(/\n/g, '<br>')}</div>`;
+        } else {
+            return `<div class="simple-description-unified">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
         }
+    }
+
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
         
-        // Double-clic pour sélection
-        const now = Date.now();
-        const lastClick = this.lastTaskClick || 0;
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-content-formatted">${formattedContent}</div>`;
+    }
+
+    formatDeadline(deadline) {
+        if (!deadline) return '';
         
-        if (now - lastClick < 300) {
-            event.preventDefault();
-            event.stopPropagation();
-            this.toggleTaskSelection(taskId);
-            this.lastTaskClick = 0;
-            return;
-        }
-        
-        this.lastTaskClick = now;
-        
-        // Simple clic pour ouvrir les détails
-        setTimeout(() => {
-            if (Date.now() - this.lastTaskClick >= 250) {
-                this.showTaskDetails(taskId);
+        try {
+            const deadlineDate = new Date(deadline);
+            const now = new Date();
+            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `Échue il y a ${Math.abs(diffDays)}j`;
+            } else if (diffDays === 0) {
+                return 'Aujourd\'hui';
+            } else if (diffDays === 1) {
+                return 'Demain';
+            } else if (diffDays <= 7) {
+                return `${diffDays}j`;
+            } else {
+                return deadlineDate.toLocaleDateString('fr-FR', { 
+                    day: 'numeric', 
+                    month: 'short' 
+                });
             }
-        }, 250);
-    }
-
-    toggleTaskSelection(taskId) {
-        if (this.selectedTasks.has(taskId)) {
-            this.selectedTasks.delete(taskId);
-        } else {
-            this.selectedTasks.add(taskId);
+        } catch (error) {
+            return deadline;
         }
-        
-        this.updateSelectionUI();
-        this.refreshView();
     }
 
-    clearSelection() {
-        this.selectedTasks.clear();
-        this.refreshView();
-        this.showToast('Sélection effacée', 'info');
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
-    markComplete(taskId) {
-        window.taskManager.updateTask(taskId, { 
-            status: 'completed',
-            completedAt: new Date().toISOString()
-        });
-        this.showToast('Tâche marquée comme terminée', 'success');
-        this.refreshView();
-    }
-
-    changeViewMode(mode) {
-        this.currentViewMode = mode;
-        this.refreshView();
-    }
-
+    // ================================================
+    // GESTION DES FILTRES ET NAVIGATION
+    // ================================================
+    
     quickFilter(filterId) {
         this.currentFilters = {
             status: 'all',
@@ -1768,6 +2234,18 @@ class TasksView {
         this.refreshView();
     }
 
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+            case 'todo': return this.currentFilters.status === 'todo';
+            case 'in-progress': return this.currentFilters.status === 'in-progress';
+            case 'completed': return this.currentFilters.status === 'completed';
+            case 'overdue': return this.currentFilters.overdue;
+            case 'needsReply': return this.currentFilters.needsReply;
+            default: return false;
+        }
+    }
+
     updateFilter(filterType, value) {
         this.currentFilters[filterType] = value;
         this.refreshView();
@@ -1783,12 +2261,11 @@ class TasksView {
             sortBy: 'created'
         };
         
-        // Reset search input
+        // Reset UI elements
         const searchInput = document.getElementById('taskSearchInput');
         if (searchInput) searchInput.value = '';
         
-        // Reset filter selects
-        document.querySelectorAll('.filter-select').forEach(select => {
+        document.querySelectorAll('.filter-select-unified').forEach(select => {
             if (select.querySelector('option[value="all"]')) {
                 select.value = 'all';
             } else if (select.id === 'sortByFilter') {
@@ -1840,107 +2317,18 @@ class TasksView {
         return options;
     }
 
-    bulkActions() {
-        if (this.selectedTasks.size === 0) return;
-        
-        const actions = [
-            'Marquer comme terminé',
-            'Changer la priorité',
-            'Changer le statut',
-            'Supprimer',
-            'Exporter'
-        ];
-        
-        const action = prompt(`Actions disponibles pour ${this.selectedTasks.size} tâche(s):\n\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\n')}\n\nEntrez le numéro de l'action:`);
-        
-        if (!action) return;
-        
-        const actionIndex = parseInt(action) - 1;
-        
-        switch (actionIndex) {
-            case 0: // Marquer comme terminé
-                this.selectedTasks.forEach(taskId => {
-                    window.taskManager.updateTask(taskId, { 
-                        status: 'completed',
-                        completedAt: new Date().toISOString()
-                    });
-                });
-                this.showToast(`${this.selectedTasks.size} tâche(s) marquée(s) comme terminée(s)`, 'success');
-                this.clearSelection();
-                break;
-                
-            case 1: // Changer la priorité
-                const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
-                const priorities = ['', 'low', 'medium', 'high', 'urgent'];
-                if (priority && priorities[parseInt(priority)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.updateTask(taskId, { priority: priorities[parseInt(priority)] });
-                    });
-                    this.showToast(`Priorité mise à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 2: // Changer le statut
-                const status = prompt('Nouveau statut:\n1. À faire\n2. En cours\n3. Terminé\n\nEntrez le numéro:');
-                const statuses = ['', 'todo', 'in-progress', 'completed'];
-                if (status && statuses[parseInt(status)]) {
-                    this.selectedTasks.forEach(taskId => {
-                        const updates = { status: statuses[parseInt(status)] };
-                        if (updates.status === 'completed') {
-                            updates.completedAt = new Date().toISOString();
-                        }
-                        window.taskManager.updateTask(taskId, updates);
-                    });
-                    this.showToast(`Statut mis à jour pour ${this.selectedTasks.size} tâche(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 3: // Supprimer
-                if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?\n\nCette action est irréversible.`)) {
-                    this.selectedTasks.forEach(taskId => {
-                        window.taskManager.deleteTask(taskId);
-                    });
-                    this.showToast(`${this.selectedTasks.size} tâche(s) supprimée(s)`, 'success');
-                    this.clearSelection();
-                }
-                break;
-                
-            case 4: // Exporter
-                this.exportSelectedTasks();
-                break;
-        }
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
+        this.refreshView();
     }
 
-    exportSelectedTasks() {
-        const tasks = Array.from(this.selectedTasks).map(id => window.taskManager.getTask(id)).filter(Boolean);
-        
-        const csvContent = [
-            ['Titre', 'Description', 'Priorité', 'Statut', 'Échéance', 'Client', 'Créé le'].join(','),
-            ...tasks.map(task => [
-                `"${task.title}"`,
-                `"${task.description || ''}"`,
-                task.priority,
-                task.status,
-                task.dueDate || '',
-                task.client || '',
-                new Date(task.createdAt).toLocaleDateString('fr-FR')
-            ].join(','))
-        ].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `taches_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        this.showToast('Export terminé', 'success');
-        this.clearSelection();
+    markComplete(taskId) {
+        window.taskManager.updateTask(taskId, { 
+            status: 'completed',
+            completedAt: new Date().toISOString()
+        });
+        this.showToast('Tâche marquée comme terminée', 'success');
+        this.refreshView();
     }
 
     refreshTasks() {
@@ -1956,11 +2344,13 @@ class TasksView {
         
         // Mettre à jour les stats dans les pills
         const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters-harmonized-twolines').forEach(container => {
-            container.innerHTML = this.buildHarmonizedStatusPills(stats);
-        });
+        const pillsContainer = document.querySelector('.status-filters-unified');
+        if (pillsContainer) {
+            pillsContainer.innerHTML = this.buildUnifiedStatusPills(stats);
+        }
         
         this.updateSelectionUI();
+        this.updateActionBar();
     }
 
     updateSelectionUI() {
@@ -1972,6 +2362,88 @@ class TasksView {
             const checkbox = item.querySelector('input[type="checkbox"]');
             if (checkbox) checkbox.checked = isSelected;
         });
+    }
+
+    updateActionBar() {
+        // Mettre à jour le bouton "Tout sélectionner"
+        const selectAllBtn = document.querySelector('[onclick*="selectAllVisible"]');
+        if (selectAllBtn) {
+            const visibleTasks = this.getVisibleTasks();
+            const allSelected = visibleTasks.length > 0 && visibleTasks.every(task => this.selectedTasks.has(task.id));
+            
+            const icon = selectAllBtn.querySelector('i');
+            const span = selectAllBtn.querySelector('span');
+            
+            if (allSelected && visibleTasks.length > 0) {
+                icon.className = 'fas fa-minus-square';
+                span.textContent = 'Tout désélectionner';
+            } else {
+                icon.className = 'fas fa-check-double';
+                span.textContent = 'Tout sélectionner';
+            }
+        }
+        
+        // Re-render la barre d'actions si nécessaire
+        const actionsBar = document.querySelector('.actions-bar-unified');
+        if (actionsBar && this.selectedTasks.size !== this.lastSelectedCount) {
+            this.lastSelectedCount = this.selectedTasks.size;
+            // Re-render complet uniquement si le nombre change significativement
+            this.render(document.querySelector('.tasks-page-unified').parentNode);
+        }
+    }
+
+    renderEmptyState() {
+        let title, text, action = '';
+        
+        if (this.currentFilters.search) {
+            title = 'Aucun résultat trouvé';
+            text = `Aucune tâche ne correspond à votre recherche "${this.currentFilters.search}"`;
+            action = `
+                <button class="action-btn-unified primary" onclick="window.tasksView.clearSearch()">
+                    <i class="fas fa-undo"></i>
+                    <span>Effacer la recherche</span>
+                </button>
+            `;
+        } else if (this.hasActiveFilters()) {
+            title = 'Aucune tâche trouvée';
+            text = 'Aucune tâche ne correspond à vos critères de filtrage.';
+            action = `
+                <button class="action-btn-unified primary" onclick="window.tasksView.resetAllFilters()">
+                    <i class="fas fa-undo"></i>
+                    <span>Réinitialiser les filtres</span>
+                </button>
+            `;
+        } else {
+            title = 'Aucune tâche';
+            text = 'Vous n\'avez aucune tâche pour le moment.';
+            action = `
+                <button class="action-btn-unified primary" onclick="window.tasksView.showCreateModal()">
+                    <i class="fas fa-plus"></i>
+                    <span>Créer votre première tâche</span>
+                </button>
+            `;
+        }
+        
+        return `
+            <div class="empty-state-unified">
+                <div class="empty-state-icon-unified">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <h3 class="empty-state-title-unified">${title}</h3>
+                <p class="empty-state-text-unified">${text}</p>
+                ${action}
+            </div>
+        `;
+    }
+
+    hasActiveFilters() {
+        return this.currentFilters.status !== 'all' ||
+               this.currentFilters.priority !== 'all' ||
+               this.currentFilters.category !== 'all' ||
+               this.currentFilters.client !== 'all' ||
+               this.currentFilters.search !== '' ||
+               this.currentFilters.overdue ||
+               this.currentFilters.needsReply;
     }
 
     setupEventListeners() {
@@ -2000,176 +2472,12 @@ class TasksView {
         this.refreshView();
     }
 
-    // ================================================
-    // MÉTHODES UTILITAIRES
-    // ================================================
-    
-    isFilterActive(filterId) {
-        switch (filterId) {
-            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
-            case 'todo': return this.currentFilters.status === 'todo';
-            case 'in-progress': return this.currentFilters.status === 'in-progress';
-            case 'completed': return this.currentFilters.status === 'completed';
-            case 'overdue': return this.currentFilters.overdue;
-            case 'needsReply': return this.currentFilters.needsReply;
-            default: return false;
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.remove();
         }
-    }
-
-    hasActiveFilters() {
-        return this.currentFilters.status !== 'all' ||
-               this.currentFilters.priority !== 'all' ||
-               this.currentFilters.category !== 'all' ||
-               this.currentFilters.client !== 'all' ||
-               this.currentFilters.search !== '' ||
-               this.currentFilters.overdue ||
-               this.currentFilters.needsReply;
-    }
-
-    getPriorityIcon(priority) {
-        const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
-        return icons[priority] || '📌';
-    }
-
-    getPriorityLabel(priority) {
-        const labels = { urgent: 'Urgente', high: 'Haute', medium: 'Normale', low: 'Basse' };
-        return labels[priority] || 'Normale';
-    }
-
-    getPriorityColor(priority) {
-        const colors = { urgent: '#ef4444', high: '#f97316', medium: '#3b82f6', low: '#10b981' };
-        return colors[priority] || '#3b82f6';
-    }
-
-    getStatusIcon(status) {
-        const icons = { todo: '⏳', 'in-progress': '🔄', completed: '✅' };
-        return icons[status] || '⏳';
-    }
-
-    getStatusLabel(status) {
-        const labels = { todo: 'À faire', 'in-progress': 'En cours', completed: 'Terminé' };
-        return labels[status] || 'À faire';
-    }
-
-    getReplyToneIcon(tone) {
-        const icons = {
-            professionnel: '👔',
-            formel: '👔',
-            informel: '😊',
-            urgent: '🚨',
-            neutre: '📝',
-            amical: '🤝',
-            détaillé: '📋'
-        };
-        return icons[tone] || '📝';
-    }
-
-    getReplyToneLabel(tone) {
-        const labels = {
-            professionnel: 'Professionnel',
-            formel: 'Formel',
-            informel: 'Informel',
-            urgent: 'Urgent',
-            neutre: 'Neutre',
-            amical: 'Amical',
-            détaillé: 'Détaillé'
-        };
-        return labels[tone] || 'Neutre';
-    }
-
-    formatDueDate(dateString) {
-        if (!dateString) {
-            return { 
-                html: '', 
-                text: '', 
-                className: 'no-deadline' 
-            };
-        }
-        
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-        
-        let className = 'deadline-normal';
-        let text = '';
-        
-        if (diffDays < 0) {
-            className = 'deadline-overdue';
-            text = `En retard de ${Math.abs(diffDays)}j`;
-        } else if (diffDays === 0) {
-            className = 'deadline-today';
-            text = 'Aujourd\'hui';
-        } else if (diffDays === 1) {
-            className = 'deadline-tomorrow';
-            text = 'Demain';
-        } else if (diffDays <= 7) {
-            className = 'deadline-week';
-            text = `${diffDays}j`;
-        } else {
-            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-        }
-        
-        return {
-            html: `<span class="deadline-badge ${className}">📅 ${text}</span>`,
-            text: text,
-            className: className
-        };
-    }
-
-    formatDescription(description) {
-        if (!description) return '';
-        
-        if (description.includes('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')) {
-            return `<div class="structured-description">${description.replace(/\n/g, '<br>')}</div>`;
-        } else {
-            return `<div class="simple-description">${this.escapeHtml(description).replace(/\n/g, '<br>')}</div>`;
-        }
-    }
-
-    formatEmailContent(content) {
-        if (!content) return '<p>Contenu non disponible</p>';
-        
-        const formattedContent = content
-            .replace(/\n/g, '<br>')
-            .replace(/Email de:/g, '<strong>Email de:</strong>')
-            .replace(/Date:/g, '<strong>Date:</strong>')
-            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
-            
-        return `<div class="email-original-content">${formattedContent}</div>`;
-    }
-
-    formatDeadline(deadline) {
-        if (!deadline) return '';
-        
-        try {
-            const deadlineDate = new Date(deadline);
-            const now = new Date();
-            const diffDays = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
-            
-            if (diffDays < 0) {
-                return `Échue il y a ${Math.abs(diffDays)}j`;
-            } else if (diffDays === 0) {
-                return 'Aujourd\'hui';
-            } else if (diffDays === 1) {
-                return 'Demain';
-            } else if (diffDays <= 7) {
-                return `${diffDays}j`;
-            } else {
-                return deadlineDate.toLocaleDateString('fr-FR', { 
-                    day: 'numeric', 
-                    month: 'short' 
-                });
-            }
-        } catch (error) {
-            return deadline;
-        }
-    }
-
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+        document.body.style.overflow = 'auto';
     }
 
     showToast(message, type = 'info') {
@@ -2180,96 +2488,105 @@ class TasksView {
         }
     }
 
-    addHarmonizedTaskStyles() {
-        if (document.getElementById('harmonizedTaskStylesV9')) return;
+    // ================================================
+    // STYLES UNIFIÉS
+    // ================================================
+    
+    addUnifiedTaskStyles() {
+        if (document.getElementById('unifiedTaskStylesV10')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'harmonizedTaskStylesV9';
+        styles.id = 'unifiedTaskStylesV10';
         styles.textContent = `
-            /* Variables CSS pour TaskManager v9.0 */
+            /* Variables CSS Unifiées TaskManager v10.0 */
             :root {
+                --icon-size-sm: 14px;
+                --icon-size-md: 16px;
+                --icon-size-lg: 20px;
+                --icon-size-xl: 24px;
+                
                 --btn-height: 44px;
-                --btn-padding-horizontal: 16px;
-                --btn-font-size: 13px;
+                --btn-padding: 0 16px;
+                --btn-font-size: 14px;
                 --btn-border-radius: 10px;
                 --btn-font-weight: 600;
                 --btn-gap: 8px;
-                --card-height: 76px;
-                --card-padding: 14px;
+                
+                --card-padding: 16px;
                 --card-border-radius: 12px;
-                --action-btn-size: 36px;
-                --gap-small: 8px;
-                --gap-medium: 12px;
-                --gap-large: 16px;
-                --transition-speed: 0.2s;
-                --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
-                --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+                --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                --card-shadow-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
+                
+                --color-primary: #3b82f6;
+                --color-primary-dark: #2563eb;
+                --color-success: #10b981;
+                --color-warning: #f59e0b;
+                --color-danger: #ef4444;
+                --color-gray: #6b7280;
+                --color-gray-light: #f3f4f6;
+                --color-gray-dark: #374151;
+                
+                --transition: all 0.2s ease;
+                --border-color: #e5e7eb;
+                --text-color: #1f2937;
+                --text-muted: #6b7280;
             }
             
-            .tasks-page-modern {
+            /* Base unifiée */
+            .tasks-page-unified {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
                 min-height: 100vh;
-                padding: var(--gap-large);
+                padding: 20px;
+                color: var(--text-color);
                 font-size: var(--btn-font-size);
             }
 
-            /* BARRE DE CONTRÔLES HARMONISÉE */
-            .controls-bar-harmonized {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-                min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
+            /* Barre de recherche unifiée */
+            .search-bar-unified {
+                margin-bottom: 16px;
             }
             
-            .search-section-harmonized {
-                flex: 1;
-                height: var(--btn-height);
-            }
-            
-            .search-box-harmonized {
+            .search-container-unified {
                 position: relative;
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
+                max-width: 600px;
+                margin: 0 auto;
             }
             
-            .search-input-harmonized {
+            .search-input-unified {
                 width: 100%;
-                height: var(--btn-height);
-                padding: 0 var(--gap-medium) 0 44px;
-                border: 1px solid #d1d5db;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                background: #f9fafb;
-                transition: all var(--transition-speed) ease;
-                outline: none;
-            }
-            
-            .search-input-harmonized:focus {
-                border-color: #3b82f6;
+                height: 52px;
+                padding: 0 24px 0 52px;
+                border: 2px solid var(--border-color);
+                border-radius: 26px;
+                font-size: 16px;
                 background: white;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                transition: var(--transition);
+                outline: none;
+                box-shadow: var(--card-shadow);
             }
             
-            .search-icon-harmonized {
+            .search-input-unified:focus {
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), var(--card-shadow);
+            }
+            
+            .search-icon-unified {
                 position: absolute;
-                left: var(--gap-medium);
-                color: #9ca3af;
+                left: 20px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--text-muted);
+                font-size: var(--icon-size-lg);
                 pointer-events: none;
             }
             
-            .search-clear-harmonized {
+            .search-clear-unified {
                 position: absolute;
-                right: var(--gap-small);
-                background: #ef4444;
+                right: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: var(--color-danger);
                 color: white;
                 border: none;
                 width: 28px;
@@ -2279,598 +2596,348 @@ class TasksView {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
-                transition: all var(--transition-speed) ease;
+                font-size: 12px;
+                transition: var(--transition);
             }
             
-            .search-clear-harmonized:hover {
+            .search-clear-unified:hover {
                 background: #dc2626;
-                transform: scale(1.1);
+                transform: translateY(-50%) scale(1.1);
             }
 
-            /* SECONDE LIGNE DE CONTRÔLES */
-            .second-line-controls-harmonized {
+            /* Barre d'actions unifiée */
+            .actions-bar-unified {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: var(--gap-large);
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                gap: 20px;
+                background: white;
+                border: 1px solid var(--border-color);
                 border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-                min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
+                padding: 16px 20px;
+                margin-bottom: 16px;
+                box-shadow: var(--card-shadow);
             }
             
-            .view-modes-harmonized {
+            .view-modes-unified {
                 display: flex;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
+                background: var(--color-gray-light);
+                border: 1px solid var(--border-color);
                 border-radius: var(--btn-border-radius);
                 padding: 4px;
                 gap: 2px;
-                height: var(--btn-height);
             }
             
-            .view-mode-harmonized {
+            .view-mode-unified {
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: var(--btn-gap);
-                padding: 0 var(--btn-padding-horizontal);
-                height: calc(var(--btn-height) - 8px);
+                padding: 8px 16px;
+                height: 36px;
                 border: none;
                 background: transparent;
-                color: #6b7280;
+                color: var(--text-muted);
                 border-radius: calc(var(--btn-border-radius) - 2px);
                 cursor: pointer;
-                transition: all var(--transition-speed) ease;
+                transition: var(--transition);
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
-                min-width: 120px;
+                white-space: nowrap;
             }
             
-            .view-mode-harmonized:hover {
+            .view-mode-unified i {
+                font-size: var(--icon-size-md);
+            }
+            
+            .view-mode-unified:hover {
                 background: rgba(255, 255, 255, 0.8);
-                color: #374151;
+                color: var(--text-color);
             }
             
-            .view-mode-harmonized.active {
+            .view-mode-unified.active {
                 background: white;
-                color: #1f2937;
-                box-shadow: var(--shadow-base);
+                color: var(--color-primary);
+                box-shadow: var(--card-shadow);
                 font-weight: 700;
             }
             
-            .action-buttons-harmonized {
+            .main-actions-unified {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
-                height: var(--btn-height);
-                flex-shrink: 0;
+                gap: 12px;
+                flex-wrap: wrap;
             }
             
-            .btn-harmonized {
+            .action-btn-unified {
+                display: flex;
+                align-items: center;
+                gap: var(--btn-gap);
                 height: var(--btn-height);
+                padding: var(--btn-padding);
                 background: white;
-                color: #374151;
-                border: 1px solid #e5e7eb;
+                color: var(--text-color);
+                border: 1px solid var(--border-color);
                 border-radius: var(--btn-border-radius);
-                padding: 0 var(--btn-padding-horizontal);
                 font-size: var(--btn-font-size);
                 font-weight: var(--btn-font-weight);
                 cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                display: flex;
-                align-items: center;
-                gap: var(--btn-gap);
-                box-shadow: var(--shadow-base);
+                transition: var(--transition);
+                box-shadow: var(--card-shadow);
                 position: relative;
+                white-space: nowrap;
             }
             
-            .btn-harmonized:hover {
-                background: #f9fafb;
-                border-color: #6366f1;
-                color: #1f2937;
+            .action-btn-unified i {
+                font-size: var(--icon-size-md);
+            }
+            
+            .action-btn-unified:hover:not(.disabled) {
+                background: var(--color-gray-light);
+                border-color: var(--color-primary);
                 transform: translateY(-1px);
-                box-shadow: var(--shadow-hover);
+                box-shadow: var(--card-shadow-hover);
             }
             
-            .btn-harmonized.btn-primary {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            .action-btn-unified.primary {
+                background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
                 color: white;
                 border-color: transparent;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
             }
             
-            .btn-harmonized.btn-primary:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+            .action-btn-unified.primary:hover {
+                background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1d4ed8 100%);
                 transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
             }
             
-            .btn-harmonized.btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
+            .action-btn-unified.secondary {
+                background: var(--color-gray-light);
+                color: var(--color-gray-dark);
             }
             
-            .btn-harmonized.btn-secondary:hover {
-                background: #f1f5f9;
-                color: #334155;
-                border-color: #cbd5e1;
+            .action-btn-unified.success {
+                background: var(--color-success);
+                color: white;
+                border-color: transparent;
             }
             
-            .btn-harmonized.btn-clear-selection {
-                background: #f3f4f6;
-                color: #6b7280;
-                border: none;
-                width: var(--btn-height);
-                min-width: var(--btn-height);
-                padding: 0;
+            .action-btn-unified.disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                pointer-events: none;
             }
             
-            .btn-harmonized.btn-clear-selection:hover {
-                background: #e5e7eb;
-                color: #374151;
-            }
-            
-            .selection-info-harmonized {
-                height: var(--btn-height);
-                padding: 0 var(--btn-padding-horizontal);
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border: 1px solid #93c5fd;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                color: #1e40af;
-                display: flex;
-                align-items: center;
-                gap: var(--btn-gap);
-            }
-            
-            .count-badge-harmonized {
+            .count-badge-unified {
                 position: absolute;
                 top: -8px;
                 right: -8px;
-                background: #ef4444;
+                background: var(--color-danger);
                 color: white;
-                font-size: 10px;
+                font-size: 11px;
                 font-weight: 700;
                 padding: 3px 6px;
                 border-radius: 10px;
                 min-width: 18px;
                 text-align: center;
                 border: 2px solid white;
-            }
-
-            /* FILTRES DE STATUT */
-            .status-filters-harmonized-twolines {
-                display: flex;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
-                flex-wrap: wrap;
-                width: 100%;
+                animation: badgePulse 2s ease-in-out infinite;
             }
             
-            .status-pill-harmonized-twolines {
-                height: 60px;
-                padding: var(--gap-small);
-                font-size: 12px;
-                font-weight: 700;
-                flex: 0 1 calc(16.666% - var(--gap-small));
-                min-width: 120px;
-                max-width: 180px;
+            @keyframes badgePulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+            }
+            
+            .selection-info-unified {
+                display: flex;
+                align-items: center;
+                gap: var(--btn-gap);
+                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+                border: 1px solid #93c5fd;
                 border-radius: var(--btn-border-radius);
-                box-shadow: var(--shadow-base);
-                transition: all var(--transition-speed) ease;
+                padding: 8px 12px;
+                color: #1e40af;
+                font-weight: 600;
+            }
+            
+            .selection-info-unified i {
+                font-size: var(--icon-size-md);
+            }
+            
+            .clear-selection-unified {
+                background: rgba(239, 68, 68, 0.1);
+                color: var(--color-danger);
+                border: none;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                text-align: center;
-                background: white;
-                color: #374151;
-                border: 1px solid #e5e7eb;
-                cursor: pointer;
-                position: relative;
+                transition: var(--transition);
+                margin-left: 4px;
             }
             
-            .pill-content-twolines {
+            .clear-selection-unified:hover {
+                background: rgba(239, 68, 68, 0.2);
+                transform: scale(1.1);
+            }
+
+            /* Filtres de statut unifiés */
+            .status-filters-unified {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .status-pill-unified {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: 4px;
-                width: 100%;
-                height: 100%;
-                justify-content: center;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: var(--card-border-radius);
+                padding: 12px 16px;
+                cursor: pointer;
+                transition: var(--transition);
+                box-shadow: var(--card-shadow);
+                min-width: 120px;
+                position: relative;
             }
             
-            .pill-first-line-twolines {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-            
-            .pill-icon-twolines {
-                font-size: 16px;
-            }
-            
-            .pill-count-twolines {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 2px 6px;
-                border-radius: 6px;
-                font-size: 10px;
-                font-weight: 800;
-                min-width: 18px;
-                text-align: center;
-            }
-            
-            .pill-text-twolines {
-                font-weight: 700;
-                font-size: 12px;
-                line-height: 1.2;
-                text-align: center;
-            }
-            
-            .status-pill-harmonized-twolines:hover {
-                border-color: #3b82f6;
+            .status-pill-unified:hover {
+                border-color: var(--color-primary);
                 background: #f0f9ff;
                 transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+                box-shadow: var(--card-shadow-hover);
             }
             
-            .status-pill-harmonized-twolines.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            .status-pill-unified.active {
+                background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
                 color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+                border-color: var(--color-primary);
                 transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
             }
             
-            .status-pill-harmonized-twolines.active .pill-count-twolines {
+            .pill-header-unified {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 6px;
+            }
+            
+            .pill-header-unified i {
+                font-size: var(--icon-size-lg);
+            }
+            
+            .pill-count-unified {
+                background: rgba(0, 0, 0, 0.1);
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 700;
+                min-width: 20px;
+                text-align: center;
+            }
+            
+            .status-pill-unified.active .pill-count-unified {
                 background: rgba(255, 255, 255, 0.3);
                 color: white;
             }
+            
+            .pill-label-unified {
+                font-weight: 600;
+                font-size: 13px;
+                text-align: center;
+            }
 
-            /* FILTRES AVANCÉS */
-            .advanced-filters-panel {
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+            /* Panneau de filtres avancés */
+            .advanced-filters-panel-unified {
+                background: white;
+                border: 1px solid var(--border-color);
                 border-radius: var(--card-border-radius);
-                margin-bottom: var(--gap-large);
+                margin-bottom: 20px;
                 max-height: 0;
                 overflow: hidden;
                 transition: all 0.3s ease;
                 opacity: 0;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+                box-shadow: var(--card-shadow);
             }
             
-            .advanced-filters-panel.show {
+            .advanced-filters-panel-unified.show {
                 max-height: 200px;
                 opacity: 1;
-                padding: var(--gap-large);
+                padding: 20px;
             }
             
-            .advanced-filters-grid {
+            .filters-grid-unified {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: var(--gap-medium);
+                gap: 16px;
                 align-items: end;
             }
             
-            .filter-group {
+            .filter-group-unified {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-small);
+                gap: 8px;
             }
             
-            .filter-label {
+            .filter-label-unified {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 8px;
                 font-weight: 600;
-                font-size: 12px;
-                color: #374151;
+                font-size: 13px;
+                color: var(--text-color);
             }
             
-            .filter-select {
+            .filter-label-unified i {
+                font-size: var(--icon-size-sm);
+            }
+            
+            .filter-select-unified {
                 height: var(--btn-height);
-                padding: 0 var(--gap-medium);
-                border: 1px solid #d1d5db;
+                padding: 0 16px;
+                border: 1px solid var(--border-color);
                 border-radius: var(--btn-border-radius);
                 background: white;
                 font-size: var(--btn-font-size);
-                color: #374151;
+                color: var(--text-color);
                 cursor: pointer;
-                transition: all 0.2s ease;
-                font-weight: 500;
+                transition: var(--transition);
             }
             
-            .filter-select:focus {
+            .filter-select-unified:focus {
                 outline: none;
-                border-color: #6366f1;
-                box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
-            .filter-actions {
+            .filter-actions-unified {
                 display: flex;
-                flex-direction: column;
                 align-items: center;
-                gap: var(--gap-small);
+                justify-content: center;
             }
 
-            /* CONTAINER DES TÂCHES */
-            .tasks-container-harmonized {
+            /* Container principal des tâches */
+            .tasks-container-unified {
                 background: transparent;
             }
 
-            /* VUE MINIMALISTE */
-            .tasks-minimal-list {
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                background: rgba(255, 255, 255, 0.8);
-                border-radius: var(--card-border-radius);
-                overflow: hidden;
-                box-shadow: var(--shadow-base);
-            }
-            
-            .task-minimal {
-                display: flex;
-                align-items: center;
-                background: white;
-                padding: 12px 16px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border-bottom: 1px solid #f3f4f6;
-                min-height: 50px;
-                gap: 12px;
-            }
-            
-            .task-minimal:last-child {
-                border-bottom: none;
-            }
-            
-            .task-minimal:hover {
-                background: #f9fafb;
-                transform: translateY(-1px);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            }
-            
-            .task-minimal.selected {
-                background: #eff6ff;
-                border-left: 3px solid #3b82f6;
-            }
-            
-            .task-minimal.completed {
-                opacity: 0.6;
-            }
-            
-            .task-minimal.completed .task-title-minimal {
-                text-decoration: line-through;
-            }
-            
-            .task-checkbox-minimal {
-                width: 16px;
-                height: 16px;
-                cursor: pointer;
-                flex-shrink: 0;
-            }
-            
-            .task-priority-minimal {
+            /* Éléments communs */
+            .task-checkbox-unified {
                 width: 20px;
                 height: 20px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 10px;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-            
-            .task-priority-minimal.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .task-priority-minimal.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .task-priority-minimal.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .task-priority-minimal.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .task-content-minimal {
-                flex: 1;
-                display: grid;
-                grid-template-columns: 2fr 1fr 1fr;
-                gap: 12px;
-                align-items: center;
-                min-width: 0;
-            }
-            
-            .task-title-minimal {
-                font-weight: 600;
-                color: #1f2937;
-                font-size: 14px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .task-client-minimal {
-                font-size: 12px;
-                color: #6b7280;
-                font-weight: 500;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .task-deadline-minimal {
-                font-size: 12px;
-                font-weight: 500;
-                text-align: right;
-                white-space: nowrap;
-            }
-            
-            .task-deadline-minimal.deadline-overdue {
-                color: #dc2626;
-                font-weight: 600;
-            }
-            
-            .task-deadline-minimal.deadline-today {
-                color: #d97706;
-                font-weight: 600;
-            }
-            
-            .task-deadline-minimal.deadline-tomorrow {
-                color: #d97706;
-            }
-            
-            .task-deadline-minimal.deadline-week {
-                color: #2563eb;
-            }
-            
-            .task-deadline-minimal.deadline-normal {
-                color: #6b7280;
-            }
-            
-            .task-deadline-minimal.no-deadline {
-                color: #9ca3af;
-                font-style: italic;
-            }
-            
-            .task-actions-minimal {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                flex-shrink: 0;
-            }
-            
-            .action-btn-minimal {
-                width: 28px;
-                height: 28px;
-                border: 1px solid #d1d5db;
+                cursor: pointer;
                 border-radius: 6px;
+                border: 2px solid var(--border-color);
                 background: white;
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.2s ease;
-                font-size: 12px;
-            }
-            
-            .action-btn-minimal:hover {
-                background: #f3f4f6;
-                border-color: #9ca3af;
-                transform: translateY(-1px);
-            }
-            
-            .action-btn-minimal.complete:hover {
-                background: #dcfce7;
-                border-color: #16a34a;
-                color: #16a34a;
-            }
-            
-            .action-btn-minimal.edit:hover {
-                background: #fef3c7;
-                border-color: #d97706;
-                color: #d97706;
-            }
-
-            /* VUE NORMALE */
-            .tasks-harmonized-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-            }
-            
-            .task-harmonized-card {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .task-harmonized-card:first-child {
-                border-top-left-radius: var(--card-border-radius);
-                border-top-right-radius: var(--card-border-radius);
-                border-top: 1px solid #e5e7eb;
-            }
-            
-            .task-harmonized-card:last-child {
-                border-bottom-left-radius: var(--card-border-radius);
-                border-bottom-right-radius: var(--card-border-radius);
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            .task-harmonized-card:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                border-color: rgba(99, 102, 241, 0.2);
-                border-left: 3px solid #6366f1;
-                z-index: 1;
-            }
-            
-            .task-harmonized-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid #3b82f6;
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-                z-index: 2;
-            }
-            
-            .task-harmonized-card.completed {
-                opacity: 0.75;
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-left: 3px solid #22c55e;
-            }
-            
-            .task-harmonized-card.completed .task-title-harmonized {
-                text-decoration: line-through;
-                color: #6b7280;
-            }
-            
-            .task-checkbox-harmonized {
-                margin-right: var(--gap-medium);
-                cursor: pointer;
-                width: 20px;
-                height: 20px;
-                border-radius: 6px;
-                border: 2px solid #d1d5db;
-                background: white;
-                transition: all var(--transition-speed) ease;
-                flex-shrink: 0;
+                transition: var(--transition);
                 appearance: none;
                 position: relative;
                 display: flex;
@@ -2878,49 +2945,429 @@ class TasksView {
                 justify-content: center;
             }
             
-            .task-checkbox-harmonized:checked {
-                background: #6366f1;
-                border-color: #6366f1;
+            .task-checkbox-unified:checked {
+                background: var(--color-primary);
+                border-color: var(--color-primary);
             }
             
-            .task-checkbox-harmonized:checked::after {
+            .task-checkbox-unified:checked::after {
                 content: '✓';
                 color: white;
                 font-size: 12px;
                 font-weight: 700;
             }
             
-            .priority-bar-harmonized {
-                width: 4px;
-                height: 56px;
-                border-radius: 2px;
-                margin-right: var(--gap-medium);
-                transition: all 0.3s ease;
-                flex-shrink: 0;
+            .priority-indicator-unified {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                border: 2px solid;
+                transition: var(--transition);
             }
             
-            .task-main-content-harmonized {
+            .priority-indicator-unified i {
+                font-size: var(--icon-size-sm);
+            }
+            
+            .priority-indicator-unified.priority-urgent {
+                background: #fef2f2;
+                color: var(--color-danger);
+                border-color: #fecaca;
+            }
+            
+            .priority-indicator-unified.priority-high {
+                background: #fef3c7;
+                color: var(--color-warning);
+                border-color: #fde68a;
+            }
+            
+            .priority-indicator-unified.priority-medium {
+                background: #eff6ff;
+                color: var(--color-primary);
+                border-color: #bfdbfe;
+            }
+            
+            .priority-indicator-unified.priority-low {
+                background: #f0fdf4;
+                color: var(--color-success);
+                border-color: #bbf7d0;
+            }
+            
+            .priority-bar-unified {
+                width: 4px;
+                height: 60px;
+                border-radius: 2px;
+                margin-right: 12px;
+                transition: var(--transition);
+            }
+            
+            .priority-bar-unified.priority-urgent {
+                background: var(--color-danger);
+            }
+            
+            .priority-bar-unified.priority-high {
+                background: var(--color-warning);
+            }
+            
+            .priority-bar-unified.priority-medium {
+                background: var(--color-primary);
+            }
+            
+            .priority-bar-unified.priority-low {
+                background: var(--color-success);
+            }
+            
+            .type-badge-unified,
+            .deadline-badge-unified,
+            .priority-badge-unified,
+            .status-badge-unified {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid;
+                white-space: nowrap;
+            }
+            
+            .type-badge-unified i,
+            .deadline-badge-unified i,
+            .priority-badge-unified i,
+            .status-badge-unified i {
+                font-size: 10px;
+            }
+            
+            .type-badge-unified {
+                background: var(--color-gray-light);
+                color: var(--color-gray);
+                border-color: var(--border-color);
+            }
+            
+            .type-badge-unified.email {
+                background: #e0f2fe;
+                color: #0891b2;
+                border-color: #7dd3fc;
+            }
+            
+            .deadline-badge-unified.deadline-overdue {
+                background: #fef2f2;
+                color: var(--color-danger);
+                border-color: #fecaca;
+                animation: pulse 2s infinite;
+            }
+            
+            .deadline-badge-unified.deadline-today {
+                background: #fef3c7;
+                color: var(--color-warning);
+                border-color: #fde68a;
+            }
+            
+            .deadline-badge-unified.deadline-tomorrow {
+                background: #fef3c7;
+                color: var(--color-warning);
+                border-color: #fde68a;
+            }
+            
+            .deadline-badge-unified.deadline-week {
+                background: #eff6ff;
+                color: var(--color-primary);
+                border-color: #bfdbfe;
+            }
+            
+            .deadline-badge-unified.deadline-normal {
+                background: var(--color-gray-light);
+                color: var(--color-gray);
+                border-color: var(--border-color);
+            }
+            
+            .deadline-badge-unified.no-deadline {
+                background: var(--color-gray-light);
+                color: var(--text-muted);
+                border-color: var(--border-color);
+                font-style: italic;
+            }
+            
+            .priority-badge-unified.priority-urgent {
+                background: #fef2f2;
+                color: var(--color-danger);
+                border-color: #fecaca;
+            }
+            
+            .priority-badge-unified.priority-high {
+                background: #fef3c7;
+                color: var(--color-warning);
+                border-color: #fde68a;
+            }
+            
+            .priority-badge-unified.priority-medium {
+                background: #eff6ff;
+                color: var(--color-primary);
+                border-color: #bfdbfe;
+            }
+            
+            .priority-badge-unified.priority-low {
+                background: #f0fdf4;
+                color: var(--color-success);
+                border-color: #bbf7d0;
+            }
+            
+            .status-badge-unified.status-todo {
+                background: #fef3c7;
+                color: var(--color-warning);
+                border-color: #fde68a;
+            }
+            
+            .status-badge-unified.status-in-progress {
+                background: #eff6ff;
+                color: var(--color-primary);
+                border-color: #bfdbfe;
+            }
+            
+            .status-badge-unified.status-completed {
+                background: #f0fdf4;
+                color: var(--color-success);
+                border-color: #bbf7d0;
+            }
+            
+            .action-btn-icon-unified {
+                width: 36px;
+                height: 36px;
+                border: 1px solid var(--border-color);
+                border-radius: var(--btn-border-radius);
+                background: white;
+                color: var(--text-muted);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: var(--transition);
+                box-shadow: var(--card-shadow);
+            }
+            
+            .action-btn-icon-unified i {
+                font-size: var(--icon-size-sm);
+            }
+            
+            .action-btn-icon-unified:hover {
+                background: var(--color-gray-light);
+                transform: translateY(-1px);
+                box-shadow: var(--card-shadow-hover);
+            }
+            
+            .action-btn-icon-unified.complete:hover {
+                background: #dcfce7;
+                border-color: var(--color-success);
+                color: var(--color-success);
+            }
+            
+            .action-btn-icon-unified.edit:hover {
+                background: #fef3c7;
+                border-color: var(--color-warning);
+                color: var(--color-warning);
+            }
+            
+            .action-btn-icon-unified.details:hover {
+                background: #f3e8ff;
+                border-color: #8b5cf6;
+                color: #8b5cf6;
+            }
+            
+            .action-btn-icon-unified.reply:hover {
+                background: #dbeafe;
+                border-color: var(--color-primary);
+                color: var(--color-primary);
+            }
+
+            /* ===== VUE MINIMALISTE ===== */
+            .tasks-minimal-unified {
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: var(--card-border-radius);
+                overflow: hidden;
+                box-shadow: var(--card-shadow);
+            }
+            
+            .task-minimal-item {
+                display: flex;
+                align-items: center;
+                padding: 12px 16px;
+                cursor: pointer;
+                transition: var(--transition);
+                border-bottom: 1px solid #f8fafc;
+                gap: 12px;
+                min-height: 60px;
+            }
+            
+            .task-minimal-item:last-child {
+                border-bottom: none;
+            }
+            
+            .task-minimal-item:hover {
+                background: #f8fafc;
+                transform: translateY(-1px);
+            }
+            
+            .task-minimal-item.selected {
+                background: #eff6ff;
+                border-left: 3px solid var(--color-primary);
+            }
+            
+            .task-minimal-item.completed {
+                opacity: 0.7;
+            }
+            
+            .task-minimal-item.completed .task-title-minimal {
+                text-decoration: line-through;
+                color: var(--text-muted);
+            }
+            
+            .task-content-minimal {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .task-title-minimal {
+                font-weight: 600;
+                color: var(--text-color);
+                font-size: 15px;
+                margin-bottom: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .task-meta-minimal {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                font-size: 12px;
+                color: var(--text-muted);
+            }
+            
+            .task-client-minimal,
+            .task-deadline-minimal {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            .task-client-minimal i,
+            .task-deadline-minimal i {
+                font-size: 10px;
+            }
+            
+            .task-deadline-minimal.deadline-overdue {
+                color: var(--color-danger);
+                font-weight: 600;
+            }
+            
+            .task-deadline-minimal.deadline-today,
+            .task-deadline-minimal.deadline-tomorrow {
+                color: var(--color-warning);
+                font-weight: 600;
+            }
+            
+            .task-deadline-minimal.deadline-week {
+                color: var(--color-primary);
+            }
+            
+            .email-indicator-minimal {
+                color: #0891b2;
+            }
+            
+            .task-actions-minimal {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+            /* ===== VUE NORMALE ===== */
+            .tasks-normal-unified {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .task-normal-item {
+                display: flex;
+                align-items: center;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 0;
+                padding: var(--card-padding);
+                cursor: pointer;
+                transition: var(--transition);
+                position: relative;
+                min-height: 80px;
+                border-bottom: 1px solid #f1f5f9;
+                gap: 12px;
+            }
+            
+            .task-normal-item:first-child {
+                border-top-left-radius: var(--card-border-radius);
+                border-top-right-radius: var(--card-border-radius);
+            }
+            
+            .task-normal-item:last-child {
+                border-bottom-left-radius: var(--card-border-radius);
+                border-bottom-right-radius: var(--card-border-radius);
+                border-bottom: 1px solid var(--border-color);
+            }
+            
+            .task-normal-item:hover {
+                background: #f8fafc;
+                transform: translateY(-1px);
+                box-shadow: var(--card-shadow-hover);
+                border-color: rgba(59, 130, 246, 0.2);
+                border-left: 3px solid var(--color-primary);
+                z-index: 1;
+            }
+            
+            .task-normal-item.selected {
+                background: #eff6ff;
+                border-left: 4px solid var(--color-primary);
+                border-color: var(--color-primary);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+                z-index: 2;
+            }
+            
+            .task-normal-item.completed {
+                opacity: 0.8;
+                background: #f0fdf4;
+                border-left: 3px solid var(--color-success);
+            }
+            
+            .task-normal-item.completed .task-title-normal {
+                text-decoration: line-through;
+                color: var(--text-muted);
+            }
+            
+            .task-main-content {
                 flex: 1;
                 min-width: 0;
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                gap: 4px;
-                height: 100%;
+                gap: 8px;
             }
             
-            .task-header-harmonized {
+            .task-header-normal {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                gap: var(--gap-medium);
-                margin-bottom: 4px;
+                gap: 16px;
             }
             
-            .task-title-harmonized {
+            .task-title-normal {
                 font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
+                color: var(--text-color);
+                font-size: 16px;
                 margin: 0;
                 line-height: 1.3;
                 flex: 1;
@@ -2930,423 +3377,189 @@ class TasksView {
                 white-space: nowrap;
             }
             
-            .task-meta-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                flex-shrink: 0;
-            }
-            
-            .task-type-badge-harmonized,
-            .deadline-badge-harmonized {
-                display: flex;
-                align-items: center;
-                gap: 3px;
-                background: #f8fafc;
-                color: #64748b;
-                padding: 4px 8px;
-                border-radius: 6px;
-                font-size: 11px;
-                font-weight: 600;
-                border: 1px solid #e2e8f0;
-                white-space: nowrap;
-            }
-            
-            .deadline-badge-harmonized.deadline-overdue {
-                background: #fef2f2;
-                color: #dc2626;
-                border-color: #fecaca;
-                animation: pulse 2s infinite;
-            }
-            
-            .deadline-badge-harmonized.deadline-today {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-            
-            .deadline-badge-harmonized.deadline-tomorrow {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-            
-            .deadline-badge-harmonized.deadline-week {
-                background: #eff6ff;
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-            
-            .deadline-badge-harmonized.deadline-normal {
-                background: #f8fafc;
-                color: #64748b;
-                border-color: #e2e8f0;
-            }
-            
-            .deadline-badge-harmonized.no-deadline {
-                background: #f3f4f6;
-                color: #9ca3af;
-                border-color: #d1d5db;
-                font-style: italic;
-            }
-            
-            .no-deadline {
-                color: #9ca3af;
-                font-style: italic;
-                font-size: 10px;
-            }
-            
-            .task-recipient-harmonized {
+            .task-badges-normal {
                 display: flex;
                 align-items: center;
                 gap: 6px;
-                color: #6b7280;
-                font-size: 12px;
-                font-weight: 500;
-                line-height: 1.2;
-            }
-            
-            .recipient-name-harmonized {
-                font-weight: 600;
-                color: #374151;
-            }
-            
-            .reply-indicator-harmonized {
-                color: #dc2626;
-                font-weight: 600;
-                font-size: 10px;
-            }
-            
-            .has-suggestions {
-                color: #8b5cf6;
-                font-weight: 600;
-                font-size: 10px;
-            }
-            
-            .task-actions-harmonized {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                margin-left: var(--gap-medium);
                 flex-shrink: 0;
             }
             
-            .action-btn-harmonized {
-                width: var(--action-btn-size);
-                height: var(--action-btn-size);
-                border: 2px solid transparent;
-                border-radius: var(--btn-border-radius);
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
+            .task-meta-normal {
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
+                gap: 16px;
                 font-size: 13px;
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+                color: var(--text-muted);
+                flex-wrap: wrap;
             }
             
-            .action-btn-harmonized:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            .client-info-normal,
+            .sender-info-normal,
+            .reply-needed-normal,
+            .has-images-normal {
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
             
-            .action-btn-harmonized.complete {
-                color: #16a34a;
+            .client-info-normal i,
+            .sender-info-normal i,
+            .reply-needed-normal i,
+            .has-images-normal i {
+                font-size: 12px;
             }
             
-            .action-btn-harmonized.complete:hover {
-                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-                border-color: #16a34a;
-                color: #15803d;
+            .reply-needed-normal {
+                color: var(--color-warning);
+                font-weight: 600;
             }
             
-            .action-btn-harmonized.edit {
-                color: #d97706;
-            }
-            
-            .action-btn-harmonized.edit:hover {
-                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                border-color: #d97706;
-                color: #92400e;
-            }
-            
-            .action-btn-harmonized.details {
+            .has-images-normal {
                 color: #8b5cf6;
+                font-weight: 600;
             }
             
-            .action-btn-harmonized.details:hover {
-                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-                border-color: #8b5cf6;
-                color: #7c3aed;
-            }
-            
-            .action-btn-harmonized.reply {
-                color: #3b82f6;
-            }
-            
-            .action-btn-harmonized.reply:hover {
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border-color: #3b82f6;
-                color: #2563eb;
+            .task-actions-normal {
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
 
-            /* VUE DÉTAILLÉE */
-            .tasks-detailed-grid {
+            /* ===== VUE DÉTAILLÉE ===== */
+            .tasks-detailed-unified {
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-                gap: var(--gap-large);
+                gap: 20px;
             }
             
-            .task-detailed-card {
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+            .task-detailed-item {
+                background: white;
+                border: 1px solid var(--border-color);
                 border-radius: var(--card-border-radius);
-                padding: var(--gap-large);
-                transition: all 0.3s ease;
-                box-shadow: var(--shadow-base);
-                min-height: 200px;
+                padding: 20px;
+                transition: var(--transition);
+                box-shadow: var(--card-shadow);
+                min-height: 250px;
                 display: flex;
                 flex-direction: column;
             }
             
-            .task-detailed-card:hover {
+            .task-detailed-item:hover {
                 transform: translateY(-2px);
-                box-shadow: var(--shadow-hover);
-                border-color: rgba(99, 102, 241, 0.3);
+                box-shadow: var(--card-shadow-hover);
+                border-color: rgba(59, 130, 246, 0.3);
             }
             
-            .task-detailed-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-color: #3b82f6;
+            .task-detailed-item.selected {
+                background: #eff6ff;
+                border-color: var(--color-primary);
                 box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
             }
             
-            .task-detailed-card.completed {
+            .task-detailed-item.completed {
                 opacity: 0.8;
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-color: #22c55e;
+                background: #f0fdf4;
+                border-color: var(--color-success);
             }
             
             .task-detailed-header {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
+                justify-content: space-between;
+                margin-bottom: 16px;
             }
             
-            .task-checkbox-detailed {
-                width: 18px;
-                height: 18px;
-                cursor: pointer;
-                flex-shrink: 0;
+            .task-indicators-detailed {
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
-            .task-priority-detailed {
+            .status-indicator-unified {
                 width: 24px;
                 height: 24px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                background: var(--color-gray-light);
+                color: var(--color-gray);
+                border: 1px solid var(--border-color);
+            }
+            
+            .status-indicator-unified i {
                 font-size: 12px;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-            
-            .task-priority-detailed.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .task-priority-detailed.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .task-priority-detailed.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .task-priority-detailed.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .task-status-detailed {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                background: #f3f4f6;
-                color: #6b7280;
-                border: 1px solid #d1d5db;
-                flex-shrink: 0;
             }
             
             .task-detailed-content {
                 flex: 1;
-                margin-bottom: var(--gap-medium);
+                margin-bottom: 16px;
             }
             
             .task-title-detailed {
                 font-size: 18px;
                 font-weight: 700;
-                color: #1f2937;
-                margin: 0 0 var(--gap-small) 0;
+                color: var(--text-color);
+                margin: 0 0 12px 0;
                 line-height: 1.3;
                 cursor: pointer;
-                transition: color 0.2s ease;
+                transition: var(--transition);
             }
             
             .task-title-detailed:hover {
-                color: #3b82f6;
+                color: var(--color-primary);
             }
             
             .task-description-detailed {
                 font-size: 14px;
-                color: #6b7280;
+                color: var(--text-muted);
                 line-height: 1.5;
-                margin: 0 0 var(--gap-medium) 0;
+                margin: 0 0 16px 0;
+            }
+            
+            .task-badges-detailed {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-bottom: 12px;
             }
             
             .task-meta-detailed {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
+                gap: 8px;
             }
             
-            .task-client-detailed,
-            .task-deadline-detailed {
+            .meta-item-detailed {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 8px;
                 font-size: 13px;
-                font-weight: 500;
+                color: var(--text-muted);
             }
             
-            .task-client-detailed {
-                color: #6b7280;
+            .meta-item-detailed i {
+                font-size: 12px;
+                width: 16px;
             }
             
-            .task-deadline-detailed.deadline-overdue {
-                color: #dc2626;
+            .meta-item-detailed.reply-needed {
+                color: var(--color-warning);
                 font-weight: 600;
             }
             
-            .task-deadline-detailed.deadline-today {
-                color: #d97706;
+            .meta-item-detailed.has-images {
+                color: #8b5cf6;
                 font-weight: 600;
-            }
-            
-            .task-deadline-detailed.deadline-tomorrow {
-                color: #d97706;
-            }
-            
-            .task-deadline-detailed.deadline-week {
-                color: #2563eb;
-            }
-            
-            .task-deadline-detailed.deadline-normal {
-                color: #6b7280;
-            }
-            
-            .task-deadline-detailed.no-deadline {
-                color: #9ca3af;
-                font-style: italic;
-            }
-            
-            .task-email-info {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                font-size: 13px;
-                color: #6b7280;
-                padding: var(--gap-small);
-                background: #f8fafc;
-                border-radius: 6px;
-                border: 1px solid #e2e8f0;
-            }
-            
-            .reply-needed {
-                background: #fef3c7;
-                color: #d97706;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 11px;
-                font-weight: 500;
-                border: 1px solid #fde68a;
             }
             
             .task-detailed-actions {
                 display: flex;
-                gap: var(--gap-small);
+                gap: 8px;
                 flex-wrap: wrap;
             }
-            
-            .btn-detailed {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                padding: 8px 14px;
-                border-radius: var(--btn-border-radius);
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border: 1px solid;
-                white-space: nowrap;
-            }
-            
-            .btn-detailed.btn-success {
-                background: #16a34a;
-                color: white;
-                border-color: #16a34a;
-            }
-            
-            .btn-detailed.btn-success:hover {
-                background: #15803d;
-                border-color: #15803d;
-                transform: translateY(-1px);
-            }
-            
-            .btn-detailed.btn-primary {
-                background: #3b82f6;
-                color: white;
-                border-color: #3b82f6;
-            }
-            
-            .btn-detailed.btn-primary:hover {
-                background: #2563eb;
-                border-color: #2563eb;
-                transform: translateY(-1px);
-            }
-            
-            .btn-detailed.btn-secondary {
-                background: #f3f4f6;
-                color: #374151;
-                border-color: #d1d5db;
-            }
-            
-            .btn-detailed.btn-secondary:hover {
-                background: #e5e7eb;
-                border-color: #9ca3af;
-            }
 
-            /* MODALES */
+            /* ===== MODALES ===== */
             .modal-overlay {
                 position: fixed;
                 top: 0;
@@ -3373,13 +3586,13 @@ class TasksView {
                 box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             }
             
-            .modal-container.modal-large {
-                max-width: 1000px;
+            .modal-container.modal-xl {
+                max-width: 1200px;
             }
             
             .modal-header {
                 padding: 24px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--border-color);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -3389,10 +3602,14 @@ class TasksView {
                 margin: 0;
                 font-size: 20px;
                 font-weight: 700;
-                color: #1f2937;
+                color: var(--text-color);
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 8px;
+            }
+            
+            .modal-header h2 i {
+                font-size: var(--icon-size-lg);
             }
             
             .modal-close {
@@ -3400,19 +3617,19 @@ class TasksView {
                 border: none;
                 font-size: 20px;
                 cursor: pointer;
-                color: #6b7280;
+                color: var(--text-muted);
                 width: 32px;
                 height: 32px;
                 border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                transition: all 0.2s ease;
+                transition: var(--transition);
             }
             
             .modal-close:hover {
-                background: #f3f4f6;
-                color: #374151;
+                background: var(--color-gray-light);
+                color: var(--text-color);
             }
             
             .modal-content {
@@ -3423,7 +3640,7 @@ class TasksView {
             
             .modal-footer {
                 padding: 24px;
-                border-top: 1px solid #e5e7eb;
+                border-top: 1px solid var(--border-color);
                 display: flex;
                 justify-content: flex-end;
                 gap: 12px;
@@ -3432,33 +3649,37 @@ class TasksView {
             .btn-modal {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 8px;
                 padding: 12px 20px;
-                border-radius: 8px;
-                font-size: 14px;
+                border-radius: var(--btn-border-radius);
+                font-size: var(--btn-font-size);
                 font-weight: 600;
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: var(--transition);
                 border: 1px solid;
                 white-space: nowrap;
             }
             
+            .btn-modal i {
+                font-size: var(--icon-size-sm);
+            }
+            
             .btn-modal.btn-primary {
-                background: #3b82f6;
+                background: var(--color-primary);
                 color: white;
-                border-color: #3b82f6;
+                border-color: var(--color-primary);
             }
             
             .btn-modal.btn-primary:hover {
-                background: #2563eb;
-                border-color: #2563eb;
+                background: var(--color-primary-dark);
+                border-color: var(--color-primary-dark);
                 transform: translateY(-1px);
             }
             
             .btn-modal.btn-secondary {
-                background: #f3f4f6;
-                color: #374151;
-                border-color: #d1d5db;
+                background: var(--color-gray-light);
+                color: var(--text-color);
+                border-color: var(--border-color);
             }
             
             .btn-modal.btn-secondary:hover {
@@ -3467,14 +3688,14 @@ class TasksView {
             }
             
             .btn-modal.btn-success {
-                background: #16a34a;
+                background: var(--color-success);
                 color: white;
-                border-color: #16a34a;
+                border-color: var(--color-success);
             }
             
             .btn-modal.btn-success:hover {
-                background: #15803d;
-                border-color: #15803d;
+                background: #059669;
+                border-color: #059669;
                 transform: translateY(-1px);
             }
             
@@ -3490,351 +3711,520 @@ class TasksView {
                 transform: translateY(-1px);
             }
 
-            /* FORMULAIRES */
-            .edit-form,
-            .create-form {
-                display: flex;
-                flex-direction: column;
-                gap: var(--gap-large);
-            }
-            
-            .form-row {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: var(--gap-medium);
-            }
-            
-            .form-row .form-group:only-child {
-                grid-column: 1 / -1;
-            }
-            
-            .form-group {
-                display: flex;
-                flex-direction: column;
-                gap: var(--gap-small);
-            }
-            
-            .form-group label {
-                font-weight: 600;
-                color: #374151;
-                font-size: 14px;
-            }
-            
-            .form-input,
-            .form-select,
-            .form-textarea {
-                padding: 12px 16px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                background: white;
-                transition: border-color 0.2s ease;
-                font-family: inherit;
-            }
-            
-            .form-input:focus,
-            .form-select:focus,
-            .form-textarea:focus {
-                outline: none;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-            
-            .form-textarea {
-                resize: vertical;
-                min-height: 80px;
-                font-family: inherit;
-            }
-            
-            .form-section {
-                margin-top: var(--gap-large);
-                padding-top: var(--gap-large);
-                border-top: 1px solid #e5e7eb;
-            }
-            
-            .form-section h3 {
-                margin: 0 0 var(--gap-medium) 0;
-                font-size: 16px;
-                font-weight: 600;
-                color: #1f2937;
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-            }
-            
-            .email-info-readonly {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: var(--gap-medium);
-                font-size: 14px;
-                color: #374151;
-            }
-            
-            .email-info-readonly > div {
-                margin-bottom: var(--gap-small);
-            }
-            
-            .email-info-readonly > div:last-child {
-                margin-bottom: 0;
-            }
-
-            /* DÉTAILS DES TÂCHES */
-            .task-details-content {
+            /* ===== DÉTAILS DE TÂCHE ENRICHIS ===== */
+            .task-details-enriched {
                 max-width: none;
             }
             
-            .details-header {
+            .details-header-enriched {
                 margin-bottom: 24px;
                 padding-bottom: 16px;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--border-color);
             }
             
-            .task-title-details {
+            .task-title-enriched {
                 font-size: 24px;
                 font-weight: 700;
-                color: #1f2937;
+                color: var(--text-color);
                 margin: 0 0 12px 0;
                 line-height: 1.3;
             }
             
-            .task-meta-badges {
+            .task-badges-enriched {
                 display: flex;
                 gap: 12px;
                 flex-wrap: wrap;
             }
             
-            .priority-badge,
-            .status-badge,
-            .deadline-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 6px 12px;
-                border-radius: 8px;
-                font-size: 14px;
-                font-weight: 600;
-            }
-            
-            .priority-badge.priority-urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .priority-badge.priority-high {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .priority-badge.priority-medium {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .priority-badge.priority-low {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .status-badge.status-todo {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .status-badge.status-in-progress {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .status-badge.status-completed {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .deadline-badge.deadline-overdue {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .deadline-badge.deadline-today {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .deadline-badge.deadline-tomorrow {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .deadline-badge.deadline-week {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .deadline-badge.deadline-normal {
-                background: #f8fafc;
-                color: #64748b;
-                border: 1px solid #e2e8f0;
-            }
-            
-            .deadline-badge.no-deadline {
-                background: #f3f4f6;
-                color: #9ca3af;
-                border: 1px solid #d1d5db;
-                font-style: italic;
-            }
-            
-            .details-section {
+            .details-section-enriched {
                 margin-bottom: 24px;
                 background: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
+                border: 1px solid var(--border-color);
+                border-radius: var(--btn-border-radius);
                 overflow: hidden;
             }
             
-            .details-section h3 {
+            .details-section-enriched h3 {
                 margin: 0;
                 padding: 16px 20px;
                 background: white;
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--border-color);
                 font-size: 16px;
                 font-weight: 600;
-                color: #1f2937;
+                color: var(--text-color);
                 display: flex;
                 align-items: center;
                 gap: 8px;
             }
             
-            .description-content {
+            .details-section-enriched h3 i {
+                font-size: var(--icon-size-md);
+            }
+            
+            .details-section-enriched.email-section {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border-color: #7dd3fc;
+            }
+            
+            .details-section-enriched.email-section h3 {
+                background: #f0f9ff;
+                border-bottom-color: #7dd3fc;
+                color: #075985;
+            }
+            
+            .details-section-enriched.attention {
+                background: #fef3c7;
+                border-color: #fbbf24;
+            }
+            
+            .details-section-enriched.attention h3 {
+                background: #fef9e8;
+                border-bottom-color: #fbbf24;
+                color: #92400e;
+            }
+            
+            .details-section-enriched.suggestions {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border-color: #7dd3fc;
+            }
+            
+            .details-section-enriched.suggestions h3 {
+                background: #f0f9ff;
+                border-bottom-color: #7dd3fc;
+                color: #075985;
+            }
+            
+            .description-content-enriched,
+            .info-grid-enriched,
+            .email-info-enriched,
+            .actions-list-enriched,
+            .key-info-grid-enriched,
+            .risks-list-enriched,
+            .suggestions-preview-enriched {
                 padding: 16px 20px;
             }
             
-            .structured-description {
+            .structured-description-unified {
                 font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
                 font-size: 13px;
                 line-height: 1.6;
                 background: white;
                 padding: 16px;
                 border-radius: 6px;
-                border: 1px solid #e5e7eb;
+                border: 1px solid var(--border-color);
             }
             
-            .simple-description {
+            .simple-description-unified {
                 font-size: 14px;
                 line-height: 1.6;
-                color: #374151;
+                color: var(--text-color);
             }
             
-            .info-grid {
-                padding: 16px 20px;
+            .info-grid-enriched {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                 gap: 12px;
             }
             
-            .info-item {
+            .info-item-enriched {
                 display: flex;
-                align-items: center;
                 gap: 12px;
                 font-size: 14px;
-                color: #374151;
+                color: var(--text-color);
                 line-height: 1.4;
             }
             
-            .info-item strong {
+            .info-item-enriched strong {
                 min-width: 120px;
-                color: #1f2937;
-            }
-            
-            .email-details-grid {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .email-detail-item {
-                display: flex;
-                gap: 12px;
-                font-size: 14px;
-            }
-            
-            .email-detail-item strong {
-                min-width: 80px;
-                color: #374151;
-            }
-            
-            .email-content-section {
-                padding: 16px 20px;
-            }
-            
-            .email-content-section h4 {
-                margin: 0 0 12px 0;
-                font-size: 14px;
+                color: var(--text-color);
                 font-weight: 600;
-                color: #374151;
             }
-            
-            .email-content-box {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
+
+            /* Section Email Enrichie */
+            .email-header-enriched {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
                 padding: 16px;
-                max-height: 300px;
-                overflow-y: auto;
+                background: white;
+                border-radius: var(--btn-border-radius);
+                border: 1px solid #7dd3fc;
             }
             
-            .email-content-viewer {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                line-height: 1.6;
-                color: #333;
-            }
-            
-            .email-original-content {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 14px;
-                line-height: 1.6;
-                color: #374151;
-                white-space: pre-wrap;
-            }
-            
-            .email-original-content strong {
-                color: #1f2937;
-                font-weight: 600;
-            }
-            
-            .actions-list-details {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .action-item-details {
+            .sender-info-enriched {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                padding: 10px 12px;
-                background: white;
-                border-radius: 6px;
-                border: 1px solid #e5e7eb;
             }
             
-            .action-number {
-                width: 24px;
-                height: 24px;
-                background: #667eea;
+            .sender-avatar-enriched {
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, #0ea5e9, #0284c7);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                font-weight: 700;
+                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+            }
+            
+            .sender-details-enriched {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .sender-name-enriched {
+                font-weight: 600;
+                color: var(--text-color);
+                font-size: 16px;
+            }
+            
+            .sender-email-enriched {
+                font-size: 13px;
+                color: var(--text-muted);
+            }
+            
+            .email-meta-enriched {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                text-align: right;
+            }
+            
+            .email-date-enriched,
+            .email-domain-enriched {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 13px;
+                color: var(--text-muted);
+            }
+            
+            .email-date-enriched i,
+            .email-domain-enriched i {
+                font-size: 12px;
+            }
+            
+            .email-subject-enriched {
+                font-size: 14px;
+                color: var(--text-color);
+                margin-bottom: 12px;
+                padding: 12px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid #e0f2fe;
+            }
+            
+            .email-flags-enriched {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            
+            .email-flag-enriched {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .email-flag-enriched.reply-needed {
+                background: #fef3c7;
+                color: var(--color-warning);
+                border: 1px solid #fde68a;
+            }
+            
+            .email-flag-enriched.replied {
+                background: #dcfce7;
+                color: var(--color-success);
+                border: 1px solid #bbf7d0;
+            }
+            
+            .email-flag-enriched.has-attachments {
+                background: #f3e8ff;
+                color: #8b5cf6;
+                border: 1px solid #e9d5ff;
+            }
+            
+            .email-flag-enriched i {
+                font-size: 11px;
+            }
+
+            /* Images de l'email */
+            .email-images-enriched h4,
+            .email-attachments-enriched h4,
+            .email-conversation-enriched h4,
+            .email-html-content-enriched h4 {
+                margin: 0 0 12px 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-color);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .images-grid-enriched {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 12px;
+            }
+            
+            .image-item-enriched {
+                position: relative;
+                background: white;
+                border: 1px solid #e0f2fe;
+                border-radius: var(--btn-border-radius);
+                overflow: hidden;
+                cursor: pointer;
+                transition: var(--transition);
+                aspect-ratio: 4/3;
+            }
+            
+            .image-item-enriched:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            }
+            
+            .email-image-thumb {
+                width: 100%;
+                height: 120px;
+                object-fit: cover;
+                display: block;
+            }
+            
+            .image-info-enriched {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+                color: white;
+                padding: 8px;
+            }
+            
+            .image-name-enriched {
+                font-size: 11px;
+                font-weight: 600;
+                margin-bottom: 2px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .image-size-enriched {
+                font-size: 10px;
+                opacity: 0.8;
+            }
+            
+            .image-overlay-enriched {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: var(--icon-size-lg);
+                opacity: 0;
+                transition: var(--transition);
+            }
+            
+            .image-item-enriched:hover .image-overlay-enriched {
+                opacity: 1;
+            }
+
+            /* Pièces jointes */
+            .attachments-list-enriched {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .attachment-item-enriched {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 12px;
+                background: white;
+                border: 1px solid #e0f2fe;
+                border-radius: 6px;
+                font-size: 13px;
+            }
+            
+            .attachment-item-enriched i {
+                font-size: var(--icon-size-md);
+                color: #8b5cf6;
+            }
+            
+            .attachment-name-enriched {
+                flex: 1;
+                font-weight: 500;
+                color: var(--text-color);
+            }
+            
+            .attachment-size-enriched {
+                color: var(--text-muted);
+                font-size: 12px;
+            }
+
+            /* Conversation */
+            .conversation-thread-enriched {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .conversation-message-enriched {
+                background: white;
+                border: 1px solid #e0f2fe;
+                border-radius: var(--btn-border-radius);
+                padding: 16px;
+                position: relative;
+            }
+            
+            .conversation-message-enriched.latest {
+                border-color: #0ea5e9;
+                box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+            }
+            
+            .message-header-enriched {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            
+            .message-sender-enriched {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .message-avatar-enriched {
+                width: 32px;
+                height: 32px;
+                background: linear-gradient(135deg, #0ea5e9, #0284c7);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: 600;
+            }
+            
+            .message-details-enriched {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .message-from-enriched {
+                font-weight: 600;
+                color: var(--text-color);
+                font-size: 14px;
+            }
+            
+            .message-date-enriched {
+                font-size: 12px;
+                color: var(--text-muted);
+            }
+            
+            .latest-indicator-enriched {
+                background: #0ea5e9;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            
+            .message-content-enriched {
+                font-size: 14px;
+                line-height: 1.6;
+                color: var(--text-color);
+            }
+            
+            .email-content-formatted {
+                font-family: inherit;
+                line-height: 1.6;
+            }
+
+            /* Contenu HTML */
+            .html-content-viewer-enriched {
+                position: relative;
+                background: white;
+                border: 1px solid #e0f2fe;
+                border-radius: var(--btn-border-radius);
+                overflow: hidden;
+                cursor: pointer;
+                transition: var(--transition);
+            }
+            
+            .html-content-preview {
+                max-height: 200px;
+                overflow: hidden;
+                padding: 16px;
+            }
+            
+            .html-content-viewer-enriched.expanded .html-content-preview {
+                max-height: none;
+                overflow: visible;
+            }
+            
+            .expand-html-button {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(transparent, rgba(14, 165, 233, 0.9));
+                color: white;
+                padding: 12px;
+                text-align: center;
+                font-size: 12px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+            }
+            
+            .html-content-viewer-enriched.expanded .expand-html-button {
+                position: static;
+                background: #0ea5e9;
+            }
+
+            /* Actions et informations */
+            .actions-list-enriched {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .action-item-enriched {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+            }
+            
+            .action-number-enriched {
+                width: 28px;
+                height: 28px;
+                background: var(--color-primary);
                 color: white;
                 border-radius: 50%;
                 display: flex;
@@ -3845,57 +4235,69 @@ class TasksView {
                 flex-shrink: 0;
             }
             
-            .action-text {
+            .action-content-enriched {
                 flex: 1;
-                font-size: 14px;
-                color: #374151;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
             }
             
-            .action-deadline {
+            .action-text-enriched {
+                font-size: 14px;
+                color: var(--text-color);
+                font-weight: 500;
+            }
+            
+            .action-deadline-enriched {
+                display: flex;
+                align-items: center;
+                gap: 4px;
                 font-size: 12px;
-                color: #dc2626;
+                color: var(--color-danger);
                 font-weight: 600;
                 background: #fef2f2;
                 padding: 4px 8px;
                 border-radius: 4px;
                 border: 1px solid #fecaca;
+                width: fit-content;
             }
             
-            .key-info-grid {
-                padding: 16px 20px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
+            .action-deadline-enriched i {
+                font-size: 10px;
             }
             
-            .key-info-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 8px;
-                font-size: 14px;
-                color: #374151;
-                line-height: 1.4;
-            }
-            
-            .attention-section {
-                background: #fef3c7;
-                border-color: #fbbf24;
-            }
-            
-            .attention-section h3 {
-                background: #fef9e8;
-                border-bottom-color: #fbbf24;
-                color: #92400e;
-            }
-            
-            .attention-list {
-                padding: 16px 20px;
+            .key-info-grid-enriched {
                 display: flex;
                 flex-direction: column;
                 gap: 10px;
             }
             
-            .attention-item {
+            .key-info-item-enriched {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                font-size: 14px;
+                color: var(--text-color);
+                line-height: 1.4;
+                padding: 8px 12px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
+            }
+            
+            .key-info-item-enriched i {
+                font-size: 12px;
+                color: var(--color-success);
+                margin-top: 2px;
+            }
+            
+            .risks-list-enriched {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .risk-item-enriched {
                 display: flex;
                 align-items: flex-start;
                 gap: 10px;
@@ -3905,342 +4307,370 @@ class TasksView {
                 padding: 10px 12px;
             }
             
-            .attention-item i {
+            .risk-item-enriched i {
                 font-size: 14px;
-                color: #f59e0b;
+                color: var(--color-warning);
                 margin-top: 2px;
             }
             
-            .attention-item span {
+            .risk-item-enriched span {
                 flex: 1;
                 font-size: 13px;
                 color: #92400e;
                 line-height: 1.4;
             }
-            
-            .suggested-replies-section {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                border: 1px solid #7dd3fc;
-            }
-            
-            .suggested-replies-section h3 {
-                background: #f0f9ff;
-                border-bottom-color: #7dd3fc;
-                color: #075985;
-            }
-            
-            .suggested-replies-preview {
-                padding: 16px 20px;
-                text-align: center;
-            }
-            
-            .suggested-replies-preview p {
-                margin: 0 0 12px 0;
-                color: #0c4a6e;
-                font-size: 14px;
-            }
-            
-            .btn-preview {
-                display: inline-flex;
-                align-items: center;
-                gap: var(--gap-small);
-                padding: 8px 16px;
-                background: #0ea5e9;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-size: 13px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            
-            .btn-preview:hover {
-                background: #0284c7;
-                transform: translateY(-1px);
-            }
 
-            /* SUGGESTIONS DE RÉPONSE */
-            .ai-suggestions-info {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                border: 1px solid #7dd3fc;
-                border-radius: 8px;
-                padding: 16px;
-                margin-bottom: 20px;
+            /* Modal d'image */
+            .image-modal-overlay {
+                background: rgba(0, 0, 0, 0.9);
             }
             
-            .ai-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                background: #0ea5e9;
-                color: white;
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                margin-bottom: 8px;
-            }
-            
-            .ai-suggestions-info p {
-                margin: 0;
-                color: #075985;
-                font-size: 14px;
-            }
-            
-            .ai-generation-time {
-                font-size: 12px;
-                color: #6b7280;
-                margin-top: 8px;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            
-            .replies-list {
+            .image-modal-container {
+                background: white;
+                border-radius: 16px;
+                max-width: 90vw;
+                max-height: 90vh;
                 display: flex;
                 flex-direction: column;
-                gap: 16px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             }
             
-            .reply-suggestion-card {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 16px;
-                transition: all 0.2s ease;
-            }
-            
-            .reply-suggestion-card:hover {
-                border-color: #3b82f6;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-            }
-            
-            .reply-card-header {
+            .image-modal-header {
+                padding: 16px 20px;
+                border-bottom: 1px solid var(--border-color);
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 12px;
             }
             
-            .reply-tone-badge {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 4px 12px;
-                border-radius: 16px;
-                font-size: 12px;
+            .image-modal-header h3 {
+                margin: 0;
+                font-size: 16px;
                 font-weight: 600;
-                text-transform: capitalize;
+                color: var(--text-color);
             }
             
-            .reply-tone-badge.professionnel,
-            .reply-tone-badge.formel {
-                background: #f3f4f6;
-                color: #374151;
-                border: 1px solid #d1d5db;
-            }
-            
-            .reply-tone-badge.urgent {
-                background: #fef2f2;
-                color: #dc2626;
-                border: 1px solid #fecaca;
-            }
-            
-            .reply-tone-badge.neutre {
-                background: #eff6ff;
-                color: #2563eb;
-                border: 1px solid #bfdbfe;
-            }
-            
-            .reply-tone-badge.amical {
-                background: #f0fdf4;
-                color: #16a34a;
-                border: 1px solid #bbf7d0;
-            }
-            
-            .reply-tone-badge.détaillé {
-                background: #fef3c7;
-                color: #d97706;
-                border: 1px solid #fde68a;
-            }
-            
-            .reply-card-actions {
+            .image-modal-info {
                 display: flex;
+                gap: 12px;
+                font-size: 12px;
+                color: var(--text-muted);
+            }
+            
+            .image-modal-content {
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                max-height: 70vh;
+                overflow: hidden;
+            }
+            
+            .modal-image {
+                max-width: 100%;
+                max-height: 100%;
+                border-radius: var(--btn-border-radius);
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            }
+            
+            .image-modal-footer {
+                padding: 16px 20px;
+                border-top: 1px solid var(--border-color);
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            /* Actions en masse */
+            .bulk-actions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 16px;
+            }
+            
+            .bulk-action-btn {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 20px;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: var(--card-border-radius);
+                cursor: pointer;
+                transition: var(--transition);
+                text-align: left;
+            }
+            
+            .bulk-action-btn:hover {
+                border-color: var(--color-primary);
+                transform: translateY(-2px);
+                box-shadow: var(--card-shadow-hover);
+            }
+            
+            .bulk-action-btn.danger:hover {
+                border-color: var(--color-danger);
+                background: #fef2f2;
+            }
+            
+            .bulk-action-btn i {
+                font-size: var(--icon-size-xl);
+                color: var(--color-primary);
+                width: 40px;
+                text-align: center;
+            }
+            
+            .bulk-action-btn.danger i {
+                color: var(--color-danger);
+            }
+            
+            .bulk-action-info h4 {
+                margin: 0 0 4px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text-color);
+            }
+            
+            .bulk-action-info p {
+                margin: 0;
+                font-size: 13px;
+                color: var(--text-muted);
+                line-height: 1.4;
+            }
+
+            /* Formulaires */
+            .task-form-unified {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .form-row-unified {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+            
+            .form-row-unified .form-group-unified:only-child {
+                grid-column: 1 / -1;
+            }
+            
+            .form-group-unified {
+                display: flex;
+                flex-direction: column;
                 gap: 8px;
             }
             
-            .btn-sm {
-                display: inline-flex;
+            .form-label-unified {
+                display: flex;
                 align-items: center;
-                gap: 4px;
-                padding: 6px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border: 1px solid;
+                gap: 8px;
+                font-weight: 600;
+                color: var(--text-color);
+                font-size: 14px;
             }
             
-            .btn-sm.btn-secondary {
-                background: #f3f4f6;
-                color: #374151;
-                border-color: #d1d5db;
+            .form-label-unified i {
+                font-size: var(--icon-size-sm);
             }
             
-            .btn-sm.btn-secondary:hover {
-                background: #e5e7eb;
-                border-color: #9ca3af;
+            .form-input-unified,
+            .form-select-unified,
+            .form-textarea-unified {
+                padding: 12px 16px;
+                border: 2px solid var(--border-color);
+                border-radius: var(--btn-border-radius);
+                font-size: var(--btn-font-size);
+                background: white;
+                transition: var(--transition);
+                font-family: inherit;
+                color: var(--text-color);
             }
             
-            .btn-sm.btn-primary {
-                background: #3b82f6;
-                color: white;
-                border-color: #3b82f6;
+            .form-input-unified:focus,
+            .form-select-unified:focus,
+            .form-textarea-unified:focus {
+                outline: none;
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
-            .btn-sm.btn-primary:hover {
-                background: #2563eb;
-                border-color: #2563eb;
-                transform: translateY(-1px);
+            .form-textarea-unified {
+                resize: vertical;
+                min-height: 80px;
             }
             
-            .reply-subject-line {
-                font-size: 13px;
-                color: #4b5563;
-                margin-bottom: 10px;
-                padding-bottom: 8px;
-                border-bottom: 1px solid #e5e7eb;
+            .form-section-unified {
+                margin-top: 20px;
+                padding-top: 20px;
+                border-top: 1px solid var(--border-color);
             }
             
-            .reply-content-preview {
-                font-size: 13px;
-                color: #374151;
-                line-height: 1.6;
-                white-space: pre-wrap;
+            .form-section-unified h3 {
+                margin: 0 0 16px 0;
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--text-color);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .form-section-unified h3 i {
+                font-size: var(--icon-size-md);
+            }
+            
+            .email-info-readonly-unified {
                 background: #f8fafc;
-                padding: 12px;
-                border-radius: 6px;
-                border: 1px solid #e5e7eb;
-                max-height: 150px;
-                overflow-y: auto;
+                border: 1px solid var(--border-color);
+                border-radius: var(--btn-border-radius);
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .readonly-item-unified {
+                font-size: 14px;
+                color: var(--text-color);
+            }
+            
+            .readonly-item-unified strong {
+                font-weight: 600;
+                margin-right: 8px;
+            }
+            
+            .checkbox-label-unified {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+            }
+            
+            .checkbox-text-unified {
+                font-size: 14px;
+                color: var(--text-color);
             }
 
-            /* ÉTAT VIDE */
-            .empty-state-harmonized {
+            /* État vide */
+            .empty-state-unified {
                 text-align: center;
                 padding: 60px 30px;
-                background: rgba(255, 255, 255, 0.8);
-                backdrop-filter: blur(20px);
+                background: white;
+                border: 1px solid var(--border-color);
                 border-radius: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+                box-shadow: var(--card-shadow);
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
             }
             
-            .empty-state-icon-harmonized {
+            .empty-state-icon-unified {
                 font-size: 48px;
                 margin-bottom: 20px;
-                color: #d1d5db;
+                color: var(--text-muted);
+                background: linear-gradient(135deg, var(--color-gray-light) 0%, var(--border-color) 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
             }
             
-            .empty-state-title-harmonized {
+            .empty-state-title-unified {
                 font-size: 22px;
                 font-weight: 700;
-                color: #374151;
+                color: var(--text-color);
                 margin-bottom: 12px;
             }
             
-            .empty-state-text-harmonized {
+            .empty-state-text-unified {
                 font-size: 15px;
                 margin-bottom: 24px;
                 max-width: 400px;
                 line-height: 1.6;
-                color: #6b7280;
+                color: var(--text-muted);
                 font-weight: 500;
             }
+            
+            .loading-state-unified {
+                text-align: center;
+                padding: 60px 30px;
+                background: white;
+                border: 1px solid var(--border-color);
+                border-radius: 20px;
+                box-shadow: var(--card-shadow);
+            }
+            
+            .loading-icon-unified {
+                font-size: 32px;
+                margin-bottom: 16px;
+                color: var(--color-primary);
+            }
 
-            /* RESPONSIVE */
+            /* Responsive */
             @media (max-width: 1200px) {
-                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                    flex: 0 1 calc(20% - var(--gap-small));
-                    min-width: 100px;
-                    max-width: 160px;
-                    height: 56px;
+                .tasks-detailed-unified {
+                    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
                 }
                 
-                .tasks-detailed-grid {
-                    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                .status-filters-unified {
+                    justify-content: flex-start;
+                }
+                
+                .status-pill-unified {
+                    min-width: 100px;
                 }
             }
             
             @media (max-width: 1024px) {
-                .second-line-controls-harmonized {
+                .actions-bar-unified {
                     flex-direction: column;
-                    gap: var(--gap-medium);
+                    gap: 16px;
                     align-items: stretch;
                 }
                 
-                .view-modes-harmonized {
+                .view-modes-unified {
                     width: 100%;
                     justify-content: space-around;
                 }
                 
-                .action-buttons-harmonized {
+                .main-actions-unified {
                     width: 100%;
                     justify-content: center;
-                    flex-wrap: wrap;
                 }
                 
-                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                    flex: 0 1 calc(25% - var(--gap-small));
-                    min-width: 80px;
-                    max-width: 140px;
-                    height: 52px;
+                .filters-grid-unified {
+                    grid-template-columns: 1fr;
                 }
                 
-                .task-content-minimal {
-                    grid-template-columns: 1fr auto;
-                    gap: 8px;
-                }
-                
-                .task-client-minimal {
-                    grid-column: 1 / -1;
-                    font-size: 11px;
-                }
-                
-                .tasks-detailed-grid {
+                .tasks-detailed-unified {
                     grid-template-columns: 1fr;
                 }
             }
             
             @media (max-width: 768px) {
-                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                    flex: 0 1 calc(33.333% - var(--gap-small));
-                    min-width: 70px;
-                    max-width: 120px;
-                    height: 48px;
+                .tasks-page-unified {
+                    padding: 12px;
                 }
                 
-                .view-mode-harmonized span,
-                .btn-harmonized span {
+                .view-mode-unified span,
+                .action-btn-unified span {
                     display: none;
                 }
                 
-                .form-row {
+                .form-row-unified {
                     grid-template-columns: 1fr;
                 }
                 
-                .task-meta-harmonized .task-type-badge-harmonized {
-                    display: none;
+                .task-meta-normal {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
                 }
                 
-                .pill-text-twolines {
-                    display: none;
+                .task-badges-normal,
+                .task-badges-detailed {
+                    flex-direction: column;
+                    align-items: flex-start;
                 }
                 
                 .modal-container {
@@ -4253,44 +4683,62 @@ class TasksView {
                 .modal-footer {
                     padding: 16px;
                 }
+                
+                .images-grid-enriched {
+                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                }
+                
+                .email-header-enriched {
+                    flex-direction: column;
+                    gap: 12px;
+                }
+                
+                .email-meta-enriched {
+                    text-align: left;
+                }
             }
             
             @media (max-width: 480px) {
-                .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                    flex: 0 1 calc(50% - 4px);
-                    min-width: 60px;
-                    max-width: 110px;
-                    height: 44px;
-                }
-                
-                .action-buttons-harmonized {
+                .status-filters-unified {
                     flex-direction: column;
-                    gap: 4px;
                     align-items: stretch;
                 }
                 
-                .action-buttons-harmonized > * {
-                    width: 100%;
-                    justify-content: center;
+                .status-pill-unified {
+                    min-width: auto;
                 }
                 
-                .task-content-minimal {
-                    grid-template-columns: 1fr;
-                    gap: 4px;
-                }
-                
-                .task-deadline-minimal {
-                    text-align: left;
-                    font-size: 11px;
-                }
-                
-                .task-meta-badges {
+                .main-actions-unified {
                     flex-direction: column;
                     gap: 8px;
                 }
                 
-                .info-grid {
+                .task-meta-minimal {
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                
+                .bulk-actions-grid {
                     grid-template-columns: 1fr;
+                }
+                
+                .task-badges-enriched {
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                
+                .images-grid-enriched {
+                    grid-template-columns: 1fr;
+                }
+                
+                .conversation-thread-enriched {
+                    gap: 12px;
+                }
+                
+                .message-header-enriched {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 8px;
                 }
             }
         `;
@@ -4303,8 +4751,8 @@ class TasksView {
 // GLOBAL INITIALIZATION
 // =====================================
 
-function initializeTaskManagerV9() {
-    console.log('[TaskManager] Initializing v9.0 - Version complète...');
+function initializeTaskManagerV10() {
+    console.log('[TaskManager] Initializing v10.0 - Version complète réécrite...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
@@ -4327,15 +4775,15 @@ function initializeTaskManagerV9() {
         }
     });
     
-    console.log('✅ TaskManager v9.0 loaded - Version complète avec édition et vue minimaliste');
+    console.log('✅ TaskManager v10.0 loaded - Version complète réécrite avec harmonisation et contenu email enrichi');
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
-initializeTaskManagerV9();
+initializeTaskManagerV10();
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManagerV9();
+    initializeTaskManagerV10();
 });
 
 // Fallback sur window.load
@@ -4343,7 +4791,7 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
             console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManagerV9();
+            initializeTaskManagerV10();
         }
     }, 1000);
 });
