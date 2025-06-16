@@ -796,7 +796,7 @@ class TasksView {
                         <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                     </div>
                     
-                    <div class="task-meta">
+                    <div class="task-meta-center">
                         <span class="task-deadline ${dueDateInfo.className}">
                             ${dueDateInfo.text || 'Pas d\'échéance'}
                         </span>
@@ -846,11 +846,11 @@ class TasksView {
                             </div>
                         </div>
                         
-                        <div class="task-details">
+                        <div class="task-details-single-line">
                             <span class="task-client">
                                 ${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}
                             </span>
-                            <span class="task-deadline ${dueDateInfo.className}">
+                            <span class="task-deadline-center ${dueDateInfo.className}">
                                 ${dueDateInfo.text || 'Pas d\'échéance'}
                             </span>
                         </div>
@@ -2608,104 +2608,24 @@ class TasksView {
             }
 
             .task-info {
-                flex: 1;
+                flex: 2;
                 display: flex;
-                align-items: center;
-                gap: 16px;
+                flex-direction: column;
+                justify-content: center;
+                gap: 4px;
                 min-width: 0;
             }
 
-            .task-title {
-                font-weight: 700;
-                color: #1e293b;
-                font-size: 14px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                flex: 2;
-            }
-
-            .task-client {
-                font-size: 13px;
-                color: #475569;
-                font-weight: 600;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+            .task-meta-center {
                 flex: 1;
-            }
-
-            .task-meta {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                flex-shrink: 0;
                 min-width: 120px;
             }
 
-            .task-deadline {
-                font-size: 13px;
-                font-weight: 600;
-                white-space: nowrap;
-                text-align: center;
-                padding: 4px 8px;
-                border-radius: 6px;
-                background: rgba(255, 255, 255, 0.8);
-            }
-
-            .task-deadline.deadline-overdue {
-                color: #dc2626;
-                font-weight: 700;
-                background: #fef2f2;
-                border: 1px solid #fecaca;
-            }
-
-            .task-deadline.deadline-today {
-                color: #d97706;
-                font-weight: 700;
-                background: #fef3c7;
-                border: 1px solid #fde68a;
-            }
-
-            .task-deadline.deadline-tomorrow {
-                color: #d97706;
-                font-weight: 600;
-                background: #fef3c7;
-                border: 1px solid #fde68a;
-            }
-
-            .task-deadline.deadline-week {
-                color: #2563eb;
-                font-weight: 600;
-                background: #eff6ff;
-                border: 1px solid #bfdbfe;
-            }
-
-            .task-deadline.deadline-normal {
-                color: #059669;
-                font-weight: 600;
-                background: #f0fdf4;
-                border: 1px solid #bbf7d0;
-            }
-
-            .task-deadline.no-deadline {
-                color: #64748b;
-                font-weight: 500;
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                font-style: italic;
-            }
-
-            .email-badge {
-                background: #eff6ff;
-                color: var(--primary-color);
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: 600;
-            }
-
             .task-actions {
+                flex: 0 0 auto;
                 display: flex;
                 gap: 4px;
                 flex-shrink: 0;
@@ -2835,65 +2755,119 @@ class TasksView {
                 gap: 12px;
             }
 
-            .task-normal .task-title {
-                font-size: 15px;
+            .task-title {
                 font-weight: 700;
-                color: #0f172a;
-                margin: 0;
-                line-height: 1.3;
+                color: #1e293b;
+                font-size: 14px;
+                white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                white-space: nowrap;
-                flex: 1;
+                margin: 0;
             }
 
-            .task-details {
-                display: flex;
-                align-items: center;
-                gap: 16px;
+            .task-client {
                 font-size: 12px;
-                color: var(--text-secondary);
-            }
-
-            .task-client,
-            .task-normal .task-deadline {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-            }
-
-            .task-normal .task-client {
                 color: #475569;
                 font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
-            .task-normal .task-deadline {
+            .task-deadline {
                 font-size: 13px;
                 font-weight: 600;
+                white-space: nowrap;
+                text-align: center;
                 padding: 4px 8px;
                 border-radius: 6px;
                 background: rgba(255, 255, 255, 0.8);
             }
 
-            .task-normal .task-deadline.deadline-overdue {
+            .task-deadline.deadline-overdue {
+                color: #dc2626;
+                font-weight: 700;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+            }
+
+            .task-deadline.deadline-today {
+                color: #d97706;
+                font-weight: 700;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+            }
+
+            .task-deadline.deadline-tomorrow {
+                color: #d97706;
+                font-weight: 600;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+            }
+
+            .task-deadline.deadline-week {
+                color: #2563eb;
+                font-weight: 600;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+            }
+
+            .task-deadline.deadline-normal {
+                color: #059669;
+                font-weight: 600;
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+            }
+
+            .task-deadline.no-deadline {
+                color: #64748b;
+                font-weight: 500;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                font-style: italic;
+            }
+
+            /* VUE NORMALE - ligne unique avec échéance centrée */
+            .task-details-single-line {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                font-size: 12px;
+            }
+
+            .task-deadline-center {
+                font-size: 13px;
+                font-weight: 600;
+                white-space: nowrap;
+                text-align: center;
+                padding: 4px 8px;
+                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.8);
+                flex: 1;
+                display: flex;
+                justify-content: center;
+            }
+
+            .task-deadline-center.deadline-overdue {
                 color: #dc2626;
                 background: #fef2f2;
                 border: 1px solid #fecaca;
             }
 
-            .task-normal .task-deadline.deadline-today {
+            .task-deadline-center.deadline-today {
                 color: #d97706;
                 background: #fef3c7;
                 border: 1px solid #fde68a;
             }
 
-            .task-normal .task-deadline.deadline-week {
+            .task-deadline-center.deadline-week {
                 color: #2563eb;
                 background: #eff6ff;
                 border: 1px solid #bfdbfe;
             }
 
-            .task-normal .task-deadline.deadline-normal {
+            .task-deadline-center.deadline-normal {
                 color: #059669;
                 background: #f0fdf4;
                 border: 1px solid #bbf7d0;
