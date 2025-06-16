@@ -791,10 +791,6 @@ class TasksView {
                            ${isSelected ? 'checked' : ''}
                            onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                     
-                    <div class="task-priority priority-${task.priority}" title="Priorité ${task.priority}">
-                        ${priorityIcon}
-                    </div>
-                    
                     <div class="task-info">
                         <span class="task-title">${this.escapeHtml(task.title)}</span>
                         <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
@@ -847,9 +843,6 @@ class TasksView {
                         <div class="task-header">
                             <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
                             <div class="task-badges">
-                                <span class="priority-badge priority-${task.priority}" title="Priorité ${task.priority}">
-                                    ${priorityIcon}
-                                </span>
                                 <span class="status-badge status-${task.status}" title="Statut: ${this.getStatusLabel(task.status)}">
                                     ${statusIcon}
                                 </span>
@@ -900,9 +893,6 @@ class TasksView {
                            onclick="window.tasksView.toggleTaskSelection('${task.id}')">
                     
                     <div class="task-badges-group">
-                        <span class="priority-badge priority-${task.priority}">
-                            ${this.getPriorityIcon(task.priority)} ${this.getPriorityLabel(task.priority)}
-                        </span>
                         <span class="status-badge status-${task.status}">
                             ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
                         </span>
@@ -922,7 +912,6 @@ class TasksView {
                         </div>
                         ${task.hasEmail ? `
                             <div class="meta-item email-meta">
-                                <i class="fas fa-envelope"></i>
                                 <span>${task.emailFromName || 'Email'}</span>
                                 ${task.needsReply ? '<span class="reply-needed">Réponse requise</span>' : ''}
                             </div>
