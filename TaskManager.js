@@ -1059,6 +1059,176 @@ class TasksView {
         });
     }
 
+render(container) {
+    if (!container) {
+        console.error('[TasksView] No container provided');
+        return;
+    }
+
+    if (!window.taskManager || !window.taskManager.initialized) {
+        container.innerHTML = `
+            <div class="loading-state">
+                <div class="loading-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Chargement des tâches...</p>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            if (window.taskManager && window.taskManager.initialized) {
+                this.render(container);
+            }
+        }, 500);
+        return;
+    }
+
+    const stats = window.taskManager.getStats();
+    const selectedCount = this.selectedTasks.size;
+    
+    container.innerHTML = `
+        <div class="tasks-page-modern">
+            <!-- Barre de contrôles harmonisée - IDENTIQUE à PageManager -->
+            <div class="controls-bar-harmonized">
+                <!-- Section recherche - LIGNE COMPLÈTE -->
+                <div class="search-section-harmonized">
+                    <div class="search-box-harmonized">
+                        <i class="fas fa-search search-icon-harmonized"></i>
+                        <input type="text" 
+                               class="search-input-harmonized" 
+                               id="taskSearchInput"
+                               placeholder="Rechercher tâches..." 
+                               value="${this.currentFilters.search}">
+                        ${this.currentFilters.search ? `
+                            <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+
+            <!-- DEUXIÈME LIGNE : Modes de vue + Actions - IDENTIQUE à PageManager -->
+            <div class="second-line-controls-harmonized">
+                <!-- Modes de vue harmonisés -->
+                <div class="view-modes-harmonized">
+                    <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                            onclick="window.tasksView.changeViewMode('flat')"
+                            title="Liste">
+                        <i class="fas fa-list"></i>
+                        <span>Liste</span>
+                    </button>
+                    <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                            onclick="window.tasksView.changeViewMode('grouped-domain')"
+                            title="Par domaine">
+                        <i class="fas fa-globe"></i>
+                        <span>Domaine</span>
+                    </button>
+                    <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                            onclick="window.tasksView.changeViewMode('grouped-sender')"
+                            title="Par expéditeur">
+                        <i class="fas fa-user"></i>
+                        <span>Expéditeur</span>
+                    </button>
+                </div>
+                
+                <!-- Actions principales harmonisées -->
+                <div class="action-buttons-harmonized">
+                    ${selectedCount > 0 ? `
+                        <div class="selection-info-harmonized">
+                            <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
+                            <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <button class="btn-harmonized btn-primary" onclick="window.tasksView.bulkActions()">
+                            <i class="fas fa-cog"></i>
+                            <span>Actions</span>
+                            <span class="count-badge-harmonized">${selectedCount}</span>
+                        </button>
+                    ` : ''}
+                    
+                    <button class="btn-harmonized btn-secondary" onclick="window.tasksView.refreshTasks()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Actualiser</span>
+                    </button>
+                    
+                    <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
+                        <i class="fas fa-plus"></i>
+                        <span>Nouvelle</span>
+                    </button>
+                    
+                    <button class="btn-harmonized filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                            onclick="window.tasksView.toggleAdvancedFilters()">
+                        <i class="fas fa-filter"></i>
+                        <span>Filtres</span>
+                        <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtres de statut harmonisés - IDENTIQUE à PageManager -->
+            <div class="status-filters-harmonized-twolines">
+                ${this.buildHarmonizedStatusPills(stats)}
+            </div>
+            
+            <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                <div class="advanced-filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-flag"></i> Priorité
+                        </label>
+                        <select class="filter-select" id="priorityFilter" 
+                                onchange="window.tasksView.updateFilter('priority', this.value)">
+                            <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-building"></i> Client
+                        </label>
+                        <select class="filter-select" id="clientFilter" 
+                                onchange="window.tasksView.updateFilter('client', this.value)">
+                            ${this.buildClientFilterOptions()}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-sort"></i> Trier par
+                        </label>
+                        <select class="filter-select" id="sortByFilter" 
+                                onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                            <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button class="btn-harmonized btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tasks-container-harmonized" id="tasksContainer">
+                ${this.renderTasksList()}
+            </div>
+        </div>
+    `;
+
+    this.addHarmonizedTaskStyles();
+    this.setupEventListeners();
+    console.log('[TasksView] Interface harmonisée rendue');
+}
 
 buildHarmonizedStatusPills(stats) {
     const pills = [
