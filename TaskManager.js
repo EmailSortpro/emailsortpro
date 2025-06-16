@@ -800,7 +800,6 @@ class TasksView {
                         <span class="task-deadline ${dueDateInfo.className}">
                             ${dueDateInfo.text || 'Pas d\'échéance'}
                         </span>
-                        ${task.hasEmail ? '<span class="email-badge">📧</span>' : ''}
                     </div>
                     
                     <div class="task-actions">
@@ -843,11 +842,7 @@ class TasksView {
                         <div class="task-header">
                             <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
                             <div class="task-badges">
-                                <span class="status-badge status-${task.status}" title="Statut: ${this.getStatusLabel(task.status)}">
-                                    ${statusIcon}
-                                </span>
-                                ${task.hasEmail ? '<span class="email-badge" title="Email">📧</span>' : ''}
-                                ${task.needsReply ? '<span class="reply-badge" title="Réponse requise">↩️</span>' : ''}
+                                <!-- Badges supprimés - affichage épuré -->
                             </div>
                         </div>
                         
@@ -893,9 +888,7 @@ class TasksView {
                            onclick="window.tasksView.toggleTaskSelection('${task.id}')">
                     
                     <div class="task-badges-group">
-                        <span class="status-badge status-${task.status}">
-                            ${this.getStatusIcon(task.status)} ${this.getStatusLabel(task.status)}
-                        </span>
+                        <!-- Badges supprimés - affichage épuré -->
                     </div>
                 </div>
                 
@@ -907,15 +900,9 @@ class TasksView {
                         <div class="meta-item">
                             <span>${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                         </div>
-                        <div class="meta-item ${dueDateInfo.className}">
+                        <div class="meta-item deadline-centered ${dueDateInfo.className}">
                             <span>${dueDateInfo.text || 'Pas d\'échéance'}</span>
                         </div>
-                        ${task.hasEmail ? `
-                            <div class="meta-item email-meta">
-                                <span>${task.emailFromName || 'Email'}</span>
-                                ${task.needsReply ? '<span class="reply-needed">Réponse requise</span>' : ''}
-                            </div>
-                        ` : ''}
                     </div>
                 </div>
                 
@@ -2682,7 +2669,7 @@ class TasksView {
             .task-meta {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                justify-content: center;
                 flex-shrink: 0;
             }
 
@@ -2690,6 +2677,7 @@ class TasksView {
                 font-size: 12px;
                 font-weight: 500;
                 white-space: nowrap;
+                text-align: center;
             }
 
             .task-deadline.deadline-overdue {
