@@ -239,6 +239,7 @@
         })();
     </script>
 
+    <!-- Styles intégrés pour l'application sobre -->
     <style>
         /* Reset et styles de base */
         * {
@@ -495,7 +496,7 @@
         .auth-status {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
 
         .user-info {
@@ -540,36 +541,6 @@
             justify-content: center;
             font-weight: 500;
             font-size: 13px;
-        }
-
-        .logout-button {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white !important;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            font-size: 12px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            text-decoration: none;
-        }
-
-        .logout-button:hover {
-            background: rgba(255,255,255,0.2);
-            border-color: rgba(255,255,255,0.3);
-            color: white !important;
-        }
-
-        .logout-button:active {
-            background: rgba(255,255,255,0.15);
-        }
-
-        .logout-button i {
-            font-size: 11px;
         }
 
         /* Forcer le texte blanc pour tous les éléments dans auth-status */
@@ -1130,16 +1101,6 @@
             .guide-step {
                 min-width: auto;
             }
-
-            .logout-button {
-                font-size: 11px;
-                padding: 4px 8px;
-                gap: 4px;
-            }
-
-            .logout-button i {
-                font-size: 10px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -1384,11 +1345,11 @@
     
     <!-- Scripts de gestion des événements -->
     <script>
-        // Variables globales
+        // Variable pour éviter les vérifications multiples
         let authCheckInProgress = false;
         let appAlreadyShown = false;
 
-        // Vérification précoce d'authentification
+        // Vérification précoce IMMÉDIATE de l'authentification
         const earlyAuthCheck = () => {
             try {
                 const msalAccount = localStorage.getItem('msal.account.keys');
@@ -1405,7 +1366,7 @@
             return false;
         };
 
-        // Exécuter la vérification précoce
+        // Exécuter la vérification précoce TOUT DE SUITE
         earlyAuthCheck();
 
         // Fonction pour forcer l'affichage de l'app
@@ -1428,7 +1389,7 @@
             console.log('[FORCE] App display activated');
         };
 
-        // Fonction pour afficher l'app après connexion
+        // Fonction pour masquer le loading et afficher l'app
         window.showApp = function() {
             console.log('[SHOW_APP] Switching to app interface...');
             
@@ -1451,10 +1412,10 @@
                 loginPage.style.display = 'none';
             }
             
-            // Utiliser le module dashboard
+            // UTILISER LE NOUVEAU MODULE DASHBOARD
             window.setPageMode('dashboard');
             
-            // Charger le dashboard
+            // Charger le dashboard via le module
             if (window.dashboardModule) {
                 console.log('[SHOW_APP] Loading dashboard via dashboardModule...');
                 window.dashboardModule.render();
@@ -1475,12 +1436,14 @@
             console.log('[SHOW_APP] App interface activated with dashboard module');
         };
 
-        // Fonction pour vérifier le scroll
+        // Fonction pour vérifier si le scroll est nécessaire - OPTIMISÉE ET SILENCIEUSE
         window.checkScrollNeeded = function() {
+            // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
             
+            // Éviter les appels multiples
             if (window.scrollCheckInProgress) return;
             window.scrollCheckInProgress = true;
             
@@ -1503,12 +1466,13 @@
             }, 50);
         };
 
-        // Mode login initial
+        // Ajouter une classe pour le mode login initial
         document.body.classList.add('login-mode');
 
-        // Gestion du redimensionnement
+        // Vérifier à chaque redimensionnement de fenêtre - OPTIMISÉ
         let resizeTimeout;
         window.addEventListener('resize', () => {
+            // Si l'app est active, laisser app.js gérer le resize
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
@@ -1517,8 +1481,9 @@
             resizeTimeout = setTimeout(window.checkScrollNeeded, 150);
         });
 
-        // Gestion des modes d'affichage pour les pages
+        // Gestion des modes d'affichage pour les pages - SILENCIEUX
         window.setPageMode = function(pageName) {
+            // Si l'app est active, laisser app.js gérer le scroll
             if (document.body.classList.contains('app-active') && window.app) {
                 return;
             }
@@ -1542,7 +1507,7 @@
                 body.classList.add(`page-${pageName}`);
             }
             
-            // Gestion du scroll si l'app n'est pas encore active
+            // Gestion du scroll UNIQUEMENT si l'app n'est pas encore active
             if (!document.body.classList.contains('app-active')) {
                 clearTimeout(window.scrollCheckTimeout);
                 window.scrollCheckTimeout = setTimeout(() => {
@@ -1569,9 +1534,11 @@
                 const originalLoadPage = window.pageManager.loadPage.bind(window.pageManager);
                 
                 window.pageManager.loadPage = function(pageName, ...args) {
+                    // Appliquer le mode d'affichage approprié pour TOUTES les pages
                     window.setPageMode(pageName);
                     
                     if (pageName === 'dashboard') {
+                        // Mettre à jour la navigation pour marquer dashboard comme actif
                         const navItems = document.querySelectorAll('.nav-item');
                         navItems.forEach(item => {
                             item.classList.remove('active');
@@ -1580,6 +1547,7 @@
                             }
                         });
                         
+                        // UTILISER LE MODULE DASHBOARD
                         if (window.dashboardModule) {
                             const pageContent = document.getElementById('pageContent');
                             if (pageContent) {
@@ -1587,11 +1555,13 @@
                                 pageContent.style.opacity = '1';
                             }
                             
+                            // Render dashboard via module
                             window.dashboardModule.render();
                         } else {
                             return originalLoadPage(pageName, ...args);
                         }
                         
+                        // Vérifier le scroll après affichage du dashboard
                         setTimeout(() => {
                             if (window.app && window.app.checkScrollNeeded) {
                                 window.app.checkScrollNeeded();
@@ -1602,6 +1572,7 @@
                         
                         return Promise.resolve();
                     } else {
+                        // Pour toutes les autres pages, masquer le dashboard et utiliser la méthode originale
                         const pageContent = document.getElementById('pageContent');
                         if (pageContent && window.dashboardModule) {
                             window.dashboardModule.hide();
@@ -1615,74 +1586,10 @@
             }
         };
 
-        // Fonction pour mettre à jour l'affichage utilisateur dans le header AVEC BOUTON DE DÉCONNEXION
-        window.updateUserDisplay = function(user) {
-            const authStatus = document.getElementById('authStatus');
-            if (authStatus && user) {
-                const userName = user.displayName || 'Vianney Hastings';
-                const userEmail = user.mail || user.userPrincipalName || 'vianney.hastings@hotmail.fr';
-                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
-                
-                authStatus.innerHTML = `
-                    <div class="user-info">
-                        <div class="user-details">
-                            <div class="user-name">${userName}</div>
-                            <div class="user-email">${userEmail}</div>
-                        </div>
-                        <div class="user-avatar">${initials}</div>
-                    </div>
-                    <button id="logoutBtn" class="logout-button" onclick="window.handleLogout()">
-                        <i class="fas fa-sign-out-alt"></i>
-                        Déconnexion
-                    </button>
-                `;
-            }
-        };
-
-        // Fonction pour gérer la déconnexion
-        window.handleLogout = function() {
-            if (window.app && typeof window.app.logout === 'function') {
-                if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                    console.log('[LOGOUT] User confirmed logout');
-                    window.app.logout();
-                }
-            } else {
-                console.warn('[LOGOUT] App logout method not available');
-                if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
-                    localStorage.clear();
-                    window.location.reload();
-                }
-            }
-        };
-
-        // Fonction pour le succès d'authentification
-        window.onAuthSuccess = function() {
-            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
-                window.showApp();
-            }
-        };
-
-        // Fonction de diagnostic
-        window.checkServices = function() {
-            return {
-                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
-                authService: window.authService ? 'OK' : 'MANQUANT',
-                mailService: window.mailService ? 'OK' : 'MANQUANT',
-                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
-                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
-                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
-                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
-                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
-                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
-                hostname: window.location.hostname,
-                expectedHostname: 'emailsortpro.netlify.app'
-            };
-        };
-
         // Lancer l'interception du dashboard
         setTimeout(window.interceptDashboardLoad, 1000);
 
-        // Gestion du DOM chargé
+        // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
             if (appAlreadyShown) {
                 return;
@@ -1728,7 +1635,6 @@
                 }
             }, 200);
             
-            // Gestion du bouton de connexion
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
@@ -1769,7 +1675,7 @@
                 });
             }
             
-            // Gestionnaire d'événements pour le bouton Dashboard
+            // Ajouter un gestionnaire d'événements direct pour le bouton Dashboard
             const dashboardBtn = document.querySelector('.nav-item[data-page="dashboard"]');
             if (dashboardBtn) {
                 dashboardBtn.addEventListener('click', function(e) {
@@ -1793,7 +1699,7 @@
                 });
             }
             
-            // Vérification de la configuration après le chargement du DOM
+            // Vérifier la configuration après le chargement du DOM
             setTimeout(function() {
                 if (window.AppConfig) {
                     const validation = window.AppConfig.validate();
@@ -1819,6 +1725,51 @@
                 }
             }, 1000);
         });
+        
+        // Fonction globale pour basculer vers l'app après connexion
+        window.onAuthSuccess = function() {
+            if (!appAlreadyShown && !document.body.classList.contains('app-active')) {
+                window.showApp();
+            }
+        };
+
+        // Fonction pour mettre à jour l'affichage utilisateur dans le header
+        window.updateUserDisplay = function(user) {
+            const authStatus = document.getElementById('authStatus');
+            if (authStatus && user) {
+                // Utiliser le nom et email spécifiés ou ceux du profil
+                const userName = user.displayName || 'Vianney Hastings';
+                const userEmail = user.mail || user.userPrincipalName || 'vianney.hastings@hotmail.fr';
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+                
+                authStatus.innerHTML = `
+                    <div class="user-info">
+                        <div class="user-details">
+                            <div class="user-name">${userName}</div>
+                            <div class="user-email">${userEmail}</div>
+                        </div>
+                        <div class="user-avatar">${initials}</div>
+                    </div>
+                `;
+            }
+        };
+
+        // Fonction de diagnostic accessible globalement (silencieuse par défaut)
+        window.checkServices = function() {
+            return {
+                AppConfig: window.AppConfig ? 'OK' : 'MANQUANT',
+                authService: window.authService ? 'OK' : 'MANQUANT',
+                mailService: window.mailService ? 'OK' : 'MANQUANT',
+                uiManager: window.uiManager ? 'OK' : 'MANQUANT',
+                taskManager: window.taskManager ? (window.taskManager.initialized ? 'OK (initialized)' : 'LOADING') : 'MANQUANT',
+                tasksView: window.tasksView ? 'OK' : 'MANQUANT',
+                pageManager: window.pageManager ? 'OK' : 'MANQUANT',
+                categoryManager: window.categoryManager ? 'OK' : 'MANQUANT',
+                dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
+                hostname: window.location.hostname,
+                expectedHostname: 'emailsortpro.netlify.app'
+            };
+        };
     </script>
 </body>
 </html>
