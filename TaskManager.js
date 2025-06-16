@@ -1,4 +1,4 @@
-// TaskManager Pro v9.0 - Interface Épurée et Moderne - HARMONISÉE
+// TaskManager Pro v8.4 - CORRIGÉ avec affichage email complet et suggestions de réponse
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -13,7 +13,7 @@ class TaskManager {
 
     async init() {
         try {
-            console.log('[TaskManager] Initializing v9.0 - Interface Épurée...');
+            console.log('[TaskManager] Initializing v8.4 - CORRIGÉ avec affichage email complet...');
             await this.loadTasks();
             this.initialized = true;
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
@@ -44,12 +44,11 @@ class TaskManager {
         const sampleTasks = [
             {
                 id: 'sample_1',
-                title: 'Validation campagne marketing Q2',
+                title: 'Répondre à l\'équipe marketing sur la campagne Q2',
                 description: '📧 RÉSUMÉ EXÉCUTIF\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nDe: Sarah Martin (acme-corp.com)\nObjet: Demande de validation pour la campagne marketing Q2\n📮 Réponse attendue\n\n🎯 ACTIONS REQUISES:\n1. Valider les visuels de la campagne\n2. Confirmer le budget alloué\n3. Définir les dates de lancement\n\n💡 INFORMATIONS CLÉS:\n• Budget proposé : 50k€\n• Cible : 25-45 ans\n• Canaux : LinkedIn, Google Ads\n\n⚠️ POINTS D\'ATTENTION:\n• Deadline serrée pour le lancement\n• Coordination avec l\'équipe commerciale requise',
                 priority: 'high',
                 status: 'todo',
                 category: 'email',
-                type: 'email',
                 hasEmail: true,
                 emailFrom: 'sarah.martin@acme-corp.com',
                 emailFromName: 'Sarah Martin',
@@ -73,6 +72,7 @@ Pourriez-vous valider ces éléments avant vendredi ? Nous devons coordonner ave
 
 Merci d'avance,
 Sarah Martin`,
+                // NOUVEAU: Contenu HTML complet de l'email
                 emailHtmlContent: `<div style="font-family: Arial, sans-serif; max-width: 600px;">
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
                         <h1 style="margin: 0; font-size: 24px;">ACME Corp</h1>
@@ -114,6 +114,7 @@ Sarah Martin`,
                     'Deadline serrée pour le lancement',
                     'Coordination avec l\'équipe commerciale requise'
                 ],
+                // NOUVEAU: Suggestions de réponse personnalisées
                 suggestedReplies: [
                     {
                         tone: 'formel',
@@ -133,46 +134,27 @@ Excellente initiative, félicitations à toute l'équipe !
 
 Cordialement,
 [Votre nom]`
+                    },
+                    {
+                        tone: 'urgent',
+                        subject: 'Re: Validation campagne marketing Q2 - Questions urgentes',
+                        content: `Bonjour Sarah,
+
+J'ai examiné le dossier campagne Q2 avec attention.
+
+Avant validation finale, j'ai quelques questions urgentes :
+
+1. Budget 50k€ : quelle répartition LinkedIn vs Google Ads ?
+2. Cible 25-45 ans : avez-vous les personas détaillés ?
+3. Coordination commerciale : qui est le référent côté vente ?
+
+Pouvons-nous organiser un point rapidement demain pour clarifier ces aspects ?
+
+Dans l'attente de votre retour,
+[Votre nom]`
                     }
                 ],
                 method: 'ai'
-            },
-            {
-                id: 'sample_2',
-                title: 'Proposition commerciale Bankin\'',
-                description: 'Offre record jusqu\'à 260€ offerts',
-                priority: 'medium',
-                status: 'todo',
-                category: 'email',
-                type: 'email',
-                hasEmail: true,
-                emailFrom: 'offres@bankin.com',
-                emailFromName: 'Bankin\'',
-                emailSubject: 'Offre record : jusqu\'à 260€ offerts',
-                emailDate: '2025-06-06T14:30:00Z',
-                emailDomain: 'bankin.com',
-                tags: ['finance', 'offre'],
-                client: 'Bankin\'',
-                createdAt: new Date(Date.now() - 3600000).toISOString(),
-                updatedAt: new Date(Date.now() - 3600000).toISOString(),
-                needsReply: false,
-                dueDate: null,
-                method: 'ai'
-            },
-            {
-                id: 'sample_3',
-                title: 'Réunion équipe projet Alpha',
-                description: 'Point mensuel sur l\'avancement du projet Alpha',
-                priority: 'high',
-                status: 'in-progress',
-                category: 'meeting',
-                type: 'réunion',
-                hasEmail: false,
-                client: 'Interne',
-                createdAt: new Date(Date.now() - 7200000).toISOString(),
-                updatedAt: new Date(Date.now() - 1800000).toISOString(),
-                dueDate: '2025-06-09',
-                method: 'manual'
             }
         ];
         
@@ -180,15 +162,21 @@ Cordialement,
         this.saveTasks();
     }
 
+    // MÉTHODE PRINCIPALE POUR CRÉER UNE TÂCHE À PARTIR D'UN EMAIL - CORRIGÉE AVEC IA
     async createTaskFromEmail(taskData, email = null) {
-        console.log('[TaskManager] Creating task from email:', taskData.title);
+        console.log('[TaskManager] Creating task from email with AI-powered reply suggestions:', taskData.title);
         
+        // Assurer un ID unique
         const taskId = taskData.id || this.generateId();
+        
+        // EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
         const fullEmailContent = this.extractFullEmailContent(email, taskData);
         const htmlEmailContent = this.extractHtmlEmailContent(email, taskData);
         
+        // GÉNÉRER DES SUGGESTIONS DE RÉPONSE VIA IA SI NÉCESSAIRE
         let suggestedReplies = taskData.suggestedReplies || [];
         
+        // Si pas de suggestions fournies et qu'on a un email, générer via IA
         if ((!suggestedReplies || suggestedReplies.length === 0) && 
             (email || taskData.emailFrom) && 
             window.aiTaskAnalyzer) {
@@ -199,10 +187,12 @@ Cordialement,
                 console.log('[TaskManager] Generated', suggestedReplies.length, 'AI reply suggestions');
             } catch (error) {
                 console.warn('[TaskManager] AI reply generation failed:', error);
+                // Générer des suggestions de base en fallback
                 suggestedReplies = this.generateBasicReplySuggestions(email || taskData, taskData);
             }
         }
         
+        // Construire la tâche complète avec toutes les données email
         const task = {
             id: taskId,
             title: taskData.title || 'Nouvelle tâche',
@@ -211,48 +201,66 @@ Cordialement,
             status: taskData.status || 'todo',
             dueDate: taskData.dueDate || null,
             category: taskData.category || 'email',
-            type: taskData.type || 'email',
             
+            // DONNÉES EMAIL COMPLÈTES AVEC CONTENU
             emailId: taskData.emailId || null,
             emailFrom: taskData.emailFrom || (email?.from?.emailAddress?.address),
             emailFromName: taskData.emailFromName || (email?.from?.emailAddress?.name),
             emailSubject: taskData.emailSubject || email?.subject,
-            emailContent: fullEmailContent,
-            emailHtmlContent: htmlEmailContent,
+            emailContent: fullEmailContent, // CONTENU COMPLET TEXTE
+            emailHtmlContent: htmlEmailContent, // NOUVEAU: CONTENU HTML COMPLET
             emailDomain: taskData.emailDomain || (taskData.emailFrom ? taskData.emailFrom.split('@')[1] : ''),
             hasEmail: true,
             emailReplied: false,
             emailDate: taskData.emailDate || email?.receivedDateTime,
-            needsReply: taskData.needsReply !== false,
+            needsReply: taskData.needsReply !== false, // Par défaut true pour les emails
             hasAttachments: email?.hasAttachments || false,
             
+            // DONNÉES STRUCTURÉES DE L'IA - COMPLÈTES
             summary: taskData.summary || '',
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
             aiAnalysis: taskData.aiAnalysis || null,
             
+            // NOUVEAU: Suggestions de réponse personnalisées IA
             suggestedReplies: suggestedReplies,
             aiRepliesGenerated: suggestedReplies.length > 0,
             aiRepliesGeneratedAt: suggestedReplies.length > 0 ? new Date().toISOString() : null,
             
+            // MÉTADONNÉES
             tags: taskData.tags || [],
             client: taskData.client || 'Externe',
             
+            // TIMESTAMPS
             createdAt: taskData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             
             method: taskData.method || 'ai'
         };
         
+        // Ajouter la tâche
         this.tasks.push(task);
         this.saveTasks();
         this.emitTaskUpdate('create', task);
         
-        console.log('[TaskManager] Task created successfully:', task.id);
+        console.log('[TaskManager] Task created successfully with AI reply suggestions:', {
+            id: task.id,
+            hasEmailContent: !!task.emailContent,
+            hasHtmlContent: !!task.emailHtmlContent,
+            contentLength: task.emailContent?.length || 0,
+            htmlContentLength: task.emailHtmlContent?.length || 0,
+            hasActions: task.actions?.length || 0,
+            hasKeyInfo: task.keyInfo?.length || 0,
+            hasRisks: task.risks?.length || 0,
+            hasSuggestedReplies: task.suggestedReplies?.length || 0,
+            aiRepliesGenerated: task.aiRepliesGenerated
+        });
+        
         return task;
     }
 
+    // NOUVELLE MÉTHODE POUR GÉNÉRER DES SUGGESTIONS DE RÉPONSE INTELLIGENTES VIA IA
     async generateIntelligentReplySuggestions(email, taskData) {
         if (!window.aiTaskAnalyzer) {
             console.warn('[TaskManager] AITaskAnalyzer not available');
@@ -269,6 +277,7 @@ Cordialement,
             const keyInfo = taskData.keyInfo || [];
             const risks = taskData.risks || [];
 
+            // Construire un prompt spécialisé pour la génération de réponses
             const replyPrompt = `Tu es un assistant expert en communication professionnelle. Génère 3 suggestions de réponse personnalisées pour cet email.
 
 CONTEXTE DE L'EMAIL:
@@ -315,6 +324,7 @@ FORMAT DE RÉPONSE JSON:
   ]
 }`;
 
+            // Appeler l'IA pour générer les suggestions
             const aiResponse = await this.callAIForReplySuggestions(replyPrompt);
             
             if (aiResponse && aiResponse.suggestions && Array.isArray(aiResponse.suggestions)) {
@@ -338,12 +348,15 @@ FORMAT DE RÉPONSE JSON:
         }
     }
 
+    // MÉTHODE POUR APPELER L'IA CLAUDE SPÉCIFIQUEMENT POUR LES RÉPONSES
     async callAIForReplySuggestions(prompt) {
         if (!window.aiTaskAnalyzer) {
             throw new Error('AITaskAnalyzer not available');
         }
 
+        // Utiliser la même infrastructure que AITaskAnalyzer mais avec un prompt spécialisé
         try {
+            // Vérifier si l'API est configurée
             if (window.aiTaskAnalyzer.apiKey) {
                 console.log('[TaskManager] Using Claude API for reply suggestions');
                 return await this.callClaudeAPI(prompt);
@@ -357,10 +370,12 @@ FORMAT DE RÉPONSE JSON:
         }
     }
 
+    // APPEL À L'API CLAUDE POUR LES SUGGESTIONS DE RÉPONSE
     async callClaudeAPI(prompt) {
         const apiUrl = 'https://api.anthropic.com/v1/messages';
         const apiKey = window.aiTaskAnalyzer.apiKey;
         
+        // Essayer d'abord le proxy local si disponible
         if (window.aiTaskAnalyzer.useLocalProxy && window.aiTaskAnalyzer.localProxyUrl) {
             try {
                 const response = await fetch(window.aiTaskAnalyzer.localProxyUrl, {
@@ -393,6 +408,7 @@ FORMAT DE RÉPONSE JSON:
             }
         }
 
+        // Essayer les solutions CORS en fallback
         for (const proxyUrl of window.aiTaskAnalyzer.corsProxies) {
             try {
                 const targetUrl = encodeURIComponent(apiUrl);
@@ -429,10 +445,12 @@ FORMAT DE RÉPONSE JSON:
         throw new Error('All Claude API methods failed');
     }
 
+    // PARSER LA RÉPONSE DE CLAUDE POUR LES SUGGESTIONS
     parseClaudeReplyResponse(response) {
         try {
             let jsonContent;
             
+            // Gérer différents formats de réponse
             if (typeof response === 'object' && response.content) {
                 if (Array.isArray(response.content)) {
                     jsonContent = response.content[0]?.text || '';
@@ -445,6 +463,7 @@ FORMAT DE RÉPONSE JSON:
                 jsonContent = JSON.stringify(response);
             }
             
+            // Extraire le JSON de la réponse
             const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
             if (!jsonMatch) {
                 throw new Error('No JSON found in Claude response');
@@ -452,6 +471,7 @@ FORMAT DE RÉPONSE JSON:
             
             const parsed = JSON.parse(jsonMatch[0]);
             
+            // Valider la structure
             if (!parsed.suggestions || !Array.isArray(parsed.suggestions)) {
                 throw new Error('Invalid suggestions format');
             }
@@ -464,6 +484,7 @@ FORMAT DE RÉPONSE JSON:
         }
     }
 
+    // SUGGESTIONS DE BASE EN FALLBACK
     generateBasicReplySuggestions(email, taskData) {
         const senderName = email.from?.emailAddress?.name || taskData.emailFromName || 'l\'expéditeur';
         const subject = email.subject || taskData.emailSubject || 'votre message';
@@ -472,6 +493,7 @@ FORMAT DE RÉPONSE JSON:
 
         const suggestions = [];
 
+        // Réponse professionnelle standard
         suggestions.push({
             tone: 'professionnel',
             subject: `Re: ${subject}`,
@@ -490,6 +512,7 @@ Cordialement,
             generatedAt: new Date().toISOString()
         });
 
+        // Réponse urgente si nécessaire
         if (urgency === 'urgent' || urgency === 'high') {
             suggestions.push({
                 tone: 'urgent',
@@ -512,6 +535,7 @@ Cordialement,
             });
         }
 
+        // Réponse de confirmation détaillée
         suggestions.push({
             tone: 'détaillé',
             subject: `Re: ${subject} - Confirmation de réception`,
@@ -538,51 +562,62 @@ Cordialement,
         return suggestions;
     }
 
+    // NOUVELLE MÉTHODE POUR EXTRAIRE LE CONTENU COMPLET DE L'EMAIL
     extractFullEmailContent(email, taskData) {
         console.log('[TaskManager] Extracting full email content...');
         
+        // Priorité 1: Contenu passé directement dans taskData
         if (taskData.emailContent && taskData.emailContent.length > 50) {
             console.log('[TaskManager] Using email content from taskData');
             return taskData.emailContent;
         }
         
+        // Priorité 2: Contenu complet de l'email
         if (email?.body?.content) {
             console.log('[TaskManager] Using email body content');
             return this.cleanEmailContent(email.body.content);
         }
         
+        // Priorité 3: Contenu HTML de l'email (si disponible)
         if (email?.body?.type === 'html' && email?.body?.content) {
             console.log('[TaskManager] Using HTML email content');
             return this.convertHtmlToText(email.body.content);
         }
         
+        // Priorité 4: Preview de l'email étendu
         if (email?.bodyPreview && email.bodyPreview.length > 20) {
             console.log('[TaskManager] Using extended email preview');
             return this.buildExtendedPreview(email);
         }
         
+        // Priorité 5: Construire un contenu minimal mais complet
         console.log('[TaskManager] Building minimal email content');
         return this.buildMinimalEmailContent(email, taskData);
     }
 
+    // NOUVELLE MÉTHODE POUR EXTRAIRE LE CONTENU HTML COMPLET
     extractHtmlEmailContent(email, taskData) {
         console.log('[TaskManager] Extracting HTML email content...');
         
+        // Priorité 1: Contenu HTML passé directement dans taskData
         if (taskData.emailHtmlContent && taskData.emailHtmlContent.length > 50) {
             console.log('[TaskManager] Using HTML email content from taskData');
             return taskData.emailHtmlContent;
         }
         
+        // Priorité 2: Contenu HTML de l'email
         if (email?.body?.contentType === 'html' && email?.body?.content) {
             console.log('[TaskManager] Using email HTML body content');
             return this.cleanHtmlEmailContent(email.body.content);
         }
         
+        // Priorité 3: Contenu de l'email (même si text, on peut le formater)
         if (email?.body?.content) {
             console.log('[TaskManager] Converting text to HTML');
             return this.convertTextToHtml(email.body.content, email);
         }
         
+        // Priorité 4: Construire un HTML à partir du contenu texte
         const textContent = this.extractFullEmailContent(email, taskData);
         return this.convertTextToHtml(textContent, email);
     }
@@ -590,40 +625,48 @@ Cordialement,
     cleanEmailContent(content) {
         if (!content) return '';
         
+        // Nettoyer le contenu HTML et garder seulement le texte
         const cleanContent = content
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-            .replace(/<[^>]*>/g, ' ')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/\s+/g, ' ')
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Supprimer scripts
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Supprimer styles
+            .replace(/<[^>]*>/g, ' ') // Supprimer toutes les balises HTML
+            .replace(/&nbsp;/g, ' ') // Remplacer &nbsp;
+            .replace(/&amp;/g, '&') // Remplacer &amp;
+            .replace(/&lt;/g, '<') // Remplacer &lt;
+            .replace(/&gt;/g, '>') // Remplacer &gt;
+            .replace(/&quot;/g, '"') // Remplacer &quot;
+            .replace(/\s+/g, ' ') // Normaliser les espaces
             .trim();
             
         return cleanContent.length > 100 ? cleanContent : '';
     }
 
+    // NOUVELLE MÉTHODE POUR NETTOYER LE CONTENU HTML
     cleanHtmlEmailContent(htmlContent) {
         if (!htmlContent) return '';
         
+        // Nettoyer le HTML en gardant la structure visuelle
         let cleanHtml = htmlContent
+            // Supprimer les scripts et styles dangereux
             .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
             .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-            .replace(/on\w+="[^"]*"/gi, '')
-            .replace(/javascript:/gi, '')
+            .replace(/on\w+="[^"]*"/gi, '') // Supprimer les événements JS
+            .replace(/javascript:/gi, '') // Supprimer javascript:
             
+            // Nettoyer les attributs dangereux
             .replace(/style="[^"]*"/gi, (match) => {
+                // Garder seulement les styles de mise en forme de base
                 const safeStyles = match.match(/(color|background|font-size|font-weight|text-align|margin|padding|border):[^;]*/gi);
                 return safeStyles ? `style="${safeStyles.join(';')}"` : '';
             });
         
+        // Encapsuler dans un conteneur sécurisé
         return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             ${cleanHtml}
         </div>`;
     }
 
+    // NOUVELLE MÉTHODE POUR CONVERTIR TEXTE EN HTML
     convertTextToHtml(textContent, email) {
         if (!textContent) return '';
         
@@ -632,14 +675,15 @@ Cordialement,
         const subject = email?.subject || 'Sans sujet';
         const date = email?.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString('fr-FR') : '';
         
+        // Créer un HTML formaté à partir du texte
         const htmlContent = textContent
             .replace(/\n/g, '<br>')
             .replace(/Email de:([^\n]+)/g, '<strong>De:</strong>$1')
             .replace(/Date:([^\n]+)/g, '<strong>Date:</strong>$1')
             .replace(/Sujet:([^\n]+)/g, '<strong>Sujet:</strong>$1')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **texte** -> bold
+            .replace(/\*(.*?)\*/g, '<em>$1</em>') // *texte* -> italic
+            .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>'); // Links
         
         return `<div class="email-content-viewer" style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb;">
             <div style="background: #f8fafc; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #3b82f6;">
@@ -658,9 +702,11 @@ Cordialement,
     convertHtmlToText(htmlContent) {
         if (!htmlContent) return '';
         
+        // Créer un élément temporaire pour extraire le texte
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlContent;
         
+        // Extraire le texte propre
         const textContent = tempDiv.textContent || tempDiv.innerText || '';
         
         return textContent.trim();
@@ -689,16 +735,19 @@ ${preview}
         const date = taskData.emailDate || email?.receivedDateTime;
         const formattedDate = date ? new Date(date).toLocaleString('fr-FR') : 'Date inconnue';
         
+        // Construire un contenu basé sur l'analyse IA si disponible
         let content = `Email de: ${senderName} <${senderEmail}>
 Date: ${formattedDate}
 Sujet: ${subject}
 
 `;
 
+        // Ajouter le résumé s'il existe
         if (taskData.summary) {
             content += `${taskData.summary}\n\n`;
         }
         
+        // Ajouter les actions s'elles existent
         if (taskData.actions && taskData.actions.length > 0) {
             content += `Actions mentionnées dans l'email:\n`;
             taskData.actions.forEach((action, idx) => {
@@ -707,6 +756,7 @@ Sujet: ${subject}
             content += '\n';
         }
         
+        // Ajouter les informations clés
         if (taskData.keyInfo && taskData.keyInfo.length > 0) {
             content += `Informations importantes:\n`;
             taskData.keyInfo.forEach(info => {
@@ -715,11 +765,13 @@ Sujet: ${subject}
             content += '\n';
         }
         
+        // Ajouter un message si le contenu complet n'est pas disponible
         content += `[Contenu complet de l'email non disponible - Résumé généré par IA]`;
         
         return content;
     }
 
+    // MÉTHODE ALTERNATIVE POUR CRÉER UNE TÂCHE NORMALE
     createTask(taskData) {
         console.log('[TaskManager] Creating normal task:', taskData.title || 'Untitled');
         
@@ -731,28 +783,31 @@ Sujet: ${subject}
             status: taskData.status || 'todo',
             dueDate: taskData.dueDate || null,
             category: taskData.category || 'other',
-            type: taskData.type || 'tâche',
             
+            // Email info
             emailId: taskData.emailId || null,
             emailFrom: taskData.emailFrom || null,
             emailFromName: taskData.emailFromName || null,
             emailSubject: taskData.emailSubject || null,
             emailContent: taskData.emailContent || '',
-            emailHtmlContent: taskData.emailHtmlContent || '',
+            emailHtmlContent: taskData.emailHtmlContent || '', // NOUVEAU
             hasEmail: !!(taskData.emailId || taskData.emailFrom || taskData.emailContent),
             emailReplied: false,
             emailDate: taskData.emailDate || taskData.createdAt,
             needsReply: taskData.needsReply || false,
             
+            // Structured data (ajout pour unifier avec PageManager)
             summary: taskData.summary || '',
             actions: taskData.actions || [],
             keyInfo: taskData.keyInfo || [],
             risks: taskData.risks || [],
-            suggestedReplies: taskData.suggestedReplies || [],
+            suggestedReplies: taskData.suggestedReplies || [], // NOUVEAU
             
+            // Metadata
             tags: taskData.tags || [],
             client: taskData.client || 'Interne',
             
+            // Timestamps
             createdAt: taskData.createdAt || new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             
@@ -797,28 +852,34 @@ Sujet: ${subject}
     filterTasks(filters = {}) {
         let filtered = [...this.tasks];
         
+        // Status filter
         if (filters.status && filters.status !== 'all') {
             filtered = filtered.filter(task => task.status === filters.status);
         }
         
+        // Priority filter
         if (filters.priority && filters.priority !== 'all') {
             filtered = filtered.filter(task => task.priority === filters.priority);
         }
         
+        // Category filter
         if (filters.category && filters.category !== 'all') {
             filtered = filtered.filter(task => task.category === filters.category);
         }
         
+        // Client filter
         if (filters.client && filters.client !== 'all') {
             filtered = filtered.filter(task => task.client === filters.client);
         }
         
+        // Tag filter
         if (filters.tag && filters.tag !== 'all') {
             filtered = filtered.filter(task => 
                 task.tags && Array.isArray(task.tags) && task.tags.includes(filters.tag)
             );
         }
         
+        // Date range filter
         if (filters.dateRange && filters.dateRange !== 'all') {
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -844,6 +905,7 @@ Sujet: ${subject}
             });
         }
         
+        // Search filter
         if (filters.search) {
             const search = filters.search.toLowerCase();
             filtered = filtered.filter(task => 
@@ -855,6 +917,7 @@ Sujet: ${subject}
             );
         }
         
+        // Special filters
         if (filters.overdue) {
             filtered = filtered.filter(task => {
                 if (!task.dueDate || task.status === 'completed') return false;
@@ -971,7 +1034,7 @@ Sujet: ${subject}
 }
 
 // =====================================
-// MODERN TASKS VIEW - INTERFACE ÉPURÉE
+// MODERN TASKS VIEW - AVEC AFFICHAGE CONTENU COMPLET
 // =====================================
 class TasksView {
     constructor() {
@@ -987,7 +1050,7 @@ class TasksView {
         };
         
         this.selectedTasks = new Set();
-        this.currentViewMode = 'flat';
+        this.currentViewMode = 'condensed';
         this.showCompleted = false;
         this.showAdvancedFilters = false;
         
@@ -996,177 +1059,1407 @@ class TasksView {
         });
     }
 
-    render(container) {
-        if (!container) {
-            console.error('[TasksView] No container provided');
-            return;
-        }
+    // MÉTHODE PRINCIPALE POUR RENDRE L'INTERFACE - IDENTIQUE À PAGEMANAGER
+// MÉTHODE PRINCIPALE POUR RENDRE L'INTERFACE - AVEC BARRE ÉTENDUE
+render(container) {
+    if (!container) {
+        console.error('[TasksView] No container provided');
+        return;
+    }
 
-        if (!window.taskManager || !window.taskManager.initialized) {
-            container.innerHTML = `
-                <div class="loading-state">
-                    <div class="loading-icon">
-                        <i class="fas fa-spinner fa-spin"></i>
-                    </div>
-                    <p>Chargement des tâches...</p>
-                </div>
-            `;
-            
-            setTimeout(() => {
-                if (window.taskManager && window.taskManager.initialized) {
-                    this.render(container);
-                }
-            }, 500);
-            return;
-        }
-
-        const stats = window.taskManager.getStats();
-        const selectedCount = this.selectedTasks.size;
-        
+    if (!window.taskManager || !window.taskManager.initialized) {
         container.innerHTML = `
-            <div class="tasks-page-modern">
-                <!-- Barre de contrôles harmonisée -->
-                <div class="controls-bar-harmonized">
-                    <!-- Section recherche -->
-                    <div class="search-section-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
+            <div class="loading-state">
+                <div class="loading-icon">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </div>
+                <p>Chargement des tâches...</p>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            if (window.taskManager && window.taskManager.initialized) {
+                this.render(container);
+            }
+        }, 500);
+        return;
+    }
+
+    const stats = window.taskManager.getStats();
+    
+    // INTERFACE AVEC BARRE ÉTENDUE SUR 2 LIGNES
+    container.innerHTML = `
+        <div class="tasks-page-modern">
+            <!-- Barre de contrôles étendue sur 2 lignes -->
+            <div class="tasks-main-toolbar-expanded">
+                <!-- PREMIÈRE LIGNE : Titre + Recherche étendue -->
+                <div class="toolbar-top-line">
+                    <div class="toolbar-left-expanded">
+                        <h1 class="tasks-title">Tâches</h1>
+                        <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
+                    </div>
+                    
+                    <div class="toolbar-center-expanded">
+                        <div class="search-wrapper-expanded">
+                            <i class="fas fa-search search-icon-expanded"></i>
                             <input type="text" 
-                                   class="search-input-harmonized" 
+                                   class="search-input-expanded" 
                                    id="taskSearchInput"
-                                   placeholder="Rechercher tâches..." 
+                                   placeholder="Rechercher dans vos tâches (titre, description, expéditeur, client, tags)..." 
                                    value="${this.currentFilters.search}">
-                            ${this.currentFilters.search ? `
-                                <button class="search-clear-harmonized" onclick="window.tasksView.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : ''}
+                            <button class="search-clear-expanded" id="searchClearBtn" 
+                                    style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                                    onclick="window.tasksView.clearSearch()">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     </div>
-                    
-                    <!-- Modes de vue harmonisés -->
-                    <div class="view-modes-harmonized">
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                onclick="window.tasksView.changeViewMode('flat')"
-                                title="Liste">
+                </div>
+                
+                <!-- SECONDE LIGNE : Modes de vue + Actions -->
+                <div class="toolbar-bottom-line">
+                    <div class="view-modes-expanded">
+                        <button class="btn-expanded ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
+                                data-mode="condensed"
+                                onclick="window.tasksView.changeViewMode('condensed')">
                             <i class="fas fa-list"></i>
-                            <span>Liste</span>
+                            <span class="btn-text-expanded">Condensé</span>
                         </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                onclick="window.tasksView.changeViewMode('grouped-domain')"
-                                title="Par domaine">
-                            <i class="fas fa-globe"></i>
-                            <span>Domaine</span>
-                        </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                onclick="window.tasksView.changeViewMode('grouped-sender')"
-                                title="Par expéditeur">
-                            <i class="fas fa-user"></i>
-                            <span>Expéditeur</span>
+                        <button class="btn-expanded ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                data-mode="detailed"
+                                onclick="window.tasksView.changeViewMode('detailed')">
+                            <i class="fas fa-th-large"></i>
+                            <span class="btn-text-expanded">Détaillé</span>
                         </button>
                     </div>
                     
-                    <!-- Actions principales harmonisées -->
-                    <div class="action-buttons-harmonized">
-                        ${selectedCount > 0 ? `
-                            <div class="selection-info-harmonized">
-                                <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
-                                <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
+                    <!-- Séparateur visuel -->
+                    <div class="toolbar-separator"></div>
+                    
+                    <div class="toolbar-actions-expanded">
+                        ${this.selectedTasks.size > 0 ? `
+                            <div class="selection-info-expanded">
+                                <span class="selection-count-expanded">${this.selectedTasks.size} sélectionné(s)</span>
+                                <button class="btn-expanded btn-secondary-expanded" onclick="window.tasksView.clearSelection()">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </div>
-                            <button class="btn-harmonized btn-primary" onclick="window.tasksView.bulkActions()">
+                            <button class="btn-expanded btn-primary-expanded" onclick="window.tasksView.bulkActions()">
                                 <i class="fas fa-cog"></i>
-                                <span>Actions</span>
-                                <span class="count-badge-harmonized">${selectedCount}</span>
+                                <span class="btn-text-expanded">Actions</span>
                             </button>
                         ` : ''}
-                        
-                        <button class="btn-harmonized btn-secondary" onclick="window.tasksView.refreshTasks()">
-                            <i class="fas fa-sync-alt"></i>
-                            <span>Actualiser</span>
-                        </button>
-                        
-                        <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
+                        <button class="btn-expanded btn-primary-expanded" onclick="window.tasksView.showCreateModal()">
                             <i class="fas fa-plus"></i>
-                            <span>Nouvelle</span>
-                        </button>
-                        
-                        <button class="btn-harmonized filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
-                                onclick="window.tasksView.toggleAdvancedFilters()">
-                            <i class="fas fa-filter"></i>
-                            <span>Filtres</span>
-                            <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                            <span class="btn-text-expanded">Nouvelle tâche</span>
                         </button>
                     </div>
-                </div>
-
-                <!-- Filtres de statut harmonisés -->
-                <div class="status-filters-harmonized">
-                    ${this.buildHarmonizedStatusPills(stats)}
-                </div>
-                
-                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
-                    <div class="advanced-filters-grid">
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-flag"></i> Priorité
-                            </label>
-                            <select class="filter-select" id="priorityFilter" 
-                                    onchange="window.tasksView.updateFilter('priority', this.value)">
-                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
-                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-building"></i> Client
-                            </label>
-                            <select class="filter-select" id="clientFilter" 
-                                    onchange="window.tasksView.updateFilter('client', this.value)">
-                                ${this.buildClientFilterOptions()}
-                            </select>
-                        </div>
-
-                        <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-sort"></i> Trier par
-                            </label>
-                            <select class="filter-select" id="sortByFilter" 
-                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
-                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                            </select>
-                        </div>
-
-                        <div class="filter-actions">
-                            <button class="btn-harmonized btn-secondary" onclick="window.tasksView.resetAllFilters()">
-                                <i class="fas fa-undo"></i> Réinitialiser
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tasks-container-harmonized" id="tasksContainer">
-                    ${this.renderTasksList()}
                 </div>
             </div>
-        `;
 
-        this.addHarmonizedTaskStyles();
-        this.setupEventListeners();
-        console.log('[TasksView] Harmonized interface rendered');
-    }
+            <!-- Filtres de statut avec bouton filtres avancés -->
+            <div class="status-filters-large">
+                ${this.buildLargeStatusPills(stats)}
+                <button class="btn-expanded advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
+                        onclick="window.tasksView.toggleAdvancedFilters()">
+                    <i class="fas fa-filter"></i>
+                    <span class="btn-text-expanded">Filtres avancés</span>
+                    <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
+                </button>
+            </div>
 
-    buildHarmonizedStatusPills(stats) {
+            <!-- Filtres avancés -->
+            <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                <div class="advanced-filters-grid">
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-flag"></i> Priorité
+                        </label>
+                        <select class="filter-select" id="priorityFilter" 
+                                onchange="window.tasksView.updateFilter('priority', this.value)">
+                            <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-building"></i> Client
+                        </label>
+                        <select class="filter-select" id="clientFilter" 
+                                onchange="window.tasksView.updateFilter('client', this.value)">
+                            ${this.buildClientFilterOptions()}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-tags"></i> Tag
+                        </label>
+                        <select class="filter-select" id="tagFilter" 
+                                onchange="window.tasksView.updateFilter('tag', this.value)">
+                            ${this.buildTagFilterOptions()}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-calendar"></i> Période
+                        </label>
+                        <select class="filter-select" id="dateRangeFilter" 
+                                onchange="window.tasksView.updateFilter('dateRange', this.value)">
+                            <option value="all" ${this.currentFilters.dateRange === 'all' ? 'selected' : ''}>Toutes</option>
+                            <option value="today" ${this.currentFilters.dateRange === 'today' ? 'selected' : ''}>Aujourd'hui</option>
+                            <option value="week" ${this.currentFilters.dateRange === 'week' ? 'selected' : ''}>Cette semaine</option>
+                            <option value="month" ${this.currentFilters.dateRange === 'month' ? 'selected' : ''}>Ce mois</option>
+                            <option value="older" ${this.currentFilters.dateRange === 'older' ? 'selected' : ''}>Plus ancien</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">
+                            <i class="fas fa-sort"></i> Trier par
+                        </label>
+                        <select class="filter-select" id="sortByFilter" 
+                                onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                            <option value="updated" ${this.currentFilters.sortBy === 'updated' ? 'selected' : ''}>Dernière modif</option>
+                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                            <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                            <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                            <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                            <i class="fas fa-undo"></i> Réinitialiser
+                        </button>
+                        <div class="active-filters-count">
+                            ${this.getActiveFiltersCount()} filtres actifs
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tasks-container-modern" id="tasksContainer">
+                ${this.renderTasksList()}
+            </div>
+        </div>
+    `;
+
+    // UTILISER LES NOUVEAUX STYLES ÉTENDUS
+    this.addExpandedTaskStyles();
+    this.setupEventListeners();
+    console.log('[TasksView] Modern interface rendered with expanded search bar');
+}
+
+// STYLES ÉTENDUS POUR TASKMANAGER AVEC BARRE SUR 2 LIGNES
+addExpandedTaskStyles() {
+    // Utiliser les styles existants s'ils sont déjà présents
+    if (document.getElementById('expandedTaskStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'expandedTaskStyles';
+    styles.textContent = `
+        /* Variables CSS étendues pour TaskManager */
+        :root {
+            --btn-height-task: 44px;
+            --btn-padding-task: 16px;
+            --btn-font-size-task: 13px;
+            --btn-border-radius-task: 10px;
+            --btn-font-weight-task: 600;
+            --btn-gap-task: 8px;
+            --gap-small-task: 8px;
+            --gap-medium-task: 12px;
+            --gap-large-task: 16px;
+            --transition-speed-task: 0.2s;
+            --shadow-base-task: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-hover-task: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tasks-page-modern {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            min-height: 100vh;
+            padding: var(--gap-large-task);
+            font-size: var(--btn-font-size-task);
+        }
+
+        /* ===== BARRE DE CONTRÔLES ÉTENDUE SUR 2 LIGNES ===== */
+        .tasks-main-toolbar-expanded {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: var(--gap-large-task);
+            margin-bottom: var(--gap-medium-task);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: var(--gap-large-task);
+        }
+        
+        /* PREMIÈRE LIGNE : Titre + Recherche étendue */
+        .toolbar-top-line {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-large-task);
+            width: 100%;
+        }
+        
+        .toolbar-left-expanded {
+            display: flex;
+            align-items: baseline;
+            gap: var(--gap-small-task);
+            min-width: 200px;
+            flex-shrink: 0;
+        }
+        
+        .tasks-title {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .tasks-count-large {
+            font-size: 15px;
+            color: #6b7280;
+            font-weight: 600;
+            background: #f3f4f6;
+            padding: 5px 12px;
+            border-radius: 14px;
+        }
+        
+        .toolbar-center-expanded {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .search-wrapper-expanded {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            height: calc(var(--btn-height-task) + 8px);
+        }
+        
+        .search-input-expanded {
+            width: 100%;
+            height: 100%;
+            padding: 0 var(--gap-large-task) 0 56px;
+            border: 2px solid #e5e7eb;
+            border-radius: calc(var(--btn-border-radius-task) + 4px);
+            font-size: calc(var(--btn-font-size-task) + 2px);
+            background: #f9fafb;
+            transition: all var(--transition-speed-task) ease;
+            outline: none;
+            font-weight: 500;
+            color: #374151;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-input-expanded:focus {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+        
+        .search-input-expanded::placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+        
+        .search-icon-expanded {
+            position: absolute;
+            left: var(--gap-large-task);
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6b7280;
+            pointer-events: none;
+            font-size: 18px;
+            z-index: 1;
+        }
+        
+        .search-input-expanded:focus + .search-icon-expanded {
+            color: #667eea;
+        }
+        
+        .search-clear-expanded {
+            position: absolute;
+            right: var(--gap-medium-task);
+            top: 50%;
+            transform: translateY(-50%);
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all var(--transition-speed-task) ease;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+        }
+        
+        .search-clear-expanded:hover {
+            background: #dc2626;
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* SECONDE LIGNE : Modes de vue + Actions */
+        .toolbar-bottom-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--gap-large-task);
+            width: 100%;
+        }
+        
+        /* Modes de vue étendus */
+        .view-modes-expanded {
+            display: flex;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--btn-border-radius-task);
+            padding: 4px;
+            gap: 2px;
+            height: var(--btn-height-task);
+            flex-shrink: 0;
+        }
+        
+        .btn-expanded {
+            height: var(--btn-height-task);
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--btn-border-radius-task);
+            padding: 0 var(--btn-padding-task);
+            font-size: var(--btn-font-size-task);
+            font-weight: var(--btn-font-weight-task);
+            cursor: pointer;
+            transition: all var(--transition-speed-task) ease;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap-task);
+            box-shadow: var(--shadow-base-task);
+            position: relative;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 120px;
+        }
+        
+        .view-modes-expanded .btn-expanded {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            height: calc(var(--btn-height-task) - 8px);
+            color: #6b7280;
+        }
+        
+        .view-modes-expanded .btn-expanded:hover {
+            background: rgba(255, 255, 255, 0.8);
+            color: #374151;
+            transform: translateY(-1px);
+        }
+        
+        .view-modes-expanded .btn-expanded.active {
+            background: white;
+            color: #1f2937;
+            box-shadow: var(--shadow-base-task);
+            font-weight: 700;
+            transform: translateY(-1px);
+        }
+        
+        /* Séparateur visuel */
+        .toolbar-separator {
+            width: 1px;
+            height: calc(var(--btn-height-task) - 8px);
+            background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
+            flex-shrink: 0;
+        }
+        
+        /* Actions étendues */
+        .toolbar-actions-expanded {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-medium-task);
+            flex: 1;
+            justify-content: flex-end;
+        }
+        
+        .btn-expanded:hover {
+            background: #f9fafb;
+            border-color: #667eea;
+            color: #1f2937;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover-task);
+        }
+        
+        /* Boutons désactivés */
+        .btn-expanded.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+        
+        .btn-expanded.disabled:hover {
+            transform: none !important;
+            box-shadow: var(--shadow-base-task) !important;
+            background: white !important;
+            border-color: #e5e7eb !important;
+        }
+        
+        .btn-expanded.btn-primary-expanded {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+            font-weight: 700;
+        }
+        
+        .btn-expanded.btn-primary-expanded:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6c5ce7 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35);
+        }
+        
+        .btn-expanded.btn-primary-expanded.disabled {
+            background: #e5e7eb !important;
+            color: #9ca3af !important;
+            box-shadow: var(--shadow-base-task) !important;
+        }
+        
+        .btn-expanded.btn-secondary-expanded {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #e2e8f0;
+        }
+        
+        .btn-expanded.btn-secondary-expanded:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        
+        .btn-text-expanded {
+            font-weight: 600;
+        }
+        
+        .selection-info-expanded {
+            height: var(--btn-height-task);
+            padding: 0 var(--btn-padding-task);
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: var(--btn-border-radius-task);
+            font-size: var(--btn-font-size-task);
+            font-weight: var(--btn-font-weight-task);
+            color: #1e40af;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap-task);
+            box-shadow: var(--shadow-base-task);
+            white-space: nowrap;
+        }
+        
+        .selection-count-expanded {
+            font-weight: 700;
+        }
+        
+        /* ===== FILTRES DE STATUT (inchangés du TaskManager original) ===== */
+        .status-filters-large {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 0 0 16px 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+        }
+        
+        .status-pill-large {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            background: white;
+            color: #374151;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 46px;
+            box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .status-pill-large:hover {
+            border-color: #667eea;
+            background: #667eea12;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+        
+        .status-pill-large.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+        }
+        
+        .pill-icon-large {
+            font-size: 17px;
+        }
+        
+        .pill-text-large {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .pill-count-large {
+            background: rgba(0,0,0,0.1);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            min-width: 22px;
+            text-align: center;
+        }
+        
+        .status-pill-large.active .pill-count-large {
+            background: rgba(255,255,255,0.25);
+        }
+        
+        /* Bouton filtres avancés étendu */
+        .advanced-filters-toggle {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #475569;
+        }
+        
+        .advanced-filters-toggle:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+        
+        .advanced-filters-toggle.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        /* ===== PANNEAU FILTRES AVANCÉS (inchangé) ===== */
+        .advanced-filters-panel {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        
+        .advanced-filters-panel.show {
+            max-height: 500px;
+            opacity: 1;
+            padding: 20px;
+        }
+        
+        .advanced-filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            align-items: end;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .filter-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: white;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .filter-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-small {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid;
+        }
+        
+        .btn-small.btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border-color: #d1d5db;
+        }
+        
+        .btn-small.btn-secondary:hover {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        
+        .active-filters-count {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        /* ===== CONTENEUR DES TÂCHES (inchangé) ===== */
+        .tasks-container-modern {
+            background: transparent;
+        }
+        
+        .tasks-condensed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            background: #f9fafb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .task-condensed {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 16px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f3f4f6;
+            min-height: 60px;
+        }
+        
+        .task-condensed:last-child {
+            border-bottom: none;
+        }
+        
+        .task-condensed:hover {
+            background: #f9fafb;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .task-condensed.selected {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .task-condensed.completed {
+            opacity: 0.7;
+        }
+        
+        .task-condensed.completed .task-title-large {
+            text-decoration: line-through;
+        }
+        
+        .task-checkbox-condensed {
+            margin-right: 16px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .task-indicators {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+        
+        .priority-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .priority-urgent {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .priority-high {
+            background: #fef3c7;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        
+        .priority-medium {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+        
+        .priority-low {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .status-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: #f3f4f6;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+        }
+        
+        .task-content-condensed {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .task-header-line {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 16px;
+        }
+        
+        .task-title-large {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 16px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .task-meta-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        
+        .client-badge {
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .due-date-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        
+        .due-date-normal {
+            color: #6b7280;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .due-date-soon {
+            color: #d97706;
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+        }
+        
+        .due-date-today {
+            color: #dc2626;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+        
+        .due-date-tomorrow {
+            color: #d97706;
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+        }
+        
+        .due-date-overdue {
+            color: #dc2626;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .task-date-large {
+            font-size: 14px;
+            color: #6b7280;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .task-email-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        
+        .email-from {
+            font-weight: 500;
+        }
+        
+        .reply-needed {
+            background: #fef3c7;
+            color: #d97706;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #fde68a;
+        }
+        
+        .has-ai-suggestions {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #5a67d8;
+            animation: aiGlow 2s infinite alternate;
+        }
+        
+        .ai-generated-badge {
+            background: #10b981;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid #059669;
+        }
+        
+        @keyframes aiGlow {
+            0% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.5); }
+            100% { box-shadow: 0 0 15px rgba(102, 126, 234, 0.8); }
+        }
+        
+        .task-reply-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #f3f4f6;
+        }
+        
+        .reply-to-email-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+        }
+        
+        .reply-to-email-btn:hover {
+            background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .reply-to-email-btn .ai-icon {
+            animation: aiPulse 1.5s infinite;
+            margin-left: 4px;
+        }
+        
+        @keyframes aiPulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        .task-actions-condensed {
+            margin-left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .action-btn-modern {
+            width: 32px;
+            height: 32px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            background: white;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 14px;
+        }
+        
+        .action-btn-modern:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+            transform: translateY(-1px);
+        }
+        
+        .action-btn-modern.complete:hover {
+            background: #dcfce7;
+            border-color: #16a34a;
+            color: #16a34a;
+        }
+        
+        .action-btn-modern.ai-refresh {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #5a67d8;
+        }
+        
+        .action-btn-modern.ai-refresh:hover {
+            background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+            border-color: #4c51bf;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+        
+        .action-btn-modern.edit:hover {
+            background: #fef3c7;
+            border-color: #d97706;
+            color: #d97706;
+        }
+        
+        .action-btn-modern.delete-btn {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn-modern.delete-btn:hover {
+            background: #dc2626;
+            color: white;
+            border-color: #dc2626;
+            transform: translateY(-1px) scale(1.05);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+        }
+        
+        /* ===== STYLES POUR LES TAGS DANS LES TÂCHES ===== */
+        .task-tags-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            font-size: 12px;
+            color: #6b7280;
+            flex-wrap: wrap;
+        }
+        
+        .task-tag {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .task-tag:hover {
+            background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+        
+        .tags-more {
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        /* ===== ÉTAT VIDE ===== */
+        .empty-state-modern {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #d1d5db;
+        }
+        
+        .empty-state-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+        
+        .empty-state-text {
+            font-size: 16px;
+            margin-bottom: 24px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.5;
+        }
+        
+        /* ===== STYLES POUR LES MODALS (hérités du TaskManager original) ===== */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        /* ===== STYLES POUR LES DÉTAILS DE TÂCHE ===== */
+        .task-details-content {
+            max-width: none;
+        }
+        
+        .details-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .task-title-details {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin: 0 0 12px 0;
+            line-height: 1.3;
+        }
+        
+        .task-meta-badges {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .priority-badge, .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .details-section {
+            margin-bottom: 24px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .details-section h3 {
+            margin: 0;
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 1400px) {
+            .search-wrapper-expanded {
+                max-width: 600px;
+            }
+            
+            .toolbar-bottom-line {
+                gap: var(--gap-medium-task);
+            }
+            
+            .toolbar-actions-expanded {
+                gap: var(--gap-small-task);
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .search-wrapper-expanded {
+                max-width: 500px;
+            }
+            
+            .btn-expanded {
+                min-width: 100px;
+                padding: 0 12px;
+            }
+        }
+        
+        @media (max-width: 1024px) {
+            .tasks-main-toolbar-expanded {
+                padding: var(--gap-medium-task);
+            }
+            
+            .toolbar-top-line {
+                flex-direction: column;
+                gap: var(--gap-medium-task);
+                align-items: stretch;
+            }
+            
+            .toolbar-left-expanded {
+                min-width: auto;
+                justify-content: center;
+            }
+            
+            .toolbar-center-expanded {
+                max-width: 100%;
+            }
+            
+            .toolbar-bottom-line {
+                flex-direction: column;
+                gap: var(--gap-medium-task);
+                align-items: stretch;
+            }
+            
+            .view-modes-expanded {
+                width: 100%;
+                justify-content: space-around;
+            }
+            
+            .toolbar-actions-expanded {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .search-wrapper-expanded {
+                max-width: 100%;
+            }
+            
+            .toolbar-separator {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .btn-text-expanded {
+                display: none;
+            }
+            
+            .btn-expanded {
+                min-width: 44px;
+                padding: 0;
+                justify-content: center;
+            }
+            
+            .view-modes-expanded .btn-expanded {
+                min-width: 44px;
+                padding: 0;
+            }
+            
+            .search-input-expanded {
+                font-size: var(--btn-font-size-task);
+                padding: 0 var(--gap-medium-task) 0 48px;
+            }
+            
+            .search-icon-expanded {
+                left: var(--gap-medium-task);
+                font-size: 16px;
+            }
+            
+            .task-condensed {
+                padding: 12px 16px;
+                min-height: 50px;
+            }
+            
+            .task-indicators {
+                margin-right: 12px;
+            }
+            
+            .task-header-line {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            
+            .task-title-large {
+                min-width: auto;
+                font-size: 15px;
+            }
+            
+            .task-meta-right {
+                width: 100%;
+                justify-content: space-between;
+                margin-left: 0;
+            }
+            
+            .status-filters-large {
+                gap: 8px;
+            }
+            
+            .status-pill-large {
+                padding: 10px 16px;
+                font-size: 14px;
+                min-height: 42px;
+            }
+            
+            .pill-text-large {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .tasks-main-toolbar-expanded {
+                padding: var(--gap-small-task);
+                gap: var(--gap-medium-task);
+            }
+            
+            .toolbar-actions-expanded {
+                flex-direction: column;
+                gap: var(--gap-small-task);
+                align-items: stretch;
+            }
+            
+            .toolbar-actions-expanded > * {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .search-wrapper-expanded {
+                height: calc(var(--btn-height-task) + 4px);
+            }
+            
+            .search-input-expanded {
+                padding: 0 var(--gap-small-task) 0 40px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    `;
+    
+    document.head.appendChild(styles);
+    
+    // Ajouter les styles spécifiques aux suggestions de réponse si pas déjà présents
+    this.addSuggestedRepliesStyles();
+}
+
+    // MÉTHODES IDENTIQUES À PAGEMANAGER
+    buildLargeStatusPills(stats) {
         const pills = [
-            { id: 'all', name: 'Tous', icon: '📧', count: stats.total },
+            { id: 'all', name: 'Toutes', icon: '📋', count: stats.total },
             { id: 'todo', name: 'À faire', icon: '⏳', count: stats.todo },
             { id: 'in-progress', name: 'En cours', icon: '🔄', count: stats.inProgress },
             { id: 'overdue', name: 'En retard', icon: '⚠️', count: stats.overdue },
@@ -1175,12 +2468,12 @@ class TasksView {
         ];
 
         return pills.map(pill => `
-            <button class="status-pill-harmonized ${this.isFilterActive(pill.id) ? 'active' : ''}" 
+            <button class="btn-large status-pill-large ${this.isFilterActive(pill.id) ? 'active' : ''}" 
                     data-filter="${pill.id}"
                     onclick="window.tasksView.quickFilter('${pill.id}')">
-                <span class="pill-icon-harmonized">${pill.icon}</span>
-                <span class="pill-text-harmonized">${pill.name}</span>
-                <span class="pill-count-harmonized">${pill.count}</span>
+                <span class="pill-icon-large">${pill.icon}</span>
+                <span class="pill-text-large">${pill.name}</span>
+                <span class="pill-count-large">${pill.count}</span>
             </button>
         `).join('');
     }
@@ -1194,181 +2487,31 @@ class TasksView {
         }
 
         switch (this.currentViewMode) {
-            case 'flat':
-                return this.renderFlatView(filteredTasks);
-            case 'grouped-domain':
-            case 'grouped-sender':
-                return this.renderGroupedView(filteredTasks, this.currentViewMode);
+            case 'detailed':
+                return this.renderDetailedView(filteredTasks);
+            case 'condensed':
             default:
-                return this.renderFlatView(filteredTasks);
+                return this.renderCondensedView(filteredTasks);
         }
-    }
-
-    renderFlatView(tasks) {
-        return `
-            <div class="tasks-harmonized-list">
-                ${tasks.map(task => this.renderHarmonizedTaskItem(task)).join('')}
-            </div>
-        `;
-    }
-
-    renderGroupedView(tasks, groupMode) {
-        const groups = this.createTaskGroups(tasks, groupMode);
-        
-        return `
-            <div class="tasks-grouped-harmonized">
-                ${groups.map(group => this.renderTaskGroup(group, groupMode)).join('')}
-            </div>
-        `;
-    }
-
-    renderTaskGroup(group, groupType) {
-        const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
-        const avatarColor = this.generateAvatarColor(group.name);
-        
-        return `
-            <div class="task-group-harmonized" data-group-key="${group.key}">
-                <div class="group-header-harmonized" onclick="window.tasksView.toggleGroup('${group.key}')">
-                    <div class="group-avatar-harmonized" style="background: ${avatarColor}">
-                        ${groupType === 'grouped-domain' ? 
-                            '<i class="fas fa-globe"></i>' : 
-                            group.name.charAt(0).toUpperCase()
-                        }
-                    </div>
-                    <div class="group-info-harmonized">
-                        <div class="group-name-harmonized">${displayName}</div>
-                        <div class="group-meta-harmonized">${group.count} tâche${group.count > 1 ? 's' : ''} • ${this.formatRelativeDate(group.latestDate)}</div>
-                    </div>
-                    <div class="group-expand-harmonized">
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-                
-                <div class="group-content-harmonized" style="display: none;">
-                    ${group.tasks.map(task => this.renderHarmonizedTaskItem(task)).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    createTaskGroups(tasks, groupMode) {
-        const groups = {};
-        
-        tasks.forEach(task => {
-            let groupKey, groupName;
-            
-            if (groupMode === 'grouped-domain') {
-                if (task.hasEmail && task.emailDomain) {
-                    groupKey = task.emailDomain;
-                    groupName = task.emailDomain;
-                } else {
-                    groupKey = 'internal';
-                    groupName = 'Tâches internes';
-                }
-            } else { // grouped-sender
-                if (task.hasEmail && task.emailFromName) {
-                    groupKey = task.emailFrom || task.emailFromName;
-                    groupName = task.emailFromName;
-                } else {
-                    groupKey = task.client || 'internal';
-                    groupName = task.client || 'Tâches internes';
-                }
-            }
-            
-            if (!groups[groupKey]) {
-                groups[groupKey] = {
-                    key: groupKey,
-                    name: groupName,
-                    tasks: [],
-                    count: 0,
-                    latestDate: null
-                };
-            }
-            
-            groups[groupKey].tasks.push(task);
-            groups[groupKey].count++;
-            
-            const taskDate = new Date(task.createdAt);
-            if (!groups[groupKey].latestDate || taskDate > groups[groupKey].latestDate) {
-                groups[groupKey].latestDate = taskDate;
-            }
-        });
-        
-        return Object.values(groups).sort((a, b) => {
-            if (!a.latestDate && !b.latestDate) return 0;
-            if (!a.latestDate) return 1;
-            if (!b.latestDate) return -1;
-            return b.latestDate - a.latestDate;
-        });
-    }
-
-    toggleGroup(groupKey) {
-        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
-        if (!group) return;
-        
-        const content = group.querySelector('.group-content-harmonized');
-        const icon = group.querySelector('.group-expand-harmonized i');
-        const header = group.querySelector('.group-header-harmonized');
-        
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-            group.classList.add('expanded');
-            header.classList.add('expanded-header');
-        } else {
-            content.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-            group.classList.remove('expanded');
-            header.classList.remove('expanded-header');
-        }
-    }
-
-    generateAvatarColor(text) {
-        let hash = 0;
-        for (let i = 0; i < text.length; i++) {
-            hash = text.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        
-        const hue = Math.abs(hash) % 360;
-        const saturation = 65 + (Math.abs(hash) % 20);
-        const lightness = 45 + (Math.abs(hash) % 15);
-        
-        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
-    }
-
-    formatRelativeDate(date) {
-        if (!date) return 'Date inconnue';
-        
-        const now = new Date();
-        const diff = now - date;
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        
-        if (days === 0) return 'Aujourd\'hui';
-        if (days === 1) return 'Hier';
-        if (days < 7) return `Il y a ${days} jours`;
-        if (days < 30) return `Il y a ${Math.floor(days / 7)} semaines`;
-        return date.toLocaleDateString('fr-FR');
     }
 
     renderEmptyState() {
         return `
-            <div class="empty-state-harmonized">
-                <div class="empty-state-icon-harmonized">
+            <div class="empty-state-modern">
+                <div class="empty-state-icon">
                     <i class="fas fa-tasks"></i>
                 </div>
-                <h3 class="empty-state-title-harmonized">Aucune tâche trouvée</h3>
-                <p class="empty-state-text-harmonized">
+                <h3 class="empty-state-title">Aucune tâche trouvée</h3>
+                <p class="empty-state-text">
                     ${this.hasActiveFilters() ? 'Aucune tâche ne correspond à vos critères' : 'Vous n\'avez aucune tâche'}
                 </p>
                 ${this.hasActiveFilters() ? `
-                    <button class="btn-harmonized btn-primary" onclick="window.tasksView.resetAllFilters()">
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.resetAllFilters()">
                         <i class="fas fa-undo"></i>
                         <span>Réinitialiser les filtres</span>
                     </button>
                 ` : `
-                    <button class="btn-harmonized btn-primary" onclick="window.tasksView.showCreateModal()">
+                    <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
                         <i class="fas fa-plus"></i>
                         <span>Créer votre première tâche</span>
                     </button>
@@ -1377,70 +2520,111 @@ class TasksView {
         `;
     }
 
-    renderHarmonizedTaskItem(task) {
+    renderCondensedView(tasks) {
+        return `
+            <div class="tasks-condensed-list">
+                ${tasks.map(task => this.renderCondensedTaskItem(task)).join('')}
+            </div>
+        `;
+    }
+
+    // RENDU IDENTIQUE À L'INTERFACE EMAIL DE PAGEMANAGER AVEC BOUTON RÉPONDRE
+    renderCondensedTaskItem(task) {
         const isSelected = this.selectedTasks.has(task.id);
         const isCompleted = task.status === 'completed';
+        const priorityIcon = this.getPriorityIcon(task.priority);
+        const statusIcon = this.getStatusIcon(task.status);
         
-        // Destinataire : priorité email > client > type
-        const recipient = task.hasEmail ? 
-            (task.emailFromName || this.extractNameFromEmail(task.emailFrom) || 'Email inconnu') :
-            (task.client !== 'Interne' ? task.client : task.type || 'Tâche');
+        const clientInfo = task.hasEmail ? 
+            `@${task.emailDomain || 'email'}` : 
+            task.client || 'Interne';
             
-        // Type visuel clair
-        const taskTypeDisplay = this.getTaskTypeDisplay(task);
+        const dueDateInfo = this.formatDueDate(task.dueDate);
         
-        // Deadline formatting
-        const dueDateDisplay = this.formatDueDateSimple(task.dueDate);
-        
-        // Priority color
-        const priorityColor = this.getPriorityColor(task.priority);
+        // Déterminer si on montre le bouton de réponse
+        const showReplyButton = task.hasEmail && !task.emailReplied && task.status !== 'completed';
+        const hasAiSuggestions = task.suggestedReplies && task.suggestedReplies.length > 0;
         
         return `
-            <div class="task-harmonized-card ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
+            <div class="task-condensed ${isCompleted ? 'completed' : ''} ${isSelected ? 'selected' : ''}" 
                  data-task-id="${task.id}"
                  onclick="window.tasksView.handleTaskClick(event, '${task.id}')">
                 
-                <!-- Checkbox de sélection harmonisé -->
                 <input type="checkbox" 
-                       class="task-checkbox-harmonized" 
+                       class="task-checkbox-condensed" 
                        ${isSelected ? 'checked' : ''}
                        onclick="event.stopPropagation(); window.tasksView.toggleTaskSelection('${task.id}')">
                 
-                <!-- Indicateur de priorité harmonisé -->
-                <div class="priority-bar-harmonized" style="background-color: ${priorityColor}"></div>
-                
-                <!-- Contenu principal harmonisé et centré -->
-                <div class="task-main-content-harmonized">
-                    <div class="task-header-harmonized">
-                        <h3 class="task-title-harmonized">${this.escapeHtml(task.title)}</h3>
-                        <div class="task-meta-harmonized">
-                            <span class="task-type-badge-harmonized">${taskTypeDisplay.icon} ${taskTypeDisplay.label}</span>
-                            ${dueDateDisplay.html}
-                        </div>
+                <div class="task-indicators">
+                    <div class="priority-indicator priority-${task.priority}" title="Priorité ${task.priority}">
+                        ${priorityIcon}
                     </div>
-                    
-                    <div class="task-recipient-harmonized">
-                        <i class="fas ${task.hasEmail ? 'fa-envelope' : 'fa-user'}"></i>
-                        <span class="recipient-name-harmonized">${this.escapeHtml(recipient)}</span>
-                        ${task.hasEmail && task.needsReply ? '<span class="reply-indicator-harmonized">• Réponse requise</span>' : ''}
+                    <div class="status-indicator status-${task.status}" title="Statut: ${task.status}">
+                        ${statusIcon}
                     </div>
                 </div>
                 
-                <!-- Actions rapides harmonisées -->
-                <div class="task-actions-harmonized">
-                    ${this.renderHarmonizedActions(task)}
+                <div class="task-content-condensed">
+                    <div class="task-header-line">
+                        <span class="task-title-large">${this.escapeHtml(task.title)}</span>
+                        <div class="task-meta-right">
+                            <span class="client-badge">${clientInfo}</span>
+                            ${dueDateInfo.html}
+                            <span class="task-date-large">${this.formatRelativeDate(task.createdAt)}</span>
+                        </div>
+                    </div>
+                    
+                    ${task.hasEmail ? `
+                        <div class="task-email-line">
+                            <i class="fas fa-envelope"></i>
+                            <span class="email-from">${this.escapeHtml(task.emailFromName || task.emailFrom || 'Email')}</span>
+                            ${task.needsReply || showReplyButton ? 
+                                '<span class="reply-needed">📧 Réponse requise</span>' : ''
+                            }
+                            ${hasAiSuggestions ? 
+                                '<span class="has-ai-suggestions">🤖 Suggestions IA</span>' : ''
+                            }
+                            ${task.aiRepliesGenerated ? 
+                                '<span class="ai-generated-badge">✨ IA</span>' : ''
+                            }
+                            ${task.tags && task.tags.length > 0 ? `
+                                <div class="task-tags-line">
+                                    <i class="fas fa-tags"></i>
+                                    ${task.tags.slice(0, 3).map(tag => `
+                                        <span class="task-tag" onclick="event.stopPropagation(); window.tasksView.filterByTag('${tag}')">#${tag}</span>
+                                    `).join('')}
+                                    ${task.tags.length > 3 ? `<span class="tags-more">+${task.tags.length - 3}</span>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    ${showReplyButton ? `
+                        <div class="task-reply-section">
+                            <button class="reply-to-email-btn" 
+                                    onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
+                                    title="${hasAiSuggestions ? 'Répondre avec suggestions IA' : 'Répondre à l\'email'}">
+                                <i class="fas fa-reply"></i>
+                                <span>Répondre au mail</span>
+                                ${hasAiSuggestions ? '<i class="fas fa-robot ai-icon"></i>' : ''}
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="task-actions-condensed">
+                    ${this.renderQuickActions(task)}
                 </div>
             </div>
         `;
     }
 
-    renderHarmonizedActions(task) {
+    renderQuickActions(task, minimal = false) {
         const actions = [];
         
-        // Bouton principal selon l'état
         if (task.status !== 'completed') {
             actions.push(`
-                <button class="action-btn-harmonized complete" 
+                <button class="action-btn-modern complete" 
                         onclick="event.stopPropagation(); window.tasksView.markComplete('${task.id}')"
                         title="Marquer comme terminé">
                     <i class="fas fa-check"></i>
@@ -1448,136 +2632,124 @@ class TasksView {
             `);
         }
         
-        // Bouton répondre pour les emails
-        if (task.hasEmail && !task.emailReplied && task.status !== 'completed') {
+        // Bouton pour régénérer les suggestions IA
+        if (task.hasEmail && window.aiTaskAnalyzer?.apiKey) {
             actions.push(`
-                <button class="action-btn-harmonized reply" 
-                        onclick="event.stopPropagation(); window.tasksView.replyToEmailWithAI('${task.id}')"
-                        title="Répondre à l'email">
-                    <i class="fas fa-reply"></i>
+                <button class="action-btn-modern ai-refresh" 
+                        onclick="event.stopPropagation(); window.tasksView.regenerateAISuggestions('${task.id}')"
+                        title="Régénérer suggestions IA">
+                    <i class="fas fa-robot"></i>
                 </button>
             `);
         }
         
-        // Bouton détails
+        if (!minimal) {
+            actions.push(`
+                <button class="action-btn-modern edit" 
+                        onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
+                        title="Voir les détails">
+                    <i class="fas fa-eye"></i>
+                </button>
+            `);
+        }
+        
+        // Bouton de suppression modifié avec confirmation
         actions.push(`
-            <button class="action-btn-harmonized details" 
-                    onclick="event.stopPropagation(); window.tasksView.showTaskDetails('${task.id}')"
-                    title="Voir les détails">
-                <i class="fas fa-eye"></i>
+            <button class="action-btn-modern delete-btn" 
+                    onclick="event.stopPropagation(); window.tasksView.confirmDeleteTask('${task.id}')"
+                    title="Supprimer cette tâche"
+                    data-task-title="${this.escapeHtml(task.title)}">
+                <i class="fas fa-trash-alt"></i>
             </button>
         `);
         
         return actions.join('');
     }
 
-    // NOUVELLES FONCTIONS UTILITAIRES POUR L'AFFICHAGE ÉPURÉ
-    getTaskTypeDisplay(task) {
-        if (task.hasEmail) {
-            return { 
-                icon: '📧', 
-                label: 'Email' 
-            };
+    // NOUVELLE MÉTHODE POUR CONFIRMATION DE SUPPRESSION
+    confirmDeleteTask(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task) return;
+
+        const modalHTML = `
+            <div id="deleteConfirmModal" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 500px; width: 100%; 
+                           box-shadow: 0 10px 40px rgba(0,0,0,0.3); border: 1px solid #e5e7eb;">
+                    <div style="padding: 24px 24px 16px 24px; text-align: center;">
+                        <div style="width: 64px; height: 64px; background: #fef2f2; border-radius: 50%; 
+                                   display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 28px; color: #dc2626;"></i>
+                        </div>
+                        <h3 style="margin: 0 0 8px 0; font-size: 20px; color: #1f2937;">Confirmer la suppression</h3>
+                        <p style="margin: 0 0 16px 0; color: #6b7280; line-height: 1.5;">
+                            Êtes-vous sûr de vouloir supprimer cette tâche ?
+                        </p>
+                        <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 16px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">
+                                ${this.escapeHtml(task.title)}
+                            </div>
+                            ${task.hasEmail ? `
+                                <div style="font-size: 14px; color: #6b7280;">
+                                    <i class="fas fa-envelope"></i> Email de ${task.emailFromName || task.emailFrom}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <p style="margin: 0; font-size: 14px; color: #dc2626; font-weight: 500;">
+                            ⚠️ Cette action est irréversible
+                        </p>
+                    </div>
+                    <div style="padding: 16px 24px 24px 24px; display: flex; justify-content: center; gap: 12px;">
+                        <button onclick="document.getElementById('deleteConfirmModal').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 10px 20px; background: #f3f4f6; border: 1px solid #d1d5db; 
+                                       border-radius: 8px; cursor: pointer; font-weight: 500; color: #374151;">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button onclick="window.tasksView.executeDelete('${task.id}'); document.getElementById('deleteConfirmModal').remove();"
+                                style="padding: 10px 20px; background: #dc2626; color: white; border: none; 
+                                       border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            <i class="fas fa-trash-alt"></i> Supprimer définitivement
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    executeDelete(taskId) {
+        window.taskManager.deleteTask(taskId);
+        this.selectedTasks.delete(taskId);
+        document.body.style.overflow = 'auto';
+        this.showToast('Tâche supprimée définitivement', 'success');
+    }
+
+    // MÉTHODE POUR FILTRER PAR TAG
+    filterByTag(tag) {
+        this.currentFilters.tag = tag;
+        this.showAdvancedFilters = true;
+        
+        // Mettre à jour le select
+        const tagFilter = document.getElementById('tagFilter');
+        if (tagFilter) {
+            tagFilter.value = tag;
         }
         
-        switch (task.category) {
-            case 'meeting':
-                return { icon: '🗓️', label: 'Réunion' };
-            case 'call':
-                return { icon: '📞', label: 'Appel' };
-            case 'document':
-                return { icon: '📄', label: 'Document' };
-            case 'project':
-                return { icon: '🎯', label: 'Projet' };
-            default:
-                return { icon: '✓', label: task.type || 'Tâche' };
-        }
-    }
-
-    getPriorityColor(priority) {
-        const colors = {
-            urgent: '#ef4444',   // Rouge vif
-            high: '#f97316',     // Orange
-            medium: '#3b82f6',   // Bleu
-            low: '#10b981'       // Vert
-        };
-        return colors[priority] || colors.medium;
-    }
-
-    formatDueDateSimple(dateString) {
-        if (!dateString) {
-            return { html: '<span class="no-deadline-harmonized">Pas d\'échéance</span>', text: '' };
-        }
-        
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-        
-        let className = 'deadline-normal-harmonized';
-        let text = '';
-        let bgColor = '#f3f4f6';
-        let textColor = '#6b7280';
-        
-        if (diffDays < 0) {
-            className = 'deadline-overdue-harmonized';
-            text = `En retard (${Math.abs(diffDays)}j)`;
-            bgColor = '#fef2f2';
-            textColor = '#dc2626';
-        } else if (diffDays === 0) {
-            className = 'deadline-today-harmonized';
-            text = 'Aujourd\'hui';
-            bgColor = '#fef3c7';
-            textColor = '#d97706';
-        } else if (diffDays === 1) {
-            className = 'deadline-tomorrow-harmonized';
-            text = 'Demain';
-            bgColor = '#fef3c7';
-            textColor = '#d97706';
-        } else if (diffDays <= 7) {
-            className = 'deadline-week-harmonized';
-            text = `${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-            bgColor = '#eff6ff';
-            textColor = '#2563eb';
-        } else {
-            text = date.toLocaleDateString('fr-FR', { 
-                day: 'numeric', 
-                month: 'short',
-                year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-            });
-        }
-        
-        return {
-            html: `<span class="deadline-badge-harmonized ${className}" style="background-color: ${bgColor}; color: ${textColor};">
-                📅 ${text}
-            </span>`,
-            text: text
-        };
-    }
-
-    extractNameFromEmail(email) {
-        if (!email) return null;
-        
-        // Extraire le nom avant @ et le formatter
-        const namePart = email.split('@')[0];
-        if (!namePart) return null;
-        
-        // Remplacer points et underscores par espaces, capitaliser
-        return namePart
-            .replace(/[._-]/g, ' ')
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
-    }
-
-    // MÉTHODES EXISTANTES ADAPTÉES
-    handleTaskClick(event, taskId) {
-        this.showTaskDetails(taskId);
-    }
-
-    changeViewMode(mode) {
-        this.currentViewMode = mode;
         this.refreshView();
-        console.log('[TasksView] View mode changed to:', mode);
+        this.showToast(`Filtré par tag: #${tag}`, 'info');
+    }
+
+    // Event handlers et interactions IDENTIQUES À PAGEMANAGER
+    handleTaskClick(event, taskId) {
+        if (this.currentViewMode === 'condensed') {
+            this.showTaskDetails(taskId);
+        } else {
+            this.toggleTaskSelection(taskId);
+        }
     }
 
     quickFilter(filterId) {
@@ -1659,10 +2831,11 @@ class TasksView {
         document.body.style.overflow = 'hidden';
     }
 
+    // CONTENU DES DÉTAILS AVEC CONTENU EMAIL COMPLET ET SUGGESTIONS DE RÉPONSE
     buildTaskDetailsContent(task) {
         const priorityIcon = this.getPriorityIcon(task.priority);
         const statusLabel = this.getStatusLabel(task.status);
-        const dueDateInfo = this.formatDueDateSimple(task.dueDate);
+        const dueDateInfo = this.formatDueDate(task.dueDate);
         
         return `
             <div class="task-details-content">
@@ -1759,28 +2932,31 @@ class TasksView {
 
                 ${task.suggestedReplies && task.suggestedReplies.length > 0 ? `
                     <div class="details-section suggested-replies-section">
-                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse</h3>
+                        <h3><i class="fas fa-reply-all"></i> Suggestions de Réponse Personnalisées</h3>
                         <div class="suggested-replies-container">
-                            ${task.suggestedReplies.slice(0, 2).map((reply, idx) => `
-                                <div class="suggested-reply-card-compact">
-                                    <div class="reply-header-compact">
-                                        <span class="reply-tone-badge ${reply.tone}">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="suggested-reply-card">
+                                    <div class="reply-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
                                             ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
-                                        </span>
-                                        <button class="use-reply-btn-compact" onclick="window.tasksView.useReply('${task.id}', ${idx})">
-                                            <i class="fas fa-paper-plane"></i> Utiliser
+                                        </div>
+                                        <button class="copy-reply-btn" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${task.id}')">
+                                            <i class="fas fa-copy"></i> Copier
                                         </button>
                                     </div>
-                                    <div class="reply-preview">
-                                        ${this.escapeHtml(reply.content.substring(0, 150))}${reply.content.length > 150 ? '...' : ''}
+                                    <div class="reply-subject">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                    <div class="reply-actions">
+                                        <button class="use-reply-btn" onclick="window.tasksView.useReply('${task.id}', ${idx})">
+                                            <i class="fas fa-paper-plane"></i> Utiliser cette réponse
+                                        </button>
                                     </div>
                                 </div>
                             `).join('')}
-                            ${task.suggestedReplies.length > 2 ? `
-                                <button class="show-all-replies-btn" onclick="window.tasksView.showSuggestedReplies('${task.id}')">
-                                    Voir toutes les suggestions (${task.suggestedReplies.length})
-                                </button>
-                            ` : ''}
                         </div>
                     </div>
                 ` : ''}
@@ -1818,7 +2994,168 @@ class TasksView {
         `;
     }
 
-    // MÉTHODES UTILITAIRES CONSERVÉES
+    // NOUVELLE MÉTHODE POUR GÉRER LES ONGLETS EMAIL
+    switchEmailTab(tabType, taskId) {
+        // Gérer les onglets
+        const tabs = document.querySelectorAll('.tab-btn');
+        tabs.forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Gérer les contenus
+        const htmlView = document.getElementById(`email-html-${taskId}`);
+        const textView = document.getElementById(`email-text-${taskId}`);
+        
+        if (tabType === 'html') {
+            htmlView.style.display = 'block';
+            htmlView.classList.add('active');
+            textView.style.display = 'none';
+            textView.classList.remove('active');
+        } else {
+            htmlView.style.display = 'none';
+            htmlView.classList.remove('active');
+            textView.style.display = 'block';
+            textView.classList.add('active');
+        }
+    }
+
+    // NOUVELLE MÉTHODE POUR AFFICHER LES SUGGESTIONS DE RÉPONSE
+    showSuggestedReplies(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
+
+        const uniqueId = 'replies_modal_' + Date.now();
+        
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
+                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 20px;"><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <div class="ai-suggestions-info">
+                            <div class="ai-badge">
+                                <i class="fas fa-robot"></i>
+                                <span>Suggestions générées par Claude AI</span>
+                            </div>
+                            <p>Ces réponses ont été personnalisées selon le contexte de l'email de <strong>${task.emailFromName || 'l\'expéditeur'}</strong></p>
+                            ${task.aiRepliesGeneratedAt ? `
+                                <p class="ai-generation-time">
+                                    <i class="fas fa-clock"></i>
+                                    Générées le ${new Date(task.aiRepliesGeneratedAt).toLocaleString('fr-FR')}
+                                </p>
+                            ` : ''}
+                            ${window.aiTaskAnalyzer?.apiKey ? `
+                                <div class="ai-actions">
+                                    <button class="btn-sm btn-secondary" onclick="window.tasksView.regenerateAISuggestions('${taskId}')">
+                                        <i class="fas fa-sync"></i> Régénérer
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="replies-list">
+                            ${task.suggestedReplies.map((reply, idx) => `
+                                <div class="reply-suggestion-card">
+                                    <div class="reply-card-header">
+                                        <div class="reply-tone-badge ${reply.tone}">
+                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
+                                        </div>
+                                        <div class="reply-card-actions">
+                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
+                                                <i class="fas fa-copy"></i> Copier
+                                            </button>
+                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
+                                                <i class="fas fa-paper-plane"></i> Utiliser
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="reply-subject-line">
+                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
+                                    </div>
+                                    <div class="reply-content-preview">
+                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    // NOUVELLE MÉTHODE POUR COPIER UNE RÉPONSE
+    async copyReplyToClipboard(replyIndex, taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
+        
+        try {
+            await navigator.clipboard.writeText(text);
+            this.showToast('Réponse copiée dans le presse-papiers', 'success');
+        } catch (error) {
+            console.error('Error copying to clipboard:', error);
+            this.showToast('Erreur lors de la copie', 'error');
+        }
+    }
+
+    // NOUVELLE MÉTHODE POUR UTILISER UNE RÉPONSE
+    useReply(taskId, replyIndex) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
+
+        const reply = task.suggestedReplies[replyIndex];
+        const subject = reply.subject;
+        const body = reply.content;
+        const to = task.emailFrom;
+        
+        // Créer le lien mailto
+        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // Ouvrir le client email
+        window.open(mailtoLink);
+        
+        // Marquer comme répondu
+        window.taskManager.updateTask(taskId, { 
+            emailReplied: true,
+            status: task.status === 'todo' ? 'in-progress' : task.status
+        });
+        
+        this.showToast('Email de réponse ouvert dans votre client email', 'success');
+        
+        // Fermer les modals
+        document.querySelectorAll('[id^="replies_modal_"], [id^="task_details_modal_"]').forEach(el => el.remove());
+        document.body.style.overflow = 'auto';
+    }
+
+    // NOUVELLE MÉTHODE POUR FORMATER LE CONTENU EMAIL
+    formatEmailContent(content) {
+        if (!content) return '<p>Contenu non disponible</p>';
+        
+        // Préserver la structure de l'email
+        const formattedContent = content
+            .replace(/\n/g, '<br>')
+            .replace(/Email de:/g, '<strong>Email de:</strong>')
+            .replace(/Date:/g, '<strong>Date:</strong>')
+            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
+            
+        return `<div class="email-original-content">${formattedContent}</div>`;
+    }
+
+    // Utility methods IDENTIQUES À PAGEMANAGER
     getPriorityIcon(priority) {
         const icons = { urgent: '🚨', high: '⚡', medium: '📌', low: '📄' };
         return icons[priority] || '📌';
@@ -1861,6 +3198,54 @@ class TasksView {
         return labels[tone] || 'Neutre';
     }
 
+    formatDueDate(dateString) {
+        if (!dateString) return { html: '', text: '' };
+        
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffDays = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+        
+        let className = 'due-date-normal';
+        let text = '';
+        
+        if (diffDays < 0) {
+            className = 'due-date-overdue';
+            text = `En retard de ${Math.abs(diffDays)}j`;
+        } else if (diffDays === 0) {
+            className = 'due-date-today';
+            text = 'Aujourd\'hui';
+        } else if (diffDays === 1) {
+            className = 'due-date-tomorrow';
+            text = 'Demain';
+        } else if (diffDays <= 7) {
+            className = 'due-date-soon';
+            text = `${diffDays}j`;
+        } else {
+            text = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+        
+        return {
+            html: `<span class="due-date-badge ${className}">📅 ${text}</span>`,
+            text: text
+        };
+    }
+
+    formatRelativeDate(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 3600000) {
+            return `${Math.floor(diff / 60000)}m`;
+        } else if (diff < 86400000) {
+            return `${Math.floor(diff / 3600000)}h`;
+        } else if (diff < 604800000) {
+            return `${Math.floor(diff / 86400000)}j`;
+        } else {
+            return date.toLocaleDateString('fr-FR');
+        }
+    }
+
     formatDescription(description) {
         if (!description) return '';
         
@@ -1898,143 +3283,84 @@ class TasksView {
         }
     }
 
-    formatEmailContent(content) {
-        if (!content) return '<p>Contenu non disponible</p>';
-        
-        const formattedContent = content
-            .replace(/\n/g, '<br>')
-            .replace(/Email de:/g, '<strong>Email de:</strong>')
-            .replace(/Date:/g, '<strong>Date:</strong>')
-            .replace(/Sujet:/g, '<strong>Sujet:</strong>');
-            
-        return `<div class="email-original-content">${formattedContent}</div>`;
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
-    switchEmailTab(tabType, taskId) {
-        const tabs = document.querySelectorAll('.tab-btn');
-        tabs.forEach(tab => tab.classList.remove('active'));
-        event.target.classList.add('active');
-        
-        const htmlView = document.getElementById(`email-html-${taskId}`);
-        const textView = document.getElementById(`email-text-${taskId}`);
-        
-        if (tabType === 'html') {
-            htmlView.style.display = 'block';
-            htmlView.classList.add('active');
-            textView.style.display = 'none';
-            textView.classList.remove('active');
-        } else {
-            htmlView.style.display = 'none';
-            htmlView.classList.remove('active');
-            textView.style.display = 'block';
-            textView.classList.add('active');
+    isFilterActive(filterId) {
+        switch (filterId) {
+            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
+            case 'todo': return this.currentFilters.status === 'todo';
+            case 'in-progress': return this.currentFilters.status === 'in-progress';
+            case 'completed': return this.currentFilters.status === 'completed';
+            case 'overdue': return this.currentFilters.overdue;
+            case 'needsReply': return this.currentFilters.needsReply;
+            default: return false;
         }
     }
 
-    showSuggestedReplies(taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || task.suggestedReplies.length === 0) return;
-
-        const uniqueId = 'replies_modal_' + Date.now();
-        
-        const modalHTML = `
-            <div id="${uniqueId}" 
-                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
-                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
-                        padding: 20px; backdrop-filter: blur(4px);">
-                <div style="background: white; border-radius: 12px; max-width: 800px; width: 100%; 
-                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 5px 30px rgba(0,0,0,0.3);">
-                    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
-                        <h2 style="margin: 0; font-size: 20px;"><i class="fas fa-reply-all"></i> Suggestions de Réponse</h2>
-                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
-                                style="background: none; border: none; font-size: 20px; cursor: pointer;">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
-                        <div class="replies-list">
-                            ${task.suggestedReplies.map((reply, idx) => `
-                                <div class="reply-suggestion-card">
-                                    <div class="reply-card-header">
-                                        <div class="reply-tone-badge ${reply.tone}">
-                                            ${this.getReplyToneIcon(reply.tone)} ${this.getReplyToneLabel(reply.tone)}
-                                        </div>
-                                        <div class="reply-card-actions">
-                                            <button class="btn-sm btn-secondary" onclick="window.tasksView.copyReplyToClipboard(${idx}, '${taskId}')">
-                                                <i class="fas fa-copy"></i> Copier
-                                            </button>
-                                            <button class="btn-sm btn-primary" onclick="window.tasksView.useReply('${taskId}', ${idx})">
-                                                <i class="fas fa-paper-plane"></i> Utiliser
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="reply-subject-line">
-                                        <strong>Sujet:</strong> ${this.escapeHtml(reply.subject)}
-                                    </div>
-                                    <div class="reply-content-preview">
-                                        ${this.escapeHtml(reply.content).replace(/\n/g, '<br>')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
+    hasActiveFilters() {
+        return this.currentFilters.status !== 'all' ||
+               this.currentFilters.priority !== 'all' ||
+               this.currentFilters.category !== 'all' ||
+               this.currentFilters.client !== 'all' ||
+               this.currentFilters.tag !== 'all' ||
+               this.currentFilters.dateRange !== 'all' ||
+               this.currentFilters.search !== '' ||
+               this.currentFilters.overdue ||
+               this.currentFilters.needsReply;
     }
 
-    async copyReplyToClipboard(replyIndex, taskId) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
-
-        const reply = task.suggestedReplies[replyIndex];
-        const text = `Sujet: ${reply.subject}\n\n${reply.content}`;
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
         
-        try {
-            await navigator.clipboard.writeText(text);
-            this.showToast('Réponse copiée dans le presse-papiers', 'success');
-        } catch (error) {
-            console.error('Error copying to clipboard:', error);
-            this.showToast('Erreur lors de la copie', 'error');
-        }
-    }
-
-    useReply(taskId, replyIndex) {
-        const task = window.taskManager.getTask(taskId);
-        if (!task || !task.suggestedReplies || !task.suggestedReplies[replyIndex]) return;
-
-        const reply = task.suggestedReplies[replyIndex];
-        const subject = reply.subject;
-        const body = reply.content;
-        const to = task.emailFrom;
-        
-        const mailtoLink = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        
-        window.open(mailtoLink);
-        
-        window.taskManager.updateTask(taskId, { 
-            emailReplied: true,
-            status: task.status === 'todo' ? 'in-progress' : task.status
+        document.querySelectorAll('.btn-large[data-mode]').forEach(btn => {
+            btn.classList.remove('active');
         });
+        const activeBtn = document.querySelector(`[data-mode="${mode}"]`);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
         
-        this.showToast('Email de réponse ouvert dans votre client email', 'success');
-        
-        document.querySelectorAll('[id^="replies_modal_"], [id^="task_details_modal_"]').forEach(el => el.remove());
-        document.body.style.overflow = 'auto';
+        this.refreshView();
     }
 
+    toggleTaskSelection(taskId) {
+        if (this.selectedTasks.has(taskId)) {
+            this.selectedTasks.delete(taskId);
+        } else {
+            this.selectedTasks.add(taskId);
+        }
+        
+        this.updateSelectionUI();
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+    }
+
+    clearSelection() {
+        this.selectedTasks.clear();
+        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
+    }
+
+    markComplete(taskId) {
+        window.taskManager.updateTask(taskId, { status: 'completed' });
+        this.showToast('Tâche marquée comme terminée', 'success');
+    }
+
+    // NOUVELLE MÉTHODE POUR RÉPONDRE AVEC IA
     async replyToEmailWithAI(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task || !task.hasEmail) return;
         
+        // Si on a déjà des suggestions IA, les afficher
         if (task.suggestedReplies && task.suggestedReplies.length > 0) {
             this.showSuggestedReplies(taskId);
             return;
         }
         
+        // Sinon, générer des suggestions en temps réel
         try {
             this.showToast('Génération de suggestions IA...', 'info');
             
@@ -2048,6 +3374,7 @@ class TasksView {
                 task
             );
             
+            // Mettre à jour la tâche avec les nouvelles suggestions
             if (newSuggestions && newSuggestions.length > 0) {
                 window.taskManager.updateTask(taskId, { 
                     suggestedReplies: newSuggestions,
@@ -2070,6 +3397,44 @@ class TasksView {
         }
     }
 
+    // MÉTHODE POUR RÉGÉNÉRER LES SUGGESTIONS IA
+    async regenerateAISuggestions(taskId) {
+        const task = window.taskManager.getTask(taskId);
+        if (!task || !task.hasEmail) return;
+        
+        try {
+            this.showToast('Régénération des suggestions IA...', 'info');
+            
+            const newSuggestions = await window.taskManager.generateIntelligentReplySuggestions(
+                { 
+                    from: { emailAddress: { name: task.emailFromName, address: task.emailFrom } },
+                    subject: task.emailSubject,
+                    body: { content: task.emailContent },
+                    bodyPreview: task.emailContent
+                }, 
+                task
+            );
+            
+            if (newSuggestions && newSuggestions.length > 0) {
+                window.taskManager.updateTask(taskId, { 
+                    suggestedReplies: newSuggestions,
+                    aiRepliesGenerated: true,
+                    aiRepliesGeneratedAt: new Date().toISOString()
+                });
+                
+                this.showToast('Nouvelles suggestions IA générées !', 'success');
+                this.refreshView();
+            } else {
+                this.showToast('Impossible de régénérer les suggestions', 'warning');
+            }
+            
+        } catch (error) {
+            console.error('[TasksView] Error regenerating AI suggestions:', error);
+            this.showToast('Erreur lors de la régénération', 'error');
+        }
+    }
+
+    // MÉTHODE DE RÉPONSE BASIQUE EN FALLBACK
     replyToEmailBasic(taskId) {
         const task = window.taskManager.getTask(taskId);
         if (!task || !task.hasEmail) return;
@@ -2085,39 +3450,18 @@ class TasksView {
         this.showToast('Email de réponse ouvert', 'success');
     }
 
-    markComplete(taskId) {
-        window.taskManager.updateTask(taskId, { status: 'completed' });
-        this.showToast('Tâche marquée comme terminée', 'success');
+    replyToEmail(taskId) {
+        // Rediriger vers la méthode avec IA
+        this.replyToEmailWithAI(taskId);
     }
 
-    toggleTaskSelection(taskId) {
-        if (this.selectedTasks.has(taskId)) {
-            this.selectedTasks.delete(taskId);
-        } else {
-            this.selectedTasks.add(taskId);
-        }
-        
-        this.updateSelectionUI();
-        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
-    }
-
-    clearSelection() {
-        this.selectedTasks.clear();
-        this.render(document.querySelector('.tasks-page-modern')?.parentElement);
-    }
-
-    updateSelectionUI() {
-        document.querySelectorAll('[data-task-id]').forEach(item => {
-            const taskId = item.dataset.taskId;
-            const isSelected = this.selectedTasks.has(taskId);
-            
-            item.classList.toggle('selected', isSelected);
-            const checkbox = item.querySelector('input[type="checkbox"]');
-            if (checkbox) checkbox.checked = isSelected;
-        });
+    deleteTask(taskId) {
+        // Rediriger vers la confirmation
+        this.confirmDeleteTask(taskId);
     }
 
     showCreateModal() {
+        // Implementation for creating new tasks
         const uniqueId = 'create_task_modal_' + Date.now();
         
         const modalHTML = `
@@ -2183,6 +3527,7 @@ class TasksView {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
         
+        // Focus sur le titre
         setTimeout(() => {
             const titleInput = document.getElementById('new-task-title');
             if (titleInput) titleInput.focus();
@@ -2208,7 +3553,6 @@ class TasksView {
             dueDate: dueDate || null,
             client: client || 'Interne',
             category: 'work',
-            type: 'tâche',
             method: 'manual'
         };
 
@@ -2223,6 +3567,127 @@ class TasksView {
             console.error('[TasksView] Error creating task:', error);
             this.showToast('Erreur lors de la création', 'error');
         }
+    }
+
+    clearSearch() {
+        this.currentFilters.search = '';
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        this.refreshView();
+    }
+
+    // NOUVELLES MÉTHODES POUR LES FILTRES AVANCÉS
+    toggleAdvancedFilters() {
+        this.showAdvancedFilters = !this.showAdvancedFilters;
+        
+        const panel = document.getElementById('advancedFiltersPanel');
+        const toggle = document.querySelector('.advanced-filters-toggle');
+        
+        if (panel) {
+            panel.classList.toggle('show', this.showAdvancedFilters);
+        }
+        
+        if (toggle) {
+            toggle.classList.toggle('active', this.showAdvancedFilters);
+            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
+            if (chevron) {
+                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
+                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
+            }
+        }
+    }
+
+    buildClientFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const clients = new Set();
+        
+        tasks.forEach(task => {
+            if (task.client) {
+                clients.add(task.client);
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
+        
+        Array.from(clients).sort().forEach(client => {
+            const count = tasks.filter(t => t.client === client).length;
+            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+    buildTagFilterOptions() {
+        const tasks = window.taskManager.getAllTasks();
+        const tags = new Set();
+        
+        tasks.forEach(task => {
+            if (task.tags && Array.isArray(task.tags)) {
+                task.tags.forEach(tag => tags.add(tag));
+            }
+        });
+        
+        let options = `<option value="all" ${this.currentFilters.tag === 'all' ? 'selected' : ''}>Tous les tags</option>`;
+        
+        Array.from(tags).sort().forEach(tag => {
+            const count = tasks.filter(t => t.tags && t.tags.includes(tag)).length;
+            options += `<option value="${tag}" ${this.currentFilters.tag === tag ? 'selected' : ''}>#${tag} (${count})</option>`;
+        });
+        
+        return options;
+    }
+
+// MÉTHODE updateFilter MISE À JOUR POUR TASKMANAGER
+updateFilter(filterType, value) {
+    this.currentFilters[filterType] = value;
+    this.refreshView();
+    console.log('[TasksView] Filter updated:', filterType, '=', value);
+}
+
+    getActiveFiltersCount() {
+        let count = 0;
+        
+        if (this.currentFilters.status !== 'all') count++;
+        if (this.currentFilters.priority !== 'all') count++;
+        if (this.currentFilters.client !== 'all') count++;
+        if (this.currentFilters.tag !== 'all') count++;
+        if (this.currentFilters.dateRange !== 'all') count++;
+        if (this.currentFilters.search !== '') count++;
+        if (this.currentFilters.overdue) count++;
+        if (this.currentFilters.needsReply) count++;
+        
+        return count;
+    }
+
+    resetAllFilters() {
+        this.currentFilters = {
+            status: 'all',
+            priority: 'all',
+            category: 'all',
+            client: 'all',
+            tag: 'all',
+            search: '',
+            sortBy: 'created',
+            dateRange: 'all',
+            overdue: false,
+            needsReply: false
+        };
+        
+        // Reset search input
+        const searchInput = document.getElementById('taskSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        // Reset all filter selects
+        document.querySelectorAll('.filter-select').forEach(select => {
+            if (select.querySelector('option[value="all"]')) {
+                select.value = 'all';
+            } else if (select.id === 'sortByFilter') {
+                select.value = 'created';
+            }
+        });
+        
+        this.refreshView();
+        this.showToast('Filtres réinitialisés', 'info');
     }
 
     bulkActions() {
@@ -2242,7 +3707,7 @@ class TasksView {
         const actionIndex = parseInt(action) - 1;
         
         switch (actionIndex) {
-            case 0:
+            case 0: // Marquer comme terminé
                 this.selectedTasks.forEach(taskId => {
                     window.taskManager.updateTask(taskId, { status: 'completed' });
                 });
@@ -2250,7 +3715,7 @@ class TasksView {
                 this.clearSelection();
                 break;
                 
-            case 1:
+            case 1: // Changer la priorité
                 const priority = prompt('Nouvelle priorité:\n1. Basse\n2. Normale\n3. Haute\n4. Urgente\n\nEntrez le numéro:');
                 const priorities = ['', 'low', 'medium', 'high', 'urgent'];
                 if (priority && priorities[parseInt(priority)]) {
@@ -2262,7 +3727,7 @@ class TasksView {
                 }
                 break;
                 
-            case 2:
+            case 2: // Supprimer
                 if (confirm(`Êtes-vous sûr de vouloir supprimer ${this.selectedTasks.size} tâche(s) ?`)) {
                     this.selectedTasks.forEach(taskId => {
                         window.taskManager.deleteTask(taskId);
@@ -2272,7 +3737,7 @@ class TasksView {
                 }
                 break;
                 
-            case 3:
+            case 3: // Exporter
                 this.exportSelectedTasks();
                 break;
         }
@@ -2307,115 +3772,15 @@ class TasksView {
         this.showToast('Export terminé', 'success');
     }
 
-    clearSearch() {
-        this.currentFilters.search = '';
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        this.refreshView();
-    }
-
-    toggleAdvancedFilters() {
-        this.showAdvancedFilters = !this.showAdvancedFilters;
-        
-        const panel = document.getElementById('advancedFiltersPanel');
-        const toggle = document.querySelector('.filters-toggle');
-        
-        if (panel) {
-            panel.classList.toggle('show', this.showAdvancedFilters);
-        }
-        
-        if (toggle) {
-            toggle.classList.toggle('active', this.showAdvancedFilters);
-            const chevron = toggle.querySelector('.fa-chevron-down, .fa-chevron-up');
-            if (chevron) {
-                chevron.classList.toggle('fa-chevron-down', !this.showAdvancedFilters);
-                chevron.classList.toggle('fa-chevron-up', this.showAdvancedFilters);
-            }
-        }
-    }
-
-    refreshTasks() {
-        this.refreshView();
-        this.showToast('Tâches actualisées', 'success');
-    }
-
-    buildClientFilterOptions() {
-        const tasks = window.taskManager.getAllTasks();
-        const clients = new Set();
-        
-        tasks.forEach(task => {
-            if (task.client) {
-                clients.add(task.client);
-            }
+    updateSelectionUI() {
+        document.querySelectorAll('[data-task-id]').forEach(item => {
+            const taskId = item.dataset.taskId;
+            const isSelected = this.selectedTasks.has(taskId);
+            
+            item.classList.toggle('selected', isSelected);
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) checkbox.checked = isSelected;
         });
-        
-        let options = `<option value="all" ${this.currentFilters.client === 'all' ? 'selected' : ''}>Tous les clients</option>`;
-        
-        Array.from(clients).sort().forEach(client => {
-            const count = tasks.filter(t => t.client === client).length;
-            options += `<option value="${client}" ${this.currentFilters.client === client ? 'selected' : ''}>${client} (${count})</option>`;
-        });
-        
-        return options;
-    }
-
-    updateFilter(filterType, value) {
-        this.currentFilters[filterType] = value;
-        this.refreshView();
-        console.log('[TasksView] Filter updated:', filterType, '=', value);
-    }
-
-    resetAllFilters() {
-        this.currentFilters = {
-            status: 'all',
-            priority: 'all',
-            category: 'all',
-            client: 'all',
-            tag: 'all',
-            search: '',
-            sortBy: 'created',
-            dateRange: 'all',
-            overdue: false,
-            needsReply: false
-        };
-        
-        const searchInput = document.getElementById('taskSearchInput');
-        if (searchInput) searchInput.value = '';
-        
-        document.querySelectorAll('.filter-select').forEach(select => {
-            if (select.querySelector('option[value="all"]')) {
-                select.value = 'all';
-            } else if (select.id === 'sortByFilter') {
-                select.value = 'created';
-            }
-        });
-        
-        this.refreshView();
-        this.showToast('Filtres réinitialisés', 'info');
-    }
-
-    isFilterActive(filterId) {
-        switch (filterId) {
-            case 'all': return this.currentFilters.status === 'all' && !this.currentFilters.overdue && !this.currentFilters.needsReply;
-            case 'todo': return this.currentFilters.status === 'todo';
-            case 'in-progress': return this.currentFilters.status === 'in-progress';
-            case 'completed': return this.currentFilters.status === 'completed';
-            case 'overdue': return this.currentFilters.overdue;
-            case 'needsReply': return this.currentFilters.needsReply;
-            default: return false;
-        }
-    }
-
-    hasActiveFilters() {
-        return this.currentFilters.status !== 'all' ||
-               this.currentFilters.priority !== 'all' ||
-               this.currentFilters.category !== 'all' ||
-               this.currentFilters.client !== 'all' ||
-               this.currentFilters.tag !== 'all' ||
-               this.currentFilters.dateRange !== 'all' ||
-               this.currentFilters.search !== '' ||
-               this.currentFilters.overdue ||
-               this.currentFilters.needsReply;
     }
 
     refreshView() {
@@ -2425,8 +3790,8 @@ class TasksView {
         }
         
         const stats = window.taskManager.getStats();
-        document.querySelectorAll('.status-filters-harmonized').forEach(container => {
-            container.innerHTML = this.buildHarmonizedStatusPills(stats);
+        document.querySelectorAll('.status-filters-large').forEach(container => {
+            container.innerHTML = this.buildLargeStatusPills(stats);
         });
     }
 
@@ -2455,1767 +3820,1282 @@ class TasksView {
         this.currentFilters.search = value.trim();
         this.refreshView();
         
-        const clearBtn = document.querySelector('.search-clear-harmonized');
+        const clearBtn = document.getElementById('searchClearBtn');
         if (clearBtn) {
             clearBtn.style.display = this.currentFilters.search ? 'flex' : 'none';
         }
     }
 
-    escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // STYLES HARMONISÉS ET UNIFORMISÉS AVEC CENTRAGE PARFAIT
-    addHarmonizedTaskStyles() {
-        if (document.getElementById('harmonizedTaskStyles')) return;
+    // STYLES IDENTIQUES À PAGEMANAGER + STYLES POUR CONTENU EMAIL ET SUGGESTIONS
+    addModernTaskStyles() {
+        // Utiliser les styles existants de PageManager s'ils sont déjà présents
+        if (document.getElementById('optimizedEmailPageStyles')) {
+            console.log('[TasksView] Using existing PageManager styles');
+            // Ajouter seulement les nouveaux styles spécifiques aux suggestions
+            this.addSuggestedRepliesStyles();
+            return;
+        }
+        
+        if (document.getElementById('modernTaskStyles')) return;
         
         const styles = document.createElement('style');
-        styles.id = 'harmonizedTaskStyles';
+        styles.id = 'modernTaskStyles';
         styles.textContent = `
-            /* ===== HARMONISATION ABSOLUE DE TOUS LES BOUTONS AVEC CENTRAGE PARFAIT ===== */
-            
-            /* Variables CSS pour cohérence parfaite */
-            :root {
-                /* TAILLES UNIFIÉES POUR TOUS LES BOUTONS */
-                --btn-height: 44px;
-                --btn-padding-horizontal: 16px;
-                --btn-padding-vertical: 0;
-                --btn-font-size: 13px;
-                --btn-border-radius: 10px;
-                --btn-font-weight: 600;
-                --btn-line-height: 1;
-                --btn-gap: 8px;
-                
-                /* MÊME HAUTEUR POUR TOUS LES PILLS */
-                --pill-height: 44px;
-                --pill-padding-horizontal: 16px;
-                --pill-padding-vertical: 0;
-                --pill-font-size: 13px;
-                --pill-border-radius: 10px;
-                
-                /* CARTES ET AUTRES ÉLÉMENTS */
-                --card-height: 88px;
-                --card-padding: 16px;
-                --card-border-radius: 12px;
-                
-                /* INPUTS HARMONISÉS */
-                --input-height: 44px;
-                --input-padding: 12px 16px;
-                --input-font-size: 13px;
-                
-                /* BOUTONS D'ACTION */
-                --action-btn-size: 36px;
-                --action-btn-font-size: 13px;
-                
-                /* ESPACEMENTS UNIFORMES */
-                --gap-tiny: 4px;
-                --gap-small: 8px;
-                --gap-medium: 12px;
-                --gap-large: 16px;
-                --gap-xl: 20px;
-                
-                /* PROPRIÉTÉS COMMUNES */
-                --border-width: 1px;
-                --transition-speed: 0.2s;
-                --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
-                --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
-                --shadow-primary: 0 4px 12px rgba(99, 102, 241, 0.25);
+            /* STYLES IDENTIQUES À PAGEMANAGER */
+            .tasks-page-modern {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #f8fafc;
+                min-height: 100vh;
+                padding: 0;
             }
             
-            /* CLASSE DE BASE POUR TOUS LES BOUTONS AVEC CENTRAGE PARFAIT */
-            .btn-base,
-            .btn-harmonized,
-            .view-mode-harmonized,
-            .status-pill-harmonized {
-                /* DIMENSIONS EXACTES */
-                height: var(--btn-height);
-                min-height: var(--btn-height);
-                max-height: var(--btn-height);
-                
-                /* PADDING UNIFORME */
-                padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
-                
-                /* TYPOGRAPHIE IDENTIQUE ET CENTRÉE */
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                line-height: var(--btn-line-height);
-                text-align: center;
-                
-                /* APPARENCE UNIFIÉE */
-                border: var(--border-width) solid transparent;
-                border-radius: var(--btn-border-radius);
+            .tasks-main-toolbar {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 4px 0 2px 0;
+                border: none;
+                margin: 0 0 4px 0;
+                min-height: 48px;
+                background: transparent;
+            }
+            
+            .toolbar-left {
+                display: flex;
+                align-items: baseline;
+                gap: 8px;
+                min-width: 160px;
+                flex-shrink: 0;
+            }
+            
+            .tasks-title {
+                margin: 0;
+                font-size: 26px;
+                font-weight: 700;
+                color: #1f2937;
+            }
+            
+            .tasks-count-large {
+                font-size: 15px;
+                color: #6b7280;
+                font-weight: 600;
+                background: #f3f4f6;
+                padding: 5px 12px;
+                border-radius: 14px;
+            }
+            
+            .toolbar-center {
+                flex: 1;
+                max-width: 450px;
+                min-width: 280px;
+            }
+            
+            .search-wrapper-large {
+                position: relative;
+                width: 100%;
+            }
+            
+            .search-input-large {
+                width: 100%;
+                padding: 14px 18px 14px 48px;
+                border: 1px solid #d1d5db;
+                border-radius: 12px;
+                font-size: 15px;
+                background: white;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            
+            .search-input-large:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+            
+            .search-icon-large {
+                position: absolute;
+                left: 18px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #9ca3af;
+                font-size: 17px;
+            }
+            
+            .search-clear-large {
+                position: absolute;
+                right: 14px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                color: #9ca3af;
                 cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                text-decoration: none;
-                white-space: nowrap;
-                box-sizing: border-box;
-                
-                /* DISPOSITION FLEX UNIFIÉE AVEC CENTRAGE PARFAIT */
-                display: inline-flex;
+                padding: 5px;
+                border-radius: 5px;
+                display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: var(--btn-gap);
-                
-                /* COMPORTEMENT */
-                user-select: none;
-                outline: none;
-                position: relative;
-                
-                /* CENTRAGE VERTICAL ET HORIZONTAL PARFAIT */
-                vertical-align: middle;
+                transition: all 0.2s ease;
             }
             
-            /* STYLES SPÉCIFIQUES POUR CHAQUE TYPE DE BOUTON */
-            .btn-harmonized {
-                background: white;
-                color: #374151;
-                border-color: #e5e7eb;
-                box-shadow: var(--shadow-base);
-                min-width: fit-content;
-            }
-            
-            .btn-harmonized:hover {
-                background: #f9fafb;
-                border-color: #6366f1;
-                color: #1f2937;
-                transform: translateY(-1px);
-                box-shadow: var(--shadow-hover);
-            }
-            
-            .btn-harmonized:active {
-                transform: translateY(0);
-                box-shadow: var(--shadow-base);
-            }
-            
-            /* BOUTON PRIMARY - MÊME TAILLE */
-            .btn-harmonized.btn-primary {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border-color: transparent;
-                box-shadow: var(--shadow-primary);
-            }
-            
-            .btn-harmonized.btn-primary:hover {
-                background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
-            }
-            
-            /* BOUTON SECONDARY - MÊME TAILLE */
-            .btn-harmonized.btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-            
-            .btn-harmonized.btn-secondary:hover {
-                background: #f1f5f9;
-                color: #334155;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
-            }
-            
-            /* BOUTON CLEAR SELECTION - CARRÉ PARFAIT CENTRÉ */
-            .btn-harmonized.btn-clear-selection {
+            .search-clear-large:hover {
                 background: #f3f4f6;
                 color: #6b7280;
-                border: none;
-                width: var(--btn-height);
-                height: var(--btn-height);
-                min-width: var(--btn-height);
-                max-width: var(--btn-height);
-                padding: 0;
-                border-radius: var(--btn-border-radius);
+            }
+            
+            .toolbar-center-right {
+                flex-shrink: 0;
+            }
+            
+            .view-modes-large {
+                display: flex;
+                gap: 5px;
+                background: #f3f4f6;
+                padding: 5px;
+                border-radius: 10px;
+            }
+            
+            .toolbar-right {
                 display: flex;
                 align-items: center;
-                justify-content: center;
+                gap: 10px;
+                flex-shrink: 0;
             }
             
-            .btn-harmonized.btn-clear-selection:hover {
-                background: #e5e7eb;
-                color: #374151;
-                transform: translateY(-1px);
-            }
-            
-            /* BOUTON FILTERS TOGGLE */
-            .btn-harmonized.filters-toggle {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
-            }
-            
-            .btn-harmonized.filters-toggle:hover {
-                background: #f1f5f9;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
-            }
-            
-            .btn-harmonized.filters-toggle.active {
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                color: white;
-                border-color: transparent;
-                box-shadow: var(--shadow-primary);
-            }
-            
-            /* MODES DE VUE - EXACTEMENT LA MÊME TAILLE ET PARFAITEMENT CENTRÉS */
-            .view-mode-harmonized {
-                background: transparent;
-                color: #6b7280;
-                border-color: transparent;
-                min-width: 120px;
-                flex: 1;
-                text-align: center;
+            .selection-info-large {
                 display: flex;
                 align-items: center;
-                justify-content: center;
-            }
-            
-            .view-mode-harmonized:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
-                transform: translateY(-1px);
-            }
-            
-            .view-mode-harmonized.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: var(--shadow-base);
-                font-weight: 700;
-                transform: translateY(-1px);
-            }
-            
-            /* STATUS PILLS - EXACTEMENT LA MÊME TAILLE ET CENTRÉS */
-            .status-pill-harmonized {
-                background: white;
-                color: #374151;
-                border-color: #e5e7eb;
-                box-shadow: var(--shadow-base);
-                min-width: fit-content;
-                text-align: center;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .status-pill-harmonized:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-            }
-            
-            .status-pill-harmonized.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
-                transform: translateY(-1px);
-            }
-            
-            /* CONTAINER DES MODES DE VUE AVEC CENTRAGE */
-            .view-modes-harmonized {
-                display: flex;
-                background: #f8fafc;
-                border: var(--border-width) solid #e2e8f0;
-                border-radius: var(--btn-border-radius);
-                padding: var(--gap-tiny);
-                gap: 2px;
-                height: var(--btn-height);
-                box-sizing: border-box;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            /* INFO DE SÉLECTION PARFAITEMENT CENTRÉE */
-            .selection-info-harmonized {
-                height: var(--btn-height);
-                padding: var(--btn-padding-vertical) var(--btn-padding-horizontal);
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border: var(--border-width) solid #93c5fd;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
+                gap: 10px;
+                padding: 10px 14px;
+                background: #eff6ff;
+                border: 1px solid #bfdbfe;
+                border-radius: 10px;
+                font-size: 14px;
                 color: #1e40af;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-                box-sizing: border-box;
-                white-space: nowrap;
+            }
+            
+            .selection-count-large {
+                font-weight: 600;
+            }
+            
+            .btn-large {
                 display: inline-flex;
                 align-items: center;
-                justify-content: center;
-                gap: var(--btn-gap);
-                text-align: center;
-            }
-            
-            /* BADGE DE COMPTAGE CENTRÉ */
-            .count-badge-harmonized {
-                position: absolute;
-                top: -8px;
-                right: -8px;
-                background: #ef4444;
-                color: white;
-                font-size: 10px;
-                font-weight: 700;
-                padding: 3px 6px;
+                gap: 8px;
+                padding: 12px 20px;
+                border: 1px solid #d1d5db;
                 border-radius: 10px;
-                min-width: 18px;
-                text-align: center;
-                border: 2px solid white;
-                line-height: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            /* ICÔNES ET TEXTE DANS LES PILLS AVEC CENTRAGE PARFAIT */
-            .pill-icon-harmonized {
-                font-size: var(--btn-font-size);
-                line-height: 1;
-                flex-shrink: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .pill-text-harmonized {
-                font-weight: var(--btn-font-weight);
-                line-height: 1;
-                flex-shrink: 0;
-                text-align: center;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .pill-count-harmonized {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 4px 8px;
-                border-radius: 8px;
-                font-size: 11px;
-                font-weight: 700;
-                min-width: 20px;
-                text-align: center;
-                line-height: 1;
-                flex-shrink: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .status-pill-harmonized.active .pill-count-harmonized {
-                background: rgba(255, 255, 255, 0.25);
-            }
-            
-            .selection-count-harmonized {
-                font-weight: 700;
-                flex-shrink: 0;
-                text-align: center;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            /* Interface principale */
-            .tasks-page-modern {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-                min-height: 100vh;
-                padding: var(--gap-large);
-                font-size: var(--btn-font-size);
-            }
-            
-            /* ===== BARRE DE CONTRÔLES AVEC ALIGNEMENT PARFAIT ===== */
-            .controls-bar-harmonized {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: var(--gap-large);
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                padding: var(--gap-medium);
-                margin-bottom: var(--gap-medium);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-                min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
-                box-sizing: border-box;
-            }
-            
-            /* SECTION RECHERCHE - HAUTEUR EXACTE ET CENTRÉE */
-            .search-section-harmonized {
-                flex: 0 0 300px;
-                height: var(--btn-height);
-                display: flex;
-                align-items: center;
-            }
-            
-            .search-box-harmonized {
-                position: relative;
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
-            }
-            
-            .search-input-harmonized {
-                width: 100%;
-                height: var(--btn-height);
-                padding: 0 var(--gap-medium) 0 44px;
-                border: var(--border-width) solid #d1d5db;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                background: #f9fafb;
-                transition: all var(--transition-speed) ease;
-                box-sizing: border-box;
-                line-height: var(--btn-line-height);
-                outline: none;
-                text-align: left;
-                vertical-align: middle;
-            }
-            
-            .search-input-harmonized:focus {
-                border-color: #3b82f6;
                 background: white;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                color: #374151;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-decoration: none;
+                white-space: nowrap;
+                min-height: 46px;
+                box-sizing: border-box;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             }
             
-            .search-input-harmonized::placeholder {
-                color: #9ca3af;
+            .btn-large:hover {
+                background: #f9fafb;
+                border-color: #9ca3af;
+                color: #1f2937;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            }
+            
+            .btn-large.active {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+                box-shadow: 0 3px 8px rgba(102, 126, 234, 0.25);
+            }
+            
+            .btn-large.btn-primary-large {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+            }
+            
+            .btn-large.btn-primary-large:hover {
+                background: #5a67d8;
+                border-color: #5a67d8;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+            }
+            
+            .btn-large.btn-secondary-large {
+                background: #f9fafb;
+                color: #4b5563;
+                border-color: #d1d5db;
+            }
+            
+            .btn-large.btn-secondary-large:hover {
+                background: #f3f4f6;
+                color: #374151;
+                transform: translateY(-1px);
+            }
+            
+            .btn-text-large {
+                font-weight: 600;
+            }
+            
+            .status-filters-large {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                margin: 0 0 16px 0;
+                padding: 0;
+                background: transparent;
+                border: none;
+            }
+            
+            .status-pill-large {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 20px;
+                border: 1px solid #d1d5db;
+                border-radius: 10px;
+                background: white;
+                color: #374151;
+                font-size: 15px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-height: 46px;
+                box-sizing: border-box;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }
+            
+            .status-pill-large:hover {
+                border-color: #667eea;
+                background: #667eea12;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+            }
+            
+            .status-pill-large.active {
+                background: #667eea;
+                color: white;
+                border-color: #667eea;
+                transform: translateY(-1px);
+                box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            }
+            
+            .pill-icon-large {
+                font-size: 17px;
+            }
+            
+            .pill-text-large {
+                font-weight: 600;
+                font-size: 15px;
+            }
+            
+            .pill-count-large {
+                background: rgba(0,0,0,0.1);
+                padding: 4px 10px;
+                border-radius: 12px;
+                font-size: 13px;
+                font-weight: 700;
+                min-width: 22px;
+                text-align: center;
+            }
+            
+            .status-pill-large.active .pill-count-large {
+                background: rgba(255,255,255,0.25);
+            }
+            
+            .tasks-condensed-list {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+                background: #f9fafb;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .task-condensed {
+                display: flex;
+                align-items: center;
+                background: white;
+                padding: 16px 20px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border-bottom: 1px solid #f3f4f6;
+                min-height: 60px;
+            }
+            
+            .task-condensed:last-child {
+                border-bottom: none;
+            }
+            
+            .task-condensed:hover {
+                background: #f9fafb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            }
+            
+            .task-condensed.selected {
+                background: #eff6ff;
+                border-left: 4px solid #3b82f6;
+            }
+            
+            .task-condensed.completed {
+                opacity: 0.7;
+            }
+            
+            .task-condensed.completed .task-title-large {
+                text-decoration: line-through;
+            }
+            
+            .task-checkbox-condensed {
+                margin-right: 16px;
+                cursor: pointer;
+                width: 18px;
+                height: 18px;
+            }
+            
+            .task-indicators {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-right: 16px;
+                flex-shrink: 0;
+            }
+            
+            .priority-indicator {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .priority-urgent {
+                background: #fef2f2;
+                color: #dc2626;
+                border: 1px solid #fecaca;
+            }
+            
+            .priority-high {
+                background: #fef3c7;
+                color: #d97706;
+                border: 1px solid #fde68a;
+            }
+            
+            .priority-medium {
+                background: #eff6ff;
+                color: #2563eb;
+                border: 1px solid #bfdbfe;
+            }
+            
+            .priority-low {
+                background: #f0fdf4;
+                color: #16a34a;
+                border: 1px solid #bbf7d0;
+            }
+            
+            .status-indicator {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                background: #f3f4f6;
+                color: #6b7280;
+                border: 1px solid #d1d5db;
+            }
+            
+            .task-content-condensed {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .task-header-line {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                gap: 16px;
+            }
+            
+            .task-title-large {
+                font-weight: 700;
+                color: #1f2937;
+                font-size: 16px;
+                white-space: nowrap;
+                flex-shrink: 0;
+                min-width: 250px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .task-meta-right {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-shrink: 0;
+                margin-left: auto;
+            }
+            
+            .client-badge {
+                background: #f3f4f6;
+                color: #6b7280;
+                padding: 4px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+            }
+            
+            .due-date-badge {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 4px 8px;
+                border-radius: 6px;
+                white-space: nowrap;
+            }
+            
+            .due-date-normal {
+                color: #6b7280;
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .due-date-soon {
+                color: #d97706;
+                background: #fef3c7;
+                border: 1px solid #fde68a;
+            }
+            
+            .due-date-today {
+                color: #dc2626;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+            }
+            
+            .due-date-overdue {
+                color: #dc2626;
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                animation: pulse 2s infinite;
+            }
+            
+            .task-date-large {
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            
+            .task-email-line {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 4px;
+                font-size: 14px;
+                color: #6b7280;
+            }
+            
+            .email-from {
                 font-weight: 500;
             }
             
-            .search-icon-harmonized {
-                position: absolute;
-                left: var(--gap-medium);
-                top: 50%;
-                transform: translateY(-50%);
-                color: #9ca3af;
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                pointer-events: none;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .search-clear-harmonized {
-                position: absolute;
-                right: var(--gap-small);
-                top: 50%;
-                transform: translateY(-50%);
-                background: #ef4444;
-                color: white;
-                border: none;
-                width: 28px;
-                height: 28px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 11px;
-                font-weight: 700;
-                transition: all var(--transition-speed) ease;
-                outline: none;
-            }
-            
-            .search-clear-harmonized:hover {
-                background: #dc2626;
-                transform: translateY(-50%) scale(1.1);
-            }
-            
-            /* MODES DE VUE PARFAITEMENT ALIGNÉS ET CENTRÉS */
-            .view-modes-harmonized {
-                display: flex;
-                background: #f8fafc;
-                border: var(--border-width) solid #e2e8f0;
-                border-radius: var(--btn-border-radius);
-                padding: var(--gap-tiny);
-                gap: 2px;
-                height: var(--btn-height);
-                box-sizing: border-box;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .view-mode-harmonized {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: var(--btn-gap);
-                padding: 0 var(--btn-padding-horizontal);
-                height: calc(var(--btn-height) - var(--gap-small));
-                border: none;
-                background: transparent;
-                color: #6b7280;
-                border-radius: calc(var(--btn-border-radius) - 2px);
-                cursor: pointer;
-                transition: all var(--transition-speed) ease;
-                font-size: var(--btn-font-size);
-                font-weight: var(--btn-font-weight);
-                white-space: nowrap;
-                box-sizing: border-box;
-                min-width: 120px;
-                flex: 1;
-                text-align: center;
-            }
-            
-            .view-mode-harmonized:hover {
-                background: rgba(255, 255, 255, 0.8);
-                color: #374151;
-                transform: translateY(-1px);
-            }
-            
-            .view-mode-harmonized.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: var(--shadow-base);
-                font-weight: 700;
-                transform: translateY(-1px);
-            }
-            
-            /* ACTIONS PRINCIPALES - TOUTES À LA MÊME HAUTEUR ET CENTRÉES */
-            .action-buttons-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                height: var(--btn-height);
-                flex-shrink: 0;
-            }
-            
-            /* TOUS les boutons dans action-buttons-harmonized DOIVENT avoir la même hauteur ET être centrés */
-            .action-buttons-harmonized > *,
-            .action-buttons-harmonized .btn-harmonized,
-            .action-buttons-harmonized .selection-info-harmonized {
-                height: var(--btn-height);
-                min-height: var(--btn-height);
-                max-height: var(--btn-height);
-                box-sizing: border-box;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            /* ===== FILTRES DE STATUT SANS ESPACES EXCESSIFS ET PARFAITEMENT CENTRÉS ===== */
-            .status-filters-harmonized {
-                display: flex;
-                gap: var(--gap-small);
-                margin-bottom: var(--gap-medium);
-                flex-wrap: wrap;
-                align-items: center;
-                justify-content: flex-start;
-            }
-            
-            /* TOUS les pills de statut ont une taille AGRANDIE pour meilleure lisibilité ET PARFAITEMENT CENTRÉS */
-            .status-filters-harmonized .status-pill-harmonized {
-                height: 52px;
-                min-height: 52px;
-                max-height: 52px;
-                padding: var(--btn-padding-vertical) 20px;
-                font-size: 14px;
-                font-weight: 700;
-                min-width: 120px;
-                box-sizing: border-box;
-                border-radius: 12px;
-                box-shadow: var(--shadow-base);
-                transition: all var(--transition-speed) ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-            }
-            
-            .status-pill-harmonized:hover {
-                border-color: #3b82f6;
-                background: #f0f9ff;
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-            }
-            
-            .status-pill-harmonized.active {
-                background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-                color: white;
-                border-color: #3b82f6;
-                box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-                transform: translateY(-2px);
-            }
-            
-            /* ALIGNEMENT PARFAIT DU CONTENU DANS LES PILLS AVEC CENTRAGE */
-            .pill-icon-harmonized {
-                font-size: 16px;
-                line-height: 1;
-                flex-shrink: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .pill-text-harmonized {
-                font-weight: 700;
-                line-height: 1;
-                flex-shrink: 0;
-                text-align: center;
-                flex: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .pill-count-harmonized {
-                background: rgba(0, 0, 0, 0.1);
-                padding: 6px 10px;
-                border-radius: 10px;
+            .reply-needed {
+                background: #fef3c7;
+                color: #d97706;
+                padding: 2px 8px;
+                border-radius: 6px;
                 font-size: 12px;
-                font-weight: 800;
-                min-width: 24px;
-                text-align: center;
-                line-height: 1;
-                flex-shrink: 0;
+                font-weight: 600;
+                border: 1px solid #fde68a;
+            }
+            
+            .has-ai-suggestions {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 2px 8px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 600;
+                border: 1px solid #5a67d8;
+                animation: aiGlow 2s infinite alternate;
+            }
+            
+            .ai-generated-badge {
+                background: #10b981;
+                color: white;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                border: 1px solid #059669;
+            }
+            
+            @keyframes aiGlow {
+                0% { box-shadow: 0 0 5px rgba(102, 126, 234, 0.5); }
+                100% { box-shadow: 0 0 15px rgba(102, 126, 234, 0.8); }
+            }
+            
+            .task-reply-section {
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid #f3f4f6;
+            }
+            
+            .reply-to-email-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+            }
+            
+            .reply-to-email-btn:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+            
+            .reply-to-email-btn .ai-icon {
+                animation: aiPulse 1.5s infinite;
+                margin-left: 4px;
+            }
+            
+            @keyframes aiPulse {
+                0%, 100% { opacity: 0.7; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.1); }
+            }
+            
+            .action-btn-modern.ai-refresh {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                border-color: #5a67d8;
+            }
+            
+            .action-btn-modern.ai-refresh:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                border-color: #4c51bf;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            }
+            
+            .ai-generation-time {
+                font-size: 12px;
+                color: #6b7280;
+                margin-top: 8px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .ai-actions {
+                margin-top: 12px;
+                display: flex;
+                gap: 8px;
+            }
+            
+            .task-actions-condensed {
+                margin-left: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .action-btn-modern {
+                width: 32px;
+                height: 32px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                background: white;
+                color: #6b7280;
+                cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                transition: all 0.2s ease;
+                font-size: 14px;
             }
             
-            .status-pill-harmonized.active .pill-count-harmonized {
-                background: rgba(255, 255, 255, 0.25);
+            .action-btn-modern:hover {
+                background: #f3f4f6;
+                border-color: #9ca3af;
+                transform: translateY(-1px);
             }
             
-            /* Panneau de filtres avancés */
+            .action-btn-modern.complete:hover {
+                background: #dcfce7;
+                border-color: #16a34a;
+                color: #16a34a;
+            }
+            
+            .action-btn-modern.reply:hover {
+                background: #dbeafe;
+                border-color: #2563eb;
+                color: #2563eb;
+            }
+            
+            .action-btn-modern.edit:hover {
+                background: #fef3c7;
+                border-color: #d97706;
+                color: #d97706;
+            }
+            
+            /* NOUVEAUX STYLES POUR FILTRES AVANCÉS */
+            .advanced-filters-toggle {
+                background: #f8fafc;
+                border-color: #e2e8f0;
+                color: #475569;
+            }
+            
+            .advanced-filters-toggle:hover {
+                background: #f1f5f9;
+                border-color: #cbd5e1;
+            }
+            
+            .advanced-filters-toggle.active {
+                background: #3b82f6;
+                color: white;
+                border-color: #3b82f6;
+            }
+            
             .advanced-filters-panel {
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
-                margin-bottom: var(--gap-large);
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                margin-bottom: 16px;
                 max-height: 0;
                 overflow: hidden;
                 transition: all 0.3s ease;
                 opacity: 0;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
             }
             
             .advanced-filters-panel.show {
-                max-height: 200px;
+                max-height: 500px;
                 opacity: 1;
-                padding: var(--gap-large);
+                padding: 20px;
             }
             
             .advanced-filters-grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: var(--gap-medium);
+                gap: 16px;
                 align-items: end;
             }
             
             .filter-group {
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-small);
+                gap: 6px;
             }
             
             .filter-label {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 6px;
                 font-weight: 600;
-                font-size: 12px;
+                font-size: 14px;
                 color: #374151;
             }
             
             .filter-select {
-                height: var(--input-height);
-                padding: var(--input-padding);
+                padding: 8px 12px;
                 border: 1px solid #d1d5db;
-                border-radius: var(--btn-border-radius);
+                border-radius: 6px;
                 background: white;
-                font-size: var(--input-font-size);
+                font-size: 14px;
                 color: #374151;
                 cursor: pointer;
-                transition: all 0.2s ease;
-                font-weight: 500;
-                box-sizing: border-box;
+                transition: border-color 0.2s ease;
             }
             
             .filter-select:focus {
                 outline: none;
-                border-color: #6366f1;
-                box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
             
             .filter-actions {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                gap: var(--gap-small);
+                gap: 8px;
             }
             
-            /* ===== CARTES DE TÂCHES SANS ESPACEMENT ET PARFAITEMENT CENTRÉES ===== */
-            .tasks-harmonized-list {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-                background: transparent;
-            }
-            
-            .task-harmonized-card {
-                display: flex;
+            .btn-small {
+                display: inline-flex;
                 align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                box-shadow: none;
-                overflow: hidden;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                box-sizing: border-box;
-                border-bottom: 1px solid #e5e7eb;
-            }
-            
-            /* PREMIER ET DERNIER ÉLÉMENT AVEC BORDURES ARRONDIES */
-            .task-harmonized-card:first-child {
-                border-top-left-radius: var(--card-border-radius);
-                border-top-right-radius: var(--card-border-radius);
-                border-top: var(--border-width) solid #e5e7eb;
-            }
-            
-            .task-harmonized-card:last-child {
-                border-bottom-left-radius: var(--card-border-radius);
-                border-bottom-right-radius: var(--card-border-radius);
-                border-bottom: var(--border-width) solid #e5e7eb;
-            }
-            
-            .task-harmonized-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 2px;
-                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
-                opacity: 0;
-                transition: all 0.3s ease;
-            }
-            
-            .task-harmonized-card:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                border-color: rgba(99, 102, 241, 0.2);
-                border-left: 3px solid #6366f1;
-                z-index: 1;
-            }
-            
-            .task-harmonized-card:hover::before {
-                opacity: 1;
-            }
-            
-            .task-harmonized-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid #3b82f6;
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-                z-index: 2;
-            }
-            
-            .task-harmonized-card.completed {
-                opacity: 0.75;
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-left: 3px solid #22c55e;
-            }
-            
-            .task-harmonized-card.completed .task-title-harmonized {
-                text-decoration: line-through;
-                color: #6b7280;
-            }
-            
-            .task-checkbox-harmonized {
-                margin-right: var(--gap-medium);
-                cursor: pointer;
-                width: 20px;
-                height: 20px;
+                gap: 6px;
+                padding: 6px 12px;
                 border-radius: 6px;
-                border: 2px solid #d1d5db;
-                background: white;
-                transition: all var(--transition-speed) ease;
-                flex-shrink: 0;
-                appearance: none;
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .task-checkbox-harmonized:checked {
-                background: #6366f1;
-                border-color: #6366f1;
-            }
-            
-            .task-checkbox-harmonized:checked::after {
-                content: '✓';
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: white;
                 font-size: 12px;
-                font-weight: 700;
-                line-height: 1;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid;
+            }
+            
+            .btn-small.btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+            
+            .btn-small.btn-secondary:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
+            }
+            
+            .active-filters-count {
+                font-size: 12px;
+                color: #6b7280;
+                text-align: center;
+                font-weight: 500;
+            }
+            
+            /* STYLES POUR LES TAGS DANS LES TÂCHES */
+            .task-tags-line {
                 display: flex;
                 align-items: center;
-                justify-content: center;
+                gap: 8px;
+                margin-top: 4px;
+                font-size: 12px;
+                color: #6b7280;
+                flex-wrap: wrap;
             }
             
-            .priority-bar-harmonized {
-                width: 4px;
-                height: 56px;
-                border-radius: 2px;
-                margin-right: var(--gap-medium);
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-                flex-shrink: 0;
-            }
-            
-            .task-harmonized-card:hover .priority-bar-harmonized {
-                height: 60px;
-                width: 5px;
-                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-            }
-            
-            .task-main-content-harmonized {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: var(--gap-tiny);
-                height: 100%;
-            }
-            
-            .task-header-harmonized {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: var(--gap-medium);
-                margin-bottom: var(--gap-tiny);
-            }
-            
-            .task-title-harmonized {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                margin: 0;
-                line-height: 1.3;
-                flex: 1;
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                text-align: left;
-                display: flex;
-                align-items: center;
-            }
-            
-            .task-meta-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-small);
-                flex-shrink: 0;
-            }
-            
-            .task-type-badge-harmonized {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 3px;
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                color: #475569;
-                padding: 4px 8px;
-                border-radius: 6px;
+            .task-tag {
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                padding: 2px 8px;
+                border-radius: 12px;
                 font-size: 11px;
-                font-weight: 600;
-                border: var(--border-width) solid #e2e8f0;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-                white-space: nowrap;
-                line-height: 1;
-                text-align: center;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: 1px solid rgba(255,255,255,0.2);
             }
             
-            .deadline-badge-harmonized {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 3px;
+            .task-tag:hover {
+                background: linear-gradient(135deg, #5a67d8, #6c5ce7);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+            }
+            
+            .tags-more {
+                background: #f3f4f6;
+                color: #6b7280;
+                padding: 2px 6px;
+                border-radius: 10px;
                 font-size: 10px;
-                font-weight: 600;
-                padding: 4px 8px;
-                border-radius: 6px;
-                white-space: nowrap;
-                border: var(--border-width) solid;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-                line-height: 1;
-                text-align: center;
+                font-weight: 500;
             }
             
-            .deadline-normal-harmonized {
-                background: #f8fafc;
-                color: #64748b;
-                border-color: #e2e8f0;
-            }
-            
-            .deadline-week-harmonized {
-                background: #eff6ff;
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-            
-            .deadline-today-harmonized, .deadline-tomorrow-harmonized {
-                background: #fef3c7;
-                color: #d97706;
-                border-color: #fde68a;
-            }
-            
-            .deadline-overdue-harmonized {
+            /* NOUVEAU STYLE POUR LE BOUTON DE SUPPRESSION */
+            .action-btn-modern.delete-btn {
                 background: #fef2f2;
                 color: #dc2626;
                 border-color: #fecaca;
-                animation: pulse 2s infinite;
-            }
-            
-            .no-deadline-harmonized {
-                color: #9ca3af;
-                font-style: italic;
-                font-size: 10px;
-                text-align: center;
-            }
-            
-            .task-recipient-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-tiny);
-                color: #6b7280;
-                font-size: 12px;
-                font-weight: 500;
-                line-height: 1.2;
-            }
-            
-            .task-recipient-harmonized i {
-                color: #9ca3af;
-                font-size: 12px;
-                flex-shrink: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .recipient-name-harmonized {
-                font-weight: 600;
-                color: #374151;
-                text-align: left;
-                display: flex;
-                align-items: center;
-            }
-            
-            .reply-indicator-harmonized {
-                color: #dc2626;
-                font-weight: 600;
-                font-size: 10px;
-                text-align: center;
-            }
-            
-            .task-actions-harmonized {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: var(--gap-tiny);
-                margin-left: var(--gap-medium);
-                flex-shrink: 0;
-            }
-            
-            .action-btn-harmonized {
-                width: var(--action-btn-size);
-                height: var(--action-btn-size);
-                border: 2px solid transparent;
-                border-radius: var(--btn-border-radius);
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                font-size: var(--action-btn-font-size);
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-                flex-shrink: 0;
-                text-align: center;
-            }
-            
-            .action-btn-harmonized:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            }
-            
-            .action-btn-harmonized.complete {
-                color: #16a34a;
-                border-color: transparent;
-            }
-            
-            .action-btn-harmonized.complete:hover {
-                background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-                border-color: #16a34a;
-                color: #15803d;
-            }
-            
-            .action-btn-harmonized.reply {
-                color: #3b82f6;
-                border-color: transparent;
-            }
-            
-            .action-btn-harmonized.reply:hover {
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border-color: #3b82f6;
-                color: #2563eb;
-            }
-            
-            .action-btn-harmonized.details {
-                color: #8b5cf6;
-                border-color: transparent;
-            }
-            
-            .action-btn-harmonized.details:hover {
-                background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-                border-color: #8b5cf6;
-                color: #7c3aed;
-            }
-
-            /* ===== VUE GROUPÉE IDENTIQUE À LA VUE LISTE ===== */
-            .tasks-grouped-harmonized {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-                background: transparent;
-            }
-            
-            .task-group-harmonized {
-                background: transparent;
-                border: none;
-                border-radius: 0;
-                overflow: visible;
-                box-shadow: none;
-                margin: 0;
-                padding: 0;
-            }
-            
-            .group-header-harmonized {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                box-shadow: none;
-                overflow: hidden;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                box-sizing: border-box;
-                border-bottom: 1px solid #e5e7eb;
-                gap: var(--gap-medium);
-            }
-            
-            /* PREMIER ET DERNIER EN-TÊTE AVEC BORDURES ARRONDIES */
-            .task-group-harmonized:first-child .group-header-harmonized {
-                border-top-left-radius: var(--card-border-radius);
-                border-top-right-radius: var(--card-border-radius);
-                border-top: var(--border-width) solid #e5e7eb;
-            }
-            
-            .task-group-harmonized:last-child .group-header-harmonized:not(.expanded-header) {
-                border-bottom-left-radius: var(--card-border-radius);
-                border-bottom-right-radius: var(--card-border-radius);
-                border-bottom: var(--border-width) solid #e5e7eb;
-            }
-            
-            .group-header-harmonized::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 2px;
-                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
-                opacity: 0;
                 transition: all 0.3s ease;
             }
             
-            .group-header-harmonized:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                border-color: rgba(99, 102, 241, 0.2);
-                border-left: 3px solid #6366f1;
-                z-index: 1;
-            }
-            
-            .group-header-harmonized:hover::before {
-                opacity: 1;
-            }
-            
-            .task-group-harmonized.expanded .group-header-harmonized {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid #3b82f6;
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-                z-index: 2;
-                border-bottom-left-radius: 0;
-                border-bottom-right-radius: 0;
-            }
-            
-            .group-avatar-harmonized {
-                width: 20px;
-                height: 20px;
-                border-radius: 6px;
-                border: 2px solid #d1d5db;
-                background: white;
-                transition: all var(--transition-speed) ease;
-                flex-shrink: 0;
-                appearance: none;
-                position: relative;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+            .action-btn-modern.delete-btn:hover {
+                background: #dc2626;
                 color: white;
-                font-weight: 700;
-                font-size: 12px;
-                margin-right: var(--gap-medium);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                border-color: #dc2626;
+                transform: translateY(-1px) scale(1.05);
+                box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+            }
+            
+            .empty-state-modern {
                 text-align: center;
-            }
-            
-            .group-info-harmonized {
-                flex: 1;
-                min-width: 0;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                gap: var(--gap-tiny);
-                height: 100%;
-            }
-            
-            .group-name-harmonized {
-                font-weight: 700;
-                color: #1f2937;
-                font-size: 15px;
-                margin: 0;
-                line-height: 1.3;
-                flex: 1;
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                text-align: left;
-                display: flex;
-                align-items: center;
-            }
-            
-            .group-meta-harmonized {
-                display: flex;
-                align-items: center;
-                gap: var(--gap-tiny);
+                padding: 60px 20px;
                 color: #6b7280;
-                font-size: 12px;
-                font-weight: 500;
-                line-height: 1.2;
             }
             
-            .group-expand-harmonized {
-                width: var(--action-btn-size);
-                height: var(--action-btn-size);
-                border: 2px solid transparent;
-                border-radius: var(--btn-border-radius);
-                background: rgba(255, 255, 255, 0.9);
-                color: #6b7280;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s ease;
-                font-size: var(--action-btn-font-size);
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-                flex-shrink: 0;
-                text-align: center;
-                margin-left: var(--gap-medium);
-            }
-            
-            .group-expand-harmonized:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                color: #374151;
-            }
-            
-            .task-group-harmonized.expanded .group-expand-harmonized {
-                transform: rotate(180deg) translateY(-1px);
-                color: #3b82f6;
-                background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-                border-color: #3b82f6;
-            }
-            
-            .group-content-harmonized {
-                background: transparent;
-                margin: 0;
-                padding: 0;
-                display: none;
-            }
-            
-            .task-group-harmonized.expanded .group-content-harmonized {
-                display: block;
-            }
-            
-            /* TÂCHES DANS LES GROUPES - IDENTIQUES À LA VUE LISTE */
-            .group-content-harmonized .task-harmonized-card {
-                display: flex;
-                align-items: center;
-                background: rgba(255, 255, 255, 0.95);
-                backdrop-filter: blur(20px);
-                border: var(--border-width) solid rgba(255, 255, 255, 0.2);
-                border-radius: 0;
-                padding: var(--card-padding);
-                cursor: pointer;
-                transition: all 0.3s ease;
-                position: relative;
-                box-shadow: none;
-                overflow: hidden;
-                min-height: var(--card-height);
-                max-height: var(--card-height);
-                box-sizing: border-box;
-                border-bottom: 1px solid #e5e7eb;
-                margin: 0;
-            }
-            
-            .group-content-harmonized .task-harmonized-card:last-child {
-                border-bottom-left-radius: var(--card-border-radius);
-                border-bottom-right-radius: var(--card-border-radius);
-                border-bottom: var(--border-width) solid #e5e7eb;
-            }
-            
-            .group-content-harmonized .task-harmonized-card::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                height: 2px;
-                background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
-                opacity: 0;
-                transition: all 0.3s ease;
-            }
-            
-            .group-content-harmonized .task-harmonized-card:hover {
-                background: white;
-                transform: translateY(-1px);
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                border-color: rgba(99, 102, 241, 0.2);
-                border-left: 3px solid #6366f1;
-                z-index: 1;
-            }
-            
-            .group-content-harmonized .task-harmonized-card:hover::before {
-                opacity: 1;
-            }
-            
-            .group-content-harmonized .task-harmonized-card.selected {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                border-left: 4px solid #3b82f6;
-                border-color: #3b82f6;
-                transform: translateY(-1px);
-                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-                z-index: 2;
-            }
-            
-            .group-content-harmonized .task-harmonized-card.completed {
-                opacity: 0.75;
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                border-left: 3px solid #22c55e;
-            }
-            
-            /* ===== ÉTAT VIDE HARMONISÉ ET CENTRÉ ===== */
-            .empty-state-harmonized {
-                text-align: center;
-                padding: 60px 30px;
-                background: rgba(255, 255, 255, 0.8);
-                backdrop-filter: blur(20px);
-                border-radius: 20px;
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .empty-state-icon-harmonized {
+            .empty-state-icon {
                 font-size: 48px;
                 margin-bottom: 20px;
                 color: #d1d5db;
-                background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                display: flex;
-                align-items: center;
-                justify-content: center;
             }
             
-            .empty-state-title-harmonized {
-                font-size: 22px;
-                font-weight: 700;
+            .empty-state-title {
+                font-size: 24px;
+                font-weight: 600;
                 color: #374151;
                 margin-bottom: 12px;
-                background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                text-align: center;
             }
             
-            .empty-state-text-harmonized {
-                font-size: 15px;
+            .empty-state-text {
+                font-size: 16px;
                 margin-bottom: 24px;
                 max-width: 400px;
                 margin-left: auto;
                 margin-right: auto;
-                line-height: 1.6;
-                color: #6b7280;
-                font-weight: 500;
-                text-align: center;
+                line-height: 1.5;
             }
             
-            /* ===== CONTAINER PRINCIPAL ===== */
-            .tasks-container-harmonized {
-                background: transparent;
-            }
-            
-            /* ===== FORMULAIRES HARMONISÉS ET CENTRÉS ===== */
+            /* Form styles pour les modals */
             .form-group {
-                margin-bottom: var(--gap-large);
+                margin-bottom: 16px;
             }
             
             .form-group label {
                 display: block;
-                margin-bottom: var(--gap-small);
-                font-weight: 700;
+                margin-bottom: 6px;
+                font-weight: 600;
                 color: #374151;
-                font-size: var(--input-font-size);
-                text-align: left;
+                font-size: 14px;
             }
             
             .form-input, .form-select, .form-textarea {
                 width: 100%;
-                height: var(--input-height);
-                padding: var(--input-padding);
-                border: 2px solid #e5e7eb;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--input-font-size);
+                padding: 10px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 14px;
                 background: white;
-                transition: all 0.2s ease;
-                font-weight: 500;
-                color: #374151;
-                box-sizing: border-box;
-                text-align: left;
-            }
-            
-            .form-textarea {
-                height: auto;
-                min-height: 80px;
-                resize: vertical;
-                font-family: inherit;
+                transition: border-color 0.2s ease;
             }
             
             .form-input:focus, .form-select:focus, .form-textarea:focus {
                 outline: none;
-                border-color: #6366f1;
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-                background: #fafafa;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
             }
             
             .form-row {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: var(--gap-large);
+                gap: 16px;
             }
             
-            /* ===== DÉTAILS DES TÂCHES HARMONISÉS ===== */
+            .form-textarea {
+                resize: vertical;
+                min-height: 80px;
+            }
+            
+            /* Task details modal styles */
             .task-details-content {
                 max-width: none;
             }
             
             .details-header {
-                margin-bottom: 32px;
-                padding-bottom: 20px;
-                border-bottom: 2px solid #f3f4f6;
-                text-align: center;
+                margin-bottom: 24px;
+                padding-bottom: 16px;
+                border-bottom: 1px solid #e5e7eb;
             }
             
             .task-title-details {
-                font-size: 28px;
-                font-weight: 800;
+                font-size: 24px;
+                font-weight: 700;
                 color: #1f2937;
-                margin: 0 0 16px 0;
-                line-height: 1.2;
-                background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-                text-align: center;
+                margin: 0 0 12px 0;
+                line-height: 1.3;
             }
             
             .task-meta-badges {
                 display: flex;
-                gap: var(--gap-large);
+                gap: 12px;
                 flex-wrap: wrap;
-                justify-content: center;
-                align-items: center;
             }
             
             .priority-badge, .status-badge {
                 display: inline-flex;
                 align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
-                height: var(--btn-height);
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: 700;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                border: 2px solid;
-                box-sizing: border-box;
-                text-align: center;
-            }
-            
-            .priority-urgent {
-                background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-                color: #dc2626;
-                border-color: #fecaca;
-            }
-            
-            .priority-high {
-                background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
-                color: #d97706;
-                border-color: #fde68a;
-            }
-            
-            .priority-medium {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                color: #2563eb;
-                border-color: #bfdbfe;
-            }
-            
-            .priority-low {
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                color: #16a34a;
-                border-color: #bbf7d0;
-            }
-            
-            .status-todo {
-                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                color: #d97706;
-                border-color: #f59e0b;
-            }
-            
-            .status-in-progress {
-                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-                color: #2563eb;
-                border-color: #3b82f6;
-            }
-            
-            .status-completed {
-                background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-                color: #16a34a;
-                border-color: #22c55e;
+                gap: 6px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 600;
             }
             
             .details-section {
-                margin-bottom: 32px;
-                background: rgba(255, 255, 255, 0.8);
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                border-radius: var(--card-border-radius);
+                margin-bottom: 24px;
+                background: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
                 overflow: hidden;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
             }
             
             .details-section h3 {
                 margin: 0;
-                padding: 20px 24px;
-                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-                border-bottom: 1px solid #e2e8f0;
-                font-size: 18px;
-                font-weight: 700;
+                padding: 16px 20px;
+                background: white;
+                border-bottom: 1px solid #e5e7eb;
+                font-size: 16px;
+                font-weight: 600;
                 color: #1f2937;
                 display: flex;
                 align-items: center;
-                gap: var(--gap-medium);
-                text-align: left;
+                gap: 8px;
             }
             
             .email-details-grid {
-                padding: 20px 24px;
+                padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-large);
+                gap: 12px;
             }
             
             .email-detail-item {
                 display: flex;
-                gap: var(--gap-large);
-                font-size: 15px;
-                padding: 12px 16px;
-                background: #f8fafc;
-                border-radius: 10px;
-                border: 1px solid #e2e8f0;
-                align-items: center;
+                gap: 12px;
+                font-size: 14px;
             }
             
             .email-detail-item strong {
-                min-width: 100px;
+                min-width: 80px;
                 color: #374151;
-                font-weight: 700;
-                text-align: left;
-            }
-            
-            .email-detail-item span {
-                color: #4b5563;
-                font-weight: 500;
-                text-align: left;
-                flex: 1;
             }
             
             .description-content {
-                padding: 20px 24px;
+                padding: 16px 20px;
             }
             
             .structured-description {
-                font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-                font-size: 14px;
+                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                font-size: 13px;
                 line-height: 1.6;
-                background: #f8fafc;
-                padding: 20px;
-                border-radius: 12px;
-                border: 1px solid #e2e8f0;
-                color: #374151;
-                text-align: left;
+                background: white;
+                padding: 16px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
             }
             
             .simple-description {
-                font-size: 15px;
-                line-height: 1.7;
+                font-size: 14px;
+                line-height: 1.6;
                 color: #374151;
-                font-weight: 500;
-                text-align: left;
             }
             
             .actions-list-details {
-                padding: 20px 24px;
+                padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-large);
+                gap: 12px;
             }
             
             .action-item-details {
                 display: flex;
                 align-items: center;
-                gap: var(--gap-large);
-                padding: 16px 20px;
-                background: #f8fafc;
-                border-radius: 12px;
-                border: 1px solid #e2e8f0;
-                transition: all 0.2s ease;
-            }
-            
-            .action-item-details:hover {
-                background: #f1f5f9;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+                gap: 12px;
+                padding: 10px 12px;
+                background: white;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
             }
             
             .action-number {
-                width: 32px;
-                height: 32px;
-                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                width: 24px;
+                height: 24px;
+                background: #667eea;
                 color: white;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 14px;
-                font-weight: 700;
+                font-size: 12px;
+                font-weight: 600;
                 flex-shrink: 0;
-                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-                text-align: center;
             }
             
             .action-text {
                 flex: 1;
-                font-size: 15px;
+                font-size: 14px;
                 color: #374151;
-                font-weight: 600;
-                text-align: left;
             }
             
             .action-deadline {
                 font-size: 12px;
                 color: #dc2626;
-                font-weight: 700;
+                font-weight: 600;
                 background: #fef2f2;
-                padding: 6px 12px;
-                border-radius: 8px;
+                padding: 4px 8px;
+                border-radius: 4px;
                 border: 1px solid #fecaca;
-                text-align: center;
             }
             
             .info-grid {
-                padding: 20px 24px;
+                padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 8px;
             }
             
             .info-item {
                 display: flex;
                 align-items: flex-start;
-                gap: 12px;
-                font-size: 15px;
+                gap: 8px;
+                font-size: 14px;
                 color: #374151;
-                line-height: 1.5;
-                padding: 12px 16px;
-                background: #f8fafc;
-                border-radius: 10px;
-                border: 1px solid #e2e8f0;
-                font-weight: 500;
-            }
-            
-            .info-item i {
-                color: #6366f1;
-                margin-top: 2px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            .info-item span {
-                text-align: left;
-                flex: 1;
+                line-height: 1.4;
             }
             
             .attention-section {
-                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                border-color: #f59e0b;
+                background: #fef3c7;
+                border-color: #fbbf24;
             }
             
             .attention-section h3 {
-                background: linear-gradient(135deg, #fef9e8 0%, #fef3c7 100%);
-                border-bottom-color: #f59e0b;
+                background: #fef9e8;
+                border-bottom-color: #fbbf24;
                 color: #92400e;
             }
             
             .attention-list {
-                padding: 20px 24px;
+                padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
-                gap: 14px;
+                gap: 10px;
             }
             
             .attention-item {
                 display: flex;
                 align-items: flex-start;
-                gap: 12px;
+                gap: 10px;
                 background: #fffbeb;
                 border: 1px solid #fde68a;
-                border-radius: 12px;
-                padding: 16px 20px;
-                transition: all 0.2s ease;
-            }
-            
-            .attention-item:hover {
-                background: #fef9e8;
-                border-color: #f59e0b;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);
+                border-radius: 6px;
+                padding: 10px 12px;
             }
             
             .attention-item i {
-                font-size: 16px;
+                font-size: 14px;
                 color: #f59e0b;
                 margin-top: 2px;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                justify-content: center;
             }
             
             .attention-item span {
                 flex: 1;
-                font-size: 14px;
+                font-size: 13px;
                 color: #92400e;
-                line-height: 1.5;
-                font-weight: 600;
-                text-align: left;
+                line-height: 1.4;
             }
             
-            /* ===== SUGGESTIONS DE RÉPONSE HARMONISÉES ===== */
+            /* NOUVEAUX STYLES POUR LE CONTENU EMAIL */
+            .email-content-section {
+                padding: 16px 20px;
+            }
+            
+            .email-content-tabs {
+                display: flex;
+                gap: 5px;
+                margin-bottom: 16px;
+                background: #f3f4f6;
+                padding: 5px;
+                border-radius: 8px;
+            }
+            
+            .tab-btn {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 16px;
+                background: transparent;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #6b7280;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .tab-btn.active {
+                background: white;
+                color: #1f2937;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            
+            .tab-btn:hover:not(.active) {
+                background: rgba(255,255,255,0.5);
+                color: #374151;
+            }
+            
+            .email-content-box {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                max-height: 500px;
+                overflow-y: auto;
+            }
+            
+            .email-content-view {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+            }
+            
+            .email-content-viewer {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                line-height: 1.6;
+                color: #333;
+            }
+            
+            .email-original-content {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                color: #374151;
+                white-space: pre-wrap;
+            }
+            
+            .email-original-content strong {
+                color: #1f2937;
+                font-weight: 600;
+            }
+            
+            /* Responsive */
+            @media (max-width: 768px) {
+                .tasks-main-toolbar {
+                    flex-direction: column;
+                    gap: 10px;
+                    align-items: stretch;
+                    padding: 4px 0 2px 0;
+                    margin: 0 0 6px 0;
+                }
+                
+                .toolbar-left,
+                .toolbar-center,
+                .toolbar-center-right,
+                .toolbar-right {
+                    width: 100%;
+                    max-width: none;
+                }
+                
+                .toolbar-right {
+                    justify-content: flex-end;
+                }
+                
+                .view-modes-large {
+                    justify-content: center;
+                }
+                
+                .status-filters-large {
+                    padding: 0;
+                    gap: 8px;
+                    margin: 0 0 12px 0;
+                }
+                
+                .btn-large {
+                    padding: 10px 16px;
+                    font-size: 14px;
+                    min-height: 42px;
+                }
+                
+                .status-pill-large {
+                    padding: 10px 16px;
+                    font-size: 14px;
+                    min-height: 42px;
+                }
+                
+                .btn-text-large {
+                    display: none;
+                }
+                
+                .pill-text-large {
+                    display: none;
+                }
+                
+                .task-condensed {
+                    padding: 12px 16px;
+                    min-height: 50px;
+                }
+                
+                .task-indicators {
+                    margin-right: 12px;
+                }
+                
+                .task-header-line {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 6px;
+                }
+                
+                .task-title-large {
+                    min-width: auto;
+                    font-size: 15px;
+                }
+                
+                .task-meta-right {
+                    width: 100%;
+                    justify-content: space-between;
+                    margin-left: 0;
+                }
+                
+                .form-row {
+                    grid-template-columns: 1fr;
+                }
+            }
+        `;
+        
+        document.head.appendChild(styles);
+        
+        // Ajouter les styles spécifiques aux suggestions de réponse
+        this.addSuggestedRepliesStyles();
+    }
+
+    // NOUVEAUX STYLES POUR LES SUGGESTIONS DE RÉPONSE
+    addSuggestedRepliesStyles() {
+        if (document.getElementById('suggestedRepliesStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'suggestedRepliesStyles';
+        styles.textContent = `
+            /* Styles pour les suggestions de réponse */
             .suggested-replies-section {
                 background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                border-color: #0ea5e9;
+                border: 1px solid #7dd3fc;
             }
             
             .suggested-replies-section h3 {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                border-bottom-color: #0ea5e9;
+                background: #f0f9ff;
+                border-bottom-color: #7dd3fc;
                 color: #075985;
             }
             
             .suggested-replies-container {
-                padding: 20px 24px;
+                padding: 16px 20px;
                 display: flex;
                 flex-direction: column;
-                gap: var(--gap-large);
+                gap: 16px;
             }
             
-            .suggested-reply-card-compact {
+            .suggested-reply-card {
                 background: white;
                 border: 1px solid #bae6fd;
-                border-radius: 12px;
-                padding: var(--gap-large);
+                border-radius: 8px;
+                padding: 16px;
                 transition: all 0.2s ease;
+            }
+            
+            .suggested-reply-card:hover {
+                border-color: #7dd3fc;
                 box-shadow: 0 2px 8px rgba(14, 165, 233, 0.1);
             }
             
-            .suggested-reply-card-compact:hover {
-                border-color: #0ea5e9;
-                box-shadow: 0 4px 16px rgba(14, 165, 233, 0.15);
-                transform: translateY(-1px);
-            }
-            
-            .reply-header-compact {
+            .reply-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
@@ -4225,17 +5105,12 @@ class TasksView {
             .reply-tone-badge {
                 display: inline-flex;
                 align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
-                height: var(--btn-height);
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: 700;
+                gap: 6px;
+                padding: 4px 12px;
+                border-radius: 16px;
+                font-size: 12px;
+                font-weight: 600;
                 text-transform: capitalize;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                box-sizing: border-box;
-                text-align: center;
             }
             
             .reply-tone-badge.formel {
@@ -4262,676 +5137,186 @@ class TasksView {
                 border: 1px solid #bbf7d0;
             }
             
-            .use-reply-btn-compact {
+            .copy-reply-btn {
                 display: inline-flex;
                 align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
-                height: var(--btn-height);
-                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                color: white;
-                border: none;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: 700;
+                gap: 6px;
+                padding: 6px 12px;
+                background: #f3f4f6;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                color: #374151;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-                box-sizing: border-box;
-                text-align: center;
             }
             
-            .use-reply-btn-compact:hover {
-                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            .copy-reply-btn:hover {
+                background: #e5e7eb;
+                border-color: #9ca3af;
             }
             
-            .reply-preview {
+            .reply-subject {
+                font-size: 14px;
+                color: #4b5563;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .reply-content {
                 font-size: 13px;
                 color: #374151;
-                line-height: 1.5;
+                line-height: 1.6;
+                white-space: pre-wrap;
                 background: #f8fafc;
                 padding: 12px;
-                border-radius: 8px;
-                border: 1px solid #e2e8f0;
-                font-weight: 500;
-                text-align: left;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+                margin-bottom: 12px;
             }
             
-            .show-all-replies-btn {
+            .reply-actions {
+                display: flex;
+                justify-content: flex-end;
+            }
+            
+            .use-reply-btn {
                 display: inline-flex;
                 align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
-                height: var(--btn-height);
-                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-                color: #475569;
-                border: 2px solid #cbd5e1;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
-                font-weight: 700;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                text-align: center;
-                width: 100%;
-                box-sizing: border-box;
-            }
-            
-            .show-all-replies-btn:hover {
-                background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-                border-color: #94a3b8;
-                transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(71, 85, 105, 0.15);
-            }
-            
-            /* ===== CONTENU EMAIL HARMONISÉ ===== */
-            .email-content-section {
-                padding: 20px 24px;
-            }
-            
-            .email-content-tabs {
-                display: flex;
                 gap: 6px;
-                margin-bottom: 20px;
-                background: #f3f4f6;
-                padding: 6px;
-                border-radius: 12px;
-            }
-            
-            .tab-btn {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: var(--btn-padding);
-                height: var(--btn-height);
-                background: transparent;
+                padding: 8px 16px;
+                background: #3b82f6;
+                color: white;
                 border: none;
-                border-radius: var(--btn-border-radius);
-                font-size: var(--btn-font-size);
+                border-radius: 6px;
+                font-size: 13px;
                 font-weight: 600;
-                color: #6b7280;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                flex: 1;
-                box-sizing: border-box;
-                text-align: center;
             }
             
-            .tab-btn.active {
-                background: white;
-                color: #1f2937;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            .use-reply-btn:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
             }
             
-            .tab-btn:hover:not(.active) {
-                background: rgba(255, 255, 255, 0.5);
-                color: #374151;
+            /* Styles pour le modal des suggestions */
+            .ai-suggestions-info {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+                border: 1px solid #7dd3fc;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
             }
             
-            .email-content-box {
-                background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 20px;
-                max-height: 500px;
-                overflow-y: auto;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            .ai-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #0ea5e9;
+                color: white;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 8px;
             }
             
-            .email-content-view {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            .ai-suggestions-info p {
+                margin: 0;
+                color: #075985;
                 font-size: 14px;
-                line-height: 1.7;
-                color: #374151;
-                font-weight: 500;
-                text-align: left;
             }
             
-            .email-content-viewer {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                line-height: 1.7;
-                color: #333;
-                text-align: left;
-            }
-            
-            .email-original-content {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 14px;
-                line-height: 1.7;
-                color: #374151;
-                white-space: pre-wrap;
-                font-weight: 500;
-                text-align: left;
-            }
-            
-            .email-original-content strong {
-                color: #1f2937;
-                font-weight: 700;
-            }
-            
-            /* ===== MODAL REPLIES HARMONISÉES ===== */
             .replies-list {
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 16px;
             }
             
             .reply-suggestion-card {
                 background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: var(--card-border-radius);
-                padding: 20px;
-                transition: all 0.3s ease;
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 16px;
+                transition: all 0.2s ease;
             }
             
             .reply-suggestion-card:hover {
-                border-color: #6366f1;
-                box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
-                transform: translateY(-2px);
+                border-color: #3b82f6;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
             }
             
             .reply-card-header {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: var(--gap-large);
+                margin-bottom: 12px;
             }
             
             .reply-card-actions {
                 display: flex;
-                gap: 12px;
+                gap: 8px;
             }
             
             .btn-sm {
                 display: inline-flex;
                 align-items: center;
-                justify-content: center;
-                gap: var(--gap-small);
-                padding: 8px 12px;
-                height: 32px;
-                border-radius: var(--btn-border-radius);
+                gap: 4px;
+                padding: 6px 12px;
+                border-radius: 6px;
                 font-size: 12px;
-                font-weight: 600;
+                font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 border: 1px solid;
-                box-sizing: border-box;
-                text-align: center;
             }
             
             .btn-sm.btn-secondary {
-                background: #f8fafc;
-                color: #475569;
-                border-color: #e2e8f0;
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
             }
             
             .btn-sm.btn-secondary:hover {
-                background: #f1f5f9;
-                border-color: #cbd5e1;
-                transform: translateY(-1px);
+                background: #e5e7eb;
+                border-color: #9ca3af;
             }
             
             .btn-sm.btn-primary {
-                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                background: #3b82f6;
                 color: white;
-                border-color: transparent;
-                box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
+                border-color: #3b82f6;
             }
             
             .btn-sm.btn-primary:hover {
-                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                background: #2563eb;
+                border-color: #2563eb;
                 transform: translateY(-1px);
-                box-shadow: 0 3px 8px rgba(59, 130, 246, 0.3);
             }
             
             .reply-subject-line {
-                font-size: 14px;
+                font-size: 13px;
                 color: #4b5563;
-                margin-bottom: 12px;
-                padding-bottom: 12px;
+                margin-bottom: 10px;
+                padding-bottom: 8px;
                 border-bottom: 1px solid #e5e7eb;
-                font-weight: 600;
-                text-align: left;
             }
             
             .reply-content-preview {
-                font-size: 14px;
+                font-size: 13px;
                 color: #374151;
                 line-height: 1.6;
                 white-space: pre-wrap;
                 background: #f8fafc;
-                padding: var(--gap-large);
-                border-radius: 12px;
-                border: 1px solid #e2e8f0;
-                max-height: 200px;
+                padding: 12px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+                max-height: 150px;
                 overflow-y: auto;
-                font-weight: 500;
-                text-align: left;
-            }
-            
-            /* ===== ANIMATIONS ===== */
-            @keyframes pulse {
-                0%, 100% { 
-                    opacity: 1; 
-                    transform: scale(1);
-                }
-                50% { 
-                    opacity: 0.8; 
-                    transform: scale(1.02);
-                }
-            }
-            
-            @keyframes fadeInUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
-            .task-harmonized-card {
-                animation: fadeInUp 0.3s ease-out;
-            }
-            
-            /* ===== RESPONSIVE AVEC PILLS AGRANDIS ET CENTRAGE MAINTENU ===== */
-            @media (max-width: 1200px) {
-                :root {
-                    --btn-height: 42px;
-                    --card-height: 84px;
-                    --action-btn-size: 34px;
-                }
-                
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 48px;
-                    min-height: 48px;
-                    max-height: 48px;
-                    font-size: 13px;
-                    min-width: 110px;
-                }
-                
-                .controls-bar-harmonized {
-                    gap: var(--gap-medium);
-                }
-                
-                .search-section-harmonized {
-                    flex: 0 0 250px;
-                }
-                
-                .view-mode-harmonized {
-                    min-width: 100px;
-                }
-                
-                /* MAINTENIR l'harmonisation sur tablette */
-                .action-buttons-harmonized > *,
-                .view-modes-harmonized .view-mode-harmonized {
-                    height: var(--btn-height);
-                    min-height: var(--btn-height);
-                    max-height: var(--btn-height);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-            }
-            
-            @media (max-width: 1024px) {
-                :root {
-                    --btn-height: 40px;
-                    --card-height: 80px;
-                    --action-btn-size: 32px;
-                    --gap-small: 6px;
-                    --gap-medium: 10px;
-                    --gap-large: 14px;
-                }
-                
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 44px;
-                    min-height: 44px;
-                    max-height: 44px;
-                    font-size: 12px;
-                    min-width: 100px;
-                    padding: 0 16px;
-                }
-                
-                .controls-bar-harmonized {
-                    flex-direction: column;
-                    gap: var(--gap-medium);
-                    align-items: stretch;
-                    padding: var(--gap-large);
-                }
-                
-                .search-section-harmonized {
-                    flex: none;
-                    width: 100%;
-                    order: 1;
-                    height: var(--btn-height);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .view-modes-harmonized {
-                    width: 100%;
-                    justify-content: space-around;
-                    order: 2;
-                    height: var(--btn-height);
-                    display: flex;
-                    align-items: center;
-                }
-                
-                .action-buttons-harmonized {
-                    width: 100%;
-                    justify-content: center;
-                    flex-wrap: wrap;
-                    order: 3;
-                    height: auto;
-                    min-height: var(--btn-height);
-                    display: flex;
-                    align-items: center;
-                }
-                
-                .view-mode-harmonized {
-                    flex: 1;
-                    min-width: 80px;
-                    height: calc(var(--btn-height) - var(--gap-small));
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .status-filters-harmonized {
-                    justify-content: center;
-                }
-                
-                .form-row {
-                    grid-template-columns: 1fr;
-                }
-                
-                .advanced-filters-grid {
-                    grid-template-columns: 1fr;
-                }
-                
-                /* FORCER l'harmonisation sur tablette */
-                .action-buttons-harmonized > * {
-                    height: var(--btn-height) !important;
-                    min-height: var(--btn-height) !important;
-                    max-height: var(--btn-height) !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                }
-            }
-            
-            @media (max-width: 768px) {
-                :root {
-                    --btn-height: 38px;
-                    --btn-padding-horizontal: 14px;
-                    --btn-font-size: 12px;
-                    --card-height: 76px;
-                    --card-padding: 12px;
-                    --action-btn-size: 30px;
-                    --action-btn-font-size: 12px;
-                }
-                
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 40px;
-                    min-height: 40px;
-                    max-height: 40px;
-                    font-size: 11px;
-                    min-width: 80px;
-                    padding: 0 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .view-mode-harmonized span,
-                .btn-harmonized span {
-                    display: none;
-                }
-                
-                .view-mode-harmonized {
-                    min-width: 38px;
-                    padding: 0 var(--gap-small);
-                    height: calc(var(--btn-height) - var(--gap-small));
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .pill-text-harmonized {
-                    display: none;
-                }
-                
-                .task-header-harmonized {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: var(--gap-tiny);
-                    margin-bottom: var(--gap-small);
-                }
-                
-                .task-title-harmonized {
-                    font-size: 13px;
-                    white-space: normal;
-                    line-height: 1.4;
-                    max-height: 2.8em;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    display: -webkit-box;
-                    -webkit-line-clamp: 2;
-                    -webkit-box-orient: vertical;
-                    text-align: left;
-                }
-                
-                .task-meta-harmonized {
-                    width: 100%;
-                    justify-content: space-between;
-                    display: flex;
-                    align-items: center;
-                }
-                
-                .priority-bar-harmonized {
-                    height: 44px;
-                    margin-right: var(--gap-small);
-                }
-                
-                .task-actions-harmonized {
-                    margin-left: var(--gap-small);
-                    gap: 3px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                /* FORCER l'harmonisation sur mobile */
-                .action-buttons-harmonized > * {
-                    height: var(--btn-height) !important;
-                    min-height: var(--btn-height) !important;
-                    max-height: var(--btn-height) !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    text-align: center !important;
-                }
-            }
-            
-            @media (max-width: 480px) {
-                :root {
-                    --btn-height: 36px;
-                    --btn-padding-horizontal: 12px;
-                    --btn-font-size: 11px;
-                    --card-height: 72px;
-                    --card-padding: 10px;
-                    --action-btn-size: 28px;
-                    --action-btn-font-size: 11px;
-                    --gap-tiny: 2px;
-                    --gap-small: 4px;
-                    --gap-medium: 8px;
-                    --gap-large: 12px;
-                }
-                
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 36px;
-                    min-height: 36px;
-                    max-height: 36px;
-                    font-size: 10px;
-                    min-width: 70px;
-                    padding: 0 10px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .tasks-page-modern {
-                    padding: var(--gap-medium);
-                }
-                
-                .controls-bar-harmonized {
-                    padding: var(--gap-medium);
-                }
-                
-                .task-title-harmonized {
-                    font-size: 12px;
-                    text-align: left;
-                }
-                
-                .task-type-badge-harmonized {
-                    font-size: 9px;
-                    padding: 3px 5px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .deadline-badge-harmonized {
-                    font-size: 8px;
-                    padding: 3px 5px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .task-recipient-harmonized {
-                    font-size: 10px;
-                }
-                
-                .priority-bar-harmonized {
-                    width: 3px;
-                    height: 36px;
-                    margin-right: var(--gap-small);
-                }
-                
-                .task-checkbox-harmonized {
-                    width: 16px;
-                    height: 16px;
-                    margin-right: var(--gap-small);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                .pill-count-harmonized {
-                    padding: 2px 4px;
-                    font-size: 9px;
-                    min-width: 16px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .search-clear-harmonized {
-                    width: 24px;
-                    height: 24px;
-                    font-size: 9px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                
-                /* FORCER l'harmonisation sur petit mobile */
-                .action-buttons-harmonized > *,
-                .view-modes-harmonized .view-mode-harmonized {
-                    height: var(--btn-height) !important;
-                    min-height: var(--btn-height) !important;
-                    max-height: var(--btn-height) !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    text-align: center !important;
-                }
-                
-                .view-mode-harmonized {
-                    height: calc(var(--btn-height) - var(--gap-small)) !important;
-                }
-            }
-            
-            @media (max-width: 360px) {
-                :root {
-                    --btn-height: 34px;
-                    --card-height: 68px;
-                    --action-btn-size: 26px;
-                }
-                
-                .status-filters-harmonized .status-pill-harmonized {
-                    height: 34px;
-                    min-height: 34px;
-                    max-height: 34px;
-                    font-size: 9px;
-                    min-width: 60px;
-                    padding: 0 8px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .view-modes-harmonized {
-                    gap: 1px;
-                }
-                
-                .view-mode-harmonized {
-                    min-width: 34px;
-                    padding: 0 4px;
-                    height: calc(var(--btn-height) - var(--gap-small)) !important;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-align: center;
-                }
-                
-                .status-filters-harmonized {
-                    gap: 4px;
-                    justify-content: center;
-                }
-                
-                .action-buttons-harmonized {
-                    gap: 4px;
-                    justify-content: center;
-                }
-                
-                /* FORCER l'harmonisation sur très petit écran */
-                .action-buttons-harmonized > * {
-                    height: var(--btn-height) !important;
-                    min-height: var(--btn-height) !important;
-                    max-height: var(--btn-height) !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    text-align: center !important;
-                }
             }
         `;
         
@@ -4940,20 +5325,24 @@ class TasksView {
 }
 
 // =====================================
-// GLOBAL INITIALIZATION
+// GLOBAL INITIALIZATION GARANTIE
 // =====================================
 
+// Fonction d'initialisation garantie
 function initializeTaskManager() {
-    console.log('[TaskManager] Initializing global instances v9.0...');
+    console.log('[TaskManager] Initializing global instances...');
     
+    // Créer ou réinitialiser TaskManager
     if (!window.taskManager || !window.taskManager.initialized) {
         window.taskManager = new TaskManager();
     }
     
+    // Créer ou réinitialiser TasksView  
     if (!window.tasksView) {
         window.tasksView = new TasksView();
     }
     
+    // Bind methods pour éviter les erreurs de contexte
     Object.getOwnPropertyNames(TaskManager.prototype).forEach(name => {
         if (name !== 'constructor' && typeof window.taskManager[name] === 'function') {
             window.taskManager[name] = window.taskManager[name].bind(window.taskManager);
@@ -4966,9 +5355,10 @@ function initializeTaskManager() {
         }
     });
     
-    console.log('✅ TaskManager v9.0 loaded - Interface harmonisée et centrée');
+    console.log('✅ TaskManager v8.4 CORRIGÉ loaded - Avec affichage email complet et suggestions de réponse personnalisées');
 }
 
+// Initialisation immédiate ET sur DOMContentLoaded
 initializeTaskManager();
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -4976,6 +5366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTaskManager();
 });
 
+// Fallback sur window.load
 window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
