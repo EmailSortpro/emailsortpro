@@ -870,10 +870,10 @@ class TasksView {
         const pills = [
             { id: 'all', name: 'Tous', icon: 'fas fa-list', count: stats.total },
             { id: 'todo', name: 'À faire', icon: 'fas fa-clock', count: stats.todo },
-            { id: 'in-progress', name: 'En cours', icon: 'fas fa-play-circle', count: stats.inProgress },
+            { id: 'in-progress', name: 'En cours', icon: 'fas fa-play', count: stats.inProgress },
             { id: 'overdue', name: 'En retard', icon: 'fas fa-exclamation-triangle', count: stats.overdue },
             { id: 'needsReply', name: 'À répondre', icon: 'fas fa-reply', count: stats.needsReply },
-            { id: 'completed', name: 'Terminées', icon: 'fas fa-check-circle', count: stats.completed }
+            { id: 'completed', name: 'Terminées', icon: 'fas fa-check', count: stats.completed }
         ];
 
         return pills.map(pill => `
@@ -1365,7 +1365,7 @@ class TasksView {
                 ${task.hasEmail ? `
                     <!-- Section Email Enrichie -->
                     <div class="details-section-enriched email-section">
-                        <h3><i class="fas fa-envelope"></i> Contenu Email Complet</h3>
+                        <h3><i class="fas fa-envelope"></i> Informations Email</h3>
                         
                         <!-- Informations de base -->
                         <div class="email-info-enriched">
@@ -1485,7 +1485,7 @@ class TasksView {
                         <!-- Contenu HTML complet de l'email -->
                         ${task.emailHtmlContent ? `
                             <div class="email-html-content-enriched">
-                                <h4><i class="fas fa-code"></i> Contenu HTML Complet</h4>
+                                <h4><i class="fas fa-code"></i> Contenu Complet</h4>
                                 <div class="html-content-viewer-enriched" onclick="window.tasksView.toggleHtmlExpansion(this)">
                                     <div class="html-content-preview">
                                         ${task.emailHtmlContent}
@@ -2831,7 +2831,7 @@ class TasksView {
             }
             
             .pill-header-unified i {
-                font-size: var(--icon-size-lg);
+                font-size: var(--icon-size-md);
             }
             
             .pill-count-unified {
@@ -3762,14 +3762,14 @@ class TasksView {
             }
             
             .details-section-enriched.email-section {
-                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-                border-color: #7dd3fc;
+                background: #f8fafc;
+                border-color: #e2e8f0;
             }
             
             .details-section-enriched.email-section h3 {
-                background: #f0f9ff;
-                border-bottom-color: #7dd3fc;
-                color: #075985;
+                background: #f8fafc;
+                border-bottom-color: #e2e8f0;
+                color: var(--text-color);
             }
             
             .details-section-enriched.attention {
@@ -3846,10 +3846,10 @@ class TasksView {
                 justify-content: space-between;
                 align-items: center;
                 margin-bottom: 16px;
-                padding: 16px;
+                padding: 12px 16px;
                 background: white;
-                border-radius: var(--btn-border-radius);
-                border: 1px solid #7dd3fc;
+                border-radius: 6px;
+                border: 1px solid var(--border-color);
             }
             
             .sender-info-enriched {
@@ -3859,17 +3859,17 @@ class TasksView {
             }
             
             .sender-avatar-enriched {
-                width: 48px;
-                height: 48px;
-                background: linear-gradient(135deg, #0ea5e9, #0284c7);
-                color: white;
-                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                background: var(--color-gray-light);
+                color: var(--text-color);
+                border-radius: 8px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 18px;
-                font-weight: 700;
-                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.3);
+                font-size: 16px;
+                font-weight: 600;
+                border: 1px solid var(--border-color);
             }
             
             .sender-details-enriched {
@@ -3910,13 +3910,14 @@ class TasksView {
             }
             
             .email-subject-enriched {
-                font-size: 14px;
+                font-size: 13px;
                 color: var(--text-color);
                 margin-bottom: 12px;
-                padding: 12px;
+                padding: 10px 12px;
                 background: white;
-                border-radius: 6px;
-                border: 1px solid #e0f2fe;
+                border-radius: 4px;
+                border: 1px solid var(--border-color);
+                font-weight: 500;
             }
             
             .email-flags-enriched {
@@ -3980,8 +3981,8 @@ class TasksView {
             .image-item-enriched {
                 position: relative;
                 background: white;
-                border: 1px solid #e0f2fe;
-                border-radius: var(--btn-border-radius);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
                 overflow: hidden;
                 cursor: pointer;
                 transition: var(--transition);
@@ -4054,17 +4055,17 @@ class TasksView {
             .attachment-item-enriched {
                 display: flex;
                 align-items: center;
-                gap: 10px;
-                padding: 10px 12px;
+                gap: 8px;
+                padding: 8px 10px;
                 background: white;
-                border: 1px solid #e0f2fe;
-                border-radius: 6px;
-                font-size: 13px;
+                border: 1px solid var(--border-color);
+                border-radius: 4px;
+                font-size: 12px;
             }
             
             .attachment-item-enriched i {
-                font-size: var(--icon-size-md);
-                color: #8b5cf6;
+                font-size: var(--icon-size-sm);
+                color: var(--text-muted);
             }
             
             .attachment-name-enriched {
@@ -4087,15 +4088,15 @@ class TasksView {
             
             .conversation-message-enriched {
                 background: white;
-                border: 1px solid #e0f2fe;
-                border-radius: var(--btn-border-radius);
-                padding: 16px;
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
+                padding: 12px;
                 position: relative;
             }
             
             .conversation-message-enriched.latest {
-                border-color: #0ea5e9;
-                box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+                border-color: var(--color-primary);
+                box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
             }
             
             .message-header-enriched {
@@ -4112,16 +4113,17 @@ class TasksView {
             }
             
             .message-avatar-enriched {
-                width: 32px;
-                height: 32px;
-                background: linear-gradient(135deg, #0ea5e9, #0284c7);
-                color: white;
-                border-radius: 50%;
+                width: 28px;
+                height: 28px;
+                background: var(--color-gray-light);
+                color: var(--text-color);
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 14px;
+                font-size: 12px;
                 font-weight: 600;
+                border: 1px solid var(--border-color);
             }
             
             .message-details-enriched {
@@ -4141,11 +4143,11 @@ class TasksView {
             }
             
             .latest-indicator-enriched {
-                background: #0ea5e9;
+                background: var(--color-primary);
                 color: white;
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 11px;
+                padding: 3px 8px;
+                border-radius: 10px;
+                font-size: 10px;
                 font-weight: 600;
             }
             
@@ -4164,8 +4166,8 @@ class TasksView {
             .html-content-viewer-enriched {
                 position: relative;
                 background: white;
-                border: 1px solid #e0f2fe;
-                border-radius: var(--btn-border-radius);
+                border: 1px solid var(--border-color);
+                border-radius: 6px;
                 overflow: hidden;
                 cursor: pointer;
                 transition: var(--transition);
@@ -4174,7 +4176,7 @@ class TasksView {
             .html-content-preview {
                 max-height: 200px;
                 overflow: hidden;
-                padding: 16px;
+                padding: 12px;
             }
             
             .html-content-viewer-enriched.expanded .html-content-preview {
@@ -4187,21 +4189,22 @@ class TasksView {
                 bottom: 0;
                 left: 0;
                 right: 0;
-                background: linear-gradient(transparent, rgba(14, 165, 233, 0.9));
+                background: linear-gradient(transparent, rgba(107, 114, 128, 0.9));
                 color: white;
-                padding: 12px;
+                padding: 8px 12px;
                 text-align: center;
-                font-size: 12px;
-                font-weight: 600;
+                font-size: 11px;
+                font-weight: 500;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 6px;
+                gap: 4px;
             }
             
             .html-content-viewer-enriched.expanded .expand-html-button {
                 position: static;
-                background: #0ea5e9;
+                background: var(--color-gray-light);
+                color: var(--text-color);
             }
 
             /* Actions et informations */
