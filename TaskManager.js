@@ -1088,9 +1088,9 @@ render(container) {
     
     container.innerHTML = `
         <div class="tasks-page-modern">
-            <!-- Barre de contrôles harmonisée -->
+            <!-- Barre de contrôles harmonisée - IDENTIQUE à PageManager -->
             <div class="controls-bar-harmonized">
-                <!-- Section recherche -->
+                <!-- Section recherche - LIGNE COMPLÈTE -->
                 <div class="search-section-harmonized">
                     <div class="search-box-harmonized">
                         <i class="fas fa-search search-icon-harmonized"></i>
@@ -1106,7 +1106,10 @@ render(container) {
                         ` : ''}
                     </div>
                 </div>
-                
+            </div>
+
+            <!-- DEUXIÈME LIGNE : Modes de vue + Actions - IDENTIQUE à PageManager -->
+            <div class="second-line-controls-harmonized">
                 <!-- Modes de vue harmonisés -->
                 <div class="view-modes-harmonized">
                     <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
@@ -1129,9 +1132,15 @@ render(container) {
                     </button>
                 </div>
                 
-                <!-- Actions principales harmonisées SANS info de sélection -->
+                <!-- Actions principales harmonisées -->
                 <div class="action-buttons-harmonized">
                     ${selectedCount > 0 ? `
+                        <div class="selection-info-harmonized">
+                            <span class="selection-count-harmonized">${selectedCount} sélectionné(s)</span>
+                            <button class="btn-harmonized btn-clear-selection" onclick="window.tasksView.clearSelection()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                         <button class="btn-harmonized btn-primary" onclick="window.tasksView.bulkActions()">
                             <i class="fas fa-cog"></i>
                             <span>Actions</span>
@@ -1158,8 +1167,8 @@ render(container) {
                 </div>
             </div>
 
-            <!-- Filtres de statut harmonisés -->
-            <div class="status-filters-harmonized">
+            <!-- Filtres de statut harmonisés - IDENTIQUE à PageManager -->
+            <div class="status-filters-harmonized-twolines">
                 ${this.buildHarmonizedStatusPills(stats)}
             </div>
             
@@ -1218,8 +1227,9 @@ render(container) {
 
     this.addHarmonizedTaskStyles();
     this.setupEventListeners();
-    console.log('[TasksView] Harmonized interface rendered');
+    console.log('[TasksView] Interface harmonisée rendue');
 }
+
 buildHarmonizedStatusPills(stats) {
     const pills = [
         { id: 'all', name: 'Tous', icon: '📧', count: stats.total },
