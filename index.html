@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EmailSortProAI - Scanner d'Emails Intelligent avec IA</title>
+    <title>EmailSortPro - Scanner d'Emails Intelligent avec IA</title>
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="Organisez vos emails Outlook intelligemment avec l'IA. Catégorisation automatique et organisation par domaine.">
@@ -13,13 +13,13 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://emailsortpro.netlify.app/">
-    <meta property="og:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
+    <meta property="og:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="og:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://emailsortpro.netlify.app/">
-    <meta property="twitter:title" content="EmailSortProAI - Scanner d'Emails Intelligent">
+    <meta property="twitter:title" content="EmailSortPro - Scanner d'Emails Intelligent">
     <meta property="twitter:description" content="Organisez vos emails Outlook intelligemment avec l'IA.">
     
     <!-- Favicon -->
@@ -37,15 +37,15 @@
     <!-- Styles principaux -->
     <link rel="stylesheet" href="styles.css">
     
-    <!-- CONFIGURATION NETLIFY -->
+    <!-- CONFIGURATION NETLIFY SÉCURISÉE -->
     <script>
         console.log('[INDEX] 🚀 Loading Netlify configuration for emailsortpro.netlify.app...');
         
-        // Client IDs pour Microsoft et Google
+        // Client IDs SÉCURISÉS (SANS CLIENT SECRETS)
         window.NETLIFY_CLIENT_ID = '8fec3ae1-78e3-4b5d-a425-00b8f20516f7';
-        window.GOOGLE_CLIENT_ID = '436941729211-00tc5fdl74l0hc3q1qotfknh0v86h72i.apps.googleusercontent.com';
+        window.GOOGLE_CLIENT_ID = '436941729211-2dr129lfjnc22k1k7f42ofisjbfthmr2.apps.googleusercontent.com';
         
-        console.log('[INDEX] ✅ Netlify Client IDs configured for new domain');
+        console.log('[INDEX] ✅ Netlify Client IDs configured for new domain - SECURE VERSION');
         
         // Détection de l'environnement
         (function() {
@@ -108,17 +108,18 @@
                 return config;
             }
             
-            // Fonction pour créer la configuration
+            // Fonction pour créer la configuration SÉCURISÉE
             function createConfig(clientIds) {
                 const basePath = '';
                 const redirectUri = 'https://emailsortpro.netlify.app/auth-callback.html';
                 const postLogoutRedirectUri = 'https://emailsortpro.netlify.app/';
                 
-                console.log('[INDEX] Creating config with corrected URIs:', {
+                console.log('[INDEX] Creating SECURE config with corrected URIs:', {
                     redirectUri,
                     postLogoutRedirectUri,
                     microsoftClientId: clientIds.microsoft.substring(0, 8) + '...',
-                    googleClientId: clientIds.google.substring(0, 15) + '...'
+                    googleClientId: clientIds.google.substring(0, 15) + '...',
+                    secureMode: true
                 });
                 
                 window.AppConfig = {
@@ -146,7 +147,7 @@
                     },
                     google: {
                         clientId: clientIds.google,
-                        clientSecret: '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',
+                        // PAS DE CLIENT SECRET - SÉCURISÉ !
                         scopes: [
                             'https://www.googleapis.com/auth/gmail.readonly',
                             'https://www.googleapis.com/auth/gmail.modify',
@@ -156,7 +157,10 @@
                         discoveryDocs: [
                             'https://gmail.googleapis.com/$discovery/rest?version=v1',
                             'https://www.googleapis.com/discovery/v1/apis/oauth2/v2/rest'
-                        ]
+                        ],
+                        // Configuration pour flow sécurisé
+                        responseType: 'token',
+                        accessType: 'online'
                     },
                     scopes: {
                         login: [
@@ -171,11 +175,12 @@
                         ]
                     },
                     app: {
-                        name: 'EmailSortProAI',
-                        version: '3.0.1',
+                        name: 'EmailSortPro',
+                        version: '3.0.2',
                         debug: isLocalhost,
                         environment: isNetlify ? 'netlify' : isGitHubPages ? 'github' : isLocalhost ? 'localhost' : 'other',
-                        domain: 'emailsortpro.netlify.app'
+                        domain: 'emailsortpro.netlify.app',
+                        securityMode: 'secure'
                     },
                     email: {
                         defaultFolder: 'inbox',
@@ -227,18 +232,20 @@
                             redirectUri: this.msal.redirectUri,
                             postLogoutRedirectUri: this.msal.postLogoutRedirectUri,
                             isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
+                            securityMode: this.app.securityMode,
                             timestamp: new Date().toISOString()
                         };
                     }
                 };
                 
-                console.log('[INDEX] ✅ Configuration créée pour le nouveau domaine:', {
+                console.log('[INDEX] ✅ SECURE Configuration créée pour le nouveau domaine:', {
                     environment: window.AppConfig.app.environment,
                     domain: window.AppConfig.app.domain,
                     microsoftClientId: clientIds.microsoft.substring(0, 8) + '...',
                     googleClientId: clientIds.google.substring(0, 15) + '...',
                     redirectUri: window.AppConfig.msal.redirectUri,
-                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app'
+                    isCorrectDomain: window.location.hostname === 'emailsortpro.netlify.app',
+                    securityMode: window.AppConfig.app.securityMode
                 });
             }
             
@@ -274,7 +281,7 @@
                     }, 1000);
                 }
             } else {
-                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app');
+                console.log('[INDEX] ✅ Configuration valide pour emailsortpro.netlify.app - SECURE MODE');
             }
         })();
     </script>
@@ -1354,7 +1361,7 @@
             <div class="header-content">
                 <div class="logo">
                     <i class="fas fa-envelope-open-text"></i>
-                    <span>EmailSortProAI</span>
+                    <span>EmailSortPro</span>
                     <span class="ai-badge">AI</span>
                 </div>
                 <div id="authStatus" class="auth-status">
@@ -1487,7 +1494,7 @@
                                 </a>
                             </div>
                             <div class="copyright">
-                                © 2025 EmailSortProAI - VH (Vianney Hastings) - Tous droits réservés
+                                © 2025 EmailSortPro - VH (Vianney Hastings) - Tous droits réservés
                             </div>
                         </div>
                     </div>
@@ -1517,8 +1524,8 @@
                         </a>
                     </div>
                     <div class="footer-info">
-                        <strong>EmailSortProAI</strong> - Assistant IA pour Outlook et Gmail<br>
-                        Développé par <strong>VH (Vianney Hastings)</strong> • Version 3.0.1<br>
+                        <strong>EmailSortPro</strong> - Assistant IA pour Outlook et Gmail<br>
+                        Développé par <strong>VH (Vianney Hastings)</strong> • Version 3.0.2<br>
                         <span style="font-size: 12px; color: #94a3b8;">
                             🔐 100% RGPD • 📧 Données privées • 🚀 Traitement local
                         </span>
@@ -1546,7 +1553,7 @@
     <script src="MailService.js"></script>
     <script src="UIManager.js" onerror="console.error('UIManager.js manquant')"></script>
 
-    <!-- 2. GoogleAuthService - NOUVEAU -->
+    <!-- 2. GoogleAuthService - SÉCURISÉ -->
     <script src="GoogleAuthService.js" onerror="console.error('GoogleAuthService.js manquant')"></script>
 
     <!-- 3. CategoryManager -->
@@ -1824,7 +1831,7 @@
         // Lancer l'interception du dashboard
         setTimeout(window.interceptDashboardLoad, 1000);
 
-        // Gestion des boutons de connexion DUAL
+        // Gestion des boutons de connexion DUAL SÉCURISÉ
         document.addEventListener('DOMContentLoaded', function() {
             if (appAlreadyShown) {
                 return;
@@ -1936,7 +1943,7 @@
                 });
             }
             
-            // BOUTON GOOGLE - NOUVEAU
+            // BOUTON GOOGLE - SÉCURISÉ
             const googleLoginBtn = document.getElementById('googleLoginBtn');
             if (googleLoginBtn) {
                 googleLoginBtn.addEventListener('click', function() {
@@ -2096,6 +2103,7 @@
                 dashboardModule: window.dashboardModule ? 'OK' : 'MANQUANT',
                 hostname: window.location.hostname,
                 expectedHostname: 'emailsortpro.netlify.app',
+                securityMode: 'SECURE',
                 providers: {
                     microsoft: {
                         clientId: window.AppConfig?.msal?.clientId?.substring(0, 8) + '...' || 'N/A',
@@ -2103,7 +2111,8 @@
                     },
                     google: {
                         clientId: window.AppConfig?.google?.clientId?.substring(0, 15) + '...' || 'N/A',
-                        configured: !!(window.AppConfig?.google?.clientId && window.AppConfig.google.clientId !== 'CONFIGURATION_REQUIRED')
+                        configured: !!(window.AppConfig?.google?.clientId && window.AppConfig.google.clientId !== 'CONFIGURATION_REQUIRED'),
+                        hasClientSecret: false // ✅ SÉCURISÉ
                     }
                 }
             };
@@ -2111,7 +2120,7 @@
 
         // Fonction pour diagnostiquer les deux providers
         window.diagnoseDualAuth = function() {
-            console.group('🔍 DIAGNOSTIC DUAL AUTH - EmailSortPro');
+            console.group('🔍 DIAGNOSTIC DUAL AUTH SÉCURISÉ - EmailSortPro');
             
             const services = window.checkServices();
             console.log('📊 Services Status:', services);
@@ -2130,11 +2139,12 @@
             }
             
             // Google
-            console.log('🔴 Google Status:');
+            console.log('🔴 Google Status (SÉCURISÉ):');
             if (window.googleAuthService) {
                 console.log('  Service:', 'Available');
                 console.log('  Initialized:', window.googleAuthService.isInitialized || false);
                 console.log('  Authenticated:', window.googleAuthService.isAuthenticated ? window.googleAuthService.isAuthenticated() : false);
+                console.log('  🔒 Client Secret:', 'ABSENT (sécurisé)');
                 if (window.googleAuthService.getDiagnosticInfo) {
                     console.log('  Details:', window.googleAuthService.getDiagnosticInfo());
                 }
@@ -2150,6 +2160,7 @@
                 if (!validation.valid) {
                     console.log('  Issues:', validation.issues);
                 }
+                console.log('  Security Mode:', window.AppConfig.app?.securityMode || 'Unknown');
                 console.log('  Debug Info:', window.AppConfig.getDebugInfo());
             } else {
                 console.log('  AppConfig:', 'Missing');
