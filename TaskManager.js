@@ -32,11 +32,22 @@ class TaskManager {
             console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
             await this.loadTasks();
             this.initialized = true;
+            
+            // Signal que TaskManager est prêt
+            window.dispatchEvent(new CustomEvent('taskManagerReady', {
+                detail: { version: 'v10.1', tasksCount: this.tasks.length }
+            }));
+            
             console.log('[TaskManager] Initialization complete with', this.tasks.length, 'tasks');
         } catch (error) {
             console.error('[TaskManager] Initialization error:', error);
             this.tasks = [];
             this.initialized = true;
+            
+            // Signal même en cas d'erreur
+            window.dispatchEvent(new CustomEvent('taskManagerReady', {
+                detail: { version: 'v10.1', error: error.message }
+            }));
         }
     }
 
@@ -553,10 +564,18 @@ class TasksView {
         this.currentViewMode = 'normal'; // normal, minimal, detailed
         this.showCompleted = false;
         this.showAdvancedFilters = false;
+        this.initialized = true; // TasksView s'initialise immédiatement
         
         window.addEventListener('taskUpdate', () => {
             this.refreshView();
         });
+        
+        // Signal que TasksView est prêt
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('tasksViewReady', {
+                detail: { version: 'v10.1', viewMode: this.currentViewMode }
+            }));
+        }, 100);
     }
 
     render(container) {
@@ -3994,7 +4013,7 @@ class TasksView {
 // GLOBAL INITIALIZATION
 // =====================================
 
-function initializeTaskManagerV10Corrected() {
+function initializeTaskManagerV10() {
     console.log('[TaskManager] Initializing v10.1 - Interface harmonisée corrigée...');
     
     if (!window.taskManager || !window.taskManager.initialized) {
@@ -4022,11 +4041,11 @@ function initializeTaskManagerV10Corrected() {
 }
 
 // Initialisation immédiate ET sur DOMContentLoaded
-initializeTaskManagerV10Corrected();
+initializeTaskManagerV10();
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TaskManager] DOM ready, ensuring initialization...');
-    initializeTaskManagerV10Corrected();
+    initializeTaskManagerV10();
 });
 
 // Fallback sur window.load
@@ -4034,7 +4053,7 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         if (!window.taskManager || !window.taskManager.initialized) {
             console.log('[TaskManager] Fallback initialization...');
-            initializeTaskManagerV10Corrected();
+            initializeTaskManagerV10();
         }
     }, 1000);
 });
