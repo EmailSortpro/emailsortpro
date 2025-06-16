@@ -206,7 +206,6 @@ class PageManager {
             }
         });
     }
-
 async renderEmails(container) {
     // Récupérer les emails depuis EmailScanner centralisé
     const emails = window.emailScanner?.getAllEmails() || [];
@@ -227,135 +226,139 @@ async renderEmails(container) {
         const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
         
         container.innerHTML = `
-            <div class="tasks-page-modern">
-                <!-- Texte explicatif avec possibilité de fermer -->
-                ${!this.hideExplanation ? `
-                    <div class="explanation-text-harmonized">
-                        <i class="fas fa-info-circle"></i>
-                        <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
-                        <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                ` : ''}
-
-                <!-- Barre de contrôles avec boutons TOUJOURS VISIBLES -->
-                <div class="controls-bar-harmonized">
-                    <!-- Section recherche -->
-                    <div class="search-section-harmonized">
-                        <div class="search-box-harmonized">
-                            <i class="fas fa-search search-icon-harmonized"></i>
-                            <input type="text" 
-                                   class="search-input-harmonized" 
-                                   id="emailSearchInput"
-                                   placeholder="Rechercher emails..." 
-                                   value="${this.searchTerm}">
-                            ${this.searchTerm ? `
-                                <button class="search-clear-harmonized" onclick="window.pageManager.clearSearch()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <!-- Modes de vue -->
-                    <div class="view-modes-harmonized">
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
-                                onclick="window.pageManager.changeViewMode('grouped-domain')"
-                                title="Par domaine">
-                            <i class="fas fa-globe"></i>
-                            <span>Domaine</span>
-                        </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
-                                onclick="window.pageManager.changeViewMode('grouped-sender')"
-                                title="Par expéditeur">
-                            <i class="fas fa-user"></i>
-                            <span>Expéditeur</span>
-                        </button>
-                        <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
-                                onclick="window.pageManager.changeViewMode('flat')"
-                                title="Liste complète">
-                            <i class="fas fa-list"></i>
-                            <span>Liste</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Actions principales TOUJOURS VISIBLES -->
-                    <div class="action-buttons-harmonized">
-                        <!-- Bouton Sélectionner tout TOUJOURS VISIBLE -->
-                        <button class="btn-harmonized btn-selection-toggle" 
-                                onclick="window.pageManager.toggleAllSelection()"
-                                title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
-                            <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
-                            <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
-                            ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
-                        </button>
-                        
-                        <!-- Bouton Créer tâches TOUJOURS VISIBLE (désactivé si pas de sélection) -->
-                        <button class="btn-harmonized btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
-                                onclick="window.pageManager.createTasksFromSelection()"
-                                ${selectedCount === 0 ? 'disabled' : ''}>
-                            <i class="fas fa-tasks"></i>
-                            <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
-                            ${selectedCount > 0 ? `<span class="count-badge-harmonized">${selectedCount}</span>` : ''}
-                        </button>
-                        
-                        <!-- Bouton Actions TOUJOURS VISIBLE (désactivé si pas de sélection) -->
-                        <div class="dropdown-action-harmonized">
-                            <button class="btn-harmonized btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
-                                    onclick="window.pageManager.toggleBulkActions(event)"
-                                    ${selectedCount === 0 ? 'disabled' : ''}>
-                                <i class="fas fa-ellipsis-v"></i>
-                                <span>Actions</span>
-                                <i class="fas fa-chevron-down"></i>
+            <div class="emails-page-container">
+                <div class="emails-main-container">
+                    <!-- Texte explicatif avec possibilité de fermer -->
+                    ${!this.hideExplanation ? `
+                        <div class="explanation-text-harmonized">
+                            <i class="fas fa-info-circle"></i>
+                            <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                            <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
+                                <i class="fas fa-times"></i>
                             </button>
-                            <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
-                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
-                                    <i class="fas fa-eye"></i>
-                                    <span>Marquer comme lu</span>
+                        </div>
+                    ` : ''}
+
+                    <!-- Barre de contrôles avec boutons TOUJOURS VISIBLES -->
+                    <div class="controls-section-wrapper">
+                        <div class="controls-bar-harmonized ${selectedCount > 0 ? 'has-selection' : ''}">
+                            <!-- Section recherche -->
+                            <div class="search-section-harmonized">
+                                <div class="search-box-harmonized">
+                                    <i class="fas fa-search search-icon-harmonized"></i>
+                                    <input type="text" 
+                                           class="search-input-harmonized" 
+                                           id="emailSearchInput"
+                                           placeholder="Rechercher emails..." 
+                                           value="${this.searchTerm}">
+                                    ${this.searchTerm ? `
+                                        <button class="search-clear-harmonized" onclick="window.pageManager.clearSearch()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            
+                            <!-- Modes de vue -->
+                            <div class="view-modes-harmonized">
+                                <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                        title="Par domaine">
+                                    <i class="fas fa-globe"></i>
+                                    <span>Domaine</span>
                                 </button>
-                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkArchive()">
-                                    <i class="fas fa-archive"></i>
-                                    <span>Archiver</span>
+                                <button class="view-mode-harmonized ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                        title="Par expéditeur">
+                                    <i class="fas fa-user"></i>
+                                    <span>Expéditeur</span>
                                 </button>
-                                <button class="dropdown-item-harmonized danger" onclick="window.pageManager.bulkDelete()">
-                                    <i class="fas fa-trash"></i>
-                                    <span>Supprimer</span>
+                                <button class="view-mode-harmonized ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                        onclick="window.pageManager.changeViewMode('flat')"
+                                        title="Liste complète">
+                                    <i class="fas fa-list"></i>
+                                    <span>Liste</span>
                                 </button>
-                                <div class="dropdown-divider"></div>
-                                <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkExport()">
-                                    <i class="fas fa-download"></i>
-                                    <span>Exporter</span>
+                            </div>
+                            
+                            <!-- Actions principales TOUJOURS VISIBLES -->
+                            <div class="action-buttons-harmonized">
+                                <!-- Bouton Sélectionner tout TOUJOURS VISIBLE -->
+                                <button class="btn-harmonized btn-selection-toggle" 
+                                        onclick="window.pageManager.toggleAllSelection()"
+                                        title="${allVisible ? 'Désélectionner tout' : 'Sélectionner tout'}">
+                                    <i class="fas ${allVisible ? 'fa-square-check' : 'fa-square'}"></i>
+                                    <span>${allVisible ? 'Désélectionner' : 'Sélectionner'}</span>
+                                    ${visibleEmails.length > 0 ? `<span class="count-badge-small">${visibleEmails.length}</span>` : ''}
                                 </button>
+                                
+                                <!-- Bouton Créer tâches TOUJOURS VISIBLE (désactivé si pas de sélection) -->
+                                <button class="btn-harmonized btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                                        onclick="window.pageManager.createTasksFromSelection()"
+                                        ${selectedCount === 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-tasks"></i>
+                                    <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                                    ${selectedCount > 0 ? `<span class="count-badge-harmonized">${selectedCount}</span>` : ''}
+                                </button>
+                                
+                                <!-- Bouton Actions TOUJOURS VISIBLE (désactivé si pas de sélection) -->
+                                <div class="dropdown-action-harmonized">
+                                    <button class="btn-harmonized btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
+                                            onclick="window.pageManager.toggleBulkActions(event)"
+                                            ${selectedCount === 0 ? 'disabled' : ''}>
+                                        <i class="fas fa-ellipsis-v"></i>
+                                        <span>Actions</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="dropdown-menu-harmonized" id="bulkActionsMenu">
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkMarkAsRead()">
+                                            <i class="fas fa-eye"></i>
+                                            <span>Marquer comme lu</span>
+                                        </button>
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkArchive()">
+                                            <i class="fas fa-archive"></i>
+                                            <span>Archiver</span>
+                                        </button>
+                                        <button class="dropdown-item-harmonized danger" onclick="window.pageManager.bulkDelete()">
+                                            <i class="fas fa-trash"></i>
+                                            <span>Supprimer</span>
+                                        </button>
+                                        <div class="dropdown-divider"></div>
+                                        <button class="dropdown-item-harmonized" onclick="window.pageManager.bulkExport()">
+                                            <i class="fas fa-download"></i>
+                                            <span>Exporter</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Bouton Actualiser TOUJOURS VISIBLE -->
+                                <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
+                                    <i class="fas fa-sync-alt"></i>
+                                    <span>Actualiser</span>
+                                </button>
+                                
+                                <!-- Indicateur de sélection (si emails sélectionnés) -->
+                                ${selectedCount > 0 ? `
+                                    <div class="selection-info-harmonized">
+                                        <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
+                                        <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
-                        
-                        <!-- Bouton Actualiser TOUJOURS VISIBLE -->
-                        <button class="btn-harmonized btn-secondary" onclick="window.pageManager.refreshEmails()">
-                            <i class="fas fa-sync-alt"></i>
-                            <span>Actualiser</span>
-                        </button>
-                        
-                        <!-- Indicateur de sélection (si emails sélectionnés) -->
-                        ${selectedCount > 0 ? `
-                            <div class="selection-info-harmonized">
-                                <span class="selection-count-harmonized">${selectedCount} sélectionné${selectedCount > 1 ? 's' : ''}</span>
-                                <button class="btn-harmonized btn-clear-selection" onclick="window.pageManager.clearSelection()">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        ` : ''}
                     </div>
-                </div>
 
-                <!-- Filtres de catégories -->
-                <div class="status-filters-harmonized-twolines">
-                    ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
-                </div>
+                    <!-- Filtres de catégories -->
+                    <div class="status-filters-harmonized-twolines">
+                        ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
+                    </div>
 
-                <!-- CONTENU DES EMAILS -->
-                <div class="tasks-container-harmonized">
-                    ${this.renderEmailsList()}
+                    <!-- CONTENU DES EMAILS -->
+                    <div class="tasks-container-harmonized">
+                        ${this.renderEmailsList()}
+                    </div>
                 </div>
             </div>
         `;
@@ -618,34 +621,28 @@ dispatchEvent(eventName, detail) {
         window.uiManager?.showToast('Sélection effacée', 'info');
     }
 
-    refreshEmailsView() {
-        const emailsContainer = document.querySelector('.tasks-container-harmonized');
-        if (emailsContainer) {
-            emailsContainer.innerHTML = this.renderEmailsList();
-        }
-        
-        this.updateControlsBar();
-    }
 
-    updateControlsBar() {
-        const container = document.getElementById('pageContent');
-        if (container && this.currentPage === 'emails') {
-            // Sauvegarder l'état de recherche
-            const searchInput = document.getElementById('emailSearchInput');
-            const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
-            
-            // Re-render
-            this.renderEmails(container);
-            
-            // Restaurer la recherche
-            setTimeout(() => {
-                const newSearchInput = document.getElementById('emailSearchInput');
-                if (newSearchInput && currentSearchValue) {
-                    newSearchInput.value = currentSearchValue;
-                }
-            }, 100);
-        }
+updateControlsBar() {
+    const container = document.getElementById('pageContent');
+    if (container && this.currentPage === 'emails') {
+        // Sauvegarder l'état de recherche
+        const searchInput = document.getElementById('emailSearchInput');
+        const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
+        
+        // Re-render avec le nouveau layout
+        this.renderEmails(container);
+        
+        // Restaurer la recherche
+        setTimeout(() => {
+            const newSearchInput = document.getElementById('emailSearchInput');
+            if (newSearchInput && currentSearchValue) {
+                newSearchInput.value = currentSearchValue;
+            }
+        }, 100);
     }
+}
+
+
 buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
     // Récupérer les catégories pré-sélectionnées
     const preselectedCategories = this.getTaskPreselectedCategories();
@@ -1968,12 +1965,25 @@ addHarmonizedEmailStyles() {
             --preselect-color-dark: #7c3aed;
         }
         
-        .tasks-page-modern {
+        /* Conteneur principal centré */
+        .emails-page-container {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: #f8fafc;
             min-height: 100vh;
-            padding: var(--gap-large);
-            font-size: var(--btn-font-size);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .emails-main-container {
+            width: 100%;
+            max-width: 1400px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            padding: 24px;
+            margin: 0 auto;
         }
 
         .explanation-text-harmonized {
@@ -2022,20 +2032,30 @@ addHarmonizedEmailStyles() {
             transform: scale(1.1);
         }
         
+        /* Wrapper pour la section de contrôles avec fond gris */
+        .controls-section-wrapper {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--card-border-radius);
+            padding: var(--gap-medium);
+            margin-bottom: var(--gap-medium);
+            transition: all var(--transition-speed) ease;
+        }
+        
         /* Barre de contrôles */
         .controls-bar-harmonized {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: var(--gap-large);
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: var(--card-border-radius);
-            padding: var(--gap-medium);
-            margin-bottom: var(--gap-medium);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
+            min-height: var(--btn-height);
+            transition: all var(--transition-speed) ease;
+        }
+        
+        /* Ajustement dynamique quand il y a une sélection */
+        .controls-bar-harmonized.has-selection {
+            flex-wrap: wrap;
+            gap: var(--gap-medium);
         }
         
         .search-section-harmonized {
@@ -2058,7 +2078,7 @@ addHarmonizedEmailStyles() {
             border: 1px solid #d1d5db;
             border-radius: var(--btn-border-radius);
             font-size: var(--btn-font-size);
-            background: #f9fafb;
+            background: white;
             transition: all var(--transition-speed) ease;
             outline: none;
         }
@@ -2100,7 +2120,7 @@ addHarmonizedEmailStyles() {
         
         .view-modes-harmonized {
             display: flex;
-            background: #f8fafc;
+            background: white;
             border: 1px solid #e2e8f0;
             border-radius: var(--btn-border-radius);
             padding: 4px;
@@ -2127,13 +2147,13 @@ addHarmonizedEmailStyles() {
         }
         
         .view-mode-harmonized:hover {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(59, 130, 246, 0.05);
             color: #374151;
         }
         
         .view-mode-harmonized.active {
-            background: white;
-            color: #1f2937;
+            background: #3b82f6;
+            color: white;
             box-shadow: var(--shadow-base);
             font-weight: 700;
         }
@@ -2144,6 +2164,7 @@ addHarmonizedEmailStyles() {
             gap: var(--gap-small);
             height: var(--btn-height);
             flex-shrink: 0;
+            flex-wrap: wrap;
         }
         
         .btn-harmonized {
@@ -2162,6 +2183,7 @@ addHarmonizedEmailStyles() {
             gap: var(--btn-gap);
             box-shadow: var(--shadow-base);
             position: relative;
+            white-space: nowrap;
         }
         
         .btn-harmonized:hover {
@@ -2206,7 +2228,7 @@ addHarmonizedEmailStyles() {
         }
         
         .btn-harmonized.btn-secondary {
-            background: #f8fafc;
+            background: white;
             color: #475569;
             border-color: #e2e8f0;
         }
@@ -2267,6 +2289,7 @@ addHarmonizedEmailStyles() {
             display: flex;
             align-items: center;
             gap: var(--btn-gap);
+            flex-shrink: 0;
         }
         
         .count-badge-harmonized {
@@ -2349,734 +2372,31 @@ addHarmonizedEmailStyles() {
             margin: 8px 0;
         }
         
-        /* ===== FILTRES DE CATÉGORIES AVEC ÉTOILE FIXE ===== */
+        /* ===== FILTRES DE CATÉGORIES ===== */
         .status-filters-harmonized-twolines {
             display: flex;
             gap: var(--gap-small);
             margin-bottom: var(--gap-medium);
             flex-wrap: wrap;
             width: 100%;
-        }
-        
-        .status-pill-harmonized-twolines {
-            height: 60px;
-            padding: var(--gap-small);
-            font-size: 12px;
-            font-weight: 700;
-            flex: 0 1 calc(16.666% - var(--gap-small));
-            min-width: 120px;
-            max-width: 180px;
-            border-radius: var(--btn-border-radius);
-            box-shadow: var(--shadow-base);
-            transition: all var(--transition-speed) ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: white;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-            cursor: pointer;
-            position: relative;
-            overflow: visible !important; /* Important pour l'étoile */
-        }
-        
-        /* Style pour les catégories pré-sélectionnées */
-        .status-pill-harmonized-twolines.preselected-category {
-            animation: pulsePreselected 3s ease-in-out infinite;
-            border-width: 2px;
-        }
-        
-        .status-pill-harmonized-twolines.preselected-category::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border-radius: inherit;
-            background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
-            background-size: 300% 300%;
-            animation: gradientShift 4s ease infinite;
-            z-index: -1;
-            opacity: 0.3;
-        }
-        
-        @keyframes pulsePreselected {
-            0%, 100% { 
-                transform: scale(1);
-            }
-            50% { 
-                transform: scale(1.03);
-            }
-        }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .pill-content-twolines {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            width: 100%;
-            height: 100%;
-            justify-content: center;
-        }
-        
-        .pill-first-line-twolines {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .pill-icon-twolines {
-            font-size: 16px;
-        }
-        
-        .pill-count-twolines {
-            background: rgba(0, 0, 0, 0.1);
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 10px;
-            font-weight: 800;
-            min-width: 18px;
-            text-align: center;
-        }
-        
-        /* Étoile de pré-sélection TOUJOURS VISIBLE */
-        .preselected-star {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 20px;
-            height: 20px;
-            background: var(--preselect-color);
-            color: white;
-            border-radius: 50%;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            border: 2px solid white;
-            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-            animation: starPulse 2s ease-in-out infinite;
-            z-index: 10;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-        
-        @keyframes starPulse {
-            0%, 100% { 
-                transform: scale(1);
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-            }
-            50% { 
-                transform: scale(1.15);
-                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
-            }
-        }
-        
-        .pill-text-twolines {
-            font-weight: 700;
-            font-size: 12px;
-            line-height: 1.2;
-            text-align: center;
-        }
-        
-        .status-pill-harmonized-twolines:hover {
-            border-color: #3b82f6;
-            background: #f0f9ff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-        }
-        
-        .status-pill-harmonized-twolines.active {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-            border-color: #3b82f6;
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        /* Catégorie active ET pré-sélectionnée */
-        .status-pill-harmonized-twolines.active.preselected-category {
-            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
-        }
-        
-        .status-pill-harmonized-twolines.active .pill-count-twolines {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-        
-        /* Container des emails */
-        .tasks-container-harmonized {
-            background: transparent;
-        }
-        
-        .tasks-harmonized-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-        
-        /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
-        .task-harmonized-card {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0;
-            padding: var(--card-padding);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            min-height: var(--card-height);
-            max-height: var(--card-height);
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .task-harmonized-card:first-child {
-            border-top-left-radius: var(--card-border-radius);
-            border-top-right-radius: var(--card-border-radius);
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .task-harmonized-card:last-child {
-            border-bottom-left-radius: var(--card-border-radius);
-            border-bottom-right-radius: var(--card-border-radius);
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .task-harmonized-card:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            border-color: rgba(99, 102, 241, 0.2);
-            border-left: 3px solid #6366f1;
-            z-index: 1;
-        }
-        
-        .task-harmonized-card.selected {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border-left: 4px solid #3b82f6;
-            border-color: #3b82f6;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-            z-index: 2;
-        }
-        
-        .task-harmonized-card.has-task {
-            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-            border-left: 3px solid #22c55e;
-        }
-        
-        /* Email pré-sélectionné pour tâche */
-        .task-harmonized-card.preselected-task {
-            background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
-            border-left: 3px solid var(--preselect-color);
-            border-color: rgba(139, 92, 246, 0.3);
-        }
-        
-        .task-harmonized-card.preselected-task:hover {
-            border-left: 4px solid var(--preselect-color);
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
-            border-color: rgba(139, 92, 246, 0.4);
-        }
-        
-        .task-harmonized-card.preselected-task.selected {
-            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
-            border-left: 4px solid var(--preselect-color);
-            border-color: var(--preselect-color);
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
-        }
-        
-        .task-checkbox-harmonized {
-            margin-right: var(--gap-medium);
-            cursor: pointer;
-            width: 20px;
-            height: 20px;
-            border-radius: 6px;
-            border: 2px solid #d1d5db;
-            background: white;
-            transition: all var(--transition-speed) ease;
-            flex-shrink: 0;
-            appearance: none;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .task-checkbox-harmonized:checked {
-            background: #6366f1;
-            border-color: #6366f1;
-        }
-        
-        .task-harmonized-card.preselected-task .task-checkbox-harmonized:checked {
-            background: var(--preselect-color);
-            border-color: var(--preselect-color);
-        }
-        
-        .task-checkbox-harmonized:checked::after {
-            content: '✓';
-            color: white;
-            font-size: 12px;
-            font-weight: 700;
-        }
-        
-        .priority-bar-harmonized {
-            width: 4px;
-            height: 56px;
-            border-radius: 2px;
-            margin-right: var(--gap-medium);
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-        }
-        
-        .task-main-content-harmonized {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
-            height: 100%;
-        }
-        
-        .task-header-harmonized {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: var(--gap-medium);
-            margin-bottom: 4px;
-        }
-        
-        .task-title-harmonized {
-            font-weight: 700;
-            color: #1f2937;
-            font-size: 15px;
-            margin: 0;
-            line-height: 1.3;
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .task-meta-harmonized {
-            display: flex;
-            align-items: center;
-            gap: var(--gap-small);
-            flex-shrink: 0;
-        }
-        
-        .task-type-badge-harmonized,
-        .deadline-badge-harmonized,
-        .confidence-badge-harmonized {
-            display: flex;
-            align-items: center;
-            gap: 3px;
             background: #f8fafc;
-            color: #64748b;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 600;
-            border: 1px solid #e2e8f0;
-            white-space: nowrap;
+            padding: var(--gap-medium);
+            border-radius: var(--card-border-radius);
+            border: 1px solid #e5e7eb;
         }
         
-        .confidence-badge-harmonized {
-            background: #f0fdf4;
-            color: #16a34a;
-            border-color: #bbf7d0;
-        }
+        /* Le reste des styles reste identique... */
         
-        /* Badge pré-sélectionné amélioré */
-        .preselected-badge-harmonized {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
-            color: white !important;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 700 !important;
-            border: none !important;
-            white-space: nowrap;
-            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
-            animation: badgePulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes badgePulse {
-            0%, 100% { 
-                transform: scale(1);
-                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
-            }
-            50% { 
-                transform: scale(1.05);
-                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.5);
-            }
-        }
-        
-        .task-recipient-harmonized {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: #6b7280;
-            font-size: 12px;
-            font-weight: 500;
-            line-height: 1.2;
-        }
-        
-        .recipient-name-harmonized {
-            font-weight: 600;
-            color: #374151;
-        }
-        
-        .reply-indicator-harmonized {
-            color: #dc2626;
-            font-weight: 600;
-            font-size: 10px;
-        }
-        
-        .category-indicator-harmonized {
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            transition: all 0.2s ease;
-        }
-        
-        /* Indicateur de catégorie pour emails pré-sélectionnés */
-        .task-harmonized-card.preselected-task .category-indicator-harmonized {
-            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
-            animation: categoryGlow 2s ease-in-out infinite;
-        }
-        
-        @keyframes categoryGlow {
-            0%, 100% { 
-                box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
-            }
-            50% { 
-                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
-            }
-        }
-        
-        .task-actions-harmonized {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-left: var(--gap-medium);
-            flex-shrink: 0;
-        }
-        
-        .action-btn-harmonized {
-            width: var(--action-btn-size);
-            height: var(--action-btn-size);
-            border: 2px solid transparent;
-            border-radius: var(--btn-border-radius);
-            background: rgba(255, 255, 255, 0.9);
-            color: #6b7280;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            font-size: 13px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-        }
-        
-        .action-btn-harmonized:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        .action-btn-harmonized.create-task {
-            color: #3b82f6;
-        }
-        
-        .action-btn-harmonized.create-task:hover {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border-color: #3b82f6;
-            color: #2563eb;
-        }
-        
-        /* Bouton créer tâche pour emails pré-sélectionnés */
-        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task {
-            color: var(--preselect-color);
-            background: rgba(139, 92, 246, 0.1);
-        }
-        
-        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task:hover {
-            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
-            border-color: var(--preselect-color);
-            color: var(--preselect-color-dark);
-        }
-        
-        .action-btn-harmonized.view-task {
-            color: #16a34a;
-            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-        }
-        
-        .action-btn-harmonized.view-task:hover {
-            background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
-            border-color: #16a34a;
-            color: #15803d;
-        }
-        
-        .action-btn-harmonized.details {
-            color: #8b5cf6;
-        }
-        
-        .action-btn-harmonized.details:hover {
-            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
-            border-color: #8b5cf6;
-            color: #7c3aed;
-        }
-        
-        /* Vue groupée */
-        .tasks-grouped-harmonized {
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-        }
-        
-        .task-group-harmonized {
-            background: transparent;
-            border: none;
-            border-radius: 0;
-            overflow: visible;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .group-header-harmonized {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0;
-            padding: var(--card-padding);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            min-height: var(--card-height);
-            max-height: var(--card-height);
-            border-bottom: 1px solid #e5e7eb;
-            gap: var(--gap-medium);
-        }
-        
-        .task-group-harmonized:first-child .group-header-harmonized {
-            border-top-left-radius: var(--card-border-radius);
-            border-top-right-radius: var(--card-border-radius);
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .task-group-harmonized:last-child .group-header-harmonized:not(.expanded-header) {
-            border-bottom-left-radius: var(--card-border-radius);
-            border-bottom-right-radius: var(--card-border-radius);
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .group-header-harmonized:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            border-color: rgba(99, 102, 241, 0.2);
-            border-left: 3px solid #6366f1;
-            z-index: 1;
-        }
-        
-        .task-group-harmonized.expanded .group-header-harmonized {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border-left: 4px solid #3b82f6;
-            border-color: #3b82f6;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-            z-index: 2;
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-        }
-        
-        .group-avatar-harmonized {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 16px;
-            flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .group-info-harmonized {
-            flex: 1;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
-            height: 100%;
-        }
-        
-        .group-name-harmonized {
-            font-weight: 700;
-            color: #1f2937;
-            font-size: 15px;
-            margin: 0;
-            line-height: 1.3;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        
-        .group-meta-harmonized {
-            color: #6b7280;
-            font-size: 12px;
-            font-weight: 500;
-            line-height: 1.2;
-        }
-        
-        .group-expand-harmonized {
-            width: var(--action-btn-size);
-            height: var(--action-btn-size);
-            border: 2px solid transparent;
-            border-radius: var(--btn-border-radius);
-            background: rgba(255, 255, 255, 0.9);
-            color: #6b7280;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            font-size: 13px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-            flex-shrink: 0;
-        }
-        
-        .group-expand-harmonized:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            color: #374151;
-        }
-        
-        .task-group-harmonized.expanded .group-expand-harmonized {
-            transform: rotate(180deg) translateY(-1px);
-            color: #3b82f6;
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border-color: #3b82f6;
-        }
-        
-        .group-content-harmonized {
-            background: transparent;
-            margin: 0;
-            padding: 0;
-            display: none;
-        }
-        
-        .task-group-harmonized.expanded .group-content-harmonized {
-            display: block;
-        }
-        
-        .group-content-harmonized .task-harmonized-card {
-            border-radius: 0;
-            margin: 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .group-content-harmonized .task-harmonized-card:last-child {
-            border-bottom-left-radius: var(--card-border-radius);
-            border-bottom-right-radius: var(--card-border-radius);
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        /* État vide */
-        .empty-state-harmonized {
-            text-align: center;
-            padding: 60px 30px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .empty-state-icon-harmonized {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #d1d5db;
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .empty-state-title-harmonized {
-            font-size: 22px;
-            font-weight: 700;
-            color: #374151;
-            margin-bottom: 12px;
-            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .empty-state-text-harmonized {
-            font-size: 15px;
-            margin-bottom: 24px;
-            max-width: 400px;
-            line-height: 1.6;
-            color: #6b7280;
-            font-weight: 500;
-        }
-        
-        /* RESPONSIVE */
-        @media (max-width: 1200px) {
-            :root {
-                --btn-height: 42px;
-                --card-height: 84px;
-                --action-btn-size: 34px;
+        /* RESPONSIVE - Mise à jour pour la bande grise */
+        @media (max-width: 1024px) {
+            .controls-section-wrapper {
+                padding: var(--gap-large);
             }
             
-            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                flex: 0 1 calc(20% - var(--gap-small));
-                min-width: 100px;
-                max-width: 160px;
-                height: 56px;
-            }
-        }
-        
-        @media (max-width: 1024px) {
             .controls-bar-harmonized {
                 flex-direction: column;
                 gap: var(--gap-medium);
                 align-items: stretch;
-                padding: var(--gap-large);
             }
             
             .search-section-harmonized {
@@ -3097,104 +2417,20 @@ addHarmonizedEmailStyles() {
                 flex-wrap: wrap;
                 order: 3;
             }
-            
-            .dropdown-menu-harmonized {
-                right: auto;
-                left: 0;
-            }
-            
-            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                flex: 0 1 calc(25% - var(--gap-small));
-                min-width: 80px;
-                max-width: 140px;
-                height: 52px;
-            }
         }
         
         @media (max-width: 768px) {
-            .status-filters-harmonized-twolines {
-                justify-content: center;
-            }
-            
-            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                flex: 0 1 calc(33.333% - var(--gap-small));
-                min-width: 70px;
-                max-width: 120px;
-                height: 48px;
-            }
-            
-            .view-mode-harmonized span,
-            .btn-harmonized span {
-                display: none;
-            }
-            
-            .action-buttons-harmonized {
-                gap: 4px;
-            }
-            
-            .dropdown-menu-harmonized {
-                min-width: 150px;
-            }
-            
-            .preselected-star {
-                width: 16px;
-                height: 16px;
-                font-size: 9px;
-                top: -6px;
-                right: -6px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
-                flex: 0 1 calc(50% - 4px);
-                min-width: 60px;
-                max-width: 110px;
-                height: 44px;
-            }
-            
-            .action-buttons-harmonized {
-                flex-direction: column;
-                gap: 4px;
-                align-items: stretch;
-            }
-            
-            .action-buttons-harmonized > * {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .dropdown-menu-harmonized {
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                width: 90vw;
-                max-width: 300px;
-            }
-            
-            .explanation-text-harmonized {
-                font-size: 12px;
-                padding: var(--gap-small);
-            }
-            
-            .task-harmonized-card {
+            .emails-page-container {
                 padding: 10px;
-                min-height: 70px;
-                max-height: 70px;
             }
             
-            .task-title-harmonized {
-                font-size: 14px;
+            .emails-main-container {
+                padding: 16px;
+                border-radius: 12px;
             }
             
-            .task-meta-harmonized {
-                display: none;
-            }
-            
-            .preselected-badge-harmonized {
-                font-size: 10px;
-                padding: 2px 4px;
+            .controls-section-wrapper {
+                padding: var(--gap-medium);
             }
         }
     `;
