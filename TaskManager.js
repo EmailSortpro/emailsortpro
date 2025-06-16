@@ -1,4 +1,20 @@
-// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
+.task-normal .task-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0;
+                line-height: 1.3;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .task-normal .task-client {
+                color: #475569;
+                font-weight: 600;
+                font-size: 12px;
+                flex: 1;
+            }// TaskManager Pro v10.1 - Interface Harmonisée Corrigée avec Alignement Parfait
 
 // =====================================
 // ENHANCED TASK MANAGER CLASS
@@ -796,14 +812,13 @@ class TasksView {
                         <span class="task-client">${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}</span>
                     </div>
                     
-                    <div class="task-meta-center">
+                    <div class="task-meta-right">
                         <span class="task-deadline ${dueDateInfo.className}">
                             ${dueDateInfo.text || 'Pas d\'échéance'}
                         </span>
-                    </div>
-                    
-                    <div class="task-actions">
-                        ${this.renderTaskActions(task)}
+                        <div class="task-actions">
+                            ${this.renderTaskActions(task)}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -841,17 +856,19 @@ class TasksView {
                     <div class="task-main">
                         <div class="task-header">
                             <h3 class="task-title">${this.escapeHtml(task.title)}</h3>
-                            <div class="task-badges">
-                                <!-- Badges supprimés - affichage épuré -->
+                            <div class="task-right-section">
+                                <span class="task-deadline-inline ${dueDateInfo.className}">
+                                    ${dueDateInfo.text || 'Pas d\'échéance'}
+                                </span>
+                                <div class="task-actions">
+                                    ${this.renderTaskActions(task)}
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="task-details-single-line">
+                        <div class="task-details-simple">
                             <span class="task-client">
                                 ${this.escapeHtml(task.client === 'Externe' ? (task.emailFromName || task.emailFrom || 'Société') : task.client)}
-                            </span>
-                            <span class="task-deadline-center ${dueDateInfo.className}">
-                                ${dueDateInfo.text || 'Pas d\'échéance'}
                             </span>
                         </div>
                     </div>
@@ -2616,16 +2633,15 @@ class TasksView {
                 min-width: 0;
             }
 
-            .task-meta-center {
-                flex: 1;
+            .task-meta-right {
+                flex: 0 0 auto;
                 display: flex;
                 align-items: center;
-                justify-content: center;
-                min-width: 120px;
+                gap: 8px;
+                flex-shrink: 0;
             }
 
             .task-actions {
-                flex: 0 0 auto;
                 display: flex;
                 gap: 4px;
                 flex-shrink: 0;
@@ -2827,16 +2843,21 @@ class TasksView {
                 font-style: italic;
             }
 
-            /* VUE NORMALE - ligne unique avec échéance centrée */
-            .task-details-single-line {
+            .task-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 16px;
-                font-size: 12px;
+                gap: 12px;
             }
 
-            .task-deadline-center {
+            .task-right-section {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            .task-deadline-inline {
                 font-size: 13px;
                 font-weight: 600;
                 white-space: nowrap;
@@ -2844,33 +2865,36 @@ class TasksView {
                 padding: 4px 8px;
                 border-radius: 6px;
                 background: rgba(255, 255, 255, 0.8);
-                flex: 1;
-                display: flex;
-                justify-content: center;
             }
 
-            .task-deadline-center.deadline-overdue {
+            .task-deadline-inline.deadline-overdue {
                 color: #dc2626;
                 background: #fef2f2;
                 border: 1px solid #fecaca;
             }
 
-            .task-deadline-center.deadline-today {
+            .task-deadline-inline.deadline-today {
                 color: #d97706;
                 background: #fef3c7;
                 border: 1px solid #fde68a;
             }
 
-            .task-deadline-center.deadline-week {
+            .task-deadline-inline.deadline-week {
                 color: #2563eb;
                 background: #eff6ff;
                 border: 1px solid #bfdbfe;
             }
 
-            .task-deadline-center.deadline-normal {
+            .task-deadline-inline.deadline-normal {
                 color: #059669;
                 background: #f0fdf4;
                 border: 1px solid #bbf7d0;
+            }
+
+            .task-details-simple {
+                display: flex;
+                align-items: center;
+                font-size: 12px;
             }
 
             /* VUE DÉTAILLÉE - GRILLE DE CARTES */
