@@ -1059,197 +1059,197 @@ class TasksView {
         });
     }
 
-// MÉTHODE RENDER VRAIMENT CORRIGÉE - Garde la structure HTML originale exacte
-render(container) {
-    if (!container) {
-        console.error('[TasksView] No container provided');
-        return;
-    }
+    // MÉTHODE PRINCIPALE POUR RENDRE L'INTERFACE - IDENTIQUE À PAGEMANAGER
+    render(container) {
+        if (!container) {
+            console.error('[TasksView] No container provided');
+            return;
+        }
 
-    if (!window.taskManager || !window.taskManager.initialized) {
-        container.innerHTML = `
-            <div class="loading-state">
-                <div class="loading-icon">
-                    <i class="fas fa-spinner fa-spin"></i>
+        if (!window.taskManager || !window.taskManager.initialized) {
+            container.innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <p>Chargement des tâches...</p>
                 </div>
-                <p>Chargement des tâches...</p>
-            </div>
-        `;
+            `;
+            
+            setTimeout(() => {
+                if (window.taskManager && window.taskManager.initialized) {
+                    this.render(container);
+                }
+            }, 500);
+            return;
+        }
+
+        const stats = window.taskManager.getStats();
         
-        setTimeout(() => {
-            if (window.taskManager && window.taskManager.initialized) {
-                this.render(container);
-            }
-        }, 500);
-        return;
-    }
-
-    const stats = window.taskManager.getStats();
-    
-    // GARDE EXACTEMENT LA STRUCTURE HTML ORIGINALE - Juste réorganisée visuellement
-    container.innerHTML = `
-        <div class="tasks-page-modern">
-            <!-- Barre principale EXACTEMENT comme l'original mais réorganisée visuellement -->
-            <div class="tasks-main-toolbar">
-                <div class="toolbar-left">
-                    <h1 class="tasks-title">Tâches</h1>
-                    <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
-                </div>
-                
-                <div class="toolbar-center">
-                    <div class="search-wrapper-large">
-                        <i class="fas fa-search search-icon-large"></i>
-                        <input type="text" 
-                               class="search-input-large" 
-                               id="taskSearchInput"
-                               placeholder="Rechercher dans les tâches..." 
-                               value="${this.currentFilters.search}">
-                        <button class="search-clear-large" id="searchClearBtn" 
-                                style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
-                                onclick="window.tasksView.clearSearch()">
-                            <i class="fas fa-times"></i>
-                        </button>
+        // INTERFACE IDENTIQUE À PAGEMANAGER - MÊME STRUCTURE
+        container.innerHTML = `
+            <div class="tasks-page-modern">
+                <!-- Barre principale IDENTIQUE à PageManager -->
+                <div class="tasks-main-toolbar">
+                    <div class="toolbar-left">
+                        <h1 class="tasks-title">Tâches</h1>
+                        <span class="tasks-count-large">${stats.total} tâche${stats.total > 1 ? 's' : ''}</span>
                     </div>
-                </div>
-                
-                <div class="toolbar-center-right">
-                    <div class="view-modes-large">
-                        <button class="btn-large ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
-                                data-mode="condensed"
-                                onclick="window.tasksView.changeViewMode('condensed')">
-                            <i class="fas fa-list"></i>
-                            <span class="btn-text-large">Condensé</span>
-                        </button>
-                        <button class="btn-large ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
-                                data-mode="detailed"
-                                onclick="window.tasksView.changeViewMode('detailed')">
-                            <i class="fas fa-th-large"></i>
-                            <span class="btn-text-large">Détaillé</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="toolbar-right">
-                    ${this.selectedTasks.size > 0 ? `
-                        <div class="selection-info-large">
-                            <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
-                            <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
+                    
+                    <div class="toolbar-center">
+                        <div class="search-wrapper-large">
+                            <i class="fas fa-search search-icon-large"></i>
+                            <input type="text" 
+                                   class="search-input-large" 
+                                   id="taskSearchInput"
+                                   placeholder="Rechercher dans les tâches..." 
+                                   value="${this.currentFilters.search}">
+                            <button class="search-clear-large" id="searchClearBtn" 
+                                    style="display: ${this.currentFilters.search ? 'flex' : 'none'}"
+                                    onclick="window.tasksView.clearSearch()">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
-                        <button class="btn-large btn-primary-large" onclick="window.tasksView.bulkActions()">
-                            <i class="fas fa-cog"></i>
-                            <span class="btn-text-large">Actions</span>
+                    </div>
+                    
+                    <div class="toolbar-center-right">
+                        <div class="view-modes-large">
+                            <button class="btn-large ${this.currentViewMode === 'condensed' ? 'active' : ''}" 
+                                    data-mode="condensed"
+                                    onclick="window.tasksView.changeViewMode('condensed')">
+                                <i class="fas fa-list"></i>
+                                <span class="btn-text-large">Condensé</span>
+                            </button>
+                            <button class="btn-large ${this.currentViewMode === 'detailed' ? 'active' : ''}" 
+                                    data-mode="detailed"
+                                    onclick="window.tasksView.changeViewMode('detailed')">
+                                <i class="fas fa-th-large"></i>
+                                <span class="btn-text-large">Détaillé</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="toolbar-right">
+                        ${this.selectedTasks.size > 0 ? `
+                            <div class="selection-info-large">
+                                <span class="selection-count-large">${this.selectedTasks.size} sélectionné(s)</span>
+                                <button class="btn-large btn-secondary-large" onclick="window.tasksView.clearSelection()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <button class="btn-large btn-primary-large" onclick="window.tasksView.bulkActions()">
+                                <i class="fas fa-cog"></i>
+                                <span class="btn-text-large">Actions</span>
+                            </button>
+                        ` : ''}
+                        <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
+                            <i class="fas fa-plus"></i>
+                            <span class="btn-text-large">Nouvelle tâche</span>
                         </button>
-                    ` : ''}
+                    </div>
+                </div>
+
+                <!-- Filtres de statut avec bouton filtres avancés -->
+                <div class="status-filters-large">
+                    ${this.buildLargeStatusPills(stats)}
                     <button class="btn-large advanced-filters-toggle ${this.showAdvancedFilters ? 'active' : ''}" 
                             onclick="window.tasksView.toggleAdvancedFilters()">
                         <i class="fas fa-filter"></i>
                         <span class="btn-text-large">Filtres avancés</span>
                         <i class="fas fa-chevron-${this.showAdvancedFilters ? 'up' : 'down'}"></i>
                     </button>
-                    <button class="btn-large btn-primary-large" onclick="window.tasksView.showCreateModal()">
-                        <i class="fas fa-plus"></i>
-                        <span class="btn-text-large">Nouvelle tâche</span>
-                    </button>
                 </div>
-            </div>
 
-            <!-- Filtres de statut EXACTEMENT comme l'original -->
-            <div class="status-filters-large">
-                ${this.buildLargeStatusPills(stats)}
-            </div>
+                <!-- Filtres avancés -->
+                <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
+                    <div class="advanced-filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-flag"></i> Priorité
+                            </label>
+                            <select class="filter-select" id="priorityFilter" 
+                                    onchange="window.tasksView.updateFilter('priority', this.value)">
+                                <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
+                                <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                                <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                                <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                            </select>
+                        </div>
 
-            <!-- Filtres avancés EXACTEMENT comme l'original -->
-            <div class="advanced-filters-panel ${this.showAdvancedFilters ? 'show' : ''}" id="advancedFiltersPanel">
-                <div class="advanced-filters-grid">
-                    <div class="filter-group">
-                        <label class="filter-label">
-                            <i class="fas fa-flag"></i> Priorité
-                        </label>
-                        <select class="filter-select" id="priorityFilter" 
-                                onchange="window.tasksView.updateFilter('priority', this.value)">
-                            <option value="all" ${this.currentFilters.priority === 'all' ? 'selected' : ''}>Toutes</option>
-                            <option value="urgent" ${this.currentFilters.priority === 'urgent' ? 'selected' : ''}>🚨 Urgente</option>
-                            <option value="high" ${this.currentFilters.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
-                            <option value="medium" ${this.currentFilters.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
-                            <option value="low" ${this.currentFilters.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
-                        </select>
-                    </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-building"></i> Client
+                            </label>
+                            <select class="filter-select" id="clientFilter" 
+                                    onchange="window.tasksView.updateFilter('client', this.value)">
+                                ${this.buildClientFilterOptions()}
+                            </select>
+                        </div>
 
-                    <div class="filter-group">
-                        <label class="filter-label">
-                            <i class="fas fa-building"></i> Client
-                        </label>
-                        <select class="filter-select" id="clientFilter" 
-                                onchange="window.tasksView.updateFilter('client', this.value)">
-                            ${this.buildClientFilterOptions()}
-                        </select>
-                    </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-tags"></i> Tag
+                            </label>
+                            <select class="filter-select" id="tagFilter" 
+                                    onchange="window.tasksView.updateFilter('tag', this.value)">
+                                ${this.buildTagFilterOptions()}
+                            </select>
+                        </div>
 
-                    <div class="filter-group">
-                        <label class="filter-label">
-                            <i class="fas fa-tags"></i> Tag
-                        </label>
-                        <select class="filter-select" id="tagFilter" 
-                                onchange="window.tasksView.updateFilter('tag', this.value)">
-                            ${this.buildTagFilterOptions()}
-                        </select>
-                    </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-calendar"></i> Période
+                            </label>
+                            <select class="filter-select" id="dateRangeFilter" 
+                                    onchange="window.tasksView.updateFilter('dateRange', this.value)">
+                                <option value="all" ${this.currentFilters.dateRange === 'all' ? 'selected' : ''}>Toutes</option>
+                                <option value="today" ${this.currentFilters.dateRange === 'today' ? 'selected' : ''}>Aujourd'hui</option>
+                                <option value="week" ${this.currentFilters.dateRange === 'week' ? 'selected' : ''}>Cette semaine</option>
+                                <option value="month" ${this.currentFilters.dateRange === 'month' ? 'selected' : ''}>Ce mois</option>
+                                <option value="older" ${this.currentFilters.dateRange === 'older' ? 'selected' : ''}>Plus ancien</option>
+                            </select>
+                        </div>
 
-                    <div class="filter-group">
-                        <label class="filter-label">
-                            <i class="fas fa-calendar"></i> Période
-                        </label>
-                        <select class="filter-select" id="dateRangeFilter" 
-                                onchange="window.tasksView.updateFilter('dateRange', this.value)">
-                            <option value="all" ${this.currentFilters.dateRange === 'all' ? 'selected' : ''}>Toutes</option>
-                            <option value="today" ${this.currentFilters.dateRange === 'today' ? 'selected' : ''}>Aujourd'hui</option>
-                            <option value="week" ${this.currentFilters.dateRange === 'week' ? 'selected' : ''}>Cette semaine</option>
-                            <option value="month" ${this.currentFilters.dateRange === 'month' ? 'selected' : ''}>Ce mois</option>
-                            <option value="older" ${this.currentFilters.dateRange === 'older' ? 'selected' : ''}>Plus ancien</option>
-                        </select>
-                    </div>
+                        <div class="filter-group">
+                            <label class="filter-label">
+                                <i class="fas fa-sort"></i> Trier par
+                            </label>
+                            <select class="filter-select" id="sortByFilter" 
+                                    onchange="window.tasksView.updateFilter('sortBy', this.value)">
+                                <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
+                                <option value="updated" ${this.currentFilters.sortBy === 'updated' ? 'selected' : ''}>Dernière modif</option>
+                                <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
+                                <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
+                                <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
+                                <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
+                                <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
+                            </select>
+                        </div>
 
-                    <div class="filter-group">
-                        <label class="filter-label">
-                            <i class="fas fa-sort"></i> Trier par
-                        </label>
-                        <select class="filter-select" id="sortByFilter" 
-                                onchange="window.tasksView.updateFilter('sortBy', this.value)">
-                            <option value="created" ${this.currentFilters.sortBy === 'created' ? 'selected' : ''}>Date création</option>
-                            <option value="updated" ${this.currentFilters.sortBy === 'updated' ? 'selected' : ''}>Dernière modif</option>
-                            <option value="priority" ${this.currentFilters.sortBy === 'priority' ? 'selected' : ''}>Priorité</option>
-                            <option value="dueDate" ${this.currentFilters.sortBy === 'dueDate' ? 'selected' : ''}>Date échéance</option>
-                            <option value="title" ${this.currentFilters.sortBy === 'title' ? 'selected' : ''}>Titre A-Z</option>
-                            <option value="client" ${this.currentFilters.sortBy === 'client' ? 'selected' : ''}>Client</option>
-                            <option value="sender" ${this.currentFilters.sortBy === 'sender' ? 'selected' : ''}>Expéditeur</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-actions">
-                        <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
-                            <i class="fas fa-undo"></i> Réinitialiser
-                        </button>
-                        <div class="active-filters-count">
-                            ${this.getActiveFiltersCount()} filtres actifs
+                        <div class="filter-actions">
+                            <button class="btn-small btn-secondary" onclick="window.tasksView.resetAllFilters()">
+                                <i class="fas fa-undo"></i> Réinitialiser
+                            </button>
+                            <div class="active-filters-count">
+                                ${this.getActiveFiltersCount()} filtres actifs
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="tasks-container-modern" id="tasksContainer">
-                ${this.renderTasksList()}
+                <div class="tasks-container-modern" id="tasksContainer">
+                    ${this.renderTasksList()}
+                </div>
             </div>
-        </div>
-    `;
+        `;
 
-    // GARDE EXACTEMENT LES MÊMES STYLES mais ajoute juste les corrections CSS
-    this.addModernTaskStyles();
-    this.addLayoutOnlyFixes(); // Corrections CSS uniquement
-    this.setupEventListeners();
-    console.log('[TasksView] Fixed layout with CSS only - No HTML structure changes');
-}
+        // UTILISER LES MÊMES STYLES QUE PAGEMANAGER
+        this.addModernTaskStyles();
+        this.setupEventListeners();
+        console.log('[TasksView] Modern interface rendered with PageManager styling');
+    }
+
     // MÉTHODES IDENTIQUES À PAGEMANAGER
     buildLargeStatusPills(stats) {
         const pills = [
@@ -1288,231 +1288,7 @@ render(container) {
                 return this.renderCondensedView(filteredTasks);
         }
     }
-// STYLES DE CORRECTION MINIMAUX - S'ajoutent par-dessus les styles existants sans les casser
-addLayoutFixStyles() {
-    if (document.getElementById('layoutFixStyles')) return;
-    
-    const styles = document.createElement('style');
-    styles.id = 'layoutFixStyles';
-    styles.textContent = `
-        /* CORRECTIONS MINIMALES - S'ajoutent aux styles existants sans les remplacer */
-        
-        /* Section titre */
-        .tasks-title-section {
-            display: flex;
-            align-items: baseline;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-        
-        /* Section recherche pleine largeur */
-        .tasks-search-section-full {
-            width: 100%;
-            margin-bottom: 16px;
-        }
-        
-        .tasks-search-section-full .search-wrapper-large {
-            width: 100%;
-            max-width: none !important;
-        }
-        
-        .tasks-search-section-full .search-input-large {
-            width: 100% !important;
-            max-width: none !important;
-        }
-        
-        /* Section boutons sur nouvelle ligne */
-        .tasks-buttons-section {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            min-height: 48px;
-        }
-        
-        .tasks-buttons-section .toolbar-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        
-        .tasks-buttons-section .toolbar-center {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            justify-content: center;
-        }
-        
-        .tasks-buttons-section .toolbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .tasks-title-section {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
-                margin-bottom: 12px;
-            }
-            
-            .tasks-buttons-section {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-                margin-bottom: 12px;
-            }
-            
-            .tasks-buttons-section .toolbar-left,
-            .tasks-buttons-section .toolbar-center,
-            .tasks-buttons-section .toolbar-right {
-                width: 100%;
-                justify-content: center;
-            }
-            
-            .tasks-buttons-section .toolbar-right {
-                justify-content: flex-end;
-            }
-        }
-    `;
-    
-    document.head.appendChild(styles);
-    console.log('[TasksView] Layout fix styles added - Minimal corrections applied');
-}
 
-// CORRECTIONS CSS UNIQUEMENT - Modifie seulement l'affichage visuel sans changer la structure HTML
-addLayoutOnlyFixes() {
-    if (document.getElementById('cssOnlyFixes')) return;
-    
-    const styles = document.createElement('style');
-    styles.id = 'cssOnlyFixes';
-    styles.textContent = `
-        /* CORRECTIONS CSS UNIQUEMENT - Réorganise visuellement sans changer la structure HTML */
-        
-        /* Modification de la toolbar principale pour passer à la ligne */
-        .tasks-main-toolbar {
-            display: flex;
-            flex-wrap: wrap !important; /* Force le passage à la ligne */
-            align-items: center;
-            gap: 12px;
-            padding: 4px 0 2px 0;
-            border: none;
-            margin: 0 0 4px 0;
-            min-height: auto !important; /* Permet la hauteur variable */
-            background: transparent;
-        }
-        
-        /* Première ligne : Titre + Recherche */
-        .tasks-main-toolbar .toolbar-left {
-            order: 1;
-            flex-shrink: 0;
-        }
-        
-        .tasks-main-toolbar .toolbar-center {
-            order: 2;
-            flex: 1;
-            min-width: 300px; /* Force la recherche à prendre de la place */
-        }
-        
-        /* Deuxième ligne : Boutons de vue + Actions + Filtres + Nouvelle tâche */
-        .tasks-main-toolbar .toolbar-center-right {
-            order: 3;
-            flex-basis: 100%; /* Force le passage à la ligne */
-            width: 100%;
-            display: flex;
-            justify-content: flex-start;
-            margin-top: 8px;
-        }
-        
-        .tasks-main-toolbar .toolbar-right {
-            order: 4;
-            flex: 1;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 10px;
-            margin-top: 8px;
-        }
-        
-        /* Assure que la barre de recherche prend toute la largeur disponible */
-        .tasks-main-toolbar .search-wrapper-large {
-            width: 100%;
-            max-width: none !important;
-        }
-        
-        .tasks-main-toolbar .search-input-large {
-            width: 100% !important;
-            max-width: none !important;
-        }
-        
-        /* Bouton des filtres avancés sur la première ligne des boutons */
-        .tasks-main-toolbar .advanced-filters-toggle {
-            background: #f8fafc;
-            border-color: #e2e8f0;
-            color: #475569;
-        }
-        
-        .tasks-main-toolbar .advanced-filters-toggle:hover {
-            background: #f1f5f9;
-            border-color: #cbd5e1;
-        }
-        
-        .tasks-main-toolbar .advanced-filters-toggle.active {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .tasks-main-toolbar {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-                padding: 4px 0 2px 0;
-                margin: 0 0 6px 0;
-            }
-            
-            .tasks-main-toolbar .toolbar-left,
-            .tasks-main-toolbar .toolbar-center,
-            .tasks-main-toolbar .toolbar-center-right,
-            .tasks-main-toolbar .toolbar-right {
-                order: unset;
-                width: 100%;
-                max-width: none;
-                flex-basis: auto;
-                margin-top: 0;
-            }
-            
-            .tasks-main-toolbar .toolbar-right {
-                justify-content: flex-end;
-            }
-            
-            .tasks-main-toolbar .toolbar-center-right {
-                justify-content: center;
-            }
-        }
-        
-        /* Assure que les filtres de statut restent corrects */
-        .status-filters-large {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin: 0 0 16px 0;
-            padding: 0;
-            background: transparent;
-            border: none;
-        }
-    `;
-    
-    document.head.appendChild(styles);
-    console.log('[TasksView] CSS-only fixes applied - Layout reorganized without breaking HTML structure');
-}
     renderEmptyState() {
         return `
             <div class="empty-state-modern">
