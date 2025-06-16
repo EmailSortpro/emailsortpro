@@ -227,7 +227,7 @@ async renderEmails(container) {
         const allVisible = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
         
         container.innerHTML = `
-            <div class="tasks-page-modern">
+            <div class="tasks-page-modern" style="min-height: calc(100vh - 100px); display: flex; flex-direction: column;">
                 <!-- Texte explicatif avec possibilité de fermer -->
                 ${!this.hideExplanation ? `
                     <div class="explanation-text-harmonized">
@@ -353,8 +353,8 @@ async renderEmails(container) {
                     ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
                 </div>
 
-                <!-- CONTENU DES EMAILS -->
-                <div class="tasks-container-harmonized">
+                <!-- CONTENU DES EMAILS avec flex-grow pour remplir l'espace -->
+                <div class="tasks-container-harmonized" style="flex: 1; overflow-y: auto;">
                     ${this.renderEmailsList()}
                 </div>
             </div>
