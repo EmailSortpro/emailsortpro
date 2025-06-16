@@ -1476,12 +1476,17 @@ toggleGroup(groupKey, event) {
 // PageManager.js - Fonction toggleBulkActions() COMPLÈTEMENT CORRIGÉE
 // Remplacer cette fonction dans PageManager.js vers ligne 1500
 
+// PageManager.js - Fonction toggleBulkActions() AMÉLIORÉE
+// Remplacer cette fonction dans PageManager.js
+
 toggleBulkActions(event) {
     event.stopPropagation();
     event.preventDefault();
     
     const menu = document.getElementById('bulkActionsMenu');
-    if (!menu) return;
+    const button = event.currentTarget;
+    
+    if (!menu || !button) return;
     
     const isCurrentlyVisible = menu.classList.contains('show');
     
@@ -1489,6 +1494,13 @@ toggleBulkActions(event) {
     document.querySelectorAll('.dropdown-menu-expanded.show').forEach(dropdown => {
         if (dropdown !== menu) {
             dropdown.classList.remove('show');
+        }
+    });
+    
+    // Retirer les classes show des autres boutons
+    document.querySelectorAll('.dropdown-toggle.show').forEach(btn => {
+        if (btn !== button) {
+            btn.classList.remove('show');
         }
     });
     
@@ -1501,41 +1513,50 @@ toggleBulkActions(event) {
     if (isCurrentlyVisible) {
         // Fermer le menu
         menu.classList.remove('show');
+        button.classList.remove('show');
         console.log('[PageManager] Dropdown Actions fermé');
     } else {
         // Ouvrir le menu
         menu.classList.add('show');
+        button.classList.add('show');
         console.log('[PageManager] Dropdown Actions ouvert');
+        
+        // S'assurer que le menu a le z-index maximum
+        menu.style.zIndex = '9999';
+        menu.style.position = 'absolute';
         
         // Créer un overlay pour détecter les clics à l'extérieur
         const overlay = document.createElement('div');
         overlay.className = 'dropdown-overlay show';
         overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 1999;
-            background: transparent;
-            cursor: default;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 9998 !important;
+            background: rgba(0, 0, 0, 0.05) !important;
+            cursor: pointer !important;
+            display: block !important;
         `;
         
         // Fermer le dropdown quand on clique sur l'overlay
         overlay.addEventListener('click', (e) => {
             e.stopPropagation();
             menu.classList.remove('show');
+            button.classList.remove('show');
             overlay.remove();
             console.log('[PageManager] Dropdown fermé via overlay');
         });
         
-        // Ajouter l'overlay au body
+        // Ajouter l'overlay au body (pas dans le container des emails)
         document.body.appendChild(overlay);
         
         // Fermer avec Escape
         const handleEscape = (e) => {
             if (e.key === 'Escape') {
                 menu.classList.remove('show');
+                button.classList.remove('show');
                 overlay.remove();
                 document.removeEventListener('keydown', handleEscape);
                 console.log('[PageManager] Dropdown fermé via Escape');
@@ -1543,16 +1564,33 @@ toggleBulkActions(event) {
         };
         document.addEventListener('keydown', handleEscape);
         
-        // Auto-fermeture après 10 secondes
+        // Empêcher la fermeture quand on clique dans le menu
+        menu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        // Auto-fermeture après 15 secondes
         setTimeout(() => {
             if (menu.classList.contains('show')) {
                 menu.classList.remove('show');
+                button.classList.remove('show');
                 if (overlay.parentNode) {
                     overlay.remove();
                 }
                 console.log('[PageManager] Dropdown fermé automatiquement');
             }
-        }, 10000);
+        }, 15000);
+        
+        // Debug : vérifier la position
+        setTimeout(() => {
+            const rect = menu.getBoundingClientRect();
+            console.log('[PageManager] Position dropdown:', {
+                top: rect.top,
+                left: rect.left,
+                zIndex: window.getComputedStyle(menu).zIndex,
+                visible: menu.classList.contains('show')
+            });
+        }, 100);
     }
 }
 
@@ -2467,18 +2505,20 @@ addExpandedEmailStyles() {
         }
         
         /* ===== BARRE DE CONTRÔLES ÉTENDUE SUR 2 LIGNES ===== */
-        .controls-bar-harmonized-expanded {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: var(--card-border-radius);
-            padding: var(--gap-large);
-            margin-bottom: var(--gap-medium);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            display: flex;
-            flex-direction: column;
-            gap: var(--gap-large);
-        }
+ .controls-bar-harmonized-expanded {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--card-border-radius);
+    padding: var(--gap-large);
+    margin-bottom: var(--gap-medium);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-large);
+    position: relative;
+    z-index: 1000; /* TRÈS ÉLEVÉ - Au-dessus de tout */
+}
         
         /* PREMIÈRE LIGNE : Recherche étendue */
         .search-line-full {
@@ -2623,13 +2663,15 @@ addExpandedEmailStyles() {
         }
         
         /* Actions étendues */
-        .action-buttons-expanded {
-            display: flex;
-            align-items: center;
-            gap: var(--gap-medium);
-            flex: 1;
-            justify-content: flex-end;
-        }
+.action-buttons-expanded {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-medium);
+    flex: 1;
+    justify-content: flex-end;
+    position: relative;
+    z-index: 1001; /* Encore plus haut */
+}
         
         .btn-expanded {
             height: var(--btn-height);
@@ -2788,9 +2830,8 @@ addExpandedEmailStyles() {
 .dropdown-action-expanded {
     position: relative;
     display: inline-block;
-    z-index: 1001; /* AUGMENTÉ pour être au-dessus des emails */
+    z-index: 1002; /* Maximum pour le container */
 }
-        
 .dropdown-menu-expanded {
     position: absolute;
     top: calc(100% + 8px);
@@ -2798,21 +2839,22 @@ addExpandedEmailStyles() {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: var(--btn-border-radius);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25); /* Ombre plus forte */
     min-width: 220px;
-    z-index: 2000; /* TRÈS ÉLEVÉ pour être au-dessus de tout */
+    z-index: 9999; /* MAXIMUM ABSOLU */
     padding: 8px 0;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
     transition: all 0.2s ease;
-    backdrop-filter: blur(10px); /* Ajout d'un flou d'arrière-plan */
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(99, 102, 241, 0.2); /* Bordure colorée pour visibilité */
 }
-  .dropdown-menu-expanded.show {
+.dropdown-menu-expanded.show {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25); /* Ombre plus forte quand visible */
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35); /* Ombre très forte quand visible */
 }
 
         
@@ -2853,36 +2895,39 @@ addExpandedEmailStyles() {
         }
         
         /* ===== FILTRES DE CATÉGORIES (inchangés) ===== */
-        .status-filters-harmonized-twolines {
-            display: flex;
-            gap: var(--gap-small);
-            margin-bottom: var(--gap-medium);
-            flex-wrap: wrap;
-            width: 100%;
-        }
+   .status-filters-harmonized-twolines {
+    display: flex;
+    gap: var(--gap-small);
+    margin-bottom: var(--gap-medium);
+    flex-wrap: wrap;
+    width: 100%;
+    position: relative;
+    z-index: 10; /* BAS - Sous la barre de contrôles */
+}
         
-        .status-pill-harmonized-twolines {
-            height: 60px;
-            padding: var(--gap-small);
-            font-size: 12px;
-            font-weight: 700;
-            flex: 0 1 calc(16.666% - var(--gap-small));
-            min-width: 120px;
-            max-width: 180px;
-            border-radius: var(--btn-border-radius);
-            box-shadow: var(--shadow-base);
-            transition: all var(--transition-speed) ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: white;
-            color: #374151;
-            border: 1px solid #e5e7eb;
-            cursor: pointer;
-            position: relative;
-            overflow: visible !important;
-        }
+.status-pill-harmonized-twolines {
+    height: 60px;
+    padding: var(--gap-small);
+    font-size: 12px;
+    font-weight: 700;
+    flex: 0 1 calc(16.666% - var(--gap-small));
+    min-width: 120px;
+    max-width: 180px;
+    border-radius: var(--btn-border-radius);
+    box-shadow: var(--shadow-base);
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: white;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    position: relative;
+    overflow: visible;
+    z-index: 11; /* Un peu plus haut mais toujours sous le dropdown */
+}
         
         .status-pill-harmonized-twolines.preselected-category {
             animation: pulsePreselected 3s ease-in-out infinite;
@@ -2984,20 +3029,21 @@ addExpandedEmailStyles() {
             text-align: center;
         }
         
-        .status-pill-harmonized-twolines:hover {
-            border-color: #3b82f6;
-            background: #f0f9ff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
-        }
-        
-        .status-pill-harmonized-twolines.active {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-            border-color: #3b82f6;
-            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
-            transform: translateY(-2px);
-        }
+.status-pill-harmonized-twolines:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+    z-index: 12; /* Légèrement plus haut au hover */
+}
+.status-pill-harmonized-twolines.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+    z-index: 13; /* Plus haut quand actif */
+}
         
         .status-pill-harmonized-twolines.active.preselected-category {
             background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
@@ -3375,13 +3421,34 @@ addExpandedEmailStyles() {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 1999; /* Juste sous le dropdown mais au-dessus de tout le reste */
-    background: transparent;
+    z-index: 9998; /* Juste sous le dropdown */
+    background: rgba(0, 0, 0, 0.1); /* Légèrement visible pour debug */
+    cursor: pointer;
     display: none;
 }
 
 .dropdown-overlay.show {
     display: block;
+}
+.dropdown-action-expanded .dropdown-toggle.show {
+    background: #f0f9ff;
+    border-color: #3b82f6;
+    color: #1e40af;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    z-index: 1003;
+    position: relative;
+}
+.dropdown-menu-expanded::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background: transparent;
+    pointer-events: none;
 }
         .group-avatar-harmonized {
             width: 40px;
@@ -4126,26 +4193,26 @@ addHarmonizedEmailStyles() {
         }
         
         /* Étoile de pré-sélection TOUJOURS VISIBLE */
-        .preselected-star {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            width: 20px;
-            height: 20px;
-            background: var(--preselect-color);
-            color: white;
-            border-radius: 50%;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            border: 2px solid white;
-            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
-            animation: starPulse 2s ease-in-out infinite;
-            z-index: 10;
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
+.preselected-star {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: var(--preselect-color);
+    color: white;
+    border-radius: 50%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+    animation: starPulse 2s ease-in-out infinite;
+    z-index: 15; /* Plus haut que son parent pill */
+    visibility: visible !important;
+    opacity: 1 !important;
+}
         
         @keyframes starPulse {
             0%, 100% { 
@@ -4203,21 +4270,22 @@ addHarmonizedEmailStyles() {
         }
         
         /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
-        .task-harmonized-card {
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0;
-            padding: var(--card-padding);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            min-height: var(--card-height);
-            max-height: var(--card-height);
-            border-bottom: 1px solid #e5e7eb;
-        }
+.task-harmonized-card {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    padding: var(--card-padding);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: var(--card-height);
+    max-height: var(--card-height);
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 2; /* BAS - Sous tout */
+}
         
         .task-harmonized-card:first-child {
             border-top-left-radius: var(--card-border-radius);
@@ -4231,23 +4299,22 @@ addHarmonizedEmailStyles() {
             border-bottom: 1px solid #e5e7eb;
         }
         
-        .task-harmonized-card:hover {
-            background: white;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-            border-color: rgba(99, 102, 241, 0.2);
-            border-left: 3px solid #6366f1;
-            z-index: 1;
-        }
-        
-        .task-harmonized-card.selected {
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border-left: 4px solid #3b82f6;
-            border-color: #3b82f6;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
-            z-index: 2;
-        }
+.task-harmonized-card:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: rgba(99, 102, 241, 0.2);
+    border-left: 3px solid #6366f1;
+    z-index: 3; /* Légèrement plus haut au hover mais toujours très bas */
+}
+ .task-harmonized-card.selected {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6;
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+    z-index: 4; /* Plus haut pour les sélectionnés mais toujours bas */
+}
         
         .task-harmonized-card.has-task {
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
