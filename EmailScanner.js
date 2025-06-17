@@ -1,5 +1,4 @@
-
-// EmailScanner.js - Version 9.1 - ULTRA OPTIMISÉ PERFORMANCE + CORRECTIONS 🚀
+// EmailScanner.js - Version 10.0 - COMPLÈTEMENT CORRIGÉ + DÉTECTION NEWSLETTER AMÉLIORÉE 🚀
 
 class EmailScanner {
     constructor() {
@@ -22,8 +21,8 @@ class EmailScanner {
         this.changeListener = null;
         
         // NOUVEAU: Optimisations de traitement
-        this.maxConcurrentProcessing = 10; // Limite la charge CPU
-        this.batchSize = 25; // Réduit de 50 à 25 pour plus de responsivité
+        this.maxConcurrentProcessing = 10;
+        this.batchSize = 25;
         this.processingQueue = [];
         this.isProcessingQueue = false;
         
@@ -41,14 +40,13 @@ class EmailScanner {
         
         this.initializeWithOptimizedSync();
         
-        console.log('[EmailScanner] ✅ Version 9.1 - ULTRA OPTIMISÉ PERFORMANCE + CORRECTIONS');
+        console.log('[EmailScanner] ✅ Version 10.0 - COMPLÈTEMENT CORRIGÉ + DÉTECTION NEWSLETTER AMÉLIORÉE');
     }
 
     // ================================================
     // CLASSES UTILITAIRES INTÉGRÉES
     // ================================================
     
-    // Remplace la classe BatchProcessor externe
     createBatchProcessor() {
         return {
             async processBatch(items, processor, batchSize = 25) {
@@ -63,7 +61,6 @@ class EmailScanner {
                     const batchResults = await this.processConcurrentBatch(batch, processor);
                     results.push(...batchResults);
                     
-                    // Pause micro pour éviter le blocage
                     await this.microPause();
                 }
                 
@@ -96,16 +93,9 @@ class EmailScanner {
     // ================================================
     async initializeWithOptimizedSync() {
         try {
-            // 1. Charger les paramètres de manière optimisée
             await this.loadSettingsFromCategoryManagerOptimized();
-            
-            // 2. S'enregistrer comme listener de changements (moins fréquent)
             this.registerAsOptimizedChangeListener();
-            
-            // 3. Démarrer la surveillance temps réel optimisée
             this.startOptimizedRealTimeSync();
-            
-            // 4. Setup event listeners optimisés
             this.setupOptimizedEventListeners();
             
             console.log('[EmailScanner] 🔗 Synchronisation ultra-optimisée initialisée');
@@ -113,7 +103,6 @@ class EmailScanner {
             
         } catch (error) {
             console.error('[EmailScanner] ❌ Erreur initialisation optimisée:', error);
-            // Fallback mode
             this.settings = this.getDefaultSettings();
             this.taskPreselectedCategories = [];
         }
@@ -121,12 +110,11 @@ class EmailScanner {
 
     registerAsOptimizedChangeListener() {
         if (window.categoryManager && typeof window.categoryManager.addChangeListener === 'function') {
-            // Debounced change handler pour éviter les appels excessifs
             this.changeListener = window.categoryManager.addChangeListener(
-                this.debounce((type, value, fullSettings) => {
+                this.debounceMethod((type, value, fullSettings) => {
                     console.log(`[EmailScanner] 📨 Changement reçu (debounced): ${type}`, value);
                     this.handleCategoryManagerChangeOptimized(type, value, fullSettings);
-                }, 500) // 500ms de debounce
+                }, 500)
             );
             
             console.log('[EmailScanner] 👂 Listener optimisé enregistré');
@@ -135,9 +123,10 @@ class EmailScanner {
         }
     }
 
-    debounce(func, delay) {
+    // MÉTHODE DEBOUNCE CORRIGÉE
+    debounceMethod(func, delay) {
         let timeoutId;
-        return function (...args) {
+        return (...args) => {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => func.apply(this, args), delay);
         };
@@ -171,15 +160,14 @@ class EmailScanner {
                 break;
         }
         
-        // Re-catégorisation optimisée avec délai et batch
         if (needsRecategorization && this.emails.length > 0) {
             console.log('[EmailScanner] 🔄 Déclenchement re-catégorisation optimisée');
-            this.debounce(() => {
+            const debouncedRecategorize = this.debounceMethod(() => {
                 this.recategorizeEmailsOptimized();
-            }, 300)();
+            }, 300);
+            debouncedRecategorize();
         }
         
-        // Notification optimisée
         setTimeout(() => {
             this.dispatchEvent('emailScannerSynced', {
                 type,
@@ -191,14 +179,13 @@ class EmailScanner {
     }
 
     startOptimizedRealTimeSync() {
-        // Vérification moins fréquente pour réduire la charge
         if (this.syncInterval) {
             clearInterval(this.syncInterval);
         }
         
         this.syncInterval = setInterval(() => {
             this.checkAndSyncSettingsOptimized();
-        }, 15000); // 15 secondes au lieu de 10
+        }, 15000);
     }
 
     async checkAndSyncSettingsOptimized() {
@@ -208,7 +195,6 @@ class EmailScanner {
             const currentManagerCategories = this.safeGetTaskPreselectedCategories();
             const currentManagerSettings = this.safeGetCategoryManagerSettings();
             
-            // Vérification optimisée avec hash pour éviter JSON.stringify coûteux
             const categoriesChanged = this.hashArray(this.taskPreselectedCategories) !== 
                                     this.hashArray(currentManagerCategories);
             
@@ -226,11 +212,9 @@ class EmailScanner {
             if (categoriesChanged || needsRecategorization) {
                 console.log('[EmailScanner] 🔄 Désynchronisation détectée, correction optimisée...');
                 
-                // Forcer la synchronisation
                 this.taskPreselectedCategories = [...currentManagerCategories];
                 this.settings = { ...this.settings, ...currentManagerSettings };
                 
-                // Re-catégorisation optimisée si nécessaire
                 if (this.emails.length > 0 && needsRecategorization) {
                     console.log('[EmailScanner] 🔄 Re-catégorisation optimisée nécessaire');
                     await this.recategorizeEmailsOptimized();
@@ -283,11 +267,9 @@ class EmailScanner {
 
     safeGetCustomCategories() {
         try {
-            // Vérifier si la méthode existe avant de l'appeler
             if (window.categoryManager && typeof window.categoryManager.getCustomCategories === 'function') {
                 return window.categoryManager.getCustomCategories();
             } else if (window.categoryManager && window.categoryManager.customCategories) {
-                // Fallback direct sur la propriété
                 return window.categoryManager.customCategories;
             }
         } catch (error) {
@@ -308,10 +290,9 @@ class EmailScanner {
     }
 
     // ================================================
-    // SCAN ULTRA-OPTIMISÉ
+    // SCAN ULTRA-OPTIMISÉ AVEC DÉTECTION NEWSLETTER AMÉLIORÉE
     // ================================================
     async scan(options = {}) {
-        // ÉTAPE 1: Synchronisation forcée PRÉ-SCAN (optimisée)
         console.log('[EmailScanner] 🔄 === SYNCHRONISATION PRÉ-SCAN OPTIMISÉE ===');
         
         this.scannerPerformanceMonitor.startMeasurement('total_scan');
@@ -326,7 +307,9 @@ class EmailScanner {
             this.settings = { ...this.settings, ...freshSettings };
         }
         
-        // Options avec optimisations
+        // AMÉLIORER LA DÉTECTION DES NEWSLETTERS
+        this.enhanceNewsletterDetection();
+        
         if (options.taskPreselectedCategories && Array.isArray(options.taskPreselectedCategories)) {
             this.taskPreselectedCategories = [...options.taskPreselectedCategories];
         }
@@ -427,7 +410,7 @@ class EmailScanner {
                     this.scanProgress({
                         phase: 'analyzing',
                         message: 'Analyse IA prioritaire...',
-                        progress: { current: 0, total: 5 } // Réduit à 5 max
+                        progress: { current: 0, total: 5 }
                     });
                 }
 
@@ -482,6 +465,91 @@ class EmailScanner {
     }
 
     // ================================================
+    // AMÉLIORATION DÉTECTION NEWSLETTER
+    // ================================================
+    enhanceNewsletterDetection() {
+        console.log('[EmailScanner] 🔍 Amélioration détection newsletter...');
+        
+        if (!window.categoryManager) return;
+        
+        // Récupérer les mots-clés actuels de marketing_news
+        const currentKeywords = window.categoryManager.getCategoryKeywords('marketing_news');
+        
+        if (currentKeywords) {
+            // Mots-clés absolus ultra-précis pour newsletters
+            const enhancedAbsolute = [
+                'unsubscribe', 'se désabonner', 'se désinscrire', 'désinscription',
+                'email preferences', 'préférences email', 'notification settings',
+                'manage subscription', 'gérer abonnement', 'update preferences',
+                'opt-out', 'opt out', 'mailing list', 'liste de diffusion',
+                'powered by mailchimp', 'sent by', 'envoyé par', 'this email was sent',
+                'view in browser', 'voir dans le navigateur', 'view online',
+                'if you no longer wish', 'si vous ne souhaitez plus',
+                'manage your email preferences', 'gérer vos préférences',
+                'update your preferences', 'mettre à jour vos préférences',
+                'unsubscribe from this list', 'click here to unsubscribe',
+                'cliquez ici pour vous désabonner', 'remove from mailing list',
+                'stop receiving these emails', 'arrêter de recevoir ces emails',
+                'mailchimp', 'constant contact', 'campaign monitor', 'sendinblue',
+                'newsletter@', 'no-reply@', 'noreply@', 'info@', 'news@',
+                'update@', 'notification@', 'marketing@', 'promo@',
+                '© 2024', '© 2023', 'all rights reserved', 'tous droits réservés',
+                'privacy policy', 'politique de confidentialité', 'terms of service',
+                'you are receiving this', 'vous recevez cet email',
+                'email automatically generated', 'email généré automatiquement',
+                'this is an automated message', 'ceci est un message automatique'
+            ];
+            
+            // Mots-clés forts pour newsletters
+            const enhancedStrong = [
+                'newsletter', 'bulletin', 'infolettre', 'weekly digest', 
+                'monthly update', 'daily brief', 'subscription',
+                'weekly newsletter', 'bulletin hebdomadaire',
+                'actualités', 'news update', 'latest news', 'dernières nouvelles',
+                'promotional', 'promotion', 'offer', 'offre spéciale',
+                'special offer', 'limited time', 'temps limité',
+                'exclusive offer', 'offre exclusive', 'member exclusive',
+                'save now', 'économisez maintenant', 'discount', 'remise',
+                'coupon', 'code promo', 'promo code', 'deal of the day',
+                'flash sale', 'vente flash', 'clearance', 'liquidation',
+                'new arrivals', 'nouvelles arrivées', 'trending now',
+                'best sellers', 'meilleures ventes', 'featured products',
+                'produits vedettes', 'editor picks', 'sélection de la rédaction'
+            ];
+            
+            // Mots-clés faibles pour newsletters
+            const enhancedWeak = [
+                'marketing', 'campaign', 'campagne', 'communication',
+                'update', 'mise à jour', 'information', 'info',
+                'discover', 'découvrir', 'explore', 'explorer',
+                'learn more', 'en savoir plus', 'read more', 'lire la suite',
+                'check out', 'jetez un œil', 'take a look', 'regardez',
+                'dont miss', 'ne manquez pas', 'limited quantity',
+                'quantité limitée', 'while supplies last', 'jusqu\'à épuisement',
+                'act now', 'agissez maintenant', 'hurry', 'dépêchez-vous',
+                'expires soon', 'expire bientôt', 'last chance', 'dernière chance'
+            ];
+            
+            // Fusionner avec les mots-clés existants (sans doublons)
+            const mergedKeywords = {
+                absolute: [...new Set([...currentKeywords.absolute, ...enhancedAbsolute])],
+                strong: [...new Set([...currentKeywords.strong, ...enhancedStrong])],
+                weak: [...new Set([...currentKeywords.weak, ...enhancedWeak])],
+                exclusions: currentKeywords.exclusions || []
+            };
+            
+            // Mettre à jour dans CategoryManager
+            window.categoryManager.updateCategoryKeywords('marketing_news', mergedKeywords);
+            
+            console.log('[EmailScanner] ✅ Détection newsletter améliorée:', {
+                absolute: mergedKeywords.absolute.length,
+                strong: mergedKeywords.strong.length,
+                weak: mergedKeywords.weak.length
+            });
+        }
+    }
+
+    // ================================================
     // CATÉGORISATION ULTRA-OPTIMISÉE
     // ================================================
     async categorizeEmailsUltraOptimized(overridePreselectedCategories = null) {
@@ -494,29 +562,24 @@ class EmailScanner {
 
         this.scannerPerformanceMonitor.startMeasurement('categorization');
 
-        // Initialisation des stats optimisée
         const categoryStats = this.initializeCategoryStats();
         const preselectedStats = {};
         taskPreselectedCategories.forEach(catId => {
             preselectedStats[catId] = 0;
         });
 
-        // Créer le batch processor
         const batchProcessor = this.createBatchProcessor();
 
-        // Traitement par batch ultra-optimisé
         const results = await batchProcessor.processBatch(
             this.emails,
             async (email, index) => {
                 try {
-                    // Utilisation du CategoryManager optimisé
                     const analysis = window.categoryManager.analyzeEmailOptimized ? 
                         window.categoryManager.analyzeEmailOptimized(email) :
                         window.categoryManager.analyzeEmail(email);
                     
                     const finalCategory = analysis.category || 'other';
                     
-                    // Attribution optimisée des propriétés
                     Object.assign(email, {
                         category: finalCategory,
                         categoryScore: analysis.score || 0,
@@ -529,20 +592,17 @@ class EmailScanner {
                         isPreselectedForTasks: taskPreselectedCategories.includes(finalCategory)
                     });
 
-                    // Stats rapides
                     categoryStats[finalCategory] = (categoryStats[finalCategory] || 0) + 1;
                     
                     if (email.isPreselectedForTasks) {
                         preselectedStats[finalCategory] = (preselectedStats[finalCategory] || 0) + 1;
                     }
 
-                    // Ajout à la catégorie
                     if (!this.categorizedEmails[finalCategory]) {
                         this.categorizedEmails[finalCategory] = [];
                     }
                     this.categorizedEmails[finalCategory].push(email);
 
-                    // Progress callback optimisé (moins fréquent)
                     if (index % 50 === 0 && this.scanProgress) {
                         const percent = Math.round((index / total) * 100);
                         this.scanProgress({
@@ -557,7 +617,6 @@ class EmailScanner {
                 } catch (error) {
                     console.error('[EmailScanner] ❌ Erreur catégorisation email:', error);
                     
-                    // Fallback optimisé
                     Object.assign(email, {
                         category: 'other',
                         categoryError: error.message,
@@ -583,7 +642,6 @@ class EmailScanner {
         const preselectedCount = this.emails.filter(e => e.isPreselectedForTasks).length;
         const errors = results.filter(r => !r.success).length;
         
-        // Mise à jour des métriques
         this.scanMetrics.categorizedCount = total;
         this.scanMetrics.categoryDistribution = categoryStats;
         this.scanMetrics.preselectedCount = preselectedCount;
@@ -602,37 +660,29 @@ class EmailScanner {
         this.verifyPreselectionSyncOptimized(taskPreselectedCategories);
     }
 
-    // Ajouter ces méthodes à la classe EmailScanner après la ligne 1800 environ
-// (après la méthode categorizeEmailsUltraOptimized)
-
     // ================================================
     // MÉTHODES DE COMPATIBILITÉ
     // ================================================
     
-    // Alias pour la compatibilité avec l'ancien nom
     async categorizeEmails(overridePreselectedCategories = null) {
         console.log('[EmailScanner] 🔄 categorizeEmails -> categorizeEmailsUltraOptimized');
         return this.categorizeEmailsUltraOptimized(overridePreselectedCategories);
     }
     
-    // Alias pour la méthode recategorizeEmails
     async recategorizeEmails() {
         console.log('[EmailScanner] 🔄 recategorizeEmails -> recategorizeEmailsOptimized');
         return this.recategorizeEmailsOptimized();
     }
     
-    // Alias pour analyzeForTasks
     async analyzeForTasks() {
         console.log('[EmailScanner] 🔄 analyzeForTasks -> analyzeForTasksOptimized');
         return this.analyzeForTasksOptimized();
     }
     
-    // Alias pour getDetailedResults
     getDetailedResults() {
         return this.getDetailedResultsOptimized();
     }
     
-    // Reset standard pour compatibilité
     reset() {
         return this.resetOptimized();
     }
@@ -642,7 +692,6 @@ class EmailScanner {
         const categories = this.safeGetAllCategories();
         const customCategories = this.safeGetCustomCategories();
         
-        // Initialisation rapide
         Object.keys(categories).forEach(catId => {
             categoryStats[catId] = 0;
         });
@@ -653,7 +702,6 @@ class EmailScanner {
             }
         });
         
-        // Catégories spéciales
         ['other', 'excluded', 'spam', 'personal'].forEach(specialCat => {
             if (!categoryStats[specialCat]) {
                 categoryStats[specialCat] = 0;
@@ -674,18 +722,16 @@ class EmailScanner {
 
         this.scannerPerformanceMonitor.startMeasurement('ai_analysis');
 
-        // PRIORITÉ 1: Top 3 emails pré-sélectionnés seulement
         const preselectedEmails = this.emails
             .filter(email => email.isPreselectedForTasks && email.categoryConfidence > 0.7)
             .sort((a, b) => b.categoryConfidence - a.categoryConfidence)
-            .slice(0, 3); // RÉDUIT à 3 maximum
+            .slice(0, 3);
         
-        // PRIORITÉ 2: 2 emails max avec très haute confiance
         const additionalEmails = this.emails
             .filter(email => !email.isPreselectedForTasks && 
                     email.categoryConfidence > 0.9 &&
                     ['tasks', 'commercial'].includes(email.category))
-            .slice(0, 2); // RÉDUIT à 2 maximum
+            .slice(0, 2);
         
         const emailsToAnalyze = [...preselectedEmails, ...additionalEmails];
 
@@ -708,9 +754,8 @@ class EmailScanner {
                     });
                 }
                 
-                // Pause micro réduite
                 if (analyzed < emailsToAnalyze.length) {
-                    await new Promise(resolve => setTimeout(resolve, 50)); // 50ms au lieu de 100ms
+                    await new Promise(resolve => setTimeout(resolve, 50));
                 }
                 
             } catch (error) {
@@ -741,24 +786,20 @@ class EmailScanner {
         
         this.scannerPerformanceMonitor.startMeasurement('recategorization');
         
-        // Réinitialisation rapide
         this.scanMetrics.startTime = Date.now();
         this.scanMetrics.categorizedCount = 0;
         this.scanMetrics.keywordMatches = {};
         this.scanMetrics.categoryDistribution = {};
         
-        // Vider seulement les références, pas recréer les objets
         Object.keys(this.categorizedEmails).forEach(cat => {
-            this.categorizedEmails[cat].length = 0; // Plus rapide que = []
+            this.categorizedEmails[cat].length = 0;
         });
 
-        // Re-catégorisation batch
         await this.categorizeEmailsUltraOptimized();
         
         const recatTime = this.scannerPerformanceMonitor.endMeasurement('recategorization');
         console.log(`[EmailScanner] ✅ Re-catégorisation optimisée terminée en ${recatTime.toFixed(2)}ms`);
         
-        // Notification optimisée
         setTimeout(() => {
             this.dispatchEvent('emailsRecategorized', {
                 emails: this.emails,
@@ -783,7 +824,6 @@ class EmailScanner {
         let totalExcluded = 0;
         let totalSpam = 0;
 
-        // Calcul optimisé en une seule passe
         Object.entries(this.categorizedEmails).forEach(([catId, emails]) => {
             breakdown[catId] = emails.length;
             
@@ -795,7 +835,6 @@ class EmailScanner {
                 totalCategorized += emails.length;
             }
             
-            // Calculs en batch pour performance
             for (let i = 0; i < emails.length; i++) {
                 const email = emails[i];
                 if (email.categoryConfidence >= 0.8) totalWithHighConfidence++;
@@ -866,7 +905,6 @@ class EmailScanner {
     }
 
     calculateKeywordEffectivenessOptimized() {
-        // Version simplifiée pour performance
         const effectiveness = {};
         
         Object.entries(this.scanMetrics.keywordMatches || {}).forEach(([categoryId, matches]) => {
@@ -896,7 +934,6 @@ class EmailScanner {
         console.log(`[EmailScanner] 🎯 Confiance haute: ${results.stats.highConfidence}`);
         console.log(`[EmailScanner] 📋 Catégories configurées: ${results.taskPreselectedCategories.join(', ')}`);
         
-        // Performance stats
         const perfStats = this.scannerPerformanceMonitor.getStats();
         console.log('[EmailScanner] 🚀 Performance détaillée:');
         Object.entries(perfStats).forEach(([key, stats]) => {
@@ -905,14 +942,13 @@ class EmailScanner {
     }
 
     logOptimizedKeywordEffectiveness() {
-        // Version allégée du logging pour performance
         const effectiveness = this.calculateKeywordEffectivenessOptimized();
         
         console.log('[EmailScanner] 🎯 Top efficacité mots-clés:');
         Object.entries(effectiveness)
             .filter(([_, stats]) => stats.totalMatches > 0)
             .sort((a, b) => b[1].efficiency - a[1].efficiency)
-            .slice(0, 5) // Top 5 seulement
+            .slice(0, 5)
             .forEach(([categoryId, stats]) => {
                 const category = window.categoryManager?.getCategory(categoryId);
                 const isPreselected = this.taskPreselectedCategories.includes(categoryId);
@@ -939,10 +975,8 @@ class EmailScanner {
     resetOptimized() {
         console.log('[EmailScanner] 🔄 Réinitialisation optimisée...');
         
-        // Reset arrays plus rapide
         this.emails.length = 0;
         
-        // Reset métriques
         this.scanMetrics = {
             startTime: Date.now(),
             categorizedCount: 0,
@@ -954,12 +988,10 @@ class EmailScanner {
             categoryDistribution: {}
         };
         
-        // Initialisation optimisée des catégories
         if (window.categoryManager) {
             const categories = this.safeGetAllCategories();
             const customCategories = this.safeGetCustomCategories();
             
-            // Reset rapide avec Object.keys
             Object.keys(categories).forEach(catId => {
                 if (!this.categorizedEmails[catId]) {
                     this.categorizedEmails[catId] = [];
@@ -978,7 +1010,6 @@ class EmailScanner {
             });
         }
         
-        // Reset catégories spéciales
         ['other', 'excluded', 'spam', 'personal'].forEach(catId => {
             if (!this.categorizedEmails[catId]) {
                 this.categorizedEmails[catId] = [];
@@ -1012,10 +1043,10 @@ class EmailScanner {
     }
 
     // ================================================
-    // MÉTHODES D'ACCÈS AUX DONNÉES (optimisées)
+    // MÉTHODES D'ACCÈS AUX DONNÉES
     // ================================================
     getAllEmails() {
-        return this.emails; // Pas de copie pour performance
+        return this.emails;
     }
 
     getEmailsByCategory(categoryId) {
@@ -1038,7 +1069,6 @@ class EmailScanner {
     }
 
     getEmailById(emailId) {
-        // Optimisé avec for loop au lieu de find
         for (let i = 0; i < this.emails.length; i++) {
             if (this.emails[i].id === emailId) {
                 return this.emails[i];
@@ -1060,15 +1090,14 @@ class EmailScanner {
         if (!this.settings) this.settings = {};
         this.settings.taskPreselectedCategories = this.taskPreselectedCategories;
         
-        // Comparaison rapide avec hash
         const hasChanged = this.hashArray(oldCategories) !== this.hashArray(this.taskPreselectedCategories);
         
         if (hasChanged && this.emails.length > 0) {
             console.log('[EmailScanner] 🔄 Changement détecté, re-catégorisation optimisée');
-            // Debounced recategorization
-            this.debounce(() => {
+            const debouncedRecategorize = this.debounceMethod(() => {
                 this.recategorizeEmailsOptimized();
-            }, 200)();
+            }, 200);
+            debouncedRecategorize();
         } else if (!hasChanged) {
             console.log('[EmailScanner] ✅ Aucun changement détecté');
         }
@@ -1086,38 +1115,35 @@ class EmailScanner {
             this.updateTaskPreselectedCategories(newSettings.taskPreselectedCategories);
         }
         
-        // Vérification rapide des changements critiques
         const criticalChanges = ['activeCategories', 'categoryExclusions', 'preferences']
             .some(key => this.hashArray(oldSettings[key]) !== this.hashArray(newSettings[key]));
         
         if (criticalChanges && this.emails.length > 0) {
             console.log('[EmailScanner] 🔄 Changements critiques détectés, re-catégorisation optimisée');
-            this.debounce(() => {
+            const debouncedRecategorize = this.debounceMethod(() => {
                 this.recategorizeEmailsOptimized();
-            }, 300)();
+            }, 300);
+            debouncedRecategorize();
         }
         
         return this.settings;
     }
 
     getTaskPreselectedCategories() {
-        // Cache simple avec validation
         const now = Date.now();
-        const CACHE_DURATION = 30000; // 30 secondes
+        const CACHE_DURATION = 30000;
         
         if (this._categoriesCache && 
             this._categoriesCacheTime && 
             (now - this._categoriesCacheTime) < CACHE_DURATION) {
-            return this._categoriesCache;
+            return [...this._categoriesCache];
         }
         
-        // Sync rapide avec CategoryManager
         const managerCategories = this.safeGetTaskPreselectedCategories();
         
         this._categoriesCache = [...managerCategories];
         this._categoriesCacheTime = now;
         
-        // Log optimisé (seulement si changement)
         if (this.hashArray(this.taskPreselectedCategories) !== this.hashArray(managerCategories)) {
             console.log('[EmailScanner] 📋 Catégories tâches synchronisées:', managerCategories);
             this.taskPreselectedCategories = [...managerCategories];
@@ -1132,7 +1158,7 @@ class EmailScanner {
     }
 
     getSettings() {
-        return this.settings; // Pas de copie pour performance
+        return this.settings;
     }
 
     forceSettingsReload() {
@@ -1236,7 +1262,7 @@ class EmailScanner {
             return;
         }
 
-        const batchSize = 10; // Traitement par petits lots
+        const batchSize = 10;
         const results = [];
 
         try {
@@ -1270,7 +1296,6 @@ class EmailScanner {
                         console.warn(`[EmailScanner] Action inconnue: ${action}`);
                 }
                 
-                // Pause entre les batches
                 if (i + batchSize < emailIds.length) {
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
@@ -1306,7 +1331,6 @@ class EmailScanner {
             emails: []
         };
 
-        // Export catégories optimisé
         Object.entries(this.categorizedEmails).forEach(([catId, emails]) => {
             const categoryInfo = window.categoryManager?.getCategory(catId) || { name: catId, icon: '📂' };
             const preselectedInCategory = emails.filter(e => e.isPreselectedForTasks).length;
@@ -1321,7 +1345,6 @@ class EmailScanner {
             };
         });
 
-        // Export emails optimisé (propriétés essentielles seulement)
         data.emails = this.emails.map(email => ({
             id: email.id,
             date: email.receivedDateTime,
@@ -1346,7 +1369,6 @@ class EmailScanner {
             ['Date', 'De', 'Sujet', 'Catégorie', 'Confiance%', 'Score', 'Pré-sélectionné', 'Tâche suggérée']
         ];
 
-        // Export optimisé avec boucle for
         for (let i = 0; i < this.emails.length; i++) {
             const email = this.emails[i];
             const categoryInfo = window.categoryManager?.getCategory(email.category) || { name: email.category || 'other' };
@@ -1367,7 +1389,7 @@ class EmailScanner {
             row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
         ).join('\n');
 
-        return '\ufeff' + csv; // BOM UTF-8
+        return '\ufeff' + csv;
     }
 
     exportResults(format = 'csv') {
@@ -1425,15 +1447,14 @@ class EmailScanner {
     setupOptimizedEventListeners() {
         if (this.eventListenersSetup) return;
 
-        // Event handlers avec debounce
-        this.keywordsUpdateHandler = this.debounce((event) => {
+        this.keywordsUpdateHandler = this.debounceMethod((event) => {
             console.log('[EmailScanner] 🔑 Mots-clés mis à jour (debounced)');
             if (this.emails.length > 0) {
                 this.recategorizeEmailsOptimized();
             }
         }, 500);
 
-        this.forceSyncHandler = this.debounce((event) => {
+        this.forceSyncHandler = this.debounceMethod((event) => {
             if (event.detail?.source === 'EmailScanner') return;
             
             console.log('[EmailScanner] 🚀 Synchronisation forcée (debounced)');
@@ -1495,23 +1516,16 @@ class EmailScanner {
     cleanup() {
         console.log('[EmailScanner] 🧹 Nettoyage optimisé...');
         
-        // Arrêt des timers
         if (this.syncInterval) {
             clearInterval(this.syncInterval);
             this.syncInterval = null;
         }
         
-        // Nettoyage du listener CategoryManager
         if (this.changeListener && typeof this.changeListener === 'function') {
             this.changeListener();
             this.changeListener = null;
         }
         
-        // Nettoyage des event listeners
-        if (this.keywordsUpdateHandler) {
-            window.removeEventListener('keywordsUpdated', this.keywordsUpdateHandler);
-        }
-        // Nettoyage des event listeners
         if (this.keywordsUpdateHandler) {
             window.removeEventListener('keywordsUpdated', this.keywordsUpdateHandler);
         }
@@ -1520,11 +1534,9 @@ class EmailScanner {
         }
         this.eventListenersSetup = false;
         
-        // Nettoyage des caches
         this.processingCache.clear();
         this.invalidateCategoriesCache();
         
-        // Reset des données
         this.emails.length = 0;
         Object.keys(this.categorizedEmails).forEach(cat => {
             this.categorizedEmails[cat].length = 0;
@@ -1532,7 +1544,6 @@ class EmailScanner {
         this.taskPreselectedCategories.length = 0;
         this.scanProgress = null;
         
-        // Reset des métriques
         this.scanMetrics = {
             startTime: null,
             categorizedCount: 0,
@@ -1544,7 +1555,6 @@ class EmailScanner {
             categoryDistribution: {}
         };
         
-        // Nettoyage du performance monitor
         if (this.scannerPerformanceMonitor && this.scannerPerformanceMonitor.cleanup) {
             this.scannerPerformanceMonitor.cleanup();
         }
@@ -1574,7 +1584,7 @@ class EmailScanner {
 }
 
 // ================================================
-// CLASSES UTILITAIRES INTÉGRÉES POUR ÉVITER LES CONFLITS
+// CLASSES UTILITAIRES INTÉGRÉES
 // ================================================
 
 class EmailScannerBatchProcessor {
@@ -1593,7 +1603,6 @@ class EmailScannerBatchProcessor {
             const batchResults = await this.processConcurrentBatch(batch, processor);
             results.push(...batchResults);
             
-            // Pause micro pour éviter le blocage
             await this.microPause();
         }
         
@@ -1672,7 +1681,6 @@ class EmailScannerPerformanceMonitor {
         const duration = performance.now() - start;
         this.measurements.delete(key);
         
-        // Maintenir les tendances
         if (!this.trends.has(key)) {
             this.trends.set(key, []);
         }
@@ -1680,7 +1688,6 @@ class EmailScannerPerformanceMonitor {
         const trend = this.trends.get(key);
         trend.push(duration);
         
-        // Garder seulement les 10 dernières mesures
         if (trend.length > 10) {
             trend.shift();
         }
@@ -1717,7 +1724,6 @@ class EmailScannerPerformanceMonitor {
 // INITIALISATION GLOBALE ULTRA-OPTIMISÉE
 // ================================================
 
-// Attendre que les autres modules soient chargés pour éviter les conflits
 if (window.emailScanner) {
     console.log('[EmailScanner] 🔄 Nettoyage ancienne instance...');
     try {
@@ -1727,31 +1733,28 @@ if (window.emailScanner) {
     }
 }
 
-// Délai pour éviter les conflits de chargement
 setTimeout(() => {
-    console.log('[EmailScanner] 🚀 Création nouvelle instance v9.1 ULTRA-OPTIMISÉE...');
+    console.log('[EmailScanner] 🚀 Création nouvelle instance v10.0 ULTRA-OPTIMISÉE...');
     
     try {
         window.emailScanner = new EmailScanner();
         
-        console.log('✅ EmailScanner v9.1 ULTRA-OPTIMISÉ loaded - Performance maximisée! 🚀⚡');
+        console.log('✅ EmailScanner v10.0 ULTRA-OPTIMISÉ loaded - Performance maximisée + Détection newsletter améliorée! 🚀⚡');
         
-        // Notifier que EmailScanner est prêt
         window.dispatchEvent(new CustomEvent('emailScannerReady', {
-            detail: { version: '9.1', optimized: true, fixed: true }
+            detail: { version: '10.0', optimized: true, newsletterEnhanced: true }
         }));
         
     } catch (error) {
         console.error('[EmailScanner] ❌ Erreur lors de l\'initialisation:', error);
         
-        // Fallback: essayer de restaurer une version basique
         window.emailScanner = {
             scan: () => console.warn('EmailScanner fallback: scan non disponible'),
             getAllEmails: () => [],
             emails: []
         };
     }
-}, 50); // 50ms de délai
+}, 50);
 
 // Tests de performance améliorés
 window.testEmailScannerPerformance = function() {
@@ -1760,42 +1763,42 @@ window.testEmailScannerPerformance = function() {
         return;
     }
     
-    console.group('🚀 TEST PERFORMANCE EmailScanner v9.1');
+    console.group('🚀 TEST PERFORMANCE EmailScanner v10.0');
     
     const start = performance.now();
     
-    // Générer des emails de test plus réalistes
     const testEmails = Array.from({ length: 500 }, (_, i) => ({
         id: `test-${i}`,
         subject: [
             `Facture #${1000 + i}`, 
             `Meeting demain à 14h`,
-            `Newsletter hebdomadaire`,
+            `Newsletter hebdomadaire - Unsubscribe here`,
             `Action requise: validation urgente`,
             `Projet XYZ - mise à jour`
         ][i % 5],
         from: { emailAddress: { address: `test${i}@example.com` } },
-        bodyPreview: 'Contenu de test avec mots-clés importants',
+        bodyPreview: 'Contenu de test avec mots-clés importants unsubscribe view in browser',
         receivedDateTime: new Date(Date.now() - i * 3600000).toISOString(),
         toRecipients: [{ emailAddress: { address: 'user@company.com' } }]
     }));
     
     console.log('Test de performance sur 500 emails...');
     
-    // Simuler CategoryManager et MailService
     const originalCategoryManager = window.categoryManager;
     const originalMailService = window.mailService;
     
     window.categoryManager = {
         getTaskPreselectedCategories: () => ['tasks', 'commercial'],
         getSettings: () => ({ scanSettings: { autoAnalyze: false } }),
-        getCategories: () => ({ tasks: { name: 'Tâches' }, commercial: { name: 'Commercial' } }),
+        getCategories: () => ({ tasks: { name: 'Tâches' }, commercial: { name: 'Commercial' }, marketing_news: { name: 'Newsletter' } }),
         getCustomCategories: () => ({}),
         analyzeEmail: (email) => ({
-            category: ['tasks', 'commercial', 'other'][Math.floor(Math.random() * 3)],
+            category: ['tasks', 'commercial', 'marketing_news', 'other'][Math.floor(Math.random() * 4)],
             score: 50 + Math.random() * 50,
             confidence: 0.5 + Math.random() * 0.5
-        })
+        }),
+        updateCategoryKeywords: () => {},
+        getCategoryKeywords: () => ({ absolute: [], strong: [], weak: [], exclusions: [] })
     };
     
     window.mailService = {
@@ -1803,7 +1806,6 @@ window.testEmailScannerPerformance = function() {
     };
     
     try {
-        // Test de scan
         const scanStart = performance.now();
         window.emailScanner.scan({
             days: 7,
@@ -1826,7 +1828,6 @@ window.testEmailScannerPerformance = function() {
             
             console.groupEnd();
             
-            // Restaurer les objets originaux
             window.categoryManager = originalCategoryManager;
             window.mailService = originalMailService;
             
@@ -1853,7 +1854,7 @@ window.debugEmailScannerOptimized = function() {
         return;
     }
     
-    console.group('📊 DEBUG EmailScanner OPTIMISÉ v9.1');
+    console.group('📊 DEBUG EmailScanner OPTIMISÉ v10.0');
     
     const debugInfo = window.emailScanner.getDebugInfo();
     console.log('Infos générales:', {
@@ -1871,4 +1872,4 @@ window.debugEmailScannerOptimized = function() {
     return debugInfo;
 };
 
-console.log('✅ EmailScanner v9.1 ULTRA-OPTIMISÉ + CORRIGÉ loaded - Performance maximisée! 🚀');
+console.log('✅ EmailScanner v10.0 ULTRA-OPTIMISÉ + DÉTECTION NEWSLETTER AMÉLIORÉE loaded! 🚀');
