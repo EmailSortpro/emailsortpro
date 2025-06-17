@@ -771,6 +771,138 @@ class PageManager {
         }
     }
 
+    // Ajouter cette méthode dans PageManager.js après renderEmailsListOptimized (vers la ligne 800)
+
+    // ================================================
+    // RENDU VUE GROUPÉE OPTIMISÉE
+    // ================================================
+    renderGroupedViewOptimized(groupedEmails, totalCount, preselectedCount) {
+        const groups = [];
+        let totalGroupedCount = 0;
+        
+        // Convertir les groupes en tableau trié
+        Object.entries(groupedEmails).forEach(([categoryId, emails]) => {
+            if (emails.length === 0) return;
+            
+            const category = window.categoryManager?.getCategory(categoryId) || {
+                name: categoryId,
+                icon: '📧',
+                color: '#6b7280'
+            };
+            
+            totalGroupedCount += emails.length;
+            groups.push({
+                categoryId,
+                category,
+                emails,
+                count: emails.length,
+                preselectedCount: emails.filter(e => e.isPreselectedForTasks).length
+            });
+        });
+        
+        // Trier les groupes par nombre d'emails
+        groups.sort((a, b) => b.count - a.count);
+        
+        // Générer le HTML
+        const groupsHtml = groups.map(group => {
+            const emailsHtml = group.emails.slice(0, 10).map(email => 
+                this.renderEmailRowOptimized(email)
+            ).join('');
+            
+            const hasMore = group.emails.length > 10;
+            
+            return `
+                <div class="email-group" data-category="${group.categoryId}">
+                    <div class="group-header" onclick="window.pageManager.toggleGroup('${group.categoryId}')">
+                        <div class="group-info">
+                            <span class="group-icon">${group.category.icon}</span>
+                            <span class="group-name">${group.category.name}</span>
+                            <span class="group-count">${group.count} emails</span>
+                            ${group.preselectedCount > 0 ? `
+                                <span class="group-preselected">
+                                    <i class="fas fa-star"></i> ${group.preselectedCount}
+                                </span>
+                            ` : ''}
+                        </div>
+                        <i class="fas fa-chevron-down group-toggle"></i>
+                    </div>
+                    <div class="group-emails">
+                        ${emailsHtml}
+                        ${hasMore ? `
+                            <div class="group-more">
+                                <button class="btn-show-more" onclick="window.pageManager.showMoreInGroup('${group.categoryId}')">
+                                    Voir ${group.emails.length - 10} emails de plus
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        return `
+            <div class="emails-grouped-view">
+                <div class="grouped-stats">
+                    <div class="stat">
+                        <i class="fas fa-layer-group"></i>
+                        <span>${groups.length} groupes</span>
+                    </div>
+                    <div class="stat">
+                        <i class="fas fa-envelope"></i>
+                        <span>${totalGroupedCount} emails</span>
+                    </div>
+                    ${preselectedCount > 0 ? `
+                        <div class="stat highlight">
+                            <i class="fas fa-star"></i>
+                            <span>${preselectedCount} pré-sélectionnés</span>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${groupsHtml}
+            </div>
+        `;
+    }
+    
+    // Méthode pour toggler un groupe
+    toggleGroup(categoryId) {
+        const group = document.querySelector(`[data-category="${categoryId}"]`);
+        if (group) {
+            group.classList.toggle('collapsed');
+        }
+    }
+    
+    // Méthode pour afficher plus d'emails dans un groupe
+    showMoreInGroup(categoryId) {
+        const group = this.groupedEmails[categoryId];
+        if (!group) return;
+        
+        const groupElement = document.querySelector(`[data-category="${categoryId}"] .group-emails`);
+        if (!groupElement) return;
+        
+        // Générer le HTML pour tous les emails
+        const allEmailsHtml = group.map(email => 
+            this.renderEmailRowOptimized(email)
+        ).join('');
+        
+        groupElement.innerHTML = allEmailsHtml;
+    }
+    
+    // Méthode helper pour grouper les emails par catégorie
+    groupEmailsByCategory(emails) {
+        const grouped = {};
+        
+        emails.forEach(email => {
+            const category = email.category || 'other';
+            if (!grouped[category]) {
+                grouped[category] = [];
+            }
+            grouped[category].push(email);
+        });
+        
+        return grouped;
+    }
+
     renderVirtualizedEmailsList(emails) {
         // Configuration du scroll virtuel pour de gros volumes
         return this.virtualScrolling.render(emails, (email) => 
