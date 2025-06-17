@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 21.1 - CORRIGÉ ET OPTIMISÉ 🚀
+// CategoryManager.js - Version 22.0 - COMPLÈTEMENT CORRIGÉ 🚀
 
 class CategoryManager {
     constructor() {
@@ -10,23 +10,23 @@ class CategoryManager {
         this.debugMode = false;
         this.eventListenersSetup = false;
         
-        // NOUVEAU: Système de cache haute performance
-        this.analysisCache = new Map(); // Cache LRU des analyses
+        // Système de cache haute performance
+        this.analysisCache = new Map();
         this.cacheMaxSize = 1000;
         this.cacheTTL = 300000; // 5 minutes
         this.cacheStats = { hits: 0, misses: 0 };
         
-        // NOUVEAU: Optimisation regex pré-compilées
+        // Optimisation regex pré-compilées
         this.compiledPatterns = new Map();
         this.textNormalizer = this.createTextNormalizer();
         
-        // NOUVEAU: Système de synchronisation optimisé
+        // Système de synchronisation optimisé
         this.syncQueue = [];
         this.syncInProgress = false;
         this.changeListeners = new Set();
         this.lastSyncTimestamp = 0;
         
-        // NOUVEAU: Batch processing
+        // Batch processing
         this.pendingAnalysis = [];
         this.batchSize = 50;
         this.batchTimeout = null;
@@ -38,15 +38,74 @@ class CategoryManager {
         this.setupEventListeners();
         this.startOptimizedSync();
         
-        console.log('[CategoryManager] ✅ Version 21.1 - CORRIGÉ ET OPTIMISÉ');
+        console.log('[CategoryManager] ✅ Version 22.0 - COMPLÈTEMENT CORRIGÉ');
     }
 
     // ================================================
-    // CACHE SYSTÈME HAUTE PERFORMANCE
+    // EXTRACTION DE CONTENU - MÉTHODE PRINCIPALE
+    // ================================================
+    extractCompleteContent(email) {
+        const parts = [];
+        
+        // Sujet avec pondération
+        if (email.subject?.trim()) {
+            parts.push(email.subject.repeat(3));
+        }
+        
+        // Expéditeur
+        if (email.from?.emailAddress?.address) {
+            parts.push(email.from.emailAddress.address.repeat(2));
+        }
+        
+        // Aperçu du corps
+        if (email.bodyPreview) {
+            parts.push(email.bodyPreview);
+        }
+        
+        // Destinataires
+        const recipients = [];
+        if (email.toRecipients?.length) {
+            recipients.push(...email.toRecipients.slice(0, 3).map(r => r.emailAddress?.address).filter(Boolean));
+        }
+        if (email.ccRecipients?.length) {
+            recipients.push(...email.ccRecipients.slice(0, 2).map(r => r.emailAddress?.address).filter(Boolean));
+        }
+        parts.push(recipients.join(' '));
+        
+        const rawText = parts.join(' ');
+        const normalizedText = this.normalizeTextFast(rawText);
+        
+        return {
+            text: normalizedText,
+            subject: this.normalizeTextFast(email.subject || ''),
+            domain: this.extractDomain(email.from?.emailAddress?.address),
+            hasHtml: !!(email.body?.content && email.body.content.includes('<')),
+            length: normalizedText.length,
+            rawSubject: email.subject || ''
+        };
+    }
+
+    // Alias pour compatibilité
+    extractCompleteContentOptimized(email) {
+        return this.extractCompleteContent(email);
+    }
+
+    extractDomain(email) {
+        if (!email || !email.includes('@')) return 'unknown';
+        const parts = email.split('@');
+        return parts[1]?.toLowerCase() || 'unknown';
+    }
+
+    // Alias pour compatibilité
+    extractDomainFast(email) {
+        return this.extractDomain(email);
+    }
+
+    // ================================================
+    // CACHE SYSTÈME
     // ================================================
     createCacheKey(email) {
-        // CORRECTION: Utiliser la méthode optimisée
-        const content = this.extractCompleteContentOptimized(email);
+        const content = this.extractCompleteContent(email);
         const key = `${email.from?.emailAddress?.address || ''}|${email.subject || ''}|${content.text.substring(0, 100)}`;
         return this.hashString(key);
     }
@@ -56,7 +115,7 @@ class CategoryManager {
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
+            hash = hash & hash;
         }
         return hash.toString(36);
     }
@@ -77,7 +136,6 @@ class CategoryManager {
     setCachedAnalysis(email, result) {
         const key = this.createCacheKey(email);
         
-        // Gestion LRU: supprimer les anciens si trop de cache
         if (this.analysisCache.size >= this.cacheMaxSize) {
             const firstKey = this.analysisCache.keys().next().value;
             this.analysisCache.delete(firstKey);
@@ -89,11 +147,16 @@ class CategoryManager {
         });
     }
 
+    invalidateCache() {
+        this.analysisCache.clear();
+        this.cacheStats = { hits: 0, misses: 0 };
+        console.log('[CategoryManager] 🧹 Cache invalidé');
+    }
+
     // ================================================
-    // OPTIMISATION REGEX ET NORMALISATION
+    // NORMALISATION ET PATTERNS
     // ================================================
     createTextNormalizer() {
-        // Pré-compiler les regex de normalisation pour éviter la recompilation
         return {
             accents: /[àâäéèêëîïôöùûüç]/gi,
             accentMap: {
@@ -129,63 +192,36 @@ class CategoryManager {
     }
 
     // ================================================
-    // BATCH PROCESSING POUR ANALYSE MASSIVE
+    // ANALYSE EMAIL
     // ================================================
-    async analyzeEmailsBatch(emails) {
-        console.log(`[CategoryManager] 📦 Batch analysis: ${emails.length} emails`);
-        
-        const batchResults = [];
-        const batchSize = this.batchSize;
-        
-        for (let i = 0; i < emails.length; i += batchSize) {
-            const batch = emails.slice(i, i + batchSize);
-            const batchPromises = batch.map(email => this.analyzeEmailOptimized(email));
-            
-            // Traitement par batch avec Promise.all pour parallélisme
-            const results = await Promise.all(batchPromises);
-            batchResults.push(...results);
-            
-            // Pause micro pour laisser respirer le thread principal
-            if (i + batchSize < emails.length) {
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
-        }
-        
-        console.log(`[CategoryManager] ✅ Batch completed: ${batchResults.length} analyses`);
-        return batchResults;
-    }
-
-    // ================================================
-    // ANALYSE EMAIL OPTIMISÉE
-    // ================================================
-    analyzeEmailOptimized(email) {
+    analyzeEmail(email) {
         if (!email) return { category: 'other', score: 0, confidence: 0 };
         
-        // 1. Vérifier le cache en premier
+        // Vérifier le cache
         const cached = this.getCachedAnalysis(email);
         if (cached) {
             return cached;
         }
         
-        // 2. Vérifications rapides
-        if (this.shouldExcludeSpam() && this.isSpamEmailFast(email)) {
+        // Vérifications rapides
+        if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
             const result = { category: 'spam', score: 0, confidence: 0, isSpam: true };
             this.setCachedAnalysis(email, result);
             return result;
         }
         
-        // 3. Extraction de contenu optimisée
-        const content = this.extractCompleteContentOptimized(email);
+        // Extraction de contenu
+        const content = this.extractCompleteContent(email);
         
-        // 4. Vérifications d'exclusion rapides
-        if (this.isGloballyExcludedFast(content, email)) {
+        // Vérifications d'exclusion
+        if (this.isGloballyExcluded(content, email)) {
             const result = { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
             this.setCachedAnalysis(email, result);
             return result;
         }
         
-        // 5. Détection personnelle rapide
-        if (this.isPersonalEmailFast(content)) {
+        // Détection personnelle
+        if (this.isPersonalEmail(content)) {
             const result = {
                 category: this.categories.personal ? 'personal' : 'excluded',
                 score: 100,
@@ -196,111 +232,85 @@ class CategoryManager {
             return result;
         }
         
-        // 6. Analyse CC optimisée
-        const ccResult = this.analyzeCCOptimized(email, content);
+        // Analyse CC
+        const ccResult = this.analyzeCC(email, content);
         if (ccResult) {
             this.setCachedAnalysis(email, ccResult);
             return ccResult;
         }
         
-        // 7. Analyse des catégories avec optimisations
-        const result = this.analyzeAllCategoriesOptimized(content);
+        // Analyse des catégories
+        const result = this.analyzeAllCategories(content);
         
-        // 8. Cache du résultat
+        // Cache du résultat
         this.setCachedAnalysis(email, result);
         return result;
     }
 
-    // ================================================
-    // EXTRACTION CONTENU OPTIMISÉE
-    // ================================================
-    extractCompleteContentOptimized(email) {
-        const parts = [];
-        
-        // Sujet avec pondération (répété 3 fois au lieu de 10)
-        if (email.subject?.trim()) {
-            parts.push(email.subject.repeat(3));
-        }
-        
-        // Expéditeur (répété 2 fois au lieu de 3)
-        if (email.from?.emailAddress?.address) {
-            parts.push(email.from.emailAddress.address.repeat(2));
-        }
-        
-        // Aperçu du corps seulement (pas le corps complet)
-        if (email.bodyPreview) {
-            parts.push(email.bodyPreview);
-        }
-        
-        // Extraction simplifiée des destinataires
-        const recipients = [];
-        if (email.toRecipients?.length) {
-            recipients.push(...email.toRecipients.slice(0, 3).map(r => r.emailAddress?.address).filter(Boolean));
-        }
-        if (email.ccRecipients?.length) {
-            recipients.push(...email.ccRecipients.slice(0, 2).map(r => r.emailAddress?.address).filter(Boolean));
-        }
-        parts.push(recipients.join(' '));
-        
-        const rawText = parts.join(' ');
-        const normalizedText = this.normalizeTextFast(rawText);
-        
-        return {
-            text: normalizedText,
-            subject: this.normalizeTextFast(email.subject || ''),
-            domain: this.extractDomainFast(email.from?.emailAddress?.address),
-            hasHtml: !!(email.body?.content && email.body.content.includes('<')),
-            length: normalizedText.length,
-            rawSubject: email.subject || ''
-        };
-    }
-
-    // CORRECTION: Ajouter l'alias pour la compatibilité
-    extractCompleteContent(email) {
-        return this.extractCompleteContentOptimized(email);
-    }
-
-    extractDomainFast(email) {
-        if (!email || !email.includes('@')) return 'unknown';
-        const parts = email.split('@');
-        return parts[1]?.toLowerCase() || 'unknown';
+    // Alias pour compatibilité
+    analyzeEmailOptimized(email) {
+        return this.analyzeEmail(email);
     }
 
     // ================================================
-    // VÉRIFICATIONS RAPIDES
+    // VÉRIFICATIONS
     // ================================================
-    isSpamEmailFast(email) {
-        // Vérifications ultra-rapides uniquement
+    isSpamEmail(email) {
         if (email.parentFolderId?.toLowerCase().includes('junk')) return true;
         if (email.categories?.some(cat => cat.toLowerCase().includes('spam'))) return true;
         return false;
     }
 
-    isGloballyExcludedFast(content, email) {
+    isSpamEmailFast(email) {
+        return this.isSpamEmail(email);
+    }
+
+    isGloballyExcluded(content, email) {
         const exclusions = this.settings.categoryExclusions;
         if (!exclusions) return false;
         
-        // Vérification domaine seulement (plus rapide)
         if (exclusions.domains?.length) {
             return exclusions.domains.some(domain => content.domain.includes(domain.toLowerCase()));
         }
         return false;
     }
 
-    isPersonalEmailFast(content) {
-        // Patterns rapides pré-compilés
+    isGloballyExcludedFast(content, email) {
+        return this.isGloballyExcluded(content, email);
+    }
+
+    isPersonalEmail(content) {
         const personalPatterns = ['papa', 'maman', 'bises', 'famille'];
         return personalPatterns.some(pattern => content.text.includes(pattern));
     }
 
-    analyzeCCOptimized(email, content) {
+    isPersonalEmailFast(content) {
+        return this.isPersonalEmail(content);
+    }
+
+    isMainRecipient(email) {
+        return email.toRecipients?.length > 0;
+    }
+
+    isMainRecipientFast(email) {
+        return this.isMainRecipient(email);
+    }
+
+    isInCC(email) {
+        return email.ccRecipients?.length > 0;
+    }
+
+    isInCCFast(email) {
+        return this.isInCC(email);
+    }
+
+    analyzeCC(email, content) {
         if (!this.shouldDetectCC()) return null;
         
-        const isMainRecipient = this.isMainRecipientFast(email);
-        const isInCC = this.isInCCFast(email);
+        const isMainRecipient = this.isMainRecipient(email);
+        const isInCC = this.isInCC(email);
         
         if (isInCC && !isMainRecipient) {
-            // Vérification rapide marketing
             if (content.text.includes('unsubscribe') || content.text.includes('newsletter')) {
                 return {
                     category: 'marketing_news',
@@ -321,22 +331,17 @@ class CategoryManager {
         return null;
     }
 
-    isMainRecipientFast(email) {
-        return email.toRecipients?.length > 0;
-    }
-
-    isInCCFast(email) {
-        return email.ccRecipients?.length > 0;
+    analyzeCCOptimized(email, content) {
+        return this.analyzeCC(email, content);
     }
 
     // ================================================
-    // ANALYSE CATÉGORIES OPTIMISÉE
+    // ANALYSE DES CATÉGORIES
     // ================================================
-    analyzeAllCategoriesOptimized(content) {
+    analyzeAllCategories(content) {
         const results = {};
         const activeCategories = this.getActiveCategories();
         
-        // Traitement optimisé par priorité
         const categoriesByPriority = activeCategories
             .map(catId => ({ id: catId, priority: this.categories[catId]?.priority || 50 }))
             .sort((a, b) => b.priority - a.priority);
@@ -345,7 +350,7 @@ class CategoryManager {
             const keywords = this.weightedKeywords[categoryId];
             if (!keywords || this.isEmptyKeywords(keywords)) continue;
             
-            const score = this.calculateScoreOptimized(content, keywords, categoryId);
+            const score = this.calculateScore(content, keywords, categoryId);
             
             if (score.total > 0) {
                 results[categoryId] = {
@@ -357,49 +362,48 @@ class CategoryManager {
                     priority: this.categories[categoryId]?.priority || 50
                 };
                 
-                // Arrêt précoce si match absolu fort
                 if (score.hasAbsolute && score.total >= 150) {
                     break;
                 }
             }
         }
         
-        return this.selectByPriorityWithThresholdOptimized(results);
+        return this.selectByPriorityWithThreshold(results);
     }
 
-    calculateScoreOptimized(content, keywords, categoryId) {
+    analyzeAllCategoriesOptimized(content) {
+        return this.analyzeAllCategories(content);
+    }
+
+    calculateScore(content, keywords, categoryId) {
         let totalScore = 0;
         let hasAbsolute = false;
         const matches = [];
         const text = content.text;
         
-        // Bonus de catégorie (pré-calculé)
         const categoryBonus = this.getCategoryBonus(categoryId);
         if (categoryBonus > 0) {
             totalScore += categoryBonus;
             matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus });
         }
         
-        // Test exclusions en premier (plus rapide si on peut éliminer)
         if (keywords.exclusions?.length) {
             for (const exclusion of keywords.exclusions) {
-                if (this.findInTextOptimized(text, exclusion)) {
+                if (this.findInText(text, exclusion)) {
                     totalScore -= 50;
                     matches.push({ keyword: exclusion, type: 'exclusion', score: -50 });
                 }
             }
         }
         
-        // Test des absolus (arrêt précoce possible)
         if (keywords.absolute?.length) {
             for (const keyword of keywords.absolute) {
-                if (this.findInTextOptimized(text, keyword)) {
+                if (this.findInText(text, keyword)) {
                     totalScore += 100;
                     hasAbsolute = true;
                     matches.push({ keyword, type: 'absolute', score: 100 });
                     
-                    // Bonus sujet
-                    if (content.subject && this.findInTextOptimized(content.subject, keyword)) {
+                    if (content.subject && this.findInText(content.subject, keyword)) {
                         totalScore += 50;
                         matches.push({ keyword: keyword + '_subject', type: 'bonus', score: 50 });
                     }
@@ -407,17 +411,16 @@ class CategoryManager {
             }
         }
         
-        // Test des forts seulement si pas d'absolu suffisant
         if (!hasAbsolute || totalScore < 150) {
             if (keywords.strong?.length) {
                 let strongMatches = 0;
                 for (const keyword of keywords.strong) {
-                    if (this.findInTextOptimized(text, keyword)) {
+                    if (this.findInText(text, keyword)) {
                         totalScore += 40;
                         strongMatches++;
                         matches.push({ keyword, type: 'strong', score: 40 });
                         
-                        if (strongMatches >= 3) break; // Limite pour performance
+                        if (strongMatches >= 3) break;
                     }
                 }
                 
@@ -428,11 +431,10 @@ class CategoryManager {
             }
         }
         
-        // Test des faibles seulement si score encore faible
         if (totalScore < 100 && keywords.weak?.length) {
             let weakMatches = 0;
-            for (const keyword of keywords.weak.slice(0, 5)) { // Limite à 5 pour performance
-                if (this.findInTextOptimized(text, keyword)) {
+            for (const keyword of keywords.weak.slice(0, 5)) {
+                if (this.findInText(text, keyword)) {
                     totalScore += 15;
                     weakMatches++;
                     matches.push({ keyword, type: 'weak', score: 15 });
@@ -447,10 +449,17 @@ class CategoryManager {
         };
     }
 
-    findInTextOptimized(text, keyword) {
-        // Utilisation des regex pré-compilées
+    calculateScoreOptimized(content, keywords, categoryId) {
+        return this.calculateScore(content, keywords, categoryId);
+    }
+
+    findInText(text, keyword) {
         const pattern = this.getCompiledPattern(keyword);
         return pattern.test(text);
+    }
+
+    findInTextOptimized(text, keyword) {
+        return this.findInText(text, keyword);
     }
 
     getCategoryBonus(categoryId) {
@@ -465,7 +474,7 @@ class CategoryManager {
         return bonuses[categoryId] || 0;
     }
 
-    selectByPriorityWithThresholdOptimized(results) {
+    selectByPriorityWithThreshold(results) {
         const MIN_SCORE_THRESHOLD = 30;
         const MIN_CONFIDENCE_THRESHOLD = 0.5;
         
@@ -483,7 +492,6 @@ class CategoryManager {
             };
         }
         
-        // Tri optimisé
         validResults.sort((a, b) => {
             if (a.hasAbsolute !== b.hasAbsolute) {
                 return b.hasAbsolute - a.hasAbsolute;
@@ -504,37 +512,12 @@ class CategoryManager {
         };
     }
 
-    // ================================================
-    // SYNCHRONISATION OPTIMISÉE
-    // ================================================
-    startOptimizedSync() {
-        // Synchronisation moins fréquente
-        setInterval(() => {
-            this.processSettingsChanges();
-        }, 5000); // 5 secondes au lieu de 2
-        
-        this.setupImmediateSync();
-    }
-
-    setupImmediateSync() {
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'categorySettings') {
-                console.log('[CategoryManager] 🔄 Changement localStorage détecté');
-                this.reloadSettingsFromStorage();
-                this.invalidateCache(); // Invalider le cache
-                this.notifyAllModules('storageChange');
-            }
-        });
-    }
-
-    invalidateCache() {
-        this.analysisCache.clear();
-        this.cacheStats = { hits: 0, misses: 0 };
-        console.log('[CategoryManager] 🧹 Cache invalidé');
+    selectByPriorityWithThresholdOptimized(results) {
+        return this.selectByPriorityWithThreshold(results);
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES OPTIMISÉES
+    // UTILITAIRES
     // ================================================
     isEmptyKeywords(keywords) {
         return !keywords || (
@@ -556,64 +539,32 @@ class CategoryManager {
     }
 
     // ================================================
-    // MÉTHODES PUBLIQUES (déléguées aux versions optimisées)
+    // BATCH PROCESSING
     // ================================================
-    analyzeEmail(email) {
-        return this.analyzeEmailOptimized(email);
+    async analyzeEmailsBatch(emails) {
+        console.log(`[CategoryManager] 📦 Batch analysis: ${emails.length} emails`);
+        
+        const batchResults = [];
+        const batchSize = this.batchSize;
+        
+        for (let i = 0; i < emails.length; i += batchSize) {
+            const batch = emails.slice(i, i + batchSize);
+            const batchPromises = batch.map(email => this.analyzeEmail(email));
+            
+            const results = await Promise.all(batchPromises);
+            batchResults.push(...results);
+            
+            if (i + batchSize < emails.length) {
+                await new Promise(resolve => setTimeout(resolve, 1));
+            }
+        }
+        
+        console.log(`[CategoryManager] ✅ Batch completed: ${batchResults.length} analyses`);
+        return batchResults;
     }
 
     // ================================================
-    // MÉTRIQUES DE PERFORMANCE
-    // ================================================
-    getPerformanceStats() {
-        return {
-            cache: {
-                size: this.analysisCache.size,
-                hits: this.cacheStats.hits,
-                misses: this.cacheStats.misses,
-                hitRate: this.cacheStats.hits / (this.cacheStats.hits + this.cacheStats.misses) * 100
-            },
-            compiledPatterns: this.compiledPatterns.size,
-            batchSize: this.batchSize,
-            cacheMaxSize: this.cacheMaxSize
-        };
-    }
-
-    // ================================================
-    // NETTOYAGE OPTIMISÉ
-    // ================================================
-    cleanup() {
-        // Nettoyage du cache
-        this.analysisCache.clear();
-        this.compiledPatterns.clear();
-        
-        // Nettoyage des timers
-        if (this.batchTimeout) {
-            clearTimeout(this.batchTimeout);
-            this.batchTimeout = null;
-        }
-        
-        // Nettoyage des intervals
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
-        }
-        
-        // Nettoyage des listeners
-        if (this.externalSettingsChangeHandler) {
-            window.removeEventListener('settingsChanged', this.externalSettingsChangeHandler);
-        }
-        
-        this.syncQueue = [];
-        this.changeListeners.clear();
-        this.eventListenersSetup = false;
-        this.syncInProgress = false;
-        
-        console.log('[CategoryManager] 🧹 Nettoyage optimisé effectué');
-    }
-
-    // ================================================
-    // TOUTES LES AUTRES MÉTHODES EXISTANTES
+    // SETTINGS ET CONFIGURATION
     // ================================================
     loadSettings() {
         try {
@@ -899,7 +850,7 @@ class CategoryManager {
             }
         };
 
-        console.log('[CategoryManager] Mots-clés optimisés initialisés');
+        console.log('[CategoryManager] Mots-clés initialisés');
     }
 
     initializeFilters() {
@@ -958,6 +909,9 @@ class CategoryManager {
         }
     }
 
+    // ================================================
+    // EVENT LISTENERS ET SYNCHRONISATION
+    // ================================================
     setupEventListeners() {
         if (this.eventListenersSetup) return;
 
@@ -983,6 +937,25 @@ class CategoryManager {
         this.eventListenersSetup = true;
         
         console.log('[CategoryManager] Event listeners configurés');
+    }
+
+    startOptimizedSync() {
+        setInterval(() => {
+            this.processSettingsChanges();
+        }, 5000);
+        
+        this.setupImmediateSync();
+    }
+
+    setupImmediateSync() {
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'categorySettings') {
+                console.log('[CategoryManager] 🔄 Changement localStorage détecté');
+                this.reloadSettingsFromStorage();
+                this.invalidateCache();
+                this.notifyAllModules('storageChange');
+            }
+        });
     }
 
     processSettingsChanges() {
@@ -1115,7 +1088,7 @@ class CategoryManager {
     }
 
     // ================================================
-    // API PUBLIQUE POUR CHANGEMENTS DE PARAMÈTRES
+    // API PUBLIQUE
     // ================================================
     updateSettings(newSettings, notifyModules = true) {
         console.log('[CategoryManager] 📝 updateSettings appelé:', newSettings);
@@ -1153,12 +1126,6 @@ class CategoryManager {
         return normalizedCategories;
     }
 
-    invalidateTaskCategoriesCache() {
-        this._taskCategoriesCache = null;
-        this._taskCategoriesCacheTime = 0;
-        console.log('[CategoryManager] 🔄 Cache des catégories tâches invalidé');
-    }
-
     updateActiveCategories(categories, notifyModules = true) {
         console.log('[CategoryManager] 🏷️ updateActiveCategories:', categories);
         
@@ -1185,13 +1152,11 @@ class CategoryManager {
                 exclusions: [...(keywords.exclusions || [])]
             };
             
-            // Sauvegarder si c'est une catégorie personnalisée
             if (this.customCategories[categoryId]) {
                 this.customCategories[categoryId].keywords = this.weightedKeywords[categoryId];
                 this.saveCustomCategories();
             }
             
-            // Invalider le cache car les mots-clés ont changé
             this.invalidateCache();
             
             console.log('[CategoryManager] ✅ Mots-clés mis à jour');
@@ -1213,22 +1178,14 @@ class CategoryManager {
         };
         
         this.saveCategoryFilters();
-        
-        // Invalider le cache car les filtres ont changé
         this.invalidateCache();
         
         console.log('[CategoryManager] ✅ Filtres mis à jour');
     }
 
-    saveCategoryFilters() {
-        try {
-            localStorage.setItem('categoryFilters', JSON.stringify(this.categoryFilters));
-            console.log('[CategoryManager] 💾 Filtres sauvegardés');
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur sauvegarde filtres:', error);
-        }
-    }
-
+    // ================================================
+    // GETTERS
+    // ================================================
     getSettings() {
         return JSON.parse(JSON.stringify(this.settings));
     }
@@ -1340,10 +1297,12 @@ class CategoryManager {
                (keywords.exclusions?.length || 0);
     }
 
+    // ================================================
+    // GESTION DES CATÉGORIES PERSONNALISÉES
+    // ================================================
     createCustomCategory(categoryData) {
         console.log('[CategoryManager] 🆕 Création catégorie personnalisée:', categoryData);
         
-        // Générer un ID unique
         const id = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         const newCategory = {
@@ -1359,15 +1318,11 @@ class CategoryManager {
             }
         };
         
-        // Ajouter aux catégories
         this.categories[id] = newCategory;
         this.customCategories[id] = newCategory;
         this.weightedKeywords[id] = newCategory.keywords;
         
-        // Sauvegarder
         this.saveCustomCategories();
-        
-        // Invalider le cache
         this.invalidateCache();
         
         console.log('[CategoryManager] ✅ Catégorie créée:', id);
@@ -1383,34 +1338,40 @@ class CategoryManager {
             return false;
         }
         
-        // Supprimer de toutes les structures
         delete this.categories[categoryId];
         delete this.customCategories[categoryId];
         delete this.weightedKeywords[categoryId];
         delete this.categoryFilters?.[categoryId];
         
-        // Retirer des catégories actives si présente
         if (this.settings.activeCategories?.includes(categoryId)) {
             this.settings.activeCategories = this.settings.activeCategories.filter(id => id !== categoryId);
             this.saveSettingsToStorage();
         }
         
-        // Retirer des catégories pré-sélectionnées si présente
         if (this.settings.taskPreselectedCategories?.includes(categoryId)) {
             this.settings.taskPreselectedCategories = this.settings.taskPreselectedCategories.filter(id => id !== categoryId);
             this.saveSettingsToStorage();
         }
         
-        // Sauvegarder
         this.saveCustomCategories();
         this.saveCategoryFilters();
-        
-        // Invalider le cache
         this.invalidateCache();
         
         console.log('[CategoryManager] ✅ Catégorie supprimée');
         
         return true;
+    }
+
+    // ================================================
+    // SAUVEGARDE
+    // ================================================
+    saveSettingsToStorage() {
+        try {
+            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
+            console.log('[CategoryManager] 💾 Settings sauvegardés');
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
+        }
     }
 
     saveCustomCategories() {
@@ -1422,25 +1383,12 @@ class CategoryManager {
         }
     }
 
-    addChangeListener(callback) {
-        this.changeListeners.add(callback);
-        console.log(`[CategoryManager] 👂 Listener ajouté (${this.changeListeners.size} total)`);
-        
-        return () => {
-            this.changeListeners.delete(callback);
-        };
-    }
-
-    removeChangeListener(callback) {
-        this.changeListeners.delete(callback);
-    }
-
-    saveSettingsToStorage() {
+    saveCategoryFilters() {
         try {
-            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
-            console.log('[CategoryManager] 💾 Settings sauvegardés');
+            localStorage.setItem('categoryFilters', JSON.stringify(this.categoryFilters));
+            console.log('[CategoryManager] 💾 Filtres sauvegardés');
         } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
+            console.error('[CategoryManager] ❌ Erreur sauvegarde filtres:', error);
         }
     }
 
@@ -1482,6 +1430,48 @@ class CategoryManager {
         return changes;
     }
 
+    // ================================================
+    // LISTENERS
+    // ================================================
+    addChangeListener(callback) {
+        this.changeListeners.add(callback);
+        console.log(`[CategoryManager] 👂 Listener ajouté (${this.changeListeners.size} total)`);
+        
+        return () => {
+            this.changeListeners.delete(callback);
+        };
+    }
+
+    removeChangeListener(callback) {
+        this.changeListeners.delete(callback);
+    }
+
+    invalidateTaskCategoriesCache() {
+        this._taskCategoriesCache = null;
+        this._taskCategoriesCacheTime = 0;
+        console.log('[CategoryManager] 🔄 Cache des catégories tâches invalidé');
+    }
+
+    // ================================================
+    // PERFORMANCE
+    // ================================================
+    getPerformanceStats() {
+        return {
+            cache: {
+                size: this.analysisCache.size,
+                hits: this.cacheStats.hits,
+                misses: this.cacheStats.misses,
+                hitRate: this.cacheStats.hits / (this.cacheStats.hits + this.cacheStats.misses) * 100
+            },
+            compiledPatterns: this.compiledPatterns.size,
+            batchSize: this.batchSize,
+            cacheMaxSize: this.cacheMaxSize
+        };
+    }
+
+    // ================================================
+    // EVENTS
+    // ================================================
     dispatchEvent(eventName, detail) {
         try {
             window.dispatchEvent(new CustomEvent(eventName, { 
@@ -1496,6 +1486,35 @@ class CategoryManager {
         }
     }
 
+    // ================================================
+    // NETTOYAGE
+    // ================================================
+    cleanup() {
+        this.analysisCache.clear();
+        this.compiledPatterns.clear();
+        
+        if (this.batchTimeout) {
+            clearTimeout(this.batchTimeout);
+            this.batchTimeout = null;
+        }
+        
+        if (this.syncInterval) {
+            clearInterval(this.syncInterval);
+            this.syncInterval = null;
+        }
+        
+        if (this.externalSettingsChangeHandler) {
+            window.removeEventListener('settingsChanged', this.externalSettingsChangeHandler);
+        }
+        
+        this.syncQueue = [];
+        this.changeListeners.clear();
+        this.eventListenersSetup = false;
+        this.syncInProgress = false;
+        
+        console.log('[CategoryManager] 🧹 Nettoyage effectué');
+    }
+
     destroy() {
         this.cleanup();
         this.categories = {};
@@ -1507,48 +1526,14 @@ class CategoryManager {
 }
 
 // ================================================
-// INITIALISATION GLOBALE OPTIMISÉE
+// INITIALISATION GLOBALE
 // ================================================
 if (window.categoryManager) {
     console.log('[CategoryManager] 🔄 Nettoyage ancienne instance...');
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v21.1 CORRIGÉE...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v22.0 COMPLÈTE...');
 window.categoryManager = new CategoryManager();
 
-// Test de performance amélioré
-window.testCategoryManagerPerformance = function() {
-    console.group('🚀 TEST PERFORMANCE CategoryManager v21.1');
-    
-    const start = performance.now();
-    
-    const testEmails = Array.from({ length: 100 }, (_, i) => ({
-        id: `test-${i}`,
-        subject: `Test email ${i}`,
-        from: { emailAddress: { address: `test${i}@example.com` } },
-        bodyPreview: 'This is a test email with some content',
-        receivedDateTime: new Date().toISOString()
-    }));
-    
-    console.log('Test de 100 emails...');
-    
-    const results = testEmails.map(email => 
-        window.categoryManager.analyzeEmailOptimized(email)
-    );
-    
-    const end = performance.now();
-    const duration = end - start;
-    
-    console.log(`✅ 100 emails analysés en ${duration.toFixed(2)}ms`);
-    console.log(`📊 Moyenne: ${(duration / 100).toFixed(2)}ms par email`);
-    console.log(`📈 Estimation 700 emails: ${(duration * 7).toFixed(2)}ms`);
-    
-    const stats = window.categoryManager.getPerformanceStats();
-    console.log('Cache stats:', stats.cache);
-    
-    console.groupEnd();
-    return { duration, avgPerEmail: duration / 100, results: results.length };
-};
-
-console.log('✅ CategoryManager v21.1 CORRIGÉ loaded - Performance maximisée et bugs fixés!');
+console.log('✅ CategoryManager v22.0 COMPLÈTEMENT CORRIGÉ loaded!');
