@@ -506,7 +506,10 @@ class CategoriesPageV22 {
         }
     }
 
-    async selectBackupFolder() {
+    // Ajouter après la méthode refreshBackupTab()
+    
+    selectBackupFolder() {
+        console.log('[CategoriesPage] Ouverture sélection dossier...');
         const provider = window.backupService?.provider;
         
         if (!provider || provider === 'unknown') {
