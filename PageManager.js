@@ -1,4 +1,84 @@
-// PageManager.js - Version 13.0 - ULTRA OPTIMISÉ PERFORMANCE 🚀⚡
+// Test de performance ultra-optimisé
+window.testPageManagerPerformance = function() {
+    if (!window.pageManager || !window.pageManager.renderEmails) {
+        console.error('PageManager non disponible pour le test');
+        return;
+    }
+    
+    console.group('🚀 TEST PERFORMANCE PageManager v13.0');
+    
+    const start = performance.now();
+    
+    // Simuler 1000 emails pour test de performance
+    const testEmails = Array.from({ length: 1000 }, (_, i) => ({
+        id: `test-${i}`,
+        subject: `Email test ${i}`,
+        from: { emailAddress: { address: `test${i}@example.com`, name: `User ${i}` } },
+        bodyPreview: 'Contenu de test',
+        receivedDateTime: new Date(Date.now() - i * 3600000).toISOString(),
+        category: ['tasks', 'commercial', 'security', 'other'][i % 4],
+        categoryScore: 50 + (i % 50),
+        categoryConfidence: 0.5 + (i % 50) / 100,
+        isPreselectedForTasks: i % 10 === 0
+    }));
+    
+    // Simuler EmailScanner temporairement
+    const originalEmailScanner = window.emailScanner;
+    window.emailScanner = {
+        getAllEmails: () => testEmails,
+        getEmailById: (id) => testEmails.find(e => e.id === id)
+    };
+    
+    try {
+        // Test de rendu
+        const container = document.createElement('div');
+        const renderStart = performance.now();
+        window.pageManager.renderEmails(container);
+        const renderTime = performance.now() - renderStart;
+        
+        // Test de filtrage
+        const filterStart = performance.now();
+        window.pageManager.filterByCategory('tasks');
+        const filterTime = performance.now() - filterStart;
+        
+        // Test de sélection
+        const selectionStart = performance.now();
+        for (let i = 0; i < 100; i++) {
+            window.pageManager.toggleEmailSelection(`test-${i}`);
+        }
+        const selectionTime = performance.now() - selectionStart;
+        
+        const totalTime = performance.now() - start;
+        
+        console.log(`✅ 1000 emails rendus en ${renderTime.toFixed(2)}ms`);
+        console.log(`✅ Filtrage en ${filterTime.toFixed(2)}ms`);
+        console.log(`✅ 100 sélections en ${selectionTime.toFixed(2)}ms`);
+        console.log(`📊 Total: ${totalTime.toFixed(2)}ms`);
+        console.log(`📈 Performance: ${(1000 / (renderTime / 1000)).toFixed(0)} emails/sec`);
+        
+        const stats = window.pageManager.getPerformanceStats();
+        console.log('📋 Stats de performance:', stats);
+        
+        console.groupEnd();
+        
+        // Restaurer l'EmailScanner original
+        window.emailScanner = originalEmailScanner;
+        
+        return { 
+            renderTime, 
+            filterTime, 
+            selectionTime, 
+            totalTime,
+            emailsPerSecond: 1000 / (renderTime / 1000)
+        };
+        
+    } catch (error) {
+        console.error('Erreur pendant le test de performance:', error);
+        window.emailScanner = originalEmailScanner;
+        console.groupEnd();
+        return null;
+    }
+};// PageManager.js - Version 13.0 - ULTRA OPTIMISÉ PERFORMANCE 🚀⚡
 
 class PageManager {
     constructor() {
@@ -23,12 +103,12 @@ class PageManager {
         this.RENDER_THROTTLE = 16; // 60fps max
         
         // NOUVEAU: Optimisations batch et worker-like
-        this.batchProcessor = new BatchProcessor(25); // Taille batch optimale
-        this.performanceMonitor = new PerformanceMonitor();
-        this.virtualScrolling = new VirtualScrollManager();
+        this.batchProcessor = new PageManagerBatchProcessor(25); // Taille batch optimale
+        this.performanceMonitor = new PageManagerPerformanceMonitor();
+        this.virtualScrolling = new PageManagerVirtualScrollManager();
         
         // NOUVEAU: Gestionnaire d'événements optimisé
-        this.eventDelegator = new EventDelegator();
+        this.eventDelegator = new PageManagerEventDelegator();
         this.debounceTimers = new Map();
         
         // NOUVEAU: Synchronisation ultra-légère
@@ -2454,7 +2534,7 @@ class PageManager {
 // CLASSES UTILITAIRES OPTIMISÉES
 // ================================================
 
-class BatchProcessor {
+class PageManagerBatchProcessor {
     constructor(batchSize = 25) {
         this.batchSize = batchSize;
     }
@@ -2478,7 +2558,7 @@ class BatchProcessor {
     }
 }
 
-class PerformanceMonitor {
+class PageManagerPerformanceMonitor {
     constructor() {
         this.measurements = new Map();
         this.trends = new Map();
@@ -2525,7 +2605,7 @@ class PerformanceMonitor {
     }
 }
 
-class VirtualScrollManager {
+class PageManagerVirtualScrollManager {
     constructor() {
         this.observer = null;
         this.visibleItems = new Set();
@@ -2566,7 +2646,7 @@ class VirtualScrollManager {
     }
 }
 
-class EventDelegator {
+class PageManagerEventDelegator {
     constructor() {
         this.handlers = new Map();
         this.setupComplete = false;
@@ -2580,8 +2660,11 @@ class EventDelegator {
     }
 
     setupEmailsEvents() {
-        document.addEventListener('click', this.handleGlobalClick.bind(this), { passive: true });
-        document.addEventListener('change', this.handleGlobalChange.bind(this), { passive: true });
+        this.handleGlobalClick = this.handleGlobalClick.bind(this);
+        this.handleGlobalChange = this.handleGlobalChange.bind(this);
+        
+        document.addEventListener('click', this.handleGlobalClick, { passive: true });
+        document.addEventListener('change', this.handleGlobalChange, { passive: true });
     }
 
     handleGlobalClick(event) {
@@ -2614,8 +2697,12 @@ class EventDelegator {
     }
 
     cleanup() {
-        document.removeEventListener('click', this.handleGlobalClick);
-        document.removeEventListener('change', this.handleGlobalChange);
+        if (this.handleGlobalClick) {
+            document.removeEventListener('click', this.handleGlobalClick);
+        }
+        if (this.handleGlobalChange) {
+            document.removeEventListener('change', this.handleGlobalChange);
+        }
         this.handlers.clear();
         this.setupComplete = false;
     }
@@ -2625,87 +2712,48 @@ class EventDelegator {
 // INITIALISATION GLOBALE ULTRA-OPTIMISÉE
 // ================================================
 
+// Attendre que les autres modules soient chargés pour éviter les conflits
 if (window.pageManager) {
     console.log('[PageManager] 🔄 Nettoyage ancienne instance...');
-    window.pageManager.destroy();
+    try {
+        window.pageManager.destroy();
+    } catch (error) {
+        console.warn('[PageManager] Erreur lors du nettoyage:', error);
+    }
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v13.0 ULTRA-OPTIMISÉE...');
-window.pageManager = new PageManager();
+// Délai pour éviter les conflits de chargement
+setTimeout(() => {
+    console.log('[PageManager] 🚀 Création nouvelle instance v13.0 ULTRA-OPTIMISÉE...');
+    
+    try {
+        window.pageManager = new PageManager();
 
-// Bind des méthodes pour préserver le contexte
-Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
-    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
-        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+        // Bind des méthodes pour préserver le contexte
+        Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
+            if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
+                try {
+                    window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+                } catch (error) {
+                    console.warn(`[PageManager] Erreur bind ${name}:`, error);
+                }
+            }
+        });
+        
+        console.log('✅ PageManager v13.0 ULTRA-OPTIMISÉ loaded - Performance maximisée! 🚀⚡');
+        
+        // Notifier que PageManager est prêt
+        window.dispatchEvent(new CustomEvent('pageManagerReady', {
+            detail: { version: '13.0', optimized: true }
+        }));
+        
+    } catch (error) {
+        console.error('[PageManager] ❌ Erreur lors de l\'initialisation:', error);
+        
+        // Fallback: essayer de restaurer une version basique
+        window.pageManager = {
+            loadPage: (page) => console.warn(`PageManager fallback: loadPage(${page})`),
+            currentPage: null
+        };
     }
-});
-
-// Test de performance ultra-optimisé
-window.testPageManagerPerformance = function() {
-    console.group('🚀 TEST PERFORMANCE PageManager v13.0');
-    
-    const start = performance.now();
-    
-    // Simuler 1000 emails pour test de performance
-    const testEmails = Array.from({ length: 1000 }, (_, i) => ({
-        id: `test-${i}`,
-        subject: `Email test ${i}`,
-        from: { emailAddress: { address: `test${i}@example.com`, name: `User ${i}` } },
-        bodyPreview: 'Contenu de test',
-        receivedDateTime: new Date(Date.now() - i * 3600000).toISOString(),
-        category: ['tasks', 'commercial', 'security', 'other'][i % 4],
-        categoryScore: 50 + (i % 50),
-        categoryConfidence: 0.5 + (i % 50) / 100,
-        isPreselectedForTasks: i % 10 === 0
-    }));
-    
-    // Simuler EmailScanner
-    window.emailScanner = {
-        getAllEmails: () => testEmails,
-        getEmailById: (id) => testEmails.find(e => e.id === id)
-    };
-    
-    // Test de rendu
-    const container = document.createElement('div');
-    const renderStart = performance.now();
-    window.pageManager.renderEmails(container);
-    const renderTime = performance.now() - renderStart;
-    
-    // Test de filtrage
-    const filterStart = performance.now();
-    window.pageManager.filterByCategory('tasks');
-    const filterTime = performance.now() - filterStart;
-    
-    // Test de sélection
-    const selectionStart = performance.now();
-    for (let i = 0; i < 100; i++) {
-        window.pageManager.toggleEmailSelection(`test-${i}`);
-    }
-    const selectionTime = performance.now() - selectionStart;
-    
-    const totalTime = performance.now() - start;
-    
-    console.log(`✅ 1000 emails rendus en ${renderTime.toFixed(2)}ms`);
-    console.log(`✅ Filtrage en ${filterTime.toFixed(2)}ms`);
-    console.log(`✅ 100 sélections en ${selectionTime.toFixed(2)}ms`);
-    console.log(`📊 Total: ${totalTime.toFixed(2)}ms`);
-    console.log(`📈 Performance: ${(1000 / (renderTime / 1000)).toFixed(0)} emails/sec`);
-    
-    const stats = window.pageManager.getPerformanceStats();
-    console.log('📋 Stats de performance:', stats);
-    
-    console.groupEnd();
-    
-    // Nettoyage
-    delete window.emailScanner;
-    
-    return { 
-        renderTime, 
-        filterTime, 
-        selectionTime, 
-        totalTime,
-        emailsPerSecond: 1000 / (renderTime / 1000)
-    };
-};
-
-console.log('✅ PageManager v13.0 ULTRA-OPTIMISÉ loaded - Performance maximisée! 🚀⚡');
+}, 100); // 100ms de délai
