@@ -771,67 +771,101 @@ class PageManager {
         }
     }
 
-    // Ajouter cette méthode dans PageManager.js après renderEmailsListOptimized (vers la ligne 800)
+// Remplacer la méthode renderGroupedViewOptimized dans PageManager.js (vers ligne 780)
 
     // ================================================
-    // RENDU VUE GROUPÉE OPTIMISÉE
+    // RENDU VUE GROUPÉE OPTIMISÉE - CORRIGÉE
     // ================================================
-    renderGroupedViewOptimized(groupedEmails, totalCount, preselectedCount) {
-        const groups = [];
-        let totalGroupedCount = 0;
+    renderGroupedViewOptimized(emails, viewMode) {
+        // Grouper les emails selon le mode
+        let grouped = {};
+        let totalCount = 0;
+        let preselectedCount = 0;
         
-        // Convertir les groupes en tableau trié
-        Object.entries(groupedEmails).forEach(([categoryId, emails]) => {
-            if (emails.length === 0) return;
-            
-            const category = window.categoryManager?.getCategory(categoryId) || {
-                name: categoryId,
-                icon: '📧',
-                color: '#6b7280'
-            };
-            
-            totalGroupedCount += emails.length;
-            groups.push({
-                categoryId,
-                category,
-                emails,
-                count: emails.length,
-                preselectedCount: emails.filter(e => e.isPreselectedForTasks).length
+        if (viewMode === 'grouped-domain') {
+            // Grouper par domaine
+            emails.forEach(email => {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'Domaine inconnu';
+                if (!grouped[domain]) {
+                    grouped[domain] = {
+                        key: domain,
+                        name: domain,
+                        icon: '🌐',
+                        emails: []
+                    };
+                }
+                grouped[domain].emails.push(email);
+                totalCount++;
+                if (email.isPreselectedForTasks) {
+                    preselectedCount++;
+                }
             });
-        });
+        } else if (viewMode === 'grouped-sender') {
+            // Grouper par expéditeur
+            emails.forEach(email => {
+                const senderKey = email.from?.emailAddress?.address || 'inconnu';
+                const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Expéditeur inconnu';
+                
+                if (!grouped[senderKey]) {
+                    grouped[senderKey] = {
+                        key: senderKey,
+                        name: senderName,
+                        icon: '👤',
+                        emails: []
+                    };
+                }
+                grouped[senderKey].emails.push(email);
+                totalCount++;
+                if (email.isPreselectedForTasks) {
+                    preselectedCount++;
+                }
+            });
+        }
         
-        // Trier les groupes par nombre d'emails
-        groups.sort((a, b) => b.count - a.count);
+        // Convertir en tableau et trier par nombre d'emails
+        const groups = Object.values(grouped).sort((a, b) => b.emails.length - a.emails.length);
         
-        // Générer le HTML
+        if (groups.length === 0) {
+            return this.renderEmptyStateOptimized();
+        }
+        
+        // Générer le HTML des groupes
         const groupsHtml = groups.map(group => {
-            const emailsHtml = group.emails.slice(0, 10).map(email => 
-                this.renderEmailRowOptimized(email)
+            const groupKey = group.key;
+            const isExpanded = false; // Par défaut, les groupes sont fermés
+            const groupPreselectedCount = group.emails.filter(e => e.isPreselectedForTasks).length;
+            
+            // Limiter l'affichage initial à 5 emails par groupe
+            const visibleEmails = isExpanded ? group.emails : group.emails.slice(0, 5);
+            const hasMore = group.emails.length > 5;
+            
+            const emailsHtml = visibleEmails.map(email => 
+                this.renderOptimizedEmailRow(email)
             ).join('');
             
-            const hasMore = group.emails.length > 10;
-            
             return `
-                <div class="email-group" data-category="${group.categoryId}">
-                    <div class="group-header" onclick="window.pageManager.toggleGroup('${group.categoryId}')">
-                        <div class="group-info">
-                            <span class="group-icon">${group.category.icon}</span>
-                            <span class="group-name">${group.category.name}</span>
-                            <span class="group-count">${group.count} emails</span>
-                            ${group.preselectedCount > 0 ? `
-                                <span class="group-preselected">
-                                    <i class="fas fa-star"></i> ${group.preselectedCount}
+                <div class="task-group-harmonized" data-group-key="${this.escapeHtml(groupKey)}">
+                    <div class="group-header-harmonized" onclick="window.pageManager.toggleGroupExpanded('${this.escapeHtml(groupKey)}')">
+                        <div class="group-info-harmonized">
+                            <span class="group-icon-harmonized">${group.icon}</span>
+                            <span class="group-name-harmonized">${this.escapeHtml(group.name)}</span>
+                            <span class="group-count-harmonized">${group.emails.length} email${group.emails.length > 1 ? 's' : ''}</span>
+                            ${groupPreselectedCount > 0 ? `
+                                <span class="group-preselected-harmonized">
+                                    <i class="fas fa-star"></i> ${groupPreselectedCount}
                                 </span>
                             ` : ''}
                         </div>
-                        <i class="fas fa-chevron-down group-toggle"></i>
+                        <button class="group-expand-harmonized">
+                            <i class="fas fa-chevron-${isExpanded ? 'up' : 'down'}"></i>
+                        </button>
                     </div>
-                    <div class="group-emails">
+                    <div class="group-content-harmonized" style="display: ${isExpanded ? 'block' : 'none'};">
                         ${emailsHtml}
-                        ${hasMore ? `
-                            <div class="group-more">
-                                <button class="btn-show-more" onclick="window.pageManager.showMoreInGroup('${group.categoryId}')">
-                                    Voir ${group.emails.length - 10} emails de plus
+                        ${hasMore && !isExpanded ? `
+                            <div class="group-more-harmonized">
+                                <button class="btn-show-more-harmonized" onclick="event.stopPropagation(); window.pageManager.expandGroup('${this.escapeHtml(groupKey)}')">
+                                    Voir ${group.emails.length - 5} emails de plus
                                 </button>
                             </div>
                         ` : ''}
@@ -840,30 +874,313 @@ class PageManager {
             `;
         }).join('');
         
-        return `
-            <div class="emails-grouped-view">
-                <div class="grouped-stats">
-                    <div class="stat">
-                        <i class="fas fa-layer-group"></i>
-                        <span>${groups.length} groupes</span>
-                    </div>
-                    <div class="stat">
-                        <i class="fas fa-envelope"></i>
-                        <span>${totalGroupedCount} emails</span>
-                    </div>
-                    ${preselectedCount > 0 ? `
-                        <div class="stat highlight">
-                            <i class="fas fa-star"></i>
-                            <span>${preselectedCount} pré-sélectionnés</span>
-                        </div>
-                    ` : ''}
+        // Ajouter les stats en haut
+        const statsHtml = `
+            <div class="grouped-stats-harmonized">
+                <div class="stat-item-harmonized">
+                    <i class="fas fa-layer-group"></i>
+                    <span>${groups.length} ${viewMode === 'grouped-domain' ? 'domaines' : 'expéditeurs'}</span>
                 </div>
-                
-                ${groupsHtml}
+                <div class="stat-item-harmonized">
+                    <i class="fas fa-envelope"></i>
+                    <span>${totalCount} emails</span>
+                </div>
+                ${preselectedCount > 0 ? `
+                    <div class="stat-item-harmonized highlight">
+                        <i class="fas fa-star"></i>
+                        <span>${preselectedCount} pré-sélectionnés</span>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        
+        return `
+            <div class="emails-grouped-view-harmonized">
+                ${statsHtml}
+                <div class="groups-container-harmonized">
+                    ${groupsHtml}
+                </div>
             </div>
         `;
     }
     
+    // Méthode pour toggler l'expansion d'un groupe
+    toggleGroupExpanded(groupKey) {
+        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+        if (!group) return;
+        
+        const content = group.querySelector('.group-content-harmonized');
+        const icon = group.querySelector('.group-expand-harmonized i');
+        const header = group.querySelector('.group-header-harmonized');
+        
+        if (content && icon) {
+            const isExpanded = content.style.display === 'block';
+            
+            if (isExpanded) {
+                content.style.display = 'none';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+                group.classList.remove('expanded');
+                header.classList.remove('expanded-header');
+            } else {
+                // Afficher tous les emails du groupe
+                const emails = this.getEmailsForGroup(groupKey);
+                if (emails.length > 5) {
+                    const allEmailsHtml = emails.map(email => 
+                        this.renderOptimizedEmailRow(email)
+                    ).join('');
+                    content.innerHTML = allEmailsHtml;
+                }
+                
+                content.style.display = 'block';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+                group.classList.add('expanded');
+                header.classList.add('expanded-header');
+            }
+        }
+    }
+    
+    // Méthode pour expandre un groupe spécifique
+    expandGroup(groupKey) {
+        const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+        if (!group) return;
+        
+        const content = group.querySelector('.group-content-harmonized');
+        const icon = group.querySelector('.group-expand-harmonized i');
+        const header = group.querySelector('.group-header-harmonized');
+        
+        if (content && icon) {
+            // Afficher tous les emails
+            const emails = this.getEmailsForGroup(groupKey);
+            const allEmailsHtml = emails.map(email => 
+                this.renderOptimizedEmailRow(email)
+            ).join('');
+            content.innerHTML = allEmailsHtml;
+            
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+            group.classList.add('expanded');
+            header.classList.add('expanded-header');
+        }
+    }
+    
+    // Méthode helper pour récupérer les emails d'un groupe
+    getEmailsForGroup(groupKey) {
+        const emails = this.getVisibleEmailsOptimized();
+        
+        if (this.currentViewMode === 'grouped-domain') {
+            return emails.filter(email => {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'Domaine inconnu';
+                return domain === groupKey;
+            });
+        } else if (this.currentViewMode === 'grouped-sender') {
+            return emails.filter(email => {
+                const senderKey = email.from?.emailAddress?.address || 'inconnu';
+                return senderKey === groupKey;
+            });
+        }
+        
+        return [];
+    }
+    
+    // Ajouter aussi ces styles CSS pour les vues groupées
+    addGroupedViewStyles() {
+        if (document.getElementById('groupedViewStyles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'groupedViewStyles';
+        styles.textContent = `
+            /* Styles pour les vues groupées */
+            .emails-grouped-view-harmonized {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            
+            .grouped-stats-harmonized {
+                display: flex;
+                gap: 20px;
+                padding: 16px;
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                margin-bottom: 8px;
+            }
+            
+            .stat-item-harmonized {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 600;
+            }
+            
+            .stat-item-harmonized.highlight {
+                color: var(--preselect-color);
+            }
+            
+            .stat-item-harmonized i {
+                font-size: 16px;
+            }
+            
+            .groups-container-harmonized {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .task-group-harmonized {
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                overflow: hidden;
+                transition: all 0.3s ease;
+            }
+            
+            .task-group-harmonized.expanded {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            }
+            
+            .group-header-harmonized {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 16px;
+                background: #f9fafb;
+                cursor: pointer;
+                transition: background 0.2s ease;
+                user-select: none;
+            }
+            
+            .group-header-harmonized:hover {
+                background: #f3f4f6;
+            }
+            
+            .group-header-harmonized.expanded-header {
+                background: #eff6ff;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .group-info-harmonized {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex: 1;
+            }
+            
+            .group-icon-harmonized {
+                font-size: 20px;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            
+            .group-name-harmonized {
+                font-weight: 600;
+                font-size: 15px;
+                color: #1f2937;
+                max-width: 300px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .group-count-harmonized {
+                font-size: 13px;
+                color: #6b7280;
+                background: #e5e7eb;
+                padding: 2px 8px;
+                border-radius: 12px;
+            }
+            
+            .group-preselected-harmonized {
+                font-size: 13px;
+                color: var(--preselect-color);
+                background: rgba(139, 92, 246, 0.1);
+                padding: 2px 8px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            .group-expand-harmonized {
+                width: 32px;
+                height: 32px;
+                border: 1px solid #e5e7eb;
+                background: white;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .group-expand-harmonized:hover {
+                background: #f3f4f6;
+                border-color: #d1d5db;
+            }
+            
+            .group-content-harmonized {
+                transition: all 0.3s ease;
+            }
+            
+            .group-more-harmonized {
+                padding: 12px;
+                text-align: center;
+                border-top: 1px solid #f3f4f6;
+                background: #fafbfc;
+            }
+            
+            .btn-show-more-harmonized {
+                padding: 8px 16px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                color: #4b5563;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .btn-show-more-harmonized:hover {
+                background: #f3f4f6;
+                border-color: #d1d5db;
+                transform: translateY(-1px);
+            }
+            
+            /* Ajustements pour les cartes d'emails dans les groupes */
+            .task-group-harmonized .task-harmonized-card {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+                border-top: none;
+            }
+            
+            .task-group-harmonized .task-harmonized-card:last-child {
+                border-bottom: none;
+            }
+            
+            .task-group-harmonized .task-harmonized-card:hover {
+                margin: 0 -1px;
+                border-left: 1px solid #e5e7eb;
+                border-right: 1px solid #e5e7eb;
+            }
+        `;
+        
+        document.head.appendChild(styles);
+    }
     // Méthode pour toggler un groupe
     toggleGroup(categoryId) {
         const group = document.querySelector(`[data-category="${categoryId}"]`);
