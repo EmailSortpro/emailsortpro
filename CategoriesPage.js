@@ -154,12 +154,16 @@ class CategoriesPageV22 {
     // ================================================
     renderBackupTab() {
         const backupStatus = window.backupService?.getStatus() || {
-            enabled: false,
-            autoBackup: false,
+            enabled: true,  // Activé par défaut
+            autoBackup: true,  // Sauvegarde automatique activée par défaut
             interval: 300000,
             lastBackup: 'Jamais',
             provider: 'unknown'
         };
+        
+        // Récupérer le chemin du dossier depuis la config
+        const backupConfig = window.backupService?.config || {};
+        const folderPath = backupConfig.folderPath || 'Documents/EmailSortPro/Backups';
         
         return `
             <div class="backup-tab-content">
@@ -285,13 +289,19 @@ class CategoriesPageV22 {
                     </div>
                 </div>
                 
-                <!-- Informations sur le stockage -->
+                <!-- Informations sur le stockage avec bouton de sélection du dossier -->
                 <div class="backup-info-section">
                     <div class="info-card">
-                        <i class="fas fa-info-circle"></i>
+                        <i class="fas fa-folder-open"></i>
                         <div class="info-content">
                             <p>Vos données sont sauvegardées dans le dossier :</p>
-                            <code>Documents/EmailSortPro/Backups</code>
+                            <div class="folder-path-container">
+                                <code id="backup-folder-path">${folderPath}</code>
+                                <button class="btn-select-folder" onclick="window.categoriesPageV22.selectBackupFolder()" title="Choisir un autre dossier">
+                                    <i class="fas fa-folder-open"></i>
+                                    <span>Choisir le dossier</span>
+                                </button>
+                            </div>
                             <p class="info-provider">Provider actuel : <strong>${this.getProviderName(backupStatus.provider)}</strong></p>
                         </div>
                     </div>
@@ -494,6 +504,135 @@ class CategoriesPageV22 {
                 console.error('[CategoriesPage] Erreur initialisation backup:', error);
             });
         }
+    }
+
+    async selectBackupFolder() {
+        const provider = window.backupService?.provider;
+        
+        if (!provider || provider === 'unknown') {
+            this.showToast('⚠️ Aucun provider de stockage cloud détecté', 'warning');
+            return;
+        }
+        
+        // Créer la modal de sélection de dossier
+        this.showFolderSelectionModal();
+    }
+
+    showFolderSelectionModal() {
+        this.closeModal();
+        
+        const provider = window.backupService?.provider;
+        const currentPath = window.backupService?.config?.folderPath || 'Documents/EmailSortPro/Backups';
+        
+        const modalHTML = `
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
+                <div class="modal-modern modal-folder">
+                    <div class="modal-header">
+                        <div class="modal-title">
+                            <span class="modal-icon">📁</span>
+                            <h2>Choisir le dossier de sauvegarde</h2>
+                        </div>
+                        <button class="btn-close" onclick="window.categoriesPageV22.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="folder-selection-content">
+                            <div class="current-folder-info">
+                                <p><strong>Dossier actuel :</strong></p>
+                                <div class="current-path">${currentPath}</div>
+                            </div>
+                            
+                            <div class="folder-suggestions">
+                                <h4>Suggestions de dossiers :</h4>
+                                <div class="folder-options">
+                                    <button class="folder-option" onclick="window.categoriesPageV22.setBackupFolder('Documents/EmailSortPro/Backups')">
+                                        <i class="fas fa-folder"></i>
+                                        <div>
+                                            <div class="folder-name">Documents/EmailSortPro/Backups</div>
+                                            <div class="folder-desc">Dossier par défaut (recommandé)</div>
+                                        </div>
+                                    </button>
+                                    
+                                    <button class="folder-option" onclick="window.categoriesPageV22.setBackupFolder('Documents/Backups/EmailSortPro')">
+                                        <i class="fas fa-folder"></i>
+                                        <div>
+                                            <div class="folder-name">Documents/Backups/EmailSortPro</div>
+                                            <div class="folder-desc">Dossier Backups général</div>
+                                        </div>
+                                    </button>
+                                    
+                                    <button class="folder-option" onclick="window.categoriesPageV22.setBackupFolder('EmailSortPro/Backups')">
+                                        <i class="fas fa-folder"></i>
+                                        <div>
+                                            <div class="folder-name">EmailSortPro/Backups</div>
+                                            <div class="folder-desc">À la racine du ${this.getProviderName(provider)}</div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="custom-folder-section">
+                                <h4>Ou entrer un chemin personnalisé :</h4>
+                                <div class="custom-folder-input">
+                                    <input type="text" 
+                                           id="custom-folder-path" 
+                                           placeholder="Ex: MonDossier/EmailSortPro/Backups"
+                                           value="${currentPath}">
+                                    <button class="btn-apply-custom" onclick="window.categoriesPageV22.applyCustomFolder()">
+                                        <i class="fas fa-check"></i> Appliquer
+                                    </button>
+                                </div>
+                                <p class="folder-hint">
+                                    <i class="fas fa-info-circle"></i>
+                                    Le dossier sera créé automatiquement s'il n'existe pas
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = true;
+    }
+
+    setBackupFolder(folderPath) {
+        this.updateBackupConfig('folderPath', folderPath);
+        
+        // Mettre à jour l'affichage
+        const pathElement = document.getElementById('backup-folder-path');
+        if (pathElement) {
+            pathElement.textContent = folderPath;
+        }
+        
+        this.closeModal();
+        this.showToast(`✅ Dossier de sauvegarde modifié : ${folderPath}`, 'success');
+    }
+
+    applyCustomFolder() {
+        const input = document.getElementById('custom-folder-path');
+        if (!input) return;
+        
+        const customPath = input.value.trim();
+        if (!customPath) {
+            this.showToast('⚠️ Veuillez entrer un chemin de dossier', 'warning');
+            return;
+        }
+        
+        // Nettoyer le chemin (retirer les / au début et à la fin)
+        const cleanPath = customPath.replace(/^\/+|\/+$/g, '');
+        
+        this.setBackupFolder(cleanPath);
     }
 
     async performManualBackup() {
@@ -2381,9 +2520,184 @@ class CategoriesPageV22 {
                 margin: 8px 0;
             }
             
+            .folder-path-container {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin: 8px 0;
+            }
+            
+            .folder-path-container code {
+                flex: 1;
+                margin: 0;
+            }
+            
+            .btn-select-folder {
+                padding: 8px 16px;
+                background: white;
+                border: 1px solid #0ea5e9;
+                border-radius: 8px;
+                color: #0369a1;
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s;
+                white-space: nowrap;
+            }
+            
+            .btn-select-folder:hover {
+                background: #e0f2fe;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+            }
+            
             .info-provider {
                 margin-top: 12px !important;
                 font-size: 13px !important;
+            }
+            
+            /* Modal de sélection de dossier */
+            .modal-folder {
+                max-width: 600px;
+            }
+            
+            .folder-selection-content {
+                padding: 20px;
+            }
+            
+            .current-folder-info {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 24px;
+            }
+            
+            .current-folder-info p {
+                margin: 0 0 8px 0;
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .current-path {
+                font-family: monospace;
+                font-size: 14px;
+                color: #1f2937;
+                background: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                border: 1px solid #e5e7eb;
+            }
+            
+            .folder-suggestions h4,
+            .custom-folder-section h4 {
+                margin: 0 0 16px 0;
+                font-size: 16px;
+                color: #1f2937;
+            }
+            
+            .folder-options {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                margin-bottom: 24px;
+            }
+            
+            .folder-option {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 10px;
+                padding: 16px;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                text-align: left;
+                width: 100%;
+            }
+            
+            .folder-option:hover {
+                background: #f9fafb;
+                border-color: #3b82f6;
+                transform: translateX(4px);
+            }
+            
+            .folder-option i {
+                font-size: 24px;
+                color: #f59e0b;
+                flex-shrink: 0;
+            }
+            
+            .folder-name {
+                font-family: monospace;
+                font-size: 14px;
+                color: #1f2937;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+            
+            .folder-desc {
+                font-size: 12px;
+                color: #6b7280;
+            }
+            
+            .custom-folder-input {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .custom-folder-input input {
+                flex: 1;
+                padding: 10px 16px;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                font-size: 14px;
+                font-family: monospace;
+            }
+            
+            .custom-folder-input input:focus {
+                outline: none;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            .btn-apply-custom {
+                padding: 10px 20px;
+                background: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s;
+            }
+            
+            .btn-apply-custom:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+            
+            .folder-hint {
+                margin: 0;
+                font-size: 12px;
+                color: #6b7280;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .folder-hint i {
+                color: #3b82f6;
             }
             
             .advanced-actions {
