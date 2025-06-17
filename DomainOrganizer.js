@@ -1,2800 +1,6043 @@
-// CategoryManager.js - Version 20.0 - Synchronisation complètement fixée
+// ModernDomainOrganizer.js - Version corrigée avec gestion d'erreurs complète
+// Interface compacte et optimisée - SEULE LA PAGE PLAN MODIFIÉE
 
-class CategoryManager {
+class ModernDomainOrganizer {
     constructor() {
-        this.categories = {};
-        this.weightedKeywords = {};
-        this.customCategories = {};
-        this.settings = this.loadSettings();
-        this.isInitialized = false;
-        this.debugMode = false;
-        this.eventListenersSetup = false;
+        this.isProcessing = false;
+        this.currentStep = 'introduction';
+        this.scanResults = null;
+        this.organizationPlan = new Map();
+        this.allFolders = new Map();
+        this.emailsByDomain = new Map();
+        this.totalEmailsScanned = 0;
+        this.expandedDomains = new Set();
         
-        // NOUVEAU: Système de synchronisation renforcé
-        this.syncQueue = [];
-        this.syncInProgress = false;
-        this.changeListeners = new Set();
-        this.lastSyncTimestamp = 0;
-        
-        this.initializeCategories();
-        this.loadCustomCategories();
-        this.initializeWeightedDetection();this.initializeFilters();
-        this.setupEventListeners();
-        
-        // NOUVEAU: Démarrer la synchronisation automatique
-        this.startAutoSync();
-        
-        console.log('[CategoryManager] ✅ Version 20.0 - Synchronisation complètement fixée');
+        console.log('[ModernDomainOrganizer] ✅ Initialisé');
     }
 
-    // ================================================
-    // NOUVEAU SYSTÈME DE SYNCHRONISATION AUTOMATIQUE
-    // ================================================
-    startAutoSync() {
-        // Synchronisation automatique toutes les 2 secondes
-        setInterval(() => {
-            this.processSettingsChanges();
-        }, 2000);
-        
-        // Synchronisation immédiate lors des changements
-        this.setupImmediateSync();
+    getPageHTML() {
+        return `
+            <div class="modern-organizer">
+                <!-- Header avec progression -->
+                <div class="organizer-header">
+                    <div class="progress-steps">
+                        <div class="step active" data-step="introduction">
+                            <div class="step-circle">💡</div>
+                            <span>Guide</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="configuration">
+                            <div class="step-circle">⚙️</div>
+                            <span>Config</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="scanning">
+                            <div class="step-circle">🔍</div>
+                            <span>Scan</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="plan">
+                            <div class="step-circle">📋</div>
+                            <span>Plan</span>
+                        </div>
+                        <div class="step-line"></div>
+                        <div class="step" data-step="execution">
+                            <div class="step-circle">⚡</div>
+                            <span>Action</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenu principal -->
+                <div class="organizer-main">
+                    <div class="organizer-content">
+                        <!-- Introduction compacte -->
+                        <div class="step-content" id="step-introduction">
+                            <div class="step-card intro-card">
+                                <div class="card-header">
+                                    <h2>🎯 Organisateur automatique par domaine</h2>
+                                    <p>Créez automatiquement des dossiers par expéditeur (amazon.com, paypal.com...)</p>
+                                </div>
+
+                                <div class="intro-compact">
+                                    <div class="process-flow">
+                                        <div class="flow-step">
+                                            <div class="flow-icon">⚙️</div>
+                                            <span>Configuration</span>
+                                        </div>
+                                        <div class="flow-arrow">→</div>
+                                        <div class="flow-step">
+                                            <div class="flow-icon">🔍</div>
+                                            <span>Analyse</span>
+                                        </div>
+                                        <div class="flow-arrow">→</div>
+                                        <div class="flow-step">
+                                            <div class="flow-icon">📋</div>
+                                            <span>Édition</span>
+                                        </div>
+                                        <div class="flow-arrow">→</div>
+                                        <div class="flow-step">
+                                            <div class="flow-icon">⚡</div>
+                                            <span>Exécution</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="example-compact">
+                                        <div class="example-side">
+                                            <h4>📥 Avant</h4>
+                                            <div class="preview-box">
+                                                <div class="preview-line">Amazon - Livraison</div>
+                                                <div class="preview-line">PayPal - Paiement</div>
+                                                <div class="preview-line">Amazon - Promo</div>
+                                                <div class="preview-line">GitHub - Notification</div>
+                                            </div>
+                                        </div>
+                                        <div class="example-arrow">→</div>
+                                        <div class="example-side">
+                                            <h4>📁 Après</h4>
+                                            <div class="preview-box">
+                                                <div class="preview-line">📁 amazon.com (2)</div>
+                                                <div class="preview-line">📁 paypal.com (1)</div>
+                                                <div class="preview-line">📁 github.com (1)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="tips-compact">
+                                        <div class="tip-item">
+                                            <span class="tip-icon">🧪</span>
+                                            <span><strong>Testez :</strong> Créez d'abord les dossiers seulement</span>
+                                        </div>
+                                        <div class="tip-item">
+                                            <span class="tip-icon">📊</span>
+                                            <span><strong>Seuil :</strong> 3+ emails par domaine recommandé</span>
+                                        </div>
+                                        <div class="tip-item">
+                                            <span class="tip-icon">🚫</span>
+                                            <span><strong>Exclusions :</strong> Gmail/Outlook déjà exclus</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="action-bar">
+                                    <div></div>
+                                    <button class="btn btn-primary btn-large" onclick="window.modernDomainOrganizer.goToStep('configuration')">
+                                        <i class="fas fa-arrow-right"></i>
+                                        Commencer l'organisation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuration -->
+                        <div class="step-content hidden" id="step-configuration">
+                            <div class="step-card">
+                                <div class="card-header">
+                                    <h2>⚙️ Configuration</h2>
+                                    <p>Paramétrez l'analyse selon vos besoins</p>
+                                </div>
+
+                                <div class="config-grid">
+                                    <div class="config-group">
+                                        <label>📅 Période d'analyse</label>
+                                        <div class="date-row">
+                                            <input type="date" id="startDate" title="Date de début">
+                                            <span>→</span>
+                                            <input type="date" id="endDate" title="Date de fin">
+                                        </div>
+                                    </div>
+
+                                    <div class="config-group">
+                                        <label>📊 Critères</label>
+                                        <div class="criteria-row">
+                                            <div class="input-group">
+                                                <span>Min emails/domaine</span>
+                                                <input type="number" id="minEmails" value="3" min="1" max="50">
+                                            </div>
+                                            <div class="input-group">
+                                                <span>Limite scan</span>
+                                                <select id="emailLimit">
+                                                    <option value="0">Tous</option>
+                                                    <option value="1000">1000</option>
+                                                    <option value="2000">2000</option>
+                                                    <option value="5000">5000</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="config-group">
+                                        <label>🚫 Exclusions (optionnel)</label>
+                                        <input type="text" id="excludeDomains" placeholder="domaine1.com, domaine2.com" 
+                                               value="gmail.com, outlook.com, hotmail.com, hotmail.fr">
+                                        <textarea id="excludeEmails" placeholder="email1@exemple.com&#10;email2@exemple.com" rows="2"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="action-bar">
+                                    <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('introduction')">
+                                        <i class="fas fa-arrow-left"></i>
+                                        Retour
+                                    </button>
+                                    <button class="btn btn-primary" id="startScanBtn">
+                                        <i class="fas fa-search"></i>
+                                        Analyser
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scanning -->
+                        <div class="step-content hidden" id="step-scanning">
+                            <div class="step-card">
+                                <div class="card-header">
+                                    <h2>🔍 Analyse en cours</h2>
+                                    <p id="scanStatus">Initialisation...</p>
+                                </div>
+
+                                <div class="scan-progress">
+                                    <div class="progress-container">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="progressBar"></div>
+                                        </div>
+                                        <div class="progress-text" id="progressPercent">0%</div>
+                                    </div>
+
+                                    <div class="scan-stats">
+                                        <div class="stat">
+                                            <span class="stat-number" id="scannedEmails">0</span>
+                                            <span class="stat-label">Emails</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="foundDomains">0</span>
+                                            <span class="stat-label">Domaines</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="existingFolders">0</span>
+                                            <span class="stat-label">Existants</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="newFoldersNeeded">0</span>
+                                            <span class="stat-label">Nouveaux</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Plan - VERSION SIMPLIFIÉE AVEC BOUTON VISIBLE -->
+                        <div class="step-content hidden" id="step-plan">
+                            <div class="step-card plan-card-simple">
+                                <!-- Header condensé -->
+                                <div class="card-header-simple">
+                                    <h2>📋 Plan d'organisation</h2>
+                                </div>
+
+                                <!-- Contenu principal -->
+                                <div class="plan-content-simple">
+                                    <!-- Stats + Options en ligne -->
+                                    <div class="plan-top-bar">
+                                        <div class="stats-simple" id="planSummary">
+                                            <span><strong>16</strong> Domaines</span>
+                                            <span><strong>145</strong> Emails</span>
+                                            <span><strong>15</strong> Nouveaux</span>
+                                        </div>
+                                        <div class="options-simple">
+                                            <label><input type="radio" name="executionType" value="folders-only"> 📁 Dossiers</label>
+                                            <label><input type="radio" name="executionType" value="complete" checked> ⚡ Complet</label>
+                                        </div>
+                                        <div class="count-simple">
+                                            <span id="selectedEmailsText">145 emails sélectionnés</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Contrôles -->
+                                    <div class="controls-simple">
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.selectAllDomains()">✅ Tout</button>
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.deselectAllDomains()">❌ Rien</button>
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.expandAllDomains()">📂 Déplier</button>
+                                        <button class="btn-xs" onclick="window.modernDomainOrganizer.collapseAllDomains()">📁 Replier</button>
+                                    </div>
+
+                                    <!-- Liste des domaines avec hauteur fixe -->
+                                    <div class="domains-wrapper">
+                                        <div class="domains-container-simple" id="domainsContainer"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Boutons d'action FIXES en bas -->
+                                <div class="action-bar-simple">
+                                    <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.goToStep('configuration')">
+                                        ← Reconfigurer
+                                    </button>
+                                    <button class="btn btn-primary btn-execute" id="executeSelectedBtn" onclick="window.modernDomainOrganizer.executeSelectedAction()">
+                                        <span id="executeButtonText">⚡ Exécuter</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Execution -->
+                        <div class="step-content hidden" id="step-execution">
+                            <div class="step-card">
+                                <div class="card-header">
+                                    <h2>⚡ <span id="executionTitle">Exécution</span></h2>
+                                    <p id="executionStatus">Préparation...</p>
+                                </div>
+
+                                <div class="execution-progress">
+                                    <div class="progress-container">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="executionProgressBar"></div>
+                                        </div>
+                                        <div class="progress-text" id="executionPercent">0%</div>
+                                    </div>
+
+                                    <div class="execution-stats">
+                                        <div class="stat">
+                                            <span class="stat-number" id="foldersCreated">0</span>
+                                            <span class="stat-label">Dossiers</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="emailsMoved">0</span>
+                                            <span class="stat-label">Emails</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="domainsProcessed">0</span>
+                                            <span class="stat-label">Domaines</span>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="stat-number" id="errorsCount">0</span>
+                                            <span class="stat-label">Erreurs</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="execution-log" id="executionLog"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Success -->
+                        <div class="step-content hidden" id="step-success">
+                            <div class="step-card success-card">
+                                <div class="success-content">
+                                    <div class="success-icon">🎉</div>
+                                    <h2 id="successTitle">Terminé !</h2>
+                                    <div class="success-report" id="successReport"></div>
+                                </div>
+
+                                <div class="action-bar">
+                                    <button class="btn btn-outline" onclick="window.modernDomainOrganizer.goToStep('plan')">
+                                        <i class="fas fa-arrow-left"></i>
+                                        Retour
+                                    </button>
+                                    <button class="btn btn-primary" onclick="window.modernDomainOrganizer.restart()">
+                                        <i class="fas fa-redo"></i>
+                                        Recommencer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal d'édition -->
+                <div class="email-modal hidden" id="emailModal">
+                    <div class="email-modal-content">
+                        <div class="email-modal-header">
+                            <h3>📧 Édition email</h3>
+                            <button class="modal-close" onclick="window.modernDomainOrganizer.closeEmailModal()">×</button>
+                        </div>
+                        <div class="email-modal-body" id="emailModalBody"></div>
+                        <div class="email-modal-footer">
+                            <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.closeEmailModal()">
+                                Fermer
+                            </button>
+                            <button class="btn btn-primary" id="saveEmailBtn">
+                                Sauvegarder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+        .modern-organizer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* Styles pour l'arborescence hiérarchique */
+.folder-separator {
+    padding: 8px 24px;
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    border-top: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f3f4f6;
+    margin: 4px 0;
+}
+
+.folder-path {
+    font-size: 10px;
+    color: #9ca3af;
+    font-style: italic;
+    display: block;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+.folder-option {
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.folder-option:hover {
+    border-left-color: #3b82f6;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+}
+
+.folder-option.selected {
+    border-left-color: #1d4ed8;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Indentation visuelle pour la hiérarchie */
+.folder-option[style*="padding-left"] {
+    position: relative;
+}
+
+.folder-option[style*="padding-left"]::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, transparent 0%, #e5e7eb 20%, #e5e7eb 80%, transparent 100%);
+}
+    
+/* Modal de sélection de dossiers */
+.folder-select-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+}
+
+.folder-select-modal.hidden {
+    display: none;
+}
+
+.folder-modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.folder-modal-header {
+    padding: 20px 24px;
+    border-bottom: 2px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    flex-shrink: 0;
+}
+
+.folder-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.folder-modal-body {
+    flex: 1;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.folder-search-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafbfc;
+    flex-shrink: 0;
+}
+
+.search-container {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.folder-search-input {
+    width: 100%;
+    padding: 12px 16px 12px 40px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.folder-search-input::placeholder {
+    color: #9ca3af;
+}
+
+.folder-search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e5e7eb;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.search-clear:hover {
+    background: #d1d5db;
+    color: #374151;
+}
+
+.search-stats {
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.folder-options-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    min-height: 0;
+}
+
+.special-options {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.folder-separator {
+    padding: 8px 24px;
+    background: #e5e7eb;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.folder-tree {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.folder-option {
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid transparent;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+.folder-option:hover {
+    background: #f0f9ff;
+    border-left-color: #bfdbfe;
+}
+
+.folder-option.selected {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border-left-color: #3b82f6;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.folder-option.special-option {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    padding: 12px 16px;
+    border-left: 4px solid transparent;
+}
+
+.folder-option.special-option:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+}
+
+.folder-option.special-option.selected {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.folder-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+}
+
+.folder-spacer {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.folder-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+}
+
+.folder-details {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.folder-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folder-path {
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.folder-count {
+    font-size: 11px;
+    color: #9ca3af;
+    flex-shrink: 0;
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 8px;
+}
+
+.custom-folder-section {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    background: #fef3c7;
+    flex-shrink: 0;
+}
+
+.custom-folder-section.hidden {
+    display: none;
+}
+
+.custom-folder-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.custom-folder-input-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+}
+
+.custom-folder-name-input {
+    padding: 10px 12px;
+    border: 2px solid #f59e0b;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    color: #92400e;
+    box-sizing: border-box;
+}
+
+.custom-folder-name-input:focus {
+    outline: none;
+    border-color: #d97706;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.folder-modal-footer {
+    padding: 16px 24px;
+    border-top: 2px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    flex-shrink: 0;
+}
+
+.no-folders, .error-folders {
+    padding: 40px 24px;
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.error-folders {
+    color: #dc2626;
+}
+
+/* Highlight de recherche */
+.folder-name mark {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-weight: 600;
+}
+
+/* Scrollbar personnalisée */
+.folder-tree::-webkit-scrollbar {
+    width: 6px;
+}
+
+.folder-tree::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Responsive pour le modal */
+@media (max-width: 768px) {
+    .folder-modal-content {
+        max-width: 95%;
+        max-height: 90vh;
+        border-radius: 12px;
+    }
+    
+    .folder-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .folder-modal-header h3 {
+        font-size: 16px;
+    }
+    
+    .folder-search-section {
+        padding: 12px 20px;
+    }
+    
+    .folder-search-input {
+        padding: 10px 14px 10px 36px;
+        font-size: 13px;
+    }
+    
+    .folder-option {
+        padding: 10px 20px;
+        min-height: 40px;
+    }
+    
+    .folder-option.special-option {
+        padding: 10px 14px;
+    }
+    
+    .folder-name {
+        font-size: 13px;
+    }
+    
+    .folder-path {
+        font-size: 11px;
+    }
+    
+    .custom-folder-section {
+        padding: 12px 20px;
+    }
+    
+    .folder-modal-footer {
+        padding: 12px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .folder-modal-content {
+        max-width: 98%;
+        max-height: 95vh;
+    }
+    
+    .folder-modal-header {
+        padding: 12px 16px;
+    }
+    
+    .folder-search-section {
+        padding: 10px 16px;
+    }
+    
+    .folder-option {
+        padding: 8px 16px;
+        min-height: 36px;
+    }
+    
+    .folder-name {
+        font-size: 12px;
+    }
+    
+    .folder-tree {
+        max-height: 250px;
+    }
+}
+.folder-details {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.system-folder {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-left-color: #0ea5e9 !important;
+}
+
+.system-folder .folder-name {
+    font-weight: 600;
+    color: #0369a1;
+}
+
+.system-badge {
+    background: #0ea5e9;
+    color: white;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.folder-count {
+    font-size: 10px;
+    color: #9ca3af;
+    font-weight: 500;
+    background: #f3f4f6;
+    padding: 1px 4px;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+.system-folder .folder-count {
+    background: #bfdbfe;
+    color: #1e40af;
+}
+
+.error-folder-node {
+    padding: 8px 24px;
+    color: #dc2626;
+    font-style: italic;
+    font-size: 12px;
+    background: #fef2f2;
+    border-left: 3px solid #fca5a5;
+}
+
+/* Styles pour les différents types de dossiers */
+.folder-option[data-folder-name*="amazon"] .folder-icon::after {
+    content: "🛒";
+}
+
+.folder-option[data-folder-name*="paypal"] .folder-icon::after,
+.folder-option[data-folder-name*="payment"] .folder-icon::after {
+    content: "💳";
+}
+
+.folder-option[data-folder-name*="social"] .folder-icon::after,
+.folder-option[data-folder-name*="facebook"] .folder-icon::after,
+.folder-option[data-folder-name*="instagram"] .folder-icon::after {
+    content: "👥";
+}
+
+.folder-option[data-folder-name*="news"] .folder-icon::after,
+.folder-option[data-folder-name*="newsletter"] .folder-icon::after {
+    content: "📰";
+}
+
+/* Amélioration de la recherche avec highlighting */
+.folder-name mark {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    padding: 1px 3px;
+    border-radius: 3px;
+    font-weight: 700;
+    box-shadow: 0 1px 2px rgba(245, 158, 11, 0.2);
+}
+
+/* Animation pour l'expansion des dossiers */
+.folder-children {
+    overflow: hidden;
+    transition: all 0.3s ease;
+    max-height: 0;
+}
+
+.folder-children:not(.hidden) {
+    max-height: 2000px;
+}
+
+/* Lignes de connexion pour la hiérarchie */
+.folder-option {
+    position: relative;
+}
+
+.folder-option::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 50%;
+    width: 1px;
+    background: #e5e7eb;
+    display: none;
+}
+
+.folder-children .folder-option::before {
+    display: block;
+}
+
+.folder-children .folder-option:last-child::before {
+    bottom: 100%;
+}
+
+/* Responsive pour l'arborescence */
+@media (max-width: 768px) {
+    .folder-details {
+        gap: 4px;
+    }
+    
+    .folder-name {
+        font-size: 12px;
+    }
+    
+    .folder-count {
+        font-size: 9px;
+        padding: 1px 3px;
+    }
+    
+    .system-badge {
+        font-size: 7px;
+        padding: 1px 3px;
+    }
+    
+    .folder-option {
+        min-height: 36px;
+        padding: 6px 16px;
+    }
+    
+    .folder-icon {
+        font-size: 14px;
+    }
+}
+
+/* Scroll bars personnalisées pour le modal */
+.folder-tree::-webkit-scrollbar {
+    width: 6px;
+}
+
+.folder-tree::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+.folder-tree::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* États de hover améliorés */
+.folder-option:hover {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border-left-color: #3b82f6;
+    transform: translateX(2px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.system-folder:hover {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+}
+
+/* Animation d'apparition pour les résultats de recherche */
+@keyframes highlightResult {
+    0% { 
+        background: #fef3c7;
+        transform: scale(1.02);
+    }
+    100% { 
+        background: transparent;
+        transform: scale(1);
+    }
+}
+
+.folder-option.search-result {
+    animation: highlightResult 0.6s ease-out;
+}
+
+/* Modal de sélection de dossiers */
+.folder-select-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(4px);
+}
+
+.folder-select-modal.hidden {
+    display: none;
+}
+
+.folder-modal-content {
+    background: white;
+    border-radius: 16px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 85vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.folder-modal-header {
+    padding: 20px 24px;
+    border-bottom: 2px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    flex-shrink: 0;
+}
+
+.folder-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.folder-modal-body {
+    flex: 1;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.folder-search-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafbfc;
+    flex-shrink: 0;
+}
+
+.search-container {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.folder-search-input {
+    width: 100%;
+    padding: 12px 16px 12px 40px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.2s;
+}
+
+.folder-search-input::placeholder {
+    color: #9ca3af;
+}
+
+.folder-search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.search-clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e5e7eb;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6b7280;
+    transition: all 0.2s;
+}
+
+.search-clear:hover {
+    background: #d1d5db;
+    color: #374151;
+}
+
+.search-stats {
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.folder-options-section {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    min-height: 0;
+}
+
+.special-options {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+
+.folder-separator {
+    padding: 8px 24px;
+    background: #e5e7eb;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.folder-tree {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.folder-option {
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid transparent;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+.folder-option:hover {
+    background: #f0f9ff;
+    border-left-color: #bfdbfe;
+}
+
+.folder-option.selected {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border-left-color: #3b82f6;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.folder-option.special-option {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    padding: 12px 16px;
+}
+
+.folder-option.special-option:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+}
+
+.folder-option.special-option.selected {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+}
+
+.folder-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+}
+
+.folder-expand {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #6b7280;
+    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.folder-expand:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.folder-spacer {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.folder-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+}
+
+.folder-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folder-path {
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.folder-count {
+    font-size: 11px;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+.folder-children {
+    transition: all 0.2s;
+}
+
+.folder-children.hidden {
+    display: none;
+}
+
+.custom-folder-section {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    background: #fef3c7;
+    flex-shrink: 0;
+}
+
+.custom-folder-section.hidden {
+    display: none;
+}
+
+.custom-folder-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.custom-folder-input-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #92400e;
+}
+
+.custom-folder-name-input {
+    padding: 10px 12px;
+    border: 2px solid #f59e0b;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    color: #92400e;
+}
+
+.custom-folder-name-input:focus {
+    outline: none;
+    border-color: #d97706;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.folder-modal-footer {
+    padding: 16px 24px;
+    border-top: 2px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    flex-shrink: 0;
+}
+
+.no-folders, .error-folders {
+    padding: 40px 24px;
+    text-align: center;
+    color: #6b7280;
+    font-style: italic;
+}
+
+.error-folders {
+    color: #dc2626;
+}
+
+/* Highlight de recherche */
+.folder-name mark {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-weight: 600;
+}
+
+/* Responsive pour le modal */
+@media (max-width: 768px) {
+    .folder-modal-content {
+        max-width: 95%;
+        max-height: 90vh;
+        border-radius: 12px;
+    }
+    
+    .folder-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .folder-modal-header h3 {
+        font-size: 16px;
+    }
+    
+    .folder-search-section {
+        padding: 12px 20px;
+    }
+    
+    .folder-search-input {
+        padding: 10px 14px 10px 36px;
+        font-size: 13px;
+    }
+    
+    .folder-option {
+        padding: 8px 20px;
+        min-height: 40px;
+    }
+    
+    .folder-option.special-option {
+        padding: 10px 14px;
+    }
+    
+    .folder-name {
+        font-size: 13px;
+    }
+    
+    .folder-path {
+        font-size: 11px;
+    }
+    
+    .custom-folder-section {
+        padding: 12px 20px;
+    }
+    
+    .folder-modal-footer {
+        padding: 12px 20px;
+    }
+    
+    .folder-tree {
+        max-height: 300px;
+    }
+}
+
+@media (max-width: 480px) {
+    .folder-modal-content {
+        max-width: 98%;
+        max-height: 95vh;
+    }
+    
+    .folder-modal-header {
+        padding: 12px 16px;
+    }
+    
+    .folder-search-section {
+        padding: 10px 16px;
+    }
+    
+    .folder-option {
+        padding: 6px 16px;
+        min-height: 36px;
+    }
+    
+    .folder-name {
+        font-size: 12px;
+    }
+    
+    .folder-tree {
+        max-height: 250px;
+    }
+}
+
+.organizer-header {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    flex-shrink: 0;
+}
+
+.organizer-main {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.progress-steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 80px;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.step.active, .step.completed {
+    opacity: 1;
+}
+
+.step-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.3s;
+}
+
+.step.active .step-circle {
+    background: #3b82f6;
+    color: white;
+}
+
+.step.completed .step-circle {
+    background: #10b981;
+    color: white;
+}
+
+.step-line {
+    flex: 1;
+    height: 2px;
+    background: #e5e7eb;
+    margin: 0 -5px;
+}
+
+.step span {
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.step.active span {
+    color: #1f2937;
+    font-weight: 600;
+}
+
+.step-content {
+    animation: fadeIn 0.3s ease;
+}
+
+.step-content.hidden {
+    display: none;
+}
+
+.step-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    min-height: 500px;
+}
+
+.card-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.card-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: #1f2937;
+}
+
+.card-header p {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* VERSION SIMPLIFIÉE - BOUTON GARANTI VISIBLE */
+.plan-card-simple {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    height: calc(100vh - 200px);
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Header condensé */
+.card-header-simple {
+    padding: 10px 16px;
+    flex-shrink: 0;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: center;
+}
+
+.card-header-simple h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+}
+
+/* Contenu principal */
+.plan-content-simple {
+    flex: 1;
+    padding: 12px 16px 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+}
+
+/* Top bar avec stats + options */
+.plan-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 12px;
+    flex-shrink: 0;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.stats-simple {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    font-size: 12px;
+    color: #374151;
+}
+
+.stats-simple strong {
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.options-simple {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.options-simple label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #374151;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: white;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s;
+}
+
+.options-simple label:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+}
+
+.options-simple input[type="radio"] {
+    width: 12px;
+    height: 12px;
+}
+
+.count-simple {
+    font-size: 11px;
+    color: #0369a1;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Contrôles */
+.controls-simple {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.btn-xs {
+    padding: 4px 8px;
+    font-size: 10px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+.btn-xs:hover {
+    background: #f9fafb;
+    border-color: #3b82f6;
+}
+
+/* Wrapper pour les domaines */
+.domains-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.domains-container-simple {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 250px;
+    max-height: 400px;
+}
+
+/* Action bar FIXE en bas */
+.action-bar-simple {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 2px solid #e5e7eb;
+    flex-shrink: 0;
+    background: #fafbfc;
+    border-radius: 0 0 12px 12px;
+    position: relative;
+    z-index: 10;
+}
+
+.btn-execute {
+    background: #3b82f6 !important;
+    color: white !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    border: none !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
+    transition: all 0.2s !important;
+}
+
+.btn-execute:hover {
+    background: #2563eb !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Introduction compacte */
+.intro-compact {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.process-flow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.flow-step {
+    text-align: center;
+    min-width: 120px;
+}
+
+.flow-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.flow-step h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: #1f2937;
+}
+
+.flow-step p {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.flow-arrow {
+    font-size: 16px;
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+.example-compact {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+.example-side {
+    flex: 1;
+    max-width: 200px;
+}
+
+.example-side h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 12px 0;
+    color: #1f2937;
+}
+
+.preview-box {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.preview-line {
+    font-size: 12px;
+    padding: 4px 0;
+    color: #374151;
+}
+
+.example-arrow {
+    font-size: 20px;
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+.tips-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tip-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.tip-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+/* Configuration */
+.config-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.config-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.date-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.date-row input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.criteria-row {
+    display: flex;
+    gap: 16px;
+}
+
+.input-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.input-group span {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.input-group input, .input-group select {
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.config-group input[type="text"], .config-group textarea {
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    resize: none;
+}
+
+.config-group input:focus, .config-group select:focus, .config-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+/* Progress */
+.progress-container {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    width: 0%;
+    transition: width 0.4s ease;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.scan-stats, .execution-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    text-align: center;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.stat-number {
+    display: block;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+/* Plan */
+.plan-summary {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.plan-controls {
+    flex-shrink: 0;
+}
+
+.domain-item {
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.domain-item:last-child {
+    border-bottom: none;
+}
+
+.domain-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.domain-header:hover {
+    background: #f9fafb;
+}
+
+.domain-checkbox {
+    width: 16px;
+    height: 16px;
+}
+
+.domain-expand {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.domain-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.domain-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.domain-stats {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.domain-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.folder-input {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 12px;
+    min-width: 120px;
+}
+
+.action-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.action-new {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.action-existing {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.domain-content {
+    display: none;
+    padding: 0 16px 12px 40px;
+    background: #fafbfc;
+}
+
+.domain-content.expanded {
+    display: block;
+}
+
+.emails-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+}
+
+/* NOUVEAUX STYLES POUR LES EMAILS AVEC SÉLECTEURS DE DOSSIERS */
+.email-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 12px;
+    min-height: 80px;
+    transition: background-color 0.2s;
+}
+
+.email-item:hover {
+    background: #f9fafb;
+}
+
+.email-item:last-child {
+    border-bottom: none;
+}
+
+.email-checkbox {
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+}
+
+.email-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.email-subject {
+    font-weight: 500;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+    max-width: 100%;
+}
+
+.email-from {
+    font-size: 10px;
+    color: #6b7280;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.email-date {
+    font-size: 9px;
+    color: #9ca3af;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+/* Styles pour les sélecteurs de dossiers d'emails */
+.email-folder-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 160px;
+    flex-shrink: 0;
+}
+
+.email-folder-select {
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 11px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.email-folder-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.email-folder-select:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+}
+
+.custom-folder-input {
+    padding: 6px 8px;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    font-size: 11px;
+    background: #fef3c7;
+    color: #92400e;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.custom-folder-input:focus {
+    outline: none;
+    border-color: #d97706;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1);
+    background: #fefce8;
+}
+
+.custom-folder-input::placeholder {
+    color: #a16207;
+    opacity: 0.7;
+}
+
+.email-folder-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+.custom-folder-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.2s;
+}
+
+.custom-folder-badge.new {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #92400e;
+    border: 1px solid #f59e0b;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.2);
+}
+
+.custom-folder-badge.existing {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #1e40af;
+    border: 1px solid #3b82f6;
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
+}
+
+.default-folder-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 500;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #6b7280;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    border: 1px solid #d1d5db;
+}
+
+/* Animation pour les badges */
+.custom-folder-badge.new::before {
+    content: "✨";
+    animation: sparkle 2s infinite;
+}
+
+.custom-folder-badge.existing::before {
+    content: "📂";
+}
+
+.default-folder-badge::before {
+    content: "📁";
+}
+
+@keyframes sparkle {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Hover effects pour les badges */
+.email-item:hover .custom-folder-badge.new {
+    background: linear-gradient(135deg, #fde68a, #fcd34d);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.email-item:hover .custom-folder-badge.existing {
+    background: linear-gradient(135deg, #bfdbfe, #93c5fd);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.email-item:hover .default-folder-badge {
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    transform: translateY(-1px);
+}
+
+.execution-options {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    padding: 16px;
+    flex-shrink: 0;
+}
+
+.option-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.option-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.option-label:hover {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.option-label input[type="radio"] {
+    width: 16px;
+    height: 16px;
+}
+
+.selection-info {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0369a1;
+}
+
+/* Execution */
+.execution-log {
+    max-height: 150px;
+    overflow-y: auto;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 11px;
+}
+
+.log-entry {
+    margin-bottom: 2px;
+    color: #6b7280;
+    line-height: 1.3;
+}
+
+.log-entry.success { color: #059669; }
+.log-entry.error { color: #dc2626; }
+.log-entry.info { color: #3b82f6; }
+
+/* Success */
+.success-card {
+    text-align: center;
+}
+
+.success-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.success-report {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 16px 0;
+    text-align: left;
+    font-size: 14px;
+}
+
+.report-section {
+    margin-bottom: 12px;
+}
+
+.report-section h4 {
+    margin: 0 0 8px 0;
+    color: #065f46;
+    font-size: 14px;
+}
+
+.report-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.report-list li {
+    padding: 2px 0;
+    color: #047857;
+    font-size: 13px;
+}
+
+/* Modal */
+.email-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.email-modal.hidden {
+    display: none;
+}
+
+.email-modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.email-modal-header {
+    padding: 16px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9fafb;
+}
+
+.email-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 4px;
+}
+
+.email-modal-body {
+    padding: 16px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.email-modal-footer {
+    padding: 16px;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    background: #f9fafb;
+}
+
+/* Buttons */
+.action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.btn-outline:hover {
+    background: #f9fafb;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.btn-large {
+    padding: 14px 28px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* RESPONSIVE DESIGN AMÉLIORÉ */
+@media (max-width: 768px) {
+    .modern-organizer {
+        padding: 6px;
     }
 
-    setupImmediateSync() {
-        // Écouter les changements dans localStorage
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'categorySettings') {
-                console.log('[CategoryManager] 🔄 Changement localStorage détecté');
-                this.reloadSettingsFromStorage();
-                this.notifyAllModules('storageChange');
-            }
-        });
+    .organizer-header {
+        padding: 8px;
+        margin-bottom: 8px;
     }
 
-    processSettingsChanges() {
-        if (this.syncInProgress || this.syncQueue.length === 0) return;
-        
-        this.syncInProgress = true;
-        
+    .step-card {
+        padding: 12px;
+        min-height: 400px;
+    }
+
+    /* Plan mobile simplifié */
+    .plan-card-simple {
+        height: calc(100vh - 160px);
+        max-height: none;
+    }
+
+    .card-header-simple {
+        padding: 8px 12px;
+    }
+
+    .card-header-simple h2 {
+        font-size: 16px;
+    }
+
+    .plan-content-simple {
+        padding: 8px 12px 0 12px;
+        gap: 8px;
+    }
+
+    .action-bar-simple {
+        padding: 10px 12px;
+    }
+
+    .plan-top-bar {
+        flex-direction: column;
+        gap: 8px;
+        padding: 6px;
+    }
+
+    .stats-simple {
+        gap: 10px;
+        justify-content: space-around;
+        width: 100%;
+        font-size: 11px;
+    }
+
+    .stats-simple strong {
+        font-size: 13px;
+    }
+
+    .options-simple {
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .options-simple label {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+
+    .count-simple {
+        font-size: 10px;
+        text-align: center;
+    }
+
+    .controls-simple {
+        gap: 4px;
+    }
+
+    .btn-xs {
+        padding: 3px 6px;
+        font-size: 9px;
+    }
+
+    .domains-container-simple {
+        min-height: 200px;
+        max-height: 300px;
+    }
+
+    .btn-execute {
+        padding: 8px 16px !important;
+        font-size: 12px !important;
+    }
+
+    .domain-header {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .domain-name {
+        font-size: 12px;
+    }
+
+    .domain-stats {
+        font-size: 10px;
+    }
+
+    .folder-input {
+        font-size: 10px;
+        padding: 4px 6px;
+        min-width: 80px;
+    }
+
+    .action-badge {
+        font-size: 8px;
+        padding: 1px 4px;
+    }
+
+    .emails-list {
+        max-height: 150px;
+    }
+
+    /* EMAIL MOBILE LAYOUT */
+    .email-item {
+        grid-template-columns: auto 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 8px;
+        padding: 8px 12px;
+        min-height: auto;
+    }
+
+    .email-checkbox {
+        grid-column: 1;
+        grid-row: 1;
+        margin-top: 1px;
+    }
+
+    .email-info {
+        grid-column: 2;
+        grid-row: 1;
+        gap: 2px;
+    }
+
+    .email-folder-selector {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        min-width: auto;
+        margin-top: 4px;
+    }
+
+    .email-folder-info {
+        grid-column: 1 / -1;
+        grid-row: 3;
+        min-width: auto;
+        margin-top: 2px;
+    }
+
+    .email-folder-select {
+        font-size: 10px;
+        padding: 4px 6px;
+    }
+
+    .custom-folder-input {
+        font-size: 10px;
+        padding: 4px 6px;
+    }
+
+    .custom-folder-badge, .default-folder-badge {
+        font-size: 8px;
+        padding: 2px 6px;
+    }
+
+    .email-subject {
+        font-size: 11px;
+    }
+
+    .email-from {
+        font-size: 9px;
+    }
+
+    .email-date {
+        font-size: 8px;
+    }
+
+    .domain-content {
+        padding: 0 12px 8px 28px;
+    }
+
+    .btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .btn-large {
+        padding: 8px 16px;
+        font-size: 13px;
+    }
+}
+
+/* TRÈS PETITS ÉCRANS */
+@media (max-width: 480px) {
+    .email-folder-selector {
+        gap: 4px;
+    }
+
+    .email-folder-select, .custom-folder-input {
+        font-size: 9px;
+        padding: 3px 4px;
+    }
+
+    .custom-folder-badge, .default-folder-badge {
+        font-size: 7px;
+        padding: 1px 4px;
+    }
+
+    .email-info {
+        gap: 1px;
+    }
+
+    .email-subject {
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    .email-from {
+        font-size: 8px;
+    }
+
+    .email-date {
+        font-size: 7px;
+    }
+}
+
+.hidden {
+    display: none !important;
+}
+
+.error-message {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.warning-message {
+    background: #fef3cd;
+    border: 1px solid #fbbf24;
+    color: #92400e;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 14px;
+}
+
+.info-message {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 14px;
+}
+            </style>
+        `;
+    }
+
+    // Méthodes principales avec gestion d'erreurs renforcée
+    async initializePage() {
         try {
-            while (this.syncQueue.length > 0) {
-                const change = this.syncQueue.shift();
-                this.applySettingChange(change);
-            }
+            console.log('[ModernDomainOrganizer] Initialisation...');
             
-            this.lastSyncTimestamp = Date.now();
+            if (!window.authService?.isAuthenticated()) {
+                this.showError('Veuillez vous connecter pour continuer');
+                return false;
+            }
+
+            this.setupEventListeners();
+            this.setDefaultDates();
             
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sync queue:', error);
-        } finally {
-            this.syncInProgress = false;
-        }
-    }
-
-    applySettingChange(change) {
-        const { type, value, notifyModules } = change;
-        
-        console.log(`[CategoryManager] 📝 Application changement: ${type}`, value);
-        
-        // Appliquer le changement dans les settings locaux
-        switch (type) {
-            case 'taskPreselectedCategories':
-                this.settings.taskPreselectedCategories = [...value];
-                break;
-            case 'activeCategories':
-                this.settings.activeCategories = value;
-                break;
-            case 'categoryExclusions':
-                this.settings.categoryExclusions = { ...this.settings.categoryExclusions, ...value };
-                break;
-            case 'scanSettings':
-                this.settings.scanSettings = { ...this.settings.scanSettings, ...value };
-                break;
-            case 'automationSettings':
-                this.settings.automationSettings = { ...this.settings.automationSettings, ...value };
-                break;
-            case 'preferences':
-                this.settings.preferences = { ...this.settings.preferences, ...value };
-                break;
-            default:
-                this.settings = { ...this.settings, ...value };
-        }
-        
-        // Sauvegarder immédiatement
-        this.saveSettingsToStorage();
-        
-        // Notifier les modules si demandé
-        if (notifyModules !== false) {
-            this.notifySpecificModules(type, value);
-            this.notifyAllModules(type, value);
-        }
-    }
-
-    // ================================================
-    // MÉTHODES DE NOTIFICATION RENFORCÉES
-    // ================================================
-    notifySpecificModules(type, value) {
-        console.log(`[CategoryManager] 📢 Notification spécialisée: ${type}`);
-        
-        // EmailScanner - PRIORITÉ ABSOLUE
-        if (window.emailScanner) {
-            switch (type) {
-                case 'taskPreselectedCategories':
-                    console.log('[CategoryManager] → EmailScanner: taskPreselectedCategories');
-                    if (typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
-                        window.emailScanner.updateTaskPreselectedCategories(value);
-                    }
-                    // Forcer la re-catégorisation
-                    setTimeout(() => {
-                        if (window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                            console.log('[CategoryManager] → EmailScanner: Déclenchement re-catégorisation');
-                            window.emailScanner.recategorizeEmails?.();
-                        }
-                    }, 100);
-                    break;
-                    
-                case 'activeCategories':
-                    console.log('[CategoryManager] → EmailScanner: activeCategories');
-                    if (typeof window.emailScanner.updateSettings === 'function') {
-                        window.emailScanner.updateSettings({ activeCategories: value });
-                    }
-                    setTimeout(() => {
-                        if (window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                            window.emailScanner.recategorizeEmails?.();
-                        }
-                    }, 100);
-                    break;
-                    
-                case 'categoryExclusions':
-                case 'preferences':
-                    if (typeof window.emailScanner.updateSettings === 'function') {
-                        window.emailScanner.updateSettings({ [type]: value });
-                    }
-                    break;
-            }
-        }
-        
-        // AITaskAnalyzer
-        if (window.aiTaskAnalyzer) {
-            if (type === 'taskPreselectedCategories') {
-                console.log('[CategoryManager] → AITaskAnalyzer: taskPreselectedCategories');
-                if (typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
-                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
-                }
-            }
-            if (type === 'automationSettings') {
-                console.log('[CategoryManager] → AITaskAnalyzer: automationSettings');
-                if (typeof window.aiTaskAnalyzer.updateAutomationSettings === 'function') {
-                    window.aiTaskAnalyzer.updateAutomationSettings(value);
-                }
-            }
-        }
-        
-        // StartScan/MinimalScanModule
-        if (window.minimalScanModule || window.scanStartModule) {
-            const scanner = window.minimalScanModule || window.scanStartModule;
-            if (type === 'taskPreselectedCategories' || type === 'scanSettings') {
-                console.log('[CategoryManager] → ScanModule:', type);
-                if (typeof scanner.updateSettings === 'function') {
-                    scanner.updateSettings({ [type]: value });
-                }
-            }
-        }
-        
-        // PageManager
-        if (window.pageManager) {
-            console.log('[CategoryManager] → PageManager:', type);
-            if (typeof window.pageManager.handleSettingsChanged === 'function') {
-                window.pageManager.handleSettingsChanged({ settings: this.settings });
-            }
-        }
-    }
-
-    notifyAllModules(type, value) {
-        // Dispatch événements globaux
-        setTimeout(() => {
-            this.dispatchEvent('categorySettingsChanged', { 
-                settings: this.settings,
-                type,
-                value,
-                timestamp: Date.now()
-            });
-            
-            this.dispatchEvent('settingsChanged', { 
-                type, 
-                value,
-                source: 'CategoryManager',
-                timestamp: Date.now()
-            });
-        }, 10);
-        
-        // Notifier les listeners enregistrés
-        this.changeListeners.forEach(listener => {
-            try {
-                listener(type, value, this.settings);
-            } catch (error) {
-                console.error('[CategoryManager] Erreur listener:', error);
-            }
-        });
-    }
-
-    // ================================================
-    // API PUBLIQUE POUR CHANGEMENTS DE PARAMÈTRES
-    // ================================================
-    updateSettings(newSettings, notifyModules = true) {
-        console.log('[CategoryManager] 📝 updateSettings appelé:', newSettings);
-        
-        // Ajouter à la queue de synchronisation
-        this.syncQueue.push({
-            type: 'fullSettings',
-            value: newSettings,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        // Traitement immédiat si pas en cours
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-updateTaskPreselectedCategories(categories, notifyModules = true) {
-    console.log('[CategoryManager] 📋 updateTaskPreselectedCategories:', categories);
-    
-    const normalizedCategories = Array.isArray(categories) ? [...categories] : [];
-    
-    // Invalider le cache
-    this.invalidateTaskCategoriesCache();
-    
-    this.syncQueue.push({
-        type: 'taskPreselectedCategories',
-        value: normalizedCategories,
-        notifyModules,
-        timestamp: Date.now()
-    });
-    
-    if (!this.syncInProgress) {
-        this.processSettingsChanges();
-    }
-    
-    return normalizedCategories;
-}
-
-runDiagnostics() {
-    console.group('🏥 DIAGNOSTIC COMPLET CategoryManager');
-    
-    // 1. Vérifier les catégories
-    console.group('📂 Catégories');
-    const allCategories = Object.keys(this.categories);
-    const customCategories = Object.keys(this.customCategories);
-    const activeCategories = this.getActiveCategories();
-    
-    console.log('Total catégories:', allCategories.length);
-    console.log('Catégories standard:', allCategories.filter(c => !this.categories[c].isCustom).length);
-    console.log('Catégories personnalisées:', customCategories.length);
-    console.log('Catégories actives:', activeCategories.length);
-    
-    // Vérifier les catégories personnalisées
-    customCategories.forEach(catId => {
-        const cat = this.categories[catId];
-        const keywords = this.weightedKeywords[catId];
-        const isActive = activeCategories.includes(catId);
-        const keywordCount = this.getTotalKeywordsCount(catId);
-        
-        console.log(`\n${cat.icon} ${cat.name} (${catId}):`);
-        console.log('  - Active:', isActive ? '✅' : '❌');
-        console.log('  - Priorité:', cat.priority);
-        console.log('  - Mots-clés:', keywordCount);
-        
-        if (keywordCount === 0) {
-            console.warn('  ⚠️ AUCUN MOT-CLÉ DÉFINI!');
-        }
-    });
-    console.groupEnd();
-    
-    // 2. Vérifier l'efficacité des catégories
-    console.group('📊 Efficacité des catégories');
-    Object.entries(this.weightedKeywords).forEach(([catId, keywords]) => {
-        const totalKeywords = this.getTotalKeywordsCount(catId);
-        const absoluteCount = keywords.absolute?.length || 0;
-        const efficiency = totalKeywords > 0 ? Math.round((absoluteCount / totalKeywords) * 100) : 0;
-        
-        if (efficiency < 30 && totalKeywords > 0) {
-            const cat = this.categories[catId];
-            console.warn(`⚠️ ${cat.icon} ${cat.name}: ${efficiency}% d'efficacité (${absoluteCount} absolus sur ${totalKeywords} total)`);
-        }
-    });
-    console.groupEnd();
-    
-    // 3. Vérifier la synchronisation
-    console.group('🔄 État de synchronisation');
-    console.log('Queue de sync:', this.syncQueue.length);
-    console.log('Sync en cours:', this.syncInProgress);
-    console.log('Dernière sync:', new Date(this.lastSyncTimestamp).toLocaleTimeString());
-    console.log('Listeners actifs:', this.changeListeners.size);
-    console.groupEnd();
-    
-    // 4. Recommandations
-    console.group('💡 Recommandations');
-    
-    // Catégories sans mots-clés
-    const emptyCats = allCategories.filter(catId => this.getTotalKeywordsCount(catId) === 0);
-    if (emptyCats.length > 0) {
-        console.warn('Catégories sans mots-clés:', emptyCats);
-    }
-    
-    // Catégories peu efficaces
-    const inefficientCats = Object.entries(this.weightedKeywords)
-        .filter(([catId, keywords]) => {
-            const total = this.getTotalKeywordsCount(catId);
-            const absolute = keywords.absolute?.length || 0;
-            return total > 0 && (absolute / total) < 0.3;
-        })
-        .map(([catId]) => this.categories[catId]?.name || catId);
-    
-    if (inefficientCats.length > 0) {
-        console.warn('Catégories peu efficaces (< 30% mots absolus):', inefficientCats);
-        console.log('→ Ajoutez plus de mots-clés absolus pour améliorer la détection');
-    }
-    
-    console.groupEnd();
-    console.groupEnd();
-    
-    return {
-        totalCategories: allCategories.length,
-        customCategories: customCategories.length,
-        activeCategories: activeCategories.length,
-        emptyCategoriesCount: emptyCats.length,
-        inefficientCategoriesCount: inefficientCats.length
-    };
-}
-    updateActiveCategories(categories, notifyModules = true) {
-        console.log('[CategoryManager] 🏷️ updateActiveCategories:', categories);
-        
-        this.syncQueue.push({
-            type: 'activeCategories',
-            value: categories,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updateCategoryExclusions(exclusions, notifyModules = true) {
-        console.log('[CategoryManager] 🚫 updateCategoryExclusions:', exclusions);
-        
-        this.syncQueue.push({
-            type: 'categoryExclusions',
-            value: exclusions,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updatePreferences(preferences, notifyModules = true) {
-        console.log('[CategoryManager] ⚙️ updatePreferences:', preferences);
-        
-        this.syncQueue.push({
-            type: 'preferences',
-            value: preferences,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updateScanSettings(scanSettings, notifyModules = true) {
-        console.log('[CategoryManager] 🔍 updateScanSettings:', scanSettings);
-        
-        this.syncQueue.push({
-            type: 'scanSettings',
-            value: scanSettings,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updateAutomationSettings(automationSettings, notifyModules = true) {
-        console.log('[CategoryManager] 🤖 updateAutomationSettings:', automationSettings);
-        
-        this.syncQueue.push({
-            type: 'automationSettings',
-            value: automationSettings,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    // ================================================
-    // GESTION DES PARAMÈTRES CENTRALISÉE RENFORCÉE
-    // ================================================
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            const defaultSettings = this.getDefaultSettings();
-            
-            if (saved) {
-                const parsedSettings = JSON.parse(saved);
-                const mergedSettings = { ...defaultSettings, ...parsedSettings };
-                console.log('[CategoryManager] ✅ Settings chargés depuis localStorage');
-                return mergedSettings;
-            } else {
-                console.log('[CategoryManager] 📝 Utilisation settings par défaut');
-                return defaultSettings;
-            }
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur chargement paramètres:', error);
-            return this.getDefaultSettings();
-        }
-    }
-
-    saveSettingsToStorage() {
-        try {
-            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
-            console.log('[CategoryManager] 💾 Settings sauvegardés');
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
-        }
-    }
-
-    reloadSettingsFromStorage() {
-        const oldSettings = { ...this.settings };
-        this.settings = this.loadSettings();
-        
-        // Détecter les changements et notifier
-        const changes = this.detectSettingsChanges(oldSettings, this.settings);
-        changes.forEach(change => {
-            this.notifySpecificModules(change.type, change.value);
-        });
-    }
-
-    detectSettingsChanges(oldSettings, newSettings) {
-        const changes = [];
-        
-        const criticalFields = [
-            'taskPreselectedCategories',
-            'activeCategories', 
-            'categoryExclusions',
-            'scanSettings',
-            'automationSettings',
-            'preferences'
-        ];
-        
-        criticalFields.forEach(field => {
-            const oldValue = JSON.stringify(oldSettings[field] || {});
-            const newValue = JSON.stringify(newSettings[field] || {});
-            
-            if (oldValue !== newValue) {
-                changes.push({
-                    type: field,
-                    value: newSettings[field],
-                    oldValue: oldSettings[field]
-                });
-            }
-        });
-        
-        return changes;
-    }
-
-    getDefaultSettings() {
-        return {
-            activeCategories: null, // null = toutes actives
-            excludedDomains: [],
-            excludedKeywords: [],
-            taskPreselectedCategories: [], // VIDE par défaut
-            categoryExclusions: {
-                domains: [],
-                emails: []
-            },
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            automationSettings: {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            },
-            preferences: {
-                darkMode: false,
-                compactView: false,
-                showNotifications: true,
-                excludeSpam: true,
-                detectCC: true
-            }
-        };
-    }
-
-    // ================================================
-    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES - RENFORCÉES
-    // ================================================
-    getSettings() {
-        // Toujours retourner une copie fraîche
-        return JSON.parse(JSON.stringify(this.settings));
-    }
-
-getTaskPreselectedCategories() {
-    // Vérifier le cache avec une durée de vie de 10 secondes
-    const now = Date.now();
-    const CACHE_DURATION = 10000; // 10 secondes
-    
-    if (this._taskCategoriesCache && 
-        this._taskCategoriesCacheTime && 
-        (now - this._taskCategoriesCacheTime) < CACHE_DURATION) {
-        // Retourner depuis le cache sans logger
-        return [...this._taskCategoriesCache];
-    }
-    
-    // Récupérer les catégories fraîches
-    const categories = this.settings.taskPreselectedCategories || [];
-    
-    // Mettre à jour le cache
-    this._taskCategoriesCache = [...categories];
-    this._taskCategoriesCacheTime = now;
-    
-    // Log seulement si changement ou première fois
-    if (!this._lastLoggedTaskCategories || 
-        JSON.stringify(this._lastLoggedTaskCategories) !== JSON.stringify(categories)) {
-        console.log('[CategoryManager] 📋 Catégories tâches mises à jour:', categories);
-        this._lastLoggedTaskCategories = [...categories];
-    }
-    
-    return [...categories];
-}
-
-invalidateTaskCategoriesCache() {
-    this._taskCategoriesCache = null;
-    this._taskCategoriesCacheTime = 0;
-    console.log('[CategoryManager] 🔄 Cache des catégories tâches invalidé');
-}
-
-getActiveCategories() {
-    // Si activeCategories est null, toutes les catégories sont actives
-    if (!this.settings.activeCategories) {
-        // Retourner TOUTES les catégories (standard + personnalisées)
-        const allCategories = Object.keys(this.categories);
-        console.log('[CategoryManager] Toutes catégories actives:', allCategories);
-        return allCategories;
-    }
-    
-    // Sinon retourner seulement les catégories marquées comme actives
-    return [...this.settings.activeCategories];
-}
-
-    isCategoryActive(categoryId) {
-        const activeCategories = this.getActiveCategories();
-        return activeCategories.includes(categoryId);
-    }
-
-    getScanSettings() {
-        return { ...this.settings.scanSettings };
-    }
-
-    getAutomationSettings() {
-        return { ...this.settings.automationSettings };
-    }
-
-    shouldExcludeSpam() {
-        return this.settings.preferences?.excludeSpam !== false;
-    }
-
-    shouldDetectCC() {
-        return this.settings.preferences?.detectCC !== false;
-    }
-
-
-
-    // ================================================
-    // SYSTÈME D'ÉCOUTE POUR AUTRES MODULES
-    // ================================================
-    addChangeListener(callback) {
-        this.changeListeners.add(callback);
-        console.log(`[CategoryManager] 👂 Listener ajouté (${this.changeListeners.size} total)`);
-        
-        // Retourner une fonction pour supprimer le listener
-        return () => {
-            this.changeListeners.delete(callback);
-        };
-    }
-
-    removeChangeListener(callback) {
-        this.changeListeners.delete(callback);
-    }
-
-    saveCustomCategories() {
-        try {
-            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
-            console.log('[CategoryManager] Catégories personnalisées sauvegardées');
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
-        }
-    }
-// CategoryManager.js - Amélioration de loadCustomCategories() (remplacer vers ligne 490)
-
-// CategoryManager.js - Remplacer loadCustomCategories() vers ligne 490
-
-loadCustomCategories() {
-    try {
-        const saved = localStorage.getItem('customCategories');
-        this.customCategories = saved ? JSON.parse(saved) : {};
-        
-        console.log('[CategoryManager] 📁 Chargement catégories personnalisées...');
-        
-        Object.entries(this.customCategories).forEach(([id, category]) => {
-            // Ajouter la catégorie
-            this.categories[id] = {
-                ...category,
-                isCustom: true,
-                priority: category.priority || 30
-            };
-            
-            // IMPORTANT: Charger les mots-clés sauvegardés
-            if (category.keywords) {
-                this.weightedKeywords[id] = {
-                    absolute: [...(category.keywords.absolute || [])],
-                    strong: [...(category.keywords.strong || [])],
-                    weak: [...(category.keywords.weak || [])],
-                    exclusions: [...(category.keywords.exclusions || [])]
-                };
-            } else {
-                // Initialiser avec des tableaux vides
-                this.weightedKeywords[id] = {
-                    absolute: [],
-                    strong: [],
-                    weak: [],
-                    exclusions: []
-                };
-            }
-            
-            const totalKeywords = this.getTotalKeywordsCount(id);
-            console.log(`[CategoryManager] ✅ Catégorie personnalisée "${category.name}" (${id}):`);
-            console.log(`  - Priorité: ${category.priority || 30}`);
-            console.log(`  - Mots-clés: ${totalKeywords}`);
-            console.log(`  - Keywords object:`, this.weightedKeywords[id]);
-            
-            if (totalKeywords === 0) {
-                console.warn(`  ⚠️ AUCUN MOT-CLÉ - La catégorie ne pourra pas détecter d'emails!`);
-            }
-            
-            // S'assurer que la catégorie est active
-            if (this.settings.activeCategories === null) {
-                // Si null, toutes sont actives par défaut
-                console.log(`  ✅ Catégorie active par défaut`);
-            } else if (Array.isArray(this.settings.activeCategories)) {
-                if (!this.settings.activeCategories.includes(id)) {
-                    console.log(`  ➕ Ajout aux catégories actives`);
-                    this.settings.activeCategories.push(id);
-                    this.saveSettingsToStorage();
-                }
-            }
-        });
-        
-        console.log('[CategoryManager] 📊 Résumé:');
-        console.log('  - Catégories personnalisées chargées:', Object.keys(this.customCategories).length);
-        console.log('  - Total catégories:', Object.keys(this.categories).length);
-        
-    } catch (error) {
-        console.error('[CategoryManager] ❌ Erreur chargement catégories personnalisées:', error);
-        this.customCategories = {};
-    }
-}
-
-getTotalKeywordsCount(categoryId) {
-    const keywords = this.weightedKeywords[categoryId];
-    if (!keywords) return 0;
-    
-    return (keywords.absolute?.length || 0) + 
-           (keywords.strong?.length || 0) + 
-           (keywords.weak?.length || 0) + 
-           (keywords.exclusions?.length || 0);
-}
-    createCustomCategory(categoryData) {
-        const id = this.generateCategoryId(categoryData.name);
-        
-        const category = {
-            id: id,
-            name: categoryData.name,
-            icon: categoryData.icon || '📂',
-            color: categoryData.color || '#6366f1',
-            description: categoryData.description || '',
-            priority: categoryData.priority || 30,
-            createdAt: new Date().toISOString(),
-            isCustom: true,
-            keywords: categoryData.keywords || { absolute: [], strong: [], weak: [], exclusions: [] }
-        };
-
-        this.customCategories[id] = category;
-        this.categories[id] = category;
-        
-        // Initialiser les mots-clés
-        this.weightedKeywords[id] = {
-            absolute: category.keywords.absolute || [],
-            strong: category.keywords.strong || [],
-            weak: category.keywords.weak || [],
-            exclusions: category.keywords.exclusions || []
-        };
-
-        this.saveCustomCategories();
-        
-        setTimeout(() => {
-            this.dispatchEvent('categoryCreated', { categoryId: id, category });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie personnalisée créée:', category);
-        return category;
-    }
-
-    updateCustomCategory(categoryId, updates) {
-        if (!this.customCategories[categoryId]) {
-            throw new Error('Catégorie personnalisée non trouvée');
-        }
-
-        // Mise à jour avec préservation des mots-clés
-        const updatedCategory = {
-            ...this.customCategories[categoryId],
-            ...updates,
-            keywords: updates.keywords || this.customCategories[categoryId].keywords,
-            updatedAt: new Date().toISOString()
-        };
-
-        this.customCategories[categoryId] = updatedCategory;
-        this.categories[categoryId] = updatedCategory;
-        
-        // Mettre à jour les mots-clés si fournis
-        if (updates.keywords) {
-            this.weightedKeywords[categoryId] = {
-                absolute: updates.keywords.absolute || [],
-                strong: updates.keywords.strong || [],
-                weak: updates.keywords.weak || [],
-                exclusions: updates.keywords.exclusions || []
-            };
-        }
-
-        this.saveCustomCategories();
-        
-        setTimeout(() => {
-            this.dispatchEvent('categoryUpdated', { categoryId, category: updatedCategory });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie mise à jour:', categoryId);
-        return updatedCategory;
-    }
-
-    deleteCustomCategory(categoryId) {
-        if (!this.customCategories[categoryId]) {
-            throw new Error('Catégorie personnalisée non trouvée');
-        }
-
-        // Retirer des catégories pré-sélectionnées si présente
-        if (this.settings.taskPreselectedCategories?.includes(categoryId)) {
-            const newPreselected = this.settings.taskPreselectedCategories.filter(id => id !== categoryId);
-            this.updateTaskPreselectedCategories(newPreselected);
-        }
-
-        // Retirer des catégories actives si présente
-        if (this.settings.activeCategories?.includes(categoryId)) {
-            const newActive = this.settings.activeCategories.filter(id => id !== categoryId);
-            this.updateActiveCategories(newActive);
-        }
-
-        delete this.customCategories[categoryId];
-        delete this.categories[categoryId];
-        delete this.weightedKeywords[categoryId];
-
-        this.saveCustomCategories();
-        
-        setTimeout(() => {
-            this.dispatchEvent('categoryDeleted', { categoryId });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie supprimée:', categoryId);
-    }
-
-    generateCategoryId(name) {
-        const base = name.toLowerCase()
-            .replace(/[àâä]/g, 'a')
-            .replace(/[éèêë]/g, 'e')
-            .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/[ùûü]/g, 'u')
-            .replace(/[ç]/g, 'c')
-            .replace(/[^a-z0-9]/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '');
-        
-        let id = 'custom_' + base;
-        let counter = 1;
-        
-        while (this.categories[id] || this.customCategories[id]) {
-            id = `custom_${base}_${counter}`;
-            counter++;
-        }
-        
-        return id;
-    }
-
-    getCustomCategories() {
-        return { ...this.customCategories };
-    }
-
-    // ================================================
-    // GESTION DES MOTS-CLÉS PAR CATÉGORIE (inchangé)
-    // ================================================
-    updateCategoryKeywords(categoryId, keywords) {
-        if (!this.categories[categoryId]) {
-            throw new Error('Catégorie non trouvée');
-        }
-
-        console.log(`[CategoryManager] Mise à jour mots-clés pour ${categoryId}:`, keywords);
-
-        this.weightedKeywords[categoryId] = {
-            absolute: keywords.absolute || [],
-            strong: keywords.strong || [],
-            weak: keywords.weak || [],
-            exclusions: keywords.exclusions || []
-        };
-
-        // Si c'est une catégorie personnalisée, sauvegarder
-        if (this.customCategories[categoryId]) {
-            this.customCategories[categoryId].keywords = this.weightedKeywords[categoryId];
-            this.saveCustomCategories();
-        }
-
-        console.log(`[CategoryManager] Mots-clés mis à jour pour ${categoryId}`);
-        
-        setTimeout(() => {
-            this.dispatchEvent('keywordsUpdated', { categoryId, keywords: this.weightedKeywords[categoryId] });
-        }, 10);
-    }
-
-    getCategoryKeywords(categoryId) {
-        const keywords = this.weightedKeywords[categoryId];
-        if (!keywords) {
-            return {
-                absolute: [],
-                strong: [],
-                weak: [],
-                exclusions: []
-            };
-        }
-        
-        return {
-            absolute: keywords.absolute || [],
-            strong: keywords.strong || [],
-            weak: keywords.weak || [],
-            exclusions: keywords.exclusions || []
-        };
-    }
-
-    addKeywordToCategory(categoryId, keyword, type = 'strong') {
-        if (!this.categories[categoryId]) {
-            throw new Error('Catégorie non trouvée');
-        }
-
-        if (!this.weightedKeywords[categoryId]) {
-            this.weightedKeywords[categoryId] = { absolute: [], strong: [], weak: [], exclusions: [] };
-        }
-
-        if (!this.weightedKeywords[categoryId][type]) {
-            this.weightedKeywords[categoryId][type] = [];
-        }
-
-        const normalizedKeyword = keyword.toLowerCase().trim();
-        if (!this.weightedKeywords[categoryId][type].includes(normalizedKeyword)) {
-            this.weightedKeywords[categoryId][type].push(normalizedKeyword);
-            this.updateCategoryKeywords(categoryId, this.weightedKeywords[categoryId]);
-        }
-    }
-
-    removeKeywordFromCategory(categoryId, keyword, type) {
-        if (!this.categories[categoryId] || !this.weightedKeywords[categoryId]) {
-            return;
-        }
-
-        if (this.weightedKeywords[categoryId][type]) {
-            const normalizedKeyword = keyword.toLowerCase().trim();
-            this.weightedKeywords[categoryId][type] = this.weightedKeywords[categoryId][type].filter(k => k !== normalizedKeyword);
-            this.updateCategoryKeywords(categoryId, this.weightedKeywords[categoryId]);
-        }
-    }
-
-    getAllKeywords() {
-        return { ...this.weightedKeywords };
-    }
-
-    // ================================================
-    // INITIALISATION DES CATÉGORIES (inchangé)
-    // ================================================
-    initializeCategories() {
-        this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS
-            marketing_news: {
-                name: 'Marketing & News',
-                icon: '📰',
-                color: '#8b5cf6',
-                description: 'Newsletters et promotions',
-                priority: 100,
-                isCustom: false
-            },
-            
-            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE
-            cc: {
-                name: 'En Copie',
-                icon: '📋',
-                color: '#64748b',
-                description: 'Emails où vous êtes en copie',
-                priority: 90,
-                isCustom: false
-            },
-            
-            // PRIORITÉ NORMALE
-            security: {
-                name: 'Sécurité',
-                icon: '🔒',
-                color: '#991b1b',
-                description: 'Alertes de sécurité, connexions et authentification',
-                priority: 50,
-                isCustom: false
-            },
-            
-            finance: {
-                name: 'Finance',
-                icon: '💰',
-                color: '#dc2626',
-                description: 'Factures et paiements',
-                priority: 50,
-                isCustom: false
-            },
-            
-            tasks: {
-                name: 'Actions Requises',
-                icon: '✅',
-                color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
-                priority: 50,
-                isCustom: false
-            },
-            
-            commercial: {
-                name: 'Commercial',
-                icon: '💼',
-                color: '#059669',
-                description: 'Opportunités, devis et contrats',
-                priority: 50,
-                isCustom: false
-            },
-            
-            meetings: {
-                name: 'Réunions',
-                icon: '📅',
-                color: '#f59e0b',
-                description: 'Invitations et demandes de réunion',
-                priority: 50,
-                isCustom: false
-            },
-            
-            support: {
-                name: 'Support',
-                icon: '🛠️',
-                color: '#f59e0b',
-                description: 'Tickets et assistance',
-                priority: 50,
-                isCustom: false
-            },
-            
-            reminders: {
-                name: 'Relances',
-                icon: '🔄',
-                color: '#10b981',
-                description: 'Rappels et suivis',
-                priority: 50,
-                isCustom: false
-            },
-            
-            project: {
-                name: 'Projets',
-                icon: '📊',
-                color: '#3b82f6',
-                description: 'Gestion de projet',
-                priority: 50,
-                isCustom: false
-            },
-            
-            hr: {
-                name: 'RH',
-                icon: '👥',
-                color: '#10b981',
-                description: 'Ressources humaines',
-                priority: 50,
-                isCustom: false
-            },
-            
-            internal: {
-                name: 'Communication Interne',
-                icon: '📢',
-                color: '#0ea5e9',
-                description: 'Annonces internes',
-                priority: 50,
-                isCustom: false
-            },
-            
-            notifications: {
-                name: 'Notifications',
-                icon: '🔔',
-                color: '#94a3b8',
-                description: 'Notifications automatiques',
-                priority: 50,
-                isCustom: false
-            }
-        };
-        
-        this.isInitialized = true;
-    }
-
-// CategoryManager.js - Remplacer complètement initializeWeightedDetection() 
-
-initializeWeightedDetection() {
-    this.weightedKeywords = {
-        // PRIORITÉ MAXIMALE - MARKETING & NEWS
-        marketing_news: {
-            absolute: [
-                'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
-                'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
-                'email preferences', 'préférences email', 'preferences email',
-                'ne plus recevoir', 'stop emails', 'arreter les emails',
-                'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
-                'paramétrez vos choix', 'parametrez vos choix',
-                'newsletter', 'mailing list', 'mailing',
-                'this email was sent to', 'you are receiving this',
-                'limited offer', 'offre limitée', 'special offer',
-                'promotion', 'promo', 'soldes', 'vente privée',
-                'ventes en ligne', 'vente en ligne', 'shopping',
-                'disable these notifications', 'turn off notifications',
-                'manage notifications', 'notification settings',
-                'email settings', 'communication preferences',
-                'update your preferences', 'modify your subscription'
-            ],
-            strong: [
-                'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
-                'newsletter', 'mailing', 'campaign', 'marketing',
-                'exclusive', 'special', 'limited', 'new', 'nouveau',
-                'boutique', 'shopping', 'acheter', 'commander',
-                'offre', 'promotion', 'remise', 'solde',
-                'notifications', 'alerts', 'updates', 'subscribe'
-            ],
-            weak: ['update', 'discover', 'new', 'nouveauté', 'découvrir'],
-            exclusions: []
-        },
-
-        security: {
-            absolute: [
-                'alerte de connexion', 'alert connexion', 'nouvelle connexion',
-                'activité suspecte', 'suspicious activity', 'login alert',
-                'new sign-in', 'sign in detected', 'connexion détectée',
-                'code de vérification', 'verification code', 'security code',
-                'two-factor', '2fa', 'authentification', 'authentication',
-                'password reset', 'réinitialisation mot de passe'
-            ],
-            strong: [
-                'sécurité', 'security', 'vérification', 'verify',
-                'authentification', 'password', 'mot de passe'
-            ],
-            weak: ['compte', 'account', 'accès'],
-            exclusions: ['newsletter', 'unsubscribe', 'promotion']
-        },
-
-        tasks: {
-            absolute: [
-                'action required', 'action requise', 'action needed',
-                'please complete', 'veuillez compléter', 'to do',
-                'task assigned', 'tâche assignée', 'deadline',
-                'due date', 'échéance', 'livrable',
-                'urgence', 'urgent', 'très urgent',
-                'demande update', 'update request', 'mise à jour demandée',
-                'demande de mise à jour', 'update needed', 'mise a jour requise',
-                'correction requise', 'à corriger', 'please review',
-                'merci de valider', 'validation requise', 'approval needed'
-            ],
-            strong: [
-                'urgent', 'asap', 'priority', 'priorité',
-                'complete', 'compléter', 'action', 'faire',
-                'update', 'mise à jour', 'demande', 'request',
-                'task', 'tâche', 'todo', 'à faire',
-                'correction', 'corriger', 'modifier', 'révision'
-            ],
-            weak: ['demande', 'besoin', 'attente', 'request', 'need', 'waiting'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'papa', 'maman', 'famille']
-        },
-
-        meetings: {
-            absolute: [
-                'demande de réunion', 'meeting request', 'réunion',
-                'schedule a meeting', 'planifier une réunion',
-                'invitation réunion', 'meeting invitation',
-                'teams meeting', 'zoom meeting', 'google meet',
-                'rendez-vous', 'appointment', 'rdv'
-            ],
-            strong: [
-                'meeting', 'réunion', 'schedule', 'planifier',
-                'calendar', 'calendrier', 'appointment', 'agenda',
-                'conférence', 'conference', 'call'
-            ],
-            weak: ['présentation', 'agenda', 'disponible', 'available'],
-            exclusions: ['newsletter', 'promotion', 'marketing', 'papa', 'maman', 'famille']
-        },
-
-        commercial: {
-            absolute: [
-                'devis', 'quotation', 'proposal', 'proposition',
-                'contrat', 'contract', 'bon de commande',
-                'purchase order', 'offre commerciale',
-                'opportunity', 'opportunité', 'lead'
-            ],
-            strong: [
-                'client', 'customer', 'prospect', 'opportunity',
-                'commercial', 'business', 'marché', 'deal',
-                'vente', 'sales', 'négociation'
-            ],
-            weak: ['offre', 'négociation', 'discussion', 'projet'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'ventes en ligne']
-        },
-
-        finance: {
-            absolute: [
-                'facture', 'invoice', 'payment', 'paiement',
-                'virement', 'transfer', 'remboursement', 'refund',
-                'relevé bancaire', 'bank statement',
-                'déclaration fiscale', 'tax declaration',
-                'n°commande', 'numéro commande', 'order number',
-                'numéro de commande', 'commande n°', 'commande numéro',
-                'livraison commande', 'commande expédiée',
-                'confirmation commande', 'order confirmation'
-            ],
-            strong: [
-                'montant', 'amount', 'total', 'facture',
-                'fiscal', 'bancaire', 'bank', 'finance',
-                'commande', 'order', 'achat', 'vente',
-                'livraison', 'delivery', 'expédition', 'shipping',
-                'prix', 'price', 'coût', 'cost'
-            ],
-            weak: ['euro', 'dollar', 'prix', 'payment', 'transaction'],
-            exclusions: ['newsletter', 'marketing', 'spam', 'promotion', 'soldes', 'ventes en ligne']
-        },
-
-        project: {
-            absolute: [
-                'projet xx', 'project update', 'milestone',
-                'sprint', 'livrable projet', 'gantt',
-                'avancement projet', 'project status',
-                'kickoff', 'retrospective', 'roadmap',
-                'document corrigé', 'version corrigée', 'corrections apportées'
-            ],
-            strong: [
-                'projet', 'project', 'milestone', 'sprint',
-                'agile', 'scrum', 'kanban', 'jira',
-                'development', 'développement',
-                'document', 'présentation', 'correction'
-            ],
-            weak: ['development', 'phase', 'étape', 'planning', 'présentation'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'papa', 'maman', 'famille', 'bises']
-        },
-
-        reminders: {
-            absolute: [
-                'reminder:', 'rappel:', 'follow up', 'relance',
-                'gentle reminder', 'rappel amical', 'following up',
-                'je reviens vers vous', 'circling back',
-                'comme convenu', 'as discussed'
-            ],
-            strong: [
-                'reminder', 'rappel', 'follow', 'relance',
-                'suite', 'convenu', 'discussed', 'pending'
-            ],
-            weak: ['previous', 'discussed', 'encore', 'still'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
-        support: {
-            absolute: [
-                'ticket #', 'ticket number', 'numéro de ticket',
-                'case #', 'case number', 'incident #',
-                'problème résolu', 'issue resolved',
-                'support ticket', 'demande de support'
-            ],
-            strong: [
-                'support', 'assistance', 'help desk',
-                'technical support', 'ticket', 'incident',
-                'problème', 'problem', 'issue'
-            ],
-            weak: ['help', 'aide', 'issue', 'question'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
-        hr: {
-            absolute: [
-                'bulletin de paie', 'payslip', 'contrat de travail',
-                'congés', 'leave request', 'onboarding',
-                'entretien annuel', 'performance review',
-                'ressources humaines', 'human resources',
-                'offre d\'emploi', 'job offer', 'recrutement'
-            ],
-            strong: [
-                'rh', 'hr', 'salaire', 'salary',
-                'ressources humaines', 'human resources',
-                'contrat', 'paie', 'congés', 'vacation',
-                'emploi', 'job', 'recruitment'
-            ],
-            weak: ['employee', 'staff', 'personnel', 'équipe'],
-            exclusions: [
-                'newsletter', 'marketing', 'famille', 'family', 
-                'personnel', 'personal', 'papa', 'maman',
-                'présentation', 'document', 'correction',
-                'bises', 'bisous', 'familial'
-            ]
-        },
-
-        internal: {
-            absolute: [
-                'all staff', 'tout le personnel', 'annonce interne',
-                'company announcement', 'memo interne',
-                'communication interne', 'note de service',
-                'à tous', 'to all employees'
-            ],
-            strong: [
-                'internal', 'interne', 'company wide',
-                'personnel', 'staff', 'équipe',
-                'annonce', 'announcement'
-            ],
-            weak: ['annonce', 'announcement', 'information', 'update'],
-            exclusions: ['newsletter', 'marketing', 'external', 'client', 'papa', 'maman', 'famille', 'bises']
-        },
-
-        notifications: {
-            absolute: [
-                'do not reply', 'ne pas répondre', 'noreply@',
-                'automated message', 'notification automatique',
-                'system notification', 'ceci est un message automatique',
-                'no-reply@', 'donotreply@'
-            ],
-            strong: [
-                'automated', 'automatic', 'system',
-                'notification', 'automatique', 'alert'
-            ],
-            weak: ['notification', 'alert', 'info'],
-            exclusions: ['newsletter', 'marketing', 'urgent']
-        },
-
-        cc: {
-            absolute: [
-                'copie pour information', 'for your information', 'fyi',
-                'en copie', 'in copy', 'cc:', 'courtesy copy',
-                'pour info', 'pour information'
-            ],
-            strong: ['information', 'copie', 'copy', 'cc'],
-            weak: ['fyi', 'info'],
-            exclusions: [
-                'commande', 'order', 'facture', 'invoice',
-                'urgent', 'action required', 'payment'
-            ]
-        }
-    };
-
-    console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
-}
-// CategoryManager.js - Remplacer complètement analyzeEmail()
-analyzeEmail(email) {
-    if (!email) return { category: 'other', score: 0, confidence: 0 };
-    
-    if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
-        return { category: 'spam', score: 0, confidence: 0, isSpam: true };
-    }
-    
-    const content = this.extractCompleteContent(email);
-    
-    // Vérifier les exclusions globales
-    if (this.isGloballyExcluded(content, email)) {
-        return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
-    }
-    
-    // Détecter les emails familiaux/personnels AVANT tout
-    if (this.isPersonalEmail(content, email)) {
-        if (this.categories.personal || this.customCategories.personal) {
-            return {
-                category: 'personal',
-                score: 100,
-                confidence: 0.95,
-                matchedPatterns: [{ keyword: 'personal_email_detected', type: 'absolute', score: 100 }],
-                hasAbsolute: true,
-                isPersonal: true
-            };
-        } else {
-            return { category: 'excluded', score: 0, confidence: 0, isExcluded: true, reason: 'personal' };
-        }
-    }
-    
-    // Vérifier si on est destinataire principal ou en CC
-    const isMainRecipient = this.isMainRecipient(email);
-    const isInCC = this.isInCC(email);
-    
-    // Si on est en CC, vérifier d'abord si c'est du marketing
-    if (this.shouldDetectCC() && isInCC && !isMainRecipient) {
-        const marketingCheck = this.analyzeCategory(content, this.weightedKeywords.marketing_news);
-        if (marketingCheck.score >= 80) {
-            return {
-                category: 'marketing_news',
-                score: marketingCheck.total,
-                confidence: this.calculateConfidence(marketingCheck),
-                matchedPatterns: marketingCheck.matches,
-                hasAbsolute: marketingCheck.hasAbsolute,
-                originallyCC: true
-            };
-        }
-        
-        const allResults = this.analyzeAllCategories(content);
-        const bestNonCC = Object.values(allResults)
-            .filter(r => r.category !== 'cc')
-            .sort((a, b) => b.score - a.score)[0];
-        
-        if (bestNonCC && bestNonCC.score >= 100 && bestNonCC.hasAbsolute) {
-            return {
-                category: bestNonCC.category,
-                score: bestNonCC.score,
-                confidence: bestNonCC.confidence,
-                matchedPatterns: bestNonCC.matches,
-                hasAbsolute: bestNonCC.hasAbsolute,
-                isCC: true
-            };
-        }
-        
-        return {
-            category: 'cc',
-            score: 100,
-            confidence: 0.95,
-            matchedPatterns: [{ keyword: 'email_in_cc', type: 'detected', score: 100 }],
-            hasAbsolute: true,
-            isCC: true
-        };
-    }
-    
-    const allResults = this.analyzeAllCategories(content);
-    const selectedResult = this.selectByPriorityWithThreshold(allResults);
-    
-    // CORRECTION CRITIQUE: Si aucune catégorie trouvée, retourner explicitement 'other'
-    if (!selectedResult || selectedResult.category === 'other' || selectedResult.score === 0) {
-        return {
-            category: 'other',
-            score: 0,
-            confidence: 0,
-            matchedPatterns: [],
-            hasAbsolute: false,
-            reason: 'no_category_matched'
-        };
-    }
-    
-    return selectedResult;
-}
-
-// NOUVELLE méthode pour détecter les emails personnels/familiaux
-isPersonalEmail(content, email) {
-    const personalIndicators = [
-        'papa', 'maman', 'mamie', 'papy', 'papi',
-        'chéri', 'chérie', 'mon amour', 'ma chérie',
-        'bises', 'bisous', 'gros bisous', 'je t\'embrasse',
-        'famille', 'familial', 'personnel', 'personal'
-    ];
-    
-    const professionalCounterIndicators = [
-        'ressources humaines', 'human resources', 'rh',
-        'contrat', 'contract', 'entreprise', 'company',
-        'professionnel', 'professional', 'business'
-    ];
-    
-    const text = content.text.toLowerCase();
-    
-    // Compter les indicateurs personnels
-    let personalScore = 0;
-    personalIndicators.forEach(indicator => {
-        if (text.includes(indicator)) {
-            personalScore += 10;
-        }
-    });
-    
-    // Réduire le score si des indicateurs professionnels sont présents
-    let professionalScore = 0;
-    professionalCounterIndicators.forEach(indicator => {
-        if (text.includes(indicator)) {
-            professionalScore += 10;
-        }
-    });
-    
-    // Email personnel si score personnel > 20 ET score professionnel < 10
-    return personalScore > 20 && professionalScore < 10;
-}
-
-// Nouvelle méthode pour vérifier si on est destinataire principal
-isMainRecipient(email) {
-    if (!email.toRecipients || !Array.isArray(email.toRecipients)) {
-        return false;
-    }
-    
-    const currentUserEmail = this.getCurrentUserEmail();
-    if (!currentUserEmail) {
-        return email.toRecipients.length > 0;
-    }
-    
-    return email.toRecipients.some(recipient => {
-        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-        return recipientEmail === currentUserEmail.toLowerCase();
-    });
-}
-
-
-// CategoryManager.js - Remplacer analyzeAllCategories() vers ligne 1530
-
-analyzeAllCategories(content) {
-    const results = {};
-    const activeCategories = this.getActiveCategories();
-    
-    // IMPORTANT: Toujours inclure TOUTES les catégories personnalisées
-    const customCategoryIds = Object.keys(this.customCategories);
-    
-    if (this.debugMode) {
-        console.log('[CategoryManager] 🎯 Analyse avec:');
-        console.log('  - Catégories actives:', activeCategories);
-        console.log('  - Catégories personnalisées:', customCategoryIds);
-    }
-    
-    // Analyser toutes les catégories (standard + personnalisées)
-    const allCategoriesToAnalyze = new Set([
-        ...Object.keys(this.weightedKeywords),
-        ...customCategoryIds
-    ]);
-    
-    for (const categoryId of allCategoriesToAnalyze) {
-        // Vérifier si la catégorie est active OU personnalisée OU spéciale
-        const isActive = activeCategories.includes(categoryId);
-        const isCustom = customCategoryIds.includes(categoryId);
-        const isSpecial = ['marketing_news', 'cc'].includes(categoryId);
-        
-        if (!isActive && !isCustom && !isSpecial) {
-            continue;
-        }
-        
-        // Vérifier que la catégorie existe
-        if (!this.categories[categoryId]) {
-            console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} non trouvée`);
-            continue;
-        }
-        
-        // Obtenir les mots-clés (depuis weightedKeywords ou catégorie personnalisée)
-        let keywords = this.weightedKeywords[categoryId];
-        
-        // Pour les catégories personnalisées, charger depuis customCategories si nécessaire
-        if (isCustom && (!keywords || this.isEmptyKeywords(keywords))) {
-            const customCat = this.customCategories[categoryId];
-            if (customCat && customCat.keywords) {
-                keywords = customCat.keywords;
-                // S'assurer que les mots-clés sont dans weightedKeywords
-                this.weightedKeywords[categoryId] = keywords;
-            }
-        }
-        
-        // Vérifier si la catégorie a des mots-clés
-        if (!keywords || this.isEmptyKeywords(keywords)) {
-            if (isCustom) {
-                console.warn(`[CategoryManager] ⚠️ Catégorie personnalisée ${categoryId} (${this.categories[categoryId]?.name}) sans mots-clés`);
-            }
-            continue;
-        }
-        
-        // Calculer le score
-        const score = this.calculateScore(content, keywords, categoryId);
-        
-        results[categoryId] = {
-            category: categoryId,
-            score: score.total,
-            hasAbsolute: score.hasAbsolute,
-            matches: score.matches,
-            confidence: this.calculateConfidence(score),
-            priority: this.categories[categoryId]?.priority || 50,
-            isCustom: isCustom
-        };
-        
-        if (this.debugMode && score.total > 0) {
-            console.log(`[CategoryManager] 📊 ${categoryId}: ${score.total}pts (${score.matches.length} matches)`);
-        }
-    }
-    
-    return results;
-}
-
-// Méthode helper pour vérifier si les mots-clés sont vides
-isEmptyKeywords(keywords) {
-    return !keywords || (
-        (!keywords.absolute || keywords.absolute.length === 0) &&
-        (!keywords.strong || keywords.strong.length === 0) &&
-        (!keywords.weak || keywords.weak.length === 0)
-    );
-}
-
-// CategoryManager.js - Remplacer selectByPriorityWithThreshold() complètement
-
-selectByPriorityWithThreshold(results) {
-    // SEUILS AJUSTÉS pour avoir des emails "other"
-    const MIN_SCORE_THRESHOLD = 30; // Augmenté pour être plus sélectif
-    const MIN_CONFIDENCE_THRESHOLD = 0.5; // Augmenté pour plus de précision
-    
-    const sortedResults = Object.values(results)
-        .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
-        .sort((a, b) => {
-            // Si un a un match absolu et pas l'autre, privilégier celui avec absolu
-            if (a.hasAbsolute && !b.hasAbsolute) return -1;
-            if (!a.hasAbsolute && b.hasAbsolute) return 1;
-            
-            // Priorité d'abord
-            if (a.priority !== b.priority) {
-                return b.priority - a.priority;
-            }
-            
-            // Puis score
-            return b.score - a.score;
-        });
-    
-    if (this.debugMode) {
-        console.log('[CategoryManager] 📊 Scores par catégorie:');
-        sortedResults.forEach(r => {
-            console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence}, hasAbsolute: ${r.hasAbsolute})`);
-        });
-    }
-    
-    const bestResult = sortedResults[0];
-    
-    if (bestResult) {
-        console.log(`[CategoryManager] ✅ Catégorie sélectionnée: ${bestResult.category} (${bestResult.score}pts, ${Math.round(bestResult.confidence * 100)}%)`);
-        return {
-            category: bestResult.category,
-            score: bestResult.score,
-            confidence: bestResult.confidence,
-            matchedPatterns: bestResult.matches,
-            hasAbsolute: bestResult.hasAbsolute
-        };
-    }
-    
-    // CORRECTION CRITIQUE: Si aucun résultat au-dessus du seuil, vérifier si fallback possible
-    const allSorted = Object.values(results)
-        .filter(r => r.score > 0)
-        .sort((a, b) => b.score - a.score);
-    
-    // NOUVEAU: Fallback plus strict - seulement si score >= 20 ET confiance >= 0.4
-    if (allSorted.length > 0 && allSorted[0].score >= 20 && allSorted[0].confidence >= 0.4) {
-        const fallback = allSorted[0];
-        console.log(`[CategoryManager] 📌 Utilisation fallback: ${fallback.category} (${fallback.score}pts, ${Math.round(fallback.confidence * 100)}%)`);
-        return {
-            category: fallback.category,
-            score: fallback.score,
-            confidence: fallback.confidence,
-            matchedPatterns: fallback.matches,
-            hasAbsolute: fallback.hasAbsolute
-        };
-    }
-    
-    // CORRECTION FINALE: Retourner explicitement "other" si rien ne correspond
-    console.log('[CategoryManager] 📌 Aucune catégorie correspondante, classification "other"');
-    return {
-        category: 'other',
-        score: 0,
-        confidence: 0,
-        matchedPatterns: [],
-        hasAbsolute: false,
-        reason: 'below_threshold'
-    };
-}
-    detectByDomain(results) {
-    // Mapping domaine -> catégorie pour les cas courants
-    const domainMappings = {
-        'linkedin': 'commercial',
-        'indeed': 'commercial',
-        'github': 'project',
-        'gitlab': 'project',
-        'jira': 'project',
-        'asana': 'project',
-        'trello': 'project',
-        'slack': 'internal',
-        'teams': 'meetings',
-        'zoom': 'meetings',
-        'meet': 'meetings',
-        'paypal': 'finance',
-        'stripe': 'finance',
-        'bank': 'finance',
-        'invoice': 'finance',
-        'support': 'support',
-        'help': 'support',
-        'noreply': 'notifications',
-        'notification': 'notifications',
-        'alert': 'security',
-        'security': 'security'
-    };
-    
-    // Extraire le domaine depuis le contexte (à implémenter selon votre structure)
-    // Pour l'instant, retourne null
-    return null;
-}
-
-// CategoryManager.js - Remplacer complètement calculateScore()
-
-calculateScore(content, keywords, categoryId) {
-    let totalScore = 0;
-    let hasAbsolute = false;
-    const matches = [];
-    const text = content.text;
-    
-    // NOUVEAU: Pénalité forte pour les catégories professionnelles si email personnel détecté
-    const personalIndicators = ['papa', 'maman', 'bises', 'bisous', 'famille'];
-    const hasPersonalContent = personalIndicators.some(indicator => text.includes(indicator));
-    
-    if (hasPersonalContent && ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
-        totalScore -= 50; // Forte pénalité
-        matches.push({ keyword: 'personal_content_penalty', type: 'penalty', score: -50 });
-    }
-    
-    // Bonus de base pour certaines catégories souvent mal détectées
-    const categoryBonus = {
-        'project': 10,
-        'cc': 5,
-        'security': 10,
-        'hr': 10,
-        'tasks': 15,
-        'finance': 10,
-        'marketing_news': 5 // Petit bonus pour marketing
-    };
-    
-    if (categoryBonus[categoryId]) {
-        totalScore += categoryBonus[categoryId];
-        matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus[categoryId] });
-    }
-    
-    // NOUVEAU: Bonus spécial pour "disable notifications" en marketing_news
-    if (categoryId === 'marketing_news') {
-        const notificationKeywords = [
-            'disable these notifications',
-            'turn off notifications',
-            'manage notifications',
-            'notification settings'
-        ];
-        
-        notificationKeywords.forEach(keyword => {
-            if (text.includes(keyword)) {
-                totalScore += 50; // Bonus fort
-                matches.push({ keyword: keyword, type: 'notification_keyword', score: 50 });
-            }
-        });
-    }
-    
-    // NOUVEAU: Détection spéciale pour les corrections de documents
-    if (categoryId === 'project' || categoryId === 'tasks') {
-        const correctionKeywords = [
-            'document corrigé',
-            'corrections',
-            'corrigé',
-            'modifié',
-            'ci-joint',
-            'présentation'
-        ];
-        
-        correctionKeywords.forEach(keyword => {
-            if (text.includes(keyword)) {
-                totalScore += 30;
-                matches.push({ keyword: keyword, type: 'correction_keyword', score: 30 });
-            }
-        });
-    }
-    
-    // Test des exclusions en premier
-    if (keywords.exclusions && keywords.exclusions.length > 0) {
-        for (const exclusion of keywords.exclusions) {
-            if (this.findInText(text, exclusion)) {
-                let penalty = 50;
-                
-                // Pénalité plus forte pour contenu personnel dans catégories professionnelles
-                if (personalIndicators.includes(exclusion) && 
-                    ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
-                    penalty = 100;
-                }
-                
-                totalScore -= penalty;
-                matches.push({ keyword: exclusion, type: 'exclusion', score: -penalty });
-            }
-        }
-    }
-    
-    // Test des mots-clés absolus
-    if (keywords.absolute && keywords.absolute.length > 0) {
-        for (const keyword of keywords.absolute) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 100;
-                hasAbsolute = true;
-                matches.push({ keyword, type: 'absolute', score: 100 });
-                
-                // Bonus supplémentaire si dans le sujet
-                if (content.subject && this.findInText(content.subject, keyword)) {
-                    totalScore += 50;
-                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
-                }
-            }
-        }
-    }
-    
-    // Test des mots-clés forts
-    if (keywords.strong && keywords.strong.length > 0) {
-        let strongMatches = 0;
-        for (const keyword of keywords.strong) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 40;
-                strongMatches++;
-                matches.push({ keyword, type: 'strong', score: 40 });
-                
-                // Bonus si dans le sujet
-                if (content.subject && this.findInText(content.subject, keyword)) {
-                    totalScore += 20;
-                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 20 });
-                }
-            }
-        }
-        
-        // Bonus si plusieurs mots-clés forts matchent
-        if (strongMatches >= 2) {
-            totalScore += 30;
-            matches.push({ keyword: 'multiple_strong_matches', type: 'bonus', score: 30 });
-        }
-    }
-    
-    // Test des mots-clés faibles
-    if (keywords.weak && keywords.weak.length > 0) {
-        let weakMatches = 0;
-        for (const keyword of keywords.weak) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 15;
-                weakMatches++;
-                matches.push({ keyword, type: 'weak', score: 15 });
-            }
-        }
-        
-        // Bonus si beaucoup de mots faibles matchent
-        if (weakMatches >= 3) {
-            totalScore += 20;
-            matches.push({ keyword: 'multiple_weak_matches', type: 'bonus', score: 20 });
-        }
-    }
-    
-    // Appliquer bonus de domaine
-    this.applyEnhancedDomainBonus(content, categoryId, matches, totalScore);
-    
-    return { 
-        total: Math.max(0, totalScore), 
-        hasAbsolute, 
-        matches 
-    };
-}
-
-// Ajouter ces méthodes dans CategoryManager.js
-
-getCategoryFilters(categoryId) {
-    if (!this.categories[categoryId]) {
-        return {
-            includeDomains: [],
-            excludeDomains: [],
-            includeEmails: [],
-            excludeEmails: []
-        };
-    }
-    
-    // Charger depuis le stockage ou utiliser les valeurs par défaut
-    const filters = this.categoryFilters?.[categoryId] || this.categories[categoryId].filters || {
-        includeDomains: [],
-        excludeDomains: [],
-        includeEmails: [],
-        excludeEmails: []
-    };
-    
-    return {
-        includeDomains: filters.includeDomains || [],
-        excludeDomains: filters.excludeDomains || [],
-        includeEmails: filters.includeEmails || [],
-        excludeEmails: filters.excludeEmails || []
-    };
-}
-
-updateCategoryFilters(categoryId, filters) {
-    if (!this.categories[categoryId]) {
-        throw new Error('Catégorie non trouvée');
-    }
-    
-    console.log(`[CategoryManager] Mise à jour filtres pour ${categoryId}:`, filters);
-    
-    // Initialiser si nécessaire
-    if (!this.categoryFilters) {
-        this.categoryFilters = {};
-    }
-    
-    this.categoryFilters[categoryId] = {
-        includeDomains: filters.includeDomains || [],
-        excludeDomains: filters.excludeDomains || [],
-        includeEmails: filters.includeEmails || [],
-        excludeEmails: filters.excludeEmails || []
-    };
-    
-    // Si c'est une catégorie personnalisée, sauvegarder
-    if (this.customCategories[categoryId]) {
-        this.customCategories[categoryId].filters = this.categoryFilters[categoryId];
-        this.saveCustomCategories();
-    } else {
-        // Pour les catégories standard, sauvegarder dans localStorage séparément
-        this.saveCategoryFilters();
-    }
-    
-    console.log(`[CategoryManager] Filtres mis à jour pour ${categoryId}`);
-    
-    // Notifier les changements
-    setTimeout(() => {
-        this.dispatchEvent('categoryFiltersUpdated', { 
-            categoryId, 
-            filters: this.categoryFilters[categoryId] 
-        });
-    }, 10);
-}
-
-saveCategoryFilters() {
-    try {
-        localStorage.setItem('categoryFilters', JSON.stringify(this.categoryFilters || {}));
-        console.log('[CategoryManager] Filtres de catégories sauvegardés');
-    } catch (error) {
-        console.error('[CategoryManager] Erreur sauvegarde filtres:', error);
-    }
-}
-
-loadCategoryFilters() {
-    try {
-        const saved = localStorage.getItem('categoryFilters');
-        this.categoryFilters = saved ? JSON.parse(saved) : {};
-        console.log('[CategoryManager] Filtres de catégories chargés');
-    } catch (error) {
-        console.error('[CategoryManager] Erreur chargement filtres:', error);
-        this.categoryFilters = {};
-    }
-}
-
-// Modifier la méthode analyzeEmail pour prendre en compte les filtres
-analyzeEmailWithFilters(email) {
-    const baseAnalysis = this.analyzeEmail(email);
-    
-    // Si l'email est déjà bien catégorisé avec un score élevé, on peut le garder
-    if (baseAnalysis.category !== 'other' && baseAnalysis.score >= 100 && baseAnalysis.hasAbsolute) {
-        return baseAnalysis;
-    }
-    
-    // Vérifier les filtres d'inclusion/exclusion pour chaque catégorie
-    const emailDomain = this.extractDomain(email.from?.emailAddress?.address);
-    const emailAddress = email.from?.emailAddress?.address?.toLowerCase();
-    
-    let bestMatch = null;
-    let highestPriority = -1;
-    
-    Object.entries(this.categories).forEach(([categoryId, category]) => {
-        const filters = this.getCategoryFilters(categoryId);
-        
-        // Vérifier les exclusions d'abord
-        if (filters.excludeDomains?.includes(emailDomain) || 
-            filters.excludeEmails?.includes(emailAddress)) {
-            // Cette catégorie est exclue pour cet email
-            return;
-        }
-        
-        // Vérifier les inclusions
-        if (filters.includeDomains?.includes(emailDomain) || 
-            filters.includeEmails?.includes(emailAddress)) {
-            // Cette catégorie a une inclusion directe
-            const priority = category.priority || 50;
-            if (priority > highestPriority) {
-                highestPriority = priority;
-                bestMatch = {
-                    category: categoryId,
-                    score: 150, // Score élevé pour les inclusions directes
-                    confidence: 0.95,
-                    matchedPatterns: [{
-                        keyword: filters.includeDomains?.includes(emailDomain) ? 
-                            `domain:${emailDomain}` : `email:${emailAddress}`,
-                        type: 'filter',
-                        score: 150
-                    }],
-                    hasAbsolute: true,
-                    matchedByFilter: true
-                };
-            }
-        }
-    });
-    
-    // Si on a trouvé une correspondance par filtre, l'utiliser
-    if (bestMatch) {
-        return bestMatch;
-    }
-    
-    // Sinon, retourner l'analyse de base
-    return baseAnalysis;
-}
-
-// Ajouter cette méthode dans l'initialisation
-initializeFilters() {
-    this.loadCategoryFilters();
-    console.log('[CategoryManager] Filtres initialisés');
-}
-
-applyEnhancedDomainBonus(content, categoryId, matches, totalScore) {
-    const domainBonuses = {
-        security: ['microsoft', 'google', 'apple', 'security', 'auth', '2fa', 'verification'],
-        finance: ['gouv.fr', 'impots', 'bank', 'paypal', 'stripe', 'invoice', 'billing'],
-        marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing', 'sendinblue', 'mailjet'],
-        notifications: ['noreply', 'notification', 'donotreply', 'automated', 'system'],
-        project: ['github', 'gitlab', 'jira', 'asana', 'trello', 'confluence', 'bitbucket'],
-        hr: ['workday', 'bamboohr', 'adp', 'payroll', 'hr', 'recruiting'],
-        meetings: ['zoom', 'teams', 'meet', 'webex', 'gotomeeting', 'calendar'],
-        support: ['zendesk', 'freshdesk', 'helpdesk', 'support', 'ticket']
-    };
-    
-    if (domainBonuses[categoryId]) {
-        for (const domainKeyword of domainBonuses[categoryId]) {
-            if (content.domain.includes(domainKeyword)) {
-                const bonus = 40; // Bonus uniforme plus élevé
-                totalScore += bonus;
-                matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
-                break;
-            }
-        }
-    }
-}
-
-    applyDomainBonus(content, categoryId, matches, totalScore) {
-        const domainBonuses = {
-            security: ['microsoft', 'google', 'apple', 'security'],
-            finance: ['gouv.fr', 'impots', 'bank', 'paypal'],
-            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing'],
-            notifications: ['noreply', 'notification', 'donotreply']
-        };
-        
-        if (domainBonuses[categoryId]) {
-            for (const domainKeyword of domainBonuses[categoryId]) {
-                if (content.domain.includes(domainKeyword)) {
-                    const bonus = categoryId === 'marketing_news' ? 30 : 50;
-                    totalScore += bonus;
-                    matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
-                    break;
-                }
-            }
-        }
-    }
-
-    // ================================================
-    // VÉRIFICATION DES EXCLUSIONS GLOBALES (inchangé)
-    // ================================================
-    isGloballyExcluded(content, email) {
-        const exclusions = this.settings.categoryExclusions;
-        if (!exclusions) return false;
-        
-        // Vérifier les domaines exclus
-        if (exclusions.domains && exclusions.domains.length > 0) {
-            for (const domain of exclusions.domains) {
-                if (content.domain.includes(domain.toLowerCase())) {
-                    return true;
-                }
-            }
-        }
-        
-        // Vérifier les emails exclus
-        if (exclusions.emails && exclusions.emails.length > 0) {
-            const emailAddress = email.from?.emailAddress?.address?.toLowerCase();
-            if (emailAddress && exclusions.emails.includes(emailAddress)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES (inchangées)
-    // ================================================
-    analyzeCategory(content, keywords) {
-        return this.calculateScore(content, keywords, 'single');
-    }
-
-// CategoryManager.js - Méthode extractCompleteContent() améliorée (remplacer vers ligne 1720)
-
-extractCompleteContent(email) {
-    let allText = '';
-    let subject = '';
-    
-    // IMPORTANT: Traiter le sujet avec un poids très élevé
-    if (email.subject && email.subject.trim()) {
-        subject = email.subject;
-        // Répéter le sujet 10 fois pour lui donner beaucoup plus de poids
-        allText += (email.subject + ' ').repeat(10);
-    } else {
-        // Si pas de sujet, ajouter un marqueur pour la détection
-        subject = '[SANS_SUJET]';
-        allText += 'sans sujet email sans objet ';
-    }
-    
-    // Extraire l'expéditeur
-    if (email.from?.emailAddress?.address) {
-        allText += (email.from.emailAddress.address + ' ').repeat(3);
-    }
-    if (email.from?.emailAddress?.name) {
-        allText += (email.from.emailAddress.name + ' ').repeat(3);
-    }
-    
-    // Extraire les destinataires (important pour détecter si on est en copie)
-    if (email.toRecipients && Array.isArray(email.toRecipients)) {
-        email.toRecipients.forEach(recipient => {
-            if (recipient.emailAddress?.address) {
-                allText += recipient.emailAddress.address + ' ';
-            }
-            if (recipient.emailAddress?.name) {
-                allText += recipient.emailAddress.name + ' ';
-            }
-        });
-    }
-    
-    // Extraire les CC
-    if (email.ccRecipients && Array.isArray(email.ccRecipients)) {
-        email.ccRecipients.forEach(recipient => {
-            if (recipient.emailAddress?.address) {
-                allText += recipient.emailAddress.address + ' ';
-            }
-            if (recipient.emailAddress?.name) {
-                allText += recipient.emailAddress.name + ' ';
-            }
-        });
-    }
-    
-    // Extraire le contenu du corps
-    if (email.bodyPreview) {
-        allText += email.bodyPreview + ' ';
-    }
-    
-    if (email.body?.content) {
-        const cleanedBody = this.cleanHtml(email.body.content);
-        allText += cleanedBody + ' ';
-        
-        // Extraire les mots importants du corps (en majuscules)
-        const importantWords = cleanedBody.match(/\b[A-Z]{2,}\b/g);
-        if (importantWords) {
-            allText += importantWords.join(' ') + ' ';
-        }
-    }
-    
-    // Analyser le contexte de l'email pour détecter des patterns
-    const contextClues = this.extractContextClues(email);
-    allText += contextClues + ' ';
-    
-    return {
-        text: allText.toLowerCase().trim(),
-        subject: subject.toLowerCase(),
-        domain: this.extractDomain(email.from?.emailAddress?.address),
-        hasHtml: !!(email.body?.content && email.body.content.includes('<')),
-        length: allText.length,
-        hasNoSubject: !email.subject || !email.subject.trim(),
-        rawSubject: email.subject || ''
-    };
-}
-
-// Nouvelle méthode pour extraire des indices contextuels
-extractContextClues(email) {
-    let clues = '';
-    
-    // Détecter les patterns de réponse/transfert
-    const subject = email.subject || '';
-    if (subject.match(/^(RE:|FW:|Fwd:|Tr:)/i)) {
-        clues += ' conversation reply response ';
-    }
-    
-    // Détecter les mentions de documents
-    const body = email.body?.content || email.bodyPreview || '';
-    if (body.match(/ci-joint|attached|attachment|pièce jointe|document/i)) {
-        clues += ' document attachment piece jointe ';
-    }
-    
-    // Détecter les formules de politesse familiales
-    if (body.match(/\b(papa|maman|bises|bisous)\b/i)) {
-        clues += ' famille family personal personnel ';
-    }
-    
-    // Détecter les mentions commerciales
-    if (body.match(/\b(commande|order|facture|invoice|livraison|delivery|n°|numéro)\b/i)) {
-        clues += ' commerce order commande achat vente ';
-    }
-    
-    return clues;
-}
-
-    cleanHtml(html) {
-        if (!html) return '';
-        return html
-            .replace(/<a[^>]*>(.*?)<\/a>/gi, ' $1 ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/&[^;]+;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    extractDomain(email) {
-        if (!email || !email.includes('@')) return 'unknown';
-        return email.split('@')[1]?.toLowerCase() || 'unknown';
-    }
-
-// CategoryManager.js - Méthode findInText() corrigée (remplacer vers ligne 1850)
-
-findInText(text, keyword) {
-    if (!text || !keyword) return false;
-    
-    // Normalisation complète pour gérer tous les cas
-    const normalizedText = text.toLowerCase()
-        .normalize('NFD') // Décomposer les caractères accentués
-        .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
-        .replace(/[éèêëÉÈÊË]/gi, 'e')
-        .replace(/[àâäÀÂÄ]/gi, 'a')
-        .replace(/[ùûüÙÛÜ]/gi, 'u')
-        .replace(/[çÇ]/gi, 'c')
-        .replace(/[îïÎÏ]/gi, 'i')
-        .replace(/[ôöÔÖ]/gi, 'o')
-        .replace(/['']/g, "'") // Normaliser les apostrophes
-        .replace(/[-_]/g, ' ') // Remplacer tirets et underscores par espaces
-        .replace(/\s+/g, ' ') // Normaliser les espaces multiples
-        .trim();
-    
-    const normalizedKeyword = keyword.toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[éèêëÉÈÊË]/gi, 'e')
-        .replace(/[àâäÀÂÄ]/gi, 'a')
-        .replace(/[ùûüÙÛÜ]/gi, 'u')
-        .replace(/[çÇ]/gi, 'c')
-        .replace(/[îïÎÏ]/gi, 'i')
-        .replace(/[ôöÔÖ]/gi, 'o')
-        .replace(/['']/g, "'")
-        .replace(/[-_]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    
-    // Recherche avec word boundaries pour éviter les faux positifs
-    // Par exemple, ne pas matcher "commande" dans "commander"
-    const wordBoundaryRegex = new RegExp(`\\b${this.escapeRegex(normalizedKeyword)}\\b`, 'i');
-    
-    return wordBoundaryRegex.test(normalizedText) || normalizedText.includes(normalizedKeyword);
-}
-
-// Méthode helper pour échapper les caractères spéciaux regex
-escapeRegex(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-    calculateConfidence(score) {
-        if (score.hasAbsolute) return 0.95;
-        if (score.total >= 200) return 0.90;
-        if (score.total >= 150) return 0.85;
-        if (score.total >= 100) return 0.80;
-        if (score.total >= 80) return 0.75;
-        if (score.total >= 60) return 0.70;
-        if (score.total >= 40) return 0.60;
-        if (score.total >= 30) return 0.55;
-        return 0.40;
-    }
-
-    isSpamEmail(email) {
-        if (email.parentFolderId) {
-            const folderInfo = email.parentFolderId.toLowerCase();
-            if (folderInfo.includes('junk') || 
-                folderInfo.includes('spam') || 
-                folderInfo.includes('unwanted') ||
-                folderInfo.includes('indésirable')) {
-                return true;
-            }
-        }
-        
-        if (email.categories && Array.isArray(email.categories)) {
-            const hasSpamCategory = email.categories.some(cat => 
-                cat.toLowerCase().includes('spam') ||
-                cat.toLowerCase().includes('junk') ||
-                cat.toLowerCase().includes('indésirable')
-            );
-            if (hasSpamCategory) return true;
-        }
-        
-        return false;
-    }
-// CategoryManager.js - Méthode isInCC() corrigée (remplacer vers ligne 1950)
-
-// CategoryManager.js - Remplacer la méthode isInCC() vers ligne 1950
-
-isInCC(email) {
-    // Si pas de CC, ce n'est pas un email en CC
-    if (!email.ccRecipients || !Array.isArray(email.ccRecipients) || email.ccRecipients.length === 0) {
-        return false;
-    }
-    
-    const currentUserEmail = this.getCurrentUserEmail();
-    
-    if (!currentUserEmail) {
-        console.log('[CategoryManager] ⚠️ Email utilisateur non trouvé');
-        return false;
-    }
-    
-    // Vérifier si l'utilisateur est dans TO
-    const isInToList = email.toRecipients?.some(recipient => {
-        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-        return recipientEmail === currentUserEmail.toLowerCase();
-    }) || false;
-    
-    // Vérifier si l'utilisateur est dans CC
-    const isInCCList = email.ccRecipients.some(recipient => {
-        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-        return recipientEmail === currentUserEmail.toLowerCase();
-    });
-    
-    // IMPORTANT: On est en CC seulement si on est dans CC ET PAS dans TO
-    const result = isInCCList && !isInToList;
-    
-    if (result) {
-        console.log('[CategoryManager] 📋 Email en CC détecté (pas destinataire principal):', {
-            subject: email.subject?.substring(0, 50),
-            inTo: isInToList,
-            inCC: isInCCList
-        });
-    }
-    
-    return result;
-}
-// Méthode getCurrentUserEmail() améliorée (remplacer vers ligne 1970)
-
-getCurrentUserEmail() {
-    try {
-        // Essayer plusieurs sources
-        const userInfo = localStorage.getItem('currentUserInfo');
-        if (userInfo) {
-            const parsed = JSON.parse(userInfo);
-            return parsed.email || parsed.userPrincipalName || parsed.mail;
-        }
-        
-        // Essayer depuis le token MSAL
-        const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
-        if (msalAccounts.length > 0) {
-            const firstAccount = localStorage.getItem(msalAccounts[0]);
-            if (firstAccount) {
-                const account = JSON.parse(firstAccount);
-                return account.username || account.preferred_username;
-            }
-        }
-        
-        // Essayer depuis AuthService
-        if (window.authService && typeof window.authService.getCurrentUser === 'function') {
-            const user = window.authService.getCurrentUser();
-            if (user) {
-                return user.email || user.userPrincipalName || user.username;
-            }
-        }
-        
-    } catch (e) {
-        console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur:', e);
-    }
-    return null;
-}
-    getCurrentUserEmail() {
-        try {
-            const userInfo = localStorage.getItem('currentUserInfo');
-            if (userInfo) {
-                const parsed = JSON.parse(userInfo);
-                return parsed.email || parsed.userPrincipalName;
-            }
-        } catch (e) {
-            console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur');
-        }
-        return null;
-    }
-
-    // ================================================
-    // MÉTHODES PUBLIQUES (inchangées)
-    // ================================================
-    getCategories() {
-        return this.categories;
-    }
-    
-    getCategory(categoryId) {
-        if (categoryId === 'all') {
-            return { id: 'all', name: 'Tous', icon: '📧', color: '#1e293b' };
-        }
-        if (categoryId === 'other') {
-            return { id: 'other', name: 'Non classé', icon: '❓', color: '#64748b' };
-        }
-        if (categoryId === 'spam') {
-            return { id: 'spam', name: 'Spam', icon: '🚫', color: '#dc2626' };
-        }
-        if (categoryId === 'excluded') {
-            return { id: 'excluded', name: 'Exclu', icon: '🚫', color: '#6b7280' };
-        }
-        return this.categories[categoryId] || null;
-    }
-    
-    getCategoryStats() {
-        const stats = {
-            totalCategories: Object.keys(this.categories).length,
-            customCategories: Object.keys(this.customCategories).length,
-            activeCategories: this.getActiveCategories().length,
-            preselectedCategories: this.settings.taskPreselectedCategories?.length || 0,
-            totalKeywords: 0,
-            absoluteKeywords: 0,
-            strongKeywords: 0,
-            weakKeywords: 0,
-            exclusionKeywords: 0
-        };
-        
-        for (const keywords of Object.values(this.weightedKeywords)) {
-            if (keywords.absolute) stats.absoluteKeywords += keywords.absolute.length;
-            if (keywords.strong) stats.strongKeywords += keywords.strong.length;
-            if (keywords.weak) stats.weakKeywords += keywords.weak.length;
-            if (keywords.exclusions) stats.exclusionKeywords += keywords.exclusions.length;
-        }
-        
-        stats.totalKeywords = stats.absoluteKeywords + stats.strongKeywords + stats.weakKeywords + stats.exclusionKeywords;
-        return stats;
-    }
-    
-    // ================================================
-    // MÉTHODES DE TEST ET DEBUG (inchangées)
-    // ================================================
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-        console.log(`[CategoryManager] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
-    }
-    
-    testEmail(subject, body = '', from = 'test@example.com', expectedCategory = null) {
-        const testEmail = {
-            subject: subject,
-            body: { content: body },
-            bodyPreview: body.substring(0, 100),
-            from: { emailAddress: { address: from } },
-            toRecipients: [{ emailAddress: { address: 'user@example.com' } }],
-            receivedDateTime: new Date().toISOString()
-        };
-        
-        const result = this.analyzeEmail(testEmail);
-        
-        console.log('\n[CategoryManager] TEST RESULT:');
-        console.log(`Subject: "${subject}"`);
-        console.log(`From: ${from}`);
-        console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
-        console.log(`Score: ${result.score}pts`);
-        console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
-        console.log(`Matches:`, result.matchedPatterns);
-        
-        if (expectedCategory && result.category !== expectedCategory) {
-            console.log(`❌ FAILED - Expected ${expectedCategory}, got ${result.category}`);
-        } else {
-            console.log('✅ SUCCESS');
-        }
-        
-        return result;
-    }
-
-    testKeywords(categoryId, testText) {
-        const keywords = this.getCategoryKeywords(categoryId);
-        if (!keywords) {
-            console.error(`[CategoryManager] Catégorie ${categoryId} non trouvée`);
-            return null;
-        }
-
-        const content = {
-            text: testText.toLowerCase(),
-            subject: testText.toLowerCase(),
-            domain: 'test.com'
-        };
-
-        const result = this.calculateScore(content, keywords, categoryId);
-        
-        console.log(`\n[CategoryManager] TEST KEYWORDS - ${categoryId}:`);
-        console.log(`Text: "${testText}"`);
-        console.log(`Score: ${result.total}pts`);
-        console.log(`Has Absolute: ${result.hasAbsolute}`);
-        console.log(`Matches:`, result.matches);
-        console.log(`Confidence: ${Math.round(this.calculateConfidence(result) * 100)}%`);
-        
-        return result;
-    }
-
-    exportKeywords() {
-        const data = {
-            exportDate: new Date().toISOString(),
-            categories: {},
-            customCategories: this.customCategories
-        };
-
-        Object.entries(this.categories).forEach(([id, category]) => {
-            data.categories[id] = {
-                name: category.name,
-                description: category.description,
-                keywords: this.getCategoryKeywords(id)
-            };
-        });
-
-        return JSON.stringify(data, null, 2);
-    }
-
-    importKeywords(jsonData) {
-        try {
-            const data = JSON.parse(jsonData);
-            
-            if (data.categories) {
-                Object.entries(data.categories).forEach(([categoryId, categoryData]) => {
-                    if (this.categories[categoryId] && categoryData.keywords) {
-                        this.updateCategoryKeywords(categoryId, categoryData.keywords);
-                    }
-                });
-            }
-
-            if (data.customCategories) {
-                Object.entries(data.customCategories).forEach(([categoryId, categoryData]) => {
-                    if (!this.customCategories[categoryId]) {
-                        this.createCustomCategory(categoryData);
-                    }
-                });
-            }
-
-            console.log('[CategoryManager] Mots-clés importés avec succès');
             return true;
-            
         } catch (error) {
-            console.error('[CategoryManager] Erreur import mots-clés:', error);
+            console.error('[ModernDomainOrganizer] Erreur initialisation:', error);
+            this.showError('Erreur lors de l\'initialisation: ' + error.message);
             return false;
         }
     }
 
-    // ================================================
-    // LISTENER POUR ÉVÉNEMENTS (modifié pour ne pas dupliquer)
-    // ================================================
     setupEventListeners() {
-        if (this.eventListenersSetup) {
-            return;
+        try {
+            // Event listeners pour les boutons principaux
+            const startBtn = document.getElementById('startScanBtn');
+            const executeBtn = document.getElementById('executeSelectedBtn');
+            const saveBtn = document.getElementById('saveEmailBtn');
+            
+            if (startBtn) {
+                startBtn.addEventListener('click', () => this.startAnalysis());
+                console.log('[ModernDomainOrganizer] ✅ Event listener startScanBtn ajouté');
+            }
+            
+            if (executeBtn) {
+                executeBtn.addEventListener('click', () => this.executeSelectedAction());
+                console.log('[ModernDomainOrganizer] ✅ Event listener executeSelectedBtn ajouté');
+            }
+            
+            if (saveBtn) {
+                saveBtn.addEventListener('click', () => this.saveEmailChanges());
+                console.log('[ModernDomainOrganizer] ✅ Event listener saveEmailBtn ajouté');
+            }
+            
+            // Event listeners pour les types d'exécution
+            document.querySelectorAll('input[name="executionType"]').forEach(radio => {
+                radio.addEventListener('change', () => {
+                    console.log('[ModernDomainOrganizer] Type d\'exécution changé:', radio.value);
+                    this.updateExecutionButton();
+                });
+            });
+            
+            console.log('[ModernDomainOrganizer] ✅ Tous les event listeners configurés');
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur setup listeners:', error);
         }
+    }
 
-        // Écouter seulement les événements externes (pas les nôtres)
-        this.externalSettingsChangeHandler = (event) => {
-            // Ignorer nos propres événements
-            if (event.detail?.source === 'CategoryManager') {
+    setDefaultDates() {
+        try {
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+            
+            const startDate = document.getElementById('startDate');
+            const endDate = document.getElementById('endDate');
+            
+            if (startDate) startDate.valueAsDate = thirtyDaysAgo;
+            if (endDate) endDate.valueAsDate = today;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur dates par défaut:', error);
+        }
+    }
+
+    goToStep(stepName) {
+        try {
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            const stepElement = document.getElementById(`step-${stepName}`);
+            if (stepElement) {
+                stepElement.classList.remove('hidden');
+                this.updateStepProgress(stepName);
+                this.currentStep = stepName;
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur navigation:', error);
+        }
+    }
+
+    updateStepProgress(currentStep) {
+        try {
+            const steps = ['introduction', 'configuration', 'scanning', 'plan', 'execution'];
+            const currentIndex = steps.indexOf(currentStep);
+
+            document.querySelectorAll('.step').forEach((step, index) => {
+                step.classList.remove('active', 'completed');
+                
+                if (index < currentIndex) {
+                    step.classList.add('completed');
+                } else if (index === currentIndex) {
+                    step.classList.add('active');
+                }
+            });
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour progression:', error);
+        }
+    }
+
+    updateExecutionButton() {
+        try {
+            const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
+            const buttonText = document.getElementById('executeButtonText');
+            
+            if (buttonText) {
+                if (executionType === 'folders-only') {
+                    buttonText.textContent = 'Créer dossiers';
+                } else {
+                    buttonText.textContent = 'Exécution complète';
+                }
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour bouton:', error);
+        }
+    }
+
+    executeSelectedAction() {
+        try {
+            const executionType = document.querySelector('input[name="executionType"]:checked')?.value;
+            
+            if (executionType === 'folders-only') {
+                this.createFoldersOnly();
+            } else {
+                this.executeOrganization();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur action sélectionnée:', error);
+            this.showError('Erreur lors de l\'exécution: ' + error.message);
+        }
+    }
+
+    // Analyse avec gestion d'erreurs
+    async startAnalysis() {
+        if (this.isProcessing) return;
+        
+        try {
+            this.isProcessing = true;
+            this.clearErrors();
+            this.goToStep('scanning');
+            
+            const config = this.getConfigurationFromForm();
+            if (!this.validateConfiguration(config)) {
+                this.goToStep('configuration');
                 return;
             }
             
-            const { type, value } = event.detail;
-            console.log(`[CategoryManager] Reçu changement externe: ${type}`, value);
+            console.log('[ModernDomainOrganizer] Configuration:', config);
             
-            // Appliquer sans notifier (pour éviter les boucles)
-            this.syncQueue.push({
-                type,
-                value,
-                notifyModules: false,
-                timestamp: Date.now()
+            // Reset
+            this.emailsByDomain.clear();
+            this.allFolders.clear();
+            this.organizationPlan.clear();
+            this.expandedDomains.clear();
+            
+            // Étapes avec gestion d'erreurs
+            await this.executeWithProgress([
+                { percent: 5, message: 'Chargement des dossiers...', action: () => this.loadAllFolders() },
+                { percent: 20, message: 'Scan des emails...', action: () => this.scanEmails(config) },
+                { percent: 70, message: 'Analyse des domaines...', action: (emails) => this.analyzeDomains(emails, config) },
+                { percent: 90, message: 'Création du plan...', action: () => this.createOrganizationPlan() },
+                { percent: 100, message: 'Terminé !', action: () => this.showOrganizationPlan() }
+            ]);
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur analyse:', error);
+            this.showError('Erreur lors de l\'analyse: ' + error.message);
+            this.goToStep('configuration');
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+
+    async executeWithProgress(steps) {
+        let result = null;
+        
+        for (const step of steps) {
+            try {
+                this.updateProgress(step.percent, step.message);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (step.action) {
+                    result = await step.action(result);
+                }
+            } catch (error) {
+                throw new Error(`${step.message} - ${error.message}`);
+            }
+        }
+        
+        return result;
+    }
+
+    validateConfiguration(config) {
+        try {
+            if (!config.startDate || !config.endDate) {
+                this.showError('Veuillez sélectionner une période valide');
+                return false;
+            }
+            
+            const startDate = new Date(config.startDate);
+            const endDate = new Date(config.endDate);
+            
+            if (startDate >= endDate) {
+                this.showError('La date de début doit être antérieure à la date de fin');
+                return false;
+            }
+            
+            if (config.minEmails < 1 || config.minEmails > 100) {
+                this.showError('Le nombre minimum d\'emails doit être entre 1 et 100');
+                return false;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur validation:', error);
+            this.showError('Configuration invalide: ' + error.message);
+            return false;
+        }
+    }
+
+    getConfigurationFromForm() {
+        try {
+            const startDate = document.getElementById('startDate')?.value || '';
+            const endDate = document.getElementById('endDate')?.value || '';
+            const minEmails = parseInt(document.getElementById('minEmails')?.value) || 3;
+            const emailLimit = parseInt(document.getElementById('emailLimit')?.value) || 0;
+            
+            const excludeDomains = (document.getElementById('excludeDomains')?.value || '')
+                .split(',')
+                .map(d => d.trim())
+                .filter(d => d);
+            
+            const excludeEmails = (document.getElementById('excludeEmails')?.value || '')
+                .split('\n')
+                .map(e => e.trim())
+                .filter(e => e);
+
+            return { startDate, endDate, minEmails, emailLimit, excludeDomains, excludeEmails };
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur lecture config:', error);
+            throw new Error('Impossible de lire la configuration');
+        }
+    }
+async loadAllFolders() {
+    try {
+        console.log('[ModernDomainOrganizer] 🚀 Chargement COMPLET de tous les dossiers...');
+        
+        if (!window.authService?.isAuthenticated()) {
+            throw new Error('Non authentifié');
+        }
+        
+        const accessToken = await window.authService.getAccessToken();
+        this.allFolders.clear();
+        
+        // Charger d'abord tous les dossiers racine avec pagination
+        await this.loadAllRootFolders(accessToken);
+        
+        // Puis charger récursivement les sous-dossiers pour chaque dossier racine
+        const rootFolders = Array.from(this.allFolders.values()).filter(f => !f.parentFolderId);
+        
+        for (const rootFolder of rootFolders) {
+            if (rootFolder.childFolderCount > 0) {
+                await this.loadFoldersRecursively(accessToken, rootFolder.id, 1);
+            }
+        }
+        
+        console.log(`[ModernDomainOrganizer] 🎉 Total chargé: ${this.allFolders.size} dossiers`);
+        this.updateStat('existingFolders', this.allFolders.size);
+        
+        return Array.from(this.allFolders.values());
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur chargement dossiers:', error);
+        throw new Error('Impossible de charger les dossiers: ' + error.message);
+    }
+}
+
+// Nouvelle fonction pour charger tous les dossiers racine avec pagination
+async loadAllRootFolders(accessToken) {
+    try {
+        let hasMore = true;
+        let nextLink = 'https://graph.microsoft.com/v1.0/me/mailFolders?$top=100';
+        let totalLoaded = 0;
+        
+        while (hasMore) {
+            console.log(`[ModernDomainOrganizer] 📁 Chargement des dossiers racine (page ${Math.floor(totalLoaded / 100) + 1})...`);
+            
+            const response = await fetch(nextLink, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
             });
             
-            if (!this.syncInProgress) {
-                this.processSettingsChanges();
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[ModernDomainOrganizer] ❌ Erreur API:', errorText);
+                break;
+            }
+            
+            const data = await response.json();
+            
+            // Ajouter tous les dossiers de cette page
+            for (const folder of data.value) {
+                const folderKey = folder.displayName.toLowerCase().trim();
+                
+                // Éviter les doublons en utilisant l'ID comme clé de sécurité
+                const uniqueKey = this.allFolders.has(folderKey) 
+                    ? `${folderKey}_${folder.id.slice(-8)}`
+                    : folderKey;
+                
+                this.allFolders.set(uniqueKey, {
+                    id: folder.id,
+                    displayName: folder.displayName,
+                    totalItemCount: folder.totalItemCount || 0,
+                    parentFolderId: null, // Les dossiers racine n'ont pas de parent
+                    childFolderCount: folder.childFolderCount || 0,
+                    wellKnownName: folder.wellKnownName,
+                    depth: 0,
+                    fullPath: folder.displayName
+                });
+                
+                totalLoaded++;
+                console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}" (racine)`);
+            }
+            
+            // Vérifier s'il y a plus de pages
+            if (data['@odata.nextLink']) {
+                nextLink = data['@odata.nextLink'];
+                // Petite pause pour éviter le rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } else {
+                hasMore = false;
+            }
+        }
+        
+        console.log(`[ModernDomainOrganizer] ✅ ${totalLoaded} dossiers racine chargés`);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur chargement dossiers racine:', error);
+        throw error;
+    }
+}
+
+async loadFoldersRecursively(accessToken, parentId = null, depth = 0) {
+    try {
+        if (depth > 10) {
+            console.warn('[ModernDomainOrganizer] ⚠️ Profondeur maximale atteinte, arrêt récursion');
+            return;
+        }
+        
+        const url = parentId 
+            ? `https://graph.microsoft.com/v1.0/me/mailFolders/${parentId}/childFolders`
+            : 'https://graph.microsoft.com/v1.0/me/mailFolders';
+        
+        console.log(`[ModernDomainOrganizer] 📁 Chargement niveau ${depth}:`, parentId || 'racine');
+        
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[ModernDomainOrganizer] ❌ Erreur API:', errorText);
+            return;
+        }
+        
+        const data = await response.json();
+        console.log(`[ModernDomainOrganizer] ✅ ${data.value.length} dossiers trouvés au niveau ${depth}`);
+        
+        // Ajouter tous les dossiers de ce niveau
+        for (const folder of data.value) {
+            const folderKey = folder.displayName.toLowerCase().trim();
+            
+            // Éviter les doublons en utilisant l'ID comme clé de sécurité
+            const uniqueKey = this.allFolders.has(folderKey) 
+                ? `${folderKey}_${folder.id.slice(-8)}`
+                : folderKey;
+            
+            this.allFolders.set(uniqueKey, {
+                id: folder.id,
+                displayName: folder.displayName,
+                totalItemCount: folder.totalItemCount || 0,
+                parentFolderId: parentId, // Utiliser parentId au lieu de folder.parentFolderId
+                childFolderCount: folder.childFolderCount || 0,
+                wellKnownName: folder.wellKnownName,
+                depth: depth,
+                fullPath: this.buildFolderPath(folder.displayName, parentId)
+            });
+            
+            console.log(`[ModernDomainOrganizer] ➕ Ajouté: "${folder.displayName}" (niveau ${depth}, parent: ${parentId || 'racine'})`);
+            
+            // Charger récursivement les sous-dossiers si ils existent
+            if (folder.childFolderCount > 0) {
+                console.log(`[ModernDomainOrganizer] 📂 Chargement ${folder.childFolderCount} sous-dossiers de "${folder.displayName}"`);
+                await this.loadFoldersRecursively(accessToken, folder.id, depth + 1);
+                
+                // Petite pause pour éviter le rate limiting
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        }
+        
+    } catch (error) {
+        console.error(`[ModernDomainOrganizer] ❌ Erreur chargement niveau ${depth}:`, error);
+    }
+}
+buildFolderPath(folderName, parentId) {
+    try {
+        if (!parentId) {
+            return folderName;
+        }
+        
+        // Trouver le parent dans les dossiers déjà chargés par ID
+        const parent = Array.from(this.allFolders.values()).find(f => f.id === parentId);
+        if (parent) {
+            return `${parent.fullPath || parent.displayName} > ${folderName}`;
+        }
+        
+        return folderName;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur construction chemin:', error);
+        return folderName;
+    }
+}
+
+// Fonction helper pour compter tous les enfants
+countAllChildren(folder) {
+    let count = folder.children ? folder.children.length : 0;
+    if (folder.children) {
+        folder.children.forEach(child => {
+            count += this.countAllChildren(child);
+        });
+    }
+    return count;
+}
+buildFolderPath(folderName, parentId) {
+    try {
+        if (!parentId) {
+            return folderName;
+        }
+        
+        // Trouver le parent dans les dossiers déjà chargés
+        const parent = Array.from(this.allFolders.values()).find(f => f.id === parentId);
+        if (parent) {
+            return `${parent.fullPath || parent.displayName} > ${folderName}`;
+        }
+        
+        return folderName;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur construction chemin:', error);
+        return folderName;
+    }
+}
+addFolderToCache(folder) {
+    try {
+        if (!folder || !folder.id || !folder.displayName) {
+            console.warn('[ModernDomainOrganizer] ⚠️ Dossier invalide ignoré:', folder);
+            return;
+        }
+        
+        const folderKey = folder.displayName.toLowerCase().trim();
+        
+        // Éviter les doublons
+        if (this.allFolders.has(folderKey)) {
+            const existing = this.allFolders.get(folderKey);
+            if (existing.id === folder.id) {
+                return; // Déjà ajouté
+            }
+            // Si IDs différents, utiliser un nom unique
+            const uniqueKey = `${folderKey}_${folder.id.slice(-8)}`;
+            this.allFolders.set(uniqueKey, {
+                id: folder.id,
+                displayName: folder.displayName,
+                totalItemCount: folder.totalItemCount || 0,
+                parentFolderId: folder.parentFolderId,
+                wellKnownName: folder.wellKnownName,
+                childFolderCount: folder.childFolderCount || 0
+            });
+            console.log(`[ModernDomainOrganizer] 📁 Dossier ajouté avec clé unique: "${folder.displayName}" -> ${uniqueKey}`);
+        } else {
+            this.allFolders.set(folderKey, {
+                id: folder.id,
+                displayName: folder.displayName,
+                totalItemCount: folder.totalItemCount || 0,
+                parentFolderId: folder.parentFolderId,
+                wellKnownName: folder.wellKnownName,
+                childFolderCount: folder.childFolderCount || 0
+            });
+            console.log(`[ModernDomainOrganizer] 📁 Dossier ajouté: "${folder.displayName}"`);
+        }
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur ajout dossier au cache:', error);
+    }
+}
+    async scanEmails(config) {
+        try {
+            console.log('[ModernDomainOrganizer] Scan des emails...');
+            
+            if (!window.mailService) {
+                throw new Error('Service mail non disponible');
+            }
+            
+            const scanLimit = config.emailLimit === 0 ? 10000 : config.emailLimit;
+            
+            const options = {
+                top: Math.min(scanLimit, 10000), // Limitation de sécurité
+                orderBy: 'receivedDateTime desc'
+            };
+
+            if (config.startDate) options.startDate = config.startDate;
+            if (config.endDate) options.endDate = config.endDate;
+
+            const emails = await window.mailService.getEmailsFromFolder('inbox', options);
+            
+            if (!Array.isArray(emails)) {
+                throw new Error('Format d\'emails invalide');
+            }
+            
+            console.log(`[ModernDomainOrganizer] ${emails.length} emails récupérés`);
+            this.updateStat('scannedEmails', emails.length);
+            
+            return emails;
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur scan emails:', error);
+            throw new Error('Impossible de scanner les emails: ' + error.message);
+        }
+    }
+
+    async analyzeDomains(emails, config) {
+        try {
+            const domainCounts = new Map();
+            
+            console.log(`[ModernDomainOrganizer] Analyse de ${emails.length} emails...`);
+            
+            for (const email of emails) {
+                try {
+                    const domain = this.extractDomain(email);
+                    if (!domain) continue;
+                    
+                    if (this.shouldExcludeDomain(domain, config.excludeDomains)) continue;
+                    if (this.shouldExcludeEmail(email, config.excludeEmails)) continue;
+                    
+                    if (!domainCounts.has(domain)) {
+                        domainCounts.set(domain, {
+                            count: 0,
+                            emails: []
+                        });
+                    }
+                    
+                    const domainData = domainCounts.get(domain);
+                    domainData.count++;
+                    domainData.emails.push(email);
+                } catch (emailError) {
+                    console.warn('[ModernDomainOrganizer] Erreur traitement email:', emailError);
+                    // Continue avec l'email suivant
+                }
+            }
+
+            // Filtrer par seuil minimum
+            domainCounts.forEach((data, domain) => {
+                if (data.count >= config.minEmails) {
+                    this.emailsByDomain.set(domain, data);
+                }
+            });
+
+            console.log(`[ModernDomainOrganizer] ${this.emailsByDomain.size} domaines valides trouvés`);
+            this.updateStat('foundDomains', this.emailsByDomain.size);
+            
+            if (this.emailsByDomain.size === 0) {
+                throw new Error('Aucun domaine trouvé avec le seuil configuré');
+            }
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur analyse domaines:', error);
+            throw new Error('Erreur lors de l\'analyse des domaines: ' + error.message);
+        }
+    }
+
+    createOrganizationPlan() {
+        try {
+            this.organizationPlan.clear();
+            
+            let newFoldersCount = 0;
+            
+            this.emailsByDomain.forEach((data, domain) => {
+                try {
+                    const existingFolder = this.findExistingFolder(domain);
+                    
+                    if (existingFolder) {
+                        console.log(`[ModernDomainOrganizer] ✅ Dossier existant trouvé pour ${domain}: ${existingFolder.displayName}`);
+                        this.organizationPlan.set(domain, {
+                            domain,
+                            action: 'use-existing',
+                            targetFolder: existingFolder.displayName,
+                            targetFolderId: existingFolder.id,
+                            emailCount: data.count,
+                            emails: data.emails,
+                            selected: true
+                        });
+                    } else {
+                        console.log(`[ModernDomainOrganizer] 📁 Nouveau dossier nécessaire pour ${domain}`);
+                        this.organizationPlan.set(domain, {
+                            domain,
+                            action: 'create-new',
+                            targetFolder: domain,
+                            targetFolderId: null,
+                            emailCount: data.count,
+                            emails: data.emails,
+                            selected: true
+                        });
+                        newFoldersCount++;
+                    }
+                } catch (domainError) {
+                    console.warn(`[ModernDomainOrganizer] Erreur plan pour ${domain}:`, domainError);
+                }
+            });
+
+            this.updateStat('newFoldersNeeded', newFoldersCount);
+            console.log(`[ModernDomainOrganizer] Plan créé: ${this.organizationPlan.size} domaines, ${newFoldersCount} nouveaux dossiers`);
+            
+            if (this.organizationPlan.size === 0) {
+                throw new Error('Aucun plan d\'organisation créé');
+            }
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur création plan:', error);
+            throw new Error('Erreur lors de la création du plan: ' + error.message);
+        }
+    }
+
+    showOrganizationPlan() {
+        try {
+            this.goToStep('plan');
+            
+            const summary = document.getElementById('planSummary');
+            const container = document.getElementById('domainsContainer');
+            
+            if (!summary || !container) {
+                throw new Error('Éléments d\'interface manquants');
+            }
+            
+            this.displayPlanSummary(summary);
+            this.displayDomainsWithEmails(container);
+            this.updateTotalEmailsCount();
+            this.updateExecutionButton();
+            
+            // Réattacher les event listeners après affichage
+            setTimeout(() => {
+                this.setupEventListeners();
+            }, 100);
+            
+            console.log('[ModernDomainOrganizer] ✅ Plan d\'organisation affiché avec boutons');
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage plan:', error);
+            this.showError('Erreur lors de l\'affichage du plan: ' + error.message);
+        }
+    }
+
+    displayPlanSummary(summary) {
+        try {
+            const totalEmails = Array.from(this.organizationPlan.values())
+                .reduce((sum, plan) => sum + plan.emailCount, 0);
+            
+            const newFolders = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.action === 'create-new');
+            
+            const existingFolders = Array.from(this.organizationPlan.values())
+                .filter(plan => plan.action === 'use-existing');
+
+            summary.innerHTML = `
+                <span><strong>${this.organizationPlan.size}</strong> Domaines</span>
+                <span><strong>${totalEmails.toLocaleString()}</strong> Emails</span>
+                <span><strong>${newFolders.length}</strong> Nouveaux</span>
+                <span><strong>${existingFolders.length}</strong> Existants</span>
+            `;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage résumé:', error);
+        }
+    }
+
+    displayDomainsWithEmails(container) {
+        try {
+            container.innerHTML = '';
+            
+            const sortedDomains = Array.from(this.organizationPlan.entries())
+                .sort((a, b) => b[1].emailCount - a[1].emailCount);
+
+            sortedDomains.forEach(([domain, plan]) => {
+                try {
+                    const domainElement = this.createDomainElement(domain, plan);
+                    container.appendChild(domainElement);
+                } catch (elementError) {
+                    console.warn(`[ModernDomainOrganizer] Erreur élément ${domain}:`, elementError);
+                }
+            });
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage domaines:', error);
+        }
+    }
+
+createDomainElement(domain, plan) {
+    try {
+        const div = document.createElement('div');
+        div.className = 'domain-item';
+        div.dataset.domain = domain;
+        
+        const isExpanded = this.expandedDomains.has(domain);
+        if (isExpanded) {
+            div.classList.add('expanded');
+        }
+
+        const safeSubject = (email) => {
+            try {
+                return email.subject || '(Sans sujet)';
+            } catch {
+                return '(Erreur)';
             }
         };
 
-        window.addEventListener('settingsChanged', this.externalSettingsChangeHandler);
-        this.eventListenersSetup = true;
-        
-        console.log('[CategoryManager] Event listeners configurés (anti-boucle)');
-    }
+        const safeFrom = (email) => {
+            try {
+                return email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+            } catch {
+                return 'Inconnu';
+            }
+        };
 
-    // ================================================
-    // MÉTHODES DE VALIDATION (inchangées)
-    // ================================================
-    validateKeywords(keywords) {
-        const errors = [];
-        const types = ['absolute', 'strong', 'weak', 'exclusions'];
+        const safeDate = (email) => {
+            try {
+                return new Date(email.receivedDateTime).toLocaleDateString();
+            } catch {
+                return 'Date inconnue';
+            }
+        };
+
+        div.innerHTML = `
+            <div class="domain-header" onclick="window.modernDomainOrganizer.toggleDomain('${domain}')">
+                <input type="checkbox" class="domain-checkbox" ${plan.selected ? 'checked' : ''} 
+                       onclick="event.stopPropagation(); window.modernDomainOrganizer.toggleDomainSelection('${domain}')" 
+                       data-domain="${domain}">
+                
+                <button class="domain-expand">
+                    <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'}"></i>
+                </button>
+                
+                <div class="domain-info">
+                    <div class="domain-name">📧 ${domain}</div>
+                    <div class="domain-stats">
+                        ${plan.emailCount} emails • ${plan.emails.filter(e => e.selected !== false).length} sélectionnés
+                    </div>
+                </div>
+                
+                <div class="domain-actions" onclick="event.stopPropagation()">
+                    <input type="text" class="folder-input" value="${plan.targetFolder}" 
+                           placeholder="Nom du dossier" data-domain="${domain}"
+                           onchange="window.modernDomainOrganizer.updateFolderName('${domain}', this.value)">
+                    
+                    <span class="action-badge ${plan.action === 'create-new' ? 'action-new' : 'action-existing'}">
+                        ${plan.action === 'create-new' ? 'Nouveau' : 'Existant'}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="domain-content ${isExpanded ? 'expanded' : ''}">
+                <div class="emails-list">
+                    ${plan.emails.map((email) => {
+                        const currentFolder = email.customFolder || plan.targetFolder;
+                        const emailId = email.id.replace(/[^a-zA-Z0-9]/g, '_'); // ID sécurisé pour HTML
+                        
+                        return `
+                            <div class="email-item" data-email-id="${email.id}">
+                                <input type="checkbox" class="email-checkbox" ${email.selected !== false ? 'checked' : ''} 
+                                       onchange="window.modernDomainOrganizer.toggleEmailSelection('${domain}', '${email.id}')"
+                                       data-domain="${domain}" data-email-id="${email.id}">
+                                
+                                <div class="email-info">
+                                    <div class="email-subject" title="${safeSubject(email)}">
+                                        ${safeSubject(email)}
+                                    </div>
+                                    <div class="email-from">De: ${safeFrom(email)}</div>
+                                    <div class="email-date">${safeDate(email)}</div>
+                                </div>
+                                
+                                <div class="email-folder-selector">
+                                    <select class="email-folder-select" 
+                                            data-email-id="${email.id}" 
+                                            data-domain="${domain}"
+                                            onchange="window.modernDomainOrganizer.updateEmailFolder('${domain}', '${email.id}', this.value)"
+                                            onclick="event.stopPropagation()">
+                                        <option value="_default" ${!email.customFolder ? 'selected' : ''}>
+                                            📁 ${plan.targetFolder} (défaut)
+                                        </option>
+                                        <option value="_advanced">
+                                            🔍 Sélectionner un dossier...
+                                        </option>
+                                        <option value="_new_folder" ${email.customFolder && !this.findExistingFolderByName(email.customFolder) ? 'selected' : ''}>
+                                            ✨ Nouveau dossier...
+                                        </option>
+                                    </select>
+                                    
+                                    ${email.customFolder && !this.findExistingFolderByName(email.customFolder) ? `
+                                        <input type="text" 
+                                               class="custom-folder-input" 
+                                               value="${email.customFolder}"
+                                               placeholder="Nom du dossier personnalisé"
+                                               data-email-id="${email.id}"
+                                               data-domain="${domain}"
+                                               onchange="window.modernDomainOrganizer.updateEmailCustomFolder('${domain}', '${email.id}', this.value)"
+                                               onclick="event.stopPropagation()">
+                                    ` : ''}
+                                </div>
+                                
+                                <div class="email-folder-info">
+                                    ${email.customFolder ? `
+                                        <span class="custom-folder-badge ${this.findExistingFolderByName(email.customFolder) ? 'existing' : 'new'}">
+                                            ${this.findExistingFolderByName(email.customFolder) ? '📂' : '✨'} ${email.customFolder}
+                                        </span>
+                                    ` : `
+                                        <span class="default-folder-badge">📁 ${plan.targetFolder}</span>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        return div;
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur création élément domaine:', error);
         
-        types.forEach(type => {
-            if (keywords[type] && !Array.isArray(keywords[type])) {
-                errors.push(`${type} doit être un tableau`);
+        // Élément de fallback en cas d'erreur
+        const fallbackDiv = document.createElement('div');
+        fallbackDiv.className = 'domain-item error';
+        fallbackDiv.innerHTML = `
+            <div class="domain-header">
+                <div class="domain-info">
+                    <div class="domain-name">❌ ${domain}</div>
+                    <div class="domain-stats">Erreur d'affichage</div>
+                </div>
+            </div>
+        `;
+        return fallbackDiv;
+    }
+}
+generateFolderOptions() {
+    try {
+        const folders = Array.from(this.allFolders.values())
+            .filter(folder => {
+                // Inclure tous les dossiers sauf certains dossiers système critiques
+                const criticalFolders = ['deleteditems', 'outbox'];
+                return !criticalFolders.includes(folder.displayName.toLowerCase());
+            })
+            .sort((a, b) => {
+                // Trier par hiérarchie puis par nom
+                const aDepth = this.getFolderDepth(folder.parentFolderId);
+                const bDepth = this.getFolderDepth(folder.parentFolderId);
+                
+                if (aDepth !== bDepth) {
+                    return aDepth - bDepth;
+                }
+                
+                return a.displayName.localeCompare(b.displayName);
+            });
+        
+        return folders;
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur génération options dossiers:', error);
+        return [];
+    }
+}
+
+getFolderDepth(parentFolderId) {
+    let depth = 0;
+    let currentId = parentFolderId;
+    
+    while (currentId) {
+        depth++;
+        const parentFolder = Array.from(this.allFolders.values()).find(f => f.id === currentId);
+        currentId = parentFolder?.parentFolderId;
+        
+        // Éviter les boucles infinies
+        if (depth > 10) break;
+    }
+    
+    return depth;
+}
+buildFolderHierarchy() {
+    try {
+        console.log('[ModernDomainOrganizer] 🌳 Construction de la hiérarchie complète des dossiers...');
+        
+        const folders = Array.from(this.allFolders.values());
+        const folderMap = new Map();
+        const rootFolders = new Map();
+        
+        console.log(`[ModernDomainOrganizer] 📊 Total de dossiers à organiser: ${folders.length}`);
+        
+        // Debug: afficher quelques dossiers pour vérifier leur structure
+        if (folders.length > 0) {
+            console.log('[ModernDomainOrganizer] 🔍 Exemple de structure de dossier:', folders[0]);
+        }
+        
+        // Première passe : créer tous les nœuds avec une Map par ID
+        folders.forEach(folder => {
+            folderMap.set(folder.id, {
+                ...folder,
+                children: [],
+                level: 0,
+                path: folder.fullPath || folder.displayName
+            });
+        });
+        
+        // Deuxième passe : construire la hiérarchie
+        folders.forEach(folder => {
+            const folderNode = folderMap.get(folder.id);
+            
+            if (!folder.parentFolderId || folder.parentFolderId === null) {
+                // Dossier racine
+                rootFolders.set(folder.id, folderNode);
+                console.log(`[ModernDomainOrganizer] 🌳 Racine: "${folder.displayName}" (ID: ${folder.id})`);
+            } else {
+                // Dossier enfant - chercher le parent par ID
+                const parent = folderMap.get(folder.parentFolderId);
+                if (parent) {
+                    parent.children.push(folderNode);
+                    folderNode.level = parent.level + 1;
+                    folderNode.path = `${parent.path} > ${folder.displayName}`;
+                    console.log(`[ModernDomainOrganizer] 📁 Enfant: "${folder.displayName}" -> Parent: "${parent.displayName}"`);
+                } else {
+                    // Parent non trouvé, traiter comme racine
+                    rootFolders.set(folder.id, folderNode);
+                    console.warn(`[ModernDomainOrganizer] ⚠️ Orphelin (parent ${folder.parentFolderId} non trouvé): "${folder.displayName}"`);
+                }
+            }
+        });
+        
+        // Trier les dossiers racine et leurs enfants
+        this.sortFolderHierarchy(rootFolders);
+        
+        console.log(`[ModernDomainOrganizer] ✅ Hiérarchie construite: ${rootFolders.size} racines, ${folders.length} total`);
+        
+        // Log détaillé de la structure
+        let totalWithChildren = 0;
+        rootFolders.forEach(root => {
+            const childCount = this.countAllChildren(root);
+            if (childCount > 0) {
+                totalWithChildren++;
+                console.log(`[ModernDomainOrganizer] 📂 "${root.displayName}": ${childCount} enfants`);
+            }
+        });
+        console.log(`[ModernDomainOrganizer] 📊 ${totalWithChildren} dossiers ont des sous-dossiers`);
+        
+        return rootFolders;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur construction hiérarchie:', error);
+        return new Map();
+    }
+}
+
+// Fonction helper pour compter tous les enfants
+countAllChildren(folder) {
+    let count = folder.children ? folder.children.length : 0;
+    if (folder.children) {
+        folder.children.forEach(child => {
+            count += this.countAllChildren(child);
+        });
+    }
+    return count;
+}
+
+sortFolderHierarchy(rootFolders) {
+    try {
+        // Convertir la Map en Array pour le tri
+        const sortedRoots = Array.from(rootFolders.values()).sort((a, b) => {
+            // Prioriser les dossiers système
+            const systemOrder = {
+                'inbox': 0, 'boîte de réception': 0,
+                'sentitems': 1, 'éléments envoyés': 1, 'sent items': 1,
+                'drafts': 2, 'brouillons': 2,
+                'deleteditems': 3, 'éléments supprimés': 3, 'deleted items': 3,
+                'junkemail': 4, 'courrier indésirable': 4, 'junk email': 4,
+                'archive': 5, 'archives': 5,
+                'outbox': 6,
+                'notes': 7
+            };
+            
+            const aName = a.wellKnownName?.toLowerCase() || a.displayName.toLowerCase();
+            const bName = b.wellKnownName?.toLowerCase() || b.displayName.toLowerCase();
+            
+            const aOrder = systemOrder[aName] ?? 100;
+            const bOrder = systemOrder[bName] ?? 100;
+            
+            if (aOrder !== bOrder) {
+                return aOrder - bOrder;
             }
             
-            if (keywords[type]) {
-                keywords[type].forEach((keyword, index) => {
-                    if (typeof keyword !== 'string') {
-                        errors.push(`${type}[${index}] doit être une chaîne`);
+            return a.displayName.localeCompare(b.displayName);
+        });
+        
+        // Reconstruire la Map triée
+        rootFolders.clear();
+        sortedRoots.forEach(folder => {
+            rootFolders.set(folder.id, folder);
+            // Trier récursivement les enfants
+            this.sortChildren(folder);
+        });
+        
+        console.log(`[ModernDomainOrganizer] ✅ Hiérarchie triée: ${rootFolders.size} dossiers racine`);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur tri hiérarchie:', error);
+    }
+}
+sortChildren(folder) {
+    if (folder.children && folder.children.length > 0) {
+        folder.children.sort((a, b) => a.displayName.localeCompare(b.displayName));
+        folder.children.forEach(child => this.sortChildren(child));
+    }
+}
+
+// Fonction utilitaire pour obtenir le chemin complet d'un dossier
+getFolderPath(folderId) {
+    try {
+        const folder = Array.from(this.allFolders.values()).find(f => f.id === folderId);
+        if (!folder) return 'Inconnu';
+        
+        if (!folder.parentFolderId) {
+            return folder.displayName;
+        }
+        
+        const parentPath = this.getFolderPath(folder.parentFolderId);
+        return `${parentPath} > ${folder.displayName}`;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur calcul chemin dossier:', error);
+        return 'Erreur';
+    }
+}
+
+// Fonction pour rechercher un dossier par ID
+findFolderById(folderId) {
+    try {
+        return Array.from(this.allFolders.values()).find(f => f.id === folderId) || null;
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur recherche dossier par ID:', error);
+        return null;
+    }
+}
+
+// Fonction pour obtenir tous les dossiers d'un niveau donné
+getFoldersByLevel(level = 0) {
+    try {
+        const hierarchy = this.buildFolderHierarchy();
+        const foldersAtLevel = [];
+        
+        const collectByLevel = (folder, currentLevel) => {
+            if (currentLevel === level) {
+                foldersAtLevel.push(folder);
+            }
+            
+            if (folder.children) {
+                folder.children.forEach(child => {
+                    collectByLevel(child, currentLevel + 1);
+                });
+            }
+        };
+        
+        hierarchy.forEach(rootFolder => {
+            collectByLevel(rootFolder, 0);
+        });
+        
+        return foldersAtLevel;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur récupération dossiers par niveau:', error);
+        return [];
+    }
+}
+findFolderInHierarchy(hierarchy, folderId) {
+    for (const folder of hierarchy.values()) {
+        if (folder.id === folderId) return folder;
+        
+        const found = this.searchInChildren(folder.children, folderId);
+        if (found) return found;
+    }
+    return null;
+}
+
+createFolderSelectModal(domain, emailId, currentFolder) {
+    try {
+        console.log(`[ModernDomainOrganizer] 🎯 Création modal pour: domain=${domain}, emailId=${emailId}, currentFolder=${currentFolder}`);
+        
+        // Supprimer le modal existant s'il y en a un
+        const existingModal = document.getElementById('folderSelectModal');
+        if (existingModal) {
+            existingModal.remove();
+            console.log('[ModernDomainOrganizer] 🗑️ Modal existant supprimé');
+        }
+        
+        // Créer le nouveau modal
+        const modal = document.createElement('div');
+        modal.id = 'folderSelectModal';
+        modal.className = 'folder-select-modal';
+        
+        const folders = Array.from(this.allFolders.values());
+        console.log(`[ModernDomainOrganizer] 📁 ${folders.length} dossiers disponibles`);
+        
+        // Construire la hiérarchie complète
+        const hierarchy = this.buildFolderHierarchy();
+        
+        modal.innerHTML = `
+            <div class="folder-modal-content">
+                <div class="folder-modal-header">
+                    <h3>📁 Sélectionner un dossier</h3>
+                    <button class="modal-close" onclick="window.modernDomainOrganizer.closeFolderModal()">×</button>
+                </div>
+                
+                <div class="folder-modal-body">
+                    <div class="folder-search-section">
+                        <div class="search-container">
+                            <input type="text" 
+                                   id="folderSearchInput" 
+                                   placeholder="🔍 Rechercher un dossier..." 
+                                   class="folder-search-input">
+                            <button class="search-clear" onclick="window.modernDomainOrganizer.clearFolderSearch()">×</button>
+                        </div>
+                        
+                        <div class="search-stats" id="searchStats">
+                            ${folders.length} dossiers disponibles
+                        </div>
+                    </div>
+                    
+                    <div class="folder-options-section">
+                        <div class="special-options">
+                            <div class="folder-option special-option" data-action="default" onclick="window.modernDomainOrganizer.selectFolderOption(this)">
+                                <div class="folder-content">
+                                    <span class="folder-icon">📁</span>
+                                    <div class="folder-details">
+                                        <span class="folder-name">Utiliser le dossier par défaut</span>
+                                        <span class="folder-path">${this.organizationPlan.get(domain)?.targetFolder || domain}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="folder-option special-option" data-action="new" onclick="window.modernDomainOrganizer.selectFolderOption(this)">
+                                <div class="folder-content">
+                                    <span class="folder-icon">✨</span>
+                                    <div class="folder-details">
+                                        <span class="folder-name">Créer un nouveau dossier</span>
+                                        <span class="folder-path">Saisir un nom personnalisé</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="folder-separator">
+                            <span>Dossiers existants</span>
+                        </div>
+                        
+                        <div class="folder-tree" id="folderTree">
+                            ${this.generateHierarchicalFolderTree(hierarchy, currentFolder)}
+                        </div>
+                    </div>
+                    
+                    <div class="custom-folder-section hidden" id="customFolderSection">
+                        <div class="custom-folder-input-group">
+                            <label>Nom du nouveau dossier :</label>
+                            <input type="text" 
+                                   id="customFolderNameInput" 
+                                   placeholder="Saisir le nom du dossier..."
+                                   class="custom-folder-name-input">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="folder-modal-footer">
+                    <button class="btn btn-secondary" onclick="window.modernDomainOrganizer.closeFolderModal()">
+                        Annuler
+                    </button>
+                    <button class="btn btn-primary" id="confirmFolderBtn" onclick="window.modernDomainOrganizer.confirmFolderSelection('${domain}', '${emailId}')">
+                        Confirmer
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter le modal au DOM
+        document.body.appendChild(modal);
+        console.log('[ModernDomainOrganizer] 📦 Modal ajouté au DOM');
+        
+        // Afficher le modal
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        console.log('[ModernDomainOrganizer] ✅ Modal affiché');
+        
+        // Configurer les event listeners après un délai
+        setTimeout(() => {
+            this.setupFolderModalEvents(domain, emailId);
+        }, 100);
+        
+        // Focus sur la recherche
+        setTimeout(() => {
+            const searchInput = document.getElementById('folderSearchInput');
+            if (searchInput) {
+                searchInput.focus();
+            }
+        }, 200);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur création modal dossier:', error);
+        this.showError('Erreur lors de l\'ouverture du sélecteur de dossier');
+    }
+}
+
+generateHierarchicalFolderTree(hierarchy, currentFolder) {
+    try {
+        console.log('[ModernDomainOrganizer] 🎨 Génération de l\'arbre hiérarchique complet');
+        
+        if (!hierarchy || hierarchy.size === 0) {
+            return '<div class="no-folders">Aucun dossier trouvé</div>';
+        }
+        
+        let html = '';
+        
+        // Parcourir tous les dossiers racine
+        hierarchy.forEach(rootFolder => {
+            html += this.generateFolderNodeHTML(rootFolder, currentFolder, 0);
+        });
+        
+        console.log(`[ModernDomainOrganizer] ✅ Arbre hiérarchique généré avec ${hierarchy.size} dossiers racine`);
+        return html;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur génération arbre:', error);
+        return '<div class="error-folders">Erreur lors du chargement des dossiers</div>';
+    }
+}
+generateSimpleFolderList(folders, currentFolder) {
+    try {
+        console.log('[ModernDomainOrganizer] 🎨 Génération liste hiérarchique des dossiers');
+        
+        if (!folders || folders.length === 0) {
+            return '<div class="no-folders">Aucun dossier trouvé</div>';
+        }
+        
+        let html = '';
+        
+        // Grouper les dossiers par niveau de profondeur
+        const foldersByDepth = new Map();
+        folders.forEach(folder => {
+            const depth = folder.depth || 0;
+            if (!foldersByDepth.has(depth)) {
+                foldersByDepth.set(depth, []);
+            }
+            foldersByDepth.get(depth).push(folder);
+        });
+        
+        // Trier chaque niveau
+        foldersByDepth.forEach((levelFolders, depth) => {
+            levelFolders.sort((a, b) => {
+                // Prioriser les dossiers système au niveau 0
+                if (depth === 0) {
+                    const systemOrder = {
+                        'Boîte de réception': 0, 'Inbox': 0,
+                        'Éléments envoyés': 1, 'Sent Items': 1,
+                        'Brouillons': 2, 'Drafts': 2,
+                        'Éléments supprimés': 3, 'Deleted Items': 3,
+                        'Courrier indésirable': 4, 'Junk Email': 4
+                    };
+                    
+                    const aOrder = systemOrder[a.displayName] ?? 100;
+                    const bOrder = systemOrder[b.displayName] ?? 100;
+                    
+                    if (aOrder !== bOrder) {
+                        return aOrder - bOrder;
                     }
-                    if (keyword.length < 2) {
-                        errors.push(`${type}[${index}] trop court (min 2 caractères)`);
+                }
+                
+                return a.displayName.localeCompare(b.displayName);
+            });
+        });
+        
+        // Générer le HTML niveau par niveau
+        const maxDepth = Math.max(...foldersByDepth.keys());
+        for (let depth = 0; depth <= maxDepth; depth++) {
+            const levelFolders = foldersByDepth.get(depth) || [];
+            
+            if (depth > 0 && levelFolders.length > 0) {
+                html += `<div class="folder-separator">Niveau ${depth}</div>`;
+            }
+            
+            levelFolders.forEach(folder => {
+                const isSelected = currentFolder === folder.displayName;
+                const folderIcon = this.getFolderIcon(folder.displayName);
+                const itemCount = folder.totalItemCount > 0 ? `(${folder.totalItemCount})` : '';
+                const indent = depth * 20;
+                
+                // Indicateur de sous-dossiers
+                const hasChildren = folder.childFolderCount > 0;
+                const childrenIndicator = hasChildren ? ' 📂' : '';
+                
+                html += `
+                    <div class="folder-option ${isSelected ? 'selected' : ''}" 
+                         data-folder-id="${folder.id}" 
+                         data-folder-name="${folder.displayName}"
+                         data-folder-path="${folder.fullPath || folder.displayName}"
+                         title="${folder.fullPath || folder.displayName}"
+                         style="padding-left: ${indent + 12}px"
+                         onclick="window.modernDomainOrganizer.selectFolderOption(this)">
+                        
+                        <div class="folder-content">
+                            <span class="folder-spacer" style="width: ${Math.max(0, indent)}px"></span>
+                            <span class="folder-icon">${folderIcon}</span>
+                            
+                            <div class="folder-details">
+                                <span class="folder-name">${folder.displayName}${childrenIndicator}</span>
+                                ${folder.fullPath && folder.fullPath !== folder.displayName ? 
+                                    `<span class="folder-path">${folder.fullPath}</span>` : ''}
+                                ${itemCount ? `<span class="folder-count">${itemCount}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        console.log(`[ModernDomainOrganizer] ✅ Liste hiérarchique générée: ${folders.length} dossiers sur ${maxDepth + 1} niveaux`);
+        return html;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur génération liste hiérarchique:', error);
+        return '<div class="error-folders">Erreur lors du chargement de l\'arborescence des dossiers</div>';
+    }
+}
+selectFolderOption(optionElement) {
+    try {
+        console.log('[ModernDomainOrganizer] 🎯 Option sélectionnée:', optionElement.dataset);
+        
+        // Désélectionner toutes les autres options
+        document.querySelectorAll('.folder-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        
+        // Sélectionner l'option cliquée
+        optionElement.classList.add('selected');
+        
+        const action = optionElement.dataset.action;
+        const folderId = optionElement.dataset.folderId;
+        const folderName = optionElement.dataset.folderName;
+        
+        console.log('[ModernDomainOrganizer] 💾 Données sélection:', { action, folderId, folderName });
+        
+        // Gérer les options spéciales
+        const customSection = document.getElementById('customFolderSection');
+        if (action === 'new') {
+            if (customSection) {
+                customSection.classList.remove('hidden');
+                const input = document.getElementById('customFolderNameInput');
+                if (input) {
+                    input.focus();
+                    input.value = '';
+                }
+            }
+        } else {
+            if (customSection) {
+                customSection.classList.add('hidden');
+            }
+        }
+        
+        // Stocker la sélection
+        this.selectedFolderData = {
+            action: action || 'existing',
+            folderId: folderId,
+            folderName: folderName
+        };
+        
+        console.log('[ModernDomainOrganizer] ✅ Sélection stockée:', this.selectedFolderData);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur sélection option:', error);
+    }
+}
+
+generateFolderTreeHTML(hierarchy, flatFolders, currentFolder) {
+    try {
+        console.log('[ModernDomainOrganizer] 🎨 Génération de l\'arbre HTML...');
+        
+        let html = '';
+        const rootFolders = Array.from(hierarchy.values());
+        
+        if (rootFolders.length === 0) {
+            console.warn('[ModernDomainOrganizer] ⚠️ Aucun dossier racine trouvé');
+            return '<div class="no-folders">Aucun dossier trouvé</div>';
+        }
+        
+        // Générer l'arbre hiérarchique
+        rootFolders.forEach(rootFolder => {
+            html += this.generateFolderNodeHTML(rootFolder, currentFolder, 0);
+        });
+        
+        console.log(`[ModernDomainOrganizer] ✅ Arbre HTML généré pour ${rootFolders.length} dossiers racine`);
+        return html;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur génération arbre HTML:', error);
+        return '<div class="error-folders">Erreur lors du chargement de l\'arborescence des dossiers</div>';
+    }
+}
+
+generateFolderNodeHTML(folder, currentFolder, level) {
+    try {
+        const isSelected = currentFolder === folder.displayName;
+        const hasChildren = folder.children && folder.children.length > 0;
+        const indent = level * 20;
+        
+        // Icône selon le type de dossier
+        const folderIcon = this.getFolderIcon(folder.displayName, folder.wellKnownName);
+        
+        // Classe CSS selon le type
+        let nodeClass = 'folder-option';
+        if (folder.wellKnownName) {
+            nodeClass += ' system-folder';
+        }
+        if (isSelected) {
+            nodeClass += ' selected';
+        }
+        
+        // Badge de nombre d'éléments
+        const itemCountBadge = folder.totalItemCount > 0 ? 
+            `<span class="folder-count">(${folder.totalItemCount})</span>` : '';
+        
+        // Chemin complet pour l'info-bulle
+        const folderPath = folder.path || folder.displayName;
+        
+        let html = `
+            <div class="${nodeClass}" 
+                 data-folder-id="${folder.id}" 
+                 data-folder-name="${folder.displayName}"
+                 data-folder-path="${folderPath}"
+                 style="padding-left: ${indent + 12}px"
+                 title="${folderPath}"
+                 onclick="window.modernDomainOrganizer.selectFolderOption(this)">
+                
+                <div class="folder-content">
+                    ${hasChildren ? `
+                        <button class="folder-expand" onclick="event.stopPropagation(); window.modernDomainOrganizer.toggleFolderNode('${folder.id}')">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    ` : '<span class="folder-spacer"></span>'}
+                    
+                    <span class="folder-icon">${folderIcon}</span>
+                    
+                    <div class="folder-details">
+                        <span class="folder-name">${folder.displayName}</span>
+                        ${folder.wellKnownName ? '<span class="system-badge">Système</span>' : ''}
+                        ${itemCountBadge}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter les enfants (masqués par défaut)
+        if (hasChildren) {
+            html += `<div class="folder-children hidden" id="children-${folder.id}">`;
+            folder.children.forEach(child => {
+                html += this.generateFolderNodeHTML(child, currentFolder, level + 1);
+            });
+            html += '</div>';
+        }
+        
+        return html;
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur génération noeud:', error);
+        return `<div class="error-folder-node">Erreur: ${folder?.displayName || 'Dossier inconnu'}</div>`;
+    }
+}
+
+getFolderIcon(folderName, wellKnownName) {
+    try {
+        // Icônes basées sur le nom bien connu en priorité
+        if (wellKnownName) {
+            switch (wellKnownName.toLowerCase()) {
+                case 'inbox': return '📥';
+                case 'sentitems': return '📤';
+                case 'drafts': return '📝';
+                case 'deleteditems': return '🗑️';
+                case 'junkemail': return '🚫';
+                case 'outbox': return '📮';
+                case 'archive': return '📦';
+                case 'notes': return '📓';
+                case 'tasks': return '✓';
+                case 'calendar': return '📅';
+                case 'contacts': return '👥';
+                default: return '📁';
+            }
+        }
+        
+        // Icônes basées sur le nom du dossier
+        const name = folderName.toLowerCase();
+        
+        // Français
+        if (name.includes('boîte de réception') || name.includes('réception')) return '📥';
+        if (name.includes('envoyé') || name.includes('éléments envoyés')) return '📤';
+        if (name.includes('brouillon')) return '📝';
+        if (name.includes('supprimé') || name.includes('corbeille')) return '🗑️';
+        if (name.includes('indésirable') || name.includes('spam')) return '🚫';
+        if (name.includes('archive')) return '📦';
+        if (name.includes('important')) return '⭐';
+        if (name.includes('notes')) return '📓';
+        
+        // Anglais
+        if (name.includes('inbox')) return '📥';
+        if (name.includes('sent')) return '📤';
+        if (name.includes('draft')) return '📝';
+        if (name.includes('deleted') || name.includes('trash')) return '🗑️';
+        if (name.includes('junk') || name.includes('spam')) return '🚫';
+        if (name.includes('archive')) return '📦';
+        if (name.includes('important')) return '⭐';
+        
+        // Dossiers personnalisés basés sur le contenu
+        if (name.includes('amazon')) return '🛒';
+        if (name.includes('paypal') || name.includes('payment')) return '💳';
+        if (name.includes('social') || name.includes('facebook') || name.includes('twitter')) return '👥';
+        if (name.includes('news') || name.includes('newsletter')) return '📰';
+        if (name.includes('work') || name.includes('travail')) return '💼';
+        if (name.includes('travel') || name.includes('voyage')) return '✈️';
+        if (name.includes('bank') || name.includes('banque')) return '🏦';
+        if (name.includes('health') || name.includes('santé')) return '🏥';
+        if (name.includes('education') || name.includes('école')) return '🎓';
+        if (name.includes('project') || name.includes('projet')) return '📊';
+        if (name.includes('personal') || name.includes('personnel')) return '👤';
+        if (name.includes('family') || name.includes('famille')) return '👨‍👩‍👧‍👦';
+        if (name.includes('finance')) return '💰';
+        if (name.includes('urgent')) return '🚨';
+        if (name.includes('meeting') || name.includes('réunion')) return '👥';
+        if (name.includes('invoice') || name.includes('facture')) return '🧾';
+        if (name.includes('receipt') || name.includes('reçu')) return '🧾';
+        if (name.includes('order') || name.includes('commande')) return '📦';
+        if (name.includes('subscription') || name.includes('abonnement')) return '🔄';
+        
+        return '📁';
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur détermination icône:', error);
+        return '📁';
+    }
+}
+
+getFolderIcon(folderName) {
+    try {
+        const name = folderName.toLowerCase();
+        
+        // Français
+        if (name.includes('boîte de réception') || name.includes('réception')) return '📥';
+        if (name.includes('envoyé') || name.includes('éléments envoyés')) return '📤';
+        if (name.includes('brouillon')) return '📝';
+        if (name.includes('supprimé') || name.includes('corbeille')) return '🗑️';
+        if (name.includes('indésirable') || name.includes('spam')) return '🚫';
+        if (name.includes('archive')) return '📦';
+        if (name.includes('important')) return '⭐';
+        
+        // Anglais
+        if (name.includes('inbox')) return '📥';
+        if (name.includes('sent')) return '📤';
+        if (name.includes('draft')) return '📝';
+        if (name.includes('deleted') || name.includes('trash')) return '🗑️';
+        if (name.includes('junk')) return '🚫';
+        
+        // Dossiers personnalisés
+        if (name.includes('amazon')) return '🛒';
+        if (name.includes('paypal') || name.includes('payment')) return '💳';
+        if (name.includes('social') || name.includes('facebook') || name.includes('instagram')) return '👥';
+        if (name.includes('news') || name.includes('newsletter')) return '📰';
+        if (name.includes('work') || name.includes('travail')) return '💼';
+        if (name.includes('bank') || name.includes('banque')) return '🏦';
+        
+        return '📁';
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur détermination icône:', error);
+        return '📁';
+    }
+}
+setupFolderModalEvents(domain, emailId) {
+    try {
+        console.log('[ModernDomainOrganizer] 🔧 Configuration événements modal');
+        
+        // Gestion de la recherche
+        const searchInput = document.getElementById('folderSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.filterFolders(e.target.value);
+            });
+            
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.selectFirstVisibleFolder();
+                }
+                
+                if (e.key === 'Escape') {
+                    this.closeFolderModal();
+                }
+            });
+            console.log('[ModernDomainOrganizer] ✅ Événements recherche configurés');
+        }
+        
+        // Gestion du champ de saisie personnalisé
+        const customInput = document.getElementById('customFolderNameInput');
+        if (customInput) {
+            customInput.addEventListener('input', (e) => {
+                if (this.selectedFolderData && this.selectedFolderData.action === 'new') {
+                    this.selectedFolderData.folderName = e.target.value;
+                }
+            });
+            
+            customInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.confirmFolderSelection(domain, emailId);
+                }
+            });
+            console.log('[ModernDomainOrganizer] ✅ Événements input personnalisé configurés');
+        }
+        
+        // Fermeture sur Escape
+        this.modalKeydownHandler = (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('folderSelectModal');
+                if (modal && modal.style.display === 'flex') {
+                    this.closeFolderModal();
+                }
+            }
+        };
+        
+        document.addEventListener('keydown', this.modalKeydownHandler);
+        console.log('[ModernDomainOrganizer] ✅ Événements clavier configurés');
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur setup événements modal:', error);
+    }
+}
+
+handleModalKeydown(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('folderSelectModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            this.closeFolderModal();
+        }
+    }
+}
+
+showCustomFolderInput() {
+    try {
+        const section = document.getElementById('customFolderSection');
+        const input = document.getElementById('customFolderNameInput');
+        
+        if (section) {
+            section.classList.remove('hidden');
+            if (input) {
+                input.focus();
+                input.value = '';
+            }
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur affichage input personnalisé:', error);
+    }
+}
+
+filterFolders(searchTerm) {
+    try {
+        const term = searchTerm.toLowerCase().trim();
+        const allFolderOptions = document.querySelectorAll('.folder-option:not(.special-option)');
+        const stats = document.getElementById('searchStats');
+        
+        let visibleCount = 0;
+        const matchedFolders = new Set();
+        
+        // Première passe : identifier tous les dossiers qui correspondent
+        allFolderOptions.forEach(option => {
+            const folderName = option.dataset.folderName?.toLowerCase() || '';
+            const folderPath = option.dataset.folderPath?.toLowerCase() || '';
+            const folderId = option.dataset.folderId;
+            
+            const isMatch = !term || 
+                           folderName.includes(term) || 
+                           folderPath.includes(term);
+            
+            if (isMatch) {
+                matchedFolders.add(folderId);
+                visibleCount++;
+            }
+        });
+        
+        // Deuxième passe : afficher/masquer et gérer la hiérarchie
+        allFolderOptions.forEach(option => {
+            const folderId = option.dataset.folderId;
+            const isMatch = matchedFolders.has(folderId);
+            
+            if (isMatch || !term) {
+                option.style.display = 'flex';
+                
+                // Highlight du terme recherché
+                if (term && isMatch) {
+                    this.highlightSearchTerm(option, term);
+                } else {
+                    this.removeHighlight(option);
+                }
+                
+                // S'assurer que les parents sont visibles
+                if (term && isMatch) {
+                    this.showParentFolders(option);
+                }
+            } else {
+                option.style.display = 'none';
+                this.removeHighlight(option);
+            }
+        });
+        
+        // Si recherche active, déplier automatiquement les résultats
+        if (term) {
+            this.expandMatchedFolders(matchedFolders);
+        }
+        
+        // Mettre à jour les statistiques
+        if (stats) {
+            if (term) {
+                stats.textContent = `${visibleCount} dossier(s) trouvé(s) pour "${term}"`;
+            } else {
+                stats.textContent = `${allFolderOptions.length} dossiers disponibles`;
+            }
+        }
+        
+        console.log(`[ModernDomainOrganizer] 🔍 Recherche "${term}": ${visibleCount}/${allFolderOptions.length} visibles`);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur filtrage:', error);
+    }
+}
+expandMatchedFolders(matchedFolders) {
+    try {
+        matchedFolders.forEach(folderId => {
+            const childrenContainer = document.getElementById(`children-${folderId}`);
+            if (childrenContainer && childrenContainer.classList.contains('hidden')) {
+                const parentOption = childrenContainer.previousElementSibling;
+                const expandBtn = parentOption?.querySelector('.folder-expand i');
+                
+                childrenContainer.classList.remove('hidden');
+                if (expandBtn) {
+                    expandBtn.className = 'fas fa-chevron-down';
+                }
+            }
+        });
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur expansion dossiers:', error);
+    }
+}
+
+highlightSearchTerm(option, term) {
+    try {
+        const nameElement = option.querySelector('.folder-name');
+        if (!nameElement) return;
+        
+        const originalText = nameElement.dataset.originalText || nameElement.textContent;
+        nameElement.dataset.originalText = originalText;
+        
+        const regex = new RegExp(`(${term})`, 'gi');
+        const highlightedText = originalText.replace(regex, '<mark>$1</mark>');
+        nameElement.innerHTML = highlightedText;
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur highlight:', error);
+    }
+}
+
+removeHighlight(option) {
+    try {
+        const nameElement = option.querySelector('.folder-name');
+        if (!nameElement) return;
+        
+        const originalText = nameElement.dataset.originalText;
+        if (originalText) {
+            nameElement.textContent = originalText;
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur suppression highlight:', error);
+    }
+}
+
+showParentFolders(option) {
+    try {
+        let currentElement = option.parentElement;
+        
+        while (currentElement) {
+            // Si c'est un conteneur d'enfants, l'afficher
+            if (currentElement.classList.contains('folder-children')) {
+                currentElement.classList.remove('hidden');
+                
+                // Mettre à jour le bouton d'expansion du parent
+                const parentOption = currentElement.previousElementSibling;
+                if (parentOption && parentOption.classList.contains('folder-option')) {
+                    parentOption.style.display = 'flex';
+                    const expandBtn = parentOption.querySelector('.folder-expand i');
+                    if (expandBtn) {
+                        expandBtn.className = 'fas fa-chevron-down';
                     }
-                    if (keyword.length > 100) {
-                        errors.push(`${type}[${index}] trop long (max 100 caractères)`);
+                }
+            }
+            
+            currentElement = currentElement.parentElement;
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur affichage parents:', error);
+    }
+}
+expandAllVisibleFolders() {
+    try {
+        const visibleFolders = document.querySelectorAll('.folder-option:not([style*="display: none"])');
+        
+        visibleFolders.forEach(folder => {
+            const childrenContainer = folder.nextElementSibling;
+            if (childrenContainer && childrenContainer.classList.contains('folder-children')) {
+                childrenContainer.classList.remove('hidden');
+                childrenContainer.style.display = 'block';
+                
+                const expandBtn = folder.querySelector('.folder-expand i');
+                if (expandBtn) {
+                    expandBtn.className = 'fas fa-chevron-down';
+                }
+            }
+        });
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur expansion dossiers:', error);
+    }
+}
+
+clearFolderSearch() {
+    try {
+        const searchInput = document.getElementById('folderSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            this.filterFolders('');
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur clear recherche:', error);
+    }
+}
+
+selectFirstVisibleFolder() {
+    try {
+        const firstVisible = document.querySelector('.folder-option:not(.special-option):not([style*="display: none"])');
+        if (firstVisible) {
+            firstVisible.click();
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur sélection premier dossier:', error);
+    }
+}
+
+toggleFolderNode(folderId) {
+    try {
+        console.log(`[ModernDomainOrganizer] 🔄 Toggle nœud: ${folderId}`);
+        
+        const childrenContainer = document.getElementById(`children-${folderId}`);
+        const expandBtn = event?.target?.closest('.folder-expand')?.querySelector('i') ||
+                         document.querySelector(`[onclick*="${folderId}"] i`);
+        
+        if (childrenContainer) {
+            const isHidden = childrenContainer.classList.contains('hidden');
+            
+            if (isHidden) {
+                childrenContainer.classList.remove('hidden');
+                if (expandBtn) expandBtn.className = 'fas fa-chevron-down';
+                console.log(`[ModernDomainOrganizer] 📂 Nœud déplié: ${folderId}`);
+            } else {
+                childrenContainer.classList.add('hidden');
+                if (expandBtn) expandBtn.className = 'fas fa-chevron-right';
+                console.log(`[ModernDomainOrganizer] 📁 Nœud replié: ${folderId}`);
+            }
+        }
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur toggle nœud:', error);
+    }
+}
+
+confirmFolderSelection(domain, emailId) {
+    try {
+        console.log('[ModernDomainOrganizer] ✅ Confirmation sélection pour:', emailId, this.selectedFolderData);
+        
+        if (!this.selectedFolderData) {
+            this.showWarning('Veuillez sélectionner un dossier');
+            return;
+        }
+        
+        const { action, folderId, folderName } = this.selectedFolderData;
+        
+        // Validation pour nouveau dossier
+        if (action === 'new') {
+            const customName = document.getElementById('customFolderNameInput')?.value?.trim();
+            if (!customName) {
+                this.showWarning('Veuillez saisir un nom pour le nouveau dossier');
+                return;
+            }
+            this.selectedFolderData.folderName = customName;
+        }
+        
+        // Appliquer la sélection
+        this.applyFolderSelection(domain, emailId, this.selectedFolderData);
+        
+        // Fermer le modal
+        this.closeFolderModal();
+        
+        console.log('[ModernDomainOrganizer] ✅ Sélection confirmée et appliquée');
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur confirmation sélection:', error);
+        this.showError('Erreur lors de la confirmation de la sélection');
+    }
+}
+applyFolderSelection(domain, emailId, folderData) {
+    try {
+        const plan = this.organizationPlan.get(domain);
+        if (!plan) {
+            console.error('[ModernDomainOrganizer] Plan non trouvé pour:', domain);
+            return;
+        }
+        
+        const email = plan.emails.find(e => e.id === emailId);
+        if (!email) {
+            console.error('[ModernDomainOrganizer] Email non trouvé:', emailId);
+            return;
+        }
+        
+        console.log('[ModernDomainOrganizer] 📝 Application sélection:', folderData);
+        
+        // Réinitialiser les propriétés personnalisées
+        delete email.customFolder;
+        delete email.customFolderId;
+        
+        switch (folderData.action) {
+            case 'default':
+                // Utiliser le dossier par défaut - rien à faire
+                console.log('[ModernDomainOrganizer] 📁 Utilisation dossier par défaut');
+                break;
+                
+            case 'new':
+                // Nouveau dossier personnalisé
+                email.customFolder = folderData.folderName;
+                email.customFolderId = null;
+                console.log('[ModernDomainOrganizer] ✨ Nouveau dossier:', folderData.folderName);
+                break;
+                
+            case 'existing':
+                // Dossier existant
+                email.customFolder = folderData.folderName;
+                email.customFolderId = folderData.folderId;
+                console.log('[ModernDomainOrganizer] 📂 Dossier existant:', folderData.folderName);
+                break;
+        }
+        
+        // Mettre à jour l'affichage
+        this.updateEmailFolderDisplay(domain, emailId);
+        this.updateTotalEmailsCount();
+        
+        console.log('[ModernDomainOrganizer] ✅ Sélection appliquée avec succès');
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur application sélection:', error);
+    }
+}
+closeFolderModal() {
+    try {
+        console.log('[ModernDomainOrganizer] 🚪 Fermeture modal dossier');
+        
+        const modal = document.getElementById('folderSelectModal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            
+            // Supprimer le modal du DOM après un délai
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.remove();
+                }
+            }, 300);
+        }
+        
+        // Nettoyer les données de sélection
+        this.selectedFolderData = null;
+        
+        // Supprimer le listener de clavier
+        if (this.modalKeydownHandler) {
+            document.removeEventListener('keydown', this.modalKeydownHandler);
+            this.modalKeydownHandler = null;
+        }
+        
+        console.log('[ModernDomainOrganizer] ✅ Modal fermé et nettoyé');
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] ❌ Erreur fermeture modal:', error);
+    }
+}
+updateEmailFolder(domain, emailId, selectedValue) {
+    try {
+        console.log(`[ModernDomainOrganizer] 🎯 updateEmailFolder appelée: domain=${domain}, emailId=${emailId}, value=${selectedValue}`);
+        
+        if (selectedValue === '_advanced') {
+            // Ouvrir le modal de sélection avancée
+            console.log(`[ModernDomainOrganizer] 📁 Ouverture modal avancé pour email: ${emailId}`);
+            const plan = this.organizationPlan.get(domain);
+            const email = plan?.emails.find(e => e.id === emailId);
+            const currentFolder = email?.customFolder || plan?.targetFolder;
+            
+            this.createFolderSelectModal(domain, emailId, currentFolder);
+            return;
+        }
+        
+        // Traitement normal pour les autres valeurs
+        const plan = this.organizationPlan.get(domain);
+        if (!plan) {
+            console.error('[ModernDomainOrganizer] Plan non trouvé pour le domaine:', domain);
+            return;
+        }
+        
+        const email = plan.emails.find(e => e.id === emailId);
+        if (!email) {
+            console.error('[ModernDomainOrganizer] Email non trouvé:', emailId);
+            return;
+        }
+        
+        console.log(`[ModernDomainOrganizer] Mise à jour dossier pour email ${emailId}:`, selectedValue);
+        
+        // Réinitialiser les propriétés personnalisées
+        delete email.customFolder;
+        delete email.customFolderId;
+        
+        if (selectedValue === '_default') {
+            // Utiliser le dossier par défaut du domaine
+            console.log(`[ModernDomainOrganizer] Email ${emailId} utilise le dossier par défaut: ${plan.targetFolder}`);
+            
+        } else if (selectedValue === '_new_folder') {
+            // Nouveau dossier personnalisé
+            email.customFolder = `${domain}_custom`;
+            email.customFolderId = null;
+            console.log(`[ModernDomainOrganizer] Email ${emailId} utilise un nouveau dossier personnalisé`);
+            
+        } else {
+            // Dossier existant sélectionné
+            const selectedFolder = this.allFolders.get(selectedValue) || 
+                                   Array.from(this.allFolders.values()).find(f => f.id === selectedValue);
+            
+            if (selectedFolder) {
+                email.customFolder = selectedFolder.displayName;
+                email.customFolderId = selectedFolder.id;
+                console.log(`[ModernDomainOrganizer] Email ${emailId} utilise le dossier existant: ${selectedFolder.displayName}`);
+            }
+        }
+        
+        // Mettre à jour l'affichage
+        this.updateEmailFolderDisplay(domain, emailId);
+        
+        // Recalculer les statistiques
+        this.updateTotalEmailsCount();
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur mise à jour dossier email:', error);
+        this.showError('Erreur lors de la mise à jour du dossier de l\'email');
+    }
+}
+
+hideCustomFolderInput() {
+    try {
+        const section = document.getElementById('customFolderSection');
+        if (section) {
+            section.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur masquage input personnalisé:', error);
+    }
+}
+
+searchInChildren(children, folderId) {
+    for (const child of children) {
+        if (child.id === folderId) return child;
+        
+        const found = this.searchInChildren(child.children, folderId);
+        if (found) return found;
+    }
+    return null;
+}
+
+
+
+updateEmailCustomFolder(domain, emailId, folderName) {
+    try {
+        if (!folderName || folderName.trim() === '') {
+            this.showWarning('Le nom du dossier ne peut pas être vide');
+            return;
+        }
+        
+        const plan = this.organizationPlan.get(domain);
+        if (!plan) return;
+        
+        const email = plan.emails.find(e => e.id === emailId);
+        if (!email) return;
+        
+        const trimmedName = folderName.trim();
+        email.customFolder = trimmedName;
+        
+        console.log(`[ModernDomainOrganizer] Nom dossier personnalisé pour ${emailId}: "${trimmedName}"`);
+        
+        // Vérifier si le dossier existe
+        const existingFolder = this.findExistingFolderByName(trimmedName);
+        if (existingFolder) {
+            email.customFolderId = existingFolder.id;
+            console.log(`[ModernDomainOrganizer] Dossier existant trouvé: ${existingFolder.displayName}`);
+        } else {
+            email.customFolderId = null;
+            console.log(`[ModernDomainOrganizer] Nouveau dossier sera créé: ${trimmedName}`);
+        }
+        
+        // Mettre à jour l'affichage
+        this.updateEmailFolderDisplay(domain, emailId);
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur mise à jour dossier personnalisé:', error);
+        this.showError('Erreur lors de la mise à jour du nom de dossier personnalisé');
+    }
+}
+
+updateEmailFolderDisplay(domain, emailId) {
+    try {
+        const plan = this.organizationPlan.get(domain);
+        if (!plan) return;
+        
+        const email = plan.emails.find(e => e.id === emailId);
+        if (!email) return;
+        
+        const emailElement = document.querySelector(`[data-email-id="${emailId}"]`);
+        if (!emailElement) return;
+        
+        // Mettre à jour le badge d'information sur le dossier
+        const folderInfo = emailElement.querySelector('.email-folder-info');
+        if (folderInfo) {
+            if (email.customFolder) {
+                const isExisting = this.findExistingFolderByName(email.customFolder);
+                folderInfo.innerHTML = `
+                    <span class="custom-folder-badge ${isExisting ? 'existing' : 'new'}">
+                        ${isExisting ? '📂' : '✨'} ${email.customFolder}
+                    </span>
+                `;
+            } else {
+                folderInfo.innerHTML = `
+                    <span class="default-folder-badge">📁 ${plan.targetFolder}</span>
+                `;
+            }
+        }
+        
+        // Mettre à jour l'affichage du champ de saisie personnalisé
+        const customInput = emailElement.querySelector('.custom-folder-input');
+        if (customInput) {
+            if (email.customFolder && !this.findExistingFolderByName(email.customFolder)) {
+                customInput.style.display = 'block';
+                customInput.value = email.customFolder;
+            } else {
+                customInput.style.display = 'none';
+            }
+        }
+        
+        // Mettre à jour le select
+        const select = emailElement.querySelector('.email-folder-select');
+        if (select) {
+            if (!email.customFolder) {
+                select.value = '_default';
+            } else if (email.customFolderId) {
+                select.value = email.customFolderId;
+            } else {
+                select.value = '_new_folder';
+            }
+        }
+        
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur mise à jour affichage dossier email:', error);
+    }
+}
+    // Gestion des interactions avec protection d'erreurs
+    toggleDomain(domain) {
+        try {
+            if (this.expandedDomains.has(domain)) {
+                this.expandedDomains.delete(domain);
+            } else {
+                this.expandedDomains.add(domain);
+            }
+            
+            const domainElement = document.querySelector(`[data-domain="${domain}"]`);
+            if (domainElement) {
+                const content = domainElement.querySelector('.domain-content');
+                const icon = domainElement.querySelector('.domain-expand i');
+                
+                if (this.expandedDomains.has(domain)) {
+                    domainElement.classList.add('expanded');
+                    if (content) content.classList.add('expanded');
+                    if (icon) icon.className = 'fas fa-chevron-down';
+                } else {
+                    domainElement.classList.remove('expanded');
+                    if (content) content.classList.remove('expanded');
+                    if (icon) icon.className = 'fas fa-chevron-right';
+                }
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur toggle domaine:', error);
+        }
+    }
+
+    toggleDomainSelection(domain) {
+        try {
+            const plan = this.organizationPlan.get(domain);
+            if (plan) {
+                plan.selected = !plan.selected;
+                
+                plan.emails.forEach(email => {
+                    email.selected = plan.selected;
+                });
+                
+                this.updateDomainDisplay(domain);
+                this.updateTotalEmailsCount();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sélection domaine:', error);
+        }
+    }
+
+    toggleEmailSelection(domain, emailId) {
+        try {
+            const plan = this.organizationPlan.get(domain);
+            if (plan) {
+                const email = plan.emails.find(e => e.id === emailId);
+                if (email) {
+                    email.selected = !email.selected;
+                    
+                    const selectedEmails = plan.emails.filter(e => e.selected !== false).length;
+                    plan.selected = selectedEmails > 0;
+                    
+                    this.updateDomainDisplay(domain);
+                    this.updateTotalEmailsCount();
+                }
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sélection email:', error);
+        }
+    }
+
+    updateFolderName(domain, newName) {
+        try {
+            if (!newName || newName.trim() === '') {
+                this.showWarning('Le nom du dossier ne peut pas être vide');
+                return;
+            }
+            
+            const plan = this.organizationPlan.get(domain);
+            if (plan) {
+                const trimmedName = newName.trim();
+                plan.targetFolder = trimmedName;
+                
+                console.log(`[ModernDomainOrganizer] 🔄 Mise à jour nom dossier pour ${domain}: "${trimmedName}"`);
+                
+                const existingFolder = this.findExistingFolderByName(trimmedName);
+                if (existingFolder) {
+                    console.log(`[ModernDomainOrganizer] ✅ Dossier existant trouvé: "${existingFolder.displayName}"`);
+                    plan.action = 'use-existing';
+                    plan.targetFolderId = existingFolder.id;
+                } else {
+                    console.log(`[ModernDomainOrganizer] 📁 Nouveau dossier sera créé: "${trimmedName}"`);
+                    plan.action = 'create-new';
+                    plan.targetFolderId = null;
+                }
+                
+                const domainElement = document.querySelector(`[data-domain="${domain}"]`);
+                if (domainElement) {
+                    const badge = domainElement.querySelector('.action-badge');
+                    if (badge) {
+                        badge.className = `action-badge ${plan.action === 'create-new' ? 'action-new' : 'action-existing'}`;
+                        badge.textContent = plan.action === 'create-new' ? 'Nouveau' : 'Existant';
+                    }
+                }
+                
+                this.displayPlanSummary(document.getElementById('planSummary'));
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour nom dossier:', error);
+            this.showError('Erreur lors de la mise à jour du nom de dossier');
+        }
+    }
+
+    updateDomainDisplay(domain) {
+        try {
+            const plan = this.organizationPlan.get(domain);
+            if (!plan) return;
+            
+            const domainElement = document.querySelector(`[data-domain="${domain}"]`);
+            if (domainElement) {
+                const domainCheckbox = domainElement.querySelector('.domain-checkbox');
+                if (domainCheckbox) domainCheckbox.checked = plan.selected;
+                
+                const selectedEmails = plan.emails.filter(e => e.selected !== false).length;
+                const statsElement = domainElement.querySelector('.domain-stats');
+                if (statsElement) {
+                    statsElement.textContent = `${plan.emailCount} emails • ${selectedEmails} sélectionnés`;
+                }
+                
+                plan.emails.forEach(email => {
+                    const emailCheckbox = domainElement.querySelector(`[data-email-id="${email.id}"]`);
+                    if (emailCheckbox) {
+                        emailCheckbox.checked = email.selected !== false;
                     }
                 });
             }
-        });
-        
-        return errors;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour affichage domaine:', error);
+        }
     }
 
-    sanitizeKeywords(keywords) {
-        const sanitized = {
-            absolute: [],
-            strong: [],
-            weak: [],
-            exclusions: []
+    updateTotalEmailsCount() {
+        try {
+            const totalSelected = Array.from(this.organizationPlan.values())
+                .reduce((sum, plan) => {
+                    if (plan.selected) {
+                        return sum + plan.emails.filter(e => e.selected !== false).length;
+                    }
+                    return sum;
+                }, 0);
+            
+            const element = document.getElementById('selectedEmailsText');
+            if (element) {
+                element.textContent = `${totalSelected.toLocaleString()} emails sélectionnés`;
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour total:', error);
+        }
+    }
+
+    // Contrôles globaux
+    expandAllDomains() {
+        try {
+            this.organizationPlan.forEach((plan, domain) => {
+                this.expandedDomains.add(domain);
+            });
+            this.showOrganizationPlan();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur déplier tout:', error);
+        }
+    }
+
+    collapseAllDomains() {
+        try {
+            this.expandedDomains.clear();
+            this.showOrganizationPlan();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur replier tout:', error);
+        }
+    }
+
+    selectAllDomains() {
+        try {
+            this.organizationPlan.forEach((plan, domain) => {
+                plan.selected = true;
+                plan.emails.forEach(email => {
+                    email.selected = true;
+                });
+                this.updateDomainDisplay(domain);
+            });
+            this.updateTotalEmailsCount();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sélectionner tout:', error);
+        }
+    }
+
+    deselectAllDomains() {
+        try {
+            this.organizationPlan.forEach((plan, domain) => {
+                plan.selected = false;
+                plan.emails.forEach(email => {
+                    email.selected = false;
+                });
+                this.updateDomainDisplay(domain);
+            });
+            this.updateTotalEmailsCount();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur désélectionner tout:', error);
+        }
+    }
+
+    // Création des dossiers seulement
+    async createFoldersOnly() {
+        if (this.isProcessing) return;
+        
+        try {
+            this.isProcessing = true;
+            this.clearErrors();
+            
+            const selectedDomains = Array.from(this.organizationPlan.values()).filter(p => p.selected);
+            const newFolders = selectedDomains.filter(p => p.action === 'create-new');
+            
+            if (newFolders.length === 0) {
+                this.showWarning('Aucun nouveau dossier à créer');
+                return;
+            }
+            
+            this.goToStep('execution');
+            document.getElementById('executionTitle').textContent = 'Création des dossiers';
+            
+            const results = {
+                foldersCreated: 0,
+                emailsMoved: 0,
+                domainsProcessed: 0,
+                errorsCount: 0,
+                errors: [],
+                createdFolders: []
+            };
+            
+            this.addExecutionLog('📁 Début de la création des dossiers', 'info');
+            
+            const totalFolders = newFolders.length;
+            let processed = 0;
+            
+            for (const plan of newFolders) {
+                try {
+                    this.updateExecutionProgress(
+                        (processed / totalFolders) * 100,
+                        `Création du dossier "${plan.targetFolder}"...`
+                    );
+                    
+                    this.addExecutionLog(`📁 Création du dossier "${plan.targetFolder}"`, 'info');
+                    await this.createFolder(plan.targetFolder);
+                    
+                    results.foldersCreated++;
+                    results.createdFolders.push(plan.targetFolder);
+                    this.updateExecutionStat('foldersCreated', results.foldersCreated);
+                    
+                    // Pause pour éviter les rate limits
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                } catch (error) {
+                    console.error(`[ModernDomainOrganizer] Erreur création ${plan.targetFolder}:`, error);
+                    this.addExecutionLog(`❌ Erreur pour "${plan.targetFolder}": ${error.message}`, 'error');
+                    results.errors.push({ folder: plan.targetFolder, error: error.message });
+                    results.errorsCount++;
+                    this.updateExecutionStat('errorsCount', results.errorsCount);
+                }
+                
+                processed++;
+            }
+            
+            this.updateExecutionProgress(100, 'Création terminée !');
+            this.addExecutionLog('✅ Création des dossiers terminée', 'success');
+            
+            // Recharger les dossiers
+            try {
+                await this.loadAllFolders();
+                this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
+            } catch (reloadError) {
+                console.warn('[ModernDomainOrganizer] Erreur rechargement dossiers:', reloadError);
+            }
+            
+            setTimeout(() => {
+                document.getElementById('successTitle').textContent = 'Dossiers créés !';
+                this.showFinalReport(results);
+            }, 1000);
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur création dossiers:', error);
+            this.addExecutionLog(`❌ Erreur critique: ${error.message}`, 'error');
+            this.showError('Erreur lors de la création des dossiers: ' + error.message);
+        } finally {
+            this.isProcessing = false;
+        }
+    }
+
+async executeOrganization() {
+    if (this.isProcessing) return;
+    
+    try {
+        this.isProcessing = true;
+        this.clearErrors();
+        
+        const selectedEmails = Array.from(this.organizationPlan.values())
+            .reduce((sum, plan) => {
+                if (plan.selected) {
+                    return sum + plan.emails.filter(e => e.selected !== false).length;
+                }
+                return sum;
+            }, 0);
+        
+        if (selectedEmails === 0) {
+            this.showWarning('Aucun email sélectionné à organiser');
+            return;
+        }
+        
+        this.goToStep('execution');
+        document.getElementById('executionTitle').textContent = 'Organisation complète';
+        
+        const results = {
+            foldersCreated: 0,
+            emailsMoved: 0,
+            domainsProcessed: 0,
+            errorsCount: 0,
+            errors: [],
+            createdFolders: [],
+            processedDomains: []
         };
         
-        Object.keys(sanitized).forEach(type => {
-            if (keywords[type] && Array.isArray(keywords[type])) {
-                sanitized[type] = keywords[type]
-                    .filter(k => typeof k === 'string' && k.trim().length >= 2)
-                    .map(k => k.trim().toLowerCase())
-                    .filter((k, index, arr) => arr.indexOf(k) === index); // Dédoublonner
+        this.addExecutionLog('🚀 Début de l\'organisation complète', 'info');
+        
+        const folderActions = new Map();
+        
+        // Préparation des actions avec support des dossiers personnalisés
+        this.organizationPlan.forEach((plan, domain) => {
+            if (!plan.selected) return;
+            
+            plan.emails.forEach(email => {
+                if (email.selected === false) return;
+                
+                let targetFolder, targetFolderId, action;
+                
+                // Vérifier si l'email a un dossier personnalisé
+                if (email.customFolder) {
+                    targetFolder = email.customFolder;
+                    targetFolderId = email.customFolderId;
+                    action = targetFolderId ? 'use-existing' : 'create-new';
+                    console.log(`[ModernDomainOrganizer] Email ${email.id} -> dossier personnalisé: ${targetFolder}`);
+                } else {
+                    // Utiliser le dossier par défaut du domaine
+                    targetFolder = plan.targetFolder;
+                    targetFolderId = plan.targetFolderId;
+                    action = plan.action;
+                    console.log(`[ModernDomainOrganizer] Email ${email.id} -> dossier par défaut: ${targetFolder}`);
+                }
+                
+                if (!folderActions.has(targetFolder)) {
+                    folderActions.set(targetFolder, {
+                        targetFolder,
+                        targetFolderId,
+                        action,
+                        emails: []
+                    });
+                }
+                
+                folderActions.get(targetFolder).emails.push(email);
+            });
+        });
+        
+        console.log(`[ModernDomainOrganizer] ${folderActions.size} dossiers distincts à traiter`);
+        this.addExecutionLog(`📊 ${folderActions.size} dossiers distincts identifiés`, 'info');
+        
+        const totalFolders = folderActions.size;
+        let processed = 0;
+        
+        // Traitement de chaque dossier
+        for (const [folderName, folderData] of folderActions) {
+            try {
+                this.updateExecutionProgress(
+                    (processed / totalFolders) * 100,
+                    `Traitement du dossier "${folderName}"...`
+                );
+                
+                let targetFolderId = folderData.targetFolderId;
+                
+                // Création du dossier si nécessaire
+                if (folderData.action === 'create-new') {
+                    this.addExecutionLog(`📁 Création du dossier "${folderName}"`, 'info');
+                    const newFolder = await this.createFolder(folderName);
+                    targetFolderId = newFolder.id;
+                    results.foldersCreated++;
+                    results.createdFolders.push(folderName);
+                    this.updateExecutionStat('foldersCreated', results.foldersCreated);
+                    
+                    // Mettre à jour les emails qui utilisent ce nouveau dossier
+                    folderData.emails.forEach(email => {
+                        if (email.customFolder === folderName && !email.customFolderId) {
+                            email.customFolderId = newFolder.id;
+                        }
+                    });
+                    
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                } else {
+                    this.addExecutionLog(`📁 Utilisation du dossier existant "${folderName}"`, 'info');
+                }
+                
+                // Déplacement des emails par lots
+                const batchSize = 10;
+                let moved = 0;
+                
+                for (let i = 0; i < folderData.emails.length; i += batchSize) {
+                    const batch = folderData.emails.slice(i, i + batchSize);
+                    
+                    this.addExecutionLog(`📧 Déplacement de ${batch.length} emails vers "${folderName}"`, 'info');
+                    await this.moveEmailBatch(batch, targetFolderId);
+                    moved += batch.length;
+                    results.emailsMoved += batch.length;
+                    
+                    this.updateExecutionStat('emailsMoved', results.emailsMoved);
+                    
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+                
+                this.addExecutionLog(`✅ ${moved} emails déplacés vers "${folderName}"`, 'success');
+                
+            } catch (error) {
+                console.error(`[ModernDomainOrganizer] Erreur ${folderName}:`, error);
+                this.addExecutionLog(`❌ Erreur pour "${folderName}": ${error.message}`, 'error');
+                results.errors.push({ folder: folderName, error: error.message });
+                results.errorsCount++;
+                this.updateExecutionStat('errorsCount', results.errorsCount);
+            }
+            
+            processed++;
+        }
+        
+        // Comptage des domaines traités
+        this.organizationPlan.forEach((plan, domain) => {
+            if (plan.selected && plan.emails.some(e => e.selected !== false)) {
+                results.domainsProcessed++;
+                const emailsProcessed = plan.emails.filter(e => e.selected !== false).length;
+                results.processedDomains.push(`${domain} (${emailsProcessed} emails)`);
             }
         });
         
-        return sanitized;
-    }
-
-    // ================================================
-    // MÉTHODES DE NETTOYAGE (inchangées)
-    // ================================================
-    cleanupOrphanedKeywords() {
-        const validCategoryIds = Object.keys(this.categories);
-        const orphanedIds = Object.keys(this.weightedKeywords)
-            .filter(id => !validCategoryIds.includes(id));
+        this.updateExecutionStat('domainsProcessed', results.domainsProcessed);
         
-        orphanedIds.forEach(id => {
-            console.log(`[CategoryManager] Suppression mots-clés orphelins pour: ${id}`);
-            delete this.weightedKeywords[id];
-        });
+        this.updateExecutionProgress(100, 'Organisation terminée !');
+        this.addExecutionLog('🎉 Organisation terminée avec succès !', 'success');
         
-        return orphanedIds.length;
-    }
-
-    rebuildKeywordsIndex() {
-        console.log('[CategoryManager] Reconstruction de l\'index des mots-clés...');
-        
-        // Réinitialiser avec les mots-clés par défaut
-        this.initializeWeightedDetection();
-        
-        // Recharger les catégories personnalisées
-        Object.entries(this.customCategories).forEach(([id, category]) => {
-            if (category.keywords) {
-                this.weightedKeywords[id] = this.sanitizeKeywords(category.keywords);
-            }
-        });
-        
-        console.log('[CategoryManager] Index des mots-clés reconstruit');
-    }
-
-    // ================================================
-    // MÉTHODES DE DEBUG AMÉLIORÉES
-    // ================================================
-    getDebugInfo() {
-        return {
-            isInitialized: this.isInitialized,
-            syncInProgress: this.syncInProgress,
-            syncQueueLength: this.syncQueue.length,
-            lastSyncTimestamp: this.lastSyncTimestamp,
-            changeListenersCount: this.changeListeners.size,
-            eventListenersSetup: this.eventListenersSetup,
-            settings: this.settings,
-            taskPreselectedCategories: this.getTaskPreselectedCategories(),
-            activeCategories: this.getActiveCategories(),
-            totalCategories: Object.keys(this.categories).length,
-            customCategoriesCount: Object.keys(this.customCategories).length
-        };
-    }
-
-    // Force la synchronisation immédiate de tous les modules
-    forceSyncAllModules() {
-        console.log('[CategoryManager] 🚀 === SYNCHRONISATION FORCÉE TOUS MODULES ===');
-        
-        const criticalSettings = [
-            'taskPreselectedCategories',
-            'activeCategories',
-            'categoryExclusions',
-            'scanSettings',
-            'automationSettings',
-            'preferences'
-        ];
-        
-        criticalSettings.forEach(settingType => {
-            const value = this.settings[settingType];
-            if (value !== undefined) {
-                console.log(`[CategoryManager] 🔄 Force sync: ${settingType}`, value);
-                this.notifySpecificModules(settingType, value);
-            }
-        });
-        
-        // Notification générale finale
-        this.notifyAllModules('fullSync', this.settings);
-        
-        console.log('[CategoryManager] ✅ Synchronisation forcée terminée');
-    }
-
-    // Test complet de synchronisation
-    testSynchronization() {
-        console.group('🧪 TEST SYNCHRONISATION CategoryManager');
-        
-        const debugInfo = this.getDebugInfo();
-        console.log('Debug Info:', debugInfo);
-        
-        // Test modification taskPreselectedCategories
-        const originalCategories = [...this.getTaskPreselectedCategories()];
-        const testCategories = ['tasks', 'commercial'];
-        
-        console.log('Test: Modification taskPreselectedCategories');
-        console.log('Avant:', originalCategories);
-        
-        this.updateTaskPreselectedCategories(testCategories);
+        // Recharger les dossiers pour mettre à jour la liste
+        try {
+            await this.loadAllFolders();
+            this.addExecutionLog('🔄 Liste des dossiers mise à jour', 'info');
+        } catch (reloadError) {
+            console.warn('[ModernDomainOrganizer] Erreur rechargement dossiers:', reloadError);
+        }
         
         setTimeout(() => {
-            const newCategories = this.getTaskPreselectedCategories();
-            console.log('Après:', newCategories);
-            
-            // Vérifier EmailScanner
-            const emailScannerCategories = window.emailScanner?.getTaskPreselectedCategories() || [];
-            console.log('EmailScanner a:', emailScannerCategories);
-            
-            const isSync = JSON.stringify(newCategories.sort()) === JSON.stringify(emailScannerCategories.sort());
-            console.log('Synchronisation:', isSync ? '✅ OK' : '❌ ÉCHEC');
-            
-            // Remettre les valeurs originales
-            this.updateTaskPreselectedCategories(originalCategories);
-            
-            console.groupEnd();
-        }, 500);
+            document.getElementById('successTitle').textContent = 'Organisation terminée !';
+            this.showFinalReport(results);
+        }, 1000);
         
-        return true;
+    } catch (error) {
+        console.error('[ModernDomainOrganizer] Erreur organisation:', error);
+        this.addExecutionLog(`❌ Erreur critique: ${error.message}`, 'error');
+        this.showError('Erreur lors de l\'organisation: ' + error.message);
+    } finally {
+        this.isProcessing = false;
     }
+}
 
-    // ================================================
-    // NETTOYAGE ET DESTRUCTION
-    // ================================================
-    cleanup() {
-        // Arrêter tous les intervals
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
-        }
-        
-        // Nettoyer les event listeners
-        if (this.externalSettingsChangeHandler) {
-            window.removeEventListener('settingsChanged', this.externalSettingsChangeHandler);
-        }
-        
-        // Vider les queues et listeners
-        this.syncQueue = [];
-        this.changeListeners.clear();
-        this.eventListenersSetup = false;
-        this.syncInProgress = false;
-        
-        console.log('[CategoryManager] 🧹 Nettoyage effectué');
-    }
-
-    destroy() {
-        this.cleanup();
-        this.categories = {};
-        this.weightedKeywords = {};
-        this.customCategories = {};
-        this.settings = {};
-        console.log('[CategoryManager] Instance détruite');
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES FINALES
-    // ================================================
-    dispatchEvent(eventName, detail) {
+    async createFolder(folderName) {
         try {
-            window.dispatchEvent(new CustomEvent(eventName, { 
-                detail: {
-                    ...detail,
-                    source: 'CategoryManager',
-                    timestamp: Date.now()
+            if (!window.authService?.isAuthenticated()) {
+                throw new Error('Non authentifié');
+            }
+            
+            // Vérification avant création
+            console.log(`[ModernDomainOrganizer] 🔍 Vérification existence du dossier: "${folderName}"`);
+            
+            // Recharger la liste des dossiers pour s'assurer qu'elle est à jour
+            await this.loadAllFolders();
+            
+            // Vérifier si le dossier existe déjà
+            const existingFolder = this.findExistingFolderByName(folderName);
+            if (existingFolder) {
+                console.log(`[ModernDomainOrganizer] ✅ Dossier existe déjà: "${existingFolder.displayName}" (ID: ${existingFolder.id})`);
+                return existingFolder;
+            }
+            
+            console.log(`[ModernDomainOrganizer] 📁 Création du nouveau dossier: "${folderName}"`);
+            
+            const accessToken = await window.authService.getAccessToken();
+            
+            const response = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ displayName: folderName })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                
+                // Gestion spécifique de l'erreur "dossier existe déjà"
+                if (response.status === 409 && errorData.error?.code === 'ErrorFolderExists') {
+                    console.log(`[ModernDomainOrganizer] ⚠️ Le dossier "${folderName}" existe déjà selon l'API`);
+                    
+                    // Recharger et chercher le dossier existant
+                    await this.loadAllFolders();
+                    const foundFolder = this.findExistingFolderByName(folderName);
+                    
+                    if (foundFolder) {
+                        console.log(`[ModernDomainOrganizer] ✅ Dossier existant trouvé après rechargement: "${foundFolder.displayName}"`);
+                        return foundFolder;
+                    } else {
+                        // Créer un nom alternatif si on ne trouve toujours pas le dossier
+                        const alternativeName = `${folderName}_${Date.now()}`;
+                        console.log(`[ModernDomainOrganizer] 🔄 Tentative avec nom alternatif: "${alternativeName}"`);
+                        
+                        const retryResponse = await fetch('https://graph.microsoft.com/v1.0/me/mailFolders', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ displayName: alternativeName })
+                        });
+                        
+                        if (retryResponse.ok) {
+                            const result = await retryResponse.json();
+                            console.log(`[ModernDomainOrganizer] ✅ Dossier créé avec nom alternatif: "${result.displayName}"`);
+                            return result;
+                        }
+                    }
                 }
-            }));
+                
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const result = await response.json();
+            console.log(`[ModernDomainOrganizer] ✅ Nouveau dossier créé: "${result.displayName}" (ID: ${result.id})`);
+            
+            // Ajouter le nouveau dossier à notre cache
+            this.allFolders.set(result.displayName.toLowerCase().trim(), {
+                id: result.id,
+                displayName: result.displayName,
+                totalItemCount: 0,
+                parentFolderId: result.parentFolderId
+            });
+            
+            return result;
+            
         } catch (error) {
-            console.error(`[CategoryManager] Erreur dispatch ${eventName}:`, error);
+            console.error('[ModernDomainOrganizer] Erreur création dossier:', error);
+            throw new Error(`Impossible de créer le dossier "${folderName}": ${error.message}`);
+        }
+    }
+
+    async moveEmailBatch(emails, targetFolderId) {
+        try {
+            if (!window.authService?.isAuthenticated()) {
+                throw new Error('Non authentifié');
+            }
+            
+            const accessToken = await window.authService.getAccessToken();
+            
+            const batchRequests = emails.map((email, index) => ({
+                id: index.toString(),
+                method: 'POST',
+                url: `/me/messages/${email.id}/move`,
+                body: { destinationId: targetFolderId },
+                headers: { 'Content-Type': 'application/json' }
+            }));
+            
+            const response = await fetch('https://graph.microsoft.com/v1.0/$batch', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ requests: batchRequests })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const result = await response.json();
+            
+            // Vérifier les erreurs dans la réponse batch
+            if (result.responses) {
+                const errors = result.responses.filter(r => r.status >= 400);
+                if (errors.length > 0) {
+                    console.warn('[ModernDomainOrganizer] Erreurs batch:', errors);
+                }
+            }
+            
+            return result;
+            
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur déplacement batch:', error);
+            throw new Error(`Erreur lors du déplacement: ${error.message}`);
+        }
+    }
+
+    showFinalReport(results) {
+        try {
+            this.goToStep('success');
+            
+            const report = document.getElementById('successReport');
+            if (!report) return;
+            
+            let reportHTML = '<div class="report-section">';
+            reportHTML += '<h4>📊 Résumé</h4>';
+            reportHTML += '<ul class="report-list">';
+            reportHTML += `<li>Emails déplacés: <strong>${results.emailsMoved.toLocaleString()}</strong></li>`;
+            reportHTML += `<li>Domaines traités: <strong>${results.domainsProcessed}</strong></li>`;
+            reportHTML += `<li>Dossiers créés: <strong>${results.foldersCreated}</strong></li>`;
+            if (results.errorsCount > 0) {
+                reportHTML += `<li>Erreurs: <strong>${results.errorsCount}</strong></li>`;
+            }
+            reportHTML += '</ul></div>';
+            
+            if (results.createdFolders.length > 0) {
+                reportHTML += '<div class="report-section">';
+                reportHTML += '<h4>✨ Nouveaux dossiers</h4>';
+                reportHTML += '<ul class="report-list">';
+                results.createdFolders.slice(0, 10).forEach(folder => {
+                    reportHTML += `<li>📁 ${folder}</li>`;
+                });
+                if (results.createdFolders.length > 10) {
+                    reportHTML += `<li><em>... et ${results.createdFolders.length - 10} autres</em></li>`;
+                }
+                reportHTML += '</ul></div>';
+            }
+            
+            if (results.errors.length > 0) {
+                reportHTML += '<div class="report-section">';
+                reportHTML += '<h4>⚠️ Erreurs</h4>';
+                reportHTML += '<ul class="report-list">';
+                results.errors.slice(0, 5).forEach(error => {
+                    reportHTML += `<li style="color: #dc2626;">${error.folder}: ${error.error}</li>`;
+                });
+                if (results.errors.length > 5) {
+                    reportHTML += `<li><em>... et ${results.errors.length - 5} autres erreurs</em></li>`;
+                }
+                reportHTML += '</ul></div>';
+            }
+            
+            report.innerHTML = reportHTML;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur rapport final:', error);
+        }
+    }
+
+    // Utilitaires avec gestion d'erreurs
+    updateProgress(percent, message) {
+        try {
+            const progressFill = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressPercent');
+            const status = document.getElementById('scanStatus');
+
+            if (progressFill) progressFill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+            if (progressText) progressText.textContent = `${Math.round(percent)}%`;
+            if (status) status.textContent = message || 'En cours...';
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour progress:', error);
+        }
+    }
+
+    updateStat(statId, value) {
+        try {
+            const element = document.getElementById(statId);
+            if (element) {
+                element.textContent = (value || 0).toLocaleString();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour stat:', error);
+        }
+    }
+
+    updateExecutionProgress(percent, message) {
+        try {
+            const progressFill = document.getElementById('executionProgressBar');
+            const progressText = document.getElementById('executionPercent');
+            const status = document.getElementById('executionStatus');
+
+            if (progressFill) progressFill.style.width = `${Math.min(100, Math.max(0, percent))}%`;
+            if (progressText) progressText.textContent = `${Math.round(percent)}%`;
+            if (status) status.textContent = message || 'En cours...';
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour execution progress:', error);
+        }
+    }
+
+    updateExecutionStat(statId, value) {
+        try {
+            const element = document.getElementById(statId);
+            if (element) {
+                element.textContent = (value || 0).toLocaleString();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur mise à jour execution stat:', error);
+        }
+    }
+
+    addExecutionLog(message, type = 'info') {
+        try {
+            const log = document.getElementById('executionLog');
+            if (!log) return;
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            
+            // Limiter le nombre d'entrées pour éviter la surcharge
+            const entries = log.querySelectorAll('.log-entry');
+            if (entries.length > 100) {
+                entries[0].remove();
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur ajout log:', error);
+        }
+    }
+
+    // Gestion des erreurs et messages
+    showError(message) {
+        try {
+            console.error('[ModernDomainOrganizer] Erreur:', message);
+            this.showMessage(message, 'error');
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast(message, 'error');
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage erreur:', error);
+        }
+    }
+
+    showWarning(message) {
+        try {
+            console.warn('[ModernDomainOrganizer] Avertissement:', message);
+            this.showMessage(message, 'warning');
+            
+            if (window.uiManager?.showToast) {
+                window.uiManager.showToast(message, 'warning');
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage warning:', error);
+        }
+    }
+
+    showMessage(message, type) {
+        try {
+            this.clearErrors();
+            
+            const currentCard = document.querySelector('.step-content:not(.hidden) .step-card');
+            if (!currentCard) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${type}-message`;
+            messageDiv.textContent = message;
+            
+            currentCard.insertBefore(messageDiv, currentCard.firstChild);
+            
+            // Auto-suppression après 5 secondes
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 5000);
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage message:', error);
+        }
+    }
+
+    clearErrors() {
+        try {
+            document.querySelectorAll('.error-message, .warning-message, .info-message').forEach(el => {
+                el.remove();
+            });
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur clear errors:', error);
+        }
+    }
+
+    // Extraction et validation des données
+    extractDomain(email) {
+        try {
+            const address = email?.from?.emailAddress?.address;
+            if (!address || typeof address !== 'string') return null;
+            
+            const parts = address.toLowerCase().split('@');
+            return parts.length === 2 ? parts[1] : null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    shouldExcludeDomain(domain, excludedDomains) {
+        try {
+            if (!domain || !Array.isArray(excludedDomains)) return false;
+            
+            return excludedDomains.some(excluded => {
+                try {
+                    return domain.toLowerCase().includes(excluded.toLowerCase());
+                } catch {
+                    return false;
+                }
+            });
+        } catch (error) {
+            return false;
+        }
+    }
+
+    shouldExcludeEmail(email, excludedEmails) {
+        try {
+            const address = email?.from?.emailAddress?.address?.toLowerCase();
+            if (!address || !Array.isArray(excludedEmails)) return false;
+            
+            return excludedEmails.some(excluded => {
+                try {
+                    return address.includes(excluded.toLowerCase());
+                } catch {
+                    return false;
+                }
+            });
+        } catch (error) {
+            return false;
+        }
+    }
+
+    findExistingFolder(domain) {
+        try {
+            if (!domain) return null;
+            
+            const domainLower = domain.toLowerCase().trim();
+            console.log(`[ModernDomainOrganizer] 🔍 Recherche dossier pour: "${domainLower}"`);
+            
+            // 1. Recherche exacte
+            const exactMatch = this.allFolders.get(domainLower);
+            if (exactMatch) {
+                console.log(`[ModernDomainOrganizer] ✅ Correspondance exacte: "${exactMatch.displayName}"`);
+                return exactMatch;
+            }
+            
+            // 2. Recherche par partie principale du domaine
+            const domainParts = domainLower.split('.');
+            if (domainParts.length > 1) {
+                const mainDomain = domainParts[0];
+                const mainMatch = this.allFolders.get(mainDomain);
+                if (mainMatch) {
+                    console.log(`[ModernDomainOrganizer] ✅ Correspondance partielle: "${mainMatch.displayName}" pour ${mainDomain}`);
+                    return mainMatch;
+                }
+            }
+            
+            // 3. Recherche inversée (nom de dossier contient le domaine)
+            for (const [folderKey, folder] of this.allFolders) {
+                if (folderKey.includes(domainLower)) {
+                    console.log(`[ModernDomainOrganizer] ✅ Correspondance contient: "${folder.displayName}"`);
+                    return folder;
+                }
+            }
+            
+            // 4. Recherche approximative (domaine contient nom de dossier)
+            for (const [folderKey, folder] of this.allFolders) {
+                if (domainLower.includes(folderKey) && folderKey.length > 3) { // Éviter les matches trop courts
+                    console.log(`[ModernDomainOrganizer] ✅ Correspondance approximative: "${folder.displayName}"`);
+                    return folder;
+                }
+            }
+            
+            console.log(`[ModernDomainOrganizer] ❌ Aucun dossier trouvé pour: "${domainLower}"`);
+            return null;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur recherche dossier:', error);
+            return null;
+        }
+    }
+
+    findExistingFolderByName(name) {
+        try {
+            if (!name) return null;
+            
+            const nameLower = name.toLowerCase().trim();
+            console.log(`[ModernDomainOrganizer] 🔍 Recherche dossier par nom: "${nameLower}"`);
+            
+            // Recherche exacte par nom
+            for (const folder of this.allFolders.values()) {
+                if (folder.displayName.toLowerCase().trim() === nameLower) {
+                    console.log(`[ModernDomainOrganizer] ✅ Dossier trouvé par nom: "${folder.displayName}"`);
+                    return folder;
+                }
+            }
+            
+            console.log(`[ModernDomainOrganizer] ❌ Aucun dossier trouvé pour le nom: "${nameLower}"`);
+            return null;
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur recherche dossier par nom:', error);
+            return null;
+        }
+    }
+
+    // Modal management
+    closeEmailModal() {
+        try {
+            const modal = document.getElementById('emailModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur fermeture modal:', error);
+        }
+    }
+
+    saveEmailChanges() {
+        try {
+            // Placeholder pour l'édition d'emails (fonctionnalité avancée)
+            this.closeEmailModal();
+            this.showMessage('Fonctionnalité d\'édition en développement', 'info');
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur sauvegarde email:', error);
+        }
+    }
+
+    restart() {
+        try {
+            this.currentStep = 'introduction';
+            this.scanResults = null;
+            this.organizationPlan.clear();
+            this.emailsByDomain.clear();
+            this.expandedDomains.clear();
+            this.totalEmailsScanned = 0;
+            this.isProcessing = false;
+            
+            this.clearErrors();
+            this.goToStep('introduction');
+            this.setDefaultDates();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur restart:', error);
+        }
+    }
+
+    // Interface publique
+    showPage() {
+        try {
+            console.log('[ModernDomainOrganizer] Affichage de la page...');
+            
+            if (!window.authService?.isAuthenticated()) {
+                this.showError('Veuillez vous connecter pour continuer');
+                return;
+            }
+            
+            const loginPage = document.getElementById('loginPage');
+            if (loginPage) loginPage.style.display = 'none';
+            
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContent.style.display = 'block';
+                pageContent.innerHTML = this.getPageHTML();
+            }
+            
+            this.initializePage();
+            
+            // Mise à jour de la navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const rangerButton = document.querySelector('[data-page="ranger"]');
+            if (rangerButton) rangerButton.classList.add('active');
+            
+            console.log('[ModernDomainOrganizer] ✅ Page affichée');
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur affichage page:', error);
+            this.showError('Erreur lors de l\'affichage de la page: ' + error.message);
         }
     }
 }
 
-// ================================================
-// INITIALISATION GLOBALE SÉCURISÉE
-// ================================================
-
-// Créer l'instance globale avec nettoyage préalable
-if (window.categoryManager) {
-    console.log('[CategoryManager] 🔄 Nettoyage ancienne instance...');
-    window.categoryManager.destroy?.();
-}
-
-console.log('[CategoryManager] 🚀 Création nouvelle instance v20.0...');
-window.categoryManager = new CategoryManager();
-
-// Export des méthodes de test globales améliorées
-window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v20.0');
+// Initialisation avec gestion d'erreurs
+try {
+    window.modernDomainOrganizer = new ModernDomainOrganizer();
     
-    const tests = [
-        { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
-        { subject: "Action requise: Confirmer votre commande", expected: "tasks" },
-        { subject: "Nouvelle connexion détectée sur votre compte", expected: "security" },
-        { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" },
-        { subject: "Réunion équipe prévue pour demain", expected: "meetings" }
-    ];
-    
-    tests.forEach(test => {
-        window.categoryManager.testEmail(test.subject, '', 'test@example.com', test.expected);
-    });
-    
-    console.log('Stats:', window.categoryManager.getCategoryStats());
-    console.log('Debug Info:', window.categoryManager.getDebugInfo());
-    
-    // Test synchronisation
-    window.categoryManager.testSynchronization();
-    
-    console.groupEnd();
-    return { success: true, testsRun: tests.length };
-};
-
-window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés v20.0');
-    const allKeywords = window.categoryManager.getAllKeywords();
-    
-    Object.entries(allKeywords).forEach(([categoryId, keywords]) => {
-        const category = window.categoryManager.getCategory(categoryId);
-        const total = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
-                     (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
-        
-        if (total > 0) {
-            console.log(`${category?.icon || '📂'} ${category?.name || categoryId}: ${total} mots-clés`);
-            if (keywords.absolute?.length) console.log(`  Absolus: ${keywords.absolute.join(', ')}`);
-            if (keywords.strong?.length) console.log(`  Forts: ${keywords.strong.join(', ')}`);
-            if (keywords.weak?.length) console.log(`  Faibles: ${keywords.weak.join(', ')}`);
-            if (keywords.exclusions?.length) console.log(`  Exclusions: ${keywords.exclusions.join(', ')}`);
+    // Gestion autonome des événements
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            document.addEventListener('click', function(e) {
+                const rangerButton = e.target.closest('[data-page="ranger"]');
+                if (!rangerButton) return;
+                
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                window.modernDomainOrganizer.showPage();
+                return false;
+            }, true);
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur setup événements:', error);
         }
     });
     
-    console.groupEnd();
-};
-
-window.testCategorySync = function() {
-    return window.categoryManager.testSynchronization();
-};
-
-window.forceCategorySync = function() {
-    window.categoryManager.forceSyncAllModules();
-    return { success: true, message: 'Synchronisation forcée effectuée' };
-};
-
-console.log('✅ CategoryManager v20.0 loaded - Synchronisation complètement fixée');
+    // Fonction globale d'accès
+    window.showModernDomainOrganizer = function() {
+        try {
+            window.modernDomainOrganizer.showPage();
+        } catch (error) {
+            console.error('[ModernDomainOrganizer] Erreur fonction globale:', error);
+        }
+    };
+    
+    console.log('[ModernDomainOrganizer] ✅ Module chargé avec gestion d\'erreurs complète');
+    
+} catch (error) {
+    console.error('[ModernDomainOrganizer] ❌ Erreur fatale lors du chargement:', error);
+}
