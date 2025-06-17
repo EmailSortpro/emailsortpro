@@ -1,2800 +1,4962 @@
-// CategoryManager.js - Version 20.0 - Synchronisation complètement fixée
+// PageManager.js - Version 12.1 - Synchronisation fixée avec paramètres
 
-class CategoryManager {
+class PageManager {
     constructor() {
-        this.categories = {};
-        this.weightedKeywords = {};
-        this.customCategories = {};
-        this.settings = this.loadSettings();
-        this.isInitialized = false;
-        this.debugMode = false;
-        this.eventListenersSetup = false;
+        // Core state
+        this.currentPage = null;
+        this.selectedEmails = new Set();
+        this.aiAnalysisResults = new Map();
+        this.createdTasks = new Map();
+        this.autoAnalyzeEnabled = true;
+        this.searchTerm = '';
+        this.lastScanData = null;
+        this.hideExplanation = localStorage.getItem('hideEmailExplanation') === 'true';
         
-        // NOUVEAU: Système de synchronisation renforcé
-        this.syncQueue = [];
-        this.syncInProgress = false;
-        this.changeListeners = new Set();
-        this.lastSyncTimestamp = 0;
+        // Vue modes pour les emails
+        this.currentViewMode = 'grouped-domain';
+        this.currentCategory = null;
         
-        this.initializeCategories();
-        this.loadCustomCategories();
-        this.initializeWeightedDetection();this.initializeFilters();
+        // Page renderers - DASHBOARD SUPPRIMÉ
+        this.pages = {
+            scanner: (container) => this.renderScanner(container),
+            emails: (container) => this.renderEmails(container),
+            tasks: (container) => this.renderTasks(container),
+            categories: (container) => this.renderCategories(container),
+            settings: (container) => this.renderSettings(container),
+            ranger: (container) => this.renderRanger(container)
+        };
+        
         this.setupEventListeners();
-        
-        // NOUVEAU: Démarrer la synchronisation automatique
-        this.startAutoSync();
-        
-        console.log('[CategoryManager] ✅ Version 20.0 - Synchronisation complètement fixée');
+        this.init();
+    }
+
+    init() {
+        console.log('[PageManager] ✅ Version 12.1 - Synchronisation fixée avec paramètres');
     }
 
     // ================================================
-    // NOUVEAU SYSTÈME DE SYNCHRONISATION AUTOMATIQUE
-    // ================================================
-    startAutoSync() {
-        // Synchronisation automatique toutes les 2 secondes
-        setInterval(() => {
-            this.processSettingsChanges();
-        }, 2000);
-        
-        // Synchronisation immédiate lors des changements
-        this.setupImmediateSync();
-    }
-
-    setupImmediateSync() {
-        // Écouter les changements dans localStorage
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'categorySettings') {
-                console.log('[CategoryManager] 🔄 Changement localStorage détecté');
-                this.reloadSettingsFromStorage();
-                this.notifyAllModules('storageChange');
-            }
-        });
-    }
-
-    processSettingsChanges() {
-        if (this.syncInProgress || this.syncQueue.length === 0) return;
-        
-        this.syncInProgress = true;
-        
-        try {
-            while (this.syncQueue.length > 0) {
-                const change = this.syncQueue.shift();
-                this.applySettingChange(change);
-            }
-            
-            this.lastSyncTimestamp = Date.now();
-            
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sync queue:', error);
-        } finally {
-            this.syncInProgress = false;
-        }
-    }
-
-    applySettingChange(change) {
-        const { type, value, notifyModules } = change;
-        
-        console.log(`[CategoryManager] 📝 Application changement: ${type}`, value);
-        
-        // Appliquer le changement dans les settings locaux
-        switch (type) {
-            case 'taskPreselectedCategories':
-                this.settings.taskPreselectedCategories = [...value];
-                break;
-            case 'activeCategories':
-                this.settings.activeCategories = value;
-                break;
-            case 'categoryExclusions':
-                this.settings.categoryExclusions = { ...this.settings.categoryExclusions, ...value };
-                break;
-            case 'scanSettings':
-                this.settings.scanSettings = { ...this.settings.scanSettings, ...value };
-                break;
-            case 'automationSettings':
-                this.settings.automationSettings = { ...this.settings.automationSettings, ...value };
-                break;
-            case 'preferences':
-                this.settings.preferences = { ...this.settings.preferences, ...value };
-                break;
-            default:
-                this.settings = { ...this.settings, ...value };
-        }
-        
-        // Sauvegarder immédiatement
-        this.saveSettingsToStorage();
-        
-        // Notifier les modules si demandé
-        if (notifyModules !== false) {
-            this.notifySpecificModules(type, value);
-            this.notifyAllModules(type, value);
-        }
-    }
-
-    // ================================================
-    // MÉTHODES DE NOTIFICATION RENFORCÉES
-    // ================================================
-    notifySpecificModules(type, value) {
-        console.log(`[CategoryManager] 📢 Notification spécialisée: ${type}`);
-        
-        // EmailScanner - PRIORITÉ ABSOLUE
-        if (window.emailScanner) {
-            switch (type) {
-                case 'taskPreselectedCategories':
-                    console.log('[CategoryManager] → EmailScanner: taskPreselectedCategories');
-                    if (typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
-                        window.emailScanner.updateTaskPreselectedCategories(value);
-                    }
-                    // Forcer la re-catégorisation
-                    setTimeout(() => {
-                        if (window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                            console.log('[CategoryManager] → EmailScanner: Déclenchement re-catégorisation');
-                            window.emailScanner.recategorizeEmails?.();
-                        }
-                    }, 100);
-                    break;
-                    
-                case 'activeCategories':
-                    console.log('[CategoryManager] → EmailScanner: activeCategories');
-                    if (typeof window.emailScanner.updateSettings === 'function') {
-                        window.emailScanner.updateSettings({ activeCategories: value });
-                    }
-                    setTimeout(() => {
-                        if (window.emailScanner.emails && window.emailScanner.emails.length > 0) {
-                            window.emailScanner.recategorizeEmails?.();
-                        }
-                    }, 100);
-                    break;
-                    
-                case 'categoryExclusions':
-                case 'preferences':
-                    if (typeof window.emailScanner.updateSettings === 'function') {
-                        window.emailScanner.updateSettings({ [type]: value });
-                    }
-                    break;
-            }
-        }
-        
-        // AITaskAnalyzer
-        if (window.aiTaskAnalyzer) {
-            if (type === 'taskPreselectedCategories') {
-                console.log('[CategoryManager] → AITaskAnalyzer: taskPreselectedCategories');
-                if (typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
-                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
-                }
-            }
-            if (type === 'automationSettings') {
-                console.log('[CategoryManager] → AITaskAnalyzer: automationSettings');
-                if (typeof window.aiTaskAnalyzer.updateAutomationSettings === 'function') {
-                    window.aiTaskAnalyzer.updateAutomationSettings(value);
-                }
-            }
-        }
-        
-        // StartScan/MinimalScanModule
-        if (window.minimalScanModule || window.scanStartModule) {
-            const scanner = window.minimalScanModule || window.scanStartModule;
-            if (type === 'taskPreselectedCategories' || type === 'scanSettings') {
-                console.log('[CategoryManager] → ScanModule:', type);
-                if (typeof scanner.updateSettings === 'function') {
-                    scanner.updateSettings({ [type]: value });
-                }
-            }
-        }
-        
-        // PageManager
-        if (window.pageManager) {
-            console.log('[CategoryManager] → PageManager:', type);
-            if (typeof window.pageManager.handleSettingsChanged === 'function') {
-                window.pageManager.handleSettingsChanged({ settings: this.settings });
-            }
-        }
-    }
-
-    notifyAllModules(type, value) {
-        // Dispatch événements globaux
-        setTimeout(() => {
-            this.dispatchEvent('categorySettingsChanged', { 
-                settings: this.settings,
-                type,
-                value,
-                timestamp: Date.now()
-            });
-            
-            this.dispatchEvent('settingsChanged', { 
-                type, 
-                value,
-                source: 'CategoryManager',
-                timestamp: Date.now()
-            });
-        }, 10);
-        
-        // Notifier les listeners enregistrés
-        this.changeListeners.forEach(listener => {
-            try {
-                listener(type, value, this.settings);
-            } catch (error) {
-                console.error('[CategoryManager] Erreur listener:', error);
-            }
-        });
-    }
-
-    // ================================================
-    // API PUBLIQUE POUR CHANGEMENTS DE PARAMÈTRES
-    // ================================================
-    updateSettings(newSettings, notifyModules = true) {
-        console.log('[CategoryManager] 📝 updateSettings appelé:', newSettings);
-        
-        // Ajouter à la queue de synchronisation
-        this.syncQueue.push({
-            type: 'fullSettings',
-            value: newSettings,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        // Traitement immédiat si pas en cours
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-updateTaskPreselectedCategories(categories, notifyModules = true) {
-    console.log('[CategoryManager] 📋 updateTaskPreselectedCategories:', categories);
-    
-    const normalizedCategories = Array.isArray(categories) ? [...categories] : [];
-    
-    // Invalider le cache
-    this.invalidateTaskCategoriesCache();
-    
-    this.syncQueue.push({
-        type: 'taskPreselectedCategories',
-        value: normalizedCategories,
-        notifyModules,
-        timestamp: Date.now()
-    });
-    
-    if (!this.syncInProgress) {
-        this.processSettingsChanges();
-    }
-    
-    return normalizedCategories;
-}
-
-runDiagnostics() {
-    console.group('🏥 DIAGNOSTIC COMPLET CategoryManager');
-    
-    // 1. Vérifier les catégories
-    console.group('📂 Catégories');
-    const allCategories = Object.keys(this.categories);
-    const customCategories = Object.keys(this.customCategories);
-    const activeCategories = this.getActiveCategories();
-    
-    console.log('Total catégories:', allCategories.length);
-    console.log('Catégories standard:', allCategories.filter(c => !this.categories[c].isCustom).length);
-    console.log('Catégories personnalisées:', customCategories.length);
-    console.log('Catégories actives:', activeCategories.length);
-    
-    // Vérifier les catégories personnalisées
-    customCategories.forEach(catId => {
-        const cat = this.categories[catId];
-        const keywords = this.weightedKeywords[catId];
-        const isActive = activeCategories.includes(catId);
-        const keywordCount = this.getTotalKeywordsCount(catId);
-        
-        console.log(`\n${cat.icon} ${cat.name} (${catId}):`);
-        console.log('  - Active:', isActive ? '✅' : '❌');
-        console.log('  - Priorité:', cat.priority);
-        console.log('  - Mots-clés:', keywordCount);
-        
-        if (keywordCount === 0) {
-            console.warn('  ⚠️ AUCUN MOT-CLÉ DÉFINI!');
-        }
-    });
-    console.groupEnd();
-    
-    // 2. Vérifier l'efficacité des catégories
-    console.group('📊 Efficacité des catégories');
-    Object.entries(this.weightedKeywords).forEach(([catId, keywords]) => {
-        const totalKeywords = this.getTotalKeywordsCount(catId);
-        const absoluteCount = keywords.absolute?.length || 0;
-        const efficiency = totalKeywords > 0 ? Math.round((absoluteCount / totalKeywords) * 100) : 0;
-        
-        if (efficiency < 30 && totalKeywords > 0) {
-            const cat = this.categories[catId];
-            console.warn(`⚠️ ${cat.icon} ${cat.name}: ${efficiency}% d'efficacité (${absoluteCount} absolus sur ${totalKeywords} total)`);
-        }
-    });
-    console.groupEnd();
-    
-    // 3. Vérifier la synchronisation
-    console.group('🔄 État de synchronisation');
-    console.log('Queue de sync:', this.syncQueue.length);
-    console.log('Sync en cours:', this.syncInProgress);
-    console.log('Dernière sync:', new Date(this.lastSyncTimestamp).toLocaleTimeString());
-    console.log('Listeners actifs:', this.changeListeners.size);
-    console.groupEnd();
-    
-    // 4. Recommandations
-    console.group('💡 Recommandations');
-    
-    // Catégories sans mots-clés
-    const emptyCats = allCategories.filter(catId => this.getTotalKeywordsCount(catId) === 0);
-    if (emptyCats.length > 0) {
-        console.warn('Catégories sans mots-clés:', emptyCats);
-    }
-    
-    // Catégories peu efficaces
-    const inefficientCats = Object.entries(this.weightedKeywords)
-        .filter(([catId, keywords]) => {
-            const total = this.getTotalKeywordsCount(catId);
-            const absolute = keywords.absolute?.length || 0;
-            return total > 0 && (absolute / total) < 0.3;
-        })
-        .map(([catId]) => this.categories[catId]?.name || catId);
-    
-    if (inefficientCats.length > 0) {
-        console.warn('Catégories peu efficaces (< 30% mots absolus):', inefficientCats);
-        console.log('→ Ajoutez plus de mots-clés absolus pour améliorer la détection');
-    }
-    
-    console.groupEnd();
-    console.groupEnd();
-    
-    return {
-        totalCategories: allCategories.length,
-        customCategories: customCategories.length,
-        activeCategories: activeCategories.length,
-        emptyCategoriesCount: emptyCats.length,
-        inefficientCategoriesCount: inefficientCats.length
-    };
-}
-    updateActiveCategories(categories, notifyModules = true) {
-        console.log('[CategoryManager] 🏷️ updateActiveCategories:', categories);
-        
-        this.syncQueue.push({
-            type: 'activeCategories',
-            value: categories,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updateCategoryExclusions(exclusions, notifyModules = true) {
-        console.log('[CategoryManager] 🚫 updateCategoryExclusions:', exclusions);
-        
-        this.syncQueue.push({
-            type: 'categoryExclusions',
-            value: exclusions,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updatePreferences(preferences, notifyModules = true) {
-        console.log('[CategoryManager] ⚙️ updatePreferences:', preferences);
-        
-        this.syncQueue.push({
-            type: 'preferences',
-            value: preferences,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updateScanSettings(scanSettings, notifyModules = true) {
-        console.log('[CategoryManager] 🔍 updateScanSettings:', scanSettings);
-        
-        this.syncQueue.push({
-            type: 'scanSettings',
-            value: scanSettings,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    updateAutomationSettings(automationSettings, notifyModules = true) {
-        console.log('[CategoryManager] 🤖 updateAutomationSettings:', automationSettings);
-        
-        this.syncQueue.push({
-            type: 'automationSettings',
-            value: automationSettings,
-            notifyModules,
-            timestamp: Date.now()
-        });
-        
-        if (!this.syncInProgress) {
-            this.processSettingsChanges();
-        }
-    }
-
-    // ================================================
-    // GESTION DES PARAMÈTRES CENTRALISÉE RENFORCÉE
-    // ================================================
-    loadSettings() {
-        try {
-            const saved = localStorage.getItem('categorySettings');
-            const defaultSettings = this.getDefaultSettings();
-            
-            if (saved) {
-                const parsedSettings = JSON.parse(saved);
-                const mergedSettings = { ...defaultSettings, ...parsedSettings };
-                console.log('[CategoryManager] ✅ Settings chargés depuis localStorage');
-                return mergedSettings;
-            } else {
-                console.log('[CategoryManager] 📝 Utilisation settings par défaut');
-                return defaultSettings;
-            }
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur chargement paramètres:', error);
-            return this.getDefaultSettings();
-        }
-    }
-
-    saveSettingsToStorage() {
-        try {
-            localStorage.setItem('categorySettings', JSON.stringify(this.settings));
-            console.log('[CategoryManager] 💾 Settings sauvegardés');
-        } catch (error) {
-            console.error('[CategoryManager] ❌ Erreur sauvegarde paramètres:', error);
-        }
-    }
-
-    reloadSettingsFromStorage() {
-        const oldSettings = { ...this.settings };
-        this.settings = this.loadSettings();
-        
-        // Détecter les changements et notifier
-        const changes = this.detectSettingsChanges(oldSettings, this.settings);
-        changes.forEach(change => {
-            this.notifySpecificModules(change.type, change.value);
-        });
-    }
-
-    detectSettingsChanges(oldSettings, newSettings) {
-        const changes = [];
-        
-        const criticalFields = [
-            'taskPreselectedCategories',
-            'activeCategories', 
-            'categoryExclusions',
-            'scanSettings',
-            'automationSettings',
-            'preferences'
-        ];
-        
-        criticalFields.forEach(field => {
-            const oldValue = JSON.stringify(oldSettings[field] || {});
-            const newValue = JSON.stringify(newSettings[field] || {});
-            
-            if (oldValue !== newValue) {
-                changes.push({
-                    type: field,
-                    value: newSettings[field],
-                    oldValue: oldSettings[field]
-                });
-            }
-        });
-        
-        return changes;
-    }
-
-    getDefaultSettings() {
-        return {
-            activeCategories: null, // null = toutes actives
-            excludedDomains: [],
-            excludedKeywords: [],
-            taskPreselectedCategories: [], // VIDE par défaut
-            categoryExclusions: {
-                domains: [],
-                emails: []
-            },
-            scanSettings: {
-                defaultPeriod: 7,
-                defaultFolder: 'inbox',
-                autoAnalyze: true,
-                autoCategrize: true
-            },
-            automationSettings: {
-                autoCreateTasks: false,
-                groupTasksByDomain: false,
-                skipDuplicates: true,
-                autoAssignPriority: false
-            },
-            preferences: {
-                darkMode: false,
-                compactView: false,
-                showNotifications: true,
-                excludeSpam: true,
-                detectCC: true
-            }
-        };
-    }
-
-    // ================================================
-    // MÉTHODES PUBLIQUES POUR LES AUTRES MODULES - RENFORCÉES
-    // ================================================
-    getSettings() {
-        // Toujours retourner une copie fraîche
-        return JSON.parse(JSON.stringify(this.settings));
-    }
-
-getTaskPreselectedCategories() {
-    // Vérifier le cache avec une durée de vie de 10 secondes
-    const now = Date.now();
-    const CACHE_DURATION = 10000; // 10 secondes
-    
-    if (this._taskCategoriesCache && 
-        this._taskCategoriesCacheTime && 
-        (now - this._taskCategoriesCacheTime) < CACHE_DURATION) {
-        // Retourner depuis le cache sans logger
-        return [...this._taskCategoriesCache];
-    }
-    
-    // Récupérer les catégories fraîches
-    const categories = this.settings.taskPreselectedCategories || [];
-    
-    // Mettre à jour le cache
-    this._taskCategoriesCache = [...categories];
-    this._taskCategoriesCacheTime = now;
-    
-    // Log seulement si changement ou première fois
-    if (!this._lastLoggedTaskCategories || 
-        JSON.stringify(this._lastLoggedTaskCategories) !== JSON.stringify(categories)) {
-        console.log('[CategoryManager] 📋 Catégories tâches mises à jour:', categories);
-        this._lastLoggedTaskCategories = [...categories];
-    }
-    
-    return [...categories];
-}
-
-invalidateTaskCategoriesCache() {
-    this._taskCategoriesCache = null;
-    this._taskCategoriesCacheTime = 0;
-    console.log('[CategoryManager] 🔄 Cache des catégories tâches invalidé');
-}
-
-getActiveCategories() {
-    // Si activeCategories est null, toutes les catégories sont actives
-    if (!this.settings.activeCategories) {
-        // Retourner TOUTES les catégories (standard + personnalisées)
-        const allCategories = Object.keys(this.categories);
-        console.log('[CategoryManager] Toutes catégories actives:', allCategories);
-        return allCategories;
-    }
-    
-    // Sinon retourner seulement les catégories marquées comme actives
-    return [...this.settings.activeCategories];
-}
-
-    isCategoryActive(categoryId) {
-        const activeCategories = this.getActiveCategories();
-        return activeCategories.includes(categoryId);
-    }
-
-    getScanSettings() {
-        return { ...this.settings.scanSettings };
-    }
-
-    getAutomationSettings() {
-        return { ...this.settings.automationSettings };
-    }
-
-    shouldExcludeSpam() {
-        return this.settings.preferences?.excludeSpam !== false;
-    }
-
-    shouldDetectCC() {
-        return this.settings.preferences?.detectCC !== false;
-    }
-
-
-
-    // ================================================
-    // SYSTÈME D'ÉCOUTE POUR AUTRES MODULES
-    // ================================================
-    addChangeListener(callback) {
-        this.changeListeners.add(callback);
-        console.log(`[CategoryManager] 👂 Listener ajouté (${this.changeListeners.size} total)`);
-        
-        // Retourner une fonction pour supprimer le listener
-        return () => {
-            this.changeListeners.delete(callback);
-        };
-    }
-
-    removeChangeListener(callback) {
-        this.changeListeners.delete(callback);
-    }
-
-    saveCustomCategories() {
-        try {
-            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
-            console.log('[CategoryManager] Catégories personnalisées sauvegardées');
-        } catch (error) {
-            console.error('[CategoryManager] Erreur sauvegarde catégories personnalisées:', error);
-        }
-    }
-// CategoryManager.js - Amélioration de loadCustomCategories() (remplacer vers ligne 490)
-
-// CategoryManager.js - Remplacer loadCustomCategories() vers ligne 490
-
-loadCustomCategories() {
-    try {
-        const saved = localStorage.getItem('customCategories');
-        this.customCategories = saved ? JSON.parse(saved) : {};
-        
-        console.log('[CategoryManager] 📁 Chargement catégories personnalisées...');
-        
-        Object.entries(this.customCategories).forEach(([id, category]) => {
-            // Ajouter la catégorie
-            this.categories[id] = {
-                ...category,
-                isCustom: true,
-                priority: category.priority || 30
-            };
-            
-            // IMPORTANT: Charger les mots-clés sauvegardés
-            if (category.keywords) {
-                this.weightedKeywords[id] = {
-                    absolute: [...(category.keywords.absolute || [])],
-                    strong: [...(category.keywords.strong || [])],
-                    weak: [...(category.keywords.weak || [])],
-                    exclusions: [...(category.keywords.exclusions || [])]
-                };
-            } else {
-                // Initialiser avec des tableaux vides
-                this.weightedKeywords[id] = {
-                    absolute: [],
-                    strong: [],
-                    weak: [],
-                    exclusions: []
-                };
-            }
-            
-            const totalKeywords = this.getTotalKeywordsCount(id);
-            console.log(`[CategoryManager] ✅ Catégorie personnalisée "${category.name}" (${id}):`);
-            console.log(`  - Priorité: ${category.priority || 30}`);
-            console.log(`  - Mots-clés: ${totalKeywords}`);
-            console.log(`  - Keywords object:`, this.weightedKeywords[id]);
-            
-            if (totalKeywords === 0) {
-                console.warn(`  ⚠️ AUCUN MOT-CLÉ - La catégorie ne pourra pas détecter d'emails!`);
-            }
-            
-            // S'assurer que la catégorie est active
-            if (this.settings.activeCategories === null) {
-                // Si null, toutes sont actives par défaut
-                console.log(`  ✅ Catégorie active par défaut`);
-            } else if (Array.isArray(this.settings.activeCategories)) {
-                if (!this.settings.activeCategories.includes(id)) {
-                    console.log(`  ➕ Ajout aux catégories actives`);
-                    this.settings.activeCategories.push(id);
-                    this.saveSettingsToStorage();
-                }
-            }
-        });
-        
-        console.log('[CategoryManager] 📊 Résumé:');
-        console.log('  - Catégories personnalisées chargées:', Object.keys(this.customCategories).length);
-        console.log('  - Total catégories:', Object.keys(this.categories).length);
-        
-    } catch (error) {
-        console.error('[CategoryManager] ❌ Erreur chargement catégories personnalisées:', error);
-        this.customCategories = {};
-    }
-}
-
-getTotalKeywordsCount(categoryId) {
-    const keywords = this.weightedKeywords[categoryId];
-    if (!keywords) return 0;
-    
-    return (keywords.absolute?.length || 0) + 
-           (keywords.strong?.length || 0) + 
-           (keywords.weak?.length || 0) + 
-           (keywords.exclusions?.length || 0);
-}
-    createCustomCategory(categoryData) {
-        const id = this.generateCategoryId(categoryData.name);
-        
-        const category = {
-            id: id,
-            name: categoryData.name,
-            icon: categoryData.icon || '📂',
-            color: categoryData.color || '#6366f1',
-            description: categoryData.description || '',
-            priority: categoryData.priority || 30,
-            createdAt: new Date().toISOString(),
-            isCustom: true,
-            keywords: categoryData.keywords || { absolute: [], strong: [], weak: [], exclusions: [] }
-        };
-
-        this.customCategories[id] = category;
-        this.categories[id] = category;
-        
-        // Initialiser les mots-clés
-        this.weightedKeywords[id] = {
-            absolute: category.keywords.absolute || [],
-            strong: category.keywords.strong || [],
-            weak: category.keywords.weak || [],
-            exclusions: category.keywords.exclusions || []
-        };
-
-        this.saveCustomCategories();
-        
-        setTimeout(() => {
-            this.dispatchEvent('categoryCreated', { categoryId: id, category });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie personnalisée créée:', category);
-        return category;
-    }
-
-    updateCustomCategory(categoryId, updates) {
-        if (!this.customCategories[categoryId]) {
-            throw new Error('Catégorie personnalisée non trouvée');
-        }
-
-        // Mise à jour avec préservation des mots-clés
-        const updatedCategory = {
-            ...this.customCategories[categoryId],
-            ...updates,
-            keywords: updates.keywords || this.customCategories[categoryId].keywords,
-            updatedAt: new Date().toISOString()
-        };
-
-        this.customCategories[categoryId] = updatedCategory;
-        this.categories[categoryId] = updatedCategory;
-        
-        // Mettre à jour les mots-clés si fournis
-        if (updates.keywords) {
-            this.weightedKeywords[categoryId] = {
-                absolute: updates.keywords.absolute || [],
-                strong: updates.keywords.strong || [],
-                weak: updates.keywords.weak || [],
-                exclusions: updates.keywords.exclusions || []
-            };
-        }
-
-        this.saveCustomCategories();
-        
-        setTimeout(() => {
-            this.dispatchEvent('categoryUpdated', { categoryId, category: updatedCategory });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie mise à jour:', categoryId);
-        return updatedCategory;
-    }
-
-    deleteCustomCategory(categoryId) {
-        if (!this.customCategories[categoryId]) {
-            throw new Error('Catégorie personnalisée non trouvée');
-        }
-
-        // Retirer des catégories pré-sélectionnées si présente
-        if (this.settings.taskPreselectedCategories?.includes(categoryId)) {
-            const newPreselected = this.settings.taskPreselectedCategories.filter(id => id !== categoryId);
-            this.updateTaskPreselectedCategories(newPreselected);
-        }
-
-        // Retirer des catégories actives si présente
-        if (this.settings.activeCategories?.includes(categoryId)) {
-            const newActive = this.settings.activeCategories.filter(id => id !== categoryId);
-            this.updateActiveCategories(newActive);
-        }
-
-        delete this.customCategories[categoryId];
-        delete this.categories[categoryId];
-        delete this.weightedKeywords[categoryId];
-
-        this.saveCustomCategories();
-        
-        setTimeout(() => {
-            this.dispatchEvent('categoryDeleted', { categoryId });
-        }, 10);
-
-        console.log('[CategoryManager] Catégorie supprimée:', categoryId);
-    }
-
-    generateCategoryId(name) {
-        const base = name.toLowerCase()
-            .replace(/[àâä]/g, 'a')
-            .replace(/[éèêë]/g, 'e')
-            .replace(/[îï]/g, 'i')
-            .replace(/[ôö]/g, 'o')
-            .replace(/[ùûü]/g, 'u')
-            .replace(/[ç]/g, 'c')
-            .replace(/[^a-z0-9]/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '');
-        
-        let id = 'custom_' + base;
-        let counter = 1;
-        
-        while (this.categories[id] || this.customCategories[id]) {
-            id = `custom_${base}_${counter}`;
-            counter++;
-        }
-        
-        return id;
-    }
-
-    getCustomCategories() {
-        return { ...this.customCategories };
-    }
-
-    // ================================================
-    // GESTION DES MOTS-CLÉS PAR CATÉGORIE (inchangé)
-    // ================================================
-    updateCategoryKeywords(categoryId, keywords) {
-        if (!this.categories[categoryId]) {
-            throw new Error('Catégorie non trouvée');
-        }
-
-        console.log(`[CategoryManager] Mise à jour mots-clés pour ${categoryId}:`, keywords);
-
-        this.weightedKeywords[categoryId] = {
-            absolute: keywords.absolute || [],
-            strong: keywords.strong || [],
-            weak: keywords.weak || [],
-            exclusions: keywords.exclusions || []
-        };
-
-        // Si c'est une catégorie personnalisée, sauvegarder
-        if (this.customCategories[categoryId]) {
-            this.customCategories[categoryId].keywords = this.weightedKeywords[categoryId];
-            this.saveCustomCategories();
-        }
-
-        console.log(`[CategoryManager] Mots-clés mis à jour pour ${categoryId}`);
-        
-        setTimeout(() => {
-            this.dispatchEvent('keywordsUpdated', { categoryId, keywords: this.weightedKeywords[categoryId] });
-        }, 10);
-    }
-
-    getCategoryKeywords(categoryId) {
-        const keywords = this.weightedKeywords[categoryId];
-        if (!keywords) {
-            return {
-                absolute: [],
-                strong: [],
-                weak: [],
-                exclusions: []
-            };
-        }
-        
-        return {
-            absolute: keywords.absolute || [],
-            strong: keywords.strong || [],
-            weak: keywords.weak || [],
-            exclusions: keywords.exclusions || []
-        };
-    }
-
-    addKeywordToCategory(categoryId, keyword, type = 'strong') {
-        if (!this.categories[categoryId]) {
-            throw new Error('Catégorie non trouvée');
-        }
-
-        if (!this.weightedKeywords[categoryId]) {
-            this.weightedKeywords[categoryId] = { absolute: [], strong: [], weak: [], exclusions: [] };
-        }
-
-        if (!this.weightedKeywords[categoryId][type]) {
-            this.weightedKeywords[categoryId][type] = [];
-        }
-
-        const normalizedKeyword = keyword.toLowerCase().trim();
-        if (!this.weightedKeywords[categoryId][type].includes(normalizedKeyword)) {
-            this.weightedKeywords[categoryId][type].push(normalizedKeyword);
-            this.updateCategoryKeywords(categoryId, this.weightedKeywords[categoryId]);
-        }
-    }
-
-    removeKeywordFromCategory(categoryId, keyword, type) {
-        if (!this.categories[categoryId] || !this.weightedKeywords[categoryId]) {
-            return;
-        }
-
-        if (this.weightedKeywords[categoryId][type]) {
-            const normalizedKeyword = keyword.toLowerCase().trim();
-            this.weightedKeywords[categoryId][type] = this.weightedKeywords[categoryId][type].filter(k => k !== normalizedKeyword);
-            this.updateCategoryKeywords(categoryId, this.weightedKeywords[categoryId]);
-        }
-    }
-
-    getAllKeywords() {
-        return { ...this.weightedKeywords };
-    }
-
-    // ================================================
-    // INITIALISATION DES CATÉGORIES (inchangé)
-    // ================================================
-    initializeCategories() {
-        this.categories = {
-            // PRIORITÉ MAXIMALE - MARKETING & NEWS
-            marketing_news: {
-                name: 'Marketing & News',
-                icon: '📰',
-                color: '#8b5cf6',
-                description: 'Newsletters et promotions',
-                priority: 100,
-                isCustom: false
-            },
-            
-            // CATÉGORIE CC - PRIORITÉ ÉLEVÉE
-            cc: {
-                name: 'En Copie',
-                icon: '📋',
-                color: '#64748b',
-                description: 'Emails où vous êtes en copie',
-                priority: 90,
-                isCustom: false
-            },
-            
-            // PRIORITÉ NORMALE
-            security: {
-                name: 'Sécurité',
-                icon: '🔒',
-                color: '#991b1b',
-                description: 'Alertes de sécurité, connexions et authentification',
-                priority: 50,
-                isCustom: false
-            },
-            
-            finance: {
-                name: 'Finance',
-                icon: '💰',
-                color: '#dc2626',
-                description: 'Factures et paiements',
-                priority: 50,
-                isCustom: false
-            },
-            
-            tasks: {
-                name: 'Actions Requises',
-                icon: '✅',
-                color: '#ef4444',
-                description: 'Tâches à faire et demandes d\'action',
-                priority: 50,
-                isCustom: false
-            },
-            
-            commercial: {
-                name: 'Commercial',
-                icon: '💼',
-                color: '#059669',
-                description: 'Opportunités, devis et contrats',
-                priority: 50,
-                isCustom: false
-            },
-            
-            meetings: {
-                name: 'Réunions',
-                icon: '📅',
-                color: '#f59e0b',
-                description: 'Invitations et demandes de réunion',
-                priority: 50,
-                isCustom: false
-            },
-            
-            support: {
-                name: 'Support',
-                icon: '🛠️',
-                color: '#f59e0b',
-                description: 'Tickets et assistance',
-                priority: 50,
-                isCustom: false
-            },
-            
-            reminders: {
-                name: 'Relances',
-                icon: '🔄',
-                color: '#10b981',
-                description: 'Rappels et suivis',
-                priority: 50,
-                isCustom: false
-            },
-            
-            project: {
-                name: 'Projets',
-                icon: '📊',
-                color: '#3b82f6',
-                description: 'Gestion de projet',
-                priority: 50,
-                isCustom: false
-            },
-            
-            hr: {
-                name: 'RH',
-                icon: '👥',
-                color: '#10b981',
-                description: 'Ressources humaines',
-                priority: 50,
-                isCustom: false
-            },
-            
-            internal: {
-                name: 'Communication Interne',
-                icon: '📢',
-                color: '#0ea5e9',
-                description: 'Annonces internes',
-                priority: 50,
-                isCustom: false
-            },
-            
-            notifications: {
-                name: 'Notifications',
-                icon: '🔔',
-                color: '#94a3b8',
-                description: 'Notifications automatiques',
-                priority: 50,
-                isCustom: false
-            }
-        };
-        
-        this.isInitialized = true;
-    }
-
-// CategoryManager.js - Remplacer complètement initializeWeightedDetection() 
-
-initializeWeightedDetection() {
-    this.weightedKeywords = {
-        // PRIORITÉ MAXIMALE - MARKETING & NEWS
-        marketing_news: {
-            absolute: [
-                'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
-                'unsubscribe', 'opt out', 'opt-out', 'désabonner', 'desabonner',
-                'gérer vos préférences', 'gérer la réception', 'gérer mes préférences',
-                'email preferences', 'préférences email', 'preferences email',
-                'ne plus recevoir', 'stop emails', 'arreter les emails',
-                'vous ne souhaitez plus recevoir', 'ne souhaitez plus recevoir',
-                'paramétrez vos choix', 'parametrez vos choix',
-                'newsletter', 'mailing list', 'mailing',
-                'this email was sent to', 'you are receiving this',
-                'limited offer', 'offre limitée', 'special offer',
-                'promotion', 'promo', 'soldes', 'vente privée',
-                'ventes en ligne', 'vente en ligne', 'shopping',
-                'disable these notifications', 'turn off notifications',
-                'manage notifications', 'notification settings',
-                'email settings', 'communication preferences',
-                'update your preferences', 'modify your subscription'
-            ],
-            strong: [
-                'promo', 'deal', 'offer', 'sale', 'discount', 'réduction',
-                'newsletter', 'mailing', 'campaign', 'marketing',
-                'exclusive', 'special', 'limited', 'new', 'nouveau',
-                'boutique', 'shopping', 'acheter', 'commander',
-                'offre', 'promotion', 'remise', 'solde',
-                'notifications', 'alerts', 'updates', 'subscribe'
-            ],
-            weak: ['update', 'discover', 'new', 'nouveauté', 'découvrir'],
-            exclusions: []
-        },
-
-        security: {
-            absolute: [
-                'alerte de connexion', 'alert connexion', 'nouvelle connexion',
-                'activité suspecte', 'suspicious activity', 'login alert',
-                'new sign-in', 'sign in detected', 'connexion détectée',
-                'code de vérification', 'verification code', 'security code',
-                'two-factor', '2fa', 'authentification', 'authentication',
-                'password reset', 'réinitialisation mot de passe'
-            ],
-            strong: [
-                'sécurité', 'security', 'vérification', 'verify',
-                'authentification', 'password', 'mot de passe'
-            ],
-            weak: ['compte', 'account', 'accès'],
-            exclusions: ['newsletter', 'unsubscribe', 'promotion']
-        },
-
-        tasks: {
-            absolute: [
-                'action required', 'action requise', 'action needed',
-                'please complete', 'veuillez compléter', 'to do',
-                'task assigned', 'tâche assignée', 'deadline',
-                'due date', 'échéance', 'livrable',
-                'urgence', 'urgent', 'très urgent',
-                'demande update', 'update request', 'mise à jour demandée',
-                'demande de mise à jour', 'update needed', 'mise a jour requise',
-                'correction requise', 'à corriger', 'please review',
-                'merci de valider', 'validation requise', 'approval needed'
-            ],
-            strong: [
-                'urgent', 'asap', 'priority', 'priorité',
-                'complete', 'compléter', 'action', 'faire',
-                'update', 'mise à jour', 'demande', 'request',
-                'task', 'tâche', 'todo', 'à faire',
-                'correction', 'corriger', 'modifier', 'révision'
-            ],
-            weak: ['demande', 'besoin', 'attente', 'request', 'need', 'waiting'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'papa', 'maman', 'famille']
-        },
-
-        meetings: {
-            absolute: [
-                'demande de réunion', 'meeting request', 'réunion',
-                'schedule a meeting', 'planifier une réunion',
-                'invitation réunion', 'meeting invitation',
-                'teams meeting', 'zoom meeting', 'google meet',
-                'rendez-vous', 'appointment', 'rdv'
-            ],
-            strong: [
-                'meeting', 'réunion', 'schedule', 'planifier',
-                'calendar', 'calendrier', 'appointment', 'agenda',
-                'conférence', 'conference', 'call'
-            ],
-            weak: ['présentation', 'agenda', 'disponible', 'available'],
-            exclusions: ['newsletter', 'promotion', 'marketing', 'papa', 'maman', 'famille']
-        },
-
-        commercial: {
-            absolute: [
-                'devis', 'quotation', 'proposal', 'proposition',
-                'contrat', 'contract', 'bon de commande',
-                'purchase order', 'offre commerciale',
-                'opportunity', 'opportunité', 'lead'
-            ],
-            strong: [
-                'client', 'customer', 'prospect', 'opportunity',
-                'commercial', 'business', 'marché', 'deal',
-                'vente', 'sales', 'négociation'
-            ],
-            weak: ['offre', 'négociation', 'discussion', 'projet'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe', 'ventes en ligne']
-        },
-
-        finance: {
-            absolute: [
-                'facture', 'invoice', 'payment', 'paiement',
-                'virement', 'transfer', 'remboursement', 'refund',
-                'relevé bancaire', 'bank statement',
-                'déclaration fiscale', 'tax declaration',
-                'n°commande', 'numéro commande', 'order number',
-                'numéro de commande', 'commande n°', 'commande numéro',
-                'livraison commande', 'commande expédiée',
-                'confirmation commande', 'order confirmation'
-            ],
-            strong: [
-                'montant', 'amount', 'total', 'facture',
-                'fiscal', 'bancaire', 'bank', 'finance',
-                'commande', 'order', 'achat', 'vente',
-                'livraison', 'delivery', 'expédition', 'shipping',
-                'prix', 'price', 'coût', 'cost'
-            ],
-            weak: ['euro', 'dollar', 'prix', 'payment', 'transaction'],
-            exclusions: ['newsletter', 'marketing', 'spam', 'promotion', 'soldes', 'ventes en ligne']
-        },
-
-        project: {
-            absolute: [
-                'projet xx', 'project update', 'milestone',
-                'sprint', 'livrable projet', 'gantt',
-                'avancement projet', 'project status',
-                'kickoff', 'retrospective', 'roadmap',
-                'document corrigé', 'version corrigée', 'corrections apportées'
-            ],
-            strong: [
-                'projet', 'project', 'milestone', 'sprint',
-                'agile', 'scrum', 'kanban', 'jira',
-                'development', 'développement',
-                'document', 'présentation', 'correction'
-            ],
-            weak: ['development', 'phase', 'étape', 'planning', 'présentation'],
-            exclusions: ['newsletter', 'marketing', 'promotion', 'papa', 'maman', 'famille', 'bises']
-        },
-
-        reminders: {
-            absolute: [
-                'reminder:', 'rappel:', 'follow up', 'relance',
-                'gentle reminder', 'rappel amical', 'following up',
-                'je reviens vers vous', 'circling back',
-                'comme convenu', 'as discussed'
-            ],
-            strong: [
-                'reminder', 'rappel', 'follow', 'relance',
-                'suite', 'convenu', 'discussed', 'pending'
-            ],
-            weak: ['previous', 'discussed', 'encore', 'still'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
-        support: {
-            absolute: [
-                'ticket #', 'ticket number', 'numéro de ticket',
-                'case #', 'case number', 'incident #',
-                'problème résolu', 'issue resolved',
-                'support ticket', 'demande de support'
-            ],
-            strong: [
-                'support', 'assistance', 'help desk',
-                'technical support', 'ticket', 'incident',
-                'problème', 'problem', 'issue'
-            ],
-            weak: ['help', 'aide', 'issue', 'question'],
-            exclusions: ['newsletter', 'marketing', 'promotion']
-        },
-
-        hr: {
-            absolute: [
-                'bulletin de paie', 'payslip', 'contrat de travail',
-                'congés', 'leave request', 'onboarding',
-                'entretien annuel', 'performance review',
-                'ressources humaines', 'human resources',
-                'offre d\'emploi', 'job offer', 'recrutement'
-            ],
-            strong: [
-                'rh', 'hr', 'salaire', 'salary',
-                'ressources humaines', 'human resources',
-                'contrat', 'paie', 'congés', 'vacation',
-                'emploi', 'job', 'recruitment'
-            ],
-            weak: ['employee', 'staff', 'personnel', 'équipe'],
-            exclusions: [
-                'newsletter', 'marketing', 'famille', 'family', 
-                'personnel', 'personal', 'papa', 'maman',
-                'présentation', 'document', 'correction',
-                'bises', 'bisous', 'familial'
-            ]
-        },
-
-        internal: {
-            absolute: [
-                'all staff', 'tout le personnel', 'annonce interne',
-                'company announcement', 'memo interne',
-                'communication interne', 'note de service',
-                'à tous', 'to all employees'
-            ],
-            strong: [
-                'internal', 'interne', 'company wide',
-                'personnel', 'staff', 'équipe',
-                'annonce', 'announcement'
-            ],
-            weak: ['annonce', 'announcement', 'information', 'update'],
-            exclusions: ['newsletter', 'marketing', 'external', 'client', 'papa', 'maman', 'famille', 'bises']
-        },
-
-        notifications: {
-            absolute: [
-                'do not reply', 'ne pas répondre', 'noreply@',
-                'automated message', 'notification automatique',
-                'system notification', 'ceci est un message automatique',
-                'no-reply@', 'donotreply@'
-            ],
-            strong: [
-                'automated', 'automatic', 'system',
-                'notification', 'automatique', 'alert'
-            ],
-            weak: ['notification', 'alert', 'info'],
-            exclusions: ['newsletter', 'marketing', 'urgent']
-        },
-
-        cc: {
-            absolute: [
-                'copie pour information', 'for your information', 'fyi',
-                'en copie', 'in copy', 'cc:', 'courtesy copy',
-                'pour info', 'pour information'
-            ],
-            strong: ['information', 'copie', 'copy', 'cc'],
-            weak: ['fyi', 'info'],
-            exclusions: [
-                'commande', 'order', 'facture', 'invoice',
-                'urgent', 'action required', 'payment'
-            ]
-        }
-    };
-
-    console.log('[CategoryManager] Mots-clés par défaut initialisés pour', Object.keys(this.weightedKeywords).length, 'catégories');
-}
-// CategoryManager.js - Remplacer complètement analyzeEmail()
-analyzeEmail(email) {
-    if (!email) return { category: 'other', score: 0, confidence: 0 };
-    
-    if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
-        return { category: 'spam', score: 0, confidence: 0, isSpam: true };
-    }
-    
-    const content = this.extractCompleteContent(email);
-    
-    // Vérifier les exclusions globales
-    if (this.isGloballyExcluded(content, email)) {
-        return { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
-    }
-    
-    // Détecter les emails familiaux/personnels AVANT tout
-    if (this.isPersonalEmail(content, email)) {
-        if (this.categories.personal || this.customCategories.personal) {
-            return {
-                category: 'personal',
-                score: 100,
-                confidence: 0.95,
-                matchedPatterns: [{ keyword: 'personal_email_detected', type: 'absolute', score: 100 }],
-                hasAbsolute: true,
-                isPersonal: true
-            };
-        } else {
-            return { category: 'excluded', score: 0, confidence: 0, isExcluded: true, reason: 'personal' };
-        }
-    }
-    
-    // Vérifier si on est destinataire principal ou en CC
-    const isMainRecipient = this.isMainRecipient(email);
-    const isInCC = this.isInCC(email);
-    
-    // Si on est en CC, vérifier d'abord si c'est du marketing
-    if (this.shouldDetectCC() && isInCC && !isMainRecipient) {
-        const marketingCheck = this.analyzeCategory(content, this.weightedKeywords.marketing_news);
-        if (marketingCheck.score >= 80) {
-            return {
-                category: 'marketing_news',
-                score: marketingCheck.total,
-                confidence: this.calculateConfidence(marketingCheck),
-                matchedPatterns: marketingCheck.matches,
-                hasAbsolute: marketingCheck.hasAbsolute,
-                originallyCC: true
-            };
-        }
-        
-        const allResults = this.analyzeAllCategories(content);
-        const bestNonCC = Object.values(allResults)
-            .filter(r => r.category !== 'cc')
-            .sort((a, b) => b.score - a.score)[0];
-        
-        if (bestNonCC && bestNonCC.score >= 100 && bestNonCC.hasAbsolute) {
-            return {
-                category: bestNonCC.category,
-                score: bestNonCC.score,
-                confidence: bestNonCC.confidence,
-                matchedPatterns: bestNonCC.matches,
-                hasAbsolute: bestNonCC.hasAbsolute,
-                isCC: true
-            };
-        }
-        
-        return {
-            category: 'cc',
-            score: 100,
-            confidence: 0.95,
-            matchedPatterns: [{ keyword: 'email_in_cc', type: 'detected', score: 100 }],
-            hasAbsolute: true,
-            isCC: true
-        };
-    }
-    
-    const allResults = this.analyzeAllCategories(content);
-    const selectedResult = this.selectByPriorityWithThreshold(allResults);
-    
-    // CORRECTION CRITIQUE: Si aucune catégorie trouvée, retourner explicitement 'other'
-    if (!selectedResult || selectedResult.category === 'other' || selectedResult.score === 0) {
-        return {
-            category: 'other',
-            score: 0,
-            confidence: 0,
-            matchedPatterns: [],
-            hasAbsolute: false,
-            reason: 'no_category_matched'
-        };
-    }
-    
-    return selectedResult;
-}
-
-// NOUVELLE méthode pour détecter les emails personnels/familiaux
-isPersonalEmail(content, email) {
-    const personalIndicators = [
-        'papa', 'maman', 'mamie', 'papy', 'papi',
-        'chéri', 'chérie', 'mon amour', 'ma chérie',
-        'bises', 'bisous', 'gros bisous', 'je t\'embrasse',
-        'famille', 'familial', 'personnel', 'personal'
-    ];
-    
-    const professionalCounterIndicators = [
-        'ressources humaines', 'human resources', 'rh',
-        'contrat', 'contract', 'entreprise', 'company',
-        'professionnel', 'professional', 'business'
-    ];
-    
-    const text = content.text.toLowerCase();
-    
-    // Compter les indicateurs personnels
-    let personalScore = 0;
-    personalIndicators.forEach(indicator => {
-        if (text.includes(indicator)) {
-            personalScore += 10;
-        }
-    });
-    
-    // Réduire le score si des indicateurs professionnels sont présents
-    let professionalScore = 0;
-    professionalCounterIndicators.forEach(indicator => {
-        if (text.includes(indicator)) {
-            professionalScore += 10;
-        }
-    });
-    
-    // Email personnel si score personnel > 20 ET score professionnel < 10
-    return personalScore > 20 && professionalScore < 10;
-}
-
-// Nouvelle méthode pour vérifier si on est destinataire principal
-isMainRecipient(email) {
-    if (!email.toRecipients || !Array.isArray(email.toRecipients)) {
-        return false;
-    }
-    
-    const currentUserEmail = this.getCurrentUserEmail();
-    if (!currentUserEmail) {
-        return email.toRecipients.length > 0;
-    }
-    
-    return email.toRecipients.some(recipient => {
-        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-        return recipientEmail === currentUserEmail.toLowerCase();
-    });
-}
-
-
-// CategoryManager.js - Remplacer analyzeAllCategories() vers ligne 1530
-
-analyzeAllCategories(content) {
-    const results = {};
-    const activeCategories = this.getActiveCategories();
-    
-    // IMPORTANT: Toujours inclure TOUTES les catégories personnalisées
-    const customCategoryIds = Object.keys(this.customCategories);
-    
-    if (this.debugMode) {
-        console.log('[CategoryManager] 🎯 Analyse avec:');
-        console.log('  - Catégories actives:', activeCategories);
-        console.log('  - Catégories personnalisées:', customCategoryIds);
-    }
-    
-    // Analyser toutes les catégories (standard + personnalisées)
-    const allCategoriesToAnalyze = new Set([
-        ...Object.keys(this.weightedKeywords),
-        ...customCategoryIds
-    ]);
-    
-    for (const categoryId of allCategoriesToAnalyze) {
-        // Vérifier si la catégorie est active OU personnalisée OU spéciale
-        const isActive = activeCategories.includes(categoryId);
-        const isCustom = customCategoryIds.includes(categoryId);
-        const isSpecial = ['marketing_news', 'cc'].includes(categoryId);
-        
-        if (!isActive && !isCustom && !isSpecial) {
-            continue;
-        }
-        
-        // Vérifier que la catégorie existe
-        if (!this.categories[categoryId]) {
-            console.warn(`[CategoryManager] ⚠️ Catégorie ${categoryId} non trouvée`);
-            continue;
-        }
-        
-        // Obtenir les mots-clés (depuis weightedKeywords ou catégorie personnalisée)
-        let keywords = this.weightedKeywords[categoryId];
-        
-        // Pour les catégories personnalisées, charger depuis customCategories si nécessaire
-        if (isCustom && (!keywords || this.isEmptyKeywords(keywords))) {
-            const customCat = this.customCategories[categoryId];
-            if (customCat && customCat.keywords) {
-                keywords = customCat.keywords;
-                // S'assurer que les mots-clés sont dans weightedKeywords
-                this.weightedKeywords[categoryId] = keywords;
-            }
-        }
-        
-        // Vérifier si la catégorie a des mots-clés
-        if (!keywords || this.isEmptyKeywords(keywords)) {
-            if (isCustom) {
-                console.warn(`[CategoryManager] ⚠️ Catégorie personnalisée ${categoryId} (${this.categories[categoryId]?.name}) sans mots-clés`);
-            }
-            continue;
-        }
-        
-        // Calculer le score
-        const score = this.calculateScore(content, keywords, categoryId);
-        
-        results[categoryId] = {
-            category: categoryId,
-            score: score.total,
-            hasAbsolute: score.hasAbsolute,
-            matches: score.matches,
-            confidence: this.calculateConfidence(score),
-            priority: this.categories[categoryId]?.priority || 50,
-            isCustom: isCustom
-        };
-        
-        if (this.debugMode && score.total > 0) {
-            console.log(`[CategoryManager] 📊 ${categoryId}: ${score.total}pts (${score.matches.length} matches)`);
-        }
-    }
-    
-    return results;
-}
-
-// Méthode helper pour vérifier si les mots-clés sont vides
-isEmptyKeywords(keywords) {
-    return !keywords || (
-        (!keywords.absolute || keywords.absolute.length === 0) &&
-        (!keywords.strong || keywords.strong.length === 0) &&
-        (!keywords.weak || keywords.weak.length === 0)
-    );
-}
-
-// CategoryManager.js - Remplacer selectByPriorityWithThreshold() complètement
-
-selectByPriorityWithThreshold(results) {
-    // SEUILS AJUSTÉS pour avoir des emails "other"
-    const MIN_SCORE_THRESHOLD = 30; // Augmenté pour être plus sélectif
-    const MIN_CONFIDENCE_THRESHOLD = 0.5; // Augmenté pour plus de précision
-    
-    const sortedResults = Object.values(results)
-        .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD)
-        .sort((a, b) => {
-            // Si un a un match absolu et pas l'autre, privilégier celui avec absolu
-            if (a.hasAbsolute && !b.hasAbsolute) return -1;
-            if (!a.hasAbsolute && b.hasAbsolute) return 1;
-            
-            // Priorité d'abord
-            if (a.priority !== b.priority) {
-                return b.priority - a.priority;
-            }
-            
-            // Puis score
-            return b.score - a.score;
-        });
-    
-    if (this.debugMode) {
-        console.log('[CategoryManager] 📊 Scores par catégorie:');
-        sortedResults.forEach(r => {
-            console.log(`  - ${r.category}: ${r.score}pts (priority: ${r.priority}, confidence: ${r.confidence}, hasAbsolute: ${r.hasAbsolute})`);
-        });
-    }
-    
-    const bestResult = sortedResults[0];
-    
-    if (bestResult) {
-        console.log(`[CategoryManager] ✅ Catégorie sélectionnée: ${bestResult.category} (${bestResult.score}pts, ${Math.round(bestResult.confidence * 100)}%)`);
-        return {
-            category: bestResult.category,
-            score: bestResult.score,
-            confidence: bestResult.confidence,
-            matchedPatterns: bestResult.matches,
-            hasAbsolute: bestResult.hasAbsolute
-        };
-    }
-    
-    // CORRECTION CRITIQUE: Si aucun résultat au-dessus du seuil, vérifier si fallback possible
-    const allSorted = Object.values(results)
-        .filter(r => r.score > 0)
-        .sort((a, b) => b.score - a.score);
-    
-    // NOUVEAU: Fallback plus strict - seulement si score >= 20 ET confiance >= 0.4
-    if (allSorted.length > 0 && allSorted[0].score >= 20 && allSorted[0].confidence >= 0.4) {
-        const fallback = allSorted[0];
-        console.log(`[CategoryManager] 📌 Utilisation fallback: ${fallback.category} (${fallback.score}pts, ${Math.round(fallback.confidence * 100)}%)`);
-        return {
-            category: fallback.category,
-            score: fallback.score,
-            confidence: fallback.confidence,
-            matchedPatterns: fallback.matches,
-            hasAbsolute: fallback.hasAbsolute
-        };
-    }
-    
-    // CORRECTION FINALE: Retourner explicitement "other" si rien ne correspond
-    console.log('[CategoryManager] 📌 Aucune catégorie correspondante, classification "other"');
-    return {
-        category: 'other',
-        score: 0,
-        confidence: 0,
-        matchedPatterns: [],
-        hasAbsolute: false,
-        reason: 'below_threshold'
-    };
-}
-    detectByDomain(results) {
-    // Mapping domaine -> catégorie pour les cas courants
-    const domainMappings = {
-        'linkedin': 'commercial',
-        'indeed': 'commercial',
-        'github': 'project',
-        'gitlab': 'project',
-        'jira': 'project',
-        'asana': 'project',
-        'trello': 'project',
-        'slack': 'internal',
-        'teams': 'meetings',
-        'zoom': 'meetings',
-        'meet': 'meetings',
-        'paypal': 'finance',
-        'stripe': 'finance',
-        'bank': 'finance',
-        'invoice': 'finance',
-        'support': 'support',
-        'help': 'support',
-        'noreply': 'notifications',
-        'notification': 'notifications',
-        'alert': 'security',
-        'security': 'security'
-    };
-    
-    // Extraire le domaine depuis le contexte (à implémenter selon votre structure)
-    // Pour l'instant, retourne null
-    return null;
-}
-
-// CategoryManager.js - Remplacer complètement calculateScore()
-
-calculateScore(content, keywords, categoryId) {
-    let totalScore = 0;
-    let hasAbsolute = false;
-    const matches = [];
-    const text = content.text;
-    
-    // NOUVEAU: Pénalité forte pour les catégories professionnelles si email personnel détecté
-    const personalIndicators = ['papa', 'maman', 'bises', 'bisous', 'famille'];
-    const hasPersonalContent = personalIndicators.some(indicator => text.includes(indicator));
-    
-    if (hasPersonalContent && ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
-        totalScore -= 50; // Forte pénalité
-        matches.push({ keyword: 'personal_content_penalty', type: 'penalty', score: -50 });
-    }
-    
-    // Bonus de base pour certaines catégories souvent mal détectées
-    const categoryBonus = {
-        'project': 10,
-        'cc': 5,
-        'security': 10,
-        'hr': 10,
-        'tasks': 15,
-        'finance': 10,
-        'marketing_news': 5 // Petit bonus pour marketing
-    };
-    
-    if (categoryBonus[categoryId]) {
-        totalScore += categoryBonus[categoryId];
-        matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus[categoryId] });
-    }
-    
-    // NOUVEAU: Bonus spécial pour "disable notifications" en marketing_news
-    if (categoryId === 'marketing_news') {
-        const notificationKeywords = [
-            'disable these notifications',
-            'turn off notifications',
-            'manage notifications',
-            'notification settings'
-        ];
-        
-        notificationKeywords.forEach(keyword => {
-            if (text.includes(keyword)) {
-                totalScore += 50; // Bonus fort
-                matches.push({ keyword: keyword, type: 'notification_keyword', score: 50 });
-            }
-        });
-    }
-    
-    // NOUVEAU: Détection spéciale pour les corrections de documents
-    if (categoryId === 'project' || categoryId === 'tasks') {
-        const correctionKeywords = [
-            'document corrigé',
-            'corrections',
-            'corrigé',
-            'modifié',
-            'ci-joint',
-            'présentation'
-        ];
-        
-        correctionKeywords.forEach(keyword => {
-            if (text.includes(keyword)) {
-                totalScore += 30;
-                matches.push({ keyword: keyword, type: 'correction_keyword', score: 30 });
-            }
-        });
-    }
-    
-    // Test des exclusions en premier
-    if (keywords.exclusions && keywords.exclusions.length > 0) {
-        for (const exclusion of keywords.exclusions) {
-            if (this.findInText(text, exclusion)) {
-                let penalty = 50;
-                
-                // Pénalité plus forte pour contenu personnel dans catégories professionnelles
-                if (personalIndicators.includes(exclusion) && 
-                    ['internal', 'hr', 'meetings', 'commercial'].includes(categoryId)) {
-                    penalty = 100;
-                }
-                
-                totalScore -= penalty;
-                matches.push({ keyword: exclusion, type: 'exclusion', score: -penalty });
-            }
-        }
-    }
-    
-    // Test des mots-clés absolus
-    if (keywords.absolute && keywords.absolute.length > 0) {
-        for (const keyword of keywords.absolute) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 100;
-                hasAbsolute = true;
-                matches.push({ keyword, type: 'absolute', score: 100 });
-                
-                // Bonus supplémentaire si dans le sujet
-                if (content.subject && this.findInText(content.subject, keyword)) {
-                    totalScore += 50;
-                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 50 });
-                }
-            }
-        }
-    }
-    
-    // Test des mots-clés forts
-    if (keywords.strong && keywords.strong.length > 0) {
-        let strongMatches = 0;
-        for (const keyword of keywords.strong) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 40;
-                strongMatches++;
-                matches.push({ keyword, type: 'strong', score: 40 });
-                
-                // Bonus si dans le sujet
-                if (content.subject && this.findInText(content.subject, keyword)) {
-                    totalScore += 20;
-                    matches.push({ keyword: keyword + ' (in subject)', type: 'bonus', score: 20 });
-                }
-            }
-        }
-        
-        // Bonus si plusieurs mots-clés forts matchent
-        if (strongMatches >= 2) {
-            totalScore += 30;
-            matches.push({ keyword: 'multiple_strong_matches', type: 'bonus', score: 30 });
-        }
-    }
-    
-    // Test des mots-clés faibles
-    if (keywords.weak && keywords.weak.length > 0) {
-        let weakMatches = 0;
-        for (const keyword of keywords.weak) {
-            if (this.findInText(text, keyword)) {
-                totalScore += 15;
-                weakMatches++;
-                matches.push({ keyword, type: 'weak', score: 15 });
-            }
-        }
-        
-        // Bonus si beaucoup de mots faibles matchent
-        if (weakMatches >= 3) {
-            totalScore += 20;
-            matches.push({ keyword: 'multiple_weak_matches', type: 'bonus', score: 20 });
-        }
-    }
-    
-    // Appliquer bonus de domaine
-    this.applyEnhancedDomainBonus(content, categoryId, matches, totalScore);
-    
-    return { 
-        total: Math.max(0, totalScore), 
-        hasAbsolute, 
-        matches 
-    };
-}
-
-// Ajouter ces méthodes dans CategoryManager.js
-
-getCategoryFilters(categoryId) {
-    if (!this.categories[categoryId]) {
-        return {
-            includeDomains: [],
-            excludeDomains: [],
-            includeEmails: [],
-            excludeEmails: []
-        };
-    }
-    
-    // Charger depuis le stockage ou utiliser les valeurs par défaut
-    const filters = this.categoryFilters?.[categoryId] || this.categories[categoryId].filters || {
-        includeDomains: [],
-        excludeDomains: [],
-        includeEmails: [],
-        excludeEmails: []
-    };
-    
-    return {
-        includeDomains: filters.includeDomains || [],
-        excludeDomains: filters.excludeDomains || [],
-        includeEmails: filters.includeEmails || [],
-        excludeEmails: filters.excludeEmails || []
-    };
-}
-
-updateCategoryFilters(categoryId, filters) {
-    if (!this.categories[categoryId]) {
-        throw new Error('Catégorie non trouvée');
-    }
-    
-    console.log(`[CategoryManager] Mise à jour filtres pour ${categoryId}:`, filters);
-    
-    // Initialiser si nécessaire
-    if (!this.categoryFilters) {
-        this.categoryFilters = {};
-    }
-    
-    this.categoryFilters[categoryId] = {
-        includeDomains: filters.includeDomains || [],
-        excludeDomains: filters.excludeDomains || [],
-        includeEmails: filters.includeEmails || [],
-        excludeEmails: filters.excludeEmails || []
-    };
-    
-    // Si c'est une catégorie personnalisée, sauvegarder
-    if (this.customCategories[categoryId]) {
-        this.customCategories[categoryId].filters = this.categoryFilters[categoryId];
-        this.saveCustomCategories();
-    } else {
-        // Pour les catégories standard, sauvegarder dans localStorage séparément
-        this.saveCategoryFilters();
-    }
-    
-    console.log(`[CategoryManager] Filtres mis à jour pour ${categoryId}`);
-    
-    // Notifier les changements
-    setTimeout(() => {
-        this.dispatchEvent('categoryFiltersUpdated', { 
-            categoryId, 
-            filters: this.categoryFilters[categoryId] 
-        });
-    }, 10);
-}
-
-saveCategoryFilters() {
-    try {
-        localStorage.setItem('categoryFilters', JSON.stringify(this.categoryFilters || {}));
-        console.log('[CategoryManager] Filtres de catégories sauvegardés');
-    } catch (error) {
-        console.error('[CategoryManager] Erreur sauvegarde filtres:', error);
-    }
-}
-
-loadCategoryFilters() {
-    try {
-        const saved = localStorage.getItem('categoryFilters');
-        this.categoryFilters = saved ? JSON.parse(saved) : {};
-        console.log('[CategoryManager] Filtres de catégories chargés');
-    } catch (error) {
-        console.error('[CategoryManager] Erreur chargement filtres:', error);
-        this.categoryFilters = {};
-    }
-}
-
-// Modifier la méthode analyzeEmail pour prendre en compte les filtres
-analyzeEmailWithFilters(email) {
-    const baseAnalysis = this.analyzeEmail(email);
-    
-    // Si l'email est déjà bien catégorisé avec un score élevé, on peut le garder
-    if (baseAnalysis.category !== 'other' && baseAnalysis.score >= 100 && baseAnalysis.hasAbsolute) {
-        return baseAnalysis;
-    }
-    
-    // Vérifier les filtres d'inclusion/exclusion pour chaque catégorie
-    const emailDomain = this.extractDomain(email.from?.emailAddress?.address);
-    const emailAddress = email.from?.emailAddress?.address?.toLowerCase();
-    
-    let bestMatch = null;
-    let highestPriority = -1;
-    
-    Object.entries(this.categories).forEach(([categoryId, category]) => {
-        const filters = this.getCategoryFilters(categoryId);
-        
-        // Vérifier les exclusions d'abord
-        if (filters.excludeDomains?.includes(emailDomain) || 
-            filters.excludeEmails?.includes(emailAddress)) {
-            // Cette catégorie est exclue pour cet email
-            return;
-        }
-        
-        // Vérifier les inclusions
-        if (filters.includeDomains?.includes(emailDomain) || 
-            filters.includeEmails?.includes(emailAddress)) {
-            // Cette catégorie a une inclusion directe
-            const priority = category.priority || 50;
-            if (priority > highestPriority) {
-                highestPriority = priority;
-                bestMatch = {
-                    category: categoryId,
-                    score: 150, // Score élevé pour les inclusions directes
-                    confidence: 0.95,
-                    matchedPatterns: [{
-                        keyword: filters.includeDomains?.includes(emailDomain) ? 
-                            `domain:${emailDomain}` : `email:${emailAddress}`,
-                        type: 'filter',
-                        score: 150
-                    }],
-                    hasAbsolute: true,
-                    matchedByFilter: true
-                };
-            }
-        }
-    });
-    
-    // Si on a trouvé une correspondance par filtre, l'utiliser
-    if (bestMatch) {
-        return bestMatch;
-    }
-    
-    // Sinon, retourner l'analyse de base
-    return baseAnalysis;
-}
-
-// Ajouter cette méthode dans l'initialisation
-initializeFilters() {
-    this.loadCategoryFilters();
-    console.log('[CategoryManager] Filtres initialisés');
-}
-
-applyEnhancedDomainBonus(content, categoryId, matches, totalScore) {
-    const domainBonuses = {
-        security: ['microsoft', 'google', 'apple', 'security', 'auth', '2fa', 'verification'],
-        finance: ['gouv.fr', 'impots', 'bank', 'paypal', 'stripe', 'invoice', 'billing'],
-        marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing', 'sendinblue', 'mailjet'],
-        notifications: ['noreply', 'notification', 'donotreply', 'automated', 'system'],
-        project: ['github', 'gitlab', 'jira', 'asana', 'trello', 'confluence', 'bitbucket'],
-        hr: ['workday', 'bamboohr', 'adp', 'payroll', 'hr', 'recruiting'],
-        meetings: ['zoom', 'teams', 'meet', 'webex', 'gotomeeting', 'calendar'],
-        support: ['zendesk', 'freshdesk', 'helpdesk', 'support', 'ticket']
-    };
-    
-    if (domainBonuses[categoryId]) {
-        for (const domainKeyword of domainBonuses[categoryId]) {
-            if (content.domain.includes(domainKeyword)) {
-                const bonus = 40; // Bonus uniforme plus élevé
-                totalScore += bonus;
-                matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
-                break;
-            }
-        }
-    }
-}
-
-    applyDomainBonus(content, categoryId, matches, totalScore) {
-        const domainBonuses = {
-            security: ['microsoft', 'google', 'apple', 'security'],
-            finance: ['gouv.fr', 'impots', 'bank', 'paypal'],
-            marketing_news: ['newsletter', 'mailchimp', 'campaign', 'marketing'],
-            notifications: ['noreply', 'notification', 'donotreply']
-        };
-        
-        if (domainBonuses[categoryId]) {
-            for (const domainKeyword of domainBonuses[categoryId]) {
-                if (content.domain.includes(domainKeyword)) {
-                    const bonus = categoryId === 'marketing_news' ? 30 : 50;
-                    totalScore += bonus;
-                    matches.push({ keyword: `${domainKeyword}_domain`, type: 'domain', score: bonus });
-                    break;
-                }
-            }
-        }
-    }
-
-    // ================================================
-    // VÉRIFICATION DES EXCLUSIONS GLOBALES (inchangé)
-    // ================================================
-    isGloballyExcluded(content, email) {
-        const exclusions = this.settings.categoryExclusions;
-        if (!exclusions) return false;
-        
-        // Vérifier les domaines exclus
-        if (exclusions.domains && exclusions.domains.length > 0) {
-            for (const domain of exclusions.domains) {
-                if (content.domain.includes(domain.toLowerCase())) {
-                    return true;
-                }
-            }
-        }
-        
-        // Vérifier les emails exclus
-        if (exclusions.emails && exclusions.emails.length > 0) {
-            const emailAddress = email.from?.emailAddress?.address?.toLowerCase();
-            if (emailAddress && exclusions.emails.includes(emailAddress)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    // ================================================
-    // MÉTHODES UTILITAIRES (inchangées)
-    // ================================================
-    analyzeCategory(content, keywords) {
-        return this.calculateScore(content, keywords, 'single');
-    }
-
-// CategoryManager.js - Méthode extractCompleteContent() améliorée (remplacer vers ligne 1720)
-
-extractCompleteContent(email) {
-    let allText = '';
-    let subject = '';
-    
-    // IMPORTANT: Traiter le sujet avec un poids très élevé
-    if (email.subject && email.subject.trim()) {
-        subject = email.subject;
-        // Répéter le sujet 10 fois pour lui donner beaucoup plus de poids
-        allText += (email.subject + ' ').repeat(10);
-    } else {
-        // Si pas de sujet, ajouter un marqueur pour la détection
-        subject = '[SANS_SUJET]';
-        allText += 'sans sujet email sans objet ';
-    }
-    
-    // Extraire l'expéditeur
-    if (email.from?.emailAddress?.address) {
-        allText += (email.from.emailAddress.address + ' ').repeat(3);
-    }
-    if (email.from?.emailAddress?.name) {
-        allText += (email.from.emailAddress.name + ' ').repeat(3);
-    }
-    
-    // Extraire les destinataires (important pour détecter si on est en copie)
-    if (email.toRecipients && Array.isArray(email.toRecipients)) {
-        email.toRecipients.forEach(recipient => {
-            if (recipient.emailAddress?.address) {
-                allText += recipient.emailAddress.address + ' ';
-            }
-            if (recipient.emailAddress?.name) {
-                allText += recipient.emailAddress.name + ' ';
-            }
-        });
-    }
-    
-    // Extraire les CC
-    if (email.ccRecipients && Array.isArray(email.ccRecipients)) {
-        email.ccRecipients.forEach(recipient => {
-            if (recipient.emailAddress?.address) {
-                allText += recipient.emailAddress.address + ' ';
-            }
-            if (recipient.emailAddress?.name) {
-                allText += recipient.emailAddress.name + ' ';
-            }
-        });
-    }
-    
-    // Extraire le contenu du corps
-    if (email.bodyPreview) {
-        allText += email.bodyPreview + ' ';
-    }
-    
-    if (email.body?.content) {
-        const cleanedBody = this.cleanHtml(email.body.content);
-        allText += cleanedBody + ' ';
-        
-        // Extraire les mots importants du corps (en majuscules)
-        const importantWords = cleanedBody.match(/\b[A-Z]{2,}\b/g);
-        if (importantWords) {
-            allText += importantWords.join(' ') + ' ';
-        }
-    }
-    
-    // Analyser le contexte de l'email pour détecter des patterns
-    const contextClues = this.extractContextClues(email);
-    allText += contextClues + ' ';
-    
-    return {
-        text: allText.toLowerCase().trim(),
-        subject: subject.toLowerCase(),
-        domain: this.extractDomain(email.from?.emailAddress?.address),
-        hasHtml: !!(email.body?.content && email.body.content.includes('<')),
-        length: allText.length,
-        hasNoSubject: !email.subject || !email.subject.trim(),
-        rawSubject: email.subject || ''
-    };
-}
-
-// Nouvelle méthode pour extraire des indices contextuels
-extractContextClues(email) {
-    let clues = '';
-    
-    // Détecter les patterns de réponse/transfert
-    const subject = email.subject || '';
-    if (subject.match(/^(RE:|FW:|Fwd:|Tr:)/i)) {
-        clues += ' conversation reply response ';
-    }
-    
-    // Détecter les mentions de documents
-    const body = email.body?.content || email.bodyPreview || '';
-    if (body.match(/ci-joint|attached|attachment|pièce jointe|document/i)) {
-        clues += ' document attachment piece jointe ';
-    }
-    
-    // Détecter les formules de politesse familiales
-    if (body.match(/\b(papa|maman|bises|bisous)\b/i)) {
-        clues += ' famille family personal personnel ';
-    }
-    
-    // Détecter les mentions commerciales
-    if (body.match(/\b(commande|order|facture|invoice|livraison|delivery|n°|numéro)\b/i)) {
-        clues += ' commerce order commande achat vente ';
-    }
-    
-    return clues;
-}
-
-    cleanHtml(html) {
-        if (!html) return '';
-        return html
-            .replace(/<a[^>]*>(.*?)<\/a>/gi, ' $1 ')
-            .replace(/<[^>]+>/g, ' ')
-            .replace(/&[^;]+;/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-    }
-
-    extractDomain(email) {
-        if (!email || !email.includes('@')) return 'unknown';
-        return email.split('@')[1]?.toLowerCase() || 'unknown';
-    }
-
-// CategoryManager.js - Méthode findInText() corrigée (remplacer vers ligne 1850)
-
-findInText(text, keyword) {
-    if (!text || !keyword) return false;
-    
-    // Normalisation complète pour gérer tous les cas
-    const normalizedText = text.toLowerCase()
-        .normalize('NFD') // Décomposer les caractères accentués
-        .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
-        .replace(/[éèêëÉÈÊË]/gi, 'e')
-        .replace(/[àâäÀÂÄ]/gi, 'a')
-        .replace(/[ùûüÙÛÜ]/gi, 'u')
-        .replace(/[çÇ]/gi, 'c')
-        .replace(/[îïÎÏ]/gi, 'i')
-        .replace(/[ôöÔÖ]/gi, 'o')
-        .replace(/['']/g, "'") // Normaliser les apostrophes
-        .replace(/[-_]/g, ' ') // Remplacer tirets et underscores par espaces
-        .replace(/\s+/g, ' ') // Normaliser les espaces multiples
-        .trim();
-    
-    const normalizedKeyword = keyword.toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[éèêëÉÈÊË]/gi, 'e')
-        .replace(/[àâäÀÂÄ]/gi, 'a')
-        .replace(/[ùûüÙÛÜ]/gi, 'u')
-        .replace(/[çÇ]/gi, 'c')
-        .replace(/[îïÎÏ]/gi, 'i')
-        .replace(/[ôöÔÖ]/gi, 'o')
-        .replace(/['']/g, "'")
-        .replace(/[-_]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    
-    // Recherche avec word boundaries pour éviter les faux positifs
-    // Par exemple, ne pas matcher "commande" dans "commander"
-    const wordBoundaryRegex = new RegExp(`\\b${this.escapeRegex(normalizedKeyword)}\\b`, 'i');
-    
-    return wordBoundaryRegex.test(normalizedText) || normalizedText.includes(normalizedKeyword);
-}
-
-// Méthode helper pour échapper les caractères spéciaux regex
-escapeRegex(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-    calculateConfidence(score) {
-        if (score.hasAbsolute) return 0.95;
-        if (score.total >= 200) return 0.90;
-        if (score.total >= 150) return 0.85;
-        if (score.total >= 100) return 0.80;
-        if (score.total >= 80) return 0.75;
-        if (score.total >= 60) return 0.70;
-        if (score.total >= 40) return 0.60;
-        if (score.total >= 30) return 0.55;
-        return 0.40;
-    }
-
-    isSpamEmail(email) {
-        if (email.parentFolderId) {
-            const folderInfo = email.parentFolderId.toLowerCase();
-            if (folderInfo.includes('junk') || 
-                folderInfo.includes('spam') || 
-                folderInfo.includes('unwanted') ||
-                folderInfo.includes('indésirable')) {
-                return true;
-            }
-        }
-        
-        if (email.categories && Array.isArray(email.categories)) {
-            const hasSpamCategory = email.categories.some(cat => 
-                cat.toLowerCase().includes('spam') ||
-                cat.toLowerCase().includes('junk') ||
-                cat.toLowerCase().includes('indésirable')
-            );
-            if (hasSpamCategory) return true;
-        }
-        
-        return false;
-    }
-// CategoryManager.js - Méthode isInCC() corrigée (remplacer vers ligne 1950)
-
-// CategoryManager.js - Remplacer la méthode isInCC() vers ligne 1950
-
-isInCC(email) {
-    // Si pas de CC, ce n'est pas un email en CC
-    if (!email.ccRecipients || !Array.isArray(email.ccRecipients) || email.ccRecipients.length === 0) {
-        return false;
-    }
-    
-    const currentUserEmail = this.getCurrentUserEmail();
-    
-    if (!currentUserEmail) {
-        console.log('[CategoryManager] ⚠️ Email utilisateur non trouvé');
-        return false;
-    }
-    
-    // Vérifier si l'utilisateur est dans TO
-    const isInToList = email.toRecipients?.some(recipient => {
-        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-        return recipientEmail === currentUserEmail.toLowerCase();
-    }) || false;
-    
-    // Vérifier si l'utilisateur est dans CC
-    const isInCCList = email.ccRecipients.some(recipient => {
-        const recipientEmail = recipient.emailAddress?.address?.toLowerCase();
-        return recipientEmail === currentUserEmail.toLowerCase();
-    });
-    
-    // IMPORTANT: On est en CC seulement si on est dans CC ET PAS dans TO
-    const result = isInCCList && !isInToList;
-    
-    if (result) {
-        console.log('[CategoryManager] 📋 Email en CC détecté (pas destinataire principal):', {
-            subject: email.subject?.substring(0, 50),
-            inTo: isInToList,
-            inCC: isInCCList
-        });
-    }
-    
-    return result;
-}
-// Méthode getCurrentUserEmail() améliorée (remplacer vers ligne 1970)
-
-getCurrentUserEmail() {
-    try {
-        // Essayer plusieurs sources
-        const userInfo = localStorage.getItem('currentUserInfo');
-        if (userInfo) {
-            const parsed = JSON.parse(userInfo);
-            return parsed.email || parsed.userPrincipalName || parsed.mail;
-        }
-        
-        // Essayer depuis le token MSAL
-        const msalAccounts = JSON.parse(localStorage.getItem('msal.account.keys') || '[]');
-        if (msalAccounts.length > 0) {
-            const firstAccount = localStorage.getItem(msalAccounts[0]);
-            if (firstAccount) {
-                const account = JSON.parse(firstAccount);
-                return account.username || account.preferred_username;
-            }
-        }
-        
-        // Essayer depuis AuthService
-        if (window.authService && typeof window.authService.getCurrentUser === 'function') {
-            const user = window.authService.getCurrentUser();
-            if (user) {
-                return user.email || user.userPrincipalName || user.username;
-            }
-        }
-        
-    } catch (e) {
-        console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur:', e);
-    }
-    return null;
-}
-    getCurrentUserEmail() {
-        try {
-            const userInfo = localStorage.getItem('currentUserInfo');
-            if (userInfo) {
-                const parsed = JSON.parse(userInfo);
-                return parsed.email || parsed.userPrincipalName;
-            }
-        } catch (e) {
-            console.warn('[CategoryManager] Impossible de récupérer l\'email utilisateur');
-        }
-        return null;
-    }
-
-    // ================================================
-    // MÉTHODES PUBLIQUES (inchangées)
-    // ================================================
-    getCategories() {
-        return this.categories;
-    }
-    
-    getCategory(categoryId) {
-        if (categoryId === 'all') {
-            return { id: 'all', name: 'Tous', icon: '📧', color: '#1e293b' };
-        }
-        if (categoryId === 'other') {
-            return { id: 'other', name: 'Non classé', icon: '❓', color: '#64748b' };
-        }
-        if (categoryId === 'spam') {
-            return { id: 'spam', name: 'Spam', icon: '🚫', color: '#dc2626' };
-        }
-        if (categoryId === 'excluded') {
-            return { id: 'excluded', name: 'Exclu', icon: '🚫', color: '#6b7280' };
-        }
-        return this.categories[categoryId] || null;
-    }
-    
-    getCategoryStats() {
-        const stats = {
-            totalCategories: Object.keys(this.categories).length,
-            customCategories: Object.keys(this.customCategories).length,
-            activeCategories: this.getActiveCategories().length,
-            preselectedCategories: this.settings.taskPreselectedCategories?.length || 0,
-            totalKeywords: 0,
-            absoluteKeywords: 0,
-            strongKeywords: 0,
-            weakKeywords: 0,
-            exclusionKeywords: 0
-        };
-        
-        for (const keywords of Object.values(this.weightedKeywords)) {
-            if (keywords.absolute) stats.absoluteKeywords += keywords.absolute.length;
-            if (keywords.strong) stats.strongKeywords += keywords.strong.length;
-            if (keywords.weak) stats.weakKeywords += keywords.weak.length;
-            if (keywords.exclusions) stats.exclusionKeywords += keywords.exclusions.length;
-        }
-        
-        stats.totalKeywords = stats.absoluteKeywords + stats.strongKeywords + stats.weakKeywords + stats.exclusionKeywords;
-        return stats;
-    }
-    
-    // ================================================
-    // MÉTHODES DE TEST ET DEBUG (inchangées)
-    // ================================================
-    setDebugMode(enabled) {
-        this.debugMode = enabled;
-        console.log(`[CategoryManager] Mode debug ${enabled ? 'activé' : 'désactivé'}`);
-    }
-    
-    testEmail(subject, body = '', from = 'test@example.com', expectedCategory = null) {
-        const testEmail = {
-            subject: subject,
-            body: { content: body },
-            bodyPreview: body.substring(0, 100),
-            from: { emailAddress: { address: from } },
-            toRecipients: [{ emailAddress: { address: 'user@example.com' } }],
-            receivedDateTime: new Date().toISOString()
-        };
-        
-        const result = this.analyzeEmail(testEmail);
-        
-        console.log('\n[CategoryManager] TEST RESULT:');
-        console.log(`Subject: "${subject}"`);
-        console.log(`From: ${from}`);
-        console.log(`Category: ${result.category} (expected: ${expectedCategory || 'any'})`);
-        console.log(`Score: ${result.score}pts`);
-        console.log(`Confidence: ${Math.round(result.confidence * 100)}%`);
-        console.log(`Matches:`, result.matchedPatterns);
-        
-        if (expectedCategory && result.category !== expectedCategory) {
-            console.log(`❌ FAILED - Expected ${expectedCategory}, got ${result.category}`);
-        } else {
-            console.log('✅ SUCCESS');
-        }
-        
-        return result;
-    }
-
-    testKeywords(categoryId, testText) {
-        const keywords = this.getCategoryKeywords(categoryId);
-        if (!keywords) {
-            console.error(`[CategoryManager] Catégorie ${categoryId} non trouvée`);
-            return null;
-        }
-
-        const content = {
-            text: testText.toLowerCase(),
-            subject: testText.toLowerCase(),
-            domain: 'test.com'
-        };
-
-        const result = this.calculateScore(content, keywords, categoryId);
-        
-        console.log(`\n[CategoryManager] TEST KEYWORDS - ${categoryId}:`);
-        console.log(`Text: "${testText}"`);
-        console.log(`Score: ${result.total}pts`);
-        console.log(`Has Absolute: ${result.hasAbsolute}`);
-        console.log(`Matches:`, result.matches);
-        console.log(`Confidence: ${Math.round(this.calculateConfidence(result) * 100)}%`);
-        
-        return result;
-    }
-
-    exportKeywords() {
-        const data = {
-            exportDate: new Date().toISOString(),
-            categories: {},
-            customCategories: this.customCategories
-        };
-
-        Object.entries(this.categories).forEach(([id, category]) => {
-            data.categories[id] = {
-                name: category.name,
-                description: category.description,
-                keywords: this.getCategoryKeywords(id)
-            };
-        });
-
-        return JSON.stringify(data, null, 2);
-    }
-
-    importKeywords(jsonData) {
-        try {
-            const data = JSON.parse(jsonData);
-            
-            if (data.categories) {
-                Object.entries(data.categories).forEach(([categoryId, categoryData]) => {
-                    if (this.categories[categoryId] && categoryData.keywords) {
-                        this.updateCategoryKeywords(categoryId, categoryData.keywords);
-                    }
-                });
-            }
-
-            if (data.customCategories) {
-                Object.entries(data.customCategories).forEach(([categoryId, categoryData]) => {
-                    if (!this.customCategories[categoryId]) {
-                        this.createCustomCategory(categoryData);
-                    }
-                });
-            }
-
-            console.log('[CategoryManager] Mots-clés importés avec succès');
-            return true;
-            
-        } catch (error) {
-            console.error('[CategoryManager] Erreur import mots-clés:', error);
-            return false;
-        }
-    }
-
-    // ================================================
-    // LISTENER POUR ÉVÉNEMENTS (modifié pour ne pas dupliquer)
+    // ÉVÉNEMENTS GLOBAUX - SYNCHRONISATION FIXÉE
     // ================================================
     setupEventListeners() {
-        if (this.eventListenersSetup) {
+        // Écouter les changements de paramètres depuis CategoriesPage
+        window.addEventListener('categorySettingsChanged', (event) => {
+            console.log('[PageManager] 📨 Paramètres changés reçus:', event.detail);
+            this.handleSettingsChanged(event.detail);
+        });
+
+        // Écouter les changements génériques de paramètres
+        window.addEventListener('settingsChanged', (event) => {
+            console.log('[PageManager] 📨 Changement générique reçu:', event.detail);
+            this.handleGenericSettingsChanged(event.detail);
+        });
+
+        // Écouter la recatégorisation des emails
+        window.addEventListener('emailsRecategorized', (event) => {
+            console.log('[PageManager] Emails recatégorisés, mise à jour interface');
+            if (this.currentPage === 'emails') {
+                setTimeout(() => {
+                    this.refreshEmailsView();
+                }, 100);
+            }
+        });
+
+        // Écouter les fins de scan
+        window.addEventListener('scanCompleted', (event) => {
+            console.log('[PageManager] Scan terminé, données mises à jour');
+            this.lastScanData = event.detail;
+            if (this.currentPage === 'emails') {
+                this.loadPage('emails');
+            }
+        });
+    }
+
+    // ================================================
+    // GESTION DES CHANGEMENTS DE PARAMÈTRES - NOUVELLE
+    // ================================================
+    handleSettingsChanged(settingsData) {
+        console.log('[PageManager] 🔧 Traitement changement paramètres:', settingsData);
+        
+        // Si c'est un changement de catégories pré-sélectionnées, forcer la re-catégorisation
+        if (settingsData.settings?.taskPreselectedCategories) {
+            console.log('[PageManager] 📋 Catégories pré-sélectionnées changées:', settingsData.settings.taskPreselectedCategories);
+            
+            // Déclencher la re-catégorisation si des emails existent
+            if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                console.log('[PageManager] 🔄 Déclenchement re-catégorisation...');
+                setTimeout(() => {
+                    window.emailScanner.recategorizeEmails?.();
+                }, 100);
+            }
+        }
+        
+        // Mettre à jour l'affichage si on est sur la page emails
+        if (this.currentPage === 'emails') {
+            setTimeout(() => {
+                this.refreshEmailsView();
+            }, 200);
+        }
+    }
+
+    handleGenericSettingsChanged(changeData) {
+        console.log('[PageManager] 🔧 Traitement changement générique:', changeData);
+        
+        const { type, value } = changeData;
+        
+        switch (type) {
+            case 'taskPreselectedCategories':
+                console.log('[PageManager] 📋 Catégories pour tâches changées:', value);
+                // Mettre à jour le auto-analyzer si disponible
+                if (window.aiTaskAnalyzer && typeof window.aiTaskAnalyzer.updatePreselectedCategories === 'function') {
+                    window.aiTaskAnalyzer.updatePreselectedCategories(value);
+                }
+                break;
+                
+            case 'activeCategories':
+                console.log('[PageManager] 🏷️ Catégories actives changées:', value);
+                // Déclencher la re-catégorisation
+                if (window.emailScanner && window.emailScanner.emails && window.emailScanner.emails.length > 0) {
+                    setTimeout(() => {
+                        window.emailScanner.recategorizeEmails?.();
+                    }, 150);
+                }
+                break;
+                
+            case 'preferences':
+                console.log('[PageManager] ⚙️ Préférences changées:', value);
+                // Mettre à jour l'affichage selon les nouvelles préférences
+                if (this.currentPage === 'emails') {
+                    setTimeout(() => {
+                        this.refreshEmailsView();
+                    }, 100);
+                }
+                break;
+        }
+    }
+
+    // =====================================
+    // PAGE LOADING - DASHBOARD IGNORÉ
+    // =====================================
+    async loadPage(pageName) {
+        console.log(`[PageManager] Chargement page: ${pageName}`);
+
+        // IGNORER complètement le dashboard
+        if (pageName === 'dashboard') {
+            console.log('[PageManager] Dashboard ignoré - géré par index.html');
+            this.updateNavigation(pageName);
+            
+            const pageContent = document.getElementById('pageContent');
+            if (pageContent) {
+                pageContent.style.display = 'block';
+                pageContent.style.opacity = '1';
+            }
             return;
         }
 
-        // Écouter seulement les événements externes (pas les nôtres)
-        this.externalSettingsChangeHandler = (event) => {
-            // Ignorer nos propres événements
-            if (event.detail?.source === 'CategoryManager') {
-                return;
-            }
-            
-            const { type, value } = event.detail;
-            console.log(`[CategoryManager] Reçu changement externe: ${type}`, value);
-            
-            // Appliquer sans notifier (pour éviter les boucles)
-            this.syncQueue.push({
-                type,
-                value,
-                notifyModules: false,
-                timestamp: Date.now()
-            });
-            
-            if (!this.syncInProgress) {
-                this.processSettingsChanges();
-            }
-        };
-
-        window.addEventListener('settingsChanged', this.externalSettingsChangeHandler);
-        this.eventListenersSetup = true;
-        
-        console.log('[CategoryManager] Event listeners configurés (anti-boucle)');
-    }
-
-    // ================================================
-    // MÉTHODES DE VALIDATION (inchangées)
-    // ================================================
-    validateKeywords(keywords) {
-        const errors = [];
-        const types = ['absolute', 'strong', 'weak', 'exclusions'];
-        
-        types.forEach(type => {
-            if (keywords[type] && !Array.isArray(keywords[type])) {
-                errors.push(`${type} doit être un tableau`);
-            }
-            
-            if (keywords[type]) {
-                keywords[type].forEach((keyword, index) => {
-                    if (typeof keyword !== 'string') {
-                        errors.push(`${type}[${index}] doit être une chaîne`);
-                    }
-                    if (keyword.length < 2) {
-                        errors.push(`${type}[${index}] trop court (min 2 caractères)`);
-                    }
-                    if (keyword.length > 100) {
-                        errors.push(`${type}[${index}] trop long (max 100 caractères)`);
-                    }
-                });
-            }
-        });
-        
-        return errors;
-    }
-
-    sanitizeKeywords(keywords) {
-        const sanitized = {
-            absolute: [],
-            strong: [],
-            weak: [],
-            exclusions: []
-        };
-        
-        Object.keys(sanitized).forEach(type => {
-            if (keywords[type] && Array.isArray(keywords[type])) {
-                sanitized[type] = keywords[type]
-                    .filter(k => typeof k === 'string' && k.trim().length >= 2)
-                    .map(k => k.trim().toLowerCase())
-                    .filter((k, index, arr) => arr.indexOf(k) === index); // Dédoublonner
-            }
-        });
-        
-        return sanitized;
-    }
-
-    // ================================================
-    // MÉTHODES DE NETTOYAGE (inchangées)
-    // ================================================
-    cleanupOrphanedKeywords() {
-        const validCategoryIds = Object.keys(this.categories);
-        const orphanedIds = Object.keys(this.weightedKeywords)
-            .filter(id => !validCategoryIds.includes(id));
-        
-        orphanedIds.forEach(id => {
-            console.log(`[CategoryManager] Suppression mots-clés orphelins pour: ${id}`);
-            delete this.weightedKeywords[id];
-        });
-        
-        return orphanedIds.length;
-    }
-
-    rebuildKeywordsIndex() {
-        console.log('[CategoryManager] Reconstruction de l\'index des mots-clés...');
-        
-        // Réinitialiser avec les mots-clés par défaut
-        this.initializeWeightedDetection();
-        
-        // Recharger les catégories personnalisées
-        Object.entries(this.customCategories).forEach(([id, category]) => {
-            if (category.keywords) {
-                this.weightedKeywords[id] = this.sanitizeKeywords(category.keywords);
-            }
-        });
-        
-        console.log('[CategoryManager] Index des mots-clés reconstruit');
-    }
-
-    // ================================================
-    // MÉTHODES DE DEBUG AMÉLIORÉES
-    // ================================================
-    getDebugInfo() {
-        return {
-            isInitialized: this.isInitialized,
-            syncInProgress: this.syncInProgress,
-            syncQueueLength: this.syncQueue.length,
-            lastSyncTimestamp: this.lastSyncTimestamp,
-            changeListenersCount: this.changeListeners.size,
-            eventListenersSetup: this.eventListenersSetup,
-            settings: this.settings,
-            taskPreselectedCategories: this.getTaskPreselectedCategories(),
-            activeCategories: this.getActiveCategories(),
-            totalCategories: Object.keys(this.categories).length,
-            customCategoriesCount: Object.keys(this.customCategories).length
-        };
-    }
-
-    // Force la synchronisation immédiate de tous les modules
-    forceSyncAllModules() {
-        console.log('[CategoryManager] 🚀 === SYNCHRONISATION FORCÉE TOUS MODULES ===');
-        
-        const criticalSettings = [
-            'taskPreselectedCategories',
-            'activeCategories',
-            'categoryExclusions',
-            'scanSettings',
-            'automationSettings',
-            'preferences'
-        ];
-        
-        criticalSettings.forEach(settingType => {
-            const value = this.settings[settingType];
-            if (value !== undefined) {
-                console.log(`[CategoryManager] 🔄 Force sync: ${settingType}`, value);
-                this.notifySpecificModules(settingType, value);
-            }
-        });
-        
-        // Notification générale finale
-        this.notifyAllModules('fullSync', this.settings);
-        
-        console.log('[CategoryManager] ✅ Synchronisation forcée terminée');
-    }
-
-    // Test complet de synchronisation
-    testSynchronization() {
-        console.group('🧪 TEST SYNCHRONISATION CategoryManager');
-        
-        const debugInfo = this.getDebugInfo();
-        console.log('Debug Info:', debugInfo);
-        
-        // Test modification taskPreselectedCategories
-        const originalCategories = [...this.getTaskPreselectedCategories()];
-        const testCategories = ['tasks', 'commercial'];
-        
-        console.log('Test: Modification taskPreselectedCategories');
-        console.log('Avant:', originalCategories);
-        
-        this.updateTaskPreselectedCategories(testCategories);
-        
-        setTimeout(() => {
-            const newCategories = this.getTaskPreselectedCategories();
-            console.log('Après:', newCategories);
-            
-            // Vérifier EmailScanner
-            const emailScannerCategories = window.emailScanner?.getTaskPreselectedCategories() || [];
-            console.log('EmailScanner a:', emailScannerCategories);
-            
-            const isSync = JSON.stringify(newCategories.sort()) === JSON.stringify(emailScannerCategories.sort());
-            console.log('Synchronisation:', isSync ? '✅ OK' : '❌ ÉCHEC');
-            
-            // Remettre les valeurs originales
-            this.updateTaskPreselectedCategories(originalCategories);
-            
-            console.groupEnd();
-        }, 500);
-        
-        return true;
-    }
-
-    // ================================================
-    // NETTOYAGE ET DESTRUCTION
-    // ================================================
-    cleanup() {
-        // Arrêter tous les intervals
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
+        const pageContent = document.getElementById('pageContent');
+        if (!pageContent) {
+            console.error('[PageManager] Container de contenu non trouvé');
+            return;
         }
-        
-        // Nettoyer les event listeners
-        if (this.externalSettingsChangeHandler) {
-            window.removeEventListener('settingsChanged', this.externalSettingsChangeHandler);
-        }
-        
-        // Vider les queues et listeners
-        this.syncQueue = [];
-        this.changeListeners.clear();
-        this.eventListenersSetup = false;
-        this.syncInProgress = false;
-        
-        console.log('[CategoryManager] 🧹 Nettoyage effectué');
-    }
 
-    destroy() {
-        this.cleanup();
-        this.categories = {};
-        this.weightedKeywords = {};
-        this.customCategories = {};
-        this.settings = {};
-        console.log('[CategoryManager] Instance détruite');
-    }
+        this.updateNavigation(pageName);
+        window.uiManager?.showLoading(`Chargement ${pageName}...`);
 
-    // ================================================
-    // MÉTHODES UTILITAIRES FINALES
-    // ================================================
-    dispatchEvent(eventName, detail) {
         try {
-            window.dispatchEvent(new CustomEvent(eventName, { 
-                detail: {
-                    ...detail,
-                    source: 'CategoryManager',
-                    timestamp: Date.now()
-                }
-            }));
+            pageContent.innerHTML = '';
+            
+            if (this.pages[pageName]) {
+                await this.pages[pageName](pageContent);
+                this.currentPage = pageName;
+            } else {
+                throw new Error(`Page ${pageName} non trouvée`);
+            }
+
+            window.uiManager?.hideLoading();
+
         } catch (error) {
-            console.error(`[CategoryManager] Erreur dispatch ${eventName}:`, error);
+            console.error(`[PageManager] Erreur chargement page:`, error);
+            window.uiManager?.hideLoading();
+            window.uiManager?.showToast(`Erreur: ${error.message}`, 'error');
+            
+            pageContent.innerHTML = this.renderErrorPage(error);
+        }
+    }
+
+    renderErrorPage(error) {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 class="empty-state-title">Erreur de chargement</h3>
+                <p class="empty-state-text">${error.message}</p>
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('dashboard')">
+                    Retour au tableau de bord
+                </button>
+            </div>
+        `;
+    }
+
+    updateNavigation(activePage) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            if (item.dataset.page === activePage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+    }
+
+    // PageManager.js - Fonction renderEmails() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 300
+
+async renderEmails(container) {
+    // Récupérer les emails depuis EmailScanner centralisé
+    const emails = window.emailScanner?.getAllEmails() || [];
+    const categories = window.categoryManager?.getCategories() || {};
+    
+    console.log(`[PageManager] Rendu page emails avec ${emails.length} emails`);
+    
+    if (emails.length === 0) {
+        container.innerHTML = this.renderEmptyEmailsState();
+        return;
+    }
+
+    const renderEmailsPage = () => {
+        const categoryCounts = this.calculateCategoryCounts(emails);
+        const totalEmails = emails.length;
+        const selectedCount = this.selectedEmails.size;
+        const visibleEmails = this.getVisibleEmails();
+        
+        container.innerHTML = `
+            <div class="tasks-page-modern">
+                <!-- Texte explicatif avec possibilité de fermer -->
+                ${!this.hideExplanation ? `
+                    <div class="explanation-text-harmonized">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Cliquez sur vos emails pour les sélectionner, puis utilisez les boutons d'action pour transformer les emails sélectionnés en tâches ou effectuer d'autres opérations. Vous pouvez également filtrer par catégorie ci-dessous.</span>
+                        <button class="explanation-close-btn" onclick="window.pageManager.hideExplanationMessage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                ` : ''}
+
+                <!-- Barre de contrôles réorganisée sur 2 lignes -->
+                <div class="controls-bar-harmonized-expanded">
+                    <!-- PREMIÈRE LIGNE : Barre de recherche étendue -->
+                    <div class="search-line-full">
+                        <div class="search-box-full">
+                            <i class="fas fa-search search-icon-full"></i>
+                            <input type="text" 
+                                   class="search-input-full" 
+                                   id="emailSearchInput"
+                                   placeholder="Rechercher dans vos emails (expéditeur, sujet, contenu)..." 
+                                   value="${this.searchTerm}">
+                            ${this.searchTerm ? `
+                                <button class="search-clear-full" onclick="window.pageManager.clearSearch()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- SECONDE LIGNE : Tous les boutons -->
+                    <div class="buttons-line-full">
+                        <!-- Modes de vue -->
+                        <div class="view-modes-expanded">
+                            <button class="view-mode-expanded ${this.currentViewMode === 'grouped-domain' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-domain')"
+                                    title="Par domaine">
+                                <i class="fas fa-globe"></i>
+                                <span>Domaine</span>
+                            </button>
+                            <button class="view-mode-expanded ${this.currentViewMode === 'grouped-sender' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('grouped-sender')"
+                                    title="Par expéditeur">
+                                <i class="fas fa-user"></i>
+                                <span>Expéditeur</span>
+                            </button>
+                            <button class="view-mode-expanded ${this.currentViewMode === 'flat' ? 'active' : ''}" 
+                                    onclick="window.pageManager.changeViewMode('flat')"
+                                    title="Liste complète">
+                                <i class="fas fa-list"></i>
+                                <span>Liste</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Séparateur visuel -->
+                        <div class="buttons-separator"></div>
+                        
+                        <!-- Actions principales -->
+                        <div class="action-buttons-expanded">
+                            <!-- Bouton Créer tâches -->
+                            <button class="btn-expanded btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
+                                    onclick="window.pageManager.createTasksFromSelection()"
+                                    ${selectedCount === 0 ? 'disabled' : ''}>
+                                <i class="fas fa-tasks"></i>
+                                <span>Créer tâche${selectedCount > 1 ? 's' : ''}</span>
+                                ${selectedCount > 0 ? `<span class="count-badge-main">${selectedCount}</span>` : ''}
+                            </button>
+                            
+                            <!-- Bouton Actions -->
+                            <div class="dropdown-action-expanded">
+                                <button class="btn-expanded btn-secondary dropdown-toggle ${selectedCount === 0 ? 'disabled' : ''}" 
+                                        onclick="window.pageManager.toggleBulkActions(event)"
+                                        ${selectedCount === 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-ellipsis-v"></i>
+                                    <span>Actions</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu-expanded" id="bulkActionsMenu">
+                                    <button class="dropdown-item-expanded" onclick="window.pageManager.bulkMarkAsRead()">
+                                        <i class="fas fa-eye"></i>
+                                        <span>Marquer comme lu</span>
+                                    </button>
+                                    <button class="dropdown-item-expanded" onclick="window.pageManager.bulkArchive()">
+                                        <i class="fas fa-archive"></i>
+                                        <span>Archiver</span>
+                                    </button>
+                                    <button class="dropdown-item-expanded danger" onclick="window.pageManager.bulkDelete()">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Supprimer</span>
+                                    </button>
+                                    <div class="dropdown-divider"></div>
+                                    <button class="dropdown-item-expanded" onclick="window.pageManager.bulkExport()">
+                                        <i class="fas fa-download"></i>
+                                        <span>Exporter</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Bouton Actualiser -->
+                            <button class="btn-expanded btn-secondary" onclick="window.pageManager.refreshEmails()">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Actualiser</span>
+                            </button>
+                            
+                            <!-- Bouton Effacer sélection (uniquement si des emails sont sélectionnés) -->
+                            ${selectedCount > 0 ? `
+                                <button class="btn-expanded btn-clear-selection" 
+                                        onclick="window.pageManager.clearSelection()"
+                                        title="Effacer la sélection">
+                                    <i class="fas fa-times"></i>
+                                    <span>Effacer (${selectedCount})</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtres de catégories -->
+                <div class="status-filters-harmonized-twolines">
+                    ${this.buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories)}
+                </div>
+
+                <!-- CONTENU DES EMAILS -->
+                <div class="tasks-container-harmonized">
+                    ${this.renderEmailsList()}
+                </div>
+            </div>
+        `;
+
+        this.addExpandedEmailStyles();
+        this.setupEmailsEventListeners();
+    };
+
+    renderEmailsPage();
+    
+    // Auto-analyze si activé ET si catégories pré-sélectionnées configurées
+    if (this.autoAnalyzeEnabled && emails.length > 0) {
+        const preselectedCategories = this.getTaskPreselectedCategories();
+        console.log('[PageManager] 🤖 Catégories pré-sélectionnées pour analyse:', preselectedCategories);
+        
+        if (preselectedCategories && preselectedCategories.length > 0) {
+            // Filtrer les emails selon les catégories pré-sélectionnées
+            const emailsToAnalyze = emails.filter(email => 
+                preselectedCategories.includes(email.category)
+            ).slice(0, 5);
+            
+            console.log('[PageManager] 🎯 Emails sélectionnés pour analyse:', emailsToAnalyze.length);
+            
+            if (emailsToAnalyze.length > 0) {
+                setTimeout(() => {
+                    this.analyzeFirstEmails(emailsToAnalyze);
+                }, 1000);
+            }
         }
     }
 }
+    // ================================================
+    // MÉTHODE POUR RÉCUPÉRER LES CATÉGORIES PRÉ-SÉLECTIONNÉES
+    // ================================================
+    getTaskPreselectedCategories() {
+        // Essayer depuis CategoryManager en priorité
+        if (window.categoryManager && typeof window.categoryManager.getTaskPreselectedCategories === 'function') {
+            return window.categoryManager.getTaskPreselectedCategories();
+        }
+        
+        // Sinon depuis CategoriesPage
+        if (window.categoriesPage && typeof window.categoriesPage.getTaskPreselectedCategories === 'function') {
+            return window.categoriesPage.getTaskPreselectedCategories();
+        }
+        
+        // Fallback sur localStorage
+        try {
+            const settings = JSON.parse(localStorage.getItem('categorySettings') || '{}');
+            return settings.taskPreselectedCategories || [];
+        } catch (error) {
+            console.error('[PageManager] Erreur récupération catégories pré-sélectionnées:', error);
+            return [];
+        }
+    }
 
-// ================================================
-// INITIALISATION GLOBALE SÉCURISÉE
-// ================================================
-
-// Créer l'instance globale avec nettoyage préalable
-if (window.categoryManager) {
-    console.log('[CategoryManager] 🔄 Nettoyage ancienne instance...');
-    window.categoryManager.destroy?.();
-}
-
-console.log('[CategoryManager] 🚀 Création nouvelle instance v20.0...');
-window.categoryManager = new CategoryManager();
-
-// Export des méthodes de test globales améliorées
-window.testCategoryManager = function() {
-    console.group('🧪 TEST CategoryManager v20.0');
     
-    const tests = [
-        { subject: "Newsletter hebdomadaire - Désabonnez-vous ici", expected: "marketing_news" },
-        { subject: "Action requise: Confirmer votre commande", expected: "tasks" },
-        { subject: "Nouvelle connexion détectée sur votre compte", expected: "security" },
-        { subject: "Facture #12345 - Échéance dans 3 jours", expected: "finance" },
-        { subject: "Réunion équipe prévue pour demain", expected: "meetings" }
+
+    // Ajouter ces méthodes dans PageManager.js après getTaskPreselectedCategories()
+
+debugPreselection() {
+    console.group('🔍 DEBUG PRÉ-SÉLECTION COMPLÈTE');
+    
+    // 1. Sources des catégories
+    console.group('📋 Sources des catégories pré-sélectionnées:');
+    
+    const categoriesFromManager = window.categoryManager?.getTaskPreselectedCategories() || [];
+    const categoriesFromPage = window.categoriesPage?.getTaskPreselectedCategories() || [];
+    const categoriesFromLocal = this.getTaskPreselectedCategories();
+    const categoriesFromScanner = window.emailScanner?.getTaskPreselectedCategories() || [];
+    
+    console.log('CategoryManager:', categoriesFromManager);
+    console.log('CategoriesPage:', categoriesFromPage);
+    console.log('PageManager:', categoriesFromLocal);
+    console.log('EmailScanner:', categoriesFromScanner);
+    
+    // Vérifier la cohérence
+    const allSources = [
+        { name: 'CategoryManager', cats: categoriesFromManager },
+        { name: 'CategoriesPage', cats: categoriesFromPage },
+        { name: 'PageManager', cats: categoriesFromLocal },
+        { name: 'EmailScanner', cats: categoriesFromScanner }
     ];
     
-    tests.forEach(test => {
-        window.categoryManager.testEmail(test.subject, '', 'test@example.com', test.expected);
-    });
+    const referenceSource = categoriesFromManager;
+    const inconsistencies = [];
     
-    console.log('Stats:', window.categoryManager.getCategoryStats());
-    console.log('Debug Info:', window.categoryManager.getDebugInfo());
-    
-    // Test synchronisation
-    window.categoryManager.testSynchronization();
-    
-    console.groupEnd();
-    return { success: true, testsRun: tests.length };
-};
-
-window.debugCategoryKeywords = function() {
-    console.group('🔍 DEBUG Mots-clés v20.0');
-    const allKeywords = window.categoryManager.getAllKeywords();
-    
-    Object.entries(allKeywords).forEach(([categoryId, keywords]) => {
-        const category = window.categoryManager.getCategory(categoryId);
-        const total = (keywords.absolute?.length || 0) + (keywords.strong?.length || 0) + 
-                     (keywords.weak?.length || 0) + (keywords.exclusions?.length || 0);
-        
-        if (total > 0) {
-            console.log(`${category?.icon || '📂'} ${category?.name || categoryId}: ${total} mots-clés`);
-            if (keywords.absolute?.length) console.log(`  Absolus: ${keywords.absolute.join(', ')}`);
-            if (keywords.strong?.length) console.log(`  Forts: ${keywords.strong.join(', ')}`);
-            if (keywords.weak?.length) console.log(`  Faibles: ${keywords.weak.join(', ')}`);
-            if (keywords.exclusions?.length) console.log(`  Exclusions: ${keywords.exclusions.join(', ')}`);
+    allSources.forEach(source => {
+        if (JSON.stringify([...source.cats].sort()) !== JSON.stringify([...referenceSource].sort())) {
+            inconsistencies.push(source.name);
         }
     });
     
+    if (inconsistencies.length > 0) {
+        console.warn('⚠️ INCOHÉRENCES DÉTECTÉES:', inconsistencies);
+    } else {
+        console.log('✅ Toutes les sources sont synchronisées');
+    }
+    
     console.groupEnd();
-};
+    
+    // 2. État des emails
+    console.group('📧 État des emails:');
+    
+    const emails = window.emailScanner?.getAllEmails() || [];
+    const preselectedEmails = emails.filter(e => e.isPreselectedForTasks === true);
+    const shouldBePreselected = emails.filter(e => categoriesFromLocal.includes(e.category));
+    const missedEmails = shouldBePreselected.filter(e => !e.isPreselectedForTasks);
+    
+    console.log('Total emails:', emails.length);
+    console.log('Marqués pré-sélectionnés (flag):', preselectedEmails.length);
+    console.log('Devraient être pré-sélectionnés (catégorie):', shouldBePreselected.length);
+    console.log('Emails manqués:', missedEmails.length);
+    
+    if (missedEmails.length > 0) {
+        console.warn('⚠️ Emails qui devraient être marqués mais ne le sont pas:');
+        missedEmails.slice(0, 5).forEach(email => {
+            console.log('  -', {
+                subject: email.subject?.substring(0, 40),
+                category: email.category,
+                isPreselectedForTasks: email.isPreselectedForTasks
+            });
+        });
+    }
+    
+    console.groupEnd();
+    
+    // 3. Détails par catégorie
+    console.group('📊 Détails par catégorie pré-sélectionnée:');
+    
+    categoriesFromLocal.forEach(catId => {
+        const category = window.categoryManager?.getCategory(catId);
+        const emailsInCategory = emails.filter(e => e.category === catId);
+        const markedAsPreselected = emailsInCategory.filter(e => e.isPreselectedForTasks === true);
+        
+        console.group(`${category?.icon || '📂'} ${category?.name || catId} (${catId}):`);
+        console.log('Total emails dans cette catégorie:', emailsInCategory.length);
+        console.log('Marqués pré-sélectionnés:', markedAsPreselected.length);
+        console.log('Pourcentage correct:', markedAsPreselected.length === emailsInCategory.length ? '✅ 100%' : `❌ ${Math.round(markedAsPreselected.length / emailsInCategory.length * 100)}%`);
+        
+        if (markedAsPreselected.length < emailsInCategory.length) {
+            const notMarked = emailsInCategory.filter(e => !e.isPreselectedForTasks);
+            console.warn('Emails non marqués:', notMarked.slice(0, 3).map(e => ({
+                subject: e.subject?.substring(0, 40),
+                score: e.categoryScore,
+                confidence: Math.round(e.categoryConfidence * 100) + '%'
+            })));
+        }
+        
+        console.groupEnd();
+    });
+    
+    console.groupEnd();
+    
+    // 4. État de l'affichage
+    console.group('🖼️ État de l\'affichage:');
+    
+    const categoryButtons = document.querySelectorAll('.status-pill-harmonized-twolines');
+    const preselectedButtons = document.querySelectorAll('.status-pill-harmonized-twolines.preselected-category');
+    const emailCards = document.querySelectorAll('.task-harmonized-card');
+    const preselectedCards = document.querySelectorAll('.task-harmonized-card.preselected-task');
+    
+    console.log('Boutons de catégorie totaux:', categoryButtons.length);
+    console.log('Boutons avec style pré-sélectionné:', preselectedButtons.length);
+    console.log('Cartes d\'email totales:', emailCards.length);
+    console.log('Cartes avec style pré-sélectionné:', preselectedCards.length);
+    
+    console.groupEnd();
+    
+    console.groupEnd();
+    
+    return {
+        sources: {
+            categoryManager: categoriesFromManager,
+            categoriesPage: categoriesFromPage,
+            pageManager: categoriesFromLocal,
+            emailScanner: categoriesFromScanner,
+            isSync: inconsistencies.length === 0
+        },
+        emails: {
+            total: emails.length,
+            markedPreselected: preselectedEmails.length,
+            shouldBePreselected: shouldBePreselected.length,
+            missed: missedEmails.length
+        },
+        display: {
+            categoryButtons: categoryButtons.length,
+            preselectedButtons: preselectedButtons.length,
+            emailCards: emailCards.length,
+            preselectedCards: preselectedCards.length
+        }
+    };
+}
 
-window.testCategorySync = function() {
-    return window.categoryManager.testSynchronization();
-};
 
-window.forceCategorySync = function() {
-    window.categoryManager.forceSyncAllModules();
-    return { success: true, message: 'Synchronisation forcée effectuée' };
-};
+// Méthode utilitaire pour dispatcher des événements
+dispatchEvent(eventName, detail) {
+    try {
+        window.dispatchEvent(new CustomEvent(eventName, { 
+            detail: {
+                ...detail,
+                source: 'PageManager',
+                timestamp: Date.now()
+            }
+        }));
+    } catch (error) {
+        console.error(`[PageManager] Erreur dispatch ${eventName}:`, error);
+    }
+}
 
-console.log('✅ CategoryManager v20.0 loaded - Synchronisation complètement fixée');
+    renderEmptyEmailsState() {
+        return `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">Aucun email trouvé</h3>
+                <p class="empty-state-text">
+                    Utilisez le scanner pour récupérer et analyser vos emails.
+                </p>
+                <button class="btn btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                    <i class="fas fa-search"></i>
+                    Aller au scanner
+                </button>
+            </div>
+        `;
+    }
+
+    // ================================================
+    // MÉTHODES DE SÉLECTION
+    // ================================================
+    toggleAllSelection() {
+        const visibleEmails = this.getVisibleEmails();
+        const allSelected = visibleEmails.length > 0 && visibleEmails.every(email => this.selectedEmails.has(email.id));
+        
+        if (allSelected) {
+            visibleEmails.forEach(email => {
+                this.selectedEmails.delete(email.id);
+            });
+            window.uiManager?.showToast('Emails désélectionnés', 'info');
+        } else {
+            visibleEmails.forEach(email => {
+                this.selectedEmails.add(email.id);
+            });
+            window.uiManager?.showToast(`${visibleEmails.length} emails sélectionnés`, 'success');
+        }
+        
+        this.refreshEmailsView();
+    }
+
+toggleEmailSelection(emailId) {
+    console.log('[PageManager] Toggle sélection email:', emailId);
+    
+    if (this.selectedEmails.has(emailId)) {
+        this.selectedEmails.delete(emailId);
+        console.log('[PageManager] Email désélectionné:', emailId);
+    } else {
+        this.selectedEmails.add(emailId);
+        console.log('[PageManager] Email sélectionné:', emailId);
+    }
+    
+    // Mise à jour immédiate de la checkbox spécifique
+    const checkbox = document.querySelector(`[data-email-id="${emailId}"] .task-checkbox-harmonized`);
+    if (checkbox) {
+        checkbox.checked = this.selectedEmails.has(emailId);
+    }
+    
+    // Mise à jour des compteurs et boutons SANS reconstruire toute la liste
+    this.updateControlsBarOnly();
+    
+    console.log('[PageManager] Sélection mise à jour. Total sélectionnés:', this.selectedEmails.size);
+}
+
+// PageManager.js - Fonction updateControlsBarOnly() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 800
+
+updateControlsBarOnly() {
+    const selectedCount = this.selectedEmails.size;
+    const visibleEmails = this.getVisibleEmails();
+    
+    console.log('[PageManager] Mise à jour contrôles uniquement -', selectedCount, 'sélectionnés');
+    
+    // Mettre à jour le bouton "Créer tâches"
+    const createTaskBtn = document.querySelector('.btn-primary[onclick*="createTasksFromSelection"]');
+    if (createTaskBtn) {
+        const span = createTaskBtn.querySelector('span');
+        const countBadge = createTaskBtn.querySelector('.count-badge-main');
+        
+        if (selectedCount === 0) {
+            createTaskBtn.classList.add('disabled');
+            createTaskBtn.disabled = true;
+        } else {
+            createTaskBtn.classList.remove('disabled');
+            createTaskBtn.disabled = false;
+        }
+        
+        if (span) {
+            span.textContent = `Créer tâche${selectedCount > 1 ? 's' : ''}`;
+        }
+        
+        if (countBadge) {
+            if (selectedCount > 0) {
+                countBadge.textContent = selectedCount;
+                countBadge.style.display = 'block';
+            } else {
+                countBadge.style.display = 'none';
+            }
+        } else if (selectedCount > 0) {
+            // Créer le badge s'il n'existe pas
+            const newBadge = document.createElement('span');
+            newBadge.className = 'count-badge-main';
+            newBadge.textContent = selectedCount;
+            createTaskBtn.appendChild(newBadge);
+        }
+    }
+    
+    // Mettre à jour le bouton "Actions"
+    const actionsBtn = document.querySelector('.dropdown-toggle[onclick*="toggleBulkActions"]');
+    if (actionsBtn) {
+        if (selectedCount === 0) {
+            actionsBtn.classList.add('disabled');
+            actionsBtn.disabled = true;
+        } else {
+            actionsBtn.classList.remove('disabled');
+            actionsBtn.disabled = false;
+        }
+    }
+    
+    // Gérer le bouton "Effacer sélection"
+    const existingClearBtn = document.querySelector('.btn-clear-selection');
+    const actionButtonsContainer = document.querySelector('.action-buttons-expanded');
+    
+    if (selectedCount > 0) {
+        if (!existingClearBtn && actionButtonsContainer) {
+            // Créer le bouton "Effacer sélection"
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'btn-expanded btn-clear-selection';
+            clearBtn.onclick = () => window.pageManager.clearSelection();
+            clearBtn.title = 'Effacer la sélection';
+            clearBtn.innerHTML = `
+                <i class="fas fa-times"></i>
+                <span>Effacer (${selectedCount})</span>
+            `;
+            actionButtonsContainer.appendChild(clearBtn);
+        } else if (existingClearBtn) {
+            // Mettre à jour le texte du bouton existant
+            const span = existingClearBtn.querySelector('span');
+            if (span) {
+                span.textContent = `Effacer (${selectedCount})`;
+            }
+        }
+    } else {
+        // Supprimer le bouton si aucune sélection
+        if (existingClearBtn) {
+            existingClearBtn.remove();
+        }
+    }
+    
+    console.log('[PageManager] Contrôles mis à jour -', selectedCount, 'sélectionnés');
+}
+
+    clearSelection() {
+        this.selectedEmails.clear();
+        this.refreshEmailsView();
+        window.uiManager?.showToast('Sélection effacée', 'info');
+    }
+
+    refreshEmailsView() {
+    console.log('[PageManager] Rafraîchissement vue emails...');
+    
+    // Sauvegarder l'état des groupes ouverts
+    const expandedGroups = new Set();
+    document.querySelectorAll('.task-group-harmonized.expanded').forEach(group => {
+        const groupKey = group.dataset.groupKey;
+        if (groupKey) {
+            expandedGroups.add(groupKey);
+        }
+    });
+    
+    // Sauvegarder l'état de recherche
+    const searchInput = document.getElementById('emailSearchInput');
+    const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
+    
+    // Mettre à jour seulement le contenu des emails
+    const emailsContainer = document.querySelector('.tasks-container-harmonized');
+    if (emailsContainer) {
+        emailsContainer.innerHTML = this.renderEmailsList();
+        
+        // Restaurer l'état des groupes ouverts
+        expandedGroups.forEach(groupKey => {
+            const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+            if (group) {
+                const content = group.querySelector('.group-content-harmonized');
+                const icon = group.querySelector('.group-expand-harmonized i');
+                const header = group.querySelector('.group-header-harmonized');
+                
+                if (content && icon && header) {
+                    content.style.display = 'block';
+                    icon.classList.remove('fa-chevron-down');
+                    icon.classList.add('fa-chevron-up');
+                    group.classList.add('expanded');
+                    header.classList.add('expanded-header');
+                }
+            }
+        });
+        
+        console.log('[PageManager] Groupes restaurés:', expandedGroups.size);
+    }
+    
+    // Mettre à jour seulement les contrôles
+    this.updateControlsBarOnly();
+    
+    // Restaurer la recherche
+    setTimeout(() => {
+        const newSearchInput = document.getElementById('emailSearchInput');
+        if (newSearchInput && currentSearchValue && newSearchInput.value !== currentSearchValue) {
+            newSearchInput.value = currentSearchValue;
+        }
+    }, 50);
+    
+    console.log('[PageManager] Vue emails rafraîchie avec', this.selectedEmails.size, 'sélectionnés');
+}
+    updateControlsBar() {
+        const container = document.getElementById('pageContent');
+        if (container && this.currentPage === 'emails') {
+            // Sauvegarder l'état de recherche
+            const searchInput = document.getElementById('emailSearchInput');
+            const currentSearchValue = searchInput ? searchInput.value : this.searchTerm;
+            
+            // Re-render
+            this.renderEmails(container);
+            
+            // Restaurer la recherche
+            setTimeout(() => {
+                const newSearchInput = document.getElementById('emailSearchInput');
+                if (newSearchInput && currentSearchValue) {
+                    newSearchInput.value = currentSearchValue;
+                }
+            }, 100);
+        }
+    }
+buildTwoLinesCategoryTabs(categoryCounts, totalEmails, categories) {
+    // Récupérer les catégories pré-sélectionnées
+    const preselectedCategories = this.getTaskPreselectedCategories();
+    console.log('[PageManager] 📌 Catégories pré-sélectionnées pour l\'affichage:', preselectedCategories);
+    
+    const tabs = [
+        { 
+            id: 'all', 
+            name: 'Tous', 
+            icon: '📧', 
+            count: totalEmails,
+            isPreselected: false 
+        }
+    ];
+    
+    // Ajouter les catégories avec emails
+    Object.entries(categories).forEach(([catId, category]) => {
+        const count = categoryCounts[catId] || 0;
+        if (count > 0) {
+            const isPreselected = preselectedCategories.includes(catId);
+            tabs.push({
+                id: catId,
+                name: category.name,
+                icon: category.icon,
+                color: category.color,
+                count: count,
+                isPreselected: isPreselected
+            });
+            
+            if (isPreselected) {
+                console.log(`[PageManager] ⭐ Catégorie pré-sélectionnée: ${category.name} (${count} emails)`);
+            }
+        }
+    });
+    
+    // Ajouter "Autre" si nécessaire
+    const otherCount = categoryCounts.other || 0;
+    if (otherCount > 0) {
+        tabs.push({
+            id: 'other',
+            name: 'Autre',
+            icon: '📌',
+            count: otherCount,
+            isPreselected: false
+        });
+    }
+    
+    // Générer le HTML avec étoile TOUJOURS visible
+    return tabs.map(tab => {
+        const isCurrentCategory = this.currentCategory === tab.id;
+        const baseClasses = `status-pill-harmonized-twolines ${isCurrentCategory ? 'active' : ''} ${tab.isPreselected ? 'preselected-category' : ''}`;
+        
+        return `
+            <button class="${baseClasses}" 
+                    onclick="window.pageManager.filterByCategory('${tab.id}')"
+                    data-category-id="${tab.id}"
+                    title="${tab.isPreselected ? '⭐ Catégorie pré-sélectionnée pour les tâches' : ''}">
+                <div class="pill-content-twolines">
+                    <div class="pill-first-line-twolines">
+                        <span class="pill-icon-twolines">${tab.icon}</span>
+                        <span class="pill-count-twolines">${tab.count}</span>
+                    </div>
+                    <div class="pill-second-line-twolines">
+                        <span class="pill-text-twolines">${tab.name}</span>
+                    </div>
+                </div>
+                ${tab.isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
+            </button>
+        `;
+    }).join('');
+}
+
+
+// PageManager.js - Fonction filterByCategory() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1050
+
+filterByCategory(categoryId) {
+    console.log(`[PageManager] 🔍 Filtrage par catégorie: ${categoryId}`);
+    
+    this.currentCategory = categoryId;
+    
+    // Debug du filtrage
+    const emails = window.emailScanner?.getAllEmails() || [];
+    let filteredEmails;
+    
+    if (categoryId === 'all') {
+        filteredEmails = emails;
+        console.log(`[PageManager] 📧 Affichage de tous les emails: ${emails.length}`);
+    } else if (categoryId === 'other') {
+        // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
+        filteredEmails = emails.filter(email => {
+            const cat = email.category;
+            return !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+        });
+        console.log(`[PageManager] 📌 Emails "Autre" trouvés: ${filteredEmails.length}`);
+        
+        // Debug des emails "Autre"
+        if (filteredEmails.length > 0) {
+            console.log('[PageManager] 🔍 Échantillon emails "Autre":', 
+                filteredEmails.slice(0, 3).map(e => ({
+                    subject: e.subject?.substring(0, 40),
+                    category: e.category,
+                    categoryType: typeof e.category,
+                    from: e.from?.emailAddress?.address
+                }))
+            );
+        }
+    } else {
+        filteredEmails = emails.filter(email => email.category === categoryId);
+        console.log(`[PageManager] 🏷️ Emails dans catégorie "${categoryId}": ${filteredEmails.length}`);
+    }
+    
+    // Mettre à jour l'affichage
+    this.refreshEmailsView();
+    
+    // Mettre à jour visuellement le bouton actif
+    document.querySelectorAll('.status-pill-harmonized-twolines').forEach(pill => {
+        const pillCategoryId = pill.dataset.categoryId;
+        if (pillCategoryId === categoryId) {
+            pill.classList.add('active');
+        } else {
+            pill.classList.remove('active');
+        }
+    });
+}
+// PageManager.js - Fonction renderEmailsList() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1100
+
+renderEmailsList() {
+    const emails = window.emailScanner?.getAllEmails() || [];
+    let filteredEmails = emails;
+    
+    console.log(`[PageManager] 📧 Rendu liste emails: ${emails.length} total, catégorie: ${this.currentCategory}`);
+    
+    // Appliquer le filtre de catégorie
+    if (this.currentCategory && this.currentCategory !== 'all') {
+        if (this.currentCategory === 'other') {
+            // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
+            filteredEmails = filteredEmails.filter(email => {
+                const cat = email.category;
+                const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                return isOther;
+            });
+            console.log(`[PageManager] 📌 Emails "Autre" filtrés: ${filteredEmails.length}`);
+        } else {
+            filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            console.log(`[PageManager] 🏷️ Emails catégorie "${this.currentCategory}": ${filteredEmails.length}`);
+        }
+    }
+    
+    // Appliquer le filtre de recherche
+    if (this.searchTerm) {
+        const beforeSearch = filteredEmails.length;
+        filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} (était ${beforeSearch})`);
+    }
+    
+    // Affichage si aucun email trouvé
+    if (filteredEmails.length === 0) {
+        console.log('[PageManager] 📭 Aucun email à afficher');
+        return this.renderEmptyState();
+    }
+
+    // Rendu selon le mode de vue
+    switch (this.currentViewMode) {
+        case 'flat':
+            return this.renderFlatView(filteredEmails);
+        case 'grouped-domain':
+        case 'grouped-sender':
+            return this.renderGroupedView(filteredEmails, this.currentViewMode);
+        default:
+            return this.renderFlatView(filteredEmails);
+    }
+}
+
+// PageManager.js - Fonction renderEmptyState() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1180
+
+renderEmptyState() {
+    console.log(`[PageManager] 📭 Rendu état vide - Catégorie: ${this.currentCategory}, Recherche: "${this.searchTerm}"`);
+    
+    let title, text, action = '';
+    
+    if (this.searchTerm) {
+        // État vide à cause de la recherche
+        title = 'Aucun résultat trouvé';
+        text = `Aucun email ne correspond à votre recherche "${this.searchTerm}"`;
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.clearSearch()">
+                <i class="fas fa-undo"></i>
+                <span>Effacer la recherche</span>
+            </button>
+        `;
+    } else if (this.currentCategory === 'other') {
+        // État vide pour la catégorie "Autre"
+        title = 'Aucun email non catégorisé';
+        text = 'Tous vos emails ont été correctement catégorisés ! 🎉';
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                <i class="fas fa-list"></i>
+                <span>Voir tous les emails</span>
+            </button>
+        `;
+    } else if (this.currentCategory && this.currentCategory !== 'all') {
+        // État vide pour une catégorie spécifique
+        const categoryName = this.getCategoryName(this.currentCategory);
+        title = `Aucun email dans "${categoryName}"`;
+        text = 'Cette catégorie ne contient aucun email pour le moment.';
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.filterByCategory('all')">
+                <i class="fas fa-list"></i>
+                <span>Voir tous les emails</span>
+            </button>
+        `;
+    } else {
+        // État vide général (aucun email du tout)
+        title = 'Aucun email trouvé';
+        text = 'Utilisez le scanner pour récupérer et analyser vos emails.';
+        action = `
+            <button class="btn-harmonized btn-primary" onclick="window.pageManager.loadPage('scanner')">
+                <i class="fas fa-search"></i>
+                <span>Aller au scanner</span>
+            </button>
+        `;
+    }
+    
+    return `
+        <div class="empty-state-harmonized">
+            <div class="empty-state-icon-harmonized">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h3 class="empty-state-title-harmonized">${title}</h3>
+            <p class="empty-state-text-harmonized">${text}</p>
+            ${action}
+        </div>
+    `;
+}
+
+    renderFlatView(emails) {
+        return `
+            <div class="tasks-harmonized-list">
+                ${emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+            </div>
+        `;
+    }
+
+    
+// PageManager.js - Fonction renderHarmonizedEmailRow() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1600
+
+renderHarmonizedEmailRow(email) {
+    const hasTask = this.createdTasks.has(email.id);
+    const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
+    const senderEmail = email.from?.emailAddress?.address || '';
+    
+    // Récupérer les catégories pré-sélectionnées avec synchronisation forcée
+    const preselectedCategories = this.getTaskPreselectedCategories();
+    
+    // Double vérification: le flag email.isPreselectedForTasks ET l'appartenance à une catégorie pré-sélectionnée
+    let isPreselectedForTasks = email.isPreselectedForTasks === true;
+    
+    // Si le flag n'est pas défini mais que la catégorie est pré-sélectionnée, le corriger
+    if (!isPreselectedForTasks && preselectedCategories.includes(email.category)) {
+        isPreselectedForTasks = true;
+        email.isPreselectedForTasks = true;
+    }
+    
+    // CORRECTION CRITIQUE: Un email pré-sélectionné doit être automatiquement sélectionné pour création de tâche
+    const isSelected = this.selectedEmails.has(email.id) || isPreselectedForTasks;
+    
+    // Si l'email est pré-sélectionné mais pas encore dans la sélection, l'ajouter
+    if (isPreselectedForTasks && !this.selectedEmails.has(email.id)) {
+        this.selectedEmails.add(email.id);
+    }
+    
+    // Classes CSS pour l'email
+    const cardClasses = [
+        'task-harmonized-card',
+        isSelected ? 'selected' : '',
+        hasTask ? 'has-task' : '',
+        isPreselectedForTasks ? 'preselected-task' : ''
+    ].filter(Boolean).join(' ');
+    
+    return `
+        <div class="${cardClasses}" 
+             data-email-id="${email.id}"
+             data-category="${email.category}"
+             data-preselected="${isPreselectedForTasks}"
+             onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
+            
+            <!-- Checkbox de sélection avec gestion d'événement corrigée -->
+            <input type="checkbox" 
+                   class="task-checkbox-harmonized" 
+                   ${isSelected ? 'checked' : ''}
+                   onchange="event.stopPropagation(); window.pageManager.toggleEmailSelection('${email.id}')">
+            
+            <!-- Indicateur de priorité avec couleur spéciale si pré-sélectionné -->
+            <div class="priority-bar-harmonized" 
+                 style="background-color: ${isPreselectedForTasks ? '#8b5cf6' : this.getEmailPriorityColor(email)}"></div>
+            
+            <!-- Contenu principal -->
+            <div class="task-main-content-harmonized">
+                <div class="task-header-harmonized">
+                    <h3 class="task-title-harmonized">${this.escapeHtml(email.subject || 'Sans sujet')}</h3>
+                    <div class="task-meta-harmonized">
+                        <span class="task-type-badge-harmonized">📧 Email</span>
+                        <span class="deadline-badge-harmonized">
+                            📅 ${this.formatEmailDate(email.receivedDateTime)}
+                        </span>
+                        ${email.categoryScore ? `
+                            <span class="confidence-badge-harmonized">
+                                🎯 ${Math.round(email.categoryConfidence * 100)}%
+                            </span>
+                        ` : ''}
+                        ${isPreselectedForTasks ? `
+                            <span class="preselected-badge-harmonized">
+                                ⭐ Pré-sélectionné
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <div class="task-recipient-harmonized">
+                    <i class="fas fa-envelope"></i>
+                    <span class="recipient-name-harmonized">${this.escapeHtml(senderName)}</span>
+                    ${email.hasAttachments ? '<span class="reply-indicator-harmonized">• Pièce jointe</span>' : ''}
+                    ${email.category && email.category !== 'other' ? `
+                        <span class="category-indicator-harmonized" 
+                              style="background: ${this.getCategoryColor(email.category)}20; 
+                                     color: ${this.getCategoryColor(email.category)};
+                                     ${isPreselectedForTasks ? 'font-weight: 700;' : ''}">
+                            ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                            ${isPreselectedForTasks ? ' ⭐' : ''}
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <!-- Actions rapides -->
+            <div class="task-actions-harmonized">
+                ${this.renderHarmonizedEmailActions(email)}
+            </div>
+        </div>
+    `;
+}
+
+// Ajouter cette méthode dans PageManager.js après la méthode getTaskPreselectedCategories()
+
+debugPreselection() {
+    console.group('🔍 DEBUG PRÉ-SÉLECTION');
+    
+    // 1. Vérifier les catégories configurées
+    const categoriesFromManager = window.categoryManager?.getTaskPreselectedCategories() || [];
+    const categoriesFromPage = window.categoriesPage?.getTaskPreselectedCategories() || [];
+    const categoriesFromLocal = this.getTaskPreselectedCategories();
+    
+    console.log('📋 Catégories pré-sélectionnées:');
+    console.log('  - CategoryManager:', categoriesFromManager);
+    console.log('  - CategoriesPage:', categoriesFromPage);
+    console.log('  - PageManager:', categoriesFromLocal);
+    
+    // 2. Vérifier les emails
+    const emails = window.emailScanner?.getAllEmails() || [];
+    const preselectedEmails = emails.filter(e => e.isPreselectedForTasks);
+    const shouldBePreselected = emails.filter(e => categoriesFromLocal.includes(e.category));
+    
+    console.log('📧 Emails:');
+    console.log('  - Total:', emails.length);
+    console.log('  - Marqués pré-sélectionnés:', preselectedEmails.length);
+    console.log('  - Devraient être pré-sélectionnés:', shouldBePreselected.length);
+    
+    // 3. Détails par catégorie
+    console.log('📊 Détails par catégorie:');
+    categoriesFromLocal.forEach(catId => {
+        const category = window.categoryManager?.getCategory(catId);
+        const emailsInCategory = emails.filter(e => e.category === catId);
+        const markedAsPreselected = emailsInCategory.filter(e => e.isPreselectedForTasks);
+        
+        console.log(`  ${category?.icon || '📂'} ${category?.name || catId}:`, {
+            total: emailsInCategory.length,
+            marqués: markedAsPreselected.length,
+            emails: emailsInCategory.slice(0, 3).map(e => ({
+                subject: e.subject?.substring(0, 50),
+                isPreselectedForTasks: e.isPreselectedForTasks
+            }))
+        });
+    });
+    
+    // 4. Vérifier la synchronisation
+    const isSync = JSON.stringify(categoriesFromManager.sort()) === JSON.stringify(categoriesFromLocal.sort());
+    console.log('🔄 Synchronisation:', isSync ? '✅ OK' : '❌ DÉSYNCHRONISÉ');
+    
+    console.groupEnd();
+    
+    return {
+        configured: categoriesFromLocal,
+        emails: {
+            total: emails.length,
+            preselected: preselectedEmails.length,
+            shouldBePreselected: shouldBePreselected.length
+        },
+        isSync
+    };
+}
+
+forceUpdatePreselection() {
+    console.log('[PageManager] 🔄 === FORCE UPDATE PRÉ-SÉLECTION ===');
+    
+    // 1. Forcer la synchronisation des catégories
+    const freshCategories = window.categoryManager?.getTaskPreselectedCategories() || [];
+    console.log('[PageManager] 📋 Catégories fraîches depuis CategoryManager:', freshCategories);
+    
+    // 2. Mettre à jour EmailScanner
+    if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
+        window.emailScanner.updateTaskPreselectedCategories(freshCategories);
+        console.log('[PageManager] ✅ EmailScanner mis à jour');
+    }
+    
+    // 3. Mettre à jour les emails
+    const emails = window.emailScanner?.getAllEmails() || [];
+    let updated = 0;
+    let added = 0;
+    let removed = 0;
+    
+    emails.forEach(email => {
+        const shouldBePreselected = freshCategories.includes(email.category);
+        const currentlyPreselected = email.isPreselectedForTasks === true;
+        
+        if (shouldBePreselected && !currentlyPreselected) {
+            email.isPreselectedForTasks = true;
+            updated++;
+            added++;
+        } else if (!shouldBePreselected && currentlyPreselected) {
+            email.isPreselectedForTasks = false;
+            updated++;
+            removed++;
+        }
+    });
+    
+    console.log(`[PageManager] 📊 Résultat: ${updated} emails mis à jour (${added} ajoutés, ${removed} retirés)`);
+    
+    // 4. Mettre à jour les boutons de catégories sans reconstruction complète
+    document.querySelectorAll('.status-pill-harmonized-twolines').forEach(button => {
+        const categoryId = button.dataset.categoryId;
+        if (categoryId && categoryId !== 'all') {
+            const starContainer = button.querySelector('.preselected-star-container');
+            if (starContainer) {
+                if (freshCategories.includes(categoryId)) {
+                    starContainer.classList.add('visible');
+                    button.classList.add('preselected-category');
+                } else {
+                    starContainer.classList.remove('visible');
+                    button.classList.remove('preselected-category');
+                }
+            }
+        }
+    });
+    
+    // 5. Rafraîchir seulement la liste des emails
+    const emailsContainer = document.querySelector('.tasks-container-harmonized');
+    if (emailsContainer && this.currentPage === 'emails') {
+        emailsContainer.innerHTML = this.renderEmailsList();
+    }
+    
+    // 6. Déclencher un événement pour notifier les autres modules
+    setTimeout(() => {
+        this.dispatchEvent('preselectionUpdated', {
+            categories: freshCategories,
+            updated: updated,
+            added: added,
+            removed: removed
+        });
+    }, 100);
+    
+    return {
+        categories: freshCategories,
+        emailsUpdated: updated,
+        added: added,
+        removed: removed
+    };
+}
+    renderHarmonizedEmailActions(email) {
+        const hasTask = this.createdTasks.has(email.id);
+        const actions = [];
+        
+        if (!hasTask) {
+            actions.push(`
+                <button class="action-btn-harmonized create-task" 
+                        onclick="event.stopPropagation(); window.pageManager.showTaskCreationModal('${email.id}')"
+                        title="Créer une tâche">
+                    <i class="fas fa-tasks"></i>
+                </button>
+            `);
+        } else {
+            actions.push(`
+                <button class="action-btn-harmonized view-task" 
+                        onclick="event.stopPropagation(); window.pageManager.openCreatedTask('${email.id}')"
+                        title="Voir la tâche">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+            `);
+        }
+        
+        actions.push(`
+            <button class="action-btn-harmonized details" 
+                    onclick="event.stopPropagation(); window.pageManager.showEmailModal('${email.id}')"
+                    title="Voir l'email">
+                <i class="fas fa-eye"></i>
+            </button>
+        `);
+        
+        return actions.join('');
+    }
+
+    renderGroupedView(emails, groupMode) {
+        const groups = this.createEmailGroups(emails, groupMode);
+        
+        return `
+            <div class="tasks-grouped-harmonized">
+                ${groups.map(group => this.renderEmailGroup(group, groupMode)).join('')}
+            </div>
+        `;
+    }
+
+renderEmailGroup(group, groupType) {
+    const displayName = groupType === 'grouped-domain' ? `@${group.name}` : group.name;
+    const avatarColor = this.generateAvatarColor(group.name);
+    
+    return `
+        <div class="task-group-harmonized" data-group-key="${group.key}">
+            <div class="group-header-harmonized" onclick="event.preventDefault(); event.stopPropagation(); window.pageManager.toggleGroup('${group.key}', event)">
+                <div class="group-avatar-harmonized" style="background: ${avatarColor}">
+                    ${groupType === 'grouped-domain' ? 
+                        '<i class="fas fa-globe"></i>' : 
+                        group.name.charAt(0).toUpperCase()
+                    }
+                </div>
+                <div class="group-info-harmonized">
+                    <div class="group-name-harmonized">${displayName}</div>
+                    <div class="group-meta-harmonized">${group.count} email${group.count > 1 ? 's' : ''} • ${this.formatEmailDate(group.latestDate)}</div>
+                </div>
+                <div class="group-expand-harmonized" onclick="event.preventDefault(); event.stopPropagation();">
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+            
+            <div class="group-content-harmonized" style="display: none;">
+                ${group.emails.map(email => this.renderHarmonizedEmailRow(email)).join('')}
+            </div>
+        </div>
+    `;
+}
+handleEmailClick(event, emailId) {
+    // Empêcher la propagation si c'est un clic sur checkbox
+    if (event.target.type === 'checkbox') {
+        console.log('[PageManager] Clic checkbox détecté, arrêt propagation');
+        return;
+    }
+    
+    // Empêcher la propagation si c'est un clic sur les actions
+    if (event.target.closest('.task-actions-harmonized')) {
+        console.log('[PageManager] Clic action détecté, arrêt propagation');
+        return;
+    }
+    
+    // Empêcher la propagation si c'est un clic dans un groupe header
+    if (event.target.closest('.group-header-harmonized')) {
+        console.log('[PageManager] Clic dans group header, arrêt propagation');
+        return;
+    }
+    
+    // Vérifier si c'est un double-clic pour sélection
+    const now = Date.now();
+    const lastClick = this.lastEmailClick || 0;
+    
+    if (now - lastClick < 300) {
+        // Double-clic = toggle sélection
+        console.log('[PageManager] Double-clic détecté, toggle sélection');
+        event.preventDefault();
+        event.stopPropagation();
+        this.toggleEmailSelection(emailId);
+        this.lastEmailClick = 0;
+        return;
+    }
+    
+    this.lastEmailClick = now;
+    
+    // Simple clic = ouvrir modal après délai pour permettre double-clic
+    setTimeout(() => {
+        if (Date.now() - this.lastEmailClick >= 250) {
+            console.log('[PageManager] Simple clic confirmé, ouverture modal');
+            this.showEmailModal(emailId);
+        }
+    }, 250);
+}
+
+    changeViewMode(mode) {
+        this.currentViewMode = mode;
+        this.refreshEmailsView();
+    }
+
+    hideExplanationMessage() {
+        this.hideExplanation = true;
+        localStorage.setItem('hideEmailExplanation', 'true');
+        this.refreshEmailsView();
+    }
+
+toggleGroup(groupKey, event) {
+    // Arrêter la propagation pour éviter les conflits
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    console.log('[PageManager] Toggle groupe:', groupKey);
+    
+    const group = document.querySelector(`[data-group-key="${groupKey}"]`);
+    if (!group) {
+        console.error('[PageManager] Groupe non trouvé:', groupKey);
+        return;
+    }
+    
+    const content = group.querySelector('.group-content-harmonized');
+    const icon = group.querySelector('.group-expand-harmonized i');
+    const header = group.querySelector('.group-header-harmonized');
+    
+    if (!content || !icon || !header) {
+        console.error('[PageManager] Éléments du groupe manquants');
+        return;
+    }
+    
+    const isExpanded = content.style.display !== 'none';
+    
+    if (isExpanded) {
+        // Fermer le groupe
+        content.style.display = 'none';
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+        group.classList.remove('expanded');
+        header.classList.remove('expanded-header');
+        console.log('[PageManager] Groupe fermé:', groupKey);
+    } else {
+        // Ouvrir le groupe
+        content.style.display = 'block';
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+        group.classList.add('expanded');
+        header.classList.add('expanded-header');
+        console.log('[PageManager] Groupe ouvert:', groupKey);
+    }
+}
+
+    setupEmailsEventListeners() {
+        const searchInput = document.getElementById('emailSearchInput');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.handleSearch(e.target.value);
+                }, 300);
+            });
+        }
+    }
+
+    handleSearch(term) {
+        this.searchTerm = term.trim();
+        this.refreshEmailsView();
+    }
+
+    clearSearch() {
+        this.searchTerm = '';
+        const searchInput = document.getElementById('emailSearchInput');
+        if (searchInput) searchInput.value = '';
+        
+        this.refreshEmailsView();
+    }
+
+// PageManager.js - Fonction toggleBulkActions() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1500
+
+// PageManager.js - Fonction toggleBulkActions() AMÉLIORÉE
+// Remplacer cette fonction dans PageManager.js
+
+toggleBulkActions(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    
+    const menu = document.getElementById('bulkActionsMenu');
+    const button = event.currentTarget;
+    
+    if (!menu || !button) return;
+    
+    const isCurrentlyVisible = menu.classList.contains('show');
+    
+    // Fermer tous les autres dropdowns
+    document.querySelectorAll('.dropdown-menu-expanded.show').forEach(dropdown => {
+        if (dropdown !== menu) {
+            dropdown.classList.remove('show');
+        }
+    });
+    
+    // Retirer les classes show des autres boutons
+    document.querySelectorAll('.dropdown-toggle.show').forEach(btn => {
+        if (btn !== button) {
+            btn.classList.remove('show');
+        }
+    });
+    
+    // Supprimer l'overlay existant
+    const existingOverlay = document.querySelector('.dropdown-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    if (isCurrentlyVisible) {
+        // Fermer le menu
+        menu.classList.remove('show');
+        button.classList.remove('show');
+        console.log('[PageManager] Dropdown Actions fermé');
+    } else {
+        // Ouvrir le menu
+        menu.classList.add('show');
+        button.classList.add('show');
+        console.log('[PageManager] Dropdown Actions ouvert');
+        
+        // S'assurer que le menu a le z-index maximum
+        menu.style.zIndex = '9999';
+        menu.style.position = 'absolute';
+        
+        // Créer un overlay pour détecter les clics à l'extérieur
+        const overlay = document.createElement('div');
+        overlay.className = 'dropdown-overlay show';
+        overlay.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 9998 !important;
+            background: rgba(0, 0, 0, 0.05) !important;
+            cursor: pointer !important;
+            display: block !important;
+        `;
+        
+        // Fermer le dropdown quand on clique sur l'overlay
+        overlay.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.remove('show');
+            button.classList.remove('show');
+            overlay.remove();
+            console.log('[PageManager] Dropdown fermé via overlay');
+        });
+        
+        // Ajouter l'overlay au body (pas dans le container des emails)
+        document.body.appendChild(overlay);
+        
+        // Fermer avec Escape
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                menu.classList.remove('show');
+                button.classList.remove('show');
+                overlay.remove();
+                document.removeEventListener('keydown', handleEscape);
+                console.log('[PageManager] Dropdown fermé via Escape');
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+        // Empêcher la fermeture quand on clique dans le menu
+        menu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        // Auto-fermeture après 15 secondes
+        setTimeout(() => {
+            if (menu.classList.contains('show')) {
+                menu.classList.remove('show');
+                button.classList.remove('show');
+                if (overlay.parentNode) {
+                    overlay.remove();
+                }
+                console.log('[PageManager] Dropdown fermé automatiquement');
+            }
+        }, 15000);
+        
+        // Debug : vérifier la position
+        setTimeout(() => {
+            const rect = menu.getBoundingClientRect();
+            console.log('[PageManager] Position dropdown:', {
+                top: rect.top,
+                left: rect.left,
+                zIndex: window.getComputedStyle(menu).zIndex,
+                visible: menu.classList.contains('show')
+            });
+        }, 100);
+    }
+}
+
+    async bulkMarkAsRead() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (window.emailScanner) {
+            await window.emailScanner.performBatchAction(selectedEmails, 'markAsRead');
+        } else {
+            window.uiManager?.showToast(`${selectedEmails.length} emails marqués comme lus`, 'success');
+        }
+        this.clearSelection();
+    }
+
+    async bulkArchive() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (confirm(`Archiver ${selectedEmails.length} email(s) ?`)) {
+            window.uiManager?.showToast(`${selectedEmails.length} emails archivés`, 'success');
+            this.clearSelection();
+        }
+    }
+
+    async bulkDelete() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (confirm(`Supprimer définitivement ${selectedEmails.length} email(s) ?\n\nCette action est irréversible.`)) {
+            if (window.emailScanner) {
+                await window.emailScanner.performBatchAction(selectedEmails, 'delete');
+            } else {
+                window.uiManager?.showToast(`${selectedEmails.length} emails supprimés`, 'success');
+            }
+            this.clearSelection();
+            this.refreshEmailsView();
+        }
+    }
+
+    async bulkExport() {
+        const selectedEmails = Array.from(this.selectedEmails);
+        if (selectedEmails.length === 0) return;
+        
+        if (window.emailScanner) {
+            window.emailScanner.exportResults('csv');
+        } else {
+            const emails = selectedEmails.map(id => this.getEmailById(id)).filter(Boolean);
+            
+            const csvContent = [
+                ['De', 'Sujet', 'Date', 'Catégorie', 'Contenu'].join(','),
+                ...emails.map(email => [
+                    `"${email.from?.emailAddress?.name || email.from?.emailAddress?.address || ''}"`,
+                    `"${email.subject || ''}"`,
+                    email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleDateString('fr-FR') : '',
+                    `"${this.getCategoryName(email.category)}"`,
+                    `"${(email.bodyPreview || '').substring(0, 100)}"`
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `emails_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            window.uiManager?.showToast('Export terminé', 'success');
+        }
+        this.clearSelection();
+    }
+
+    // ================================================
+    // CRÉATION DE TÂCHES
+    // ================================================
+    async createTasksFromSelection() {
+        if (this.selectedEmails.size === 0) {
+            window.uiManager?.showToast('Aucun email sélectionné', 'warning');
+            return;
+        }
+        
+        let created = 0;
+        window.uiManager?.showLoading(`Création de ${this.selectedEmails.size} tâches...`);
+        
+        for (const emailId of this.selectedEmails) {
+            const email = this.getEmailById(emailId);
+            if (!email || this.createdTasks.has(emailId)) continue;
+            
+            try {
+                let analysis = this.aiAnalysisResults.get(emailId);
+                if (!analysis && window.aiTaskAnalyzer) {
+                    analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                    this.aiAnalysisResults.set(emailId, analysis);
+                }
+                
+                if (analysis && window.taskManager) {
+                    const taskData = this.buildTaskDataFromAnalysis(email, analysis);
+                    const task = window.taskManager.createTaskFromEmail(taskData, email);
+                    this.createdTasks.set(emailId, task.id);
+                    created++;
+                }
+            } catch (error) {
+                console.error('[PageManager] Erreur création tâche:', emailId, error);
+            }
+        }
+        
+        window.uiManager?.hideLoading();
+        
+        if (created > 0) {
+            window.taskManager?.saveTasks();
+            window.uiManager?.showToast(`${created} tâche${created > 1 ? 's' : ''} créée${created > 1 ? 's' : ''}`, 'success');
+            this.clearSelection();
+        } else {
+            window.uiManager?.showToast('Aucune tâche créée', 'warning');
+        }
+    }
+
+    buildTaskDataFromAnalysis(email, analysis) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const senderDomain = senderEmail.split('@')[1] || 'unknown';
+        
+        return {
+            id: this.generateTaskId(),
+            title: analysis.mainTask?.title || `Email de ${senderName}`,
+            description: analysis.mainTask?.description || analysis.summary || '',
+            priority: analysis.mainTask?.priority || 'medium',
+            dueDate: analysis.mainTask?.dueDate || null,
+            status: 'todo',
+            emailId: email.id,
+            category: email.category || 'other',
+            createdAt: new Date().toISOString(),
+            aiGenerated: true,
+            emailFrom: senderEmail,
+            emailFromName: senderName,
+            emailSubject: email.subject,
+            emailDomain: senderDomain,
+            emailDate: email.receivedDateTime,
+            hasAttachments: email.hasAttachments || false,
+            aiAnalysis: analysis,
+            tags: [senderDomain, analysis.importance, ...(analysis.tags || [])].filter(Boolean),
+            method: 'ai'
+        };
+    }
+
+    generateTaskId() {
+        return `task-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // ================================================
+    // MODALES
+    // ================================================
+    async showTaskCreationModal(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        let analysis;
+        try {
+            window.uiManager?.showLoading('Analyse de l\'email...');
+            analysis = await window.aiTaskAnalyzer?.analyzeEmailForTasks(email, { useApi: true });
+            this.aiAnalysisResults.set(emailId, analysis);
+            window.uiManager?.hideLoading();
+        } catch (error) {
+            window.uiManager?.hideLoading();
+            window.uiManager?.showToast('Erreur d\'analyse', 'error');
+            return;
+        }
+
+        const uniqueId = 'task_creation_modal_' + Date.now();
+        const modalHTML = this.buildTaskCreationModal(uniqueId, email, analysis);
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    buildTaskCreationModal(uniqueId, email, analysis) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const senderDomain = senderEmail.split('@')[1] || '';
+        
+        const enhancedTitle = analysis.mainTask.title.includes(senderName) ? 
+            analysis.mainTask.title : 
+            `${analysis.mainTask.title} - ${senderName}`;
+        
+        return `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 16px; max-width: 900px; width: 100%; 
+                            max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Créer une tâche</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        ${this.buildTaskCreationForm(email, analysis)}
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Annuler
+                        </button>
+                        <button onclick="window.pageManager.createTaskFromModal('${email.id}'); document.getElementById('${uniqueId}').remove();"
+                                style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            <i class="fas fa-check"></i> Créer la tâche
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    buildTaskCreationForm(email, analysis) {
+        const senderName = email.from?.emailAddress?.name || 'Inconnu';
+        const senderEmail = email.from?.emailAddress?.address || '';
+        const senderDomain = senderEmail.split('@')[1] || '';
+        
+        const enhancedTitle = analysis.mainTask.title.includes(senderName) ? 
+            analysis.mainTask.title : 
+            `${analysis.mainTask.title} - ${senderName}`;
+        
+        return `
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+                    <i class="fas fa-robot" style="color: #0ea5e9; font-size: 20px;"></i>
+                    <span style="color: #0c4a6e; font-weight: 600;">Analyse intelligente par Claude AI</span>
+                </div>
+                
+                <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 48px; height: 48px; background: ${this.generateAvatarColor(senderName)}; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">
+                        ${senderName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #1f2937; font-size: 16px;">${senderName}</div>
+                        <div style="color: #6b7280; font-size: 14px;">${senderEmail}</div>
+                        <div style="color: #9ca3af; font-size: 12px;">@${senderDomain}</div>
+                    </div>
+                </div>
+                
+                <div>
+                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Titre de la tâche</label>
+                    <input type="text" id="task-title" 
+                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
+                           value="${enhancedTitle}" 
+                           onfocus="this.style.borderColor='#3b82f6'"
+                           onblur="this.style.borderColor='#e5e7eb'" />
+                </div>
+                
+                <div>
+                    <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Description</label>
+                    <textarea id="task-description" 
+                              style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 100px; transition: border-color 0.2s;"
+                              onfocus="this.style.borderColor='#3b82f6'"
+                              onblur="this.style.borderColor='#e5e7eb'"
+                              rows="4">${analysis.mainTask.description || analysis.summary || ''}</textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Priorité</label>
+                        <select id="task-priority" 
+                                style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
+                                onfocus="this.style.borderColor='#3b82f6'"
+                                onblur="this.style.borderColor='#e5e7eb'">
+                            <option value="urgent" ${analysis.mainTask.priority === 'urgent' ? 'selected' : ''}>🚨 Urgent</option>
+                            <option value="high" ${analysis.mainTask.priority === 'high' ? 'selected' : ''}>⚡ Haute</option>
+                            <option value="medium" ${analysis.mainTask.priority === 'medium' ? 'selected' : ''}>📌 Normale</option>
+                            <option value="low" ${analysis.mainTask.priority === 'low' ? 'selected' : ''}>📄 Basse</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 8px;">Date d'échéance</label>
+                        <input type="date" id="task-duedate" 
+                               style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; transition: border-color 0.2s;"
+                               onfocus="this.style.borderColor='#3b82f6'"
+                               onblur="this.style.borderColor='#e5e7eb'"
+                               value="${analysis.mainTask.dueDate || ''}" />
+                    </div>
+                </div>
+                
+                <div>
+                    <button onclick="window.pageManager.toggleEmailContext()" 
+                            style="width: 100%; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #475569; transition: background 0.2s;"
+                            onmouseover="this.style.background='#f1f5f9'"
+                            onmouseout="this.style.background='#f8fafc'">
+                        <i class="fas fa-chevron-right" id="context-toggle-icon" style="transition: transform 0.2s;"></i>
+                        <span>Afficher le contenu original de l'email</span>
+                    </button>
+                    <div id="email-context-content" style="display: none; margin-top: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="margin-bottom: 4px;"><strong>De:</strong> ${senderName} &lt;${senderEmail}&gt;</div>
+                            <div style="margin-bottom: 4px;"><strong>Date:</strong> ${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</div>
+                            <div><strong>Sujet:</strong> ${email.subject || 'Sans sujet'}</div>
+                        </div>
+                        <div style="max-height: 200px; overflow-y: auto; font-size: 14px; line-height: 1.5; color: #374151;">
+                            ${this.getEmailContent(email)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    toggleEmailContext() {
+        const content = document.getElementById('email-context-content');
+        const icon = document.getElementById('context-toggle-icon');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.classList.remove('fa-chevron-right');
+            icon.classList.add('fa-chevron-down');
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            content.style.display = 'none';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-right');
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    async createTaskFromModal(emailId) {
+        const email = this.getEmailById(emailId);
+        const analysis = this.aiAnalysisResults.get(emailId);
+        
+        if (!email || !analysis) {
+            window.uiManager?.showToast('Données manquantes', 'error');
+            return;
+        }
+
+        const title = document.getElementById('task-title')?.value;
+        const description = document.getElementById('task-description')?.value;
+        const priority = document.getElementById('task-priority')?.value;
+        const dueDate = document.getElementById('task-duedate')?.value;
+
+        if (!title) {
+            window.uiManager?.showToast('Le titre est requis', 'warning');
+            return;
+        }
+
+        try {
+            const taskData = this.buildTaskDataFromAnalysis(email, {
+                ...analysis,
+                mainTask: {
+                    ...analysis.mainTask,
+                    title,
+                    description,
+                    priority,
+                    dueDate
+                }
+            });
+
+            const task = window.taskManager?.createTaskFromEmail(taskData, email);
+            if (task) {
+                this.createdTasks.set(emailId, task.id);
+                window.taskManager?.saveTasks();
+                window.uiManager?.showToast('Tâche créée avec succès', 'success');
+                this.refreshEmailsView();
+            } else {
+                throw new Error('Erreur lors de la création de la tâche');
+            }
+            
+        } catch (error) {
+            console.error('Error creating task:', error);
+            window.uiManager?.showToast('Erreur lors de la création', 'error');
+        }
+    }
+
+    showEmailModal(emailId) {
+        const email = this.getEmailById(emailId);
+        if (!email) return;
+
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+        
+        const uniqueId = 'email_modal_' + Date.now();
+        const modalHTML = `
+            <div id="${uniqueId}" 
+                 style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75); 
+                        z-index: 99999999; display: flex; align-items: center; justify-content: center; 
+                        padding: 20px; backdrop-filter: blur(4px);">
+                <div style="background: white; border-radius: 16px; max-width: 800px; width: 100%; 
+                           max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                    <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0; font-size: 24px; font-weight: 700; color: #1f2937;">Email Complet</h2>
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="padding: 24px; overflow-y: auto; flex: 1;">
+                        <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; color: #374151; min-width: 60px;">De:</span>
+                                <span style="color: #1f2937;">${email.from?.emailAddress?.name || ''} &lt;${email.from?.emailAddress?.address || ''}&gt;</span>
+                            </div>
+                            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Date:</span>
+                                <span style="color: #1f2937;">${new Date(email.receivedDateTime).toLocaleString('fr-FR')}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 700; color: #374151; min-width: 60px;">Sujet:</span>
+                                <span style="color: #1f2937; font-weight: 600;">${email.subject || 'Sans sujet'}</span>
+                            </div>
+                            ${email.category && email.category !== 'other' ? `
+                                <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+                                    <span style="font-weight: 700; color: #374151; min-width: 60px;">Catégorie:</span>
+                                    <span style="background: ${this.getCategoryColor(email.category)}20; color: ${this.getCategoryColor(email.category)}; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                                        ${this.getCategoryIcon(email.category)} ${this.getCategoryName(email.category)}
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div style="background: white; border: 1px solid #e5e7eb; padding: 20px; border-radius: 12px; max-height: 400px; overflow-y: auto; line-height: 1.6; color: #374151;">
+                            ${this.getEmailContent(email)}
+                        </div>
+                    </div>
+                    <div style="padding: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px;">
+                        <button onclick="document.getElementById('${uniqueId}').remove(); document.body.style.overflow = 'auto';"
+                                style="padding: 12px 20px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                            Fermer
+                        </button>
+                        ${!this.createdTasks.has(emailId) ? `
+                            <button onclick="document.getElementById('${uniqueId}').remove(); window.pageManager.showTaskCreationModal('${emailId}');"
+                                    style="padding: 12px 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                                <i class="fas fa-tasks"></i> Créer une tâche
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+    }
+
+    // ================================================
+    // MÉTHODES UTILITAIRES
+    // ================================================
+    async refreshEmails() {
+        window.uiManager?.showLoading('Actualisation...');
+        
+        try {
+            // Recatégoriser les emails existants
+            if (window.emailScanner && window.emailScanner.emails.length > 0) {
+                await window.emailScanner.recategorizeEmails();
+            }
+            
+            await this.loadPage('emails');
+            window.uiManager?.showToast('Emails actualisés', 'success');
+            
+        } catch (error) {
+            window.uiManager?.hideLoading();
+            window.uiManager?.showToast('Erreur d\'actualisation', 'error');
+        }
+    }
+
+    openCreatedTask(emailId) {
+        const taskId = this.createdTasks.get(emailId);
+        if (!taskId) return;
+        
+        this.loadPage('tasks').then(() => {
+            setTimeout(() => {
+                if (window.tasksView?.showTaskDetails) {
+                    window.tasksView.showTaskDetails(taskId);
+                }
+            }, 100);
+        });
+    }
+
+    getEmailById(emailId) {
+        return window.emailScanner?.getEmailById(emailId) || null;
+    }
+
+// PageManager.js - Fonction getVisibleEmails() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1750
+
+getVisibleEmails() {
+    const emails = window.emailScanner?.getAllEmails() || [];
+    let filteredEmails = emails;
+    
+    console.log(`[PageManager] 👁️ Calcul emails visibles: ${emails.length} total, catégorie: ${this.currentCategory}`);
+    
+    // Appliquer le filtre de catégorie
+    if (this.currentCategory && this.currentCategory !== 'all') {
+        if (this.currentCategory === 'other') {
+            // CORRECTION CRITIQUE: Filtrer correctement les emails "Autre"
+            filteredEmails = filteredEmails.filter(email => {
+                const cat = email.category;
+                const isOther = !cat || cat === 'other' || cat === null || cat === undefined || cat === '';
+                return isOther;
+            });
+            console.log(`[PageManager] 📌 Emails "Autre" visibles: ${filteredEmails.length}`);
+        } else {
+            filteredEmails = filteredEmails.filter(email => email.category === this.currentCategory);
+            console.log(`[PageManager] 🏷️ Emails catégorie "${this.currentCategory}" visibles: ${filteredEmails.length}`);
+        }
+    }
+    
+    // Appliquer le filtre de recherche
+    if (this.searchTerm) {
+        const beforeSearch = filteredEmails.length;
+        filteredEmails = filteredEmails.filter(email => this.matchesSearch(email, this.searchTerm));
+        console.log(`[PageManager] 🔍 Après recherche "${this.searchTerm}": ${filteredEmails.length} visibles (était ${beforeSearch})`);
+    }
+    
+    return filteredEmails;
+}
+
+    matchesSearch(email, searchTerm) {
+        if (!searchTerm) return true;
+        
+        const search = searchTerm.toLowerCase();
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.name || '').toLowerCase();
+        const senderEmail = (email.from?.emailAddress?.address || '').toLowerCase();
+        const preview = (email.bodyPreview || '').toLowerCase();
+        
+        return subject.includes(search) || 
+               sender.includes(search) || 
+               senderEmail.includes(search) || 
+               preview.includes(search);
+    }
+
+// PageManager.js - Fonction calculateCategoryCounts() COMPLÈTEMENT CORRIGÉE
+// Remplacer cette fonction dans PageManager.js vers ligne 1800
+
+calculateCategoryCounts(emails) {
+    console.log('[PageManager] 📊 Calcul des comptages de catégories...');
+    
+    const counts = {};
+    let uncategorizedCount = 0;
+    
+    emails.forEach(email => {
+        const cat = email.category;
+        
+        // Si l'email a une catégorie valide
+        if (cat && cat !== 'other' && cat !== null && cat !== undefined && cat !== '') {
+            counts[cat] = (counts[cat] || 0) + 1;
+        } else {
+            // Email non catégorisé -> dans "other"
+            uncategorizedCount++;
+        }
+    });
+    
+    // CORRECTION CRITIQUE: Toujours inclure "other" si il y a des emails non catégorisés
+    if (uncategorizedCount > 0) {
+        counts.other = uncategorizedCount;
+        console.log(`[PageManager] 📌 ${uncategorizedCount} emails dans la catégorie "Autre"`);
+    }
+    
+    // Debug des comptages
+    console.log('[PageManager] 📊 Comptages finaux:', {
+        categories: counts,
+        totalEmails: emails.length,
+        sumCounts: Object.values(counts).reduce((sum, count) => sum + count, 0)
+    });
+    
+    // Vérification de cohérence
+    const totalCounted = Object.values(counts).reduce((sum, count) => sum + count, 0);
+    if (totalCounted !== emails.length) {
+        console.error(`[PageManager] ❌ ERREUR COMPTAGE: ${totalCounted} comptés vs ${emails.length} emails totaux`);
+        
+        // Debug détaillé pour trouver le problème
+        const emailsWithoutCategory = emails.filter(e => !e.category || e.category === 'other' || e.category === '');
+        const emailsWithCategory = emails.filter(e => e.category && e.category !== 'other' && e.category !== '');
+        
+        console.error('[PageManager] Debug détaillé:', {
+            emailsWithoutCategory: emailsWithoutCategory.length,
+            emailsWithCategory: emailsWithCategory.length,
+            categories: [...new Set(emails.map(e => e.category || 'undefined'))],
+            sampleUncategorized: emailsWithoutCategory.slice(0, 3).map(e => ({
+                subject: e.subject?.substring(0, 40),
+                category: e.category,
+                categoryType: typeof e.category
+            }))
+        });
+    }
+    
+    return counts;
+}
+
+    createEmailGroups(emails, groupMode) {
+        const groups = {};
+        
+        emails.forEach(email => {
+            let groupKey, groupName;
+            
+            if (groupMode === 'grouped-domain') {
+                const domain = email.from?.emailAddress?.address?.split('@')[1] || 'unknown';
+                groupKey = domain;
+                groupName = domain;
+            } else {
+                const senderEmail = email.from?.emailAddress?.address || 'unknown';
+                const senderName = email.from?.emailAddress?.name || senderEmail;
+                groupKey = senderEmail;
+                groupName = senderName;
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    key: groupKey,
+                    name: groupName,
+                    emails: [],
+                    count: 0,
+                    latestDate: null
+                };
+            }
+            
+            groups[groupKey].emails.push(email);
+            groups[groupKey].count++;
+            
+            const emailDate = new Date(email.receivedDateTime);
+            if (!groups[groupKey].latestDate || emailDate > groups[groupKey].latestDate) {
+                groups[groupKey].latestDate = emailDate;
+            }
+        });
+        
+        return Object.values(groups).sort((a, b) => {
+            if (!a.latestDate && !b.latestDate) return 0;
+            if (!a.latestDate) return 1;
+            if (!b.latestDate) return -1;
+            return b.latestDate - a.latestDate;
+        });
+    }
+
+    generateAvatarColor(text) {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const hue = Math.abs(hash) % 360;
+        const saturation = 65 + (Math.abs(hash) % 20);
+        const lightness = 45 + (Math.abs(hash) % 15);
+        
+        return `linear-gradient(135deg, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${(hue + 30) % 360}, ${saturation}%, ${lightness + 10}%))`;
+    }
+
+    getEmailPriorityColor(email) {
+        if (email.importance === 'high') return '#ef4444';
+        if (email.hasAttachments) return '#f97316';
+        if (email.categoryScore >= 80) return '#10b981';
+        return '#3b82f6';
+    }
+
+    formatEmailDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 3600000) {
+            return `${Math.floor(diff / 60000)}m`;
+        } else if (diff < 86400000) {
+            return `${Math.floor(diff / 3600000)}h`;
+        } else if (diff < 604800000) {
+            return `${Math.floor(diff / 86400000)}j`;
+        } else {
+            return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+        }
+    }
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    getEmailContent(email) {
+        if (email.body?.content) {
+            // Nettoyer le contenu HTML pour éviter les erreurs de parsing
+            let content = email.body.content;
+            // Remplacer les meta tags problématiques
+            content = content.replace(/<meta[^>]*>/gi, '');
+            return content;
+        }
+        return `<p>${this.escapeHtml(email.bodyPreview || 'Aucun contenu disponible')}</p>`;
+    }
+
+    getCategoryColor(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        return category?.color || '#64748b';
+    }
+
+    getCategoryIcon(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        return category?.icon || '📌';
+    }
+
+    getCategoryName(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        return category?.name || categoryId || 'Autre';
+    }
+
+    async analyzeFirstEmails(emails) {
+        if (!window.aiTaskAnalyzer) return;
+        
+        for (const email of emails) {
+            if (!this.aiAnalysisResults.has(email.id)) {
+                try {
+                    const analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
+                    this.aiAnalysisResults.set(email.id, analysis);
+                } catch (error) {
+                    console.error('[PageManager] Erreur analyse email:', error);
+                }
+            }
+        }
+    }
+
+    // ================================================
+    // AUTRES PAGES (Scanner, Tasks, Categories, Settings, Ranger)
+    // ================================================
+    
+    async renderScanner(container) {
+        console.log('[PageManager] Rendu page scanner...');
+        
+        if (window.scanStartModule && 
+            typeof window.scanStartModule.render === 'function' && 
+            window.scanStartModule.stylesAdded) {
+            
+            try {
+                console.log('[PageManager] Utilisation ScanStartModule moderne');
+                await window.scanStartModule.render(container);
+                return;
+            } catch (error) {
+                console.error('[PageManager] Erreur ScanStartModule, fallback:', error);
+            }
+        }
+        
+        console.log('[PageManager] Utilisation interface scanner fallback');
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 class="empty-title">Scanner d'emails</h3>
+                <p class="empty-text">Module de scan en cours de chargement...</p>
+            </div>
+        `;
+    }
+
+    async renderTasks(container) {
+        if (window.tasksView && window.tasksView.render) {
+            window.tasksView.render(container);
+        } else {
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Tâches</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="empty-title">Aucune tâche</h3>
+                    <p class="empty-text">Créez des tâches à partir de vos emails</p>
+                </div>
+            `;
+        }
+    }
+
+    async renderCategories(container) {
+        const categories = window.categoryManager?.getCategories() || {};
+        
+        container.innerHTML = `
+            <div class="page-header">
+                <h1>Catégories</h1>
+            </div>
+            
+            <div class="categories-grid">
+                ${Object.entries(categories).map(([id, cat]) => `
+                    <div class="category-card">
+                        <div class="category-icon" style="background: ${cat.color}20; color: ${cat.color}">
+                            ${cat.icon}
+                        </div>
+                        <h3>${cat.name}</h3>
+                        <p>${cat.description || ''}</p>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    async renderSettings(container) {
+        if (window.categoriesPage) {
+            window.categoriesPage.renderSettings(container);
+        } else {
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Paramètres</h1>
+                </div>
+                
+                <div class="settings-card">
+                    <h3>Configuration IA</h3>
+                    <button class="btn primary" onclick="window.aiTaskAnalyzer?.showConfigurationModal()">
+                        <i class="fas fa-cog"></i> Configurer Claude AI
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    async renderRanger(container) {
+        if (window.domainOrganizer && window.domainOrganizer.showPage) {
+            window.domainOrganizer.showPage(container);
+        } else {
+            container.innerHTML = `
+                <div class="page-header">
+                    <h1>Ranger par domaine</h1>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-folder-tree"></i>
+                    </div>
+                    <h3 class="empty-title">Module de rangement</h3>
+                    <p class="empty-text">Module de rangement en cours de chargement...</p>
+                </div>
+            `;
+        }
+    }
+
+addExpandedEmailStyles() {
+    if (document.getElementById('expandedEmailStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'expandedEmailStyles';
+    styles.textContent = `
+        /* Variables CSS étendues */
+        :root {
+            --btn-height: 44px;
+            --btn-padding-horizontal: 16px;
+            --btn-font-size: 13px;
+            --btn-border-radius: 10px;
+            --btn-font-weight: 600;
+            --btn-gap: 8px;
+            --card-height: 76px;
+            --card-padding: 14px;
+            --card-border-radius: 12px;
+            --action-btn-size: 36px;
+            --gap-small: 8px;
+            --gap-medium: 12px;
+            --gap-large: 16px;
+            --transition-speed: 0.2s;
+            --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --preselect-color: #8b5cf6;
+            --preselect-color-light: #a78bfa;
+            --preselect-color-dark: #7c3aed;
+        }
+        
+        .tasks-page-modern {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: var(--gap-large);
+            font-size: var(--btn-font-size);
+        }
+
+        .explanation-text-harmonized {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: var(--card-border-radius);
+            padding: var(--gap-medium);
+            margin-bottom: var(--gap-medium);
+            display: flex;
+            align-items: center;
+            gap: var(--gap-medium);
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.5;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .explanation-text-harmonized i {
+            font-size: 16px;
+            color: #3b82f6;
+            flex-shrink: 0;
+        }
+        
+        .explanation-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .explanation-close-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.1);
+        }
+        
+        /* ===== BARRE DE CONTRÔLES ÉTENDUE SUR 2 LIGNES ===== */
+ .controls-bar-harmonized-expanded {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--card-border-radius);
+    padding: var(--gap-large);
+    margin-bottom: var(--gap-medium);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-large);
+    position: relative;
+    z-index: 1000; /* TRÈS ÉLEVÉ - Au-dessus de tout */
+}
+        
+        /* PREMIÈRE LIGNE : Recherche étendue */
+        .search-line-full {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+        
+        .search-box-full {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: calc(var(--btn-height) + 8px);
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input-full {
+            width: 100%;
+            height: 100%;
+            padding: 0 var(--gap-large) 0 56px;
+            border: 2px solid #e5e7eb;
+            border-radius: calc(var(--btn-border-radius) + 4px);
+            font-size: calc(var(--btn-font-size) + 2px);
+            background: #f9fafb;
+            transition: all var(--transition-speed) ease;
+            outline: none;
+            font-weight: 500;
+            color: #374151;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-input-full:focus {
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1), inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+        
+        .search-input-full::placeholder {
+            color: #9ca3af;
+            font-weight: 400;
+        }
+        
+        .search-icon-full {
+            position: absolute;
+            left: var(--gap-large);
+            color: #6b7280;
+            pointer-events: none;
+            font-size: 18px;
+            z-index: 1;
+        }
+        
+        .search-input-full:focus + .search-icon-full {
+            color: #3b82f6;
+        }
+        
+        .search-clear-full {
+            position: absolute;
+            right: var(--gap-medium);
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all var(--transition-speed) ease;
+            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+        }
+        
+        .search-clear-full:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
+        }
+        
+        /* SECONDE LIGNE : Tous les boutons */
+        .buttons-line-full {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--gap-large);
+            width: 100%;
+        }
+        
+        /* Modes de vue étendus */
+        .view-modes-expanded {
+            display: flex;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--btn-border-radius);
+            padding: 4px;
+            gap: 2px;
+            height: var(--btn-height);
+            flex-shrink: 0;
+        }
+        
+        .view-mode-expanded {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--btn-gap);
+            padding: 0 var(--btn-padding-horizontal);
+            height: calc(var(--btn-height) - 8px);
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            border-radius: calc(var(--btn-border-radius) - 2px);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            min-width: 120px;
+            white-space: nowrap;
+        }
+        
+        .view-mode-expanded:hover {
+            background: rgba(255, 255, 255, 0.8);
+            color: #374151;
+            transform: translateY(-1px);
+        }
+        
+        .view-mode-expanded.active {
+            background: white;
+            color: #1f2937;
+            box-shadow: var(--shadow-base);
+            font-weight: 700;
+            transform: translateY(-1px);
+        }
+        
+        /* Séparateur visuel */
+        .buttons-separator {
+            width: 1px;
+            height: calc(var(--btn-height) - 8px);
+            background: linear-gradient(to bottom, transparent, #e5e7eb, transparent);
+            flex-shrink: 0;
+        }
+        
+        /* Actions étendues */
+.action-buttons-expanded {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-medium);
+    flex: 1;
+    justify-content: flex-end;
+    position: relative;
+    z-index: 1001; /* Encore plus haut */
+}
+        
+        .btn-expanded {
+            height: var(--btn-height);
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--btn-border-radius);
+            padding: 0 var(--btn-padding-horizontal);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap);
+            box-shadow: var(--shadow-base);
+            position: relative;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .btn-expanded:hover {
+            background: #f9fafb;
+            border-color: #6366f1;
+            color: #1f2937;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        /* Boutons désactivés */
+        .btn-expanded.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+        
+        .btn-expanded.disabled:hover {
+            transform: none !important;
+            box-shadow: var(--shadow-base) !important;
+            background: white !important;
+            border-color: #e5e7eb !important;
+        }
+        
+        .btn-expanded.btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            font-weight: 700;
+        }
+        
+        .btn-expanded.btn-primary:hover {
+            background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        }
+        
+        .btn-expanded.btn-primary.disabled {
+            background: #e5e7eb !important;
+            color: #9ca3af !important;
+            box-shadow: var(--shadow-base) !important;
+        }
+        
+        .btn-expanded.btn-secondary {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #e2e8f0;
+        }
+        
+        .btn-expanded.btn-secondary:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        
+        .btn-expanded.btn-selection-toggle {
+            background: #f0f9ff;
+            color: #0369a1;
+            border-color: #0ea5e9;
+        }
+        
+        .btn-expanded.btn-selection-toggle:hover {
+            background: #e0f2fe;
+            color: #0c4a6e;
+            border-color: #0284c7;
+        }
+        
+        .count-badge-expanded {
+            background: #0ea5e9;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 8px;
+            margin-left: 4px;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .count-badge-main {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            border: 2px solid white;
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes badgePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+.btn-expanded.btn-clear-selection {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    font-weight: 600;
+}
+        
+.btn-expanded.btn-clear-selection:hover {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+    transform: translateY(-1px);
+}
+        
+        .selection-info-expanded {
+            height: var(--btn-height);
+            padding: 0 var(--btn-padding-horizontal);
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: var(--btn-border-radius);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            color: #1e40af;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap);
+            box-shadow: var(--shadow-base);
+            white-space: nowrap;
+        }
+        
+        .selection-count-expanded {
+            font-weight: 700;
+        }
+        
+        /* Dropdown étendu */
+.dropdown-action-expanded {
+    position: relative;
+    display: inline-block;
+    z-index: 1002; /* Maximum pour le container */
+}
+.dropdown-menu-expanded {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--btn-border-radius);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25); /* Ombre plus forte */
+    min-width: 220px;
+    z-index: 9999; /* MAXIMUM ABSOLU */
+    padding: 8px 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(99, 102, 241, 0.2); /* Bordure colorée pour visibilité */
+}
+.dropdown-menu-expanded.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35); /* Ombre très forte quand visible */
+}
+
+        
+        .dropdown-item-expanded {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-medium);
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            color: #374151;
+            font-size: var(--btn-font-size);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-item-expanded:hover {
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        
+        .dropdown-item-expanded.danger {
+            color: #dc2626;
+        }
+        
+        .dropdown-item-expanded.danger:hover {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 8px 0;
+        }
+        
+        /* ===== FILTRES DE CATÉGORIES (inchangés) ===== */
+   .status-filters-harmonized-twolines {
+    display: flex;
+    gap: var(--gap-small);
+    margin-bottom: var(--gap-medium);
+    flex-wrap: wrap;
+    width: 100%;
+    position: relative;
+    z-index: 10; /* BAS - Sous la barre de contrôles */
+}
+        
+.status-pill-harmonized-twolines {
+    height: 60px;
+    padding: var(--gap-small);
+    font-size: 12px;
+    font-weight: 700;
+    flex: 0 1 calc(16.666% - var(--gap-small));
+    min-width: 120px;
+    max-width: 180px;
+    border-radius: var(--btn-border-radius);
+    box-shadow: var(--shadow-base);
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: white;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    position: relative;
+    overflow: visible;
+    z-index: 11; /* Un peu plus haut mais toujours sous le dropdown */
+}
+        
+        .status-pill-harmonized-twolines.preselected-category {
+            animation: pulsePreselected 3s ease-in-out infinite;
+            border-width: 2px;
+        }
+        
+        .status-pill-harmonized-twolines.preselected-category::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: inherit;
+            background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
+            background-size: 300% 300%;
+            animation: gradientShift 4s ease infinite;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        @keyframes pulsePreselected {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .pill-content-twolines {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+        }
+        
+        .pill-first-line-twolines {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .pill-icon-twolines {
+            font-size: 16px;
+        }
+        
+        .pill-count-twolines {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        .preselected-star {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 20px;
+            height: 20px;
+            background: var(--preselect-color);
+            color: white;
+            border-radius: 50%;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            border: 2px solid white;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+            animation: starPulse 2s ease-in-out infinite;
+            z-index: 10;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        @keyframes starPulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+            }
+            50% { 
+                transform: scale(1.15);
+                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
+            }
+        }
+        
+        .pill-text-twolines {
+            font-weight: 700;
+            font-size: 12px;
+            line-height: 1.2;
+            text-align: center;
+        }
+        
+.status-pill-harmonized-twolines:hover {
+    border-color: #3b82f6;
+    background: #f0f9ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+    z-index: 12; /* Légèrement plus haut au hover */
+}
+.status-pill-harmonized-twolines.active {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    border-color: #3b82f6;
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+    z-index: 13; /* Plus haut quand actif */
+}
+        
+        .status-pill-harmonized-twolines.active.preselected-category {
+            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+        }
+        
+        .status-pill-harmonized-twolines.active .pill-count-twolines {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        
+        /* Container des emails */
+        .tasks-container-harmonized {
+            background: transparent;
+        }
+        
+        .tasks-harmonized-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
+  .task-harmonized-card {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    padding: var(--card-padding);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: var(--card-height);
+    max-height: var(--card-height);
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 1; /* BAS pour permettre aux dropdowns de passer par-dessus */
+}
+        
+        .task-harmonized-card:first-child {
+            border-top-left-radius: var(--card-border-radius);
+            border-top-right-radius: var(--card-border-radius);
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .task-harmonized-card:last-child {
+            border-bottom-left-radius: var(--card-border-radius);
+            border-bottom-right-radius: var(--card-border-radius);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+.task-harmonized-card:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: rgba(99, 102, 241, 0.2);
+    border-left: 3px solid #6366f1;
+    z-index: 2; /* Légèrement plus haut au hover mais toujours sous les dropdowns */
+}
+        
+.task-harmonized-card.selected {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6;
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+    z-index: 3; /* Plus haut pour les sélectionnés mais toujours sous les dropdowns */
+}
+        
+        .task-harmonized-card.has-task {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 3px solid #22c55e;
+        }
+        
+        .task-harmonized-card.preselected-task {
+            background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+            border-left: 3px solid var(--preselect-color);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .task-harmonized-card.preselected-task:hover {
+            border-left: 4px solid var(--preselect-color);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+        
+        .task-harmonized-card.preselected-task.selected {
+            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+            border-left: 4px solid var(--preselect-color);
+            border-color: var(--preselect-color);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+        }
+        
+        .task-checkbox-harmonized {
+            margin-right: var(--gap-medium);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid #d1d5db;
+            background: white;
+            transition: all var(--transition-speed) ease;
+            flex-shrink: 0;
+            appearance: none;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .task-checkbox-harmonized:checked {
+            background: #6366f1;
+            border-color: #6366f1;
+        }
+        
+        .task-harmonized-card.preselected-task .task-checkbox-harmonized:checked {
+            background: var(--preselect-color);
+            border-color: var(--preselect-color);
+        }
+        
+        .task-checkbox-harmonized:checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        
+        .priority-bar-harmonized {
+            width: 4px;
+            height: 56px;
+            border-radius: 2px;
+            margin-right: var(--gap-medium);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .task-main-content-harmonized {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+        
+        .task-header-harmonized {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--gap-medium);
+            margin-bottom: 4px;
+        }
+        
+        .task-title-harmonized {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.3;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .task-meta-harmonized {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-small);
+            flex-shrink: 0;
+        }
+        
+        .task-type-badge-harmonized,
+        .deadline-badge-harmonized,
+        .confidence-badge-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: #f8fafc;
+            color: #64748b;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        
+        .confidence-badge-harmonized {
+            background: #f0fdf4;
+            color: #16a34a;
+            border-color: #bbf7d0;
+        }
+        
+        .preselected-badge-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+            color: white !important;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700 !important;
+            border: none !important;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        
+        .task-recipient-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .recipient-name-harmonized {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .reply-indicator-harmonized {
+            color: #dc2626;
+            font-weight: 600;
+            font-size: 10px;
+        }
+        
+        .category-indicator-harmonized {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            transition: all 0.2s ease;
+        }
+        
+        .task-harmonized-card.preselected-task .category-indicator-harmonized {
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+            animation: categoryGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes categoryGlow {
+            0%, 100% { 
+                box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
+            }
+        }
+        
+       .task-actions-harmonized {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: var(--gap-medium);
+    flex-shrink: 0;
+    z-index: 10; /* Plus haut que la carte parent */
+    position: relative;
+}
+        
+ .action-btn-harmonized {
+    width: var(--action-btn-size);
+    height: var(--action-btn-size);
+    border: 2px solid transparent;
+    border-radius: var(--btn-border-radius);
+    background: rgba(255, 255, 255, 0.9);
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-size: 13px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    z-index: 11; /* Encore plus haut */
+    position: relative;
+}
+        
+        .action-btn-harmonized:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-btn-harmonized.create-task {
+            color: #3b82f6;
+        }
+        
+        .action-btn-harmonized.create-task:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #3b82f6;
+            color: #2563eb;
+        }
+        
+        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task {
+            color: var(--preselect-color);
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task:hover {
+            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+            border-color: var(--preselect-color);
+            color: var(--preselect-color-dark);
+        }
+        
+        .action-btn-harmonized.view-task {
+            color: #16a34a;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        }
+        
+        .action-btn-harmonized.view-task:hover {
+            background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        
+        .action-btn-harmonized.details {
+            color: #8b5cf6;
+        }
+        
+        .action-btn-harmonized.details:hover {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-color: #8b5cf6;
+            color: #7c3aed;
+        }
+        
+        /* Vue groupée (inchangée) */
+        .tasks-grouped-harmonized {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+.task-group-harmonized {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+    z-index: 1; /* Même niveau que les cartes d'emails */
+}
+.group-header-harmonized {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    padding: var(--card-padding);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: var(--card-height);
+    max-height: var(--card-height);
+    border-bottom: 1px solid #e5e7eb;
+    gap: var(--gap-medium);
+    z-index: 1; /* Même niveau que les cartes */
+}
+
+
+.dropdown-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9998; /* Juste sous le dropdown */
+    background: rgba(0, 0, 0, 0.1); /* Légèrement visible pour debug */
+    cursor: pointer;
+    display: none;
+}
+
+.dropdown-overlay.show {
+    display: block;
+}
+.dropdown-action-expanded .dropdown-toggle.show {
+    background: #f0f9ff;
+    border-color: #3b82f6;
+    color: #1e40af;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    z-index: 1003;
+    position: relative;
+}
+.dropdown-menu-expanded::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    background: transparent;
+    pointer-events: none;
+}
+        .group-avatar-harmonized {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .group-info-harmonized {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+        
+        .group-name-harmonized {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .group-meta-harmonized {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .group-expand-harmonized {
+            width: var(--action-btn-size);
+            height: var(--action-btn-size);
+            border: 2px solid transparent;
+            border-radius: var(--btn-border-radius);
+            background: rgba(255, 255, 255, 0.9);
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+        
+        /* État vide harmonisé */
+        .empty-state-harmonized {
+            text-align: center;
+            padding: 60px 30px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .empty-state-icon-harmonized {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #d1d5db;
+        }
+        
+        .empty-state-title-harmonized {
+            font-size: 22px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+        
+        .empty-state-text-harmonized {
+            font-size: 15px;
+            margin-bottom: 24px;
+            max-width: 400px;
+            line-height: 1.6;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        /* RESPONSIVE ÉTENDU */
+        @media (max-width: 1400px) {
+            .search-box-full {
+                max-width: 700px;
+            }
+            
+            .buttons-line-full {
+                gap: var(--gap-medium);
+            }
+            
+            .action-buttons-expanded {
+                gap: var(--gap-small);
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .search-box-full {
+                max-width: 600px;
+            }
+            
+            .view-mode-expanded {
+                min-width: 100px;
+                padding: 0 12px;
+            }
+            
+            .btn-expanded {
+                padding: 0 12px;
+            }
+        }
+        
+        @media (max-width: 1024px) {
+   .controls-bar-harmonized-expanded {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--card-border-radius);
+    padding: var(--gap-large);
+    margin-bottom: var(--gap-medium);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-large);
+    position: relative;
+    z-index: 100; /* Haut pour toute la barre de contrôles */
+}
+            .buttons-line-full {
+                flex-direction: column;
+                gap: var(--gap-medium);
+                align-items: stretch;
+            }
+            
+            .view-modes-expanded {
+                width: 100%;
+                justify-content: space-around;
+            }
+            
+            .action-buttons-expanded {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            .search-box-full {
+                max-width: 100%;
+            }
+            
+            .buttons-separator {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .view-mode-expanded span,
+            .btn-expanded span {
+                display: none;
+            }
+            
+            .view-mode-expanded {
+                min-width: 44px;
+                padding: 0;
+                justify-content: center;
+            }
+            
+            .btn-expanded {
+                padding: 0 var(--gap-small);
+            }
+            
+            .search-input-full {
+                font-size: var(--btn-font-size);
+                padding: 0 var(--gap-medium) 0 48px;
+            }
+            
+            .search-icon-full {
+                left: var(--gap-medium);
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .controls-bar-harmonized-expanded {
+                padding: var(--gap-small);
+                gap: var(--gap-medium);
+            }
+            
+            .action-buttons-expanded {
+                flex-direction: column;
+                gap: var(--gap-small);
+                align-items: stretch;
+            }
+            
+            .action-buttons-expanded > * {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .dropdown-menu-expanded {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90vw;
+                max-width: 300px;
+            }
+            
+            .search-box-full {
+                height: calc(var(--btn-height) + 4px);
+            }
+            
+            .search-input-full {
+                padding: 0 var(--gap-small) 0 40px;
+            }
+        }
+    `;
+    
+    document.head.appendChild(styles);
+}
+
+addHarmonizedEmailStyles() {
+    if (document.getElementById('harmonizedEmailStyles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'harmonizedEmailStyles';
+    styles.textContent = `
+        /* Variables CSS */
+        :root {
+            --btn-height: 44px;
+            --btn-padding-horizontal: 16px;
+            --btn-font-size: 13px;
+            --btn-border-radius: 10px;
+            --btn-font-weight: 600;
+            --btn-gap: 8px;
+            --card-height: 76px;
+            --card-padding: 14px;
+            --card-border-radius: 12px;
+            --action-btn-size: 36px;
+            --gap-small: 8px;
+            --gap-medium: 12px;
+            --gap-large: 16px;
+            --transition-speed: 0.2s;
+            --shadow-base: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --preselect-color: #8b5cf6;
+            --preselect-color-light: #a78bfa;
+            --preselect-color-dark: #7c3aed;
+        }
+        
+        .tasks-page-modern {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: var(--gap-large);
+            font-size: var(--btn-font-size);
+        }
+
+        .explanation-text-harmonized {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: var(--card-border-radius);
+            padding: var(--gap-medium);
+            margin-bottom: var(--gap-medium);
+            display: flex;
+            align-items: center;
+            gap: var(--gap-medium);
+            color: #1e40af;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.5;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .explanation-text-harmonized i {
+            font-size: 16px;
+            color: #3b82f6;
+            flex-shrink: 0;
+        }
+        
+        .explanation-close-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .explanation-close-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            transform: scale(1.1);
+        }
+        
+        /* Barre de contrôles */
+        .controls-bar-harmonized {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--gap-large);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: var(--card-border-radius);
+            padding: var(--gap-medium);
+            margin-bottom: var(--gap-medium);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            min-height: calc(var(--btn-height) + var(--gap-medium) * 2);
+        }
+        
+        .search-section-harmonized {
+            flex: 0 0 300px;
+            height: var(--btn-height);
+        }
+        
+        .search-box-harmonized {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input-harmonized {
+            width: 100%;
+            height: var(--btn-height);
+            padding: 0 var(--gap-medium) 0 44px;
+            border: 1px solid #d1d5db;
+            border-radius: var(--btn-border-radius);
+            font-size: var(--btn-font-size);
+            background: #f9fafb;
+            transition: all var(--transition-speed) ease;
+            outline: none;
+        }
+        
+        .search-input-harmonized:focus {
+            border-color: #3b82f6;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .search-icon-harmonized {
+            position: absolute;
+            left: var(--gap-medium);
+            color: #9ca3af;
+            pointer-events: none;
+        }
+        
+        .search-clear-harmonized {
+            position: absolute;
+            right: var(--gap-small);
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            transition: all var(--transition-speed) ease;
+        }
+        
+        .search-clear-harmonized:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+        
+        .view-modes-harmonized {
+            display: flex;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--btn-border-radius);
+            padding: 4px;
+            gap: 2px;
+            height: var(--btn-height);
+        }
+        
+        .view-mode-harmonized {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--btn-gap);
+            padding: 0 var(--btn-padding-horizontal);
+            height: calc(var(--btn-height) - 8px);
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            border-radius: calc(var(--btn-border-radius) - 2px);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            min-width: 120px;
+        }
+        
+        .view-mode-harmonized:hover {
+            background: rgba(255, 255, 255, 0.8);
+            color: #374151;
+        }
+        
+        .view-mode-harmonized.active {
+            background: white;
+            color: #1f2937;
+            box-shadow: var(--shadow-base);
+            font-weight: 700;
+        }
+        
+        .action-buttons-harmonized {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-small);
+            height: var(--btn-height);
+            flex-shrink: 0;
+        }
+        
+        .btn-harmonized {
+            height: var(--btn-height);
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--btn-border-radius);
+            padding: 0 var(--btn-padding-horizontal);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap);
+            box-shadow: var(--shadow-base);
+            position: relative;
+        }
+        
+        .btn-harmonized:hover {
+            background: #f9fafb;
+            border-color: #6366f1;
+            color: #1f2937;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        /* Boutons désactivés */
+        .btn-harmonized.disabled {
+            opacity: 0.5;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+        
+        .btn-harmonized.disabled:hover {
+            transform: none !important;
+            box-shadow: var(--shadow-base) !important;
+            background: white !important;
+            border-color: #e5e7eb !important;
+        }
+        
+        .btn-harmonized.btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+        
+        .btn-harmonized.btn-primary:hover {
+            background: linear-gradient(135deg, #5856eb 0%, #7c3aed 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        }
+        
+        .btn-harmonized.btn-primary.disabled {
+            background: #e5e7eb !important;
+            color: #9ca3af !important;
+            box-shadow: var(--shadow-base) !important;
+        }
+        
+        .btn-harmonized.btn-secondary {
+            background: #f8fafc;
+            color: #475569;
+            border-color: #e2e8f0;
+        }
+        
+        .btn-harmonized.btn-secondary:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        
+        .btn-harmonized.btn-selection-toggle {
+            background: #f0f9ff;
+            color: #0369a1;
+            border-color: #0ea5e9;
+        }
+        
+        .btn-harmonized.btn-selection-toggle:hover {
+            background: #e0f2fe;
+            color: #0c4a6e;
+            border-color: #0284c7;
+        }
+        
+        .count-badge-small {
+            background: #0ea5e9;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 5px;
+            border-radius: 6px;
+            margin-left: 4px;
+            min-width: 16px;
+            text-align: center;
+        }
+        
+        .btn-harmonized.btn-clear-selection {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: none;
+            width: var(--btn-height);
+            min-width: var(--btn-height);
+            padding: 0;
+        }
+        
+        .btn-harmonized.btn-clear-selection:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .selection-info-harmonized {
+            height: var(--btn-height);
+            padding: 0 var(--btn-padding-horizontal);
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #93c5fd;
+            border-radius: var(--btn-border-radius);
+            font-size: var(--btn-font-size);
+            font-weight: var(--btn-font-weight);
+            color: #1e40af;
+            display: flex;
+            align-items: center;
+            gap: var(--btn-gap);
+        }
+        
+        .count-badge-harmonized {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 10px;
+            min-width: 18px;
+            text-align: center;
+            border: 2px solid white;
+        }
+        
+        /* Dropdown actions */
+        .dropdown-action-harmonized {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-menu-harmonized {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: var(--btn-border-radius);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            z-index: 1000;
+            padding: 8px 0;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-menu-harmonized.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-item-harmonized {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-small);
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            color: #374151;
+            font-size: var(--btn-font-size);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-item-harmonized:hover {
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        
+        .dropdown-item-harmonized.danger {
+            color: #dc2626;
+        }
+        
+        .dropdown-item-harmonized.danger:hover {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 8px 0;
+        }
+        
+        /* ===== FILTRES DE CATÉGORIES AVEC ÉTOILE FIXE ===== */
+        .status-filters-harmonized-twolines {
+            display: flex;
+            gap: var(--gap-small);
+            margin-bottom: var(--gap-medium);
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        .status-pill-harmonized-twolines {
+            height: 60px;
+            padding: var(--gap-small);
+            font-size: 12px;
+            font-weight: 700;
+            flex: 0 1 calc(16.666% - var(--gap-small));
+            min-width: 120px;
+            max-width: 180px;
+            border-radius: var(--btn-border-radius);
+            box-shadow: var(--shadow-base);
+            transition: all var(--transition-speed) ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: white;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            position: relative;
+            overflow: visible !important; /* Important pour l'étoile */
+        }
+        
+        /* Style pour les catégories pré-sélectionnées */
+        .status-pill-harmonized-twolines.preselected-category {
+            animation: pulsePreselected 3s ease-in-out infinite;
+            border-width: 2px;
+        }
+        
+        .status-pill-harmonized-twolines.preselected-category::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: inherit;
+            background: linear-gradient(45deg, var(--preselect-color), var(--preselect-color-light), var(--preselect-color));
+            background-size: 300% 300%;
+            animation: gradientShift 4s ease infinite;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        @keyframes pulsePreselected {
+            0%, 100% { 
+                transform: scale(1);
+            }
+            50% { 
+                transform: scale(1.03);
+            }
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .pill-content-twolines {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+        }
+        
+        .pill-first-line-twolines {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .pill-icon-twolines {
+            font-size: 16px;
+        }
+        
+        .pill-count-twolines {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            min-width: 18px;
+            text-align: center;
+        }
+        
+        /* Étoile de pré-sélection TOUJOURS VISIBLE */
+.preselected-star {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: var(--preselect-color);
+    color: white;
+    border-radius: 50%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    border: 2px solid white;
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+    animation: starPulse 2s ease-in-out infinite;
+    z-index: 15; /* Plus haut que son parent pill */
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+        
+        @keyframes starPulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.4);
+            }
+            50% { 
+                transform: scale(1.15);
+                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.6);
+            }
+        }
+        
+        .pill-text-twolines {
+            font-weight: 700;
+            font-size: 12px;
+            line-height: 1.2;
+            text-align: center;
+        }
+        
+        .status-pill-harmonized-twolines:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+        }
+        
+        .status-pill-harmonized-twolines.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-color: #3b82f6;
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Catégorie active ET pré-sélectionnée */
+        .status-pill-harmonized-twolines.active.preselected-category {
+            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
+        }
+        
+        .status-pill-harmonized-twolines.active .pill-count-twolines {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+        
+        /* Container des emails */
+        .tasks-container-harmonized {
+            background: transparent;
+        }
+        
+        .tasks-harmonized-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        /* ===== CARTES D'EMAILS AVEC PRÉ-SÉLECTION ===== */
+.task-harmonized-card {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0;
+    padding: var(--card-padding);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: var(--card-height);
+    max-height: var(--card-height);
+    border-bottom: 1px solid #e5e7eb;
+    z-index: 2; /* BAS - Sous tout */
+}
+        
+        .task-harmonized-card:first-child {
+            border-top-left-radius: var(--card-border-radius);
+            border-top-right-radius: var(--card-border-radius);
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .task-harmonized-card:last-child {
+            border-bottom-left-radius: var(--card-border-radius);
+            border-bottom-right-radius: var(--card-border-radius);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+.task-harmonized-card:hover {
+    background: white;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-color: rgba(99, 102, 241, 0.2);
+    border-left: 3px solid #6366f1;
+    z-index: 3; /* Légèrement plus haut au hover mais toujours très bas */
+}
+ .task-harmonized-card.selected {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-left: 4px solid #3b82f6;
+    border-color: #3b82f6;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+    z-index: 4; /* Plus haut pour les sélectionnés mais toujours bas */
+}
+        
+        .task-harmonized-card.has-task {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-left: 3px solid #22c55e;
+        }
+        
+        /* Email pré-sélectionné pour tâche */
+        .task-harmonized-card.preselected-task {
+            background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+            border-left: 3px solid var(--preselect-color);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .task-harmonized-card.preselected-task:hover {
+            border-left: 4px solid var(--preselect-color);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.15);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+        
+        .task-harmonized-card.preselected-task.selected {
+            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+            border-left: 4px solid var(--preselect-color);
+            border-color: var(--preselect-color);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+        }
+        
+        .task-checkbox-harmonized {
+            margin-right: var(--gap-medium);
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid #d1d5db;
+            background: white;
+            transition: all var(--transition-speed) ease;
+            flex-shrink: 0;
+            appearance: none;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .task-checkbox-harmonized:checked {
+            background: #6366f1;
+            border-color: #6366f1;
+        }
+        
+        .task-harmonized-card.preselected-task .task-checkbox-harmonized:checked {
+            background: var(--preselect-color);
+            border-color: var(--preselect-color);
+        }
+        
+        .task-checkbox-harmonized:checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        
+        .priority-bar-harmonized {
+            width: 4px;
+            height: 56px;
+            border-radius: 2px;
+            margin-right: var(--gap-medium);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .task-main-content-harmonized {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+        
+        .task-header-harmonized {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: var(--gap-medium);
+            margin-bottom: 4px;
+        }
+        
+        .task-title-harmonized {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.3;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .task-meta-harmonized {
+            display: flex;
+            align-items: center;
+            gap: var(--gap-small);
+            flex-shrink: 0;
+        }
+        
+        .task-type-badge-harmonized,
+        .deadline-badge-harmonized,
+        .confidence-badge-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: #f8fafc;
+            color: #64748b;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        
+        .confidence-badge-harmonized {
+            background: #f0fdf4;
+            color: #16a34a;
+            border-color: #bbf7d0;
+        }
+        
+        /* Badge pré-sélectionné amélioré */
+        .preselected-badge-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            background: linear-gradient(135deg, var(--preselect-color) 0%, var(--preselect-color-dark) 100%);
+            color: white !important;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700 !important;
+            border: none !important;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes badgePulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 3px 8px rgba(139, 92, 246, 0.5);
+            }
+        }
+        
+        .task-recipient-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .recipient-name-harmonized {
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .reply-indicator-harmonized {
+            color: #dc2626;
+            font-weight: 600;
+            font-size: 10px;
+        }
+        
+        .category-indicator-harmonized {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            transition: all 0.2s ease;
+        }
+        
+        /* Indicateur de catégorie pour emails pré-sélectionnés */
+        .task-harmonized-card.preselected-task .category-indicator-harmonized {
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+            animation: categoryGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes categoryGlow {
+            0%, 100% { 
+                box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
+            }
+        }
+        
+        .task-actions-harmonized {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: var(--gap-medium);
+            flex-shrink: 0;
+        }
+        
+        .action-btn-harmonized {
+            width: var(--action-btn-size);
+            height: var(--action-btn-size);
+            border: 2px solid transparent;
+            border-radius: var(--btn-border-radius);
+            background: rgba(255, 255, 255, 0.9);
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .action-btn-harmonized:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-btn-harmonized.create-task {
+            color: #3b82f6;
+        }
+        
+        .action-btn-harmonized.create-task:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #3b82f6;
+            color: #2563eb;
+        }
+        
+        /* Bouton créer tâche pour emails pré-sélectionnés */
+        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task {
+            color: var(--preselect-color);
+            background: rgba(139, 92, 246, 0.1);
+        }
+        
+        .task-harmonized-card.preselected-task .action-btn-harmonized.create-task:hover {
+            background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+            border-color: var(--preselect-color);
+            color: var(--preselect-color-dark);
+        }
+        
+        .action-btn-harmonized.view-task {
+            color: #16a34a;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+        }
+        
+        .action-btn-harmonized.view-task:hover {
+            background: linear-gradient(135deg, #bbf7d0 0%, #86efac 100%);
+            border-color: #16a34a;
+            color: #15803d;
+        }
+        
+        .action-btn-harmonized.details {
+            color: #8b5cf6;
+        }
+        
+        .action-btn-harmonized.details:hover {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-color: #8b5cf6;
+            color: #7c3aed;
+        }
+        
+        /* Vue groupée */
+        .tasks-grouped-harmonized {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .task-group-harmonized {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            overflow: visible;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .group-header-harmonized {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0;
+            padding: var(--card-padding);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: var(--card-height);
+            max-height: var(--card-height);
+            border-bottom: 1px solid #e5e7eb;
+            gap: var(--gap-medium);
+        }
+        
+        .task-group-harmonized:first-child .group-header-harmonized {
+            border-top-left-radius: var(--card-border-radius);
+            border-top-right-radius: var(--card-border-radius);
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .task-group-harmonized:last-child .group-header-harmonized:not(.expanded-header) {
+            border-bottom-left-radius: var(--card-border-radius);
+            border-bottom-right-radius: var(--card-border-radius);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .group-header-harmonized:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            border-color: rgba(99, 102, 241, 0.2);
+            border-left: 3px solid #6366f1;
+            z-index: 1;
+        }
+        
+        .task-group-harmonized.expanded .group-header-harmonized {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-left: 4px solid #3b82f6;
+            border-color: #3b82f6;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.15);
+            z-index: 2;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        .group-avatar-harmonized {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .group-info-harmonized {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            height: 100%;
+        }
+        
+        .group-name-harmonized {
+            font-weight: 700;
+            color: #1f2937;
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .group-meta-harmonized {
+            color: #6b7280;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .group-expand-harmonized {
+            width: var(--action-btn-size);
+            height: var(--action-btn-size);
+            border: 2px solid transparent;
+            border-radius: var(--btn-border-radius);
+            background: rgba(255, 255, 255, 0.9);
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            flex-shrink: 0;
+        }
+        
+        .group-expand-harmonized:hover {
+            background: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            color: #374151;
+        }
+        
+        .task-group-harmonized.expanded .group-expand-harmonized {
+            transform: rotate(180deg) translateY(-1px);
+            color: #3b82f6;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #3b82f6;
+        }
+        
+        .group-content-harmonized {
+            background: transparent;
+            margin: 0;
+            padding: 0;
+            display: none;
+        }
+        
+        .task-group-harmonized.expanded .group-content-harmonized {
+            display: block;
+        }
+        
+        .group-content-harmonized .task-harmonized-card {
+            border-radius: 0;
+            margin: 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .group-content-harmonized .task-harmonized-card:last-child {
+            border-bottom-left-radius: var(--card-border-radius);
+            border-bottom-right-radius: var(--card-border-radius);
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        /* État vide */
+        .empty-state-harmonized {
+            text-align: center;
+            padding: 60px 30px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .empty-state-icon-harmonized {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #d1d5db;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .empty-state-title-harmonized {
+            font-size: 22px;
+            font-weight: 700;
+            color: #374151;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .empty-state-text-harmonized {
+            font-size: 15px;
+            margin-bottom: 24px;
+            max-width: 400px;
+            line-height: 1.6;
+            color: #6b7280;
+            font-weight: 500;
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+            :root {
+                --btn-height: 42px;
+                --card-height: 84px;
+                --action-btn-size: 34px;
+            }
+            
+            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
+                flex: 0 1 calc(20% - var(--gap-small));
+                min-width: 100px;
+                max-width: 160px;
+                height: 56px;
+            }
+        }
+        
+        @media (max-width: 1024px) {
+            .controls-bar-harmonized {
+                flex-direction: column;
+                gap: var(--gap-medium);
+                align-items: stretch;
+                padding: var(--gap-large);
+            }
+            
+            .search-section-harmonized {
+                flex: none;
+                width: 100%;
+                order: 1;
+            }
+            
+            .view-modes-harmonized {
+                width: 100%;
+                justify-content: space-around;
+                order: 2;
+            }
+            
+            .action-buttons-harmonized {
+                width: 100%;
+                justify-content: center;
+                flex-wrap: wrap;
+                order: 3;
+            }
+            
+            .dropdown-menu-harmonized {
+                right: auto;
+                left: 0;
+            }
+            
+            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
+                flex: 0 1 calc(25% - var(--gap-small));
+                min-width: 80px;
+                max-width: 140px;
+                height: 52px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .status-filters-harmonized-twolines {
+                justify-content: center;
+            }
+            
+            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
+                flex: 0 1 calc(33.333% - var(--gap-small));
+                min-width: 70px;
+                max-width: 120px;
+                height: 48px;
+            }
+            
+            .view-mode-harmonized span,
+            .btn-harmonized span {
+                display: none;
+            }
+            
+            .action-buttons-harmonized {
+                gap: 4px;
+            }
+            
+            .dropdown-menu-harmonized {
+                min-width: 150px;
+            }
+            
+            .preselected-star {
+                width: 16px;
+                height: 16px;
+                font-size: 9px;
+                top: -6px;
+                right: -6px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .status-filters-harmonized-twolines .status-pill-harmonized-twolines {
+                flex: 0 1 calc(50% - 4px);
+                min-width: 60px;
+                max-width: 110px;
+                height: 44px;
+            }
+            
+            .action-buttons-harmonized {
+                flex-direction: column;
+                gap: 4px;
+                align-items: stretch;
+            }
+            
+            .action-buttons-harmonized > * {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .dropdown-menu-harmonized {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90vw;
+                max-width: 300px;
+            }
+            
+            .explanation-text-harmonized {
+                font-size: 12px;
+                padding: var(--gap-small);
+            }
+            
+            .task-harmonized-card {
+                padding: 10px;
+                min-height: 70px;
+                max-height: 70px;
+            }
+            
+            .task-title-harmonized {
+                font-size: 14px;
+            }
+            
+            .task-meta-harmonized {
+                display: none;
+            }
+            
+            .preselected-badge-harmonized {
+                font-size: 10px;
+                padding: 2px 4px;
+            }
+        }
+    `;
+    
+    document.head.appendChild(styles);
+}
+
+}
+
+// Créer l'instance globale
+window.pageManager = new PageManager();
+
+// Bind des méthodes pour préserver le contexte
+Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
+    if (name !== 'constructor' && typeof window.pageManager[name] === 'function') {
+        window.pageManager[name] = window.pageManager[name].bind(window.pageManager);
+    }
+});
+
+console.log('✅ PageManager v12.1 loaded - Synchronisation fixée avec paramètres');
