@@ -571,6 +571,20 @@ class CategoriesPageV22 {
                             </div>
                             
                             <div class="custom-folder-section">
+                                <h4>Chemins personnalisés courants :</h4>
+                                
+                                <div class="path-examples">
+                                    <div class="path-example" onclick="window.categoriesPageV22.setCustomPath('Desktop/EmailSortPro')">
+                                        <i class="fas fa-desktop"></i> Bureau : <code>Desktop/EmailSortPro</code>
+                                    </div>
+                                    <div class="path-example" onclick="window.categoriesPageV22.setCustomPath('Downloads/EmailSortPro')">
+                                        <i class="fas fa-download"></i> Téléchargements : <code>Downloads/EmailSortPro</code>
+                                    </div>
+                                    <div class="path-example" onclick="window.categoriesPageV22.setCustomPath('OneDrive/Documents/EmailSortPro')">
+                                        <i class="fas fa-cloud"></i> OneDrive : <code>OneDrive/Documents/EmailSortPro</code>
+                                    </div>
+                                </div>
+                                
                                 <h4>Ou entrer un chemin personnalisé :</h4>
                                 <div class="custom-folder-input">
                                     <input type="text" 
@@ -581,10 +595,21 @@ class CategoriesPageV22 {
                                         <i class="fas fa-check"></i> Appliquer
                                     </button>
                                 </div>
-                                <p class="folder-hint">
-                                    <i class="fas fa-info-circle"></i>
-                                    Le dossier sera créé automatiquement s'il n'existe pas
-                                </p>
+                                
+                                <div class="path-tips">
+                                    <p class="folder-hint">
+                                        <i class="fas fa-info-circle"></i>
+                                        Le dossier sera créé automatiquement s'il n'existe pas
+                                    </p>
+                                    <p class="folder-hint">
+                                        <i class="fas fa-lightbulb"></i>
+                                        <strong>Astuce :</strong> Utilisez des chemins relatifs au dossier utilisateur<br>
+                                        • <code>Documents/...</code> pour Mes Documents<br>
+                                        • <code>Desktop/...</code> pour le Bureau<br>
+                                        • <code>Downloads/...</code> pour Téléchargements<br>
+                                        • <code>OneDrive/...</code> si vous utilisez OneDrive
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -593,6 +618,9 @@ class CategoriesPageV22 {
                         <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
                             Annuler
                         </button>
+                        <div class="footer-note">
+                            💡 Pour une navigation complète, copiez le chemin depuis l'Explorateur Windows
+                        </div>
                     </div>
                 </div>
             </div>
@@ -601,6 +629,13 @@ class CategoriesPageV22 {
         document.body.insertAdjacentHTML('beforeend', modalHTML);
         document.body.style.overflow = 'hidden';
         this.currentModal = true;
+    }
+
+    setCustomPath(path) {
+        const input = document.getElementById('custom-folder-path');
+        if (input) {
+            input.value = path;
+        }
     }
 
     setBackupFolder(folderPath) {
@@ -2641,6 +2676,73 @@ class CategoriesPageV22 {
             .folder-desc {
                 font-size: 12px;
                 color: #6b7280;
+            }
+            
+            .path-examples {
+                margin-bottom: 20px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                padding: 12px;
+            }
+            
+            .path-example {
+                padding: 8px 12px;
+                margin: 4px 0;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+            }
+            
+            .path-example:hover {
+                background: #f0f9ff;
+                border-color: #3b82f6;
+                transform: translateX(4px);
+            }
+            
+            .path-example i {
+                color: #6b7280;
+                width: 16px;
+            }
+            
+            .path-example code {
+                font-family: monospace;
+                font-size: 12px;
+                color: #1f2937;
+                background: #f3f4f6;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }
+            
+            .path-tips {
+                margin-top: 16px;
+                background: #fefce8;
+                border: 1px solid #fef08a;
+                border-radius: 10px;
+                padding: 12px;
+            }
+            
+            .path-tips .folder-hint {
+                margin: 8px 0;
+            }
+            
+            .path-tips .folder-hint strong {
+                color: #854d0e;
+            }
+            
+            .footer-note {
+                font-size: 12px;
+                color: #6b7280;
+                margin-left: auto;
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
             
             .custom-folder-input {
