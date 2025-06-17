@@ -77,7 +77,15 @@ class CategoriesPageV22 {
             
         } catch (error) {
             console.error('[CategoriesPage] Erreur:', error);
-            container.innerHTML = this.renderError();
+            container.innerHTML = `
+                <div class="error-state">
+                    <div class="error-icon">😵</div>
+                    <h3>Oups! Une erreur est survenue</h3>
+                    <button class="btn-modern primary" onclick="location.reload()">
+                        <i class="fas fa-redo"></i> Recharger
+                    </button>
+                </div>
+            `;
         }
     }
 
@@ -1658,17 +1666,7 @@ class CategoriesPageV22 {
         }, 3000);
     }
 
-    renderError() {
-        return `
-            <div class="error-state">
-                <div class="error-icon">😵</div>
-                <h3>Oups! Une erreur est survenue</h3>
-                <button class="btn-modern primary" onclick="location.reload()">
-                    <i class="fas fa-redo"></i> Recharger
-                </button>
-            </div>
-        `;
-    }
+
 
     // ================================================
     // STYLES CSS ÉTENDUS
