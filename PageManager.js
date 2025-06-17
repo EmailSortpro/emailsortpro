@@ -8,7 +8,7 @@ class PageManager {
         this.history = [];
         this.maxHistorySize = 10;
         
-        console.log('[PageManager] Initialized with backup support');
+        console.log('[PageManager] Initialized with backup support and separate pages');
         
         // Définir les pages disponibles
         this.setupPages();
@@ -64,16 +64,12 @@ class PageManager {
                 }
             },
             
-            // Catégories (nouvelle page séparée)
+            // Catégories (page séparée)
             categories: (container) => {
-                if (window.categoriesPage) {
-                    window.categoriesPage.render(container);
-                } else {
-                    container.innerHTML = '<p>Module catégories non disponible</p>';
-                }
+                this.renderCategoriesPage(container);
             },
             
-            // Paramètres (avec backup)
+            // Paramètres (avec backup uniquement)
             settings: (container) => {
                 this.renderSettingsPage(container);
             }
@@ -181,7 +177,100 @@ class PageManager {
     }
 
     // =====================================
-    // PAGE PARAMÈTRES AVEC BACKUP
+    // PAGE CATÉGORIES (séparée des paramètres)
+    // =====================================
+    renderCategoriesPage(container) {
+        // Si CategoriesPage.js existe, l'utiliser
+        if (window.categoriesPage) {
+            window.categoriesPage.render(container);
+            return;
+        }
+        
+        // Sinon, afficher une interface basique de gestion des catégories
+        const categories = window.categoryManager?.getCategories() || {};
+        const customCategories = window.categoryManager?.getCustomCategories() || {};
+        
+        container.innerHTML = `
+            <div class="categories-management-page">
+                <div class="page-header">
+                    <div>
+                        <h1><i class="fas fa-tags"></i> Gestion des Catégories</h1>
+                        <p class="page-subtitle">Personnalisez vos catégories d'emails</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="window.pageManager.showCreateCategoryModal()">
+                        <i class="fas fa-plus"></i> Nouvelle catégorie
+                    </button>
+                </div>
+                
+                <div class="categories-stats">
+                    <div class="stat-mini">
+                        <span class="stat-value">${Object.keys(categories).length}</span>
+                        <span class="stat-label">Total</span>
+                    </div>
+                    <div class="stat-mini">
+                        <span class="stat-value">${Object.keys(customCategories).length}</span>
+                        <span class="stat-label">Personnalisées</span>
+                    </div>
+                    <div class="stat-mini">
+                        <span class="stat-value">${Object.keys(categories).length - Object.keys(customCategories).length}</span>
+                        <span class="stat-label">Prédéfinies</span>
+                    </div>
+                </div>
+                
+                <div class="categories-grid">
+                    ${Object.entries(categories).map(([id, category]) => `
+                        <div class="category-card-full" data-id="${id}">
+                            <div class="category-header">
+                                <div class="category-icon" style="background: ${category.color}20; color: ${category.color}">
+                                    ${category.icon}
+                                </div>
+                                <div class="category-info">
+                                    <h3>${category.name}</h3>
+                                    <p class="category-type">${customCategories[id] ? 'Personnalisée' : 'Prédéfinie'}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="category-stats">
+                                <div class="stat-item">
+                                    <i class="fas fa-key"></i>
+                                    <span>${this.getTotalKeywords(id)} mots-clés</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>${this.getCategoryEmailCount(id)} emails</span>
+                                </div>
+                            </div>
+                            
+                            <div class="category-actions">
+                                <button class="btn-icon" onclick="window.pageManager.editCategory('${id}')" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${customCategories[id] ? `
+                                    <button class="btn-icon danger" onclick="window.pageManager.deleteCategory('${id}')" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="page-footer">
+                    <p class="help-text">
+                        <i class="fas fa-info-circle"></i>
+                        Les catégories permettent d'organiser automatiquement vos emails. 
+                        Vous pouvez créer des catégories personnalisées et définir des mots-clés pour la détection automatique.
+                    </p>
+                </div>
+            </div>
+        `;
+        
+        // Ajouter les styles spécifiques
+        this.addCategoriesStyles();
+    }
+
+    // =====================================
+    // PAGE PARAMÈTRES (uniquement backup et config)
     // =====================================
     renderSettingsPage(container) {
         const backupStatus = window.backupService ? window.backupService.getStatus() : null;
@@ -193,15 +282,32 @@ class PageManager {
                     <p class="page-subtitle">Configuration de l'application et sauvegarde</p>
                 </div>
                 
-                <div class="settings-grid">
+                <!-- Navigation des paramètres -->
+                <div class="settings-navigation">
+                    <button class="settings-nav-item active" onclick="window.pageManager.showSettingsSection('backup')">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Sauvegarde</span>
+                    </button>
+                    <button class="settings-nav-item" onclick="window.pageManager.showSettingsSection('app')">
+                        <i class="fas fa-desktop"></i>
+                        <span>Application</span>
+                    </button>
+                    <button class="settings-nav-item" onclick="window.pageManager.loadPage('categories')">
+                        <i class="fas fa-tags"></i>
+                        <span>Catégories</span>
+                        <i class="fas fa-external-link-alt" style="margin-left: 8px; font-size: 12px;"></i>
+                    </button>
+                </div>
+                
+                <div class="settings-content">
                     <!-- Section Backup -->
-                    <div class="settings-section backup-section">
+                    <div class="settings-section active" id="backup-section">
                         <div class="section-header">
                             <h2><i class="fas fa-cloud-upload-alt"></i> Sauvegarde & Synchronisation</h2>
                             <span class="section-badge">${backupStatus?.provider === 'google' ? 'Google Drive' : 'OneDrive'}</span>
                         </div>
                         
-                        <div class="settings-content">
+                        <div class="section-content">
                             <div class="setting-item">
                                 <div class="setting-control">
                                     <label class="switch">
@@ -303,64 +409,56 @@ class PageManager {
                     </div>
                     
                     <!-- Section Application -->
-                    <div class="settings-section app-section">
+                    <div class="settings-section" id="app-section">
                         <div class="section-header">
                             <h2><i class="fas fa-desktop"></i> Application</h2>
                         </div>
                         
-                        <div class="settings-content">
-                            <div class="app-info">
-                                <div class="info-item">
-                                    <span class="info-label">Version:</span>
-                                    <span class="info-value">3.0.1</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Provider:</span>
-                                    <span class="info-value">${window.app?.activeProvider || 'Non connecté'}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="info-label">Utilisateur:</span>
-                                    <span class="info-value">${window.app?.user?.email || 'Non connecté'}</span>
+                        <div class="section-content">
+                            <div class="app-info-card">
+                                <h3>Informations</h3>
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <span class="info-label">Version:</span>
+                                        <span class="info-value">3.0.1</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Provider:</span>
+                                        <span class="info-value">${window.app?.activeProvider || 'Non connecté'}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Utilisateur:</span>
+                                        <span class="info-value">${window.app?.user?.email || 'Non connecté'}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Emails scannés:</span>
+                                        <span class="info-value">${window.emailScanner?.getAllEmails().length || 0}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Tâches créées:</span>
+                                        <span class="info-value">${window.taskManager?.getAllTasks().length || 0}</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Catégories actives:</span>
+                                        <span class="info-value">${Object.keys(window.categoryManager?.getCategories() || {}).length}</span>
+                                    </div>
                                 </div>
                             </div>
                             
-                            <div class="button-group">
-                                <button class="btn btn-secondary" onclick="window.pageManager.clearLocalData()">
-                                    <i class="fas fa-trash"></i>
-                                    Effacer les données locales
-                                </button>
-                                <button class="btn btn-danger" onclick="window.app?.logout()">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                    Déconnexion
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Section Navigation rapide -->
-                    <div class="settings-section nav-section">
-                        <div class="section-header">
-                            <h2><i class="fas fa-compass"></i> Navigation rapide</h2>
-                        </div>
-                        
-                        <div class="settings-content">
-                            <div class="quick-nav-grid">
-                                <button class="quick-nav-item" onclick="window.pageManager.loadPage('categories')">
-                                    <i class="fas fa-tags"></i>
-                                    <span>Gérer les catégories</span>
-                                </button>
-                                <button class="quick-nav-item" onclick="window.pageManager.loadPage('tasks')">
-                                    <i class="fas fa-tasks"></i>
-                                    <span>Voir les tâches</span>
-                                </button>
-                                <button class="quick-nav-item" onclick="window.pageManager.loadPage('scanner')">
-                                    <i class="fas fa-search"></i>
-                                    <span>Scanner des emails</span>
-                                </button>
-                                <button class="quick-nav-item" onclick="window.pageManager.loadPage('ranger')">
-                                    <i class="fas fa-folder-tree"></i>
-                                    <span>Ranger par domaine</span>
-                                </button>
+                            <div class="danger-zone">
+                                <h3><i class="fas fa-exclamation-triangle"></i> Zone dangereuse</h3>
+                                <p>Ces actions sont irréversibles. Procédez avec prudence.</p>
+                                
+                                <div class="button-group">
+                                    <button class="btn btn-secondary" onclick="window.pageManager.clearLocalData()">
+                                        <i class="fas fa-trash"></i>
+                                        Effacer les données locales
+                                    </button>
+                                    <button class="btn btn-danger" onclick="window.app?.logout()">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        Déconnexion
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -373,6 +471,69 @@ class PageManager {
         
         // Attacher les événements
         this.attachSettingsEvents();
+    }
+
+    // =====================================
+    // NAVIGATION DANS LES PARAMÈTRES
+    // =====================================
+    showSettingsSection(sectionName) {
+        // Mettre à jour la navigation
+        document.querySelectorAll('.settings-nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        event.target.closest('.settings-nav-item').classList.add('active');
+        
+        // Afficher la section correspondante
+        document.querySelectorAll('.settings-section').forEach(section => {
+            section.classList.remove('active');
+        });
+        document.getElementById(`${sectionName}-section`)?.classList.add('active');
+    }
+
+    // =====================================
+    // MÉTHODES POUR LES CATÉGORIES
+    // =====================================
+    getTotalKeywords(categoryId) {
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+            absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        return keywords.absolute.length + 
+               keywords.strong.length + 
+               keywords.weak.length + 
+               keywords.exclusions.length;
+    }
+
+    getCategoryEmailCount(categoryId) {
+        const emails = window.emailScanner?.getAllEmails() || [];
+        return emails.filter(email => email.category === categoryId).length;
+    }
+
+    editCategory(categoryId) {
+        // Si CategoriesPage existe, utiliser sa méthode
+        if (window.categoriesPage && window.categoriesPage.openModal) {
+            window.categoriesPage.openModal(categoryId);
+        } else {
+            alert('Édition de catégorie: ' + categoryId);
+        }
+    }
+
+    deleteCategory(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) return;
+        
+        if (confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ?`)) {
+            window.categoryManager?.deleteCustomCategory(categoryId);
+            this.loadPage('categories'); // Recharger la page
+        }
+    }
+
+    showCreateCategoryModal() {
+        if (window.categoriesPage && window.categoriesPage.showCreateModal) {
+            window.categoriesPage.showCreateModal();
+        } else {
+            alert('Création de catégorie');
+        }
     }
 
     // =====================================
@@ -688,7 +849,7 @@ class PageManager {
                         </button>
                         <button class="action-card" onclick="window.pageManager.loadPage('settings')">
                             <i class="fas fa-cog"></i>
-                            <span>Paramètres</span>
+                            <span>Paramètres & Backup</span>
                         </button>
                     </div>
                 </div>
@@ -809,22 +970,64 @@ class PageManager {
                 margin-top: 8px;
             }
             
-            .settings-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-                gap: 24px;
+            /* Navigation des paramètres */
+            .settings-navigation {
+                display: flex;
+                gap: 16px;
+                border-bottom: 2px solid #e5e7eb;
+                margin-bottom: 32px;
+                padding-bottom: 0;
             }
             
-            .settings-section {
+            .settings-nav-item {
+                padding: 12px 24px;
+                border: none;
+                background: none;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 15px;
+                font-weight: 500;
+                color: #6b7280;
+                transition: all 0.3s;
+                position: relative;
+                border-bottom: 3px solid transparent;
+                margin-bottom: -2px;
+            }
+            
+            .settings-nav-item:hover {
+                color: #374151;
+                background: #f9fafb;
+            }
+            
+            .settings-nav-item.active {
+                color: #3b82f6;
+                font-weight: 600;
+                border-bottom-color: #3b82f6;
+            }
+            
+            .settings-nav-item i {
+                font-size: 16px;
+            }
+            
+            .settings-content {
                 background: white;
                 border-radius: 16px;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
                 overflow: hidden;
-                border: 1px solid #e5e7eb;
+            }
+            
+            .settings-section {
+                display: none;
+            }
+            
+            .settings-section.active {
+                display: block;
             }
             
             .section-header {
-                padding: 20px 24px;
+                padding: 24px;
                 background: linear-gradient(135deg, #f8fafc 0%, #f3f4f6 100%);
                 border-bottom: 1px solid #e5e7eb;
                 display: flex;
@@ -851,13 +1054,13 @@ class PageManager {
                 font-weight: 500;
             }
             
-            .settings-content {
-                padding: 24px;
+            .section-content {
+                padding: 32px;
             }
             
             /* Setting Items */
             .setting-item {
-                margin-bottom: 20px;
+                margin-bottom: 24px;
                 transition: opacity 0.3s ease;
             }
             
@@ -1067,6 +1270,69 @@ class PageManager {
                 color: #dc2626;
             }
             
+            /* App Info Card */
+            .app-info-card {
+                background: #f9fafb;
+                padding: 24px;
+                border-radius: 12px;
+                margin-bottom: 24px;
+            }
+            
+            .app-info-card h3 {
+                margin: 0 0 20px 0;
+                font-size: 18px;
+                font-weight: 600;
+                color: #374151;
+            }
+            
+            .info-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 16px;
+            }
+            
+            .info-item {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .info-label {
+                color: #6b7280;
+                font-size: 13px;
+                font-weight: 500;
+            }
+            
+            .info-value {
+                color: #374151;
+                font-size: 15px;
+                font-weight: 600;
+            }
+            
+            /* Danger Zone */
+            .danger-zone {
+                background: #fef2f2;
+                border: 1px solid #fecaca;
+                padding: 24px;
+                border-radius: 12px;
+            }
+            
+            .danger-zone h3 {
+                color: #dc2626;
+                margin: 0 0 12px 0;
+                font-size: 18px;
+                font-weight: 600;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .danger-zone p {
+                color: #7f1d1d;
+                margin: 0 0 20px 0;
+                font-size: 14px;
+            }
+            
             /* Buttons */
             .button-group {
                 display: flex;
@@ -1132,65 +1398,168 @@ class PageManager {
                 background: #dc2626;
             }
             
-            /* App Info */
-            .app-info {
-                background: #f9fafb;
-                padding: 16px;
-                border-radius: 8px;
-                margin-bottom: 20px;
+            /* Categories Page */
+            .categories-management-page {
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
             }
             
-            .info-item {
+            .categories-stats {
                 display: flex;
-                justify-content: space-between;
-                padding: 8px 0;
-                font-size: 14px;
+                gap: 24px;
+                margin-bottom: 32px;
+                padding: 20px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
             
-            .info-label {
+            .stat-mini {
+                text-align: center;
+                flex: 1;
+            }
+            
+            .stat-mini .stat-value {
+                display: block;
+                font-size: 32px;
+                font-weight: 700;
+                color: #3b82f6;
+                margin-bottom: 4px;
+            }
+            
+            .stat-mini .stat-label {
+                font-size: 14px;
                 color: #6b7280;
                 font-weight: 500;
             }
             
-            .info-value {
-                color: #374151;
-                font-weight: 600;
-            }
-            
-            /* Quick Nav Grid */
-            .quick-nav-grid {
+            .categories-grid {
                 display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                gap: 20px;
+                margin-bottom: 32px;
             }
             
-            .quick-nav-item {
-                background: #f3f4f6;
+            .category-card-full {
+                background: white;
+                border-radius: 12px;
+                padding: 24px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
                 border: 1px solid #e5e7eb;
-                padding: 16px;
-                border-radius: 8px;
-                cursor: pointer;
                 transition: all 0.3s;
+            }
+            
+            .category-card-full:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+            
+            .category-header {
                 display: flex;
-                flex-direction: column;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .category-icon {
+                width: 56px;
+                height: 56px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 28px;
+                flex-shrink: 0;
+            }
+            
+            .category-info h3 {
+                margin: 0 0 4px 0;
+                font-size: 18px;
+                font-weight: 600;
+                color: #111827;
+            }
+            
+            .category-type {
+                font-size: 14px;
+                color: #6b7280;
+                margin: 0;
+            }
+            
+            .category-stats {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 16px;
+                padding: 16px 0;
+                border-top: 1px solid #f3f4f6;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .category-stats .stat-item {
+                display: flex;
                 align-items: center;
                 gap: 8px;
-                text-align: center;
                 font-size: 14px;
-                font-weight: 500;
-                color: #4b5563;
+                color: #6b7280;
             }
             
-            .quick-nav-item i {
-                font-size: 24px;
+            .category-stats .stat-item i {
                 color: #3b82f6;
             }
             
-            .quick-nav-item:hover {
+            .category-actions {
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+            }
+            
+            .btn-icon {
+                width: 36px;
+                height: 36px;
+                border: 1px solid #e5e7eb;
                 background: white;
-                border-color: #3b82f6;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s;
+                color: #6b7280;
+            }
+            
+            .btn-icon:hover {
+                background: #f3f4f6;
+                color: #374151;
+                border-color: #d1d5db;
+            }
+            
+            .btn-icon.danger:hover {
+                background: #fee2e2;
+                color: #dc2626;
+                border-color: #fecaca;
+            }
+            
+            .page-footer {
+                margin-top: 32px;
+                padding: 24px;
+                background: #f9fafb;
+                border-radius: 12px;
+                text-align: center;
+            }
+            
+            .help-text {
+                color: #6b7280;
+                font-size: 14px;
+                line-height: 1.6;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+            
+            .help-text i {
+                color: #3b82f6;
             }
             
             /* Emails Page */
@@ -1444,7 +1813,18 @@ class PageManager {
             
             /* Responsive */
             @media (max-width: 768px) {
-                .settings-grid {
+                .settings-navigation {
+                    flex-wrap: wrap;
+                }
+                
+                .settings-nav-item {
+                    flex: 1;
+                    min-width: 120px;
+                    padding: 10px 16px;
+                    font-size: 14px;
+                }
+                
+                .info-grid {
                     grid-template-columns: 1fr;
                 }
                 
@@ -1457,7 +1837,7 @@ class PageManager {
                     justify-content: center;
                 }
                 
-                .quick-nav-grid {
+                .categories-grid {
                     grid-template-columns: 1fr;
                 }
                 
@@ -1473,9 +1853,47 @@ class PageManager {
         
         document.head.appendChild(styles);
     }
+
+    addCategoriesStyles() {
+        if (document.getElementById('categories-page-styles')) return;
+        
+        const styles = document.createElement('style');
+        styles.id = 'categories-page-styles';
+        styles.textContent = `
+            /* Styles déjà inclus dans addSettingsStyles */
+        `;
+        
+        document.head.appendChild(styles);
+    }
 }
 
 // Créer l'instance globale
 window.pageManager = new PageManager();
 
-console.log('✅ PageManager loaded with backup integration and separate categories page');
+console.log('✅ PageManager loaded with backup integration and separate categories/settings pages');
+                
+                .info-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .button-group {
+                    flex-direction: column;
+                }
+                
+                .btn {
+                    width: 100%;
+                    justify-content: center;
+                }
+                
+                .categories-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .stats-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .actions-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
