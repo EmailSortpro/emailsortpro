@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 21.0 - OPTIMISÉ PERFORMANCE 🚀
+// CategoryManager.js - Version 21.1 - CORRIGÉ ET OPTIMISÉ 🚀
 
 class CategoryManager {
     constructor() {
@@ -38,15 +38,15 @@ class CategoryManager {
         this.setupEventListeners();
         this.startOptimizedSync();
         
-        console.log('[CategoryManager] ✅ Version 21.0 - PERFORMANCE OPTIMISÉE');
+        console.log('[CategoryManager] ✅ Version 21.1 - CORRIGÉ ET OPTIMISÉ');
     }
 
     // ================================================
     // CACHE SYSTÈME HAUTE PERFORMANCE
     // ================================================
     createCacheKey(email) {
-        // Créer une clé unique basée sur le contenu essentiel
-        const content = this.extractCompleteContent(email);
+        // CORRECTION: Utiliser la méthode optimisée
+        const content = this.extractCompleteContentOptimized(email);
         const key = `${email.from?.emailAddress?.address || ''}|${email.subject || ''}|${content.text.substring(0, 100)}`;
         return this.hashString(key);
     }
@@ -253,6 +253,11 @@ class CategoryManager {
             length: normalizedText.length,
             rawSubject: email.subject || ''
         };
+    }
+
+    // CORRECTION: Ajouter l'alias pour la compatibilité
+    extractCompleteContent(email) {
+        return this.extractCompleteContentOptimized(email);
     }
 
     extractDomainFast(email) {
@@ -608,11 +613,8 @@ class CategoryManager {
     }
 
     // ================================================
-    // TOUTES LES AUTRES MÉTHODES INCHANGÉES
+    // TOUTES LES AUTRES MÉTHODES EXISTANTES
     // ================================================
-    // (Copier toutes les autres méthodes du fichier original ici)
-    // [Les méthodes de gestion des paramètres, catégories personnalisées, etc.]
-    
     loadSettings() {
         try {
             const saved = localStorage.getItem('categorySettings');
@@ -1157,6 +1159,76 @@ class CategoryManager {
         console.log('[CategoryManager] 🔄 Cache des catégories tâches invalidé');
     }
 
+    updateActiveCategories(categories, notifyModules = true) {
+        console.log('[CategoryManager] 🏷️ updateActiveCategories:', categories);
+        
+        this.syncQueue.push({
+            type: 'activeCategories',
+            value: categories,
+            notifyModules,
+            timestamp: Date.now()
+        });
+        
+        if (!this.syncInProgress) {
+            this.processSettingsChanges();
+        }
+    }
+
+    updateCategoryKeywords(categoryId, keywords) {
+        console.log(`[CategoryManager] 🔑 Mise à jour mots-clés pour ${categoryId}:`, keywords);
+        
+        if (this.weightedKeywords[categoryId]) {
+            this.weightedKeywords[categoryId] = {
+                absolute: [...(keywords.absolute || [])],
+                strong: [...(keywords.strong || [])],
+                weak: [...(keywords.weak || [])],
+                exclusions: [...(keywords.exclusions || [])]
+            };
+            
+            // Sauvegarder si c'est une catégorie personnalisée
+            if (this.customCategories[categoryId]) {
+                this.customCategories[categoryId].keywords = this.weightedKeywords[categoryId];
+                this.saveCustomCategories();
+            }
+            
+            // Invalider le cache car les mots-clés ont changé
+            this.invalidateCache();
+            
+            console.log('[CategoryManager] ✅ Mots-clés mis à jour');
+        }
+    }
+
+    updateCategoryFilters(categoryId, filters) {
+        console.log(`[CategoryManager] 🔍 Mise à jour filtres pour ${categoryId}:`, filters);
+        
+        if (!this.categoryFilters) {
+            this.categoryFilters = {};
+        }
+        
+        this.categoryFilters[categoryId] = {
+            includeDomains: [...(filters.includeDomains || [])],
+            includeEmails: [...(filters.includeEmails || [])],
+            excludeDomains: [...(filters.excludeDomains || [])],
+            excludeEmails: [...(filters.excludeEmails || [])]
+        };
+        
+        this.saveCategoryFilters();
+        
+        // Invalider le cache car les filtres ont changé
+        this.invalidateCache();
+        
+        console.log('[CategoryManager] ✅ Filtres mis à jour');
+    }
+
+    saveCategoryFilters() {
+        try {
+            localStorage.setItem('categoryFilters', JSON.stringify(this.categoryFilters));
+            console.log('[CategoryManager] 💾 Filtres sauvegardés');
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur sauvegarde filtres:', error);
+        }
+    }
+
     getSettings() {
         return JSON.parse(JSON.stringify(this.settings));
     }
@@ -1219,6 +1291,10 @@ class CategoryManager {
     getCategories() {
         return this.categories;
     }
+
+    getCustomCategories() {
+        return this.customCategories;
+    }
     
     getCategory(categoryId) {
         if (categoryId === 'all') {
@@ -1236,6 +1312,24 @@ class CategoryManager {
         return this.categories[categoryId] || null;
     }
 
+    getCategoryKeywords(categoryId) {
+        return this.weightedKeywords[categoryId] || {
+            absolute: [],
+            strong: [],
+            weak: [],
+            exclusions: []
+        };
+    }
+
+    getCategoryFilters(categoryId) {
+        return this.categoryFilters?.[categoryId] || {
+            includeDomains: [],
+            includeEmails: [],
+            excludeDomains: [],
+            excludeEmails: []
+        };
+    }
+
     getTotalKeywordsCount(categoryId) {
         const keywords = this.weightedKeywords[categoryId];
         if (!keywords) return 0;
@@ -1244,6 +1338,88 @@ class CategoryManager {
                (keywords.strong?.length || 0) + 
                (keywords.weak?.length || 0) + 
                (keywords.exclusions?.length || 0);
+    }
+
+    createCustomCategory(categoryData) {
+        console.log('[CategoryManager] 🆕 Création catégorie personnalisée:', categoryData);
+        
+        // Générer un ID unique
+        const id = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        const newCategory = {
+            ...categoryData,
+            id,
+            isCustom: true,
+            priority: categoryData.priority || 30,
+            keywords: categoryData.keywords || {
+                absolute: [],
+                strong: [],
+                weak: [],
+                exclusions: []
+            }
+        };
+        
+        // Ajouter aux catégories
+        this.categories[id] = newCategory;
+        this.customCategories[id] = newCategory;
+        this.weightedKeywords[id] = newCategory.keywords;
+        
+        // Sauvegarder
+        this.saveCustomCategories();
+        
+        // Invalider le cache
+        this.invalidateCache();
+        
+        console.log('[CategoryManager] ✅ Catégorie créée:', id);
+        
+        return { id, ...newCategory };
+    }
+
+    deleteCustomCategory(categoryId) {
+        console.log('[CategoryManager] 🗑️ Suppression catégorie:', categoryId);
+        
+        if (!this.customCategories[categoryId]) {
+            console.warn('[CategoryManager] Catégorie non trouvée ou non personnalisée');
+            return false;
+        }
+        
+        // Supprimer de toutes les structures
+        delete this.categories[categoryId];
+        delete this.customCategories[categoryId];
+        delete this.weightedKeywords[categoryId];
+        delete this.categoryFilters?.[categoryId];
+        
+        // Retirer des catégories actives si présente
+        if (this.settings.activeCategories?.includes(categoryId)) {
+            this.settings.activeCategories = this.settings.activeCategories.filter(id => id !== categoryId);
+            this.saveSettingsToStorage();
+        }
+        
+        // Retirer des catégories pré-sélectionnées si présente
+        if (this.settings.taskPreselectedCategories?.includes(categoryId)) {
+            this.settings.taskPreselectedCategories = this.settings.taskPreselectedCategories.filter(id => id !== categoryId);
+            this.saveSettingsToStorage();
+        }
+        
+        // Sauvegarder
+        this.saveCustomCategories();
+        this.saveCategoryFilters();
+        
+        // Invalider le cache
+        this.invalidateCache();
+        
+        console.log('[CategoryManager] ✅ Catégorie supprimée');
+        
+        return true;
+    }
+
+    saveCustomCategories() {
+        try {
+            localStorage.setItem('customCategories', JSON.stringify(this.customCategories));
+            console.log('[CategoryManager] 💾 Catégories personnalisées sauvegardées');
+        } catch (error) {
+            console.error('[CategoryManager] ❌ Erreur sauvegarde catégories personnalisées:', error);
+        }
     }
 
     addChangeListener(callback) {
@@ -1338,12 +1514,12 @@ if (window.categoryManager) {
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v21.0 OPTIMISÉE...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v21.1 CORRIGÉE...');
 window.categoryManager = new CategoryManager();
 
 // Test de performance amélioré
 window.testCategoryManagerPerformance = function() {
-    console.group('🚀 TEST PERFORMANCE CategoryManager v21.0');
+    console.group('🚀 TEST PERFORMANCE CategoryManager v21.1');
     
     const start = performance.now();
     
@@ -1375,4 +1551,4 @@ window.testCategoryManagerPerformance = function() {
     return { duration, avgPerEmail: duration / 100, results: results.length };
 };
 
-console.log('✅ CategoryManager v21.0 OPTIMISÉ loaded - Performance maximisée!');
+console.log('✅ CategoryManager v21.1 CORRIGÉ loaded - Performance maximisée et bugs fixés!');
