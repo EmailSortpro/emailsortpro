@@ -1,3 +1,4 @@
+
 // EmailScanner.js - Version 9.1 - ULTRA OPTIMISÉ PERFORMANCE + CORRECTIONS 🚀
 
 class EmailScanner {
@@ -599,6 +600,41 @@ class EmailScanner {
         
         this.logOptimizedKeywordEffectiveness();
         this.verifyPreselectionSyncOptimized(taskPreselectedCategories);
+    }
+
+    // Ajouter ces méthodes à la classe EmailScanner après la ligne 1800 environ
+// (après la méthode categorizeEmailsUltraOptimized)
+
+    // ================================================
+    // MÉTHODES DE COMPATIBILITÉ
+    // ================================================
+    
+    // Alias pour la compatibilité avec l'ancien nom
+    async categorizeEmails(overridePreselectedCategories = null) {
+        console.log('[EmailScanner] 🔄 categorizeEmails -> categorizeEmailsUltraOptimized');
+        return this.categorizeEmailsUltraOptimized(overridePreselectedCategories);
+    }
+    
+    // Alias pour la méthode recategorizeEmails
+    async recategorizeEmails() {
+        console.log('[EmailScanner] 🔄 recategorizeEmails -> recategorizeEmailsOptimized');
+        return this.recategorizeEmailsOptimized();
+    }
+    
+    // Alias pour analyzeForTasks
+    async analyzeForTasks() {
+        console.log('[EmailScanner] 🔄 analyzeForTasks -> analyzeForTasksOptimized');
+        return this.analyzeForTasksOptimized();
+    }
+    
+    // Alias pour getDetailedResults
+    getDetailedResults() {
+        return this.getDetailedResultsOptimized();
+    }
+    
+    // Reset standard pour compatibilité
+    reset() {
+        return this.resetOptimized();
     }
 
     initializeCategoryStats() {
