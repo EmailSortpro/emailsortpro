@@ -510,22 +510,16 @@ class CategoriesPageV22 {
     
     selectBackupFolder() {
         console.log('[CategoriesPage] Ouverture sélection dossier...');
-        const provider = window.backupService?.provider;
-        
-        if (!provider || provider === 'unknown') {
-            this.showToast('⚠️ Aucun provider de stockage cloud détecté', 'warning');
-            return;
-        }
-        
-        // Créer la modal de sélection de dossier
+        // Afficher directement la modal sans vérifier le provider
         this.showFolderSelectionModal();
     }
 
     showFolderSelectionModal() {
         this.closeModal();
         
-        const provider = window.backupService?.provider;
+        const provider = window.backupService?.provider || 'local';
         const currentPath = window.backupService?.config?.folderPath || 'Documents/EmailSortPro/Backups';
+        const providerName = this.getProviderName(provider);
         
         const modalHTML = `
             <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
@@ -570,7 +564,7 @@ class CategoriesPageV22 {
                                         <i class="fas fa-folder"></i>
                                         <div>
                                             <div class="folder-name">EmailSortPro/Backups</div>
-                                            <div class="folder-desc">À la racine du ${this.getProviderName(provider)}</div>
+                                            <div class="folder-desc">À la racine${provider !== 'unknown' ? ' du ' + providerName : ''}</div>
                                         </div>
                                     </button>
                                 </div>
@@ -771,9 +765,10 @@ class CategoriesPageV22 {
         const providers = {
             'microsoft': 'Microsoft OneDrive',
             'google': 'Google Drive',
-            'unknown': 'Non configuré'
+            'unknown': 'Stockage local',
+            'local': 'Stockage local'
         };
-        return providers[provider] || provider;
+        return providers[provider] || 'Stockage local';
     }
 
     // Actions avancées
