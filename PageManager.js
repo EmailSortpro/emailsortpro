@@ -505,7 +505,6 @@ class PageManager {
         // Ajouter les catégories
         for (const cat of sortedCategories) {
             const isPreselected = taskPreselectedCategories.includes(cat.id);
-            const displayName = cat.name.length > 16 ? cat.name.substring(0, 15) + '…' : cat.name;
             
             filtersHtml += `
                 <button class="category-pill-modern ${this.currentCategory === cat.id ? 'active' : ''} ${isPreselected ? 'preselected' : ''}" 
@@ -515,7 +514,7 @@ class PageManager {
                         title="${cat.name}">
                     <div class="pill-content">
                         <span class="pill-icon">${cat.icon}</span>
-                        <span class="pill-name">${displayName}</span>
+                        <span class="pill-name">${cat.name}</span>
                         <span class="pill-count">(${cat.count})</span>
                     </div>
                     ${isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
@@ -2046,7 +2045,7 @@ class PageManager {
                 background: white;
                 border: 1px solid var(--pm-gray-200);
                 border-radius: 8px;
-                padding: 10px 12px;
+                padding: 8px 6px;
                 cursor: pointer;
                 transition: var(--pm-transition);
                 position: relative;
@@ -2055,7 +2054,7 @@ class PageManager {
                 align-items: center;
                 justify-content: center;
                 width: calc(16.666% - 1px);
-                min-height: 44px;
+                min-height: 48px;
                 margin-right: -1px;
                 margin-bottom: -1px;
             }
@@ -2090,6 +2089,8 @@ class PageManager {
                 width: 100%;
                 justify-content: center;
                 padding: 0 2px;
+                flex-wrap: wrap;
+                text-align: center;
             }
             
             .pill-icon {
@@ -2098,13 +2099,19 @@ class PageManager {
             }
             
             .pill-name {
+                font-size: 12px;
+                line-height: 1.2;
+                text-align: center;
+                word-break: break-word;
+                hyphens: auto;
+                max-width: 100%;
+            }
+            
+            .pill-count {
                 font-size: 11px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                flex: 1;
-                text-align: left;
-                letter-spacing: -0.3px;
+                font-weight: 600;
+                opacity: 0.7;
+                flex-shrink: 0;
             }
             
             /* Tooltip pour les noms longs */
