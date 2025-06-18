@@ -1,5 +1,5 @@
-// PageManager.js - Version 15.0 - STYLE MODERNE + DÉTECTION AMÉLIORÉE + MODALES 🚀
-console.log('[PageManager] 🚀 Loading PageManager.js v15.0 - MODERN UI + BETTER DETECTION...');
+// PageManager.js - Version 16.0 - INTERFACE AMÉLIORÉE + FIX DEBOUNCE 🚀
+console.log('[PageManager] 🚀 Loading PageManager.js v16.0 - IMPROVED UI + DEBOUNCE FIX...');
 
 class PageManager {
     constructor() {
@@ -47,12 +47,31 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 15.0 - Modern UI + Enhanced Detection');
+        console.log('[PageManager] ✅ Version 16.0 - Interface améliorée + Fix');
         this.setupEventListeners();
         this.startPerformanceMonitoring();
         
         // Forcer la détection améliorée dans CategoryManager
         this.enhanceCategoryDetection();
+    }
+
+    // ================================================
+    // MÉTHODE DEBOUNCE CORRIGÉE
+    // ================================================
+    debounce(key, func, delay) {
+        return () => {
+            const existingTimer = this.debounceTimers.get(key);
+            if (existingTimer) {
+                clearTimeout(existingTimer);
+            }
+            
+            const timer = setTimeout(() => {
+                func();
+                this.debounceTimers.delete(key);
+            }, delay);
+            
+            this.debounceTimers.set(key, timer);
+        };
     }
 
     // ================================================
@@ -291,7 +310,7 @@ class PageManager {
             container.innerHTML = `
                 <div class="emails-page-modern">
                     ${this.renderExplanationModern()}
-                    ${this.renderControlsBarModern(selectedCount)}
+                    ${this.renderControlsBarModern(selectedCount, emails.length)}
                     ${this.renderCategoryFiltersModern(categoryCounts, emails.length)}
                     <div class="emails-container-modern">
                         ${this.renderEmailsListModern(emails)}
@@ -352,7 +371,7 @@ class PageManager {
         `;
     }
 
-    renderControlsBarModern(selectedCount) {
+    renderControlsBarModern(selectedCount, totalCount) {
         return `
             <div class="controls-bar-modern">
                 <!-- Ligne de recherche -->
@@ -372,18 +391,22 @@ class PageManager {
                     </div>
                 </div>
                 
-                <!-- Ligne des actions -->
+                <!-- Ligne des actions et vue -->
                 <div class="actions-line-modern">
                     ${this.renderViewModesModern()}
                     
-                    <div class="actions-separator"></div>
-                    
-                    <div class="action-buttons-modern">
+                    <div class="actions-buttons-group">
                         <button class="btn-modern btn-primary ${selectedCount === 0 ? 'disabled' : ''}" 
                                 onclick="window.pageManager.createTasksFromSelection()"
                                 ${selectedCount === 0 ? 'disabled' : ''}>
                             <i class="fas fa-tasks"></i>
                             <span>Créer ${selectedCount > 1 ? selectedCount + ' tâches' : 'une tâche'}</span>
+                        </button>
+                        
+                        <button class="btn-modern btn-select-all" 
+                                onclick="window.pageManager.toggleSelectAll()">
+                            <i class="fas fa-${this.selectedEmails.size === totalCount ? 'square-minus' : 'check-square'}"></i>
+                            <span>${this.selectedEmails.size === totalCount ? 'Désélectionner tout' : 'Tout sélectionner'}</span>
                         </button>
                         
                         <div class="dropdown-modern">
@@ -681,6 +704,25 @@ class PageManager {
         }
         
         return this.renderEmptyEmailsState();
+    }
+
+    // ================================================
+    // NOUVELLES MÉTHODES
+    // ================================================
+    toggleSelectAll() {
+        const emails = this.getFilteredEmails(window.emailScanner?.getAllEmails() || []);
+        
+        if (this.selectedEmails.size === emails.length) {
+            // Tout désélectionner
+            this.selectedEmails.clear();
+        } else {
+            // Tout sélectionner
+            emails.forEach(email => {
+                this.selectedEmails.add(email.id);
+            });
+        }
+        
+        this.refreshEmailsView();
     }
 
     // ================================================
@@ -1424,11 +1466,12 @@ class PageManager {
 
     updateControlsBar() {
         const selectedCount = this.selectedEmails.size;
+        const totalCount = window.emailScanner?.getAllEmails()?.length || 0;
         const controlsBar = document.querySelector('.controls-bar-modern');
         
         if (controlsBar) {
             // Remplacer toute la barre de contrôles
-            controlsBar.outerHTML = this.renderControlsBarModern(selectedCount);
+            controlsBar.outerHTML = this.renderControlsBarModern(selectedCount, totalCount);
             
             // Réattacher les event listeners
             const searchInput = document.getElementById('emailSearchInput');
@@ -1563,20 +1606,6 @@ class PageManager {
         }
     }
 
-    debounce(key, func, delay) {
-        const existingTimer = this.debounceTimers.get(key);
-        if (existingTimer) {
-            clearTimeout(existingTimer);
-        }
-        
-        const timer = setTimeout(() => {
-            func();
-            this.debounceTimers.delete(key);
-        }, delay);
-        
-        this.debounceTimers.set(key, timer);
-    }
-
     escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
@@ -1622,7 +1651,7 @@ class PageManager {
     }
 
     // ================================================
-    // STYLES MODERNES MINIMALISTES
+    // STYLES MODERNES AMÉLIORÉS
     // ================================================
     addModernEmailsStyles() {
         if (document.getElementById('pageManagerModernStyles')) return;
@@ -1630,7 +1659,7 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'pageManagerModernStyles';
         styles.textContent = `
-            /* PageManager Modern Styles v15.0 */
+            /* PageManager Modern Styles v16.0 - Interface améliorée */
             :root {
                 --pm-primary: #3b82f6;
                 --pm-primary-dark: #2563eb;
@@ -1655,14 +1684,18 @@ class PageManager {
                 --pm-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
                 --pm-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
                 --pm-transition: all 0.2s ease;
+                --pm-font-size-base: 16px;
+                --pm-font-size-lg: 18px;
+                --pm-font-size-xl: 20px;
             }
             
             /* Container moderne */
             .emails-page-modern {
                 padding: 24px;
-                max-width: 1400px;
+                max-width: 1600px;
                 margin: 0 auto;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+                font-size: var(--pm-font-size-base);
             }
             
             /* États vides modernes */
@@ -1675,14 +1708,14 @@ class PageManager {
             
             .empty-state-modern .empty-icon-modern,
             .error-container-modern .error-icon {
-                font-size: 64px;
+                font-size: 72px;
                 margin-bottom: 24px;
                 opacity: 0.3;
             }
             
             .empty-state-modern h3,
             .error-container-modern h2 {
-                font-size: 28px;
+                font-size: 32px;
                 margin-bottom: 12px;
                 color: var(--pm-gray-900);
                 font-weight: 600;
@@ -1691,7 +1724,7 @@ class PageManager {
             .empty-state-modern p,
             .error-container-modern p {
                 margin-bottom: 24px;
-                font-size: 16px;
+                font-size: var(--pm-font-size-lg);
                 color: var(--pm-gray-600);
             }
             
@@ -1712,14 +1745,14 @@ class PageManager {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 color: var(--pm-gray-700);
                 flex: 1;
             }
             
             .explanation-content i {
                 color: var(--pm-primary);
-                font-size: 18px;
+                font-size: 20px;
             }
             
             .explanation-close {
@@ -1761,16 +1794,16 @@ class PageManager {
                 position: absolute;
                 left: 20px;
                 color: var(--pm-gray-400);
-                font-size: 18px;
+                font-size: 20px;
                 pointer-events: none;
             }
             
             .search-input-modern {
                 width: 100%;
-                padding: 14px 20px 14px 52px;
+                padding: 16px 20px 16px 52px;
                 border: 2px solid var(--pm-gray-200);
                 border-radius: 12px;
-                font-size: 15px;
+                font-size: var(--pm-font-size-base);
                 transition: var(--pm-transition);
                 background: var(--pm-gray-50);
             }
@@ -1799,16 +1832,19 @@ class PageManager {
                 color: var(--pm-gray-600);
             }
             
+            /* Actions line moderne - Une seule ligne */
             .actions-line-modern {
                 display: flex;
                 align-items: center;
                 gap: 16px;
+                justify-content: space-between;
             }
             
-            .actions-separator {
-                width: 1px;
-                height: 32px;
-                background: var(--pm-gray-200);
+            .actions-buttons-group {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                flex-wrap: wrap;
             }
             
             /* View modes modernes */
@@ -1823,15 +1859,15 @@ class PageManager {
             .view-mode-modern {
                 background: none;
                 border: none;
-                padding: 8px 12px;
+                padding: 10px 14px;
                 border-radius: 8px;
                 color: var(--pm-gray-600);
                 cursor: pointer;
                 transition: var(--pm-transition);
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                font-size: 14px;
+                gap: 8px;
+                font-size: var(--pm-font-size-base);
                 font-weight: 500;
             }
             
@@ -1847,22 +1883,16 @@ class PageManager {
                 box-shadow: var(--pm-shadow);
             }
             
-            .view-mode-modern span {
-                display: none;
-            }
-            
-            @media (min-width: 768px) {
-                .view-mode-modern span {
-                    display: inline;
-                }
+            .view-mode-modern i {
+                font-size: 18px;
             }
             
             /* Boutons modernes */
             .btn-modern {
-                padding: 10px 18px;
+                padding: 12px 20px;
                 border: none;
                 border-radius: 10px;
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 font-weight: 600;
                 cursor: pointer;
                 transition: var(--pm-transition);
@@ -1900,6 +1930,18 @@ class PageManager {
                 border-color: var(--pm-gray-400);
             }
             
+            .btn-modern.btn-select-all {
+                background: white;
+                color: var(--pm-gray-700);
+                border: 1px solid var(--pm-gray-300);
+            }
+            
+            .btn-modern.btn-select-all:hover {
+                background: var(--pm-gray-50);
+                border-color: var(--pm-primary);
+                color: var(--pm-primary);
+            }
+            
             .btn-modern.btn-success {
                 background: linear-gradient(135deg, var(--pm-success) 0%, #059669 100%);
                 color: white;
@@ -1917,7 +1959,7 @@ class PageManager {
             }
             
             .btn-modern.btn-icon {
-                padding: 10px;
+                padding: 12px;
                 aspect-ratio: 1;
             }
             
@@ -1940,7 +1982,7 @@ class PageManager {
                 border: 1px solid var(--pm-gray-200);
                 border-radius: 12px;
                 box-shadow: var(--pm-shadow-xl);
-                min-width: 200px;
+                min-width: 220px;
                 padding: 8px;
                 opacity: 0;
                 visibility: hidden;
@@ -1957,17 +1999,17 @@ class PageManager {
             
             .dropdown-item-modern {
                 width: 100%;
-                padding: 10px 16px;
+                padding: 12px 16px;
                 background: none;
                 border: none;
                 border-radius: 8px;
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 text-align: left;
                 cursor: pointer;
                 transition: var(--pm-transition);
                 display: flex;
                 align-items: center;
-                gap: 10px;
+                gap: 12px;
                 color: var(--pm-gray-700);
             }
             
@@ -1987,23 +2029,24 @@ class PageManager {
                 margin: 8px 0;
             }
             
-            /* Filtres de catégories modernes */
+            /* Filtres de catégories modernes - 6 par ligne */
             .category-filters-modern {
-                display: flex;
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
                 gap: 12px;
                 margin-bottom: 24px;
-                flex-wrap: wrap;
             }
             
             .category-pill-modern {
                 background: white;
                 border: 2px solid var(--pm-gray-200);
                 border-radius: 12px;
-                padding: 10px 16px;
+                padding: 12px 16px;
                 cursor: pointer;
                 transition: var(--pm-transition);
                 position: relative;
                 overflow: visible;
+                text-align: center;
             }
             
             .category-pill-modern:hover {
@@ -2027,14 +2070,20 @@ class PageManager {
             
             .pill-content {
                 display: flex;
+                flex-direction: column;
                 align-items: center;
-                gap: 8px;
+                gap: 6px;
                 font-size: 14px;
                 font-weight: 500;
             }
             
             .pill-icon {
-                font-size: 18px;
+                font-size: 24px;
+            }
+            
+            .pill-name {
+                font-size: 13px;
+                line-height: 1.2;
             }
             
             .pill-count {
@@ -2055,13 +2104,13 @@ class PageManager {
                 right: -8px;
                 background: var(--pm-secondary);
                 color: white;
-                width: 20px;
-                height: 20px;
+                width: 24px;
+                height: 24px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 11px;
+                font-size: 12px;
                 border: 2px solid white;
                 box-shadow: var(--pm-shadow-md);
                 animation: pulse 2s ease-in-out infinite;
@@ -2086,9 +2135,9 @@ class PageManager {
                 background: white;
             }
             
-            /* Carte d'email moderne */
+            /* Carte d'email moderne - Plus grande */
             .email-card-modern {
-                padding: 16px 20px;
+                padding: 20px 24px;
                 border-bottom: 1px solid var(--pm-gray-100);
                 cursor: pointer;
                 transition: var(--pm-transition);
@@ -2106,7 +2155,7 @@ class PageManager {
             .email-card-modern.selected {
                 background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
                 border-left: 4px solid var(--pm-primary);
-                padding-left: 16px;
+                padding-left: 20px;
             }
             
             .email-card-modern.has-task {
@@ -2116,12 +2165,12 @@ class PageManager {
             .email-card-modern.preselected {
                 background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
                 border-left: 4px solid var(--pm-secondary);
-                padding-left: 16px;
+                padding-left: 20px;
             }
             
             .email-checkbox-modern {
-                width: 20px;
-                height: 20px;
+                width: 24px;
+                height: 24px;
                 flex-shrink: 0;
                 cursor: pointer;
                 accent-color: var(--pm-primary);
@@ -2145,12 +2194,12 @@ class PageManager {
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                margin-bottom: 8px;
+                margin-bottom: 10px;
                 gap: 16px;
             }
             
             .email-subject-modern {
-                font-size: 15px;
+                font-size: var(--pm-font-size-lg);
                 font-weight: 600;
                 margin: 0;
                 color: var(--pm-gray-900);
@@ -2164,26 +2213,28 @@ class PageManager {
                 display: flex;
                 align-items: center;
                 gap: 12px;
-                font-size: 13px;
+                font-size: 14px;
                 color: var(--pm-gray-500);
                 flex-shrink: 0;
             }
             
             .attachment-icon {
                 color: var(--pm-gray-400);
+                font-size: 16px;
             }
             
             .ai-icon {
                 color: var(--pm-secondary);
+                font-size: 16px;
             }
             
             .email-from-modern {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 14px;
+                gap: 12px;
+                font-size: var(--pm-font-size-base);
                 color: var(--pm-gray-600);
-                margin-bottom: 8px;
+                margin-bottom: 10px;
             }
             
             .sender-name {
@@ -2191,23 +2242,23 @@ class PageManager {
             }
             
             .email-preview-modern {
-                font-size: 13px;
+                font-size: 15px;
                 color: var(--pm-gray-500);
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                line-height: 1.5;
+                line-height: 1.6;
             }
             
             .category-badge-modern {
-                padding: 4px 10px;
-                border-radius: 6px;
-                font-size: 12px;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 13px;
                 font-weight: 600;
                 margin-left: auto;
                 display: inline-flex;
                 align-items: center;
-                gap: 4px;
+                gap: 6px;
             }
             
             .category-badge-modern.other {
@@ -2222,7 +2273,7 @@ class PageManager {
             
             .email-actions-modern {
                 display: flex;
-                gap: 8px;
+                gap: 10px;
                 flex-shrink: 0;
             }
             
@@ -2230,10 +2281,10 @@ class PageManager {
                 background: white;
                 border: 1px solid var(--pm-gray-200);
                 border-radius: 8px;
-                padding: 8px 12px;
+                padding: 10px 14px;
                 cursor: pointer;
                 transition: var(--pm-transition);
-                font-size: 14px;
+                font-size: 15px;
                 color: var(--pm-gray-600);
             }
             
@@ -2281,12 +2332,12 @@ class PageManager {
             }
             
             .group-header-modern {
-                padding: 16px 20px;
+                padding: 18px 24px;
                 background: var(--pm-gray-50);
                 cursor: pointer;
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 14px;
                 font-weight: 600;
                 transition: var(--pm-transition);
                 color: var(--pm-gray-800);
@@ -2299,23 +2350,23 @@ class PageManager {
             .group-header-modern i {
                 color: var(--pm-gray-500);
                 transition: transform 0.2s;
-                font-size: 14px;
+                font-size: 16px;
             }
             
             .group-icon {
-                font-size: 20px;
+                font-size: 24px;
             }
             
             .group-name {
                 flex: 1;
-                font-size: 15px;
+                font-size: var(--pm-font-size-lg);
             }
             
             .group-count {
                 background: white;
-                padding: 4px 12px;
+                padding: 6px 14px;
                 border-radius: 20px;
-                font-size: 13px;
+                font-size: 14px;
                 color: var(--pm-gray-600);
                 border: 1px solid var(--pm-gray-200);
             }
@@ -2350,7 +2401,7 @@ class PageManager {
                 background: white;
                 border-radius: 20px;
                 width: 100%;
-                max-width: 600px;
+                max-width: 700px;
                 max-height: 90vh;
                 display: flex;
                 flex-direction: column;
@@ -2364,15 +2415,15 @@ class PageManager {
             }
             
             .modal-modern.modal-email {
-                max-width: 800px;
+                max-width: 900px;
             }
             
             .modal-modern.modal-task-creation {
-                max-width: 600px;
+                max-width: 700px;
             }
             
             .modal-header-modern {
-                padding: 24px 24px 20px;
+                padding: 28px 28px 24px;
                 border-bottom: 1px solid var(--pm-gray-200);
                 display: flex;
                 justify-content: space-between;
@@ -2380,7 +2431,7 @@ class PageManager {
             }
             
             .modal-header-modern h2 {
-                font-size: 20px;
+                font-size: 24px;
                 font-weight: 700;
                 margin: 0;
                 color: var(--pm-gray-900);
@@ -2391,10 +2442,10 @@ class PageManager {
                 border: none;
                 color: var(--pm-gray-500);
                 cursor: pointer;
-                padding: 8px;
+                padding: 10px;
                 border-radius: 8px;
                 transition: var(--pm-transition);
-                font-size: 20px;
+                font-size: 22px;
             }
             
             .modal-close-modern:hover {
@@ -2403,13 +2454,13 @@ class PageManager {
             }
             
             .modal-body-modern {
-                padding: 24px;
+                padding: 28px;
                 overflow-y: auto;
                 flex: 1;
             }
             
             .modal-footer-modern {
-                padding: 20px 24px;
+                padding: 24px 28px;
                 border-top: 1px solid var(--pm-gray-200);
                 display: flex;
                 justify-content: flex-end;
@@ -2418,19 +2469,19 @@ class PageManager {
             
             /* Sections dans les modales */
             .email-details-section {
-                margin-bottom: 24px;
+                margin-bottom: 28px;
             }
             
             .email-detail-row {
                 display: flex;
-                margin-bottom: 12px;
-                font-size: 14px;
+                margin-bottom: 14px;
+                font-size: var(--pm-font-size-base);
             }
             
             .detail-label {
                 font-weight: 600;
                 color: var(--pm-gray-600);
-                width: 80px;
+                width: 100px;
                 flex-shrink: 0;
             }
             
@@ -2442,82 +2493,84 @@ class PageManager {
             .detail-value.subject {
                 font-weight: 600;
                 color: var(--pm-gray-900);
+                font-size: var(--pm-font-size-lg);
             }
             
             .ai-analysis-section {
                 background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
                 border: 1px solid rgba(139, 92, 246, 0.2);
                 border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 24px;
+                padding: 24px;
+                margin-bottom: 28px;
             }
             
             .ai-analysis-section h3 {
-                font-size: 16px;
+                font-size: var(--pm-font-size-lg);
                 font-weight: 600;
-                margin: 0 0 12px 0;
+                margin: 0 0 16px 0;
                 color: var(--pm-secondary);
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 10px;
             }
             
             .ai-summary {
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 color: var(--pm-gray-700);
-                line-height: 1.6;
-                margin-bottom: 16px;
+                line-height: 1.7;
+                margin-bottom: 18px;
             }
             
             .ai-task-suggestion {
                 background: white;
-                border-radius: 8px;
-                padding: 16px;
-                margin-top: 16px;
+                border-radius: 10px;
+                padding: 18px;
+                margin-top: 18px;
             }
             
             .ai-task-suggestion h4 {
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 font-weight: 600;
-                margin: 0 0 12px 0;
+                margin: 0 0 14px 0;
                 color: var(--pm-gray-800);
             }
             
             .suggested-task {
                 background: var(--pm-gray-50);
                 border-radius: 8px;
-                padding: 12px;
+                padding: 16px;
             }
             
             .task-title {
                 font-weight: 600;
                 color: var(--pm-gray-900);
-                margin-bottom: 8px;
+                margin-bottom: 10px;
+                font-size: var(--pm-font-size-lg);
             }
             
             .task-description {
-                font-size: 13px;
+                font-size: 15px;
                 color: var(--pm-gray-600);
-                line-height: 1.5;
-                margin-bottom: 8px;
+                line-height: 1.6;
+                margin-bottom: 10px;
             }
             
             .task-due {
-                font-size: 13px;
+                font-size: 14px;
                 color: var(--pm-warning);
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 8px;
             }
             
             .email-body-section {
-                margin-top: 24px;
+                margin-top: 28px;
             }
             
             .email-body-section h3 {
-                font-size: 16px;
+                font-size: var(--pm-font-size-lg);
                 font-weight: 600;
-                margin: 0 0 16px 0;
+                margin: 0 0 18px 0;
                 color: var(--pm-gray-800);
             }
             
@@ -2525,20 +2578,20 @@ class PageManager {
                 background: var(--pm-gray-50);
                 border: 1px solid var(--pm-gray-200);
                 border-radius: 12px;
-                padding: 20px;
-                max-height: 400px;
+                padding: 24px;
+                max-height: 450px;
                 overflow-y: auto;
             }
             
             .email-html-content {
-                font-size: 14px;
-                line-height: 1.6;
+                font-size: var(--pm-font-size-base);
+                line-height: 1.7;
                 color: var(--pm-gray-700);
             }
             
             .email-text-content {
-                font-size: 14px;
-                line-height: 1.6;
+                font-size: var(--pm-font-size-base);
+                line-height: 1.7;
                 color: var(--pm-gray-700);
                 white-space: pre-wrap;
             }
@@ -2547,37 +2600,38 @@ class PageManager {
                 text-align: center;
                 color: var(--pm-gray-500);
                 font-style: italic;
+                font-size: var(--pm-font-size-base);
             }
             
             /* Badge AI moderne */
             .ai-badge-modern {
                 background: linear-gradient(135deg, var(--pm-secondary) 0%, #7c3aed 100%);
                 color: white;
-                padding: 8px 16px;
-                border-radius: 8px;
-                font-size: 13px;
+                padding: 10px 18px;
+                border-radius: 10px;
+                font-size: 14px;
                 font-weight: 600;
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                margin-bottom: 20px;
+                gap: 10px;
+                margin-bottom: 24px;
             }
             
             /* Formulaire de tâche moderne */
             .task-form-modern {
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 24px;
             }
             
             .form-group-modern {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 10px;
             }
             
             .form-group-modern label {
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 font-weight: 600;
                 color: var(--pm-gray-700);
             }
@@ -2585,10 +2639,10 @@ class PageManager {
             .form-input-modern,
             .form-textarea-modern,
             .form-select-modern {
-                padding: 12px 16px;
+                padding: 14px 18px;
                 border: 2px solid var(--pm-gray-200);
                 border-radius: 10px;
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 transition: var(--pm-transition);
                 background: white;
                 font-family: inherit;
@@ -2604,60 +2658,68 @@ class PageManager {
             
             .form-textarea-modern {
                 resize: vertical;
-                min-height: 100px;
+                min-height: 120px;
             }
             
             .form-row-modern {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 16px;
+                gap: 18px;
             }
             
             .email-context-modern {
                 background: var(--pm-gray-50);
                 border-radius: 12px;
-                padding: 16px;
+                padding: 20px;
             }
             
             .email-context-modern h4 {
-                font-size: 14px;
+                font-size: var(--pm-font-size-base);
                 font-weight: 600;
-                margin: 0 0 12px 0;
+                margin: 0 0 14px 0;
                 color: var(--pm-gray-700);
             }
             
             .email-context-info {
                 display: flex;
                 flex-direction: column;
-                gap: 8px;
+                gap: 10px;
             }
             
             .sender-info,
             .subject-info {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 13px;
+                gap: 10px;
+                font-size: 15px;
                 color: var(--pm-gray-600);
             }
             
             .sender-info i,
             .subject-info i {
                 color: var(--pm-gray-400);
-                width: 16px;
+                width: 18px;
             }
             
             /* Responsive */
+            @media (max-width: 1200px) {
+                .category-filters-modern {
+                    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                }
+            }
+            
             @media (max-width: 768px) {
                 .emails-page-modern {
                     padding: 16px;
                 }
                 
                 .actions-line-modern {
-                    flex-wrap: wrap;
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 12px;
                 }
                 
-                .action-buttons-modern {
+                .actions-buttons-group {
                     flex-wrap: wrap;
                     gap: 8px;
                     width: 100%;
@@ -2667,15 +2729,14 @@ class PageManager {
                     display: none;
                 }
                 
-                .btn-modern.btn-primary span {
+                .btn-modern.btn-primary span,
+                .btn-modern.btn-select-all span {
                     display: inline;
                 }
                 
                 .category-filters-modern {
-                    overflow-x: auto;
-                    flex-wrap: nowrap;
-                    padding-bottom: 8px;
-                    -webkit-overflow-scrolling: touch;
+                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                    gap: 8px;
                 }
                 
                 .email-preview-modern {
@@ -2684,6 +2745,14 @@ class PageManager {
                 
                 .form-row-modern {
                     grid-template-columns: 1fr;
+                }
+                
+                .email-card-modern {
+                    padding: 16px 20px;
+                }
+                
+                .email-subject-modern {
+                    font-size: 16px;
                 }
             }
             
@@ -2697,6 +2766,18 @@ class PageManager {
                     flex-direction: column;
                     align-items: flex-start;
                     gap: 4px;
+                }
+                
+                .category-filters-modern {
+                    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                }
+                
+                .pill-content {
+                    font-size: 12px;
+                }
+                
+                .pill-icon {
+                    font-size: 20px;
                 }
             }
         `;
@@ -2746,7 +2827,7 @@ if (window.pageManager) {
     }
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v15.0...');
+console.log('[PageManager] 🚀 Création nouvelle instance v16.0...');
 window.pageManager = new PageManager();
 
 // Exposer les méthodes globalement pour les onclick
@@ -2756,4 +2837,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v15.0 loaded - Style moderne + Détection améliorée + Modales!');
+console.log('✅ PageManager v16.0 loaded - Interface améliorée + Fix debounce!');
