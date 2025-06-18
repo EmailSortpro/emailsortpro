@@ -1,5 +1,5 @@
-// EmailScanner.js - Version 3.0 - MODULE DE SCAN FONCTIONNEL 🚀
-console.log('[EmailScanner] 🚀 Loading EmailScanner.js v3.0 - FUNCTIONAL SCAN MODULE...');
+// EmailScanner.js - Version 3.1 - MODULE DE SCAN FONCTIONNEL CORRIGÉ 🚀
+console.log('[EmailScanner] 🚀 Loading EmailScanner.js v3.1 - FUNCTIONAL SCAN MODULE FIXED...');
 
 // Vérifier si EmailScanner existe déjà et le nettoyer
 if (window.emailScanner) {
@@ -35,7 +35,7 @@ class EmailScanner {
     }
 
     init() {
-        console.log('[EmailScanner] ✅ Module initialisé v3.0');
+        console.log('[EmailScanner] ✅ Module initialisé v3.1');
         this.loadFromStorage();
         this.setupEventListeners();
     }
@@ -51,8 +51,12 @@ class EmailScanner {
     }
 
     // ================================================
-    // MÉTHODE PRINCIPALE DE SCAN
+    // MÉTHODE PRINCIPALE DE SCAN - Wrapper unifié
     // ================================================
+    async scan(options = {}) {
+        return this.startScan(options);
+    }
+
     async startScan(options = {}) {
         if (this.isScanning) {
             console.warn('[EmailScanner] Scan déjà en cours');
@@ -77,13 +81,38 @@ class EmailScanner {
                 window.uiManager.showLoading('Scan des emails en cours...');
             }
 
+            // Notifier le début du scan
+            if (options.onProgress) {
+                options.onProgress({
+                    progress: { current: 10 },
+                    message: 'Connexion à votre boîte mail...',
+                    phase: 'Connexion'
+                });
+            }
+
             // Récupérer les emails
             const emails = await this.fetchEmails();
             console.log(`[EmailScanner] 📧 ${emails.length} emails récupérés`);
 
+            if (options.onProgress) {
+                options.onProgress({
+                    progress: { current: 50 },
+                    message: `${emails.length} emails trouvés, analyse en cours...`,
+                    phase: 'Analyse'
+                });
+            }
+
             // Catégoriser les emails
             if (this.scanOptions.autoCategrize) {
                 await this.categorizeEmails(emails);
+            }
+
+            if (options.onProgress) {
+                options.onProgress({
+                    progress: { current: 90 },
+                    message: 'Finalisation des résultats...',
+                    phase: 'Finalisation'
+                });
             }
 
             // Stocker les emails
@@ -93,8 +122,19 @@ class EmailScanner {
             // Sauvegarder en localStorage
             this.saveToStorage();
 
+            // Calculer les statistiques pour les catégories pré-sélectionnées
+            const stats = this.calculateStats(emails, options.taskPreselectedCategories);
+
             // Notifier les autres modules
             this.notifyScanCompleted();
+
+            if (options.onProgress) {
+                options.onProgress({
+                    progress: { current: 100 },
+                    message: 'Scan terminé !',
+                    phase: 'Terminé'
+                });
+            }
 
             // Cacher le loading
             if (window.uiManager) {
@@ -104,9 +144,12 @@ class EmailScanner {
 
             return {
                 success: true,
-                count: emails.length,
+                total: emails.length,
+                categorized: emails.filter(e => e.category && e.category !== 'other').length,
                 emails: emails,
-                timestamp: this.lastScanTimestamp
+                timestamp: this.lastScanTimestamp,
+                stats: stats,
+                taskPreselectedCategories: options.taskPreselectedCategories || []
             };
 
         } catch (error) {
@@ -128,7 +171,7 @@ class EmailScanner {
     }
 
     // ================================================
-    // RÉCUPÉRATION DES EMAILS
+    // RÉCUPÉRATION DES EMAILS - CORRIGÉE
     // ================================================
     async fetchEmails() {
         console.log('[EmailScanner] 📨 Récupération des emails...');
@@ -234,6 +277,37 @@ class EmailScanner {
     }
 
     // ================================================
+    // CALCUL DES STATISTIQUES
+    // ================================================
+    calculateStats(emails, taskPreselectedCategories = []) {
+        const stats = {
+            total: emails.length,
+            categorized: 0,
+            preselectedForTasks: 0,
+            taskSuggestions: 0,
+            byCategory: {}
+        };
+
+        emails.forEach(email => {
+            if (email.category && email.category !== 'other') {
+                stats.categorized++;
+                stats.byCategory[email.category] = (stats.byCategory[email.category] || 0) + 1;
+            }
+
+            if (email.isPreselectedForTasks || taskPreselectedCategories.includes(email.category)) {
+                stats.preselectedForTasks++;
+            }
+
+            // Compter les suggestions de tâches (emails importants)
+            if (email.importance === 'high' || email.category === 'tasks' || email.category === 'reminders') {
+                stats.taskSuggestions++;
+            }
+        });
+
+        return stats;
+    }
+
+    // ================================================
     // RECATÉGORISATION
     // ================================================
     async recategorizeEmails() {
@@ -321,7 +395,7 @@ class EmailScanner {
                 emails: this.emails,
                 lastScanTimestamp: this.lastScanTimestamp,
                 scanOptions: this.scanOptions,
-                version: '3.0'
+                version: '3.1'
             };
             
             localStorage.setItem('scanResults', JSON.stringify(dataToStore));
@@ -336,7 +410,7 @@ class EmailScanner {
             const stored = localStorage.getItem('scanResults');
             if (stored) {
                 const data = JSON.parse(stored);
-                if (data.version === '3.0' && Array.isArray(data.emails)) {
+                if (data.version === '3.1' && Array.isArray(data.emails)) {
                     this.emails = data.emails;
                     this.lastScanTimestamp = data.lastScanTimestamp;
                     this.scanOptions = { ...this.scanOptions, ...data.scanOptions };
@@ -770,4 +844,4 @@ class EmailScanner {
 console.log('[EmailScanner] 🚀 Création instance globale...');
 window.emailScanner = new EmailScanner();
 
-console.log('✅ EmailScanner v3.0 loaded - Module de scan fonctionnel!');
+console.log('✅ EmailScanner v3.1 loaded - Module de scan fonctionnel avec correction fetchEmails!');
