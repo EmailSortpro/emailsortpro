@@ -1,5 +1,5 @@
-// PageManager.js - Version 17.0 - AFFICHAGE NEWSLETTER AMÉLIORÉ 🚀
-console.log('[PageManager] 🚀 Loading PageManager.js v17.0 - NEWSLETTER DISPLAY ENHANCED...');
+// PageManager.js - Version 16.0 - INTERFACE AMÉLIORÉE + FIX DEBOUNCE 🚀
+console.log('[PageManager] 🚀 Loading PageManager.js v16.0 - IMPROVED UI + DEBOUNCE FIX...');
 
 class PageManager {
     constructor() {
@@ -33,13 +33,6 @@ class PageManager {
         this.currentModal = null;
         this.editingEmailId = null;
         
-        // Newsletter tracking
-        this.newsletterStats = {
-            total: 0,
-            displayed: 0,
-            lastUpdate: null
-        };
-        
         // Configuration des pages
         this.pages = {
             scanner: (container) => this.renderScanner(container),
@@ -54,9 +47,12 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 17.0 - Affichage newsletter amélioré');
+        console.log('[PageManager] ✅ Version 16.0 - Interface améliorée + Fix');
         this.setupEventListeners();
         this.startPerformanceMonitoring();
+        
+        // Forcer la détection améliorée dans CategoryManager
+        this.enhanceCategoryDetection();
     }
 
     // ================================================
@@ -76,6 +72,43 @@ class PageManager {
             
             this.debounceTimers.set(key, timer);
         };
+    }
+
+    // ================================================
+    // AMÉLIORATION DE LA DÉTECTION
+    // ================================================
+    enhanceCategoryDetection() {
+        // S'assurer que CategoryManager utilise une détection complète
+        if (window.categoryManager) {
+            console.log('[PageManager] 🔍 Amélioration de la détection des catégories...');
+            
+            // Ajouter des mots-clés newsletter plus complets
+            const newsletterKeywords = window.categoryManager.getCategoryKeywords('marketing_news');
+            if (newsletterKeywords) {
+                // Enrichir les mots-clés absolus pour newsletter
+                const additionalAbsolute = [
+                    'unsubscribe', 'se désabonner', 'se désinscrire', 'désinscription',
+                    'email preferences', 'préférences email', 'notification settings',
+                    'manage subscription', 'gérer abonnement', 'update preferences',
+                    'opt-out', 'opt out', 'mailing list', 'liste de diffusion',
+                    'powered by', 'sent by', 'envoyé par', 'this email was sent'
+                ];
+                
+                // Enrichir les mots-clés forts
+                const additionalStrong = [
+                    'newsletter', 'bulletin', 'infolettre', 'weekly digest', 
+                    'monthly update', 'daily brief', 'subscription',
+                    'if you no longer', 'view in browser', 'voir dans le navigateur',
+                    'privacy policy', 'terms of service'
+                ];
+                
+                // Ajouter sans doublons
+                newsletterKeywords.absolute = [...new Set([...newsletterKeywords.absolute, ...additionalAbsolute])];
+                newsletterKeywords.strong = [...new Set([...newsletterKeywords.strong, ...additionalStrong])];
+                
+                window.categoryManager.updateCategoryKeywords('marketing_news', newsletterKeywords);
+            }
+        }
     }
 
     // ================================================
@@ -101,11 +134,6 @@ class PageManager {
 
         window.addEventListener('emailsRecategorized', (event) => {
             console.log('[PageManager] 🔄 Emails recatégorisés');
-            // Mettre à jour les stats newsletter
-            if (event.detail?.newsletterCount !== undefined) {
-                this.newsletterStats.total = event.detail.newsletterCount;
-                this.newsletterStats.lastUpdate = Date.now();
-            }
             if (this.currentPage === 'emails') {
                 this.debounce('refreshEmails', () => this.refreshEmailsView(), 500)();
             }
@@ -247,7 +275,7 @@ class PageManager {
     }
 
     // ================================================
-    // RENDU DE LA PAGE EMAILS - STYLE MODERNE AVEC NEWSLETTER
+    // RENDU DE LA PAGE EMAILS - STYLE MODERNE
     // ================================================
     async renderEmails(container) {
         console.log('[PageManager] 📧 Rendu de la page emails moderne...');
@@ -268,12 +296,6 @@ class PageManager {
             
             console.log(`[PageManager] 📊 ${emails.length} emails trouvés`);
             
-            // Compter les newsletters
-            const newsletterCount = emails.filter(email => email.category === 'marketing_news' || email.isNewsletter).length;
-            this.newsletterStats.total = newsletterCount;
-            this.newsletterStats.lastUpdate = Date.now();
-            console.log(`[PageManager] 📰 ${newsletterCount} newsletters détectées`);
-            
             // Si aucun email, afficher l'état vide
             if (emails.length === 0) {
                 container.innerHTML = this.renderEmptyEmailsState();
@@ -290,7 +312,6 @@ class PageManager {
                     ${this.renderExplanationModern()}
                     ${this.renderControlsBarModern(selectedCount, emails.length)}
                     ${this.renderCategoryFiltersModern(categoryCounts, emails.length)}
-                    ${this.renderNewsletterBanner()}
                     <div class="emails-container-modern">
                         ${this.renderEmailsListModern(emails)}
                     </div>
@@ -346,30 +367,6 @@ class PageManager {
                 <button class="explanation-close" onclick="window.pageManager.hideExplanationMessage()">
                     <i class="fas fa-times"></i>
                 </button>
-            </div>
-        `;
-    }
-
-    // NOUVEAU: Bannière d'information newsletter
-    renderNewsletterBanner() {
-        if (this.newsletterStats.total === 0) return '';
-        
-        return `
-            <div class="newsletter-banner-modern">
-                <div class="newsletter-info">
-                    <i class="fas fa-newspaper"></i>
-                    <span><strong>${this.newsletterStats.total}</strong> newsletters détectées</span>
-                </div>
-                <div class="newsletter-actions">
-                    <button class="btn-modern btn-sm btn-secondary" onclick="window.pageManager.filterByCategory('marketing_news')">
-                        <i class="fas fa-filter"></i>
-                        Voir les newsletters
-                    </button>
-                    <button class="btn-modern btn-sm btn-ghost" onclick="window.pageManager.selectAllNewsletters()">
-                        <i class="fas fa-check-square"></i>
-                        Sélectionner toutes
-                    </button>
-                </div>
             </div>
         `;
     }
@@ -508,10 +505,9 @@ class PageManager {
         // Ajouter les catégories
         for (const cat of sortedCategories) {
             const isPreselected = taskPreselectedCategories.includes(cat.id);
-            const isNewsletter = cat.id === 'marketing_news';
             
             filtersHtml += `
-                <button class="category-pill-modern ${this.currentCategory === cat.id ? 'active' : ''} ${isPreselected ? 'preselected' : ''} ${isNewsletter ? 'newsletter' : ''}" 
+                <button class="category-pill-modern ${this.currentCategory === cat.id ? 'active' : ''} ${isPreselected ? 'preselected' : ''}" 
                         onclick="window.pageManager.filterByCategory('${cat.id}')"
                         data-category="${cat.id}"
                         style="--cat-color: ${cat.color}"
@@ -522,7 +518,6 @@ class PageManager {
                         <span class="pill-count">(${cat.count})</span>
                     </div>
                     ${isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
-                    ${isNewsletter && cat.count > 10 ? '<span class="newsletter-badge">📰</span>' : ''}
                 </button>
             `;
         }
@@ -554,9 +549,6 @@ class PageManager {
             return this.renderEmptySearchState();
         }
         
-        // Mettre à jour le compteur de newsletters affichées
-        this.newsletterStats.displayed = filteredEmails.filter(e => e.category === 'marketing_news' || e.isNewsletter).length;
-        
         switch (this.currentViewMode) {
             case 'flat':
                 return this.renderFlatViewModern(filteredEmails);
@@ -584,8 +576,6 @@ class PageManager {
         
         for (const [groupKey, groupEmails] of sortedGroups) {
             const isExpanded = false; // Par défaut fermé
-            const newsletterCount = groupEmails.filter(e => e.category === 'marketing_news' || e.isNewsletter).length;
-            
             html += `
                 <div class="email-group-modern ${isExpanded ? 'expanded' : ''}" data-group-key="${groupKey}">
                     <div class="group-header-modern" onclick="window.pageManager.toggleGroup('${groupKey}')">
@@ -593,7 +583,6 @@ class PageManager {
                         <span class="group-icon">${groupBy === 'domain' ? '🌐' : '👤'}</span>
                         <span class="group-name">${groupKey}</span>
                         <span class="group-count">${groupEmails.length}</span>
-                        ${newsletterCount > 0 ? `<span class="group-newsletter-count" title="${newsletterCount} newsletter(s)">📰 ${newsletterCount}</span>` : ''}
                     </div>
                     <div class="group-content-modern" style="display: ${isExpanded ? 'block' : 'none'}">
                         ${groupEmails.map(email => this.renderEmailCardModern(email)).join('')}
@@ -610,7 +599,6 @@ class PageManager {
         const isSelected = this.selectedEmails.has(email.id);
         const hasTask = this.createdTasks.has(email.id);
         const isPreselected = email.isPreselectedForTasks === true;
-        const isNewsletter = email.category === 'marketing_news' || email.isNewsletter === true;
         const senderName = email.from?.emailAddress?.name || email.from?.emailAddress?.address || 'Inconnu';
         const hasAIAnalysis = this.aiAnalysisResults.has(email.id);
         
@@ -618,7 +606,7 @@ class PageManager {
         const priorityColor = this.getEmailPriorityColor(email);
         
         return `
-            <div class="email-card-modern ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselected ? 'preselected' : ''} ${isNewsletter ? 'newsletter' : ''}" 
+            <div class="email-card-modern ${isSelected ? 'selected' : ''} ${hasTask ? 'has-task' : ''} ${isPreselected ? 'preselected' : ''}" 
                  data-email-id="${email.id}"
                  onclick="window.pageManager.handleEmailClick(event, '${email.id}')">
                 
@@ -637,7 +625,6 @@ class PageManager {
                             <span class="email-date">${this.formatDate(email.receivedDateTime)}</span>
                             ${email.hasAttachments ? '<i class="fas fa-paperclip attachment-icon" title="Pièce jointe"></i>' : ''}
                             ${hasAIAnalysis ? '<i class="fas fa-robot ai-icon" title="Analysé par IA"></i>' : ''}
-                            ${isNewsletter ? '<i class="fas fa-newspaper newsletter-icon" title="Newsletter"></i>' : ''}
                         </div>
                     </div>
                     
@@ -645,13 +632,6 @@ class PageManager {
                         <span class="sender-name">${this.escapeHtml(senderName)}</span>
                         ${this.renderCategoryBadgeModern(email)}
                     </div>
-                    
-                    ${isNewsletter && email.matchedPatterns?.length > 0 ? `
-                        <div class="newsletter-keywords-preview">
-                            <i class="fas fa-tag"></i>
-                            <span>${email.matchedPatterns.slice(0, 3).map(p => p.keyword).join(', ')}${email.matchedPatterns.length > 3 ? '...' : ''}</span>
-                        </div>
-                    ` : ''}
                 </div>
                 
                 <div class="email-actions-modern">
@@ -687,14 +667,12 @@ class PageManager {
         if (!category) return '';
         
         const isPreselected = email.isPreselectedForTasks === true;
-        const isNewsletter = email.category === 'marketing_news';
         
         return `
-            <span class="category-badge-modern ${isPreselected ? 'preselected' : ''} ${isNewsletter ? 'newsletter' : ''}" 
+            <span class="category-badge-modern ${isPreselected ? 'preselected' : ''}" 
                   style="background: ${category.color}20; color: ${category.color}">
                 ${category.icon} ${category.name}
                 ${isPreselected ? ' ⭐' : ''}
-                ${isNewsletter && email.categoryScore >= 100 ? ' ✓' : ''}
             </span>
         `;
     }
@@ -747,21 +725,6 @@ class PageManager {
         this.refreshEmailsView();
     }
 
-    selectAllNewsletters() {
-        const emails = this.getFilteredEmails(window.emailScanner?.getAllEmails() || []);
-        const newsletters = emails.filter(e => e.category === 'marketing_news' || e.isNewsletter);
-        
-        newsletters.forEach(email => {
-            this.selectedEmails.add(email.id);
-        });
-        
-        this.refreshEmailsView();
-        
-        if (window.uiManager) {
-            window.uiManager.showToast(`${newsletters.length} newsletters sélectionnées`, 'success');
-        }
-    }
-
     // ================================================
     // MODALES POUR VISUALISATION ET ÉDITION
     // ================================================
@@ -771,7 +734,6 @@ class PageManager {
         
         const analysis = this.aiAnalysisResults.get(emailId);
         const hasTask = this.createdTasks.has(emailId);
-        const isNewsletter = email.category === 'marketing_news' || email.isNewsletter;
         
         const modalHtml = `
             <div class="modal-backdrop-modern" onclick="if(event.target === this) window.pageManager.closeModal()">
@@ -805,32 +767,6 @@ class PageManager {
                                     <span class="detail-label">Catégorie :</span>
                                     <span class="detail-value">${this.renderCategoryBadgeModern(email)}</span>
                                 </div>
-                            ` : ''}
-                            ${isNewsletter ? `
-                                <div class="email-detail-row">
-                                    <span class="detail-label">Détection :</span>
-                                    <span class="detail-value">
-                                        <span class="newsletter-detection-info">
-                                            <i class="fas fa-newspaper"></i>
-                                            Newsletter détectée (score: ${email.categoryScore || 0}, confiance: ${Math.round((email.categoryConfidence || 0) * 100)}%)
-                                        </span>
-                                    </span>
-                                </div>
-                                ${email.matchedPatterns?.length > 0 ? `
-                                    <div class="email-detail-row">
-                                        <span class="detail-label">Mots-clés :</span>
-                                        <span class="detail-value">
-                                            <div class="matched-keywords">
-                                                ${email.matchedPatterns.slice(0, 5).map(pattern => `
-                                                    <span class="keyword-tag ${pattern.type}">
-                                                        ${pattern.keyword} (${pattern.type})
-                                                    </span>
-                                                `).join('')}
-                                                ${email.matchedPatterns.length > 5 ? `<span class="keyword-more">+${email.matchedPatterns.length - 5} autres</span>` : ''}
-                                            </div>
-                                        </span>
-                                    </div>
-                                ` : ''}
                             ` : ''}
                         </div>
                         
@@ -888,8 +824,8 @@ class PageManager {
         document.body.style.overflow = 'hidden';
         this.currentModal = 'email';
         
-        // Si pas d'analyse et pas newsletter, en lancer une
-        if (!analysis && !isNewsletter && window.aiTaskAnalyzer) {
+        // Si pas d'analyse, en lancer une
+        if (!analysis && window.aiTaskAnalyzer) {
             this.analyzeEmailForModal(emailId);
         }
     }
@@ -901,8 +837,8 @@ class PageManager {
         const analysis = this.aiAnalysisResults.get(emailId);
         const senderName = email.from?.emailAddress?.name || 'Inconnu';
         
-        // Si pas d'analyse et pas newsletter, en créer une d'abord
-        if (!analysis && (email.category !== 'marketing_news' && !email.isNewsletter) && window.aiTaskAnalyzer) {
+        // Si pas d'analyse, en créer une d'abord
+        if (!analysis && window.aiTaskAnalyzer) {
             window.uiManager?.showLoading('Analyse de l\'email...');
             window.aiTaskAnalyzer.analyzeEmailForTasks(email).then(result => {
                 window.uiManager?.hideLoading();
@@ -926,7 +862,6 @@ class PageManager {
         const suggestedDescription = analysis?.mainTask?.description || analysis?.summary || '';
         const suggestedPriority = analysis?.mainTask?.priority || 'medium';
         const suggestedDueDate = analysis?.mainTask?.dueDate || '';
-        const isNewsletter = email.category === 'marketing_news' || email.isNewsletter;
         
         const modalHtml = `
             <div class="modal-backdrop-modern" onclick="if(event.target === this) window.pageManager.closeModal()">
@@ -943,13 +878,6 @@ class PageManager {
                             <div class="ai-badge-modern">
                                 <i class="fas fa-robot"></i>
                                 <span>Suggestion basée sur l'analyse IA</span>
-                            </div>
-                        ` : ''}
-                        
-                        ${isNewsletter ? `
-                            <div class="newsletter-warning-modern">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                <span>Cet email est une newsletter. Voulez-vous vraiment créer une tâche ?</span>
                             </div>
                         ` : ''}
                         
@@ -1002,12 +930,6 @@ class PageManager {
                                         <i class="fas fa-envelope"></i>
                                         <span>${this.escapeHtml(email.subject || 'Sans sujet')}</span>
                                     </div>
-                                    ${email.category ? `
-                                        <div class="category-info">
-                                            <i class="fas fa-tag"></i>
-                                            ${this.renderCategoryBadgeModern(email)}
-                                        </div>
-                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -1381,7 +1303,7 @@ class PageManager {
     closeAllDropdowns() {
         document.querySelectorAll('.dropdown-menu-modern.show').forEach(menu => {
             menu.classList.remove('show');
-        }
+        });
     }
 
     // ================================================
@@ -1423,10 +1345,10 @@ class PageManager {
     }
 
     async createTaskFromEmailData(email) {
-        // Analyser l'email si nécessaire et si ce n'est pas une newsletter
+        // Analyser l'email si nécessaire
         let analysis = this.aiAnalysisResults.get(email.id);
         
-        if (!analysis && window.aiTaskAnalyzer && email.category !== 'marketing_news' && !email.isNewsletter) {
+        if (!analysis && window.aiTaskAnalyzer) {
             try {
                 analysis = await window.aiTaskAnalyzer.analyzeEmailForTasks(email);
                 this.aiAnalysisResults.set(email.id, analysis);
@@ -1540,7 +1462,6 @@ class PageManager {
         // Mettre à jour les contrôles
         this.updateControlsBar();
         this.updateCategoryFilters(emails);
-        this.updateNewsletterBanner();
     }
 
     updateControlsBar() {
@@ -1572,22 +1493,6 @@ class PageManager {
         
         const categoryCounts = this.calculateCategoryCounts(emails);
         filtersContainer.outerHTML = this.renderCategoryFiltersModern(categoryCounts, emails.length);
-    }
-
-    updateNewsletterBanner() {
-        const existingBanner = document.querySelector('.newsletter-banner-modern');
-        const newBanner = this.renderNewsletterBanner();
-        
-        if (existingBanner && newBanner) {
-            existingBanner.outerHTML = newBanner;
-        } else if (!existingBanner && newBanner) {
-            const filters = document.querySelector('.category-filters-modern');
-            if (filters) {
-                filters.insertAdjacentHTML('afterend', newBanner);
-            }
-        } else if (existingBanner && !newBanner) {
-            existingBanner.remove();
-        }
     }
 
     // ================================================
@@ -1680,9 +1585,9 @@ class PageManager {
     }
 
     scheduleAutoAnalysis(emails) {
-        // Analyser les premiers emails pré-sélectionnés (sauf newsletters)
+        // Analyser les premiers emails pré-sélectionnés
         const preselectedEmails = emails
-            .filter(email => email.isPreselectedForTasks && email.category !== 'marketing_news' && !email.isNewsletter)
+            .filter(email => email.isPreselectedForTasks)
             .slice(0, 3);
         
         if (preselectedEmails.length > 0 && window.aiTaskAnalyzer) {
@@ -1746,7 +1651,7 @@ class PageManager {
     }
 
     // ================================================
-    // STYLES MODERNES AMÉLIORÉS AVEC NEWSLETTER
+    // STYLES MODERNES AMÉLIORÉS
     // ================================================
     addModernEmailsStyles() {
         if (document.getElementById('pageManagerModernStyles')) return;
@@ -1754,7 +1659,7 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'pageManagerModernStyles';
         styles.textContent = `
-            /* PageManager Modern Styles v17.0 - Newsletter Enhanced */
+            /* PageManager Modern Styles v16.0 - Interface améliorée */
             :root {
                 --pm-primary: #3b82f6;
                 --pm-primary-dark: #2563eb;
@@ -1865,37 +1770,6 @@ class PageManager {
                 color: var(--pm-gray-700);
             }
             
-            /* Newsletter banner */
-            .newsletter-banner-modern {
-                background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
-                border: 1px solid rgba(139, 92, 246, 0.2);
-                border-radius: 12px;
-                padding: 16px 20px;
-                margin-bottom: 20px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                box-shadow: var(--pm-shadow-sm);
-            }
-            
-            .newsletter-info {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                font-size: var(--pm-font-size-base);
-                color: var(--pm-gray-700);
-            }
-            
-            .newsletter-info i {
-                color: var(--pm-secondary);
-                font-size: 20px;
-            }
-            
-            .newsletter-actions {
-                display: flex;
-                gap: 12px;
-            }
-            
             /* Controls bar moderne */
             .controls-bar-modern {
                 background: white;
@@ -1958,7 +1832,7 @@ class PageManager {
                 color: var(--pm-gray-600);
             }
             
-            /* Actions line moderne */
+            /* Actions line moderne - Une seule ligne */
             .actions-line-modern {
                 display: flex;
                 align-items: center;
@@ -2027,11 +1901,6 @@ class PageManager {
                 gap: 8px;
                 position: relative;
                 white-space: nowrap;
-            }
-            
-            .btn-modern.btn-sm {
-                padding: 8px 16px;
-                font-size: 14px;
             }
             
             .btn-modern:disabled {
@@ -2160,7 +2029,7 @@ class PageManager {
                 margin: 8px 0;
             }
             
-            /* Filtres de catégories modernes */
+            /* Filtres de catégories modernes - 6 par ligne, collés, légèrement arrondis */
             .category-filters-modern {
                 display: flex;
                 flex-wrap: wrap;
@@ -2216,10 +2085,6 @@ class PageManager {
                 background: linear-gradient(135deg, white 0%, #faf5ff 100%);
             }
             
-            .category-pill-modern.newsletter {
-                background: linear-gradient(135deg, white 0%, #f3f4f6 100%);
-            }
-            
             .pill-content {
                 display: flex;
                 align-items: center;
@@ -2257,6 +2122,51 @@ class PageManager {
                 align-items: center;
             }
             
+            /* Tooltip pour les noms longs */
+            .category-pill-modern:hover .pill-name {
+                position: relative;
+            }
+            
+            .category-pill-modern[title]:hover::after {
+                content: attr(title);
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--pm-gray-900);
+                color: white;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                white-space: nowrap;
+                z-index: 10;
+                margin-bottom: 4px;
+                box-shadow: var(--pm-shadow-md);
+            }
+            
+            .category-pill-modern[title]:hover::before {
+                content: '';
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 6px solid transparent;
+                border-top-color: var(--pm-gray-900);
+                margin-bottom: -8px;
+                z-index: 10;
+            }
+            
+            .pill-count {
+                font-size: 11px;
+                font-weight: 600;
+                opacity: 0.7;
+                flex-shrink: 0;
+            }
+            
+            .category-pill-modern.active .pill-count {
+                opacity: 0.9;
+            }
+            
             .preselected-star {
                 position: absolute;
                 top: -4px;
@@ -2272,23 +2182,6 @@ class PageManager {
                 font-size: 8px;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
                 animation: pulse 2s ease-in-out infinite;
-                z-index: 3;
-            }
-            
-            .newsletter-badge {
-                position: absolute;
-                top: -4px;
-                left: -4px;
-                background: var(--pm-gray-600);
-                color: white;
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 10px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
                 z-index: 3;
             }
             
@@ -2311,7 +2204,7 @@ class PageManager {
                 background: white;
             }
             
-            /* Carte d'email moderne */
+            /* Carte d'email moderne - Plus grande et épurée */
             .email-card-modern {
                 padding: 16px 24px;
                 border-bottom: 1px solid var(--pm-gray-100);
@@ -2342,10 +2235,6 @@ class PageManager {
                 background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
                 border-left: 4px solid var(--pm-secondary);
                 padding-left: 20px;
-            }
-            
-            .email-card-modern.newsletter {
-                background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
             }
             
             .email-checkbox-modern {
@@ -2408,11 +2297,6 @@ class PageManager {
                 font-size: 16px;
             }
             
-            .newsletter-icon {
-                color: var(--pm-gray-500);
-                font-size: 16px;
-            }
-            
             .email-from-modern {
                 display: flex;
                 align-items: center;
@@ -2426,17 +2310,13 @@ class PageManager {
                 font-weight: 500;
             }
             
-            .newsletter-keywords-preview {
-                font-size: 13px;
+            .email-preview-modern {
+                font-size: 15px;
                 color: var(--pm-gray-500);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-top: 6px;
-            }
-            
-            .newsletter-keywords-preview i {
-                font-size: 12px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                line-height: 1.6;
             }
             
             .category-badge-modern {
@@ -2458,11 +2338,6 @@ class PageManager {
             .category-badge-modern.preselected {
                 font-weight: 700;
                 box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
-            }
-            
-            .category-badge-modern.newsletter {
-                background: var(--pm-gray-100);
-                color: var(--pm-gray-700);
             }
             
             .email-actions-modern {
@@ -2563,18 +2438,6 @@ class PageManager {
                 font-size: 14px;
                 color: var(--pm-gray-600);
                 border: 1px solid var(--pm-gray-200);
-            }
-            
-            .group-newsletter-count {
-                background: var(--pm-gray-600);
-                color: white;
-                padding: 4px 10px;
-                border-radius: 16px;
-                font-size: 12px;
-                font-weight: 600;
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
             }
             
             .group-content-modern {
@@ -2702,50 +2565,6 @@ class PageManager {
                 font-size: var(--pm-font-size-lg);
             }
             
-            .newsletter-detection-info {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 6px 12px;
-                background: var(--pm-gray-100);
-                border-radius: 8px;
-                font-size: 14px;
-            }
-            
-            .matched-keywords {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            
-            .keyword-tag {
-                padding: 4px 10px;
-                border-radius: 6px;
-                font-size: 13px;
-                font-weight: 600;
-            }
-            
-            .keyword-tag.absolute {
-                background: var(--pm-danger);
-                color: white;
-            }
-            
-            .keyword-tag.strong {
-                background: var(--pm-warning);
-                color: white;
-            }
-            
-            .keyword-tag.weak {
-                background: var(--pm-gray-300);
-                color: var(--pm-gray-800);
-            }
-            
-            .keyword-more {
-                padding: 4px 10px;
-                color: var(--pm-gray-600);
-                font-size: 13px;
-            }
-            
             .ai-analysis-section {
                 background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
                 border: 1px solid rgba(139, 92, 246, 0.2);
@@ -2867,26 +2686,6 @@ class PageManager {
                 margin-bottom: 24px;
             }
             
-            /* Newsletter warning */
-            .newsletter-warning-modern {
-                background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-                border: 1px solid rgba(245, 158, 11, 0.3);
-                color: var(--pm-gray-800);
-                padding: 12px 18px;
-                border-radius: 10px;
-                font-size: 14px;
-                font-weight: 500;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin-bottom: 24px;
-            }
-            
-            .newsletter-warning-modern i {
-                color: var(--pm-warning);
-                font-size: 18px;
-            }
-            
             /* Formulaire de tâche moderne */
             .task-form-modern {
                 display: flex;
@@ -2957,8 +2756,7 @@ class PageManager {
             }
             
             .sender-info,
-            .subject-info,
-            .category-info {
+            .subject-info {
                 display: flex;
                 align-items: center;
                 gap: 10px;
@@ -2967,8 +2765,7 @@ class PageManager {
             }
             
             .sender-info i,
-            .subject-info i,
-            .category-info i {
+            .subject-info i {
                 color: var(--pm-gray-400);
                 width: 18px;
             }
@@ -3054,20 +2851,6 @@ class PageManager {
                 
                 .email-subject-modern {
                     font-size: 16px;
-                }
-                
-                .newsletter-banner-modern {
-                    flex-direction: column;
-                    gap: 12px;
-                }
-                
-                .newsletter-actions {
-                    width: 100%;
-                    justify-content: stretch;
-                }
-                
-                .newsletter-actions .btn-modern {
-                    flex: 1;
                 }
             }
             
@@ -3162,7 +2945,7 @@ if (window.pageManager) {
     }
 }
 
-console.log('[PageManager] 🚀 Création nouvelle instance v17.0...');
+console.log('[PageManager] 🚀 Création nouvelle instance v16.0...');
 window.pageManager = new PageManager();
 
 // Exposer les méthodes globalement pour les onclick
@@ -3172,4 +2955,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v17.0 loaded - Affichage newsletter amélioré! 📰');
+console.log('✅ PageManager v16.0 loaded - Interface améliorée + Fix debounce!');
