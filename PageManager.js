@@ -1,5 +1,18 @@
-// PageManager.js - Version 16.0 - INTERFACE AMÉLIORÉE + FIX DEBOUNCE 🚀
-console.log('[PageManager] 🚀 Loading PageManager.js v16.0 - IMPROVED UI + DEBOUNCE FIX...');
+// PageManager.js - Version 17.0 - CORRECTION COMPLÈTE SCAN ET AFFICHAGE 🚀
+console.log('[PageManager] 🚀 Loading PageManager.js v17.0 - FULL SCAN FIX...');
+
+// Vérifier si PageManager existe déjà et le nettoyer
+if (window.pageManager) {
+    console.log('[PageManager] 🔄 Nettoyage instance existante...');
+    try {
+        if (typeof window.pageManager.destroy === 'function') {
+            window.pageManager.destroy();
+        }
+        delete window.pageManager;
+    } catch (error) {
+        console.warn('[PageManager] Erreur nettoyage:', error);
+    }
+}
 
 class PageManager {
     constructor() {
@@ -47,7 +60,7 @@ class PageManager {
     }
 
     init() {
-        console.log('[PageManager] ✅ Version 16.0 - Interface améliorée + Fix');
+        console.log('[PageManager] ✅ Version 17.0 - Correction complète scan et affichage');
         this.setupEventListeners();
         this.startPerformanceMonitoring();
         
@@ -59,14 +72,14 @@ class PageManager {
     // MÉTHODE DEBOUNCE CORRIGÉE
     // ================================================
     debounce(key, func, delay) {
-        return () => {
+        return (...args) => {
             const existingTimer = this.debounceTimers.get(key);
             if (existingTimer) {
                 clearTimeout(existingTimer);
             }
             
             const timer = setTimeout(() => {
-                func();
+                func(...args);
                 this.debounceTimers.delete(key);
             }, delay);
             
@@ -112,7 +125,7 @@ class PageManager {
     }
 
     // ================================================
-    // GESTION DES ÉVÉNEMENTS
+    // GESTION DES ÉVÉNEMENTS - CORRECTION SCAN
     // ================================================
     setupEventListeners() {
         // Écouter les changements de paramètres
@@ -124,18 +137,26 @@ class PageManager {
             this.handleSettingsChanged(event.detail);
         });
 
-        // Écouter les changements d'emails
+        // IMPORTANT: Écouter la fin du scan ET les mises à jour d'emails
         window.addEventListener('scanCompleted', (event) => {
-            console.log('[PageManager] 📨 Scan terminé, mise à jour si nécessaire');
+            console.log('[PageManager] 📨 Scan terminé, emails reçus:', event.detail?.emails?.length || 0);
             if (this.currentPage === 'emails') {
-                this.debounce('refreshEmails', () => this.refreshEmailsView(), 500)();
+                // Rafraîchir immédiatement sans debounce pour le scan initial
+                this.refreshEmailsView();
+            }
+        });
+
+        window.addEventListener('emailsUpdated', (event) => {
+            console.log('[PageManager] 📨 Emails mis à jour:', event.detail?.count || 0);
+            if (this.currentPage === 'emails') {
+                this.refreshEmailsView();
             }
         });
 
         window.addEventListener('emailsRecategorized', (event) => {
             console.log('[PageManager] 🔄 Emails recatégorisés');
             if (this.currentPage === 'emails') {
-                this.debounce('refreshEmails', () => this.refreshEmailsView(), 500)();
+                this.debounce('refreshEmails', () => this.refreshEmailsView(), 300)();
             }
         });
 
@@ -246,7 +267,7 @@ class PageManager {
 
     cleanupEmailsPage() {
         // Nettoyage spécifique à la page emails
-        const container = document.querySelector('.tasks-container-modern');
+        const container = document.querySelector('.emails-container-modern');
         if (container) {
             container.innerHTML = '';
         }
@@ -275,28 +296,55 @@ class PageManager {
     }
 
     // ================================================
-    // RENDU DE LA PAGE EMAILS - STYLE MODERNE
+    // RENDU DE LA PAGE EMAILS - CORRECTION RÉCUPÉRATION
     // ================================================
     async renderEmails(container) {
         console.log('[PageManager] 📧 Rendu de la page emails moderne...');
         const startTime = performance.now();
         
         try {
-            // Récupérer les emails de manière sécurisée
+            // CORRECTION: Récupérer les emails de TOUTES les sources possibles
             let emails = [];
+            
+            // 1. Essayer depuis EmailScanner
             if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
                 emails = window.emailScanner.getAllEmails();
+                console.log('[PageManager] 📊 Emails depuis EmailScanner:', emails?.length || 0);
+            }
+            
+            // 2. Si pas d'emails, essayer depuis le cache/storage
+            if ((!emails || emails.length === 0) && window.emailScanner) {
+                if (window.emailScanner.emails && Array.isArray(window.emailScanner.emails)) {
+                    emails = window.emailScanner.emails;
+                    console.log('[PageManager] 📊 Emails depuis cache EmailScanner:', emails.length);
+                }
+            }
+            
+            // 3. Essayer depuis localStorage si disponible
+            if ((!emails || emails.length === 0)) {
+                try {
+                    const stored = localStorage.getItem('scanResults');
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        if (parsed.emails && Array.isArray(parsed.emails)) {
+                            emails = parsed.emails;
+                            console.log('[PageManager] 📊 Emails depuis localStorage:', emails.length);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('[PageManager] Erreur lecture localStorage:', e);
+                }
             }
             
             // Vérifier que c'est bien un tableau
             if (!Array.isArray(emails)) {
-                console.warn('[PageManager] ⚠️ getAllEmails n\'a pas retourné un tableau:', emails);
+                console.warn('[PageManager] ⚠️ emails n\'est pas un tableau:', emails);
                 emails = [];
             }
             
-            console.log(`[PageManager] 📊 ${emails.length} emails trouvés`);
+            console.log(`[PageManager] 📊 Total ${emails.length} emails trouvés`);
             
-            // Si aucun email, afficher l'état vide
+            // Si aucun email, afficher l'état vide avec bouton de scan
             if (emails.length === 0) {
                 container.innerHTML = this.renderEmptyEmailsState();
                 return;
@@ -710,7 +758,7 @@ class PageManager {
     // NOUVELLES MÉTHODES
     // ================================================
     toggleSelectAll() {
-        const emails = this.getFilteredEmails(window.emailScanner?.getAllEmails() || []);
+        const emails = this.getFilteredEmails(this.getAllEmailsSafe());
         
         if (this.selectedEmails.size === emails.length) {
             // Tout désélectionner
@@ -1071,8 +1119,41 @@ class PageManager {
     }
 
     // ================================================
-    // MÉTHODES UTILITAIRES
+    // MÉTHODES UTILITAIRES - CORRECTION RÉCUPÉRATION EMAILS
     // ================================================
+    
+    // Méthode sécurisée pour récupérer tous les emails
+    getAllEmailsSafe() {
+        let emails = [];
+        
+        // 1. Essayer depuis EmailScanner
+        if (window.emailScanner) {
+            if (typeof window.emailScanner.getAllEmails === 'function') {
+                emails = window.emailScanner.getAllEmails();
+            } else if (Array.isArray(window.emailScanner.emails)) {
+                emails = window.emailScanner.emails;
+            }
+        }
+        
+        // 2. Si pas d'emails, essayer depuis localStorage
+        if ((!emails || emails.length === 0)) {
+            try {
+                const stored = localStorage.getItem('scanResults');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed.emails && Array.isArray(parsed.emails)) {
+                        emails = parsed.emails;
+                    }
+                }
+            } catch (e) {
+                console.warn('[PageManager] Erreur lecture localStorage:', e);
+            }
+        }
+        
+        // S'assurer que c'est un tableau
+        return Array.isArray(emails) ? emails : [];
+    }
+
     calculateCategoryCounts(emails) {
         const counts = {};
         
@@ -1417,7 +1498,7 @@ class PageManager {
     }
 
     // ================================================
-    // RAFRAÎCHISSEMENT
+    // RAFRAÎCHISSEMENT - CORRECTION POUR LE SCAN
     // ================================================
     async refreshEmails() {
         window.uiManager?.showLoading('Actualisation...');
@@ -1441,20 +1522,18 @@ class PageManager {
     }
 
     refreshEmailsView() {
+        console.log('[PageManager] 🔄 Rafraîchissement de la vue emails...');
+        
         const container = document.querySelector('.emails-container-modern');
-        if (!container) return;
+        if (!container) {
+            console.log('[PageManager] Container emails non trouvé, rechargement complet...');
+            this.loadPage('emails');
+            return;
+        }
         
         // Récupérer les emails de manière sécurisée
-        let emails = [];
-        if (window.emailScanner && typeof window.emailScanner.getAllEmails === 'function') {
-            emails = window.emailScanner.getAllEmails();
-        }
-        
-        // Vérifier que c'est bien un tableau
-        if (!Array.isArray(emails)) {
-            console.warn('[PageManager] refreshEmailsView: emails n\'est pas un tableau');
-            emails = [];
-        }
+        const emails = this.getAllEmailsSafe();
+        console.log(`[PageManager] 📊 ${emails.length} emails à afficher`);
         
         // Mettre à jour le contenu
         container.innerHTML = this.renderEmailsListModern(emails);
@@ -1466,7 +1545,8 @@ class PageManager {
 
     updateControlsBar() {
         const selectedCount = this.selectedEmails.size;
-        const totalCount = window.emailScanner?.getAllEmails()?.length || 0;
+        const emails = this.getAllEmailsSafe();
+        const totalCount = emails.length;
         const controlsBar = document.querySelector('.controls-bar-modern');
         
         if (controlsBar) {
@@ -1572,10 +1652,15 @@ class PageManager {
     // MÉTHODES UTILITAIRES
     // ================================================
     getEmailById(emailId) {
+        // 1. Essayer depuis EmailScanner
         if (window.emailScanner && typeof window.emailScanner.getEmailById === 'function') {
-            return window.emailScanner.getEmailById(emailId);
+            const email = window.emailScanner.getEmailById(emailId);
+            if (email) return email;
         }
-        return null;
+        
+        // 2. Chercher dans tous les emails
+        const emails = this.getAllEmailsSafe();
+        return emails.find(e => e.id === emailId) || null;
     }
 
     hideExplanationMessage() {
@@ -1659,7 +1744,7 @@ class PageManager {
         const styles = document.createElement('style');
         styles.id = 'pageManagerModernStyles';
         styles.textContent = `
-            /* PageManager Modern Styles v16.0 - Interface améliorée */
+            /* PageManager Modern Styles v17.0 - Interface complète */
             :root {
                 --pm-primary: #3b82f6;
                 --pm-primary-dark: #2563eb;
@@ -2934,18 +3019,9 @@ class PageManager {
 }
 
 // ================================================
-// INITIALISATION
+// INITIALISATION UNIQUE
 // ================================================
-if (window.pageManager) {
-    console.log('[PageManager] 🔄 Nettoyage ancienne instance...');
-    try {
-        window.pageManager.destroy();
-    } catch (error) {
-        console.warn('[PageManager] Erreur lors du nettoyage:', error);
-    }
-}
-
-console.log('[PageManager] 🚀 Création nouvelle instance v16.0...');
+console.log('[PageManager] 🚀 Création nouvelle instance v17.0...');
 window.pageManager = new PageManager();
 
 // Exposer les méthodes globalement pour les onclick
@@ -2955,4 +3031,4 @@ Object.getOwnPropertyNames(PageManager.prototype).forEach(name => {
     }
 });
 
-console.log('✅ PageManager v16.0 loaded - Interface améliorée + Fix debounce!');
+console.log('✅ PageManager v17.0 loaded - Correction complète scan et affichage!');
