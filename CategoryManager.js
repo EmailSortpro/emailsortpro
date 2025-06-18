@@ -1,4 +1,4 @@
-// CategoryManager.js - Version 22.2 - DÉTECTION NEWSLETTER ULTRA-RENFORCÉE 🚀
+// CategoryManager.js - Version 23.0 - DÉTECTION NEWSLETTER ULTRA-RENFORCÉE 🚀
 
 class CategoryManager {
     constructor() {
@@ -38,11 +38,11 @@ class CategoryManager {
         this.setupEventListeners();
         this.startOptimizedSync();
         
-        console.log('[CategoryManager] ✅ Version 22.2 - DÉTECTION NEWSLETTER ULTRA-RENFORCÉE');
+        console.log('[CategoryManager] ✅ Version 23.0 - DÉTECTION NEWSLETTER ULTRA-RENFORCÉE');
     }
 
     // ================================================
-    // EXTRACTION DE CONTENU - MÉTHODE PRINCIPALE
+    // EXTRACTION DE CONTENU - MÉTHODE PRINCIPALE AMÉLIORÉE
     // ================================================
     extractCompleteContent(email) {
         const parts = [];
@@ -54,7 +54,7 @@ class CategoryManager {
         
         // Expéditeur avec pondération élevée
         if (email.from?.emailAddress?.address) {
-            parts.push(email.from.emailAddress.address.repeat(3)); // Augmenté de 2 à 3
+            parts.push(email.from.emailAddress.address.repeat(3));
         }
         
         // Nom de l'expéditeur si disponible
@@ -64,14 +64,19 @@ class CategoryManager {
         
         // Aperçu du corps
         if (email.bodyPreview) {
-            parts.push(email.bodyPreview.repeat(2)); // Ajout répétition
+            parts.push(email.bodyPreview.repeat(2));
         }
         
-        // Corps de l'email si disponible
+        // Corps de l'email si disponible - EXTRACTION COMPLÈTE
         if (email.body?.content) {
-            // Extraire le texte du HTML
-            const textContent = email.body.content.replace(/<[^>]*>/g, ' ').substring(0, 500);
-            parts.push(textContent);
+            // Extraire TOUT le texte du HTML, pas seulement 500 caractères
+            const fullTextContent = this.extractTextFromHtml(email.body.content);
+            parts.push(fullTextContent);
+        }
+        
+        // Ajouter aussi le body non formaté s'il existe
+        if (email.body?.text) {
+            parts.push(email.body.text);
         }
         
         // Destinataires
@@ -85,19 +90,78 @@ class CategoryManager {
         parts.push(recipients.join(' '));
         
         const rawText = parts.join(' ');
-        const normalizedText = this.normalizeTextFast(rawText);
+        
+        // AMÉLIORATION: Garder deux versions du texte
+        const normalizedText = this.normalizeTextForSearch(rawText);
+        const originalText = rawText.toLowerCase(); // Version avec accents préservés
         
         return {
             text: normalizedText,
-            subject: this.normalizeTextFast(email.subject || ''),
+            originalText: originalText, // NOUVEAU: texte original pour recherche accents
+            subject: this.normalizeTextForSearch(email.subject || ''),
+            originalSubject: (email.subject || '').toLowerCase(),
             domain: this.extractDomain(email.from?.emailAddress?.address),
-            senderName: this.normalizeTextFast(email.from?.emailAddress?.name || ''),
+            senderName: this.normalizeTextForSearch(email.from?.emailAddress?.name || ''),
             senderEmail: email.from?.emailAddress?.address?.toLowerCase() || '',
             hasHtml: !!(email.body?.content && email.body.content.includes('<')),
             length: normalizedText.length,
             rawSubject: email.subject || '',
             rawSenderName: email.from?.emailAddress?.name || ''
         };
+    }
+
+    // NOUVELLE MÉTHODE: Extraction complète du texte HTML
+    extractTextFromHtml(html) {
+        if (!html) return '';
+        
+        // Remplacer les balises par des espaces pour éviter la concaténation
+        let text = html.replace(/<br\s*\/?>/gi, ' ');
+        text = text.replace(/<\/p>/gi, ' ');
+        text = text.replace(/<\/div>/gi, ' ');
+        text = text.replace(/<\/td>/gi, ' ');
+        text = text.replace(/<\/li>/gi, ' ');
+        
+        // Supprimer toutes les autres balises
+        text = text.replace(/<[^>]*>/g, ' ');
+        
+        // Décoder les entités HTML
+        text = this.decodeHtmlEntities(text);
+        
+        // Nettoyer les espaces multiples
+        text = text.replace(/\s+/g, ' ').trim();
+        
+        return text;
+    }
+
+    // NOUVELLE MÉTHODE: Décoder les entités HTML
+    decodeHtmlEntities(text) {
+        const entities = {
+            '&amp;': '&',
+            '&lt;': '<',
+            '&gt;': '>',
+            '&quot;': '"',
+            '&#39;': "'",
+            '&nbsp;': ' ',
+            '&eacute;': 'é',
+            '&egrave;': 'è',
+            '&agrave;': 'à',
+            '&ccedil;': 'ç',
+            '&ocirc;': 'ô',
+            '&ecirc;': 'ê',
+            '&iuml;': 'ï',
+            '&ouml;': 'ö',
+            '&uuml;': 'ü'
+        };
+        
+        for (const [entity, char] of Object.entries(entities)) {
+            text = text.replace(new RegExp(entity, 'gi'), char);
+        }
+        
+        // Décoder les entités numériques
+        text = text.replace(/&#(\d+);/g, (match, num) => String.fromCharCode(num));
+        text = text.replace(/&#x([0-9a-f]+);/gi, (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+        
+        return text;
     }
 
     extractDomain(email) {
@@ -107,8 +171,820 @@ class CategoryManager {
     }
 
     // ================================================
-    // CACHE SYSTÈME
+    // NORMALISATION AMÉLIORÉE
     // ================================================
+    createTextNormalizer() {
+        return {
+            // Mapping complet des accents
+            accentMap: {
+                'à': 'a', 'â': 'a', 'ä': 'a', 'á': 'a', 'ã': 'a', 'å': 'a',
+                'è': 'e', 'é': 'e', 'ê': 'e', 'ë': 'e',
+                'ì': 'i', 'í': 'i', 'î': 'i', 'ï': 'i',
+                'ò': 'o', 'ó': 'o', 'ô': 'o', 'ö': 'o', 'õ': 'o',
+                'ù': 'u', 'ú': 'u', 'û': 'u', 'ü': 'u',
+                'ç': 'c', 'ñ': 'n'
+            },
+            spaces: /\s+/g,
+            punctuation: /[^\w\s\-\%àâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ]/g, // Garde les accents pour la recherche
+            html: /<[^>]+>/g
+        };
+    }
+
+    // NOUVELLE MÉTHODE: Normalisation pour la recherche (garde les accents)
+    normalizeTextForSearch(text) {
+        if (!text) return '';
+        
+        return text.toLowerCase()
+            .replace(this.textNormalizer.html, ' ')
+            .replace(this.textNormalizer.spaces, ' ')
+            .trim();
+    }
+
+    // Ancienne méthode pour compatibilité
+    normalizeTextFast(text) {
+        if (!text) return '';
+        
+        let normalized = text.toLowerCase();
+        
+        // Remplacer les accents
+        for (const [accented, plain] of Object.entries(this.textNormalizer.accentMap)) {
+            normalized = normalized.replace(new RegExp(accented, 'g'), plain);
+        }
+        
+        return normalized
+            .replace(this.textNormalizer.punctuation, ' ')
+            .replace(this.textNormalizer.spaces, ' ')
+            .trim();
+    }
+
+    // ================================================
+    // ANALYSE EMAIL - DÉTECTION NEWSLETTER ULTRA-RENFORCÉE
+    // ================================================
+    analyzeEmail(email) {
+        if (!email) return { category: 'other', score: 0, confidence: 0 };
+        
+        // Pré-détection newsletter ultra-agressive
+        const isNewsletterCandidate = this.isNewsletterCandidate(email);
+        
+        if (this.debugMode && isNewsletterCandidate) {
+            console.group(`[CategoryManager] 🔍 NEWSLETTER CANDIDAT: ${email.subject?.substring(0, 50)}`);
+            console.log('📧 Email complet:', {
+                subject: email.subject,
+                sender: email.from?.emailAddress?.address,
+                senderName: email.from?.emailAddress?.name,
+                bodyPreview: email.bodyPreview?.substring(0, 100)
+            });
+        }
+        
+        // Vérifier le cache
+        const cached = this.getCachedAnalysis(email);
+        if (cached) {
+            if (this.debugMode && isNewsletterCandidate) {
+                console.log('✅ Résultat depuis cache:', cached);
+                console.groupEnd();
+            }
+            return cached;
+        }
+        
+        // Vérifications rapides
+        if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
+            const result = { category: 'spam', score: 0, confidence: 0, isSpam: true };
+            this.setCachedAnalysis(email, result);
+            return result;
+        }
+        
+        // Extraction de contenu AMÉLIORÉE
+        const content = this.extractCompleteContent(email);
+        
+        if (this.debugMode && isNewsletterCandidate) {
+            console.log('📄 Contenu extrait:', {
+                textLength: content.text.length,
+                originalTextLength: content.originalText.length,
+                subject: content.subject,
+                domain: content.domain,
+                senderName: content.senderName,
+                senderEmail: content.senderEmail
+            });
+        }
+        
+        // Vérifications d'exclusion
+        if (this.isGloballyExcluded(content, email)) {
+            const result = { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
+            this.setCachedAnalysis(email, result);
+            return result;
+        }
+        
+        // Détection personnelle
+        if (this.isPersonalEmail(content)) {
+            const result = {
+                category: this.categories.personal ? 'personal' : 'excluded',
+                score: 100,
+                confidence: 0.95,
+                isPersonal: true
+            };
+            this.setCachedAnalysis(email, result);
+            return result;
+        }
+        
+        // Analyse CC
+        const ccResult = this.analyzeCC(email, content);
+        if (ccResult) {
+            this.setCachedAnalysis(email, ccResult);
+            return ccResult;
+        }
+        
+        // Analyse des catégories avec priorité newsletter
+        const result = this.analyzeAllCategories(content, email);
+        
+        if (this.debugMode && isNewsletterCandidate) {
+            console.log('🏆 Résultat final:', result);
+            console.groupEnd();
+        }
+        
+        // Cache du résultat
+        this.setCachedAnalysis(email, result);
+        return result;
+    }
+
+    // Méthode de pré-détection newsletter AMÉLIORÉE
+    isNewsletterCandidate(email) {
+        const subject = (email.subject || '').toLowerCase();
+        const sender = (email.from?.emailAddress?.address || '').toLowerCase();
+        const senderName = (email.from?.emailAddress?.name || '').toLowerCase();
+        const bodyPreview = (email.bodyPreview || '').toLowerCase();
+        
+        // Combiner tous les textes pour la recherche
+        const allText = `${subject} ${sender} ${senderName} ${bodyPreview}`;
+        
+        // Patterns évidents de newsletter (étendus)
+        const obviousPatterns = [
+            // Français
+            'newsletter', 'infolettre', 'bulletin', 'lettre d\'information',
+            'désabonner', 'desabonner', 'désinscri', 'desinscri',
+            'désabonnement', 'desabonnement', 'se désinscrire', 'se desinscrire',
+            'préférences email', 'preferences email', 'préférences de communication',
+            'preferences de communication', 'gérer vos préférences', 'gerer vos preferences',
+            'mettre à jour vos préférences', 'mettre a jour vos preferences',
+            'cliquez ici pour', 'si vous ne souhaitez plus',
+            'arrêter de recevoir', 'arreter de recevoir', 'ne plus recevoir',
+            
+            // Anglais
+            'unsubscribe', 'opt out', 'opt-out', 'email preferences',
+            'manage preferences', 'update preferences', 'notification settings',
+            'mailing list', 'stop receiving', 'click here to unsubscribe',
+            'if you no longer', 'view in browser', 'view online',
+            'this email was sent', 'you are receiving this',
+            
+            // Marques
+            'tommy', 'hilfiger', 'calvin', 'klein', 'cerruti', 'camberabero', 
+            'moustache', 'gens de confiance',
+            
+            // Promotions
+            'promo', 'promotion', 'sale', 'soldes', 'offer', 'offre',
+            'deal', 'discount', 'reduction', 'réduction', 'remise',
+            '%', 'jusqu\'à', 'jusqu\'a', 'up to', 'save', 'économis',
+            
+            // Emails automatiques
+            'noreply', 'no-reply', 'donotreply', 'do-not-reply',
+            'marketing@', 'news@', 'newsletter@', 'info@', 'contact@',
+            'hello@', 'notification@', 'updates@', 'promotions@'
+        ];
+        
+        // Recherche flexible sans regex
+        for (const pattern of obviousPatterns) {
+            if (allText.includes(pattern)) {
+                if (this.debugMode) {
+                    console.log(`[CategoryManager] 🎯 Pattern newsletter trouvé: "${pattern}"`);
+                }
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    // ================================================
+    // CALCUL DE SCORE AMÉLIORÉ
+    // ================================================
+    calculateScore(content, keywords, categoryId, email = null) {
+        let totalScore = 0;
+        let hasAbsolute = false;
+        const matches = [];
+        
+        // Utiliser DEUX versions du texte pour la recherche
+        const normalizedText = content.text;
+        const originalText = content.originalText;
+        
+        if (this.debugMode && categoryId === 'marketing_news') {
+            console.log(`[CategoryManager] 🔍 Calcul score pour ${categoryId}:`);
+            console.log('- Longueur texte normalisé:', normalizedText.length);
+            console.log('- Longueur texte original:', originalText.length);
+            console.log('- Mots-clés absolus:', keywords.absolute?.length);
+            console.log('- Mots-clés forts:', keywords.strong?.length);
+        }
+        
+        const categoryBonus = this.getCategoryBonus(categoryId);
+        if (categoryBonus > 0) {
+            totalScore += categoryBonus;
+            matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus });
+        }
+        
+        // Bonus spécial pour newsletter si candidat évident
+        if (categoryId === 'marketing_news' && email && this.isNewsletterCandidate(email)) {
+            totalScore += 30;
+            matches.push({ keyword: 'newsletter_candidate', type: 'bonus', score: 30 });
+            if (this.debugMode) {
+                console.log(`[CategoryManager] 🎁 Bonus candidat newsletter: +30`);
+            }
+        }
+        
+        // Recherche des exclusions
+        if (keywords.exclusions?.length) {
+            for (const exclusion of keywords.exclusions) {
+                if (this.findInTextImproved(normalizedText, originalText, exclusion)) {
+                    totalScore -= 50;
+                    matches.push({ keyword: exclusion, type: 'exclusion', score: -50 });
+                }
+            }
+        }
+        
+        // Recherche des mots-clés absolus
+        if (keywords.absolute?.length) {
+            for (const keyword of keywords.absolute) {
+                if (this.findInTextImproved(normalizedText, originalText, keyword)) {
+                    totalScore += 100;
+                    hasAbsolute = true;
+                    matches.push({ keyword, type: 'absolute', score: 100 });
+                    
+                    if (this.debugMode && categoryId === 'marketing_news') {
+                        console.log(`[CategoryManager] ✅ Mot-clé absolu trouvé: "${keyword}"`);
+                    }
+                    
+                    // Bonus si aussi dans le sujet
+                    if (this.findInTextImproved(content.subject, content.originalSubject, keyword)) {
+                        totalScore += 50;
+                        matches.push({ keyword: keyword + '_subject', type: 'bonus', score: 50 });
+                    }
+                }
+            }
+        }
+        
+        // Recherche des mots-clés forts
+        if (!hasAbsolute || totalScore < 150) {
+            if (keywords.strong?.length) {
+                let strongMatches = 0;
+                for (const keyword of keywords.strong) {
+                    if (this.findInTextImproved(normalizedText, originalText, keyword)) {
+                        const baseScore = categoryId === 'marketing_news' ? 60 : 40;
+                        totalScore += baseScore;
+                        strongMatches++;
+                        matches.push({ keyword, type: 'strong', score: baseScore });
+                        
+                        if (this.debugMode && categoryId === 'marketing_news') {
+                            console.log(`[CategoryManager] 💪 Mot-clé fort trouvé: "${keyword}" (+${baseScore})`);
+                        }
+                        
+                        if (strongMatches >= 3) break;
+                    }
+                }
+                
+                if (strongMatches >= 2) {
+                    const bonusScore = categoryId === 'marketing_news' ? 50 : 30;
+                    totalScore += bonusScore;
+                    matches.push({ keyword: 'multiple_strong', type: 'bonus', score: bonusScore });
+                }
+            }
+        }
+        
+        // Recherche des mots-clés faibles
+        if (totalScore < 150 && keywords.weak?.length) {
+            let weakMatches = 0;
+            for (const keyword of keywords.weak.slice(0, 10)) {
+                if (this.findInTextImproved(normalizedText, originalText, keyword)) {
+                    const baseScore = categoryId === 'marketing_news' ? 25 : 15;
+                    totalScore += baseScore;
+                    weakMatches++;
+                    matches.push({ keyword, type: 'weak', score: baseScore });
+                    
+                    if (this.debugMode && categoryId === 'marketing_news' && weakMatches <= 3) {
+                        console.log(`[CategoryManager] 🔸 Mot-clé faible trouvé: "${keyword}" (+${baseScore})`);
+                    }
+                }
+            }
+        }
+        
+        const finalScore = Math.max(0, totalScore);
+        
+        if (this.debugMode && categoryId === 'marketing_news') {
+            console.log(`[CategoryManager] 📊 Score final pour ${categoryId}: ${finalScore} (hasAbsolute: ${hasAbsolute})`);
+            console.log(`[CategoryManager] 📋 Total matches:`, matches.length);
+        }
+        
+        return { 
+            total: finalScore, 
+            hasAbsolute, 
+            matches 
+        };
+    }
+
+    // NOUVELLE MÉTHODE: Recherche améliorée dans le texte
+    findInTextImproved(normalizedText, originalText, keyword) {
+        if (!normalizedText || !keyword) return false;
+        
+        const keywordLower = keyword.toLowerCase();
+        const keywordNormalized = this.normalizeTextFast(keyword);
+        
+        // Recherche 1: Dans le texte original (avec accents)
+        if (originalText && originalText.includes(keywordLower)) {
+            return true;
+        }
+        
+        // Recherche 2: Dans le texte normalisé (sans accents)
+        if (normalizedText.includes(keywordNormalized)) {
+            return true;
+        }
+        
+        // Recherche 3: Avec espaces autour (pour éviter les faux positifs)
+        const patterns = [
+            ` ${keywordLower} `,
+            ` ${keywordLower}`,
+            `${keywordLower} `,
+            ` ${keywordNormalized} `,
+            ` ${keywordNormalized}`,
+            `${keywordNormalized} `
+        ];
+        
+        for (const pattern of patterns) {
+            if (originalText && originalText.includes(pattern)) return true;
+            if (normalizedText.includes(pattern)) return true;
+        }
+        
+        // Recherche 4: Patterns spéciaux pour les URLs et emails
+        if (keyword.includes('@') || keyword.includes('-')) {
+            const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            try {
+                const regex = new RegExp(escapedKeyword, 'i');
+                if (originalText && regex.test(originalText)) return true;
+                if (regex.test(normalizedText)) return true;
+            } catch (e) {
+                // Ignorer les erreurs regex
+            }
+        }
+        
+        return false;
+    }
+
+    getCategoryBonus(categoryId) {
+        const bonuses = {
+            'tasks': 15,
+            'security': 10,
+            'finance': 10,
+            'marketing_news': 15, // Augmenté de 10 à 15
+            'project': 10,
+            'hr': 10
+        };
+        return bonuses[categoryId] || 0;
+    }
+
+    // ================================================
+    // INITIALISATION DES MOTS-CLÉS ULTRA-COMPLETS
+    // ================================================
+    initializeWeightedDetection() {
+        this.weightedKeywords = {
+            marketing_news: {
+                absolute: [
+                    // === FRANÇAIS - DÉSINSCRIPTION ===
+                    'se désabonner', 'se desabonner', 'désabonner', 'desabonner',
+                    'se désinscrire', 'se desinscrire', 'désinscrire', 'desinscrire',
+                    'désinscription', 'desinscription', 'désabonnement', 'desabonnement',
+                    'arrêter de recevoir', 'arreter de recevoir', 'ne plus recevoir',
+                    'cesser de recevoir', 'stopper les emails', 'arrêter les emails',
+                    'me désabonner', 'me desabonner', 'vous désabonner', 'vous desabonner',
+                    'cliquez ici pour vous désabonner', 'cliquez ici pour vous desabonner',
+                    'lien de désinscription', 'lien de desinscription',
+                    'gérer mes préférences', 'gerer mes preferences',
+                    'gérer vos préférences', 'gerer vos preferences',
+                    'modifier mes préférences', 'modifier mes preferences',
+                    'modifier vos préférences', 'modifier vos preferences',
+                    'mettre à jour mes préférences', 'mettre a jour mes preferences',
+                    'mettre à jour vos préférences', 'mettre a jour vos preferences',
+                    'préférences de communication', 'preferences de communication',
+                    'préférences email', 'preferences email', 'préférences d\'email',
+                    'paramètres de notification', 'parametres de notification',
+                    'centre de préférences', 'centre de preferences',
+                    'si vous ne souhaitez plus recevoir', 'si vous ne voulez plus recevoir',
+                    'pour ne plus recevoir', 'afin de ne plus recevoir',
+                    'cliquez sur ce lien', 'suivez ce lien', 'utilisez ce lien',
+                    
+                    // === ANGLAIS - UNSUBSCRIBE ===
+                    'unsubscribe', 'unsubscribe from', 'unsubscribe here',
+                    'opt out', 'opt-out', 'optout', 'opt out here',
+                    'email preferences', 'e-mail preferences', 'mail preferences',
+                    'manage preferences', 'manage your preferences', 'update preferences',
+                    'update your preferences', 'preference center', 'preferences center',
+                    'notification settings', 'email settings', 'communication preferences',
+                    'mailing list', 'mailing lists', 'email list', 'distribution list',
+                    'remove from list', 'remove from mailing list', 'remove me',
+                    'stop receiving', 'stop receiving emails', 'stop these emails',
+                    'disable these notifications', 'turn off notifications',
+                    'click here to unsubscribe', 'unsubscribe link',
+                    'if you no longer wish', 'if you no longer want',
+                    'to unsubscribe', 'to opt out', 'to stop receiving',
+                    'update subscription', 'manage subscription', 'cancel subscription',
+                    'subscription preferences', 'subscription settings',
+                    
+                    // === TERMES NEWSLETTER ===
+                    'newsletter', 'newsletters', 'news letter', 'infolettre',
+                    'lettre d\'information', 'lettre d\'informations', 'bulletin',
+                    'bulletin d\'information', 'email marketing', 'e-mail marketing',
+                    'marketing email', 'marketing e-mail', 'promotional email',
+                    'email promotionnel', 'e-mail promotionnel',
+                    
+                    // === EMAILS AUTOMATIQUES ===
+                    'cet email a été envoyé', 'cet e-mail a été envoyé',
+                    'cet email a ete envoye', 'this email was sent',
+                    'this e-mail was sent', 'this message was sent',
+                    'vous recevez cet email', 'vous recevez cet e-mail',
+                    'you are receiving this email', 'you\'re receiving this',
+                    'email automatique', 'e-mail automatique', 'message automatique',
+                    'automated email', 'automated message', 'auto-generated',
+                    'automatically generated', 'do not reply', 'ne pas répondre',
+                    'ne pas repondre', 'donotreply', 'noreply', 'no-reply',
+                    
+                    // === LÉGAL & COPYRIGHT ===
+                    'tous droits réservés', 'tous droits reserves', 'all rights reserved',
+                    'copyright', '©', '(c)', 'politique de confidentialité',
+                    'politique de confidentialite', 'privacy policy', 'terms of service',
+                    'conditions d\'utilisation', 'terms and conditions',
+                    
+                    // === VISUALISATION ===
+                    'voir dans le navigateur', 'voir dans votre navigateur',
+                    'afficher dans le navigateur', 'view in browser',
+                    'view in your browser', 'view online', 'voir en ligne',
+                    'si cet email ne s\'affiche pas', 'if this email doesn\'t display',
+                    'having trouble viewing', 'problème d\'affichage',
+                    'probleme d\'affichage'
+                ],
+                strong: [
+                    // === MARQUES & COMMERCE ===
+                    'tommy hilfiger', 'tommy', 'hilfiger', 'calvin klein', 'calvin', 'klein',
+                    'cerruti', 'camberabero', 'big moustache', 'moustache', 'gens de confiance',
+                    
+                    // === PROMOTIONS FRANÇAIS ===
+                    'promo', 'promos', 'promotion', 'promotions', 'promo en cours',
+                    'soldes', 'solde', 'grande braderie', 'braderie', 'déstockage',
+                    'destockage', 'liquidation', 'vente flash', 'flash sale',
+                    'réduction', 'reduction', 'réductions', 'reductions',
+                    'remise', 'remises', 'rabais', 'ristourne',
+                    'offre spéciale', 'offre speciale', 'offres spéciales',
+                    'bon plan', 'bons plans', 'bonne affaire', 'bonnes affaires',
+                    'vente privée', 'vente privee', 'ventes privées', 'ventes privees',
+                    'prix cassé', 'prix casse', 'prix cassés', 'prix casses',
+                    'jusqu\'à', 'jusqu\'a', 'jusque', 'allant jusqu\'à',
+                    
+                    // === PROMOTIONS ANGLAIS ===
+                    'sale', 'sales', 'on sale', 'for sale', 'summer sale', 'winter sale',
+                    'offer', 'offers', 'special offer', 'special offers',
+                    'deal', 'deals', 'daily deal', 'deal of the day',
+                    'discount', 'discounts', 'discounted', 'save up to',
+                    'up to', '% off', 'percent off', 'percentage off',
+                    'limited time', 'limited offer', 'exclusive offer',
+                    'exclusive', 'members only', 'vip', 'early access',
+                    'clearance', 'outlet', 'bargain', 'best price',
+                    
+                    // === APPELS À L'ACTION ===
+                    'shop now', 'acheter maintenant', 'buy now', 'commander',
+                    'order now', 'commandez', 'discover', 'découvrir',
+                    'decouvrir', 'découvrez', 'decouvrez', 'explore',
+                    'explorer', 'explorez', 'voir plus', 'see more',
+                    'en savoir plus', 'learn more', 'cliquez ici',
+                    'click here', 'visitez', 'visit', 'profitez',
+                    
+                    // === TERMES MARKETING ===
+                    'campaign', 'campagne', 'marketing', 'mailing',
+                    'mass email', 'bulk email', 'bulk mail', 'broadcast',
+                    'annonce', 'announcement', 'communiqué', 'communique',
+                    'nouvelle collection', 'new collection', 'nouveautés',
+                    'nouveautes', 'new arrivals', 'latest', 'dernières',
+                    'dernieres', 'tendances', 'trends', 'must have',
+                    
+                    // === ADRESSES EMAIL MARKETING ===
+                    'newsletter@', 'news@', 'info@', 'contact@', 'hello@',
+                    'marketing@', 'promo@', 'promotions@', 'noreply@',
+                    'no-reply@', 'donotreply@', 'notification@', 'update@',
+                    'updates@', 'announce@', 'list@', 'mailinglist@'
+                ],
+                weak: [
+                    // === COMMERCE GÉNÉRAL ===
+                    'shop', 'boutique', 'store', 'magasin', 'e-shop',
+                    'eshop', 'e-commerce', 'ecommerce', 'catalogue',
+                    'catalog', 'collection', 'collections', 'gamme',
+                    'produit', 'produits', 'product', 'products',
+                    'article', 'articles', 'item', 'items',
+                    
+                    // === MODE & STYLE ===
+                    'fashion', 'mode', 'style', 'tendance', 'trend',
+                    'look', 'outfit', 'tenue', 'vêtement', 'vetement',
+                    'clothing', 'clothes', 'wear', 'apparel',
+                    'accessoire', 'accessoires', 'accessories',
+                    
+                    // === TERMES GÉNÉRAUX ===
+                    'update', 'updates', 'mise à jour', 'mise a jour',
+                    'news', 'actualité', 'actualite', 'actualités',
+                    'nouveauté', 'nouveaute', 'nouveau', 'nouvelle',
+                    'new', 'latest', 'récent', 'recent',
+                    'information', 'info', 'infos', 'message',
+                    'communication', 'annonce', 'avis', 'notice',
+                    
+                    // === FRÉQUENCE ===
+                    'hebdomadaire', 'weekly', 'mensuel', 'mensuelle',
+                    'monthly', 'quotidien', 'quotidienne', 'daily',
+                    'régulier', 'regulier', 'regular', 'périodique',
+                    'periodique', 'periodic', 'fréquent', 'frequent',
+                    
+                    // === MARQUES GÉNÉRIQUES ===
+                    'brand', 'marque', 'luxury', 'luxe', 'premium',
+                    'exclusif', 'exclusive', 'designer', 'créateur',
+                    'createur', 'officiel', 'official', 'authentique',
+                    
+                    // === RÉSEAUX SOCIAUX ===
+                    'facebook', 'instagram', 'twitter', 'linkedin',
+                    'youtube', 'pinterest', 'tiktok', 'social',
+                    'suivez-nous', 'follow us', 'rejoignez-nous',
+                    'join us', 'connectez-vous', 'connect'
+                ],
+                exclusions: [
+                    // Éviter les faux positifs avec les emails transactionnels
+                    'confirmation de commande', 'order confirmation',
+                    'votre commande', 'your order', 'numéro de commande',
+                    'order number', 'facture', 'invoice', 'reçu', 'receipt',
+                    'livraison', 'delivery', 'shipping', 'expédition',
+                    'expedition', 'suivi', 'tracking', 'colis', 'package',
+                    'paiement', 'payment', 'transaction', 'virement',
+                    'remboursement', 'refund', 'retour', 'return'
+                ]
+            },
+            security: {
+                absolute: [
+                    'alerte de connexion', 'login alert', 'new sign-in', 'nouvelle connexion',
+                    'code de vérification', 'verification code', 'two-factor', 'authentification',
+                    'password reset', 'réinitialisation mot de passe', 'security alert',
+                    'alerte sécurité', 'alerte securite', 'suspicious activity',
+                    'activité suspecte', 'activite suspecte', 'connexion inhabituelle',
+                    'unusual activity', 'verify your identity', 'vérifier votre identité'
+                ],
+                strong: ['sécurité', 'security', 'authentification', 'authentication', 'password', 'mot de passe'],
+                weak: ['compte', 'account', 'login', 'connexion'],
+                exclusions: ['newsletter', 'promotion', 'marketing']
+            },
+            tasks: {
+                absolute: [
+                    'action required', 'action requise', 'urgent', 'urgence',
+                    'deadline', 'échéance', 'echeance', 'date limite',
+                    'à faire avant', 'a faire avant', 'must be completed',
+                    'doit être fait', 'doit etre fait', 'immediate attention',
+                    'attention immédiate', 'attention immediate', 'asap',
+                    'dès que possible', 'des que possible', 'by end of day',
+                    'avant la fin de journée', 'response needed', 'réponse attendue'
+                ],
+                strong: [
+                    'urgent', 'urgency', 'urgence', 'priority', 'priorité', 'priorite',
+                    'important', 'critique', 'critical', 'deadline', 'échéance',
+                    'task', 'tâche', 'tache', 'action', 'todo', 'to-do', 'à faire',
+                    'a faire', 'assignment', 'mission', 'devoir', 'obligation'
+                ],
+                weak: [
+                    'demande', 'request', 'besoin', 'need', 'require', 'nécessaire',
+                    'necessaire', 'attente', 'waiting', 'pending', 'en cours',
+                    'rappel', 'reminder', 'suite à donner', 'follow up'
+                ],
+                exclusions: ['newsletter', 'marketing', 'promotion', 'unsubscribe']
+            },
+            meetings: {
+                absolute: [
+                    'invitation à une réunion', 'invitation a une reunion', 'meeting request',
+                    'demande de réunion', 'demande de reunion', 'réunion planifiée',
+                    'reunion planifiee', 'scheduled meeting', 'teams meeting',
+                    'zoom meeting', 'google meet', 'skype meeting', 'webex',
+                    'rendez-vous', 'rendez vous', 'appointment', 'rdv',
+                    'conférence', 'conference', 'visioconférence', 'visioconference',
+                    'video call', 'appel vidéo', 'appel video'
+                ],
+                strong: [
+                    'meeting', 'réunion', 'reunion', 'schedule', 'planning',
+                    'calendrier', 'calendar', 'agenda', 'disponibilité', 'disponibilite',
+                    'availability', 'slot', 'créneau', 'creneau', 'horaire'
+                ],
+                weak: [
+                    'date', 'heure', 'time', 'when', 'quand', 'durée', 'duree',
+                    'duration', 'participant', 'attendee', 'invité', 'invite'
+                ],
+                exclusions: ['newsletter', 'promotion', 'marketing']
+            },
+            commercial: {
+                absolute: [
+                    'devis', 'quotation', 'quote', 'proposition commerciale',
+                    'commercial proposal', 'business proposal', 'offre commerciale',
+                    'contrat', 'contract', 'accord commercial', 'agreement',
+                    'bon de commande', 'purchase order', 'po number',
+                    'opportunité', 'opportunite', 'opportunity', 'lead',
+                    'prospect', 'nouveau client', 'new customer', 'deal'
+                ],
+                strong: [
+                    'client', 'customer', 'commercial', 'business', 'vente',
+                    'sale', 'affaire', 'deal', 'négociation', 'negociation',
+                    'negotiation', 'partenariat', 'partnership', 'collaboration'
+                ],
+                weak: [
+                    'offre', 'offer', 'proposition', 'proposal', 'tarif',
+                    'price', 'prix', 'budget', 'investissement', 'investment'
+                ],
+                exclusions: ['newsletter', 'marketing', 'promotion', 'soldes']
+            },
+            finance: {
+                absolute: [
+                    'facture', 'invoice', 'facture n°', 'invoice number',
+                    'paiement', 'payment', 'virement', 'wire transfer',
+                    'transaction', 'reçu', 'recu', 'receipt', 'relevé',
+                    'releve', 'statement', 'compte rendu financier',
+                    'financial statement', 'rapport financier', 'financial report',
+                    'déclaration', 'declaration', 'tax', 'taxe', 'impôt'
+                ],
+                strong: [
+                    'montant', 'amount', 'total', 'somme', 'sum', 'solde',
+                    'balance', 'débit', 'debit', 'crédit', 'credit',
+                    'échéance', 'echeance', 'due date', 'comptabilité',
+                    'comptabilite', 'accounting', 'finance', 'financier'
+                ],
+                weak: [
+                    'euro', 'eur', '€', 'dollar', 'usd', '$', 'prix',
+                    'price', 'coût', 'cout', 'cost', 'frais', 'fee',
+                    'charge', 'dépense', 'depense', 'expense'
+                ],
+                exclusions: ['newsletter', 'marketing', 'promotion', 'offre spéciale']
+            },
+            project: {
+                absolute: [
+                    'projet', 'project', 'nom du projet', 'project name',
+                    'chef de projet', 'project manager', 'gestion de projet',
+                    'project management', 'milestone', 'jalon', 'livrable',
+                    'deliverable', 'sprint', 'iteration', 'backlog',
+                    'roadmap', 'feuille de route', 'gantt', 'planning projet'
+                ],
+                strong: [
+                    'projet', 'project', 'développement', 'developpement',
+                    'development', 'phase', 'étape', 'etape', 'stage',
+                    'avancement', 'progress', 'progression', 'statut',
+                    'status', 'mise à jour', 'mise a jour', 'update'
+                ],
+                weak: [
+                    'équipe', 'equipe', 'team', 'ressource', 'resource',
+                    'planning', 'plan', 'objectif', 'objective', 'but',
+                    'goal', 'délai', 'delai', 'timeline', 'calendrier'
+                ],
+                exclusions: ['newsletter', 'promotion', 'marketing']
+            },
+            reminders: {
+                absolute: [
+                    'rappel', 'reminder', 'n\'oubliez pas', 'n\'oubliez pas',
+                    'don\'t forget', 'gentle reminder', 'rappel amical',
+                    'friendly reminder', 'relance', 'follow up', 'follow-up',
+                    'suivi', 'comme convenu', 'as agreed', 'as discussed',
+                    'comme discuté', 'comme discute', 'suite à notre',
+                    'suite a notre', 'following our'
+                ],
+                strong: [
+                    'rappel', 'reminder', 'relance', 'follow', 'suivi',
+                    'encore', 'again', 'toujours', 'still', 'attente',
+                    'waiting', 'pending', 'en attente', 'outstanding'
+                ],
+                weak: [
+                    'précédent', 'precedent', 'previous', 'dernier', 'last',
+                    'mentionné', 'mentionne', 'mentioned', 'évoqué', 'evoque',
+                    'discussed', 'parlé', 'parle', 'talked'
+                ],
+                exclusions: ['newsletter', 'marketing', 'promotion']
+            },
+            support: {
+                absolute: [
+                    'ticket', 'ticket #', 'ticket n°', 'ticket number',
+                    'case number', 'numéro de dossier', 'numero de dossier',
+                    'support ticket', 'ticket de support', 'incident',
+                    'incident #', 'problème résolu', 'probleme resolu',
+                    'issue resolved', 'résolution', 'resolution', 'helpdesk',
+                    'help desk', 'service desk', 'centre d\'aide'
+                ],
+                strong: [
+                    'support', 'assistance', 'aide', 'help', 'technique',
+                    'technical', 'problème', 'probleme', 'problem', 'issue',
+                    'bug', 'erreur', 'error', 'dysfonctionnement', 'malfunction'
+                ],
+                weak: [
+                    'solution', 'résoudre', 'resoudre', 'resolve', 'fix',
+                    'réparer', 'reparer', 'repair', 'corriger', 'correct',
+                    'dépannage', 'depannage', 'troubleshooting'
+                ],
+                exclusions: ['newsletter', 'marketing', 'promotion']
+            },
+            hr: {
+                absolute: [
+                    'bulletin de paie', 'bulletin de salaire', 'fiche de paie',
+                    'payslip', 'pay slip', 'salary slip', 'contrat de travail',
+                    'employment contract', 'work contract', 'congés', 'conges',
+                    'vacation', 'leave', 'absence', 'rtt', 'cp',
+                    'évaluation', 'evaluation', 'performance review', 'entretien',
+                    'entretien annuel', 'annual review', 'offre d\'emploi',
+                    'offre d\'emploi', 'job offer', 'job posting'
+                ],
+                strong: [
+                    'rh', 'hr', 'human resources', 'ressources humaines',
+                    'salaire', 'salary', 'paie', 'paye', 'pay', 'payroll',
+                    'emploi', 'employment', 'job', 'poste', 'position',
+                    'recrutement', 'recruitment', 'hiring', 'embauche'
+                ],
+                weak: [
+                    'employé', 'employe', 'employee', 'salarié', 'salarie',
+                    'staff', 'personnel', 'équipe', 'equipe', 'team',
+                    'collègue', 'collegue', 'colleague', 'coworker'
+                ],
+                exclusions: ['newsletter', 'promotion', 'marketing']
+            },
+            internal: {
+                absolute: [
+                    'all staff', 'tout le personnel', 'tous les employés',
+                    'tous les employes', 'company wide', 'à toute l\'entreprise',
+                    'a toute l\'entreprise', 'company announcement', 'annonce entreprise',
+                    'annonce interne', 'internal announcement', 'memo interne',
+                    'internal memo', 'mémo interne', 'memo interne',
+                    'note de service', 'service note', 'communication interne',
+                    'internal communication', 'to all team', 'à toute l\'équipe',
+                    'a toute l\'equipe'
+                ],
+                strong: [
+                    'internal', 'interne', 'company', 'entreprise', 'société',
+                    'societe', 'organisation', 'organization', 'corporate',
+                    'annonce', 'announcement', 'mémo', 'memo', 'note',
+                    'communication', 'information', 'directive', 'policy'
+                ],
+                weak: [
+                    'team', 'équipe', 'equipe', 'staff', 'personnel',
+                    'employé', 'employe', 'employee', 'département', 'departement',
+                    'department', 'service', 'division', 'bureau', 'office'
+                ],
+                exclusions: ['newsletter', 'marketing', 'external', 'externe', 'client', 'customer']
+            },
+            notifications: {
+                absolute: [
+                    'do not reply', 'ne pas répondre', 'ne pas repondre',
+                    'no reply', 'noreply', 'no-reply', 'donotreply',
+                    'automated message', 'message automatique', 'message automatisé',
+                    'automated email', 'email automatique', 'e-mail automatique',
+                    'system notification', 'notification système', 'notification systeme',
+                    'auto-generated', 'généré automatiquement', 'genere automatiquement',
+                    'this is an automated', 'ceci est un message automatique'
+                ],
+                strong: [
+                    'automated', 'automatique', 'automatic', 'automatisé',
+                    'automatise', 'system', 'système', 'systeme', 'notification',
+                    'alert', 'alerte', 'automatic', 'bot', 'robot'
+                ],
+                weak: [
+                    'notification', 'notice', 'avis', 'info', 'information',
+                    'message', 'email', 'mail', 'update', 'mise à jour',
+                    'mise a jour', 'changement', 'change', 'modification'
+                ],
+                exclusions: ['urgent', 'action required', 'deadline', 'réponse requise']
+            },
+            cc: {
+                absolute: [
+                    'copie pour information', 'for your information', 'fyi',
+                    'pour info', 'pour information', 'en copie', 'in copy',
+                    'cc:', 'courtesy copy', 'copie de courtoisie', 'copie carbone',
+                    'carbon copy', 'également envoyé à', 'also sent to',
+                    'copie à', 'copy to', 'pour votre information'
+                ],
+                strong: [
+                    'information', 'copie', 'copy', 'courtoisie', 'courtesy',
+                    'fyi', 'cc', 'bcc', 'cci', 'pour info', 'notifier',
+                    'notify', 'informer', 'inform', 'partager', 'share'
+                ],
+                weak: [
+                    'info', 'note', 'savoir', 'know', 'aware', 'connaissance',
+                    'knowledge', 'référence', 'reference', 'mentionné',
+                    'mentioned', 'cité', 'cited', 'inclus', 'included'
+                ],
+                exclusions: ['urgent', 'action required', 'deadline', 'facture', 'invoice', 'paiement']
+            }
+        };
+
+        console.log('[CategoryManager] 🔑 Mots-clés initialisés avec détection newsletter ULTRA-RENFORCÉE');
+    }
+
+    // ================================================
+    // AUTRES MÉTHODES (inchangées mais nécessaires)
+    // ================================================
+    
+    // Cache système
     createCacheKey(email) {
         const content = this.extractCompleteContent(email);
         const key = `${email.from?.emailAddress?.address || ''}|${email.subject || ''}|${content.text.substring(0, 100)}`;
@@ -158,165 +1034,7 @@ class CategoryManager {
         console.log('[CategoryManager] 🧹 Cache invalidé');
     }
 
-    // ================================================
-    // NORMALISATION ET PATTERNS
-    // ================================================
-    createTextNormalizer() {
-        return {
-            accents: /[àâäéèêëîïôöùûüç]/gi,
-            accentMap: {
-                'à': 'a', 'â': 'a', 'ä': 'a',
-                'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
-                'î': 'i', 'ï': 'i',
-                'ô': 'o', 'ö': 'o',
-                'ù': 'u', 'û': 'u', 'ü': 'u',
-                'ç': 'c'
-            },
-            spaces: /\s+/g,
-            punctuation: /[^\w\s\-\%]/g, // Garde les % et - pour les promotions
-            html: /<[^>]+>/g
-        };
-    }
-
-    normalizeTextFast(text) {
-        if (!text) return '';
-        
-        return text.toLowerCase()
-            .replace(this.textNormalizer.accents, (match) => this.textNormalizer.accentMap[match] || match)
-            .replace(this.textNormalizer.punctuation, ' ')
-            .replace(this.textNormalizer.spaces, ' ')
-            .trim();
-    }
-
-    getCompiledPattern(keyword) {
-        if (!this.compiledPatterns.has(keyword)) {
-            // Pattern plus flexible pour newsletters
-            const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            this.compiledPatterns.set(keyword, new RegExp(`${escaped}`, 'i')); // Suppression des \b pour plus de flexibilité
-        }
-        return this.compiledPatterns.get(keyword);
-    }
-
-    // ================================================
-    // ANALYSE EMAIL - DÉTECTION NEWSLETTER RENFORCÉE
-    // ================================================
-    analyzeEmail(email) {
-        if (!email) return { category: 'other', score: 0, confidence: 0 };
-        
-        // Pré-détection newsletter ultra-agressive
-        const isNewsletterCandidate = this.isNewsletterCandidate(email);
-        
-        if (this.debugMode && isNewsletterCandidate) {
-            console.group(`[CategoryManager] 🔍 NEWSLETTER CANDIDAT: ${email.subject?.substring(0, 50)}`);
-            console.log('📧 Email complet:', {
-                subject: email.subject,
-                sender: email.from?.emailAddress?.address,
-                senderName: email.from?.emailAddress?.name,
-                bodyPreview: email.bodyPreview?.substring(0, 100)
-            });
-        }
-        
-        // Vérifier le cache
-        const cached = this.getCachedAnalysis(email);
-        if (cached) {
-            if (this.debugMode && isNewsletterCandidate) {
-                console.log('✅ Résultat depuis cache:', cached);
-                console.groupEnd();
-            }
-            return cached;
-        }
-        
-        // Vérifications rapides
-        if (this.shouldExcludeSpam() && this.isSpamEmail(email)) {
-            const result = { category: 'spam', score: 0, confidence: 0, isSpam: true };
-            this.setCachedAnalysis(email, result);
-            return result;
-        }
-        
-        // Extraction de contenu
-        const content = this.extractCompleteContent(email);
-        
-        if (this.debugMode && isNewsletterCandidate) {
-            console.log('📄 Contenu extrait:', {
-                text: content.text.substring(0, 200),
-                subject: content.subject,
-                domain: content.domain,
-                senderName: content.senderName,
-                senderEmail: content.senderEmail
-            });
-        }
-        
-        // Vérifications d'exclusion
-        if (this.isGloballyExcluded(content, email)) {
-            const result = { category: 'excluded', score: 0, confidence: 0, isExcluded: true };
-            this.setCachedAnalysis(email, result);
-            return result;
-        }
-        
-        // Détection personnelle
-        if (this.isPersonalEmail(content)) {
-            const result = {
-                category: this.categories.personal ? 'personal' : 'excluded',
-                score: 100,
-                confidence: 0.95,
-                isPersonal: true
-            };
-            this.setCachedAnalysis(email, result);
-            return result;
-        }
-        
-        // Analyse CC
-        const ccResult = this.analyzeCC(email, content);
-        if (ccResult) {
-            this.setCachedAnalysis(email, ccResult);
-            return ccResult;
-        }
-        
-        // Analyse des catégories avec priorité newsletter
-        const result = this.analyzeAllCategories(content, email);
-        
-        if (this.debugMode && isNewsletterCandidate) {
-            console.log('🏆 Résultat final:', result);
-            console.groupEnd();
-        }
-        
-        // Cache du résultat
-        this.setCachedAnalysis(email, result);
-        return result;
-    }
-
-    // Nouvelle méthode de pré-détection newsletter
-    isNewsletterCandidate(email) {
-        const subject = email.subject?.toLowerCase() || '';
-        const sender = email.from?.emailAddress?.address?.toLowerCase() || '';
-        const senderName = email.from?.emailAddress?.name?.toLowerCase() || '';
-        
-        // Patterns évidents de newsletter
-        const obviousPatterns = [
-            // Marques de mode/commerce
-            'tommy', 'hilfiger', 'calvin', 'klein', 'cerruti', 'camberabero', 'moustache',
-            // Mots promotionnels
-            'promo', 'sale', 'soldes', 'offer', 'deal', 'discount', 'reduction',
-            // Symboles promotionnels
-            '%', 'off', 'jusqu', 'up to', 'save',
-            // Termes newsletter
-            'newsletter', 'unsubscribe', 'marketing', 'campaign'
-        ];
-        
-        // Patterns d'expéditeur newsletter
-        const senderPatterns = [
-            'noreply', 'no-reply', 'newsletter', 'marketing', 'promo', 'shop', 'store',
-            'info@', 'contact@', 'hello@', 'news@'
-        ];
-        
-        return obviousPatterns.some(pattern => 
-            subject.includes(pattern) || senderName.includes(pattern)
-        ) || senderPatterns.some(pattern => sender.includes(pattern));
-    }
-
-    // ================================================
-    // VÉRIFICATIONS
-    // ================================================
+    // Vérifications
     isSpamEmail(email) {
         if (email.parentFolderId?.toLowerCase().includes('junk')) return true;
         if (email.categories?.some(cat => cat.toLowerCase().includes('spam'))) return true;
@@ -334,8 +1052,9 @@ class CategoryManager {
     }
 
     isPersonalEmail(content) {
-        const personalPatterns = ['papa', 'maman', 'bises', 'famille'];
-        return personalPatterns.some(pattern => content.text.includes(pattern));
+        const personalPatterns = ['papa', 'maman', 'bises', 'famille', 'chéri', 'cherie', 'bisous'];
+        const text = content.originalText || content.text;
+        return personalPatterns.some(pattern => text.includes(pattern));
     }
 
     isMainRecipient(email) {
@@ -353,7 +1072,9 @@ class CategoryManager {
         const isInCC = this.isInCC(email);
         
         if (isInCC && !isMainRecipient) {
-            if (content.text.includes('unsubscribe') || content.text.includes('newsletter')) {
+            if (content.originalText.includes('unsubscribe') || 
+                content.originalText.includes('newsletter') ||
+                content.originalText.includes('désabonner')) {
                 return {
                     category: 'marketing_news',
                     score: 100,
@@ -373,9 +1094,7 @@ class CategoryManager {
         return null;
     }
 
-    // ================================================
-    // ANALYSE DES CATÉGORIES - PRIORITÉ NEWSLETTER
-    // ================================================
+    // Analyse des catégories
     analyzeAllCategories(content, email = null) {
         const results = {};
         const activeCategories = this.getActiveCategories();
@@ -403,16 +1122,13 @@ class CategoryManager {
         for (const { id: categoryId } of categoriesByPriority) {
             const keywords = this.weightedKeywords[categoryId];
             if (!keywords || this.isEmptyKeywords(keywords)) {
-                if (this.debugMode) {
-                    console.log(`[CategoryManager] ⚠️ Catégorie ${categoryId}: pas de mots-clés`);
-                }
                 continue;
             }
             
             const score = this.calculateScore(content, keywords, categoryId, email);
             
             if (this.debugMode && (score.total > 0 || categoryId === 'marketing_news')) {
-                console.log(`[CategoryManager] 📊 ${categoryId}: score=${score.total}, matches:`, score.matches);
+                console.log(`[CategoryManager] 📊 ${categoryId}: score=${score.total}, matches:`, score.matches.length);
             }
             
             if (score.total > 0) {
@@ -434,9 +1150,6 @@ class CategoryManager {
                 }
                 
                 if (score.hasAbsolute && score.total >= 150) {
-                    if (this.debugMode) {
-                        console.log(`[CategoryManager] 🎯 Arrêt anticipé pour ${categoryId} (score absolu élevé)`);
-                    }
                     break;
                 }
             }
@@ -444,180 +1157,12 @@ class CategoryManager {
         
         const finalResult = this.selectByPriorityWithThreshold(results);
         
-        if (this.debugMode) {
-            console.log('[CategoryManager] 🏆 Résultat final sélectionné:', finalResult);
-        }
-        
         return finalResult;
     }
 
-    calculateScore(content, keywords, categoryId, email = null) {
-        let totalScore = 0;
-        let hasAbsolute = false;
-        const matches = [];
-        const text = content.text;
-        
-        if (this.debugMode && categoryId === 'marketing_news') {
-            console.log(`[CategoryManager] 🔍 Calcul score pour ${categoryId}:`);
-            console.log('- Texte à analyser:', text.substring(0, 300) + '...');
-            console.log('- Sujet:', content.rawSubject);
-            console.log('- Expéditeur:', content.senderEmail);
-            console.log('- Nom expéditeur:', content.rawSenderName);
-            console.log('- Mots-clés absolus:', keywords.absolute);
-            console.log('- Mots-clés forts:', keywords.strong);
-        }
-        
-        const categoryBonus = this.getCategoryBonus(categoryId);
-        if (categoryBonus > 0) {
-            totalScore += categoryBonus;
-            matches.push({ keyword: 'category_bonus', type: 'bonus', score: categoryBonus });
-        }
-        
-        // Bonus spécial pour newsletter si candidat évident
-        if (categoryId === 'marketing_news' && email && this.isNewsletterCandidate(email)) {
-            totalScore += 25;
-            matches.push({ keyword: 'newsletter_candidate', type: 'bonus', score: 25 });
-            if (this.debugMode) {
-                console.log(`[CategoryManager] 🎁 Bonus candidat newsletter: +25`);
-            }
-        }
-        
-        if (keywords.exclusions?.length) {
-            for (const exclusion of keywords.exclusions) {
-                if (this.findInText(text, exclusion)) {
-                    totalScore -= 50;
-                    matches.push({ keyword: exclusion, type: 'exclusion', score: -50 });
-                    if (this.debugMode && categoryId === 'marketing_news') {
-                        console.log(`[CategoryManager] ❌ Exclusion trouvée: ${exclusion}`);
-                    }
-                }
-            }
-        }
-        
-        if (keywords.absolute?.length) {
-            for (const keyword of keywords.absolute) {
-                if (this.findInText(text, keyword)) {
-                    totalScore += 100;
-                    hasAbsolute = true;
-                    matches.push({ keyword, type: 'absolute', score: 100 });
-                    
-                    if (this.debugMode && categoryId === 'marketing_news') {
-                        console.log(`[CategoryManager] ✅ Mot-clé absolu trouvé: ${keyword}`);
-                    }
-                    
-                    if (content.subject && this.findInText(content.subject, keyword)) {
-                        totalScore += 50;
-                        matches.push({ keyword: keyword + '_subject', type: 'bonus', score: 50 });
-                        if (this.debugMode && categoryId === 'marketing_news') {
-                            console.log(`[CategoryManager] 🎯 Bonus sujet pour: ${keyword}`);
-                        }
-                    }
-                }
-            }
-        }
-        
-        if (!hasAbsolute || totalScore < 150) {
-            if (keywords.strong?.length) {
-                let strongMatches = 0;
-                for (const keyword of keywords.strong) {
-                    if (this.findInText(text, keyword)) {
-                        const baseScore = categoryId === 'marketing_news' ? 50 : 40; // Bonus pour newsletter
-                        totalScore += baseScore;
-                        strongMatches++;
-                        matches.push({ keyword, type: 'strong', score: baseScore });
-                        
-                        if (this.debugMode && categoryId === 'marketing_news') {
-                            console.log(`[CategoryManager] 💪 Mot-clé fort trouvé: ${keyword} (+${baseScore})`);
-                        }
-                        
-                        if (strongMatches >= 3) break;
-                    }
-                }
-                
-                if (strongMatches >= 2) {
-                    const bonusScore = categoryId === 'marketing_news' ? 40 : 30;
-                    totalScore += bonusScore;
-                    matches.push({ keyword: 'multiple_strong', type: 'bonus', score: bonusScore });
-                    if (this.debugMode && categoryId === 'marketing_news') {
-                        console.log(`[CategoryManager] 🔥 Bonus multiples mots forts: +${bonusScore}`);
-                    }
-                }
-            }
-        }
-        
-        if (totalScore < 150 && keywords.weak?.length) {
-            let weakMatches = 0;
-            for (const keyword of keywords.weak.slice(0, 8)) { // Plus de mots faibles pour newsletter
-                if (this.findInText(text, keyword)) {
-                    const baseScore = categoryId === 'marketing_news' ? 20 : 15; // Bonus pour newsletter
-                    totalScore += baseScore;
-                    weakMatches++;
-                    matches.push({ keyword, type: 'weak', score: baseScore });
-                    
-                    if (this.debugMode && categoryId === 'marketing_news') {
-                        console.log(`[CategoryManager] 🔸 Mot-clé faible trouvé: ${keyword} (+${baseScore})`);
-                    }
-                }
-            }
-        }
-        
-        const finalScore = Math.max(0, totalScore);
-        
-        if (this.debugMode && categoryId === 'marketing_news') {
-            console.log(`[CategoryManager] 📊 Score final pour ${categoryId}: ${finalScore} (hasAbsolute: ${hasAbsolute})`);
-            console.log(`[CategoryManager] 📋 Détail des matches:`, matches);
-        }
-        
-        return { 
-            total: finalScore, 
-            hasAbsolute, 
-            matches 
-        };
-    }
-
-    findInText(text, keyword) {
-        if (!text || !keyword) return false;
-        
-        const normalizedKeyword = keyword.toLowerCase();
-        const normalizedText = text.toLowerCase();
-        
-        // Recherche simple ET flexible
-        if (normalizedText.includes(normalizedKeyword)) {
-            return true;
-        }
-        
-        // Recherche avec espaces pour éviter les faux positifs
-        if (normalizedText.includes(` ${normalizedKeyword} `) || 
-            normalizedText.includes(`${normalizedKeyword} `) ||
-            normalizedText.includes(` ${normalizedKeyword}`)) {
-            return true;
-        }
-        
-        // Fallback avec regex si nécessaire
-        try {
-            const pattern = this.getCompiledPattern(keyword);
-            return pattern.test(text);
-        } catch (error) {
-            console.warn('[CategoryManager] Erreur regex pour:', keyword, error);
-            return normalizedText.includes(normalizedKeyword);
-        }
-    }
-
-    getCategoryBonus(categoryId) {
-        const bonuses = {
-            'tasks': 15,
-            'security': 10,
-            'finance': 10,
-            'marketing_news': 10, // Augmenté de 5 à 10
-            'project': 10,
-            'hr': 10
-        };
-        return bonuses[categoryId] || 0;
-    }
-
     selectByPriorityWithThreshold(results) {
-        const MIN_SCORE_THRESHOLD = 25; // Abaissé de 30 à 25 pour newsletter
-        const MIN_CONFIDENCE_THRESHOLD = 0.4; // Abaissé de 0.5 à 0.4
+        const MIN_SCORE_THRESHOLD = 20; // Abaissé de 25 à 20 pour newsletter
+        const MIN_CONFIDENCE_THRESHOLD = 0.35; // Abaissé de 0.4 à 0.35
         
         const validResults = Object.values(results)
             .filter(r => r.score >= MIN_SCORE_THRESHOLD && r.confidence >= MIN_CONFIDENCE_THRESHOLD);
@@ -634,11 +1179,11 @@ class CategoryManager {
         }
         
         validResults.sort((a, b) => {
-            // Priorité absolue pour marketing_news si score > 50
-            if (a.category === 'marketing_news' && a.score >= 50) {
+            // Priorité absolue pour marketing_news si score > 40
+            if (a.category === 'marketing_news' && a.score >= 40) {
                 return -1;
             }
-            if (b.category === 'marketing_news' && b.score >= 50) {
+            if (b.category === 'marketing_news' && b.score >= 40) {
                 return 1;
             }
             
@@ -661,9 +1206,7 @@ class CategoryManager {
         };
     }
 
-    // ================================================
-    // UTILITAIRES
-    // ================================================
+    // Utilitaires
     isEmptyKeywords(keywords) {
         return !keywords || (
             (!keywords.absolute || keywords.absolute.length === 0) &&
@@ -680,33 +1223,9 @@ class CategoryManager {
         if (score.total >= 80) return 0.75;
         if (score.total >= 60) return 0.70;
         if (score.total >= 40) return 0.60;
-        if (score.total >= 25) return 0.50; // Nouveau seuil pour newsletter
-        return 0.40;
-    }
-
-    // ================================================
-    // BATCH PROCESSING
-    // ================================================
-    async analyzeEmailsBatch(emails) {
-        console.log(`[CategoryManager] 📦 Batch analysis: ${emails.length} emails`);
-        
-        const batchResults = [];
-        const batchSize = this.batchSize;
-        
-        for (let i = 0; i < emails.length; i += batchSize) {
-            const batch = emails.slice(i, i + batchSize);
-            const batchPromises = batch.map(email => this.analyzeEmail(email));
-            
-            const results = await Promise.all(batchPromises);
-            batchResults.push(...results);
-            
-            if (i + batchSize < emails.length) {
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
-        }
-        
-        console.log(`[CategoryManager] ✅ Batch completed: ${batchResults.length} analyses`);
-        return batchResults;
+        if (score.total >= 25) return 0.50;
+        if (score.total >= 20) return 0.40; // Nouveau seuil pour newsletter
+        return 0.35;
     }
 
     // ================================================
@@ -873,174 +1392,6 @@ class CategoryManager {
         };
         
         this.isInitialized = true;
-    }
-
-    initializeWeightedDetection() {
-        this.weightedKeywords = {
-            marketing_news: {
-                absolute: [
-                    // Mots-clés absolus en français et anglais
-                    'unsubscribe', 'se désinscrire', 'se desinscrire', 'opt out', 'newsletter',
-                    'disable these notifications', 'email preferences', 'manage preferences',
-                    'preference center', 'centre de préférences', 'gerer mes preferences',
-                    'stop receiving', 'arreter de recevoir', 'click here to unsubscribe',
-                    'cliquez ici pour vous désinscrire', 'update subscription'
-                ],
-                strong: [
-                    // Marques de mode et commerce
-                    'tommy hilfiger', 'tommy', 'hilfiger', 'calvin klein', 'calvin', 'klein',
-                    'cerruti', 'camberabero', 'big moustache', 'moustache',
-                    
-                    // Mots promotionnels français
-                    'promo', 'promotion', 'promotions', 'soldes', 'réduction', 'reduction',
-                    'remise', 'offre spéciale', 'offre speciale', 'bon plan', 'bons plans',
-                    'vente privée', 'vente privee', 'ventes privees', 'jusqu à', 'jusqua',
-                    
-                    // Mots promotionnels anglais
-                    'sale', 'sales', 'offer', 'offers', 'deal', 'deals', 'discount', 'discounts',
-                    'special offer', 'limited time', 'exclusive', 'save up to', 'up to',
-                    'off', 'percent off', 'buy now', 'shop now', 'order now',
-                    
-                    // Marketing/Newsletter
-                    'marketing', 'campaign', 'campaigns', 'newsletter', 'newsletters',
-                    'email marketing', 'promotional', 'advertising'
-                ],
-                weak: [
-                    // Termes généraux commerce
-                    'shop', 'store', 'boutique', 'collection', 'collections',
-                    'new arrivals', 'nouveautés', 'nouveautes', 'latest', 'dernier',
-                    'discover', 'découvrir', 'decouvrir', 'explore', 'explorer',
-                    'fashion', 'mode', 'style', 'trends', 'tendances',
-                    'brand', 'marque', 'luxury', 'luxe', 'premium',
-                    
-                    // Termes mise à jour
-                    'update', 'updates', 'mise à jour', 'news', 'nouvelles',
-                    'information', 'info', 'announcement', 'annonce'
-                ],
-                exclusions: [
-                    // Exclusions pour éviter les faux positifs
-                    'facture', 'invoice', 'commande', 'order', 'livraison', 'delivery',
-                    'suivi', 'tracking', 'expedition', 'shipping'
-                ]
-            },
-            security: {
-                absolute: [
-                    'alerte de connexion', 'login alert', 'new sign-in', 'nouvelle connexion',
-                    'code de vérification', 'verification code', 'two-factor', 'authentification',
-                    'password reset', 'réinitialisation mot de passe', 'security alert',
-                    'alerte sécurité', 'alerte securite', 'suspicious activity'
-                ],
-                strong: ['sécurité', 'security', 'authentification', 'authentication'],
-                weak: ['compte', 'account'],
-                exclusions: ['newsletter', 'promotion', 'marketing']
-            },
-            tasks: {
-                absolute: [
-                    'action required', 'action requise', 'urgent', 'urgence',
-                    'deadline', 'échéance', 'echeance', 'update request', 'correction requise',
-                    'immediate attention', 'attention immédiate', 'attention immediate'
-                ],
-                strong: ['urgent', 'priority', 'priorité', 'priorite', 'complete', 'action', 'task', 'tâche', 'tache'],
-                weak: ['demande', 'request', 'need', 'besoin'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-            meetings: {
-                absolute: [
-                    'meeting request', 'demande de réunion', 'demande de reunion', 'réunion', 'reunion',
-                    'teams meeting', 'zoom meeting', 'rendez-vous', 'rendez vous', 'appointment'
-                ],
-                strong: ['meeting', 'schedule', 'planning', 'calendar', 'calendrier', 'conference'],
-                weak: ['agenda', 'available', 'disponible'],
-                exclusions: ['newsletter', 'promotion', 'marketing']
-            },
-            commercial: {
-                absolute: [
-                    'devis', 'quotation', 'proposal', 'proposition', 'contrat', 'contract',
-                    'purchase order', 'bon de commande', 'opportunity', 'opportunité', 'opportunite'
-                ],
-                strong: ['client', 'customer', 'commercial', 'business', 'deal', 'affaire'],
-                weak: ['offre', 'négociation', 'negociation'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-            finance: {
-                absolute: [
-                    'facture', 'invoice', 'payment', 'paiement', 'virement', 'transfer',
-                    'commande n°', 'commande no', 'order number', 'confirmation commande',
-                    'order confirmation', 'receipt', 'reçu', 'recu'
-                ],
-                strong: ['montant', 'amount', 'total', 'fiscal', 'bancaire', 'bank', 'commande', 'order'],
-                weak: ['euro', 'eur', 'dollar', 'usd', 'prix', 'price'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-            project: {
-                absolute: [
-                    'projet', 'project', 'project update', 'mise à jour projet', 'milestone',
-                    'sprint', 'document corrigé', 'document corrige', 'version corrigée', 'version corrigee'
-                ],
-                strong: ['projet', 'project', 'development', 'développement', 'developpement', 'document'],
-                weak: ['development', 'phase', 'planning'],
-                exclusions: ['newsletter', 'promotion']
-            },
-            reminders: {
-                absolute: [
-                    'reminder', 'rappel', 'follow up', 'suivi', 'relance',
-                    'gentle reminder', 'rappel amical', 'comme convenu', 'as agreed'
-                ],
-                strong: ['reminder', 'rappel', 'follow', 'suivi', 'relance'],
-                weak: ['discussed', 'discuté', 'discute', 'encore', 'again'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-            support: {
-                absolute: [
-                    'ticket #', 'ticket n°', 'ticket no', 'case number', 'incident #',
-                    'support ticket', 'ticket support', 'problème résolu', 'probleme resolu'
-                ],
-                strong: ['support', 'assistance', 'help desk', 'ticket', 'helpdesk'],
-                weak: ['help', 'aide', 'issue', 'problème', 'probleme'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-            hr: {
-                absolute: [
-                    'bulletin de paie', 'bulletin de salaire', 'payslip', 'salary slip',
-                    'contrat de travail', 'employment contract', 'congés', 'conges', 'vacation',
-                    'performance review', 'évaluation', 'evaluation', 'offre d\'emploi', 'job offer'
-                ],
-                strong: ['rh', 'hr', 'human resources', 'ressources humaines', 'salaire', 'salary', 'emploi', 'employment'],
-                weak: ['employee', 'employé', 'employe', 'staff', 'personnel'],
-                exclusions: ['newsletter', 'promotion', 'marketing']
-            },
-            internal: {
-                absolute: [
-                    'all staff', 'tout le personnel', 'company announcement', 'annonce entreprise',
-                    'memo interne', 'internal memo', 'communication interne', 'internal communication',
-                    'note de service', 'company wide', 'à toute l\'équipe', 'to all team'
-                ],
-                strong: ['internal', 'interne', 'company wide', 'annonce', 'announcement', 'memo'],
-                weak: ['announcement', 'information', 'company', 'entreprise'],
-                exclusions: ['newsletter', 'marketing', 'external', 'externe']
-            },
-            notifications: {
-                absolute: [
-                    'do not reply', 'ne pas répondre', 'ne pas repondre', 'noreply@', 'no-reply@',
-                    'automated message', 'message automatique', 'system notification',
-                    'notification système', 'notification systeme', 'auto-generated'
-                ],
-                strong: ['automated', 'automatique', 'automatic', 'system', 'système', 'systeme', 'notification'],
-                weak: ['notification', 'alert', 'alerte'],
-                exclusions: ['newsletter', 'marketing', 'promotion']
-            },
-            cc: {
-                absolute: [
-                    'copie pour information', 'for your information', 'fyi', 'pour info',
-                    'en copie', 'in copy', 'courtesy copy', 'copie de courtoisie'
-                ],
-                strong: ['information', 'copie', 'copy', 'courtoisie', 'courtesy'],
-                weak: ['fyi', 'info'],
-                exclusions: ['commande', 'facture', 'urgent', 'order', 'invoice']
-            }
-        };
-
-        console.log('[CategoryManager] 🔑 Mots-clés initialisés avec détection newsletter renforcée');
     }
 
     initializeFilters() {
@@ -1706,7 +2057,11 @@ class CategoryManager {
         console.log('📄 Contenu extrait:', content);
         
         const keywords = this.weightedKeywords.marketing_news;
-        console.log('🔑 Mots-clés marketing_news:', keywords);
+        console.log('🔑 Mots-clés marketing_news:', {
+            absolute: keywords.absolute?.length,
+            strong: keywords.strong?.length,
+            weak: keywords.weak?.length
+        });
         
         const score = this.calculateScore(content, keywords, 'marketing_news', testEmail);
         console.log('📊 Score calculé:', score);
@@ -1793,20 +2148,43 @@ if (window.categoryManager) {
     window.categoryManager.destroy?.();
 }
 
-console.log('[CategoryManager] 🚀 Création nouvelle instance v22.2 avec détection newsletter ultra-renforcée...');
+console.log('[CategoryManager] 🚀 Création nouvelle instance v23.0 avec détection newsletter ultra-renforcée...');
 window.categoryManager = new CategoryManager();
 
 // ================================================
 // MÉTHODES GLOBALES DE TEST NEWSLETTER
 // ================================================
 
-// Test rapide pour l'email TOMMY HILFIGER
-window.testTommyHilfiger = function() {
+// Test rapide pour les emails problématiques
+window.testNewsletterEmail = function(subject, sender, body) {
     return window.categoryManager.testNewsletterDetection(
-        '✅ TOMMY HILFIGER boxers jusqu\'à -54%, CAMBERABERO, CALVIN KLEIN underwear, CERRUTI 1881 parfums, BIG MOUSTACHE soins...',
-        'noreply@example.com',
-        'Découvrez nos promotions exceptionnelles sur les plus grandes marques. Tommy Hilfiger, Calvin Klein, Cerruti et bien d\'autres. Offres limitées.'
+        subject || 'Test newsletter',
+        sender || 'newsletter@example.com',
+        body || 'Cliquez ici pour vous désabonner. Si vous ne souhaitez plus recevoir nos emails, mettez à jour vos préférences de communication.'
     );
+};
+
+// Test des emails des documents
+window.testRealEmails = function() {
+    console.group('🧪 TEST DES EMAILS RÉELS');
+    
+    // Email 1: Investissement Locatif
+    const email1 = window.categoryManager.testNewsletterDetection(
+        '✅ TOMMY HILFIGER boxers jusqu\'à -54%, CAMBERABERO, CALVIN KLEIN underwear, CERRUTI 1881 parfums, BIG MOUSTACHE soins...',
+        'mz@investissement-locatif.com',
+        'Comment VRAIMENT acheter un bien dans les 6 prochains mois... Rejoignez nous en direct maintenant. Pour ne plus recevoir nos communications, vous pouvez vous désabonner en cliquant sur ce lien.'
+    );
+    console.log('Email 1 (Investissement Locatif):', email1);
+    
+    // Email 2: Gens de Confiance
+    const email2 = window.categoryManager.testNewsletterDetection(
+        '🌿 Fraîchement publiées… des maisons qui sentent bon les vacances !',
+        'hello@news.gensdeconfiance.com',
+        'Ne laissez pas filer ces nouvelles locations ! Découvrez notre sélection d\'annonces tout juste partagées sur Gens de Confiance. Si vous souhaitez vous désinscrire de notre newsletter, cliquez ici'
+    );
+    console.log('Email 2 (Gens de Confiance):', email2);
+    
+    console.groupEnd();
 };
 
 // Afficher les stats de détection newsletter
@@ -1826,8 +2204,9 @@ window.toggleNewsletterDebug = function() {
     return window.categoryManager.debugMode;
 };
 
-console.log('✅ CategoryManager v22.2 - DÉTECTION NEWSLETTER ULTRA-RENFORCÉE loaded!');
+console.log('✅ CategoryManager v23.0 - DÉTECTION NEWSLETTER ULTRA-RENFORCÉE loaded!');
 console.log('🧪 Fonctions de test disponibles:');
-console.log('   - testTommyHilfiger() : Test de l\'email TOMMY HILFIGER');  
+console.log('   - testNewsletterEmail(subject, sender, body) : Test personnalisé');
+console.log('   - testRealEmails() : Test des emails des documents');  
 console.log('   - getNewsletterStats() : Statistiques de détection');
 console.log('   - toggleNewsletterDebug() : Activer/désactiver debug');
