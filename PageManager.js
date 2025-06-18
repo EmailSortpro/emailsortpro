@@ -2053,6 +2053,7 @@ class PageManager {
                 min-height: 48px;
                 margin-right: -1px;
                 margin-bottom: -1px;
+                color: var(--pm-gray-800);
             }
             
             .category-pill-modern:nth-child(6n) {
@@ -2066,10 +2067,18 @@ class PageManager {
             }
             
             .category-pill-modern.active {
-                background: var(--pm-primary);
-                color: white;
+                background: rgba(59, 130, 246, 0.15);
+                color: var(--pm-gray-800);
                 z-index: 2;
                 box-shadow: 0 0 0 2px var(--pm-primary);
+                border-color: var(--pm-primary);
+            }
+            
+            .category-pill-modern.active .pill-icon,
+            .category-pill-modern.active .pill-name,
+            .category-pill-modern.active .pill-count {
+                color: var(--pm-gray-800);
+                font-weight: 600;
             }
             
             .category-pill-modern.preselected {
