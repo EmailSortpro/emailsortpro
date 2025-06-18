@@ -2029,23 +2029,27 @@ class PageManager {
                 margin: 8px 0;
             }
             
-            /* Filtres de catégories modernes - Plus compacts */
+            /* Filtres de catégories modernes - Taille fixe et plus grande */
             .category-filters-modern {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 10px;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 12px;
                 margin-bottom: 24px;
             }
             
             .category-pill-modern {
                 background: white;
                 border: 2px solid var(--pm-gray-200);
-                border-radius: 10px;
-                padding: 8px 14px;
+                border-radius: 12px;
+                padding: 12px 16px;
                 cursor: pointer;
                 transition: var(--pm-transition);
                 position: relative;
                 overflow: visible;
+                min-height: 48px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .category-pill-modern:hover {
@@ -2070,23 +2074,31 @@ class PageManager {
             .pill-content {
                 display: flex;
                 align-items: center;
-                gap: 6px;
-                font-size: 14px;
+                gap: 8px;
+                font-size: 15px;
                 font-weight: 500;
+                width: 100%;
+                justify-content: center;
             }
             
             .pill-icon {
-                font-size: 18px;
+                font-size: 20px;
+                flex-shrink: 0;
             }
             
             .pill-name {
-                font-size: 14px;
+                font-size: 15px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 120px;
             }
             
             .pill-count {
-                font-size: 13px;
+                font-size: 14px;
                 font-weight: 600;
                 opacity: 0.8;
+                flex-shrink: 0;
             }
             
             .category-pill-modern.active .pill-count {
@@ -2099,13 +2111,13 @@ class PageManager {
                 right: -6px;
                 background: var(--pm-secondary);
                 color: white;
-                width: 20px;
-                height: 20px;
+                width: 22px;
+                height: 22px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 10px;
+                font-size: 11px;
                 border: 2px solid white;
                 box-shadow: var(--pm-shadow-md);
                 animation: pulse 2s ease-in-out infinite;
@@ -2697,13 +2709,27 @@ class PageManager {
             }
             
             /* Responsive */
+            @media (max-width: 1400px) {
+                .category-filters-modern {
+                    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                    gap: 10px;
+                }
+            }
+            
             @media (max-width: 1200px) {
                 .category-filters-modern {
+                    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
                     gap: 8px;
                 }
                 
                 .category-pill-modern {
-                    padding: 6px 12px;
+                    padding: 10px 14px;
+                    min-height: 44px;
+                }
+                
+                .pill-name {
+                    max-width: 100px;
+                    font-size: 14px;
                 }
             }
             
@@ -2734,18 +2760,25 @@ class PageManager {
                 }
                 
                 .category-filters-modern {
+                    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
                     gap: 6px;
                 }
                 
                 .category-pill-modern {
-                    padding: 6px 10px;
+                    padding: 8px 12px;
+                    min-height: 40px;
                 }
                 
                 .pill-icon {
-                    font-size: 16px;
+                    font-size: 18px;
                 }
                 
                 .pill-name {
+                    font-size: 13px;
+                    max-width: 80px;
+                }
+                
+                .pill-count {
                     font-size: 12px;
                 }
                 
@@ -2778,16 +2811,27 @@ class PageManager {
                     gap: 4px;
                 }
                 
+                .category-filters-modern {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 6px;
+                }
+                
                 .category-pill-modern {
-                    padding: 5px 8px;
+                    padding: 8px 10px;
+                    min-height: 38px;
                 }
                 
                 .pill-content {
                     font-size: 12px;
+                    gap: 4px;
                 }
                 
                 .pill-icon {
-                    font-size: 14px;
+                    font-size: 16px;
+                }
+                
+                .pill-name {
+                    max-width: 70px;
                 }
                 
                 .pill-count {
