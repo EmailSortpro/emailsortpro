@@ -505,7 +505,7 @@ class PageManager {
         // Ajouter les catégories
         for (const cat of sortedCategories) {
             const isPreselected = taskPreselectedCategories.includes(cat.id);
-            const displayName = cat.name.length > 12 ? cat.name.substring(0, 11) + '…' : cat.name;
+            const displayName = cat.name.length > 16 ? cat.name.substring(0, 15) + '…' : cat.name;
             
             filtersHtml += `
                 <button class="category-pill-modern ${this.currentCategory === cat.id ? 'active' : ''} ${isPreselected ? 'preselected' : ''}" 
@@ -2098,12 +2098,13 @@ class PageManager {
             }
             
             .pill-name {
-                font-size: 12px;
+                font-size: 11px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 flex: 1;
                 text-align: left;
+                letter-spacing: -0.3px;
             }
             
             /* Tooltip pour les noms longs */
