@@ -486,7 +486,8 @@ class PageManager {
         let filtersHtml = `
             <button class="category-pill-modern ${!this.currentCategory ? 'active' : ''}" 
                     onclick="window.pageManager.filterByCategory(null)"
-                    data-category="all">
+                    data-category="all"
+                    title="Tous les emails">
                 <div class="pill-content">
                     <span class="pill-icon">📧</span>
                     <span class="pill-name">Tous</span>
@@ -504,14 +505,17 @@ class PageManager {
         // Ajouter les catégories
         for (const cat of sortedCategories) {
             const isPreselected = taskPreselectedCategories.includes(cat.id);
+            const displayName = cat.name.length > 12 ? cat.name.substring(0, 11) + '…' : cat.name;
+            
             filtersHtml += `
                 <button class="category-pill-modern ${this.currentCategory === cat.id ? 'active' : ''} ${isPreselected ? 'preselected' : ''}" 
                         onclick="window.pageManager.filterByCategory('${cat.id}')"
                         data-category="${cat.id}"
-                        style="--cat-color: ${cat.color}">
+                        style="--cat-color: ${cat.color}"
+                        title="${cat.name}">
                     <div class="pill-content">
                         <span class="pill-icon">${cat.icon}</span>
-                        <span class="pill-name">${cat.name}</span>
+                        <span class="pill-name">${displayName}</span>
                         <span class="pill-count">(${cat.count})</span>
                     </div>
                     ${isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
@@ -525,7 +529,8 @@ class PageManager {
             filtersHtml += `
                 <button class="category-pill-modern ${this.currentCategory === 'other' ? 'active' : ''}" 
                         onclick="window.pageManager.filterByCategory('other')"
-                        data-category="other">
+                        data-category="other"
+                        title="Non catégorisé">
                     <div class="pill-content">
                         <span class="pill-icon">📌</span>
                         <span class="pill-name">Autre</span>
@@ -2079,11 +2084,12 @@ class PageManager {
             .pill-content {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 4px;
                 font-size: 13px;
                 font-weight: 500;
                 width: 100%;
                 justify-content: center;
+                padding: 0 2px;
             }
             
             .pill-icon {
@@ -2092,15 +2098,50 @@ class PageManager {
             }
             
             .pill-name {
-                font-size: 13px;
+                font-size: 12px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                max-width: 100px;
+                flex: 1;
+                text-align: left;
+            }
+            
+            /* Tooltip pour les noms longs */
+            .category-pill-modern:hover .pill-name {
+                position: relative;
+            }
+            
+            .category-pill-modern[title]:hover::after {
+                content: attr(title);
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--pm-gray-900);
+                color: white;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 12px;
+                white-space: nowrap;
+                z-index: 10;
+                margin-bottom: 4px;
+                box-shadow: var(--pm-shadow-md);
+            }
+            
+            .category-pill-modern[title]:hover::before {
+                content: '';
+                position: absolute;
+                bottom: 100%;
+                left: 50%;
+                transform: translateX(-50%);
+                border: 6px solid transparent;
+                border-top-color: var(--pm-gray-900);
+                margin-bottom: -8px;
+                z-index: 10;
             }
             
             .pill-count {
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 600;
                 opacity: 0.7;
                 flex-shrink: 0;
