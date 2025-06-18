@@ -184,41 +184,107 @@ class EmailScanner {
         const provider = await this.getActiveProvider();
         console.log('[EmailScanner] Provider actif:', provider);
 
-        // Calculer la date de début
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() - this.scanOptions.days);
-
         try {
             let emails = [];
             
-            // Debug - afficher les méthodes disponibles
-            console.log('[EmailScanner] Méthodes disponibles dans mailService:');
-            const proto = Object.getPrototypeOf(window.mailService);
-            if (proto) {
-                Object.getOwnPropertyNames(proto).forEach(name => {
-                    if (typeof proto[name] === 'function') {
-                        console.log(`  - ${name}`);
-                    }
-                });
+            // Vérifier si le MailService est initialisé
+            if (!window.mailService.isInitialized) {
+                console.log('[EmailScanner] 🔄 MailService non initialisé, initialisation...');
+                await window.mailService.initialize();
+                console.log('[EmailScanner] ✅ MailService initialisé');
             }
             
-            // Utiliser la méthode getEmailsFromFolder qui est disponible dans le prototype
-            if (typeof window.mailService.getEmailsFromFolder === 'function') {
-                console.log('[EmailScanner] Utilisation de getEmailsFromFolder');
+            // Pour Microsoft, utiliser directement getMicrosoftEmails
+            if (provider === 'microsoft' && typeof window.mailService.getMicrosoftEmails === 'function') {
+                console.log('[EmailScanner] Utilisation de getMicrosoftEmails');
                 
-                // Paramètres pour getEmailsFromFolder
-                const folderName = this.scanOptions.folder || 'inbox';
+                // Calculer la date de début
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - this.scanOptions.days);
+                
+                // Construire le filtre Microsoft Graph
+                const filter = `receivedDateTime ge ${startDate.toISOString()}`;
+                
+                // Options pour Microsoft Graph API
                 const options = {
-                    startDate: startDate.toISOString(),
-                    limit: 1000,
-                    days: this.scanOptions.days
+                    top: 1000,
+                    select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
+                    filter: filter,
+                    orderby: 'receivedDateTime desc'
                 };
                 
-                console.log('[EmailScanner] Appel de getEmailsFromFolder avec:', { folderName, options });
+                console.log('[EmailScanner] Options Microsoft:', options);
+                
+                // Appeler getMicrosoftEmails avec le dossier et les options
+                const response = await window.mailService.getMicrosoftEmails(
+                    this.scanOptions.folder || 'inbox',
+                    options
+                );
+                
+                console.log('[EmailScanner] Réponse Microsoft:', response);
+                
+                // Extraire les emails de la réponse
+                if (response) {
+                    if (Array.isArray(response)) {
+                        emails = response;
+                    } else if (response.value && Array.isArray(response.value)) {
+                        emails = response.value;
+                    } else if (response.emails && Array.isArray(response.emails)) {
+                        emails = response.emails;
+                    } else {
+                        console.warn('[EmailScanner] Format de réponse inattendu:', response);
+                        emails = [];
+                    }
+                }
+                
+            } else if (provider === 'google' && typeof window.mailService.getGmailEmails === 'function') {
+                console.log('[EmailScanner] Utilisation de getGmailEmails');
+                
+                // Calculer la date de début
+                const startDate = new Date();
+                startDate.setDate(startDate.getDate() - this.scanOptions.days);
+                
+                // Options pour Gmail API
+                const options = {
+                    labelIds: ['INBOX'],
+                    maxResults: 1000,
+                    q: `after:${startDate.toISOString().split('T')[0]}`
+                };
+                
+                console.log('[EmailScanner] Options Gmail:', options);
+                
+                const response = await window.mailService.getGmailEmails(options);
+                
+                console.log('[EmailScanner] Réponse Gmail:', response);
+                
+                if (response) {
+                    if (Array.isArray(response)) {
+                        emails = response;
+                    } else if (response.messages && Array.isArray(response.messages)) {
+                        emails = response.messages;
+                    } else if (response.emails && Array.isArray(response.emails)) {
+                        emails = response.emails;
+                    } else {
+                        emails = [];
+                    }
+                }
+                
+            } else if (typeof window.mailService.getEmailsFromFolder === 'function') {
+                // Fallback vers getEmailsFromFolder
+                console.log('[EmailScanner] Fallback vers getEmailsFromFolder');
+                
+                const folderName = this.scanOptions.folder || 'inbox';
+                const options = {
+                    days: this.scanOptions.days,
+                    limit: 1000
+                };
+                
+                console.log('[EmailScanner] Appel getEmailsFromFolder:', { folderName, options });
                 
                 const response = await window.mailService.getEmailsFromFolder(folderName, options);
                 
-                // La réponse peut être un objet avec une propriété emails ou value
+                console.log('[EmailScanner] Réponse getEmailsFromFolder:', response);
+                
                 if (response) {
                     if (Array.isArray(response)) {
                         emails = response;
@@ -226,34 +292,10 @@ class EmailScanner {
                         emails = response.emails;
                     } else if (response.value && Array.isArray(response.value)) {
                         emails = response.value;
-                    } else if (response.messages && Array.isArray(response.messages)) {
-                        emails = response.messages;
                     } else {
-                        console.warn('[EmailScanner] Format de réponse inattendu:', response);
                         emails = [];
                     }
                 }
-            } else if (typeof window.mailService.getMicrosoftEmails === 'function' && provider === 'microsoft') {
-                // Fallback vers getMicrosoftEmails si disponible
-                console.log('[EmailScanner] Utilisation de getMicrosoftEmails');
-                const response = await window.mailService.getMicrosoftEmails(
-                    this.scanOptions.folder || 'inbox',
-                    {
-                        filter: `receivedDateTime ge ${startDate.toISOString()}`,
-                        top: 1000,
-                        orderby: 'receivedDateTime desc'
-                    }
-                );
-                emails = response.value || response || [];
-            } else if (typeof window.mailService.getGmailEmails === 'function' && provider === 'google') {
-                // Pour Gmail
-                console.log('[EmailScanner] Utilisation de getGmailEmails');
-                const response = await window.mailService.getGmailEmails({
-                    labelIds: ['INBOX'],
-                    maxResults: 1000,
-                    q: `after:${startDate.toISOString().split('T')[0]}`
-                });
-                emails = response.messages || response || [];
             } else {
                 throw new Error('Aucune méthode de récupération des emails disponible');
             }
@@ -266,24 +308,40 @@ class EmailScanner {
 
             console.log(`[EmailScanner] ✅ ${emails.length} emails récupérés`);
             
-            // Si aucun email, vérifier l'initialisation du mailService
+            // Si aucun email et en mode debug, afficher plus d'infos
             if (emails.length === 0) {
-                console.log('[EmailScanner] ⚠️ Aucun email récupéré. Vérification du service...');
+                console.log('[EmailScanner] ⚠️ Aucun email récupéré. Vérifications supplémentaires...');
                 
-                // Vérifier si le service est initialisé
-                if (!window.mailService.isInitialized) {
-                    console.log('[EmailScanner] 🔄 Initialisation du MailService...');
-                    await window.mailService.initialize();
+                // Vérifier l'état du token
+                if (window.authService && typeof window.authService.isAuthenticated === 'function') {
+                    const isAuth = window.authService.isAuthenticated();
+                    console.log('[EmailScanner] Authentification Microsoft:', isAuth);
                     
-                    // Réessayer après initialisation
-                    console.log('[EmailScanner] 🔄 Nouvelle tentative après initialisation...');
-                    return this.fetchEmails();
+                    if (isAuth) {
+                        // Essayer de récupérer un nouveau token
+                        try {
+                            const token = await window.authService.getAccessToken(['Mail.Read']);
+                            console.log('[EmailScanner] Token valide obtenu');
+                        } catch (tokenError) {
+                            console.error('[EmailScanner] Erreur obtention token:', tokenError);
+                        }
+                    }
                 }
                 
-                // Afficher l'état du service pour debug
+                // Afficher les infos de debug du MailService
                 if (typeof window.mailService.getDebugInfo === 'function') {
                     const debugInfo = window.mailService.getDebugInfo();
-                    console.log('[EmailScanner] Debug info du MailService:', debugInfo);
+                    console.log('[EmailScanner] Debug info MailService:', debugInfo);
+                }
+                
+                // Vérifier les dossiers disponibles
+                if (typeof window.mailService.getFolders === 'function') {
+                    try {
+                        const folders = await window.mailService.getFolders();
+                        console.log('[EmailScanner] Dossiers disponibles:', folders);
+                    } catch (folderError) {
+                        console.error('[EmailScanner] Erreur récupération dossiers:', folderError);
+                    }
                 }
             }
             
@@ -295,6 +353,11 @@ class EmailScanner {
             // Si l'erreur est liée à l'authentification, la propager
             if (error.message?.includes('auth') || error.message?.includes('token') || error.status === 401) {
                 throw new Error('Erreur d\'authentification. Veuillez vous reconnecter.');
+            }
+            
+            // Si l'erreur est liée au réseau
+            if (error.message?.includes('network') || error.message?.includes('fetch')) {
+                throw new Error('Erreur de connexion. Vérifiez votre connexion internet.');
             }
             
             // Pour toute autre erreur, essayer de donner plus d'infos
