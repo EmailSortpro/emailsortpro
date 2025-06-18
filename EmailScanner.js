@@ -146,13 +146,20 @@ class EmailScanner {
         startDate.setDate(startDate.getDate() - this.scanOptions.days);
 
         try {
-            // Récupérer les emails via MailService
-            const emails = await window.mailService.getEmails({
-                folder: this.scanOptions.folder,
-                startDate: startDate.toISOString(),
-                includeBody: true,
-                maxResults: 1000
-            });
+            // Récupérer les emails via MailService avec la bonne méthode
+            const filter = `receivedDateTime ge ${startDate.toISOString()}`;
+            const options = {
+                top: 1000,
+                select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
+                filter: filter,
+                orderby: 'receivedDateTime desc'
+            };
+
+            // Utiliser fetchEmails au lieu de getEmails
+            const emails = await window.mailService.fetchEmails(
+                this.scanOptions.folder || 'inbox',
+                options
+            );
 
             console.log(`[EmailScanner] ✅ ${emails.length} emails récupérés`);
             return emails;
