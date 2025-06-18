@@ -146,26 +146,48 @@ class EmailScanner {
         startDate.setDate(startDate.getDate() - this.scanOptions.days);
 
         try {
-            // Récupérer les emails via MailService avec la bonne méthode
-            const filter = `receivedDateTime ge ${startDate.toISOString()}`;
-            const options = {
-                top: 1000,
-                select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
-                filter: filter,
-                orderby: 'receivedDateTime desc'
-            };
+            // Récupérer les emails selon le provider
+            let emails = [];
+            
+            if (provider === 'microsoft') {
+                // Pour Microsoft, utiliser la méthode getMessages
+                const filter = `receivedDateTime ge ${startDate.toISOString()}`;
+                const response = await window.mailService.getMessages(
+                    this.scanOptions.folder || 'inbox',
+                    {
+                        top: 1000,
+                        select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
+                        filter: filter,
+                        orderby: 'receivedDateTime desc'
+                    }
+                );
+                
+                emails = response.value || response || [];
+            } else if (provider === 'google') {
+                // Pour Google, utiliser une méthode différente si nécessaire
+                emails = await window.mailService.getGmailMessages({
+                    maxResults: 1000,
+                    q: `after:${startDate.toISOString().split('T')[0]}`
+                });
+            }
 
-            // Utiliser fetchEmails au lieu de getEmails
-            const emails = await window.mailService.fetchEmails(
-                this.scanOptions.folder || 'inbox',
-                options
-            );
+            // S'assurer que emails est un tableau
+            if (!Array.isArray(emails)) {
+                console.warn('[EmailScanner] Réponse non-tableau, conversion...');
+                emails = emails.value || [emails];
+            }
 
             console.log(`[EmailScanner] ✅ ${emails.length} emails récupérés`);
             return emails;
 
         } catch (error) {
             console.error('[EmailScanner] Erreur récupération emails:', error);
+            
+            // Si l'erreur est liée à l'authentification, la propager
+            if (error.message?.includes('auth') || error.message?.includes('token')) {
+                throw new Error('Erreur d\'authentification. Veuillez vous reconnecter.');
+            }
+            
             throw error;
         }
     }
