@@ -176,7 +176,7 @@ class EmailScanner {
     async fetchEmails() {
         console.log('[EmailScanner] 📨 Récupération des emails...');
         
-        // Utiliser le MailService unifié
+        // Vérifier la disponibilité du service
         if (!window.mailService) {
             throw new Error('Service de messagerie non disponible');
         }
@@ -189,35 +189,85 @@ class EmailScanner {
         startDate.setDate(startDate.getDate() - this.scanOptions.days);
 
         try {
-            // Récupérer les emails selon le provider
             let emails = [];
             
+            // Vérifier quelles méthodes sont disponibles dans mailService
+            console.log('[EmailScanner] Méthodes disponibles dans mailService:', Object.keys(window.mailService));
+            
             if (provider === 'microsoft') {
-                // Pour Microsoft, utiliser la méthode getMessages
-                const filter = `receivedDateTime ge ${startDate.toISOString()}`;
-                const response = await window.mailService.getMessages(
-                    this.scanOptions.folder || 'inbox',
-                    {
-                        top: 1000,
-                        select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
-                        filter: filter,
-                        orderby: 'receivedDateTime desc'
+                // Essayer différentes méthodes possibles
+                if (typeof window.mailService.fetchMessages === 'function') {
+                    // Méthode fetchMessages
+                    console.log('[EmailScanner] Utilisation de fetchMessages');
+                    const filter = `receivedDateTime ge ${startDate.toISOString()}`;
+                    emails = await window.mailService.fetchMessages(
+                        this.scanOptions.folder || 'inbox',
+                        {
+                            top: 1000,
+                            select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
+                            filter: filter,
+                            orderby: 'receivedDateTime desc'
+                        }
+                    );
+                } else if (typeof window.mailService.getEmails === 'function') {
+                    // Méthode getEmails
+                    console.log('[EmailScanner] Utilisation de getEmails');
+                    emails = await window.mailService.getEmails({
+                        folder: this.scanOptions.folder || 'inbox',
+                        days: this.scanOptions.days,
+                        limit: 1000
+                    });
+                } else if (typeof window.mailService.messages === 'object' && typeof window.mailService.messages.list === 'function') {
+                    // Méthode messages.list (style API)
+                    console.log('[EmailScanner] Utilisation de messages.list');
+                    const response = await window.mailService.messages.list({
+                        folder: this.scanOptions.folder || 'inbox',
+                        filter: `receivedDateTime ge ${startDate.toISOString()}`,
+                        top: 1000
+                    });
+                    emails = response.value || response.data || response || [];
+                } else {
+                    // Fallback - essayer d'appeler directement le service Microsoft
+                    console.log('[EmailScanner] Fallback vers Microsoft Graph API direct');
+                    if (window.microsoftMailService) {
+                        const filter = `receivedDateTime ge ${startDate.toISOString()}`;
+                        emails = await window.microsoftMailService.fetchMessages(
+                            this.scanOptions.folder || 'inbox',
+                            {
+                                top: 1000,
+                                select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
+                                filter: filter,
+                                orderby: 'receivedDateTime desc'
+                            }
+                        );
+                    } else {
+                        throw new Error('Aucune méthode de récupération des emails disponible');
                     }
-                );
-                
-                emails = response.value || response || [];
+                }
             } else if (provider === 'google') {
-                // Pour Google, utiliser une méthode différente si nécessaire
-                emails = await window.mailService.getGmailMessages({
-                    maxResults: 1000,
-                    q: `after:${startDate.toISOString().split('T')[0]}`
-                });
+                // Pour Google
+                if (typeof window.mailService.getGmailMessages === 'function') {
+                    emails = await window.mailService.getGmailMessages({
+                        maxResults: 1000,
+                        q: `after:${startDate.toISOString().split('T')[0]}`
+                    });
+                } else if (window.googleMailService) {
+                    emails = await window.googleMailService.fetchMessages({
+                        maxResults: 1000,
+                        q: `after:${startDate.toISOString().split('T')[0]}`
+                    });
+                }
             }
 
             // S'assurer que emails est un tableau
             if (!Array.isArray(emails)) {
                 console.warn('[EmailScanner] Réponse non-tableau, conversion...');
-                emails = emails.value || [emails];
+                emails = emails.value || emails.data || emails.messages || [emails];
+            }
+
+            // S'assurer que c'est bien un tableau
+            if (!Array.isArray(emails)) {
+                emails = [];
             }
 
             console.log(`[EmailScanner] ✅ ${emails.length} emails récupérés`);
@@ -231,7 +281,8 @@ class EmailScanner {
                 throw new Error('Erreur d\'authentification. Veuillez vous reconnecter.');
             }
             
-            throw error;
+            // Pour toute autre erreur, essayer de donner plus d'infos
+            throw new Error(`Erreur lors de la récupération des emails: ${error.message}`);
         }
     }
 
