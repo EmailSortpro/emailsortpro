@@ -191,20 +191,46 @@ class EmailScanner {
         try {
             let emails = [];
             
-            // Afficher les méthodes disponibles avec plus de détails
-            console.log('[EmailScanner] Méthodes disponibles dans mailService:');
+            // Debug complet de mailService
+            console.log('[EmailScanner] 🔍 Analyse complète de window.mailService:');
+            console.log('Type:', typeof window.mailService);
+            console.log('Objet complet:', window.mailService);
+            
+            // Lister toutes les propriétés
+            console.log('Propriétés et méthodes:');
             for (const key in window.mailService) {
-                if (typeof window.mailService[key] === 'function') {
-                    console.log(`  - ${key}: function`);
+                const type = typeof window.mailService[key];
+                console.log(`  - ${key}: ${type}`);
+                if (type === 'object' && window.mailService[key] !== null) {
+                    console.log(`    Sous-propriétés de ${key}:`, Object.keys(window.mailService[key]));
                 }
             }
             
-            if (provider === 'microsoft') {
-                // Vérifier chaque méthode possible pour Microsoft
-                if (typeof window.mailService.fetchMessages === 'function') {
-                    console.log('[EmailScanner] Utilisation de fetchMessages');
+            // Vérifier aussi les méthodes du prototype
+            const proto = Object.getPrototypeOf(window.mailService);
+            if (proto) {
+                console.log('Méthodes du prototype:');
+                Object.getOwnPropertyNames(proto).forEach(name => {
+                    if (typeof proto[name] === 'function' && name !== 'constructor') {
+                        console.log(`  - ${name}: function`);
+                    }
+                });
+            }
+            
+            // Vérifier si c'est un service Microsoft spécifique
+            if (window.microsoftMailService) {
+                console.log('[EmailScanner] 🔍 microsoftMailService trouvé:');
+                console.log('Type:', typeof window.microsoftMailService);
+                console.log('Méthodes:', Object.keys(window.microsoftMailService).filter(k => typeof window.microsoftMailService[k] === 'function'));
+            }
+            
+            // NOUVEAU: Essayer d'utiliser directement microsoftMailService si disponible
+            if (provider === 'microsoft' && window.microsoftMailService) {
+                console.log('[EmailScanner] Utilisation de microsoftMailService directement');
+                
+                if (typeof window.microsoftMailService.fetchMessages === 'function') {
                     const filter = `receivedDateTime ge ${startDate.toISOString()}`;
-                    const response = await window.mailService.fetchMessages(
+                    const response = await window.microsoftMailService.fetchMessages(
                         this.scanOptions.folder || 'inbox',
                         {
                             top: 1000,
@@ -214,109 +240,47 @@ class EmailScanner {
                         }
                     );
                     emails = response.value || response || [];
-                } else if (typeof window.mailService.getEmails === 'function') {
-                    console.log('[EmailScanner] Utilisation de getEmails');
-                    emails = await window.mailService.getEmails({
-                        folder: this.scanOptions.folder || 'inbox',
-                        days: this.scanOptions.days,
-                        limit: 1000
-                    });
-                } else if (typeof window.mailService.fetchEmails === 'function') {
-                    console.log('[EmailScanner] Utilisation de fetchEmails');
-                    emails = await window.mailService.fetchEmails({
-                        folder: this.scanOptions.folder || 'inbox',
-                        days: this.scanOptions.days,
-                        limit: 1000
-                    });
-                } else if (typeof window.mailService.getMails === 'function') {
-                    console.log('[EmailScanner] Utilisation de getMails');
-                    emails = await window.mailService.getMails({
+                } else if (typeof window.microsoftMailService.getMessages === 'function') {
+                    const response = await window.microsoftMailService.getMessages({
                         folder: this.scanOptions.folder || 'inbox',
                         startDate: startDate.toISOString(),
                         limit: 1000
                     });
-                } else if (typeof window.mailService.listMessages === 'function') {
-                    console.log('[EmailScanner] Utilisation de listMessages');
-                    const response = await window.mailService.listMessages({
-                        folder: this.scanOptions.folder || 'inbox',
-                        filter: `receivedDateTime ge ${startDate.toISOString()}`,
-                        limit: 1000
-                    });
-                    emails = response.value || response.messages || response || [];
+                    emails = response.value || response || [];
                 } else {
-                    // Si aucune méthode standard, essayer d'appeler directement
-                    console.log('[EmailScanner] Tentative d\'appel direct du mailService');
-                    
-                    // Peut-être que mailService est directement callable
-                    if (typeof window.mailService === 'function') {
-                        emails = await window.mailService({
-                            action: 'fetch',
-                            folder: this.scanOptions.folder || 'inbox',
-                            days: this.scanOptions.days
-                        });
-                    } else {
-                        // Dernier recours : chercher microsoftMailService
-                        console.log('[EmailScanner] Recherche de microsoftMailService...');
-                        if (window.microsoftMailService && typeof window.microsoftMailService.fetchMessages === 'function') {
-                            const filter = `receivedDateTime ge ${startDate.toISOString()}`;
-                            const response = await window.microsoftMailService.fetchMessages(
-                                this.scanOptions.folder || 'inbox',
-                                {
-                                    top: 1000,
-                                    select: 'id,subject,from,receivedDateTime,bodyPreview,body,hasAttachments,importance,categories,isRead,toRecipients,ccRecipients',
-                                    filter: filter,
-                                    orderby: 'receivedDateTime desc'
-                                }
-                            );
-                            emails = response.value || response || [];
-                        } else {
-                            throw new Error('Aucune méthode de récupération des emails disponible dans mailService');
+                    console.error('[EmailScanner] microsoftMailService disponible mais aucune méthode connue trouvée');
+                    console.log('Méthodes disponibles:', Object.getOwnPropertyNames(window.microsoftMailService));
+                }
+            } else {
+                // Si pas de microsoftMailService, essayer les méthodes sur mailService
+                console.log('[EmailScanner] Tentative avec mailService standard...');
+                
+                // Peut-être que mailService a une propriété microsoft
+                if (window.mailService.microsoft && typeof window.mailService.microsoft.fetchMessages === 'function') {
+                    console.log('[EmailScanner] Utilisation de mailService.microsoft.fetchMessages');
+                    const filter = `receivedDateTime ge ${startDate.toISOString()}`;
+                    const response = await window.mailService.microsoft.fetchMessages(
+                        this.scanOptions.folder || 'inbox',
+                        {
+                            top: 1000,
+                            filter: filter,
+                            orderby: 'receivedDateTime desc'
                         }
-                    }
-                }
-            } else if (provider === 'google') {
-                // Pour Google
-                if (typeof window.mailService.getGmailMessages === 'function') {
-                    emails = await window.mailService.getGmailMessages({
-                        maxResults: 1000,
-                        q: `after:${startDate.toISOString().split('T')[0]}`
-                    });
-                } else if (typeof window.mailService.fetchGoogleMails === 'function') {
-                    emails = await window.mailService.fetchGoogleMails({
-                        maxResults: 1000,
-                        after: startDate.toISOString().split('T')[0]
-                    });
-                } else if (window.googleMailService && typeof window.googleMailService.fetchMessages === 'function') {
-                    emails = await window.googleMailService.fetchMessages({
-                        maxResults: 1000,
-                        q: `after:${startDate.toISOString().split('T')[0]}`
-                    });
+                    );
+                    emails = response.value || response || [];
                 }
             }
-
-            // S'assurer que emails est un tableau
-            if (!Array.isArray(emails)) {
-                console.warn('[EmailScanner] Réponse non-tableau, tentative de conversion...');
-                if (emails && typeof emails === 'object') {
-                    emails = emails.value || emails.data || emails.messages || emails.items || [emails];
-                } else {
-                    emails = [];
-                }
-            }
-
-            // Vérification finale
-            if (!Array.isArray(emails)) {
-                console.warn('[EmailScanner] Impossible de convertir en tableau, utilisation d\'un tableau vide');
-                emails = [];
+            
+            // Si toujours aucun email, afficher plus d'infos pour debug
+            if (emails.length === 0) {
+                console.log('[EmailScanner] ⚠️ Aucun email récupéré');
+                console.log('Services disponibles dans window:');
+                Object.keys(window).filter(k => k.includes('mail') || k.includes('Mail')).forEach(k => {
+                    console.log(`  - ${k}:`, typeof window[k]);
+                });
             }
 
             console.log(`[EmailScanner] ✅ ${emails.length} emails récupérés`);
-            
-            // Si aucun email n'est récupéré, vérifier s'il y a un problème
-            if (emails.length === 0) {
-                console.warn('[EmailScanner] ⚠️ Aucun email récupéré. Vérifiez la connexion et les permissions.');
-            }
-            
             return emails;
 
         } catch (error) {
