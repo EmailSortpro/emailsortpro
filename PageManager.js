@@ -632,10 +632,6 @@ class PageManager {
                         <span class="sender-name">${this.escapeHtml(senderName)}</span>
                         ${this.renderCategoryBadgeModern(email)}
                     </div>
-                    
-                    ${email.bodyPreview ? `
-                        <div class="email-preview-modern">${this.escapeHtml(email.bodyPreview.substring(0, 150))}...</div>
-                    ` : ''}
                 </div>
                 
                 <div class="email-actions-modern">
@@ -2089,13 +2085,14 @@ class PageManager {
                 width: 100%;
                 justify-content: center;
                 padding: 0 2px;
-                flex-wrap: wrap;
-                text-align: center;
             }
             
             .pill-icon {
                 font-size: 16px;
                 flex-shrink: 0;
+                display: inline-flex;
+                align-items: center;
+                line-height: 1;
             }
             
             .pill-name {
@@ -2112,6 +2109,8 @@ class PageManager {
                 font-weight: 600;
                 opacity: 0.7;
                 flex-shrink: 0;
+                display: inline-flex;
+                align-items: center;
             }
             
             /* Tooltip pour les noms longs */
@@ -2196,9 +2195,9 @@ class PageManager {
                 background: white;
             }
             
-            /* Carte d'email moderne - Plus grande */
+            /* Carte d'email moderne - Plus grande et épurée */
             .email-card-modern {
-                padding: 20px 24px;
+                padding: 16px 24px;
                 border-bottom: 1px solid var(--pm-gray-100);
                 cursor: pointer;
                 transition: var(--pm-transition);
