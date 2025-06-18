@@ -490,7 +490,7 @@ class PageManager {
                 <div class="pill-content">
                     <span class="pill-icon">📧</span>
                     <span class="pill-name">Tous</span>
-                    <span class="pill-count">${totalEmails}</span>
+                    <span class="pill-count">(${totalEmails})</span>
                 </div>
             </button>
         `;
@@ -512,7 +512,7 @@ class PageManager {
                     <div class="pill-content">
                         <span class="pill-icon">${cat.icon}</span>
                         <span class="pill-name">${cat.name}</span>
-                        <span class="pill-count">${cat.count}</span>
+                        <span class="pill-count">(${cat.count})</span>
                     </div>
                     ${isPreselected ? '<span class="preselected-star">⭐</span>' : ''}
                 </button>
@@ -529,7 +529,7 @@ class PageManager {
                     <div class="pill-content">
                         <span class="pill-icon">📌</span>
                         <span class="pill-name">Autre</span>
-                        <span class="pill-count">${otherCount}</span>
+                        <span class="pill-count">(${otherCount})</span>
                     </div>
                 </button>
             `;
@@ -571,7 +571,7 @@ class PageManager {
             .sort((a, b) => b[1].length - a[1].length);
         
         for (const [groupKey, groupEmails] of sortedGroups) {
-            const isExpanded = true; // Par défaut ouvert
+            const isExpanded = false; // Par défaut fermé
             html += `
                 <div class="email-group-modern ${isExpanded ? 'expanded' : ''}" data-group-key="${groupKey}">
                     <div class="group-header-modern" onclick="window.pageManager.toggleGroup('${groupKey}')">
@@ -2029,24 +2029,23 @@ class PageManager {
                 margin: 8px 0;
             }
             
-            /* Filtres de catégories modernes - 6 par ligne */
+            /* Filtres de catégories modernes - Plus compacts */
             .category-filters-modern {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-                gap: 12px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
                 margin-bottom: 24px;
             }
             
             .category-pill-modern {
                 background: white;
                 border: 2px solid var(--pm-gray-200);
-                border-radius: 12px;
-                padding: 12px 16px;
+                border-radius: 10px;
+                padding: 8px 14px;
                 cursor: pointer;
                 transition: var(--pm-transition);
                 position: relative;
                 overflow: visible;
-                text-align: center;
             }
             
             .category-pill-modern:hover {
@@ -2070,7 +2069,6 @@ class PageManager {
             
             .pill-content {
                 display: flex;
-                flex-direction: column;
                 align-items: center;
                 gap: 6px;
                 font-size: 14px;
@@ -2078,39 +2076,36 @@ class PageManager {
             }
             
             .pill-icon {
-                font-size: 24px;
+                font-size: 18px;
             }
             
             .pill-name {
-                font-size: 13px;
-                line-height: 1.2;
+                font-size: 14px;
             }
             
             .pill-count {
-                background: rgba(0, 0, 0, 0.08);
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: 600;
+                opacity: 0.8;
             }
             
             .category-pill-modern.active .pill-count {
-                background: rgba(255, 255, 255, 0.2);
+                opacity: 0.9;
             }
             
             .preselected-star {
                 position: absolute;
-                top: -8px;
-                right: -8px;
+                top: -6px;
+                right: -6px;
                 background: var(--pm-secondary);
                 color: white;
-                width: 24px;
-                height: 24px;
+                width: 20px;
+                height: 20px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
+                font-size: 10px;
                 border: 2px solid white;
                 box-shadow: var(--pm-shadow-md);
                 animation: pulse 2s ease-in-out infinite;
@@ -2704,7 +2699,11 @@ class PageManager {
             /* Responsive */
             @media (max-width: 1200px) {
                 .category-filters-modern {
-                    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                    gap: 8px;
+                }
+                
+                .category-pill-modern {
+                    padding: 6px 12px;
                 }
             }
             
@@ -2735,8 +2734,19 @@ class PageManager {
                 }
                 
                 .category-filters-modern {
-                    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-                    gap: 8px;
+                    gap: 6px;
+                }
+                
+                .category-pill-modern {
+                    padding: 6px 10px;
+                }
+                
+                .pill-icon {
+                    font-size: 16px;
+                }
+                
+                .pill-name {
+                    font-size: 12px;
                 }
                 
                 .email-preview-modern {
@@ -2768,8 +2778,8 @@ class PageManager {
                     gap: 4px;
                 }
                 
-                .category-filters-modern {
-                    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                .category-pill-modern {
+                    padding: 5px 8px;
                 }
                 
                 .pill-content {
@@ -2777,7 +2787,11 @@ class PageManager {
                 }
                 
                 .pill-icon {
-                    font-size: 20px;
+                    font-size: 14px;
+                }
+                
+                .pill-count {
+                    font-size: 11px;
                 }
             }
         `;
