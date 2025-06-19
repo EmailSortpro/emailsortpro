@@ -391,7 +391,7 @@ class CategoriesPageV22 {
                 <div class="folder-info">
                     <small>
                         <i class="fas fa-info-circle"></i>
-                        Les sauvegardes seront créées dans le dossier sélectionné
+                        Un sous-dossier "EmailSortPro" sera créé automatiquement pour organiser vos sauvegardes
                     </small>
                 </div>
                 
@@ -400,9 +400,9 @@ class CategoriesPageV22 {
                         <i class="fas fa-check-circle"></i>
                         <span><strong>Dossiers sûrs :</strong> Documents, Téléchargements, Bureau, Google Drive, OneDrive, Dropbox</span>
                     </div>
-                    <div class="recommendation-item warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span><strong>Évitez seulement :</strong> Dossiers système (Windows, Program Files, System32)</span>
+                    <div class="recommendation-item info">
+                        <i class="fas fa-folder-plus"></i>
+                        <span><strong>Organisation :</strong> Structure finale → VotreDossier/EmailSortPro/sauvegardes.json</span>
                     </div>
                 </div>
                 
@@ -718,21 +718,27 @@ class CategoriesPageV22 {
                 return;
             }
             
-            // Afficher un avertissement préventif
-            const userConfirmed = confirm(
-                '📁 Sélection du dossier de sauvegarde\n\n' +
-                '✅ DOSSIERS SÛRS :\n' +
-                '• Documents, Téléchargements, Bureau\n' +
-                '• Google Drive, OneDrive, Dropbox\n' +
-                '• Dossiers personnalisés que vous créez\n\n' +
-                '❌ ÉVITEZ SEULEMENT :\n' +
-                '• Dossiers système (C:\\Windows, /System, etc.)\n' +
-                '• Program Files\n\n' +
-                'Continuer la sélection ?'
-            );
+            // Afficher un avertissement préventif SEULEMENT la première fois
+            const hasShownWarning = localStorage.getItem('emailsortpro_folder_warning_shown');
             
-            if (!userConfirmed) {
-                return;
+            if (!hasShownWarning) {
+                const userConfirmed = confirm(
+                    '📁 Sélection du dossier de sauvegarde\n\n' +
+                    '✅ DOSSIERS SÛRS :\n' +
+                    '• Documents, Téléchargements, Bureau\n' +
+                    '• Google Drive, OneDrive, Dropbox\n' +
+                    '• Dossiers personnalisés que vous créez\n\n' +
+                    '💡 INFO : Un sous-dossier "EmailSortPro" sera créé automatiquement\n' +
+                    'dans le dossier que vous sélectionnez.\n\n' +
+                    'Continuer la sélection ?'
+                );
+                
+                if (!userConfirmed) {
+                    return;
+                }
+                
+                // Marquer que l'avertissement a été affiché
+                localStorage.setItem('emailsortpro_folder_warning_shown', 'true');
             }
             
             // Options de sélection sécurisées
@@ -743,11 +749,11 @@ class CategoriesPageV22 {
             };
             
             // Ouvrir le sélecteur de dossier
-            const directoryHandle = await window.showDirectoryPicker(pickerOptions);
+            const parentDirectoryHandle = await window.showDirectoryPicker(pickerOptions);
             
-            // Vérifier que le dossier n'est pas un dossier système
-            const folderName = directoryHandle.name.toLowerCase();
-            const folderPath = directoryHandle.name; // Nom complet potentiel
+            // Vérifier que le dossier parent n'est pas un dossier système
+            const folderName = parentDirectoryHandle.name.toLowerCase();
+            const folderPath = parentDirectoryHandle.name;
             
             // VRAIS dossiers système à éviter (très restrictif)
             const restrictedFolders = [
@@ -764,7 +770,7 @@ class CategoriesPageV22 {
                 'root', 'proc', 'sys', 'run', 'mnt'
             ];
             
-            // Vérification plus intelligente - dossier exact ou contenu dans le nom
+            // Vérification plus intelligente
             const isRestricted = restrictedFolders.some(restricted => {
                 return folderName === restricted || 
                        folderName.startsWith(restricted + ' ') ||
@@ -774,55 +780,77 @@ class CategoriesPageV22 {
             
             // Vérification spéciale pour éviter les dossiers racine système
             const systemRootPatterns = [
-                /^[a-z]:$/i, // C:, D:, etc. (racine de disque Windows)
-                /^\/$/,      // / (racine Linux/macOS)
+                /^[a-z]:$/i, // C:, D:, etc.
+                /^\/$/,      // /
             ];
             
             const isSystemRoot = systemRootPatterns.some(pattern => pattern.test(folderPath));
             
             if (isRestricted || isSystemRoot) {
                 this.showToast('❌ Dossier système détecté. Choisissez un dossier personnel.', 'error');
-                // Relancer la sélection
                 setTimeout(() => this.selectCustomFolder(), 1000);
                 return;
             }
             
-            // Tester l'accès en écriture avant d'accepter le dossier
+            // Créer ou récupérer le sous-dossier EmailSortPro
+            let emailSortProFolder;
             try {
-                await this.testFolderWriteAccess(directoryHandle);
+                // Essayer de récupérer le dossier existant
+                emailSortProFolder = await parentDirectoryHandle.getDirectoryHandle('EmailSortPro');
+                console.log('[Backup] Dossier EmailSortPro existant trouvé');
+            } catch (error) {
+                // Le dossier n'existe pas, le créer
+                try {
+                    emailSortProFolder = await parentDirectoryHandle.getDirectoryHandle('EmailSortPro', {
+                        create: true
+                    });
+                    console.log('[Backup] Dossier EmailSortPro créé');
+                    this.showToast('📁 Dossier "EmailSortPro" créé dans ' + parentDirectoryHandle.name, 'info');
+                } catch (createError) {
+                    console.error('[Backup] Erreur création dossier:', createError);
+                    this.showToast('❌ Impossible de créer le dossier EmailSortPro', 'error');
+                    return;
+                }
+            }
+            
+            // Tester l'accès en écriture dans le sous-dossier
+            try {
+                await this.testFolderWriteAccess(emailSortProFolder);
             } catch (accessError) {
                 console.error('[Backup] Test d\'écriture échoué:', accessError);
-                this.showToast('❌ Impossible d\'écrire dans ce dossier. Choisissez un autre dossier.', 'error');
+                this.showToast('❌ Impossible d\'écrire dans le dossier EmailSortPro. Vérifiez les permissions.', 'error');
                 return;
             }
             
-            // Stocker le handle et le chemin
-            this.backupConfig.customFolderHandle = directoryHandle;
-            this.backupConfig.customFolderPath = directoryHandle.name;
+            // Stocker le handle du sous-dossier EmailSortPro (pas le parent)
+            this.backupConfig.customFolderHandle = emailSortProFolder;
+            this.backupConfig.customFolderPath = `${parentDirectoryHandle.name}/EmailSortPro`;
             
-            // Sauvegarder la configuration (sans le handle)
+            // Sauvegarder la configuration
             this.saveBackupConfig();
             
             // Mettre à jour l'affichage du chemin
             const pathInput = document.getElementById('custom-folder-path');
             if (pathInput) {
-                pathInput.value = directoryHandle.name;
+                pathInput.value = this.backupConfig.customFolderPath;
             }
             
-            this.showToast(`✅ Dossier sélectionné: ${directoryHandle.name}`, 'success');
+            this.showToast(`✅ Dossier configuré: ${this.backupConfig.customFolderPath}`, 'success');
             
-            // Proposer de créer une sauvegarde de test
-            setTimeout(() => {
-                if (confirm('Voulez-vous créer une sauvegarde de test pour vérifier que tout fonctionne ?')) {
-                    this.createTestBackup();
-                }
-            }, 1500);
+            // Proposer de créer une sauvegarde de test SEULEMENT si c'est la première fois
+            if (!localStorage.getItem('emailsortpro_test_backup_done')) {
+                setTimeout(() => {
+                    if (confirm('Voulez-vous créer une sauvegarde de test pour vérifier que tout fonctionne ?')) {
+                        this.createTestBackup();
+                        localStorage.setItem('emailsortpro_test_backup_done', 'true');
+                    }
+                }, 1500);
+            }
             
         } catch (error) {
             console.error('[Backup] Erreur sélection dossier:', error);
             
             if (error.name === 'AbortError') {
-                // L'utilisateur a annulé
                 console.log('[Backup] Sélection de dossier annulée');
             } else if (error.name === 'SecurityError') {
                 this.showToast('❌ Accès refusé. Le dossier est protégé ou inaccessible.', 'error');
@@ -2041,6 +2069,10 @@ class CategoriesPageV22 {
             this.backupConfig.customFolderPath = null;
             this.saveBackupConfig();
             
+            // Effacer aussi les flags de première utilisation pour permettre les messages à nouveau
+            localStorage.removeItem('emailsortpro_folder_warning_shown');
+            localStorage.removeItem('emailsortpro_test_backup_done');
+            
             // Rafraîchir l'affichage
             this.refreshStorageHelp('custom-folder');
             
@@ -2764,8 +2796,14 @@ class CategoriesPageV22 {
                 color: #92400E;
             }
             
-            .recommendation-item.warning i {
-                color: #F59E0B;
+            .recommendation-item.info {
+                background: #EBF8FF;
+                border: 1px solid #3B82F6;
+                color: #1E3A8A;
+            }
+            
+            .recommendation-item.info i {
+                color: #3B82F6;
             }
             
             /* Actions pour dossier sélectionné */
