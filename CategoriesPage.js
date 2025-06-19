@@ -64,12 +64,186 @@ class CategoriesPageV24 {
         // Essayer de restaurer l'accès précédent
         await this.restoreDirectoryAccess();
         
-        // Si pas configuré, préparer pour configuration manuelle
+        // FORCER la création automatique du dossier
         if (!this.filesystemConfig.enabled) {
-            this.filesystemConfig.currentPath = 'Non configuré - Cliquez "Configurer C://"';
+            console.log('[CategoriesPage] 🚀 FORCE: Tentative création automatique dossier...');
+            await this.forceCreateDefaultFolder();
         }
         
         this.initializeBackup();
+    }
+
+    async forceCreateDefaultFolder() {
+        console.log('[CategoriesPage] 🚀 FORCE: Création automatique du dossier EmailSortPro...');
+        
+        try {
+            // STRATÉGIE 1: Essayer d'accéder directement sans popup (si permissions déjà accordées)
+            const success1 = await this.tryExistingPermissions();
+            if (success1) {
+                console.log('[CategoriesPage] ✅ FORCE: Accès existant trouvé');
+                return true;
+            }
+            
+            // STRATÉGIE 2: Demander l'accès avec message explicatif
+            console.log('[CategoriesPage] 📂 FORCE: Demande accès pour création dossier...');
+            this.showToast('📁 Création automatique du dossier EmailSortPro - Veuillez sélectionner votre bureau ou dossier racine', 'info');
+            
+            const directoryHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'desktop',
+                id: 'emailsortpro-auto-setup'
+            });
+            
+            // FORCER la création de la structure complète
+            await this.createCompleteStructure(directoryHandle);
+            
+            return true;
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('[CategoriesPage] 📂 FORCE: Sélection annulée par utilisateur');
+                this.filesystemConfig.currentPath = 'Configuration annulée - Cliquez "Configurer C://" pour réessayer';
+            } else {
+                console.error('[CategoriesPage] ❌ FORCE: Erreur création automatique:', error);
+                this.filesystemConfig.currentPath = 'Erreur auto-configuration - Cliquez "Configurer C://"';
+            }
+            return false;
+        }
+    }
+
+    async tryExistingPermissions() {
+        try {
+            // Vérifier si on a déjà des permissions stockées
+            const existingPermissions = localStorage.getItem('emailsortpro_directory_permission');
+            if (!existingPermissions) return false;
+            
+            // Cette méthode ne fonctionne pas directement car les handles ne peuvent pas être sérialisés
+            // Mais on peut essayer d'autres approches silencieuses
+            return false;
+            
+        } catch (error) {
+            return false;
+        }
+    }
+
+    async createCompleteStructure(baseDirectoryHandle) {
+        console.log('[CategoriesPage] 🔧 FORCE: Création structure complète...');
+        
+        try {
+            // Étape 1: Créer EmailSortPro dans le dossier sélectionné
+            let emailSortProHandle;
+            try {
+                emailSortProHandle = await baseDirectoryHandle.getDirectoryHandle('EmailSortPro', { create: true });
+                console.log('[CategoriesPage] ✅ Dossier EmailSortPro créé/trouvé');
+            } catch (error) {
+                throw new Error('Impossible de créer le dossier EmailSortPro: ' + error.message);
+            }
+            
+            // Étape 2: Créer Categories dans EmailSortPro
+            let categoriesHandle;
+            try {
+                categoriesHandle = await emailSortProHandle.getDirectoryHandle('Categories', { create: true });
+                console.log('[CategoriesPage] ✅ Dossier Categories créé/trouvé');
+            } catch (error) {
+                throw new Error('Impossible de créer le dossier Categories: ' + error.message);
+            }
+            
+            // Étape 3: Tester l'accès en écriture
+            await this.testDirectoryAccess(categoriesHandle);
+            console.log('[CategoriesPage] ✅ Test accès écriture réussi');
+            
+            // Étape 4: Configurer le système
+            this.filesystemConfig.directoryHandle = categoriesHandle;
+            this.filesystemConfig.enabled = true;
+            this.filesystemConfig.permissions = 'granted';
+            this.filesystemConfig.currentPath = this.buildFullPath(baseDirectoryHandle, 'EmailSortPro\\Categories\\');
+            
+            // Étape 5: Sauvegarder la configuration
+            await this.saveConfig();
+            console.log('[CategoriesPage] ✅ Configuration sauvegardée');
+            
+            // Étape 6: Créer les fichiers de documentation
+            await this.createReadmeFile();
+            await this.createSetupInfoFile();
+            
+            // Étape 7: Créer un backup initial
+            await this.createBackup('auto-setup');
+            
+            this.showToast(`✅ Dossier EmailSortPro créé automatiquement dans: ${baseDirectoryHandle.name}`, 'success');
+            
+            console.log('[CategoriesPage] 🎉 FORCE: Structure complète créée avec succès');
+            return true;
+            
+        } catch (error) {
+            console.error('[CategoriesPage] ❌ FORCE: Erreur création structure:', error);
+            throw error;
+        }
+    }
+
+    buildFullPath(baseHandle, subPath) {
+        const baseName = baseHandle.name || 'DossierSelectionne';
+        
+        // Déterminer le chemin probable basé sur le nom du dossier
+        if (baseName.toLowerCase().includes('desktop') || baseName.toLowerCase().includes('bureau')) {
+            return `C:\\Users\\[Utilisateur]\\Desktop\\${baseName}\\${subPath}`;
+        } else if (baseName.toLowerCase().includes('documents')) {
+            return `C:\\Users\\[Utilisateur]\\Documents\\${baseName}\\${subPath}`;
+        } else if (baseName === 'C:' || baseName.toLowerCase().includes('disque')) {
+            return `C:\\${subPath}`;
+        } else {
+            return `C:\\Users\\[Utilisateur]\\${baseName}\\${subPath}`;
+        }
+    }
+
+    async createSetupInfoFile() {
+        if (!this.filesystemConfig.directoryHandle) return;
+        
+        try {
+            const setupContent = `# EmailSortPro - Configuration Automatique Réussie
+
+## ✅ CONFIGURATION TERMINÉE
+Votre dossier de sauvegarde EmailSortPro a été créé automatiquement !
+
+## 📁 EMPLACEMENT CONFIGURÉ
+${this.filesystemConfig.currentPath}
+
+## 🎯 STRUCTURE CRÉÉE
+- EmailSortPro/
+  └── Categories/
+      ├── EmailSortPro-Categories.json (fichier principal)
+      ├── README-EmailSortPro.txt (documentation)
+      └── [fichiers de sauvegarde horodatés]
+
+## 🔄 FONCTIONNEMENT AUTOMATIQUE
+✅ Sauvegarde automatique: Toutes les 30 secondes
+✅ Backup invisible: localStorage en parallèle
+✅ Nettoyage automatique: Conservation des 10 derniers fichiers
+✅ Accès direct: Vos fichiers dans l'explorateur Windows
+
+## 📋 PROCHAINES ÉTAPES
+1. Vos catégories sont maintenant sauvegardées automatiquement
+2. Vous pouvez accéder aux fichiers directement depuis l'explorateur
+3. Les backups sont créés à chaque modification
+4. Aucune action supplémentaire requise !
+
+## ⚙️ PARAMÈTRES
+- Configuration: ${new Date().toLocaleString('fr-FR')}
+- Version: EmailSortPro v24.0
+- Type: Configuration automatique forcée
+- Statut: ✅ OPÉRATIONNEL
+
+Félicitations ! Votre système de sauvegarde est maintenant actif.
+`;
+
+            const setupHandle = await this.filesystemConfig.directoryHandle.getFileHandle('✅-CONFIGURATION-REUSSIE.txt', { create: true });
+            const writable = await setupHandle.createWritable();
+            await writable.write(setupContent);
+            await writable.close();
+
+            console.log('[CategoriesPage] ✅ Fichier info configuration créé');
+        } catch (error) {
+            console.warn('[CategoriesPage] ⚠️ Impossible de créer fichier info:', error);
+        }
     }
 
     async restoreDirectoryAccess() {
@@ -78,7 +252,15 @@ class CategoriesPageV24 {
             if (savedConfig) {
                 const config = JSON.parse(savedConfig);
                 this.filesystemConfig.currentPath = config.currentPath;
+                this.filesystemConfig.enabled = config.enabled;
+                this.filesystemConfig.permissions = config.permissions;
                 console.log('[CategoriesPage] 📂 Configuration restaurée:', config.currentPath);
+                
+                // Si configuré mais pas de handle, marquer pour re-configuration
+                if (config.enabled && !this.filesystemConfig.directoryHandle) {
+                    console.log('[CategoriesPage] 🔄 Handle perdu - Re-configuration nécessaire');
+                    this.filesystemConfig.enabled = false;
+                }
             }
         } catch (error) {
             console.log('[CategoriesPage] ℹ️ Aucune configuration précédente');
@@ -92,44 +274,27 @@ class CategoriesPageV24 {
         }
 
         try {
-            this.showToast('📂 Sélectionnez un dossier sur votre disque C:// (ex: C:\\EmailSortPro)', 'info');
+            this.showToast('📂 CONFIGURATION: Sélectionnez votre bureau ou un dossier sur C:// pour créer EmailSortPro', 'info');
             
             const directoryHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
-                startIn: 'desktop'
+                startIn: 'desktop',
+                id: 'emailsortpro-manual-setup'
             });
             
-            // Tester l'accès
-            await this.testDirectoryAccess(directoryHandle);
+            // FORCER la création de la structure complète (même méthode que l'auto)
+            await this.createCompleteStructure(directoryHandle);
             
-            // Créer sous-dossier Categories si nécessaire
-            let categoriesHandle;
-            try {
-                categoriesHandle = await directoryHandle.getDirectoryHandle('Categories', { create: true });
-            } catch (error) {
-                categoriesHandle = directoryHandle; // Utiliser le dossier principal
-            }
-            
-            // Configurer
-            this.filesystemConfig.directoryHandle = categoriesHandle;
-            this.filesystemConfig.enabled = true;
-            this.filesystemConfig.permissions = 'granted';
-            this.filesystemConfig.currentPath = this.estimateFullPath(directoryHandle);
-            
-            await this.saveConfig();
-            await this.createReadmeFile();
-            await this.createBackup('setup');
-            
-            this.showToast(`✅ Dossier configuré: ${directoryHandle.name}`, 'success');
+            // Rafraîchir l'interface
             this.refreshInterface();
             
             return true;
             
         } catch (error) {
             if (error.name === 'AbortError') {
-                this.showToast('📂 Sélection annulée', 'info');
+                this.showToast('📂 Configuration annulée', 'info');
             } else {
-                console.error('[CategoriesPage] ❌ Erreur configuration:', error);
+                console.error('[CategoriesPage] ❌ Erreur configuration manuelle:', error);
                 this.showToast('❌ Erreur: ' + error.message, 'error');
             }
             return false;
@@ -567,7 +732,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
                             <button class="btn-action ${isConfigured ? 'secondary' : 'warning'}" 
                                     onclick="window.categoriesPageV24.configureDirectAccess()">
                                 <i class="fas fa-folder-open"></i> 
-                                ${isConfigured ? 'Changer Dossier' : 'Configurer C://'}
+                                ${isConfigured ? 'Reconfigurer Dossier' : 'CRÉER DOSSIER C://'}
                             </button>
                         ` : `
                             <p class="browser-notice">
@@ -619,16 +784,30 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 ` : `
                     <!-- Guide -->
                     <div class="guide-card">
-                        <h4><i class="fas fa-lightbulb"></i> Configuration C://</h4>
-                        <ol>
-                            <li>Cliquez sur "Configurer C://"</li>
-                            <li>Sélectionnez un dossier sur votre disque C:// (ex: C:\\EmailSortPro)</li>
-                            <li>Accordez les permissions de lecture/écriture</li>
-                            <li>Vos backups seront automatiquement sauvegardés !</li>
-                        </ol>
+                        <h4><i class="fas fa-lightbulb"></i> Création Automatique C://</h4>
+                        <div class="auto-setup-info">
+                            <div class="setup-highlight">
+                                🚀 <strong>NOUVEAU:</strong> Création automatique du dossier EmailSortPro !
+                            </div>
+                            <ol>
+                                <li>Cliquez sur <strong>"CRÉER DOSSIER C://"</strong></li>
+                                <li>Sélectionnez votre <strong>Bureau</strong> ou un dossier sur <strong>C://</strong></li>
+                                <li>Le système créera automatiquement <strong>EmailSortPro/Categories/</strong></li>
+                                <li>Vos sauvegardes seront immédiatement actives !</li>
+                            </ol>
+                            <div class="setup-benefits">
+                                <h5>✅ Avantages:</h5>
+                                <ul>
+                                    <li>Structure complète créée automatiquement</li>
+                                    <li>Accès direct aux fichiers depuis l'explorateur</li>
+                                    <li>Documentation générée automatiquement</li>
+                                    <li>Backup de test immédiat</li>
+                                </ul>
+                            </div>
+                        </div>
                         <p class="note">
                             <i class="fas fa-shield-alt"></i>
-                            Vos données restent privées sur votre ordinateur
+                            Le système force la création du dossier et teste l'accès automatiquement
                         </p>
                     </div>
                 `}
@@ -1765,9 +1944,45 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 padding-left: 20px;
             }
 
-            .path-details li {
-                margin-bottom: 4px;
+            .setup-highlight {
+                background: linear-gradient(135deg, #3B82F6, #10B981);
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                font-weight: 600;
+                text-align: center;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+
+            .auto-setup-info {
+                margin: 16px 0;
+            }
+
+            .setup-benefits {
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 6px;
+                padding: 12px;
+                margin-top: 12px;
+            }
+
+            .setup-benefits h5 {
                 font-size: 13px;
+                font-weight: 600;
+                color: #166534;
+                margin: 0 0 8px 0;
+            }
+
+            .setup-benefits ul {
+                margin: 0;
+                padding-left: 16px;
+                color: #166534;
+            }
+
+            .setup-benefits li {
+                font-size: 12px;
+                margin-bottom: 4px;
             }
 
             .error {
@@ -1886,9 +2101,31 @@ window.forceConfigureBackup = async function() {
     }
 };
 
+// API pour forcer la création automatique au démarrage
+window.forceAutoSetup = async function() {
+    console.log('[API] 🚀 FORCE: Auto-setup immédiat...');
+    
+    try {
+        const instance = window.categoriesPageV24;
+        const success = await instance.forceCreateDefaultFolder();
+        
+        if (success) {
+            console.log('[API] ✅ Auto-setup réussi');
+            return { success: true, path: instance.filesystemConfig.currentPath };
+        } else {
+            console.log('[API] ❌ Auto-setup échoué');
+            return { success: false, error: 'Auto-setup failed' };
+        }
+    } catch (error) {
+        console.error('[API] ❌ Erreur auto-setup:', error);
+        return { success: false, error: error.message };
+    }
+};
+
 console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - Stockage C:// Direct Simplifié!');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
 console.log('[CategoriesPage]   • Interface épurée et rapide');
+console.log('[CategoriesPage]   • FORCE: Création automatique du dossier EmailSortPro');
 console.log('[CategoriesPage]   • Configuration directe C:// (évite AppData)');
 console.log('[CategoriesPage]   • Sauvegarde automatique toutes les 30s');
 console.log('[CategoriesPage]   • Backup invisible en parallèle (localStorage)');
@@ -1897,4 +2134,5 @@ console.log('[CategoriesPage] 📁 API disponible:');
 console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
-console.log('[CategoriesPage] 🚀 Prêt pour stockage C:// direct!');
+console.log('[CategoriesPage]   • window.forceAutoSetup() - Auto-setup forcé');
+console.log('[CategoriesPage] 🚀 Prêt pour création forcée du dossier C:// !');
