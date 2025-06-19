@@ -113,7 +113,7 @@ class SmartBackupService {
     }
 
     async forceDocumentsSetup() {
-        console.log('[SmartBackup] 📁 Forçage création dossier Documents/EmailSortPro...');
+        console.log('[SmartBackup] 📁 Configuration dossier Documents...');
         
         try {
             if (!window.showDirectoryPicker) {
@@ -122,75 +122,18 @@ class SmartBackupService {
                 return;
             }
             
-            // Demander l'accès automatiquement au premier lancement
-            const shouldPrompt = !localStorage.getItem('emailsortpro_documents_access_requested');
+            // Vérifier si l'accès a déjà été accordé
+            const accessGranted = localStorage.getItem('emailsortpro_documents_access_granted') === 'true';
             
-            if (shouldPrompt) {
-                console.log('[SmartBackup] 📂 Demande d\'accès au dossier Documents...');
-                
-                // Afficher une notification à l'utilisateur
-                if (window.uiManager) {
-                    window.uiManager.showToast(
-                        '📁 Configuration du dossier de sauvegarde...',
-                        'info',
-                        5000
-                    );
-                }
-                
-                // Attendre un peu pour que l'utilisateur voit la notification
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                try {
-                    await this.requestDocumentsAccess();
-                    localStorage.setItem('emailsortpro_documents_access_requested', 'true');
-                    localStorage.setItem('emailsortpro_documents_access_granted', 'true');
-                    
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            '✅ Dossier Documents/EmailSortPro configuré !',
-                            'success'
-                        );
-                    }
-                    
-                } catch (accessError) {
-                    console.log('[SmartBackup] ⚠️ Accès Documents refusé, utilisation téléchargements');
-                    localStorage.setItem('emailsortpro_documents_access_requested', 'true');
-                    localStorage.setItem('emailsortpro_documents_access_granted', 'false');
-                    
-                    this.config.activeStorage = 'downloads';
-                    
-                    if (window.uiManager) {
-                        window.uiManager.showToast(
-                            '📥 Utilisation du dossier Téléchargements pour les sauvegardes',
-                            'info'
-                        );
-                    }
-                }
-            } else {
-                // L'accès a déjà été demandé, vérifier s'il était accordé
-                const accessGranted = localStorage.getItem('emailsortpro_documents_access_granted') === 'true';
-                
-                if (accessGranted) {
-                    try {
-                        // Essayer de réutiliser l'accès précédent
-                        await this.requestDocumentsAccess();
-                    } catch (error) {
-                        console.log('[SmartBackup] ⚠️ Accès Documents perdu, demande de renouvellement...');
-                        
-                        if (window.uiManager) {
-                            window.uiManager.showToast(
-                                '🔄 Renouvellement de l\'accès aux Documents...',
-                                'info'
-                            );
-                        }
-                        
-                        await this.requestDocumentsAccess();
-                    }
-                } else {
-                    // L'utilisateur avait refusé, utiliser téléchargements
-                    this.config.activeStorage = 'downloads';
-                }
+            if (accessGranted && this.documentsHandle) {
+                console.log('[SmartBackup] ✅ Accès Documents déjà configuré');
+                return;
             }
+            
+            // L'accès nécessite un geste utilisateur - reporter la demande
+            console.log('[SmartBackup] ⏳ Accès Documents sera demandé au premier backup manuel');
+            this.config.activeStorage = 'downloads'; // Utiliser téléchargements par défaut
+            this.config.needsDocumentsSetup = true;   // Flag pour setup ultérieur
             
         } catch (error) {
             console.error('[SmartBackup] Erreur setup Documents:', error);
@@ -202,6 +145,9 @@ class SmartBackupService {
         console.log('[SmartBackup] 💾 Création du backup initial...');
         
         try {
+            // Marquer comme initialisé AVANT le backup pour éviter les boucles
+            this.isInitialized = true;
+            
             const success = await this.performBackup('initial');
             
             if (success) {
@@ -218,12 +164,20 @@ class SmartBackupService {
                 // Programmer le prochain backup quotidien
                 this.scheduleNextDailyBackup();
                 
+                // Si on utilise les téléchargements, proposer Documents au premier clic
+                if (this.config.activeStorage === 'downloads' && this.config.needsDocumentsSetup) {
+                    this.setupDocumentsOnNextClick();
+                }
+                
             } else {
                 throw new Error('Échec création backup initial');
             }
             
         } catch (error) {
             console.error('[SmartBackup] ❌ Erreur backup initial:', error);
+            
+            // S'assurer que le service est initialisé même en cas d'erreur
+            this.isInitialized = true;
             
             // Fallback vers localStorage en cas d'échec
             this.config.activeStorage = 'localStorage';
@@ -248,6 +202,65 @@ class SmartBackupService {
                     );
                 }
             }
+        }
+    }
+
+    setupDocumentsOnNextClick() {
+        console.log('[SmartBackup] 🖱️ Configuration setup Documents au prochain clic...');
+        
+        // Écouter le prochain clic utilisateur
+        const handleClick = async () => {
+            console.log('[SmartBackup] 👆 Clic détecté, setup Documents...');
+            
+            try {
+                // Retirer l'écouteur
+                document.removeEventListener('click', handleClick);
+                
+                // Attendre un peu pour que l'action de clic se termine
+                setTimeout(async () => {
+                    try {
+                        await this.requestDocumentsAccess();
+                        
+                        // Succès - changer le stockage vers Documents
+                        this.config.activeStorage = 'documents';
+                        this.config.needsDocumentsSetup = false;
+                        this.saveConfig();
+                        
+                        if (window.uiManager) {
+                            window.uiManager.showToast(
+                                '✅ Dossier Documents/EmailSortPro configuré ! Prochains backups iront ici.',
+                                'success',
+                                5000
+                            );
+                        }
+                        
+                        // Créer un backup immédiat dans le nouveau dossier
+                        await this.performBackup('documents-setup');
+                        
+                    } catch (error) {
+                        console.log('[SmartBackup] ⚠️ Setup Documents échoué, on continue avec téléchargements');
+                        this.config.needsDocumentsSetup = false;
+                        this.saveConfig();
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.warn('[SmartBackup] Erreur setup Documents sur clic:', error);
+            }
+        };
+        
+        // Ajouter l'écouteur pour le prochain clic
+        document.addEventListener('click', handleClick, { once: true });
+        
+        // Informer l'utilisateur
+        if (window.uiManager) {
+            setTimeout(() => {
+                window.uiManager.showToast(
+                    '📁 Cliquez n\'importe où pour configurer le dossier Documents/EmailSortPro',
+                    'info',
+                    6000
+                );
+            }, 2000);
         }
     }
 
@@ -1228,6 +1241,32 @@ class SmartBackupService {
     // API PUBLIQUE
     // ================================================
     async backup() {
+        // Si on doit encore configurer Documents, essayer maintenant (avec geste utilisateur)
+        if (this.config.needsDocumentsSetup && window.showDirectoryPicker) {
+            try {
+                console.log('[SmartBackup] 🖱️ Geste utilisateur détecté, configuration Documents...');
+                
+                await this.requestDocumentsAccess();
+                
+                // Succès - changer vers Documents
+                this.config.activeStorage = 'documents';
+                this.config.needsDocumentsSetup = false;
+                this.saveConfig();
+                
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        '✅ Dossier Documents/EmailSortPro configuré !',
+                        'success'
+                    );
+                }
+                
+            } catch (error) {
+                console.log('[SmartBackup] ⚠️ Configuration Documents échouée, continuer avec', this.config.activeStorage);
+                this.config.needsDocumentsSetup = false;
+                this.saveConfig();
+            }
+        }
+        
         return this.performBackup('manual');
     }
 
@@ -1339,6 +1378,42 @@ window.reconfigureBackup = () => window.smartBackupService?.reconfigure();
 // NOUVELLES fonctions pour setup forcé
 window.forceBackupSetup = () => window.smartBackupService?.forceSetup();
 window.getDetailedBackupStatus = () => window.smartBackupService?.getDetailedStatus();
+
+// Fonction pour configurer Documents manuellement
+window.setupDocumentsFolder = async () => {
+    if (window.smartBackupService) {
+        try {
+            console.log('📁 Configuration manuelle du dossier Documents...');
+            await window.smartBackupService.requestDocumentsAccess();
+            
+            window.smartBackupService.config.activeStorage = 'documents';
+            window.smartBackupService.config.needsDocumentsSetup = false;
+            window.smartBackupService.saveConfig();
+            
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    '✅ Documents/EmailSortPro configuré !',
+                    'success'
+                );
+            }
+            
+            // Test backup immédiat
+            await window.smartBackupService.backup();
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Erreur configuration Documents:', error);
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    '❌ Configuration Documents échouée',
+                    'error'
+                );
+            }
+            return false;
+        }
+    }
+    return false;
+};
 
 // Fonction de test rapide
 window.testBackupNow = async () => {
