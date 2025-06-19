@@ -65,51 +65,160 @@ class CategoriesPageV24 {
         // Essayer de restaurer l'accès précédent
         await this.restoreDirectoryAccess();
         
-        // FORCER la création automatique dès que possible
-        if (!this.filesystemConfig.enabled) {
-            console.log('[CategoriesPage] 🚀 FORCE: Préparation auto-création immédiate...');
-            this.filesystemConfig.currentPath = 'PRÊT POUR AUTO-CRÉATION - Un clic et c\'est fait !';
-            
-            // Préparer l'auto-création pour la première interaction
-            this.setupAutoCreationTrigger();
+        // Vérifier si l'autorisation a déjà été donnée
+        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+        
+        if (!this.filesystemConfig.enabled && !authorizationGranted) {
+            console.log('[CategoriesPage] 🎯 Première utilisation - Préparation autorisation...');
+            this.filesystemConfig.currentPath = 'Autorisation requise pour création automatique';
+        } else if (!this.filesystemConfig.enabled && authorizationGranted) {
+            console.log('[CategoriesPage] ✅ Autorisation précédente trouvée - Configuration direct');
+            this.filesystemConfig.currentPath = 'Prêt pour création automatique';
         }
         
         this.initializeBackup();
     }
 
-    setupAutoCreationTrigger() {
-        console.log('[CategoriesPage] 🎯 Configuration trigger auto-création...');
+    async showAuthorizationModal() {
+        console.log('[CategoriesPage] 🎨 Affichage modal d\'autorisation esthétique...');
         
-        // Intercepter TOUS les clics sur la page pour déclencher la création
-        const triggerAutoCreation = async (event) => {
-            // Éviter les boucles infinies
-            if (this.filesystemConfig.enabled || this.creationInProgress) {
-                return;
+        // Vérifier si l'autorisation a déjà été donnée
+        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+        if (authorizationGranted) {
+            console.log('[CategoriesPage] ✅ Autorisation déjà accordée');
+            await this.forceCreateImmediately();
+            return;
+        }
+        
+        // Créer le modal d'autorisation esthétique
+        const modal = document.createElement('div');
+        modal.className = 'authorization-modal-overlay';
+        modal.innerHTML = `
+            <div class="authorization-modal">
+                <div class="auth-modal-header">
+                    <div class="auth-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h2>Autorisation de Stockage</h2>
+                    <p class="auth-subtitle">EmailSortPro souhaite créer son dossier de sauvegarde</p>
+                </div>
+                
+                <div class="auth-modal-body">
+                    <div class="auth-explanation">
+                        <div class="auth-feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-folder-plus"></i>
+                            </div>
+                            <div class="feature-text">
+                                <strong>Création automatique</strong>
+                                <span>Un dossier EmailSortPro sera créé dans vos Documents</span>
+                            </div>
+                        </div>
+                        
+                        <div class="auth-feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-save"></i>
+                            </div>
+                            <div class="feature-text">
+                                <strong>Sauvegarde sécurisée</strong>
+                                <span>Vos catégories et paramètres seront sauvegardés automatiquement</span>
+                            </div>
+                        </div>
+                        
+                        <div class="auth-feature">
+                            <div class="feature-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="feature-text">
+                                <strong>Confidentialité garantie</strong>
+                                <span>Tous vos fichiers restent sur votre ordinateur</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="auth-path-preview">
+                        <div class="path-label">Emplacement de création :</div>
+                        <div class="path-value">
+                            <i class="fas fa-folder"></i>
+                            Documents\\EmailSortPro\\Categories\\
+                        </div>
+                    </div>
+                    
+                    <div class="auth-promise">
+                        <i class="fas fa-check-circle"></i>
+                        Cette autorisation ne vous sera demandée qu'une seule fois
+                    </div>
+                </div>
+                
+                <div class="auth-modal-actions">
+                    <button class="auth-btn secondary" onclick="window.categoriesPageV24.denyAuthorization()">
+                        <i class="fas fa-times"></i>
+                        Plus tard
+                    </button>
+                    <button class="auth-btn primary" onclick="window.categoriesPageV24.grantAuthorization()">
+                        <i class="fas fa-check"></i>
+                        Autoriser la création
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        this.currentModal = modal;
+        
+        // Animation d'apparition
+        setTimeout(() => {
+            modal.classList.add('visible');
+        }, 50);
+    }
+
+    async grantAuthorization() {
+        console.log('[CategoriesPage] ✅ Autorisation accordée par l\'utilisateur');
+        
+        try {
+            // Marquer l'autorisation comme accordée DÉFINITIVEMENT
+            localStorage.setItem('emailsortpro_filesystem_authorized', 'true');
+            localStorage.setItem('emailsortpro_authorization_date', new Date().toISOString());
+            
+            // Fermer le modal avec animation
+            if (this.currentModal) {
+                this.currentModal.classList.add('closing');
+                setTimeout(() => {
+                    this.currentModal.remove();
+                    this.currentModal = null;
+                }, 300);
             }
             
-            this.creationInProgress = true;
-            console.log('[CategoriesPage] 🚀 TRIGGER: Auto-création déclenchée par interaction!');
+            // Message de confirmation
+            this.showToast('✅ Autorisation accordée - Création en cours...', 'success');
             
-            // Petite pause pour que l'action utilisateur se termine
-            setTimeout(async () => {
-                try {
-                    await this.forceCreateImmediately();
-                } catch (error) {
-                    console.log('[CategoriesPage] ⚠️ Auto-création différée');
-                }
-                this.creationInProgress = false;
-            }, 100);
-        };
+            // Créer immédiatement le dossier
+            await this.forceCreateImmediately();
+            
+        } catch (error) {
+            console.error('[CategoriesPage] ❌ Erreur après autorisation:', error);
+            this.showToast('❌ Erreur lors de la création: ' + error.message, 'error');
+        }
+    }
+
+    denyAuthorization() {
+        console.log('[CategoriesPage] ❌ Autorisation refusée par l\'utilisateur');
         
-        // Attacher le trigger à tous les événements possibles
-        document.addEventListener('click', triggerAutoCreation, { once: true });
-        document.addEventListener('keydown', triggerAutoCreation, { once: true });
-        document.addEventListener('touchstart', triggerAutoCreation, { once: true });
+        // Fermer le modal
+        if (this.currentModal) {
+            this.currentModal.classList.add('closing');
+            setTimeout(() => {
+                this.currentModal.remove();
+                this.currentModal = null;
+            }, 300);
+        }
         
-        // Auto-trigger sur focus de fenêtre (quand l'utilisateur revient)
-        window.addEventListener('focus', triggerAutoCreation, { once: true });
+        // Message informatif
+        this.showToast('📁 Vous pourrez autoriser la création depuis les Paramètres', 'info');
         
-        console.log('[CategoriesPage] ✅ Auto-triggers configurés - Création au prochain clic!');
+        // Mettre à jour le statut
+        this.filesystemConfig.currentPath = 'Autorisation refusée - Disponible dans Paramètres';
+        this.refreshInterface();
     }
 
     async forceCreateImmediately() {
@@ -135,49 +244,13 @@ class CategoriesPageV24 {
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.log('[CategoriesPage] 📂 Création reportée');
-                // Re-configurer le trigger pour la prochaine fois
-                setTimeout(() => this.setupAutoCreationTrigger(), 1000);
+                this.showToast('📁 Création reportée - Disponible dans Paramètres', 'info');
             } else {
                 console.error('[CategoriesPage] ❌ Erreur création immédiate:', error);
-            }
-            return false;
-        }
-    }
-
-    async forceCreateDefaultFolder() {
-        console.log('[CategoriesPage] 🚀 FORCE: Création avec interaction utilisateur...');
-        
-        try {
-            // IMPORTANT: Cette méthode nécessite une interaction utilisateur
-            // Elle ne peut pas être appelée automatiquement au chargement
-            
-            // Demander l'accès aux DOCUMENTS avec interaction utilisateur
-            console.log('[CategoriesPage] 📂 FORCE: Demande accès Documents...');
-            this.showToast('📁 CRÉATION: Sélectionnez votre dossier Documents pour créer EmailSortPro', 'info');
-            
-            const directoryHandle = await window.showDirectoryPicker({
-                mode: 'readwrite',
-                startIn: 'documents',
-                id: 'emailsortpro-documents-setup'
-            });
-            
-            // FORCER la création de la structure complète dans Documents
-            await this.createCompleteStructure(directoryHandle);
-            
-            return true;
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('[CategoriesPage] 📂 FORCE: Sélection annulée par utilisateur');
-                this.filesystemConfig.currentPath = 'Configuration annulée - Cliquez "CRÉER DANS DOCUMENTS" pour réessayer';
-                this.showToast('📂 Configuration annulée', 'info');
-            } else {
-                console.error('[CategoriesPage] ❌ FORCE: Erreur création:', error);
-                this.filesystemConfig.currentPath = 'Erreur configuration - Cliquez "CRÉER DANS DOCUMENTS"';
                 this.showToast('❌ Erreur: ' + error.message, 'error');
             }
             
-            // Rafraîchir l'interface pour montrer le nouveau statut
+            // Mettre à jour l'interface
             this.refreshInterface();
             return false;
         }
@@ -345,31 +418,23 @@ Félicitations ! Votre système de sauvegarde est maintenant actif.
             return false;
         }
 
-        try {
-            this.showToast('📂 CONFIGURATION: Sélectionnez votre dossier Documents pour créer EmailSortPro', 'info');
-            
-            const directoryHandle = await window.showDirectoryPicker({
-                mode: 'readwrite',
-                startIn: 'documents', // Force vers Documents
-                id: 'emailsortpro-docs-setup'
-            });
-            
-            // FORCER la création de la structure complète (même méthode que l'auto)
-            await this.createCompleteStructure(directoryHandle);
-            
-            // Rafraîchir l'interface
-            this.refreshInterface();
-            
-            return true;
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                this.showToast('📂 Configuration annulée', 'info');
-            } else {
-                console.error('[CategoriesPage] ❌ Erreur configuration manuelle:', error);
-                this.showToast('❌ Erreur: ' + error.message, 'error');
-            }
+        // Vérifier si l'autorisation a déjà été donnée
+        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+        
+        if (!authorizationGranted) {
+            // Première fois - Afficher le modal d'autorisation esthétique
+            await this.showAuthorizationModal();
             return false;
+        } else {
+            // Autorisation déjà accordée - Créer directement
+            try {
+                await this.forceCreateImmediately();
+                this.refreshInterface();
+                return true;
+            } catch (error) {
+                console.error('[CategoriesPage] ❌ Erreur configuration directe:', error);
+                return false;
+            }
         }
     }
 
@@ -2359,7 +2424,7 @@ window.forceAutoSetup = async function() {
             return { success: false, error: 'File System API not supported' };
         }
         
-        const success = await instance.forceCreateDefaultFolder();
+        const success = await instance.configureDirectAccess();
         
         if (success) {
             console.log('[API] ✅ Auto-setup réussi');
@@ -2374,13 +2439,108 @@ window.forceAutoSetup = async function() {
     }
 };
 
-console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - AUTO-CRÉATION FORCÉE!');
+// API pour déclencher l'autorisation à la première connexion
+window.requestFirstTimeAuthorization = async function() {
+    console.log('[API] 🎯 Demande autorisation première connexion...');
+    
+    try {
+        const instance = window.categoriesPageV24;
+        
+        if (!instance) {
+            console.log('[API] ⚠️ CategoriesPage pas encore chargée');
+            return { success: false, error: 'CategoriesPage not ready' };
+        }
+        
+        if (!instance.fileSystemSupported) {
+            console.log('[API] ⚠️ File System API non supportée');
+            return { success: false, error: 'File System API not supported' };
+        }
+        
+        // Vérifier si l'autorisation a déjà été donnée
+        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+        if (authorizationGranted) {
+            console.log('[API] ✅ Autorisation déjà accordée');
+            return { success: true, alreadyAuthorized: true };
+        }
+        
+        // Afficher le modal d'autorisation
+        await instance.showAuthorizationModal();
+        
+        return { success: true, modalShown: true };
+        
+    } catch (error) {
+        console.error('[API] ❌ Erreur demande autorisation:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// Script d'intégration pour la première connexion
+window.setupFirstTimeAuth = function() {
+    console.log('[SETUP] 🎯 Configuration autorisation première connexion...');
+    
+    // Attendre que l'application soit complètement chargée
+    const checkAndSetup = () => {
+        // Vérifier si c'est vraiment la première connexion
+        const hasConnectedBefore = localStorage.getItem('emailsortpro_has_connected');
+        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+        
+        if (!hasConnectedBefore && !authorizationGranted) {
+            console.log('[SETUP] 🆕 Première connexion détectée - Préparation autorisation...');
+            
+            // Marquer que l'utilisateur s'est connecté
+            localStorage.setItem('emailsortpro_has_connected', 'true');
+            localStorage.setItem('emailsortpro_first_connection_date', new Date().toISOString());
+            
+            // Déclencher l'autorisation après un délai pour que l'app soit stable
+            setTimeout(async () => {
+                try {
+                    console.log('[SETUP] 🎨 Déclenchement modal autorisation...');
+                    await window.requestFirstTimeAuthorization();
+                } catch (error) {
+                    console.log('[SETUP] ⚠️ Autorisation différée:', error.message);
+                }
+            }, 2000); // 2 secondes après l'affichage de l'app
+            
+        } else {
+            console.log('[SETUP] ✅ Utilisateur existant - Pas d\'autorisation requise');
+        }
+    };
+    
+    // Si l'app est déjà active, vérifier immédiatement
+    if (document.body.classList.contains('app-active')) {
+        checkAndSetup();
+    } else {
+        // Sinon, attendre que l'app devienne active
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && 
+                    mutation.attributeName === 'class' &&
+                    document.body.classList.contains('app-active')) {
+                    observer.disconnect();
+                    checkAndSetup();
+                }
+            });
+        });
+        
+        observer.observe(document.body, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+};
+
+// Démarrer le setup automatiquement
+setTimeout(() => {
+    window.setupFirstTimeAuth();
+}, 1000);
+
+console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - AUTO-AUTORISATION PREMIÈRE CONNEXION!');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
 console.log('[CategoriesPage]   • Interface épurée et rapide');
-console.log('[CategoriesPage]   • 🚀 AUTO-CRÉATION forcée dès le premier clic!');
-console.log('[CategoriesPage]   • ✨ Création automatique sans questions');
-console.log('[CategoriesPage]   • 📁 Déploiement instantané dans Documents');
-console.log('[CategoriesPage]   • 🔄 Triggers sur tous les événements utilisateur');
+console.log('[CategoriesPage]   • 🎨 Modal d\'autorisation esthétique à la première connexion');
+console.log('[CategoriesPage]   • ✨ Autorisation unique - Ne se reproduit jamais');
+console.log('[CategoriesPage]   • 📁 Création automatique dans Documents après autorisation');
+console.log('[CategoriesPage]   • 🔒 Persistance de l\'autorisation');
 console.log('[CategoriesPage]   • 💾 Sauvegarde automatique toutes les 30s');
 console.log('[CategoriesPage]   • 📦 Backup invisible en parallèle (localStorage)');
 console.log('[CategoriesPage]   • 🧪 API de test et diagnostic');
@@ -2388,5 +2548,5 @@ console.log('[CategoriesPage] 📁 API disponible:');
 console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
-console.log('[CategoriesPage]   • window.forceAutoSetup() - Auto-setup forcé');
-console.log('[CategoriesPage] ⚡ AUTO-CRÉATION au prochain clic utilisateur !');
+console.log('[CategoriesPage]   • window.requestFirstTimeAuthorization() - Modal autorisation');
+console.log('[CategoriesPage] ⚡ Autorisation esthétique à la première connexion !');
