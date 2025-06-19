@@ -1,5 +1,5 @@
-// CategoriesPage.js - Version 22.0 - Interface Optimisée avec Système de Backup - CORRIGÉE
-console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.0 - Optimized with Backup System...');
+// CategoriesPage.js - Version 22.0 - CORRIGÉE ET STABLE
+console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.0 - CORRECTED...');
 
 // Nettoyer toute instance précédente
 if (window.categoriesPage) {
@@ -201,15 +201,15 @@ class CategoriesPageV22 {
                                 </label>
                                 <select id="backup-storage" onchange="window.categoriesPageV22.updateBackupConfig('storage', this.value)">
                                     <option value="localStorage" ${config.storage === 'localStorage' ? 'selected' : ''}>Navigateur (localStorage)</option>
-                                    <option value="indexedDB" ${config.storage === 'indexedDB' ? 'selected' : ''}>Base de données locale (IndexedDB)</option>
+                                    <option value="indexedDB" ${config.storage === 'indexedDB' ? 'selected' : ''}>Base de données locale</option>
                                     <option value="download" ${config.storage === 'download' ? 'selected' : ''}>Téléchargement automatique</option>
                                 </select>
                                 <div class="storage-help">
                                     <small class="storage-help-text">
                                         ${config.storage === 'localStorage' ? '💾 Stocké dans votre navigateur. Rapide mais limité à cet appareil.' : 
-                                          config.storage === 'indexedDB' ? '🗃️ Base de données locale plus robuste. Recommandé pour de gros volumes.' :
-                                          config.storage === 'download' ? '📥 Fichiers téléchargés automatiquement dans votre dossier Téléchargements.' :
-                                          '💾 Sélectionnez un emplacement de stockage'}
+                                          config.storage === 'indexedDB' ? '🗃️ Base de données locale plus robuste.' :
+                                          config.storage === 'download' ? '📥 Fichiers téléchargés automatiquement.' :
+                                          '💾 Sélectionnez un emplacement'}
                                     </small>
                                 </div>
                             </div>
@@ -414,6 +414,11 @@ class CategoriesPageV22 {
         }
         
         this.showToast(`Configuration mise à jour: ${key}`, 'success');
+        
+        // Rafraîchir l'affichage des paramètres
+        if (key === 'storage') {
+            this.refreshSettingsTab();
+        }
     }
 
     toggleBackup(enabled) {
@@ -563,23 +568,15 @@ class CategoriesPageV22 {
         switch (this.backupConfig.storage) {
             case 'localStorage':
                 localStorage.setItem(backupKey, data);
-                this.showToast('💾 Sauvegarde stockée dans le navigateur', 'success');
                 break;
                 
             case 'indexedDB':
                 await this.storeInIndexedDB(backupKey, data);
-                this.showToast('🗃️ Sauvegarde stockée en base locale', 'success');
                 break;
                 
             case 'download':
                 this.downloadBackup(data, timestamp);
-                this.showToast('📥 Sauvegarde téléchargée automatiquement', 'success');
                 break;
-                
-            default:
-                // Fallback vers localStorage
-                localStorage.setItem(backupKey, data);
-                this.showToast('💾 Sauvegarde stockée (localStorage par défaut)', 'success');
         }
     }
 
@@ -901,17 +898,7 @@ class CategoriesPageV22 {
         });
     }
 
-    getStorageHelp(storageType) {
-        const helpTexts = {
-            localStorage: '💾 Stocké dans votre navigateur. Rapide mais limité à cet appareil.',
-            indexedDB: '🗃️ Base de données locale plus robuste. Recommandé pour de gros volumes.',
-            download: '📥 Fichiers téléchargés automatiquement dans votre dossier Téléchargements.',
-            cloud: '☁️ Synchronisation cloud (nécessite une configuration).',
-            export: '📤 Sauvegardes créées mais non stockées automatiquement.'
-        };
-        
-        return `<small class="storage-help-text">${helpTexts[storageType] || ''}</small>`;
-    }
+    refreshSettingsTab() {
         const settingsTab = document.getElementById('settings-tab');
         if (settingsTab && this.currentTab === 'settings') {
             settingsTab.innerHTML = this.renderSettingsTab();
@@ -919,7 +906,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // MÉTHODES EXISTANTES ADAPTÉES
+    // MÉTHODES CATÉGORIES
     // ================================================
     renderCategories(categories, activeCategories) {
         const filtered = this.filterCategories(categories);
@@ -986,6 +973,265 @@ class CategoriesPageV22 {
     }
 
     // ================================================
+    // MODAL CATÉGORIES
+    // ================================================
+    openModal(categoryId) {
+        const category = window.categoryManager?.getCategory(categoryId);
+        if (!category) {
+            this.showToast('❌ Catégorie introuvable', 'error');
+            return;
+        }
+        
+        this.closeModal();
+        this.editingCategoryId = categoryId;
+        
+        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
+            absolute: [], strong: [], weak: [], exclusions: []
+        };
+        
+        const modalHTML = `
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
+                <div class="modal-modern">
+                    <div class="modal-header">
+                        <div class="modal-title">
+                            <span class="modal-icon">${category.icon}</span>
+                            <h2>${category.name}</h2>
+                        </div>
+                        <button class="btn-close" onclick="window.categoriesPageV22.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <div class="keywords-grid">
+                            ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#FF6B6B', 'fa-star')}
+                            ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#FECA57', 'fa-bolt')}
+                            ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#54A0FF', 'fa-feather')}
+                            ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#A29BFE', 'fa-ban')}
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
+                            Annuler
+                        </button>
+                        <button class="btn-modern primary" onclick="window.categoriesPageV22.save()">
+                            <i class="fas fa-check"></i> Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = true;
+    }
+
+    renderKeywordBox(type, title, keywords, color, icon) {
+        return `
+            <div class="keyword-box">
+                <div class="box-header">
+                    <h4><i class="fas ${icon}"></i> ${title}</h4>
+                    <span class="box-count" style="background: ${color}20; color: ${color}">${keywords.length}</span>
+                </div>
+                <div class="input-modern">
+                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé..." 
+                           onkeypress="if(event.key === 'Enter') window.categoriesPageV22.addKeyword('${type}', '${color}')">
+                    <button style="background: ${color}" onclick="window.categoriesPageV22.addKeyword('${type}', '${color}')">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+                <div class="tags" id="${type}-items">
+                    ${keywords.map(k => `
+                        <span class="tag" style="background: ${color}15; color: ${color}">
+                            ${k}
+                            <button onclick="window.categoriesPageV22.removeItem('${type}', '${k}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    addKeyword(type, color) {
+        const input = document.getElementById(`${type}-input`);
+        if (!input?.value.trim()) return;
+        
+        const value = input.value.trim().toLowerCase();
+        const container = document.getElementById(`${type}-items`);
+        
+        if (!container) return;
+        
+        container.insertAdjacentHTML('beforeend', `
+            <span class="tag" style="background: ${color}15; color: ${color}">
+                ${value}
+                <button onclick="window.categoriesPageV22.removeItem('${type}', '${value}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </span>
+        `);
+        
+        input.value = '';
+        input.focus();
+    }
+
+    removeItem(type, value) {
+        const container = document.getElementById(`${type}-items`);
+        if (!container) return;
+        
+        const tags = container.querySelectorAll('.tag');
+        tags.forEach(tag => {
+            const text = tag.textContent.trim().replace(/×$/, '').trim();
+            if (text === value || text.includes(value)) {
+                tag.remove();
+            }
+        });
+    }
+
+    save() {
+        if (!this.editingCategoryId) return;
+        
+        try {
+            const getItems = (containerId) => {
+                const container = document.getElementById(containerId);
+                if (!container) return [];
+                return Array.from(container.querySelectorAll('.tag')).map(tag => {
+                    const text = tag.textContent.trim();
+                    return text.replace(/×$/, '').replace(/^[^\s]+\s/, '').trim();
+                });
+            };
+            
+            const keywords = {
+                absolute: getItems('absolute-items'),
+                strong: getItems('strong-items'),
+                weak: getItems('weak-items'),
+                exclusions: getItems('exclusions-items')
+            };
+            
+            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
+            
+            this.closeModal();
+            this.showToast('💾 Modifications enregistrées!');
+            this.updateCategoriesDisplay();
+            
+        } catch (error) {
+            console.error('[CategoriesPage] Erreur:', error);
+            this.showToast('❌ Erreur lors de la sauvegarde', 'error');
+        }
+    }
+
+    showCreateModal() {
+        this.closeModal();
+        
+        const modalHTML = `
+            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
+                <div class="modal-modern modal-create">
+                    <div class="modal-header">
+                        <h2>Nouvelle catégorie ✨</h2>
+                        <button class="btn-close" onclick="window.categoriesPageV22.closeModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="modal-content">
+                        <input type="text" 
+                               id="new-name" 
+                               class="input-name" 
+                               placeholder="Nom de la catégorie" 
+                               autofocus>
+                        
+                        <div class="emoji-picker">
+                            <label>Choisir une icône</label>
+                            <div class="emoji-grid">
+                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌', '🌟', '🚀', '💎', '🎨', '🔥'].map(emoji => 
+                                    `<button class="emoji-option ${emoji === '📁' ? 'selected' : ''}" 
+                                             onclick="window.categoriesPageV22.selectIcon('${emoji}')">${emoji}</button>`
+                                ).join('')}
+                            </div>
+                            <input type="hidden" id="new-icon" value="📁">
+                        </div>
+                        
+                        <div class="color-selector">
+                            <label>Couleur de la catégorie</label>
+                            <div class="color-grid">
+                                ${this.colors.map((color, i) => 
+                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
+                                             style="background: ${color}"
+                                             onclick="window.categoriesPageV22.selectColor('${color}')"></button>`
+                                ).join('')}
+                            </div>
+                            <input type="hidden" id="new-color" value="${this.colors[0]}">
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
+                            Annuler
+                        </button>
+                        <button class="btn-modern primary" onclick="window.categoriesPageV22.createCategory()">
+                            <i class="fas fa-sparkles"></i> Créer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        document.body.style.overflow = 'hidden';
+        this.currentModal = true;
+        
+        setTimeout(() => document.getElementById('new-name')?.focus(), 100);
+    }
+
+    selectIcon(icon) {
+        document.getElementById('new-icon').value = icon;
+        document.querySelectorAll('.emoji-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent === icon);
+        });
+    }
+
+    selectColor(color) {
+        document.getElementById('new-color').value = color;
+        document.querySelectorAll('.color-option').forEach(btn => {
+            btn.classList.toggle('selected', btn.style.background === color);
+        });
+    }
+
+    createCategory() {
+        const name = document.getElementById('new-name')?.value?.trim();
+        const icon = document.getElementById('new-icon')?.value || '📁';
+        const color = document.getElementById('new-color')?.value || this.colors[0];
+        
+        if (!name) {
+            this.showToast('⚠️ Nom requis', 'warning');
+            return;
+        }
+        
+        const categoryData = {
+            name,
+            icon,
+            color,
+            priority: 30,
+            keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
+        };
+        
+        const newCategory = window.categoryManager?.createCustomCategory(categoryData);
+        
+        if (newCategory) {
+            this.closeModal();
+            this.showToast('✅ Catégorie créée avec succès!');
+            this.updateCategoriesDisplay();
+            
+            setTimeout(() => this.openModal(newCategory.id), 300);
+        } else {
+            this.showToast('❌ Erreur lors de la création', 'error');
+        }
+    }
+
+    // ================================================
     // ACTIONS ET MÉTHODES UTILITAIRES
     // ================================================
     handleSearch(term) {
@@ -1017,9 +1263,7 @@ class CategoriesPageV22 {
 
     exportBackup() {
         this.createBackup().then(() => {
-            // Le téléchargement sera fait automatiquement si configuré
             if (this.backupConfig.storage !== 'download') {
-                // Forcer le téléchargement
                 const backupData = {
                     timestamp: new Date().toISOString(),
                     version: '22.0',
@@ -1080,12 +1324,10 @@ class CategoriesPageV22 {
                     throw new Error('Format de fichier invalide');
                 }
                 
-                // Confirmer l'import
                 if (!confirm('Importer ces catégories ? Ceci pourrait écraser vos catégories existantes.')) {
                     return;
                 }
                 
-                // Traiter l'import (simplifié)
                 console.log('[Import] Catégories à importer:', data.categories);
                 this.showToast('✅ Catégories importées', 'success');
                 
@@ -1096,564 +1338,6 @@ class CategoriesPageV22 {
         };
         
         input.click();
-    }
-
-    showCreateModal() {
-        this.closeModal();
-        
-        const modalHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
-                <div class="modal-modern modal-create">
-                    <div class="create-header">
-                        <h2>Nouvelle catégorie ✨</h2>
-                        <button class="btn-close" onclick="window.categoriesPageV22.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="create-content">
-                        <input type="text" 
-                               id="new-name" 
-                               class="input-name" 
-                               placeholder="Nom de la catégorie" 
-                               autofocus>
-                        
-                        <div class="emoji-picker">
-                            <label>Choisir une icône</label>
-                            <div class="emoji-grid">
-                                ${['📁', '📧', '💼', '🎯', '⚡', '🔔', '💡', '📊', '🏷️', '📌', '🌟', '🚀', '💎', '🎨', '🔥'].map(emoji => 
-                                    `<button class="emoji-option ${emoji === '📁' ? 'selected' : ''}" 
-                                             onclick="window.categoriesPageV22.selectIcon('${emoji}')">${emoji}</button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="new-icon" value="📁">
-                        </div>
-                        
-                        <div class="color-selector">
-                            <label>Couleur de la catégorie</label>
-                            <div class="color-grid">
-                                ${this.colors.map((color, i) => 
-                                    `<button class="color-option ${i === 0 ? 'selected' : ''}" 
-                                             style="background: ${color}"
-                                             onclick="window.categoriesPageV22.selectColor('${color}')"></button>`
-                                ).join('')}
-                            </div>
-                            <input type="hidden" id="new-color" value="${this.colors[0]}">
-                        </div>
-                    </div>
-                    
-                    <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
-                            Annuler
-                        </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPageV22.createCategory()">
-                            <i class="fas fa-sparkles"></i> Créer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        this.currentModal = true;
-        
-        setTimeout(() => document.getElementById('new-name')?.focus(), 100);
-    }
-
-    openModal(categoryId) {
-        const category = window.categoryManager?.getCategory(categoryId);
-        if (!category) {
-            this.showToast('❌ Catégorie introuvable', 'error');
-            return;
-        }
-        
-        this.closeModal();
-        this.editingCategoryId = categoryId;
-        
-        const keywords = window.categoryManager?.getCategoryKeywords(categoryId) || {
-            absolute: [], strong: [], weak: [], exclusions: []
-        };
-        
-        const filters = window.categoryManager?.getCategoryFilters(categoryId) || {
-            includeDomains: [], includeEmails: [], excludeDomains: [], excludeEmails: []
-        };
-        
-        const modalHTML = `
-            <div class="modal-backdrop" onclick="if(event.target === this) window.categoriesPageV22.closeModal()">
-                <div class="modal-modern">
-                    <!-- Header avec gradient -->
-                    <div class="modal-header">
-                        <div class="modal-title">
-                            <span class="modal-icon">${category.icon}</span>
-                            <h2>${category.name}</h2>
-                        </div>
-                        <button class="btn-close" onclick="window.categoriesPageV22.closeModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Tabs modernes -->
-                    <div class="tabs-modern">
-                        <button class="tab active" data-tab="keywords" onclick="window.categoriesPageV22.switchTab('keywords')">
-                            <i class="fas fa-key"></i> Mots-clés
-                        </button>
-                        <button class="tab" data-tab="filters" onclick="window.categoriesPageV22.switchTab('filters')">
-                            <i class="fas fa-filter"></i> Filtres
-                        </button>
-                        ${category.isCustom ? `
-                            <button class="tab" data-tab="settings" onclick="window.categoriesPageV22.switchTab('settings')">
-                                <i class="fas fa-cog"></i> Paramètres
-                            </button>
-                        ` : ''}
-                    </div>
-                    
-                    <!-- Contenu -->
-                    <div class="modal-content">
-                        <!-- Tab Mots-clés -->
-                        <div class="tab-panel active" id="tab-keywords">
-                            <div class="keywords-main-layout">
-                                <div class="keywords-left-section">
-                                    <div class="keywords-grid">
-                                        ${this.renderKeywordBox('absolute', 'Mots-clés absolus', keywords.absolute, '#FF6B6B', 'fa-star', 'Déclenchent toujours la catégorie')}
-                                        ${this.renderKeywordBox('strong', 'Mots-clés forts', keywords.strong, '#FECA57', 'fa-bolt', 'Poids élevé dans la détection')}
-                                        ${this.renderKeywordBox('weak', 'Mots-clés faibles', keywords.weak, '#54A0FF', 'fa-feather', 'Poids modéré dans la détection')}
-                                        ${this.renderKeywordBox('exclusions', 'Exclusions', keywords.exclusions, '#A29BFE', 'fa-ban', 'Empêchent la détection')}
-                                    </div>
-                                </div>
-                                <div class="keywords-right-section">
-                                    <div class="filter-compact-box">
-                                        <h3><i class="fas fa-filter"></i> Filtres rapides</h3>
-                                        
-                                        <div class="filter-compact-section">
-                                            <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
-                                            <div class="input-modern compact">
-                                                <input type="text" id="quick-include-domain" placeholder="exemple.com">
-                                                <button onclick="window.categoriesPageV22.addFilter('includeDomains')">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
-                                            </div>
-                                            <div class="tags compact" id="quick-includeDomains">
-                                                ${filters.includeDomains.map(d => `
-                                                    <span class="tag filter-tag">
-                                                        ${d}
-                                                        <button onclick="window.categoriesPageV22.removeFilter('includeDomains', '${d}')">×</button>
-                                                    </span>
-                                                `).join('')}
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="filter-compact-section">
-                                            <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
-                                            <div class="input-modern compact">
-                                                <input type="text" id="quick-exclude-domain" placeholder="spam.com">
-                                                <button onclick="window.categoriesPageV22.addFilter('excludeDomains')">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
-                                            </div>
-                                            <div class="tags compact" id="quick-excludeDomains">
-                                                ${filters.excludeDomains.map(d => `
-                                                    <span class="tag exclude-tag">
-                                                        ${d}
-                                                        <button onclick="window.categoriesPageV22.removeFilter('excludeDomains', '${d}')">×</button>
-                                                    </span>
-                                                `).join('')}
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="filter-compact-section">
-                                            <h4><i class="fas fa-at"></i> Emails autorisés</h4>
-                                            <div class="input-modern compact">
-                                                <input type="text" id="quick-include-email" placeholder="contact@exemple.com">
-                                                <button onclick="window.categoriesPageV22.addFilter('includeEmails')">
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
-                                            </div>
-                                            <div class="tags compact" id="quick-includeEmails">
-                                                ${filters.includeEmails.map(e => `
-                                                    <span class="tag filter-tag">
-                                                        ${e}
-                                                        <button onclick="window.categoriesPageV22.removeFilter('includeEmails', '${e}')">×</button>
-                                                    </span>
-                                                `).join('')}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Tab Filtres -->
-                        <div class="tab-panel" id="tab-filters">
-                            ${this.renderFiltersTab(filters)}
-                        </div>
-                        
-                        <!-- Tab Paramètres -->
-                        ${category.isCustom ? `
-                            <div class="tab-panel" id="tab-settings">
-                                <div class="settings-content">
-                                    <div class="danger-zone">
-                                        <h4><i class="fas fa-exclamation-triangle"></i> Zone dangereuse</h4>
-                                        <p>Cette action est irréversible</p>
-                                        <button class="btn-danger" onclick="window.categoriesPageV22.deleteCategory('${categoryId}')">
-                                            <i class="fas fa-trash"></i> Supprimer la catégorie
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <!-- Footer -->
-                    <div class="modal-footer">
-                        <button class="btn-modern secondary" onclick="window.categoriesPageV22.closeModal()">
-                            Annuler
-                        </button>
-                        <button class="btn-modern primary" onclick="window.categoriesPageV22.save()">
-                            <i class="fas fa-check"></i> Enregistrer
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        document.body.style.overflow = 'hidden';
-        this.currentModal = true;
-    }
-
-    renderKeywordBox(type, title, keywords, color, icon, description) {
-        return `
-            <div class="keyword-box">
-                <div class="box-header">
-                    <h4><i class="fas ${icon}"></i> ${title}</h4>
-                    <span class="box-count" style="background: ${color}20; color: ${color}">${keywords.length}</span>
-                </div>
-                <p class="box-description">${description}</p>
-                <div class="input-modern">
-                    <input type="text" id="${type}-input" placeholder="Ajouter un mot-clé..." 
-                           onkeypress="if(event.key === 'Enter') window.categoriesPageV22.addKeyword('${type}', '${color}')">
-                    <button style="background: ${color}" onclick="window.categoriesPageV22.addKeyword('${type}', '${color}')">
-                        <i class="fas fa-plus"></i>
-                    </button>
-                </div>
-                <div class="tags" id="${type}-items">
-                    ${keywords.map(k => `
-                        <span class="tag" style="background: ${color}15; color: ${color}">
-                            ${k}
-                            <button onclick="window.categoriesPageV22.removeItem('${type}', '${k}')">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </span>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-
-    renderFiltersTab(filters) {
-        return `
-            <div class="filters-layout">
-                <div class="filter-section">
-                    <h3>Filtres d'inclusion</h3>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-globe"></i> Domaines autorisés</h4>
-                        <p class="filter-hint">Accepter uniquement les emails de ces domaines</p>
-                        <div class="input-modern">
-                            <input type="text" id="include-domain" placeholder="exemple.com">
-                            <button onclick="window.categoriesPageV22.addFilter('includeDomains')">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="includeDomains-items">
-                            ${filters.includeDomains.map(d => `
-                                <span class="tag filter-tag">
-                                    <i class="fas fa-globe"></i>
-                                    ${d}
-                                    <button onclick="window.categoriesPageV22.removeItem('includeDomains', '${d}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-at"></i> Emails autorisés</h4>
-                        <p class="filter-hint">Accepter uniquement les emails de ces adresses</p>
-                        <div class="input-modern">
-                            <input type="text" id="include-email" placeholder="contact@exemple.com">
-                            <button onclick="window.categoriesPageV22.addFilter('includeEmails')">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="includeEmails-items">
-                            ${filters.includeEmails.map(e => `
-                                <span class="tag filter-tag">
-                                    <i class="fas fa-at"></i>
-                                    ${e}
-                                    <button onclick="window.categoriesPageV22.removeItem('includeEmails', '${e}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="filter-section">
-                    <h3>Filtres d'exclusion</h3>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-ban"></i> Domaines exclus</h4>
-                        <p class="filter-hint">Ignorer les emails de ces domaines</p>
-                        <div class="input-modern">
-                            <input type="text" id="exclude-domain" placeholder="spam.com">
-                            <button onclick="window.categoriesPageV22.addFilter('excludeDomains')">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="excludeDomains-items">
-                            ${filters.excludeDomains.map(d => `
-                                <span class="tag exclude-tag">
-                                    <i class="fas fa-ban"></i>
-                                    ${d}
-                                    <button onclick="window.categoriesPageV22.removeItem('excludeDomains', '${d}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                    
-                    <div class="filter-box">
-                        <h4><i class="fas fa-user-slash"></i> Emails exclus</h4>
-                        <p class="filter-hint">Ignorer les emails de ces adresses</p>
-                        <div class="input-modern">
-                            <input type="text" id="exclude-email" placeholder="noreply@exemple.com">
-                            <button onclick="window.categoriesPageV22.addFilter('excludeEmails')">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <div class="tags" id="excludeEmails-items">
-                            ${filters.excludeEmails.map(e => `
-                                <span class="tag exclude-tag">
-                                    <i class="fas fa-user-slash"></i>
-                                    ${e}
-                                    <button onclick="window.categoriesPageV22.removeItem('excludeEmails', '${e}')">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // ================================================
-    // ACTIONS MODAL CATÉGORIES
-    // ================================================
-    switchTab(tabName) {
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.toggle('active', tab.dataset.tab === tabName);
-        });
-        
-        document.querySelectorAll('.tab-panel').forEach(panel => {
-            panel.classList.toggle('active', panel.id === `tab-${tabName}`);
-        });
-    }
-
-    selectIcon(icon) {
-        document.getElementById('new-icon').value = icon;
-        document.querySelectorAll('.emoji-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.textContent === icon);
-        });
-    }
-
-    selectColor(color) {
-        document.getElementById('new-color').value = color;
-        document.querySelectorAll('.color-option').forEach(btn => {
-            btn.classList.toggle('selected', btn.style.background === color);
-        });
-    }
-
-    addKeyword(type, color) {
-        const input = document.getElementById(`${type}-input`);
-        if (!input?.value.trim()) return;
-        
-        const value = input.value.trim().toLowerCase();
-        const container = document.getElementById(`${type}-items`);
-        
-        if (!container) return;
-        
-        container.insertAdjacentHTML('beforeend', `
-            <span class="tag" style="background: ${color}15; color: ${color}">
-                ${value}
-                <button onclick="window.categoriesPageV22.removeItem('${type}', '${value}')">
-                    <i class="fas fa-times"></i>
-                </button>
-            </span>
-        `);
-        
-        input.value = '';
-        input.focus();
-    }
-
-    addFilter(type) {
-        let inputId;
-        if (type.includes('Domain')) {
-            inputId = document.getElementById('quick-include-domain') ? 'quick-include-domain' : 
-                     (type.includes('exclude') ? 'exclude-domain' : 'include-domain');
-        } else {
-            inputId = document.getElementById('quick-include-email') ? 'quick-include-email' :
-                     (type.includes('exclude') ? 'exclude-email' : 'include-email');
-        }
-        
-        const input = document.getElementById(inputId);
-        if (!input?.value.trim()) return;
-        
-        const value = input.value.trim().toLowerCase();
-        
-        const containers = [
-            document.getElementById(`${type}-items`),
-            document.getElementById(`quick-${type}`)
-        ].filter(Boolean);
-        
-        const isExclude = type.includes('exclude');
-        const icon = type.includes('Domain') ? 
-            (isExclude ? 'ban' : 'globe') : 
-            (isExclude ? 'user-slash' : 'at');
-        
-        containers.forEach(container => {
-            if (!container.querySelector(`[data-value="${value}"]`)) {
-                container.insertAdjacentHTML('beforeend', `
-                    <span class="tag ${isExclude ? 'exclude-tag' : 'filter-tag'}" data-value="${value}">
-                        ${type.includes('Domain') || type.includes('Email') ? '' : `<i class="fas fa-${icon}"></i>`}
-                        ${value}
-                        <button onclick="window.categoriesPageV22.removeFilter('${type}', '${value}')">×</button>
-                    </span>
-                `);
-            }
-        });
-        
-        input.value = '';
-        input.focus();
-    }
-    
-    removeFilter(type, value) {
-        const containers = [
-            document.getElementById(`${type}-items`),
-            document.getElementById(`quick-${type}`)
-        ].filter(Boolean);
-        
-        containers.forEach(container => {
-            const tags = container.querySelectorAll('.tag');
-            tags.forEach(tag => {
-                if (tag.getAttribute('data-value') === value || 
-                    tag.textContent.trim().replace('×', '').trim() === value) {
-                    tag.remove();
-                }
-            });
-        });
-    }
-
-    removeItem(type, value) {
-        const container = document.getElementById(`${type}-items`);
-        if (!container) return;
-        
-        const tags = container.querySelectorAll('.tag');
-        tags.forEach(tag => {
-            const text = tag.textContent.trim().replace(/×$/, '').trim();
-            if (text === value || text.includes(value)) {
-                tag.remove();
-            }
-        });
-    }
-
-    createCategory() {
-        const name = document.getElementById('new-name')?.value?.trim();
-        const icon = document.getElementById('new-icon')?.value || '📁';
-        const color = document.getElementById('new-color')?.value || this.colors[0];
-        
-        if (!name) {
-            this.showToast('⚠️ Nom requis', 'warning');
-            return;
-        }
-        
-        const categoryData = {
-            name,
-            icon,
-            color,
-            priority: 30,
-            keywords: { absolute: [], strong: [], weak: [], exclusions: [] }
-        };
-        
-        const newCategory = window.categoryManager?.createCustomCategory(categoryData);
-        
-        if (newCategory) {
-            this.closeModal();
-            this.showToast('✅ Catégorie créée avec succès!');
-            this.updateCategoriesDisplay();
-            
-            setTimeout(() => this.openModal(newCategory.id), 300);
-        } else {
-            this.showToast('❌ Erreur lors de la création', 'error');
-        }
-    }
-
-    save() {
-        if (!this.editingCategoryId) return;
-        
-        try {
-            const getItems = (containerId) => {
-                const container = document.getElementById(containerId);
-                if (!container) return [];
-                return Array.from(container.querySelectorAll('.tag')).map(tag => {
-                    const text = tag.textContent.trim();
-                    return text.replace(/×$/, '').replace(/^[^\s]+\s/, '').trim();
-                });
-            };
-            
-            const keywords = {
-                absolute: getItems('absolute-items'),
-                strong: getItems('strong-items'),
-                weak: getItems('weak-items'),
-                exclusions: getItems('exclusions-items')
-            };
-            
-            const filters = {
-                includeDomains: getItems('includeDomains-items'),
-                includeEmails: getItems('includeEmails-items'),
-                excludeDomains: getItems('excludeDomains-items'),
-                excludeEmails: getItems('excludeEmails-items')
-            };
-            
-            window.categoryManager?.updateCategoryKeywords(this.editingCategoryId, keywords);
-            window.categoryManager?.updateCategoryFilters(this.editingCategoryId, filters);
-            
-            this.closeModal();
-            this.showToast('💾 Modifications enregistrées!');
-            this.updateCategoriesDisplay();
-            
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur:', error);
-            this.showToast('❌ Erreur lors de la sauvegarde', 'error');
-        }
-    }
-
-    deleteCategory(categoryId) {
-        const category = window.categoryManager?.getCategory(categoryId);
-        if (!category) return;
-        
-        if (confirm(`Êtes-vous sûr de vouloir supprimer "${category.name}" ?`)) {
-            window.categoryManager?.deleteCustomCategory(categoryId);
-            this.closeModal();
-            this.showToast('🗑️ Catégorie supprimée');
-            this.updateCategoriesDisplay();
-        }
     }
 
     toggleCategory(categoryId) {
@@ -1674,18 +1358,11 @@ class CategoriesPageV22 {
         settings.activeCategories = activeCategories;
         this.saveSettings(settings);
         
-        // Notifier CategoryManager
-        if (window.categoryManager) {
-            window.categoryManager.updateActiveCategories?.(activeCategories);
-        }
-        
         this.updateCategoriesDisplay();
         this.showToast('État de la catégorie mis à jour');
     }
 
     togglePreselection(categoryId) {
-        console.log('[CategoriesPage] 🔄 Toggle pré-sélection pour:', categoryId);
-        
         const settings = this.loadSettings();
         let taskPreselectedCategories = settings.taskPreselectedCategories || [];
         
@@ -1693,98 +1370,20 @@ class CategoriesPageV22 {
         
         if (isPreselected) {
             taskPreselectedCategories = taskPreselectedCategories.filter(id => id !== categoryId);
-            console.log('[CategoriesPage] ➖ Retrait pré-sélection:', categoryId);
         } else {
             taskPreselectedCategories.push(categoryId);
-            console.log('[CategoriesPage] ➕ Ajout pré-sélection:', categoryId);
         }
         
-        // Sauvegarder dans les settings
         settings.taskPreselectedCategories = taskPreselectedCategories;
         this.saveSettings(settings);
         
-        // Notifier les autres modules
-        this.syncTaskPreselectedCategories(taskPreselectedCategories);
-        
-        // Mettre à jour l'affichage
         this.updateCategoriesDisplay();
         
-        // Toast avec icône appropriée
         const category = window.categoryManager?.getCategory(categoryId);
         const message = isPreselected ? 
             `☐ ${category?.name || categoryId} - Pré-sélection désactivée` : 
             `☑️ ${category?.name || categoryId} - Pré-sélection activée`;
         this.showToast(message);
-    }
-
-    // ================================================
-    // SYNCHRONISATION DES MODULES
-    // ================================================
-    syncTaskPreselectedCategories(categories) {
-        console.log('[CategoriesPage] 🔄 === SYNCHRONISATION GLOBALE ===');
-        console.log('[CategoriesPage] 📋 Catégories à synchroniser:', categories);
-        
-        // 1. CategoryManager
-        if (window.categoryManager && typeof window.categoryManager.updateTaskPreselectedCategories === 'function') {
-            window.categoryManager.updateTaskPreselectedCategories(categories);
-            console.log('[CategoriesPage] ✅ CategoryManager synchronisé');
-        }
-        
-        // 2. EmailScanner
-        if (window.emailScanner && typeof window.emailScanner.updateTaskPreselectedCategories === 'function') {
-            window.emailScanner.updateTaskPreselectedCategories(categories);
-            console.log('[CategoriesPage] ✅ EmailScanner synchronisé');
-        }
-        
-        // 3. PageManager
-        if (window.pageManager && typeof window.pageManager.updateSettings === 'function') {
-            window.pageManager.updateSettings({
-                taskPreselectedCategories: categories
-            });
-            console.log('[CategoriesPage] ✅ PageManager synchronisé');
-        }
-        
-        // 4. Dispatcher des événements pour les autres modules
-        this.dispatchSettingsChanged({
-            type: 'taskPreselectedCategories',
-            value: categories,
-            settings: this.loadSettings()
-        });
-        
-        console.log('[CategoriesPage] ✅ Synchronisation terminée');
-    }
-
-    // Dispatcher d'événements
-    dispatchSettingsChanged(detail) {
-        try {
-            // Événement spécifique pour les catégories
-            window.dispatchEvent(new CustomEvent('categorySettingsChanged', { 
-                detail: {
-                    ...detail,
-                    source: 'CategoriesPage',
-                    timestamp: Date.now()
-                }
-            }));
-            
-            // Événement générique
-            window.dispatchEvent(new CustomEvent('settingsChanged', { 
-                detail: {
-                    ...detail,
-                    source: 'CategoriesPage',
-                    timestamp: Date.now()
-                }
-            }));
-            
-            console.log('[CategoriesPage] 📨 Événements dispatched');
-        } catch (error) {
-            console.error('[CategoriesPage] Erreur dispatch événements:', error);
-        }
-    }
-
-    // Méthode pour récupérer les catégories pré-sélectionnées
-    getTaskPreselectedCategories() {
-        const settings = this.loadSettings();
-        return settings.taskPreselectedCategories || [];
     }
 
     getCategoryStats(categoryId) {
@@ -1834,6 +1433,11 @@ class CategoriesPageV22 {
         } catch (error) {
             console.error('[CategoriesPage] Erreur sauvegarde:', error);
         }
+    }
+
+    getTaskPreselectedCategories() {
+        const settings = this.loadSettings();
+        return settings.taskPreselectedCategories || [];
     }
 
     showToast(message, type = 'success') {
@@ -1945,7 +1549,6 @@ class CategoriesPageV22 {
             localStorage.removeItem(backupKey);
             this.showToast('🗑️ Sauvegarde supprimée', 'info');
             
-            // Rafraîchir la liste
             this.closeModal();
             setTimeout(() => this.showBackupHistory(), 300);
             
@@ -2346,488 +1949,7 @@ class CategoriesPageV22 {
                 color: #6B7280;
             }
             
-            /* Tabs modernes avec fond solide */
-            .tabs-modern {
-                display: flex;
-                padding: 0 28px;
-                gap: 32px;
-                border-bottom: 2px solid #D1D5DB;
-                background: #FFFFFF;
-            }
-            
-            .tab {
-                padding: 16px 0;
-                border: none;
-                background: none;
-                font-size: 15px;
-                font-weight: 600;
-                color: var(--text-secondary);
-                cursor: pointer;
-                position: relative;
-                transition: color 0.3s;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .tab:hover {
-                color: var(--text);
-            }
-            
-            .tab.active {
-                color: var(--primary);
-            }
-            
-            .tab.active::after {
-                content: '';
-                position: absolute;
-                bottom: -2px;
-                left: 0;
-                right: 0;
-                height: 3px;
-                background: var(--primary);
-                border-radius: 3px 3px 0 0;
-            }
-            
-            /* Tab panels */
-            .tab-panel {
-                display: none;
-                background: #E8EAED;
-                min-height: 400px;
-                padding: 24px;
-            }
-            
-            .tab-panel.active {
-                display: block;
-            }
-            
-            /* Layout mots-clés avec sidebar */
-            .keywords-main-layout {
-                display: grid;
-                grid-template-columns: 1fr 320px;
-                gap: 24px;
-                height: 100%;
-            }
-            
-            .keywords-left-section {
-                overflow-y: auto;
-                padding-right: 20px;
-            }
-            
-            .keywords-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 20px;
-            }
-            
-            .keywords-right-section {
-                padding-left: 24px;
-                overflow-y: auto;
-            }
-            
-            .filter-compact-box {
-                background: #FFFFFF;
-                border: 2px solid var(--border);
-                border-radius: 16px;
-                padding: 20px;
-                position: sticky;
-                top: 0;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            }
-            
-            .filter-compact-box h3 {
-                font-size: 16px;
-                font-weight: 600;
-                margin: 0 0 20px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                color: var(--text);
-            }
-            
-            .filter-compact-section {
-                margin-bottom: 20px;
-            }
-            
-            .filter-compact-section:last-child {
-                margin-bottom: 0;
-            }
-            
-            .filter-compact-section h4 {
-                font-size: 14px;
-                font-weight: 600;
-                margin: 0 0 10px 0;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                color: var(--text-secondary);
-            }
-            
-            .input-modern.compact input {
-                padding: 8px 12px;
-                font-size: 14px;
-            }
-            
-            .input-modern.compact button {
-                width: 36px;
-                height: 36px;
-            }
-            
-            .tags.compact {
-                gap: 6px;
-                min-height: 30px;
-                padding: 6px;
-            }
-            
-            .tags.compact .tag {
-                padding: 4px 10px;
-                font-size: 13px;
-            }
-            
-            .keyword-box {
-                background: #FFFFFF;
-                border: 2px solid var(--border);
-                border-radius: 16px;
-                padding: 24px;
-                transition: all 0.3s;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            }
-            
-            .keyword-box:hover {
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            }
-            
-            .box-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-            }
-            
-            .box-header h4 {
-                font-size: 16px;
-                font-weight: 600;
-                margin: 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .box-count {
-                padding: 2px 10px;
-                border-radius: 12px;
-                font-size: 12px;
-                font-weight: 600;
-            }
-            
-            .box-description {
-                font-size: 14px;
-                color: var(--text-secondary);
-                margin: 0 0 16px 0;
-                line-height: 1.4;
-            }
-            
-            /* Input moderne dans modal */
-            .input-modern {
-                display: flex;
-                gap: 8px;
-                margin-bottom: 12px;
-            }
-            
-            .input-modern input {
-                flex: 1;
-                padding: 12px 16px;
-                border: 2px solid var(--border);
-                border-radius: 10px;
-                font-size: 15px;
-                transition: all 0.3s;
-            }
-            
-            .input-modern input:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-            }
-            
-            .input-modern button {
-                width: 44px;
-                height: 44px;
-                border: none;
-                border-radius: 10px;
-                color: white;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: all 0.3s;
-            }
-            
-            .input-modern button:hover {
-                transform: scale(1.1);
-            }
-            
-            /* Tags dans modal */
-            .tags {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                min-height: 40px;
-                background: #FAFBFC;
-                padding: 8px;
-                border-radius: 8px;
-                border: 1px solid #E5E7EB;
-            }
-            
-            .tag {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 14px;
-                border-radius: 20px;
-                font-size: 15px;
-                font-weight: 500;
-                transition: all 0.3s;
-            }
-            
-            .tag button {
-                background: none;
-                border: none;
-                color: currentColor;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                opacity: 0.6;
-                transition: opacity 0.3s;
-                font-size: 10px;
-            }
-            
-            .tag button:hover {
-                opacity: 1;
-            }
-            
-            .filter-tag {
-                background: var(--primary)10;
-                color: var(--primary);
-            }
-            
-            .exclude-tag {
-                background: var(--danger)10;
-                color: var(--danger);
-            }
-            
-            /* Layout filtres */
-            .filters-layout {
-                display: grid;
-                gap: 32px;
-            }
-            
-            .filter-section {
-                background: #FFFFFF;
-                border: 1px solid var(--border);
-                border-radius: 20px;
-                padding: 28px;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-            }
-            
-            .filter-section h3 {
-                font-size: 18px;
-                font-weight: 600;
-                margin: 0 0 20px 0;
-                color: var(--text);
-            }
-            
-            .filter-box {
-                margin-bottom: 24px;
-            }
-            
-            .filter-box:last-child {
-                margin-bottom: 0;
-            }
-            
-            .filter-box h4 {
-                font-size: 16px;
-                font-weight: 600;
-                margin: 0 0 8px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .filter-hint {
-                font-size: 13px;
-                color: var(--text-secondary);
-                margin: 0 0 16px 0;
-            }
-            
-            /* Création de catégorie */
-            .modal-create {
-                max-width: 480px;
-            }
-            
-            .create-header {
-                padding: 28px;
-                border-bottom: 2px solid #D1D5DB;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                background: #FFFFFF;
-                border-radius: 24px 24px 0 0;
-            }
-            
-            .create-content {
-                padding: 28px;
-                overflow-y: auto;
-                flex: 1;
-                background: #FFFFFF;
-            }
-            
-            .input-name {
-                width: 100%;
-                padding: 16px 20px;
-                border: 2px solid var(--border);
-                border-radius: 12px;
-                font-size: 18px;
-                font-weight: 600;
-                margin-bottom: 24px;
-                transition: all 0.3s;
-            }
-            
-            .input-name:focus {
-                outline: none;
-                border-color: var(--primary);
-                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-            }
-            
-            .emoji-picker,
-            .color-selector {
-                margin-bottom: 24px;
-            }
-            
-            .emoji-picker label,
-            .color-selector label {
-                display: block;
-                font-size: 14px;
-                font-weight: 600;
-                color: var(--text-secondary);
-                margin-bottom: 12px;
-            }
-            
-            .emoji-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-                gap: 8px;
-            }
-            
-            .emoji-option {
-                width: 48px;
-                height: 48px;
-                border: 2px solid var(--border);
-                background: var(--surface);
-                border-radius: 12px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 24px;
-                transition: all 0.3s;
-            }
-            
-            .emoji-option:hover {
-                border-color: var(--primary);
-                transform: scale(1.1);
-            }
-            
-            .emoji-option.selected {
-                border-color: var(--primary);
-                background: var(--primary)10;
-            }
-            
-            .color-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-                gap: 8px;
-            }
-            
-            .color-option {
-                width: 40px;
-                height: 40px;
-                border: 3px solid transparent;
-                border-radius: 10px;
-                cursor: pointer;
-                transition: all 0.3s;
-                position: relative;
-            }
-            
-            .color-option:hover {
-                transform: scale(1.1);
-            }
-            
-            .color-option.selected {
-                border-color: var(--text);
-            }
-            
-            .color-option.selected::after {
-                content: '✓';
-                position: absolute;
-                inset: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-weight: bold;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-            }
-            
-            /* Paramètres de catégorie */
-            .settings-content {
-                padding: 20px 0;
-            }
-            
-            .danger-zone {
-                background: var(--danger)10;
-                border: 2px solid var(--danger)20;
-                border-radius: 16px;
-                padding: 24px;
-            }
-            
-            .danger-zone h4 {
-                font-size: 16px;
-                font-weight: 600;
-                color: var(--danger);
-                margin: 0 0 8px 0;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-            
-            .danger-zone p {
-                font-size: 14px;
-                color: var(--text-secondary);
-                margin: 0 0 16px 0;
-            }
-            
-            .btn-danger {
-                width: 100%;
-                padding: 12px;
-                background: var(--danger);
-                color: white;
-                border: none;
-                border-radius: 10px;
-                font-size: 15px;
-                font-weight: 600;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                transition: all 0.3s;
-            }
-            
-            .btn-danger:hover {
-                background: #DC2626;
-                transform: scale(1.02);
-            }
+            /* Section Paramètres */
             .settings-section {
                 max-width: 1000px;
                 margin: 0 auto;
@@ -3175,7 +2297,7 @@ class CategoriesPageV22 {
                 box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
             }
             
-            /* État vide V22 */
+            /* États vides et modals */
             .empty-state-v22 {
                 text-align: center;
                 padding: 80px 20px;
@@ -3294,7 +2416,229 @@ class CategoriesPageV22 {
                 background: #FFFFFF;
             }
             
-            /* Historique des sauvegardes */
+            /* Keywords grid pour modal */
+            .keywords-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .keyword-box {
+                background: #FFFFFF;
+                border: 2px solid var(--border);
+                border-radius: 16px;
+                padding: 24px;
+                transition: all 0.3s;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            }
+            
+            .keyword-box:hover {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            }
+            
+            .box-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+            
+            .box-header h4 {
+                font-size: 16px;
+                font-weight: 600;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .box-count {
+                padding: 2px 10px;
+                border-radius: 12px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            
+            .input-modern {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .input-modern input {
+                flex: 1;
+                padding: 12px 16px;
+                border: 2px solid var(--border);
+                border-radius: 10px;
+                font-size: 15px;
+                transition: all 0.3s;
+            }
+            
+            .input-modern input:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+            
+            .input-modern button {
+                width: 44px;
+                height: 44px;
+                border: none;
+                border-radius: 10px;
+                color: white;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.3s;
+            }
+            
+            .input-modern button:hover {
+                transform: scale(1.1);
+            }
+            
+            .tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                min-height: 40px;
+                background: #FAFBFC;
+                padding: 8px;
+                border-radius: 8px;
+                border: 1px solid #E5E7EB;
+            }
+            
+            .tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 14px;
+                border-radius: 20px;
+                font-size: 15px;
+                font-weight: 500;
+                transition: all 0.3s;
+            }
+            
+            .tag button {
+                background: none;
+                border: none;
+                color: currentColor;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                opacity: 0.6;
+                transition: opacity 0.3s;
+                font-size: 10px;
+            }
+            
+            .tag button:hover {
+                opacity: 1;
+            }
+            
+            /* Modal création */
+            .modal-create {
+                max-width: 480px;
+            }
+            
+            .input-name {
+                width: 100%;
+                padding: 16px 20px;
+                border: 2px solid var(--border);
+                border-radius: 12px;
+                font-size: 18px;
+                font-weight: 600;
+                margin-bottom: 24px;
+                transition: all 0.3s;
+            }
+            
+            .input-name:focus {
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            }
+            
+            .emoji-picker,
+            .color-selector {
+                margin-bottom: 24px;
+            }
+            
+            .emoji-picker label,
+            .color-selector label {
+                display: block;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                margin-bottom: 12px;
+            }
+            
+            .emoji-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+                gap: 8px;
+            }
+            
+            .emoji-option {
+                width: 48px;
+                height: 48px;
+                border: 2px solid var(--border);
+                background: var(--surface);
+                border-radius: 12px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                transition: all 0.3s;
+            }
+            
+            .emoji-option:hover {
+                border-color: var(--primary);
+                transform: scale(1.1);
+            }
+            
+            .emoji-option.selected {
+                border-color: var(--primary);
+                background: var(--primary)10;
+            }
+            
+            .color-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+                gap: 8px;
+            }
+            
+            .color-option {
+                width: 40px;
+                height: 40px;
+                border: 3px solid transparent;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s;
+                position: relative;
+            }
+            
+            .color-option:hover {
+                transform: scale(1.1);
+            }
+            
+            .color-option.selected {
+                border-color: var(--text);
+            }
+            
+            .color-option.selected::after {
+                content: '✓';
+                position: absolute;
+                inset: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            }
+            
+            /* Historique backup */
             .backup-history-list {
                 display: flex;
                 flex-direction: column;
@@ -3485,6 +2829,10 @@ class CategoriesPageV22 {
                 .settings-grid {
                     grid-template-columns: 1fr;
                 }
+                
+                .keywords-grid {
+                    grid-template-columns: 1fr;
+                }
             }
             
             @media (max-width: 768px) {
@@ -3523,42 +2871,6 @@ class CategoriesPageV22 {
                 .general-settings {
                     padding: 24px;
                 }
-                
-                .backup-item {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 12px;
-                }
-                
-                .backup-actions {
-                    width: 100%;
-                    justify-content: flex-end;
-                }
-                
-                .stats-grid {
-                    grid-template-columns: 1fr;
-                }
-            }
-            
-            @media (max-width: 480px) {
-                .stats-bar-v22 {
-                    grid-template-columns: 1fr;
-                    gap: 8px;
-                }
-                
-                .modal-modern {
-                    margin: 10px;
-                    max-height: 95vh;
-                }
-                
-                .modal-header,
-                .modal-footer {
-                    padding: 16px;
-                }
-                
-                .modal-content {
-                    padding: 16px;
-                }
             }
         `;
         
@@ -3594,4 +2906,4 @@ if (!window.categoriesPage.getTaskPreselectedCategories) {
     };
 }
 
-console.log('[CategoriesPage] ✅ CategoriesPage v22.0 chargée - Interface optimisée avec système de backup complet!');
+console.log('[CategoriesPage] ✅ CategoriesPage v22.0 chargée - Interface corrigée et stable!');
