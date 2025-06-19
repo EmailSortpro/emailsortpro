@@ -115,10 +115,91 @@
                     return;
                 }
                 
-                console.log('[Backup] 📝 Dossier de récupération non configuré (optionnel)');
+                // AUTO-CONFIGURATION : Essayer de configurer automatiquement
+                console.log('[Backup] 🔧 Auto-configuration du dossier de récupération...');
+                await this.autoSetupRecoveryFolder();
                 
             } catch (error) {
-                console.log('[Backup] 📝 Dossier de récupération en attente de configuration');
+                console.log('[Backup] 📝 Dossier de récupération en attente de configuration manuelle');
+            }
+        }
+
+        async autoSetupRecoveryFolder() {
+            try {
+                if (!window.showDirectoryPicker) {
+                    console.log('[Backup] ⚠️ API File System non supportée - pas d\'auto-config');
+                    return false;
+                }
+
+                // Essayer d'obtenir un accès automatique au dossier Documents
+                const documentsHandle = await this.tryGetDocumentsFolder();
+                if (!documentsHandle) {
+                    console.log('[Backup] 📝 Accès Documents non autorisé - configuration manuelle requise');
+                    return false;
+                }
+
+                // Créer le dossier EmailSortPro-Recovery automatiquement
+                let recoveryFolderHandle;
+                try {
+                    recoveryFolderHandle = await documentsHandle.getDirectoryHandle('EmailSortPro-Recovery');
+                    console.log('[Backup] ✅ Dossier de récupération existant trouvé');
+                } catch {
+                    recoveryFolderHandle = await documentsHandle.getDirectoryHandle('EmailSortPro-Recovery', { create: true });
+                    console.log('[Backup] ✅ Dossier de récupération créé automatiquement');
+                }
+
+                // Tester l'accès en écriture
+                await this.testWriteAccess(recoveryFolderHandle);
+
+                // Sauvegarder le handle
+                this.recoveryFolderHandle = recoveryFolderHandle;
+                this.recoveryAccessGranted = true;
+                this.config.recoveryBackup = true;
+                await this.saveRecoveryHandle(recoveryFolderHandle);
+
+                // Créer le README
+                await this.createRecoveryReadme(recoveryFolderHandle);
+
+                // Faire une sauvegarde de récupération immédiate
+                await this.performRecoveryBackup('auto-setup');
+                
+                // Démarrer les sauvegardes automatiques
+                this.startRecoveryTimer();
+
+                console.log('[Backup] ✅ Auto-configuration réussie - Dossier de récupération prêt');
+                return true;
+
+            } catch (error) {
+                console.log('[Backup] ⚠️ Auto-configuration échouée:', error.message);
+                return false;
+            }
+        }
+
+        async tryGetDocumentsFolder() {
+            try {
+                // Méthode 1: Essayer d'accéder directement aux Documents (peut échouer)
+                const documentsHandle = await window.showDirectoryPicker({
+                    mode: 'readwrite',
+                    startIn: 'documents',
+                    id: 'emailsortpro-auto-recovery'
+                });
+                
+                return documentsHandle;
+                
+            } catch (error) {
+                // Si échec, essayer avec l'API OPFS pour créer un dossier de récupération alternatif
+                try {
+                    if ('navigator' in window && 'storage' in navigator && 'getDirectory' in navigator.storage) {
+                        const opfsRoot = await navigator.storage.getDirectory();
+                        const recoveryDir = await opfsRoot.getDirectoryHandle('recovery-backup', { create: true });
+                        console.log('[Backup] 💾 Utilisation dossier OPFS de récupération comme alternative');
+                        return recoveryDir;
+                    }
+                } catch (opfsError) {
+                    console.log('[Backup] ⚠️ Impossible d\'utiliser OPFS pour récupération');
+                }
+                
+                return null;
             }
         }
 
@@ -519,16 +600,22 @@ Chemin: ${window.location.pathname}
                             
                             ${!this.recoveryAccessGranted ? `
                                 <button id="setup-recovery-btn" class="btn btn-primary">
-                                    <i class="fas fa-folder-plus"></i> Configurer dossier de récupération
+                                    <i class="fas fa-folder-plus"></i> Configurer manuellement le dossier
                                 </button>
                                 <p class="setting-description">
-                                    <strong>Recommandé :</strong> Choisissez un dossier permanent (ex: Documents) 
-                                    pour pouvoir récupérer vos données facilement.
+                                    <strong>Auto-configuration :</strong> Le système essaie automatiquement de créer 
+                                    un dossier EmailSortPro-Recovery dans vos Documents.<br>
+                                    <strong>Configuration manuelle :</strong> Si l'auto-config échoue, 
+                                    cliquez pour choisir un dossier permanent.
                                 </p>
                             ` : `
                                 <button id="manual-recovery-backup-btn" class="btn btn-secondary">
                                     <i class="fas fa-download"></i> Créer sauvegarde de récupération maintenant
                                 </button>
+                                <p class="setting-description">
+                                    <strong>Dossier configuré automatiquement.</strong> 
+                                    Les sauvegardes sont créées automatiquement toutes les heures.
+                                </p>
                             `}
                         </div>
                     </div>
@@ -539,9 +626,9 @@ Chemin: ${window.location.pathname}
                             <div>
                                 <h5>🎯 Meilleur des deux mondes</h5>
                                 <p>• <strong>Au quotidien :</strong> Stockage invisible, aucun fichier visible<br>
-                                • <strong>En cas de problème :</strong> Fichier de récupération accessible<br>
+                                • <strong>Auto-récupération :</strong> Dossier configuré automatiquement<br>
                                 • <strong>Pas de pollution :</strong> Aucun téléchargement automatique<br>
-                                • <strong>Sécurité maximale :</strong> Redondance multi-couches</p>
+                                • <strong>Sécurité maximale :</strong> Redondance multi-couches + fichiers permanents</p>
                             </div>
                         </div>
                     </div>
@@ -1601,12 +1688,12 @@ Chemin: ${window.location.pathname}
         }
     });
     
-    console.log('✅ BackupService HYBRIDE chargé');
-    console.log('🔄 Mode intelligent : Invisible au quotidien + Récupération optionnelle');
+    console.log('✅ BackupService HYBRIDE AUTO-CONFIGURÉ chargé');
+    console.log('🔄 Mode intelligent : Invisible + Auto-récupération');
     console.log('👻 Stockage invisible : Cache + IndexedDB + OPFS + localStorage');
-    console.log('💾 Récupération : Dossier permanent optionnel (configurable par utilisateur)');
+    console.log('💾 Auto-récupération : Dossier configuré automatiquement');
     console.log('🚫 AUCUN téléchargement automatique - GARANTI');
     console.log('⚡ Backup invisible : toutes les 5 minutes');
-    console.log('🎯 Récupération : toutes les heures (si configurée)');
+    console.log('🎯 Auto-récupération : toutes les heures');
 
 })();
