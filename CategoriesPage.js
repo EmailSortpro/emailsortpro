@@ -387,18 +387,44 @@ class CategoriesPageV22 {
                         Parcourir
                     </button>
                 </div>
+                
                 <div class="folder-info">
                     <small>
                         <i class="fas fa-info-circle"></i>
                         Les sauvegardes seront créées dans le dossier sélectionné
                     </small>
                 </div>
+                
+                <div class="folder-recommendations">
+                    <div class="recommendation-item good">
+                        <i class="fas fa-check-circle"></i>
+                        <span><strong>Recommandé :</strong> Documents, Bureau, ou créez un dossier "EmailSortPro-Backups"</span>
+                    </div>
+                    <div class="recommendation-item warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span><strong>À éviter :</strong> Dossiers système (Windows, Program Files, System32, etc.)</span>
+                    </div>
+                </div>
+                
                 ${!window.showDirectoryPicker ? `
                     <div class="folder-warning">
                         <small>
                             <i class="fas fa-exclamation-triangle"></i>
                             Cette fonctionnalité nécessite Chrome ou Edge pour fonctionner
                         </small>
+                    </div>
+                ` : ''}
+                
+                ${config.customFolderPath ? `
+                    <div class="folder-actions">
+                        <button class="btn-test-folder" onclick="window.categoriesPageV22.createTestBackup()">
+                            <i class="fas fa-vial"></i>
+                            Tester le dossier
+                        </button>
+                        <button class="btn-clear-folder" onclick="window.categoriesPageV22.clearCustomFolder()">
+                            <i class="fas fa-times"></i>
+                            Effacer la sélection
+                        </button>
                     </div>
                 ` : ''}
             </div>
@@ -692,11 +718,58 @@ class CategoriesPageV22 {
                 return;
             }
             
-            // Ouvrir le sélecteur de dossier
-            const directoryHandle = await window.showDirectoryPicker({
+            // Afficher un avertissement préventif
+            const userConfirmed = confirm(
+                '⚠️ IMPORTANT - Sélection de dossier de sauvegarde\n\n' +
+                '• Choisissez un dossier dans vos Documents, Bureau ou un dossier personnel\n' +
+                '• ÉVITEZ : Dossiers système (C:\\Windows, /System, etc.)\n' +
+                '• ÉVITEZ : Dossiers protégés (Program Files, etc.)\n' +
+                '• RECOMMANDÉ : Créez un nouveau dossier "EmailSortPro-Backups"\n\n' +
+                'Continuer la sélection ?'
+            );
+            
+            if (!userConfirmed) {
+                return;
+            }
+            
+            // Options de sélection sécurisées
+            const pickerOptions = {
                 mode: 'readwrite',
-                startIn: 'documents'
-            });
+                startIn: 'documents', // Commencer dans Documents par défaut
+                id: 'emailsortpro-backup-folder' // ID pour mémoriser le dernier dossier
+            };
+            
+            // Ouvrir le sélecteur de dossier
+            const directoryHandle = await window.showDirectoryPicker(pickerOptions);
+            
+            // Vérifier que le dossier n'est pas un dossier système
+            const folderName = directoryHandle.name.toLowerCase();
+            const restrictedFolders = [
+                'windows', 'system32', 'program files', 'program files (x86)',
+                'system', 'usr', 'bin', 'sbin', 'etc', 'var', 'tmp',
+                'applications', 'library', 'system library',
+                'recovery', 'boot', 'efi', '$recycle.bin'
+            ];
+            
+            const isRestricted = restrictedFolders.some(restricted => 
+                folderName.includes(restricted) || restricted.includes(folderName)
+            );
+            
+            if (isRestricted) {
+                this.showToast('❌ Dossier système détecté. Choisissez un dossier personnel.', 'error');
+                // Relancer la sélection
+                setTimeout(() => this.selectCustomFolder(), 1000);
+                return;
+            }
+            
+            // Tester l'accès en écriture avant d'accepter le dossier
+            try {
+                await this.testFolderWriteAccess(directoryHandle);
+            } catch (accessError) {
+                console.error('[Backup] Test d\'écriture échoué:', accessError);
+                this.showToast('❌ Impossible d\'écrire dans ce dossier. Choisissez un autre dossier.', 'error');
+                return;
+            }
             
             // Stocker le handle et le chemin
             this.backupConfig.customFolderHandle = directoryHandle;
@@ -713,19 +786,103 @@ class CategoriesPageV22 {
             
             this.showToast(`✅ Dossier sélectionné: ${directoryHandle.name}`, 'success');
             
+            // Proposer de créer une sauvegarde de test
+            setTimeout(() => {
+                if (confirm('Voulez-vous créer une sauvegarde de test pour vérifier que tout fonctionne ?')) {
+                    this.createTestBackup();
+                }
+            }, 1500);
+            
         } catch (error) {
+            console.error('[Backup] Erreur sélection dossier:', error);
+            
             if (error.name === 'AbortError') {
                 // L'utilisateur a annulé
                 console.log('[Backup] Sélection de dossier annulée');
+            } else if (error.name === 'SecurityError') {
+                this.showToast('❌ Accès refusé. Le dossier est protégé ou inaccessible.', 'error');
+            } else if (error.name === 'NotAllowedError') {
+                this.showToast('❌ Permission refusée. Choisissez un dossier dans vos documents personnels.', 'error');
+            } else if (error.message && error.message.includes('system')) {
+                this.showToast('❌ Dossier système détecté. Sélectionnez un dossier personnel.', 'error');
             } else {
-                console.error('[Backup] Erreur sélection dossier:', error);
-                this.showToast('❌ Erreur lors de la sélection du dossier', 'error');
+                this.showToast('❌ Erreur lors de la sélection du dossier. Réessayez avec un autre dossier.', 'error');
             }
         }
     }
 
     // ================================================
-    // MÉTHODE CORRIGÉE: Stocker dans un dossier personnalisé
+    // NOUVELLE MÉTHODE: Tester l'accès en écriture
+    // ================================================
+    async testFolderWriteAccess(directoryHandle) {
+        const testFileName = '.emailsortpro-test-access';
+        
+        try {
+            // Créer un fichier de test
+            const testFileHandle = await directoryHandle.getFileHandle(testFileName, {
+                create: true
+            });
+            
+            // Écrire des données de test
+            const writable = await testFileHandle.createWritable();
+            await writable.write('test-access-' + Date.now());
+            await writable.close();
+            
+            // Supprimer le fichier de test
+            await directoryHandle.removeEntry(testFileName);
+            
+            console.log('[Backup] Test d\'accès réussi');
+            return true;
+            
+        } catch (error) {
+            console.error('[Backup] Test d\'accès échoué:', error);
+            throw new Error('Impossible d\'écrire dans ce dossier');
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Créer une sauvegarde de test
+    // ================================================
+    async createTestBackup() {
+        try {
+            if (!this.backupConfig.customFolderHandle) {
+                throw new Error('Aucun dossier sélectionné');
+            }
+            
+            const testData = {
+                timestamp: new Date().toISOString(),
+                version: '22.1-test',
+                testBackup: true,
+                message: 'Ceci est une sauvegarde de test pour vérifier le bon fonctionnement du système.',
+                data: {
+                    categories: { test: { name: 'Test', icon: '🧪' } },
+                    tasks: [],
+                    settings: {}
+                }
+            };
+            
+            const testFileName = `emailsortpro-TEST-${Date.now()}.json`;
+            
+            // Créer le fichier de test
+            const fileHandle = await this.backupConfig.customFolderHandle.getFileHandle(testFileName, {
+                create: true
+            });
+            
+            // Écrire les données de test
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(testData, null, 2));
+            await writable.close();
+            
+            this.showToast(`✅ Sauvegarde de test créée: ${testFileName}`, 'success');
+            
+        } catch (error) {
+            console.error('[Backup] Erreur sauvegarde de test:', error);
+            this.showToast('❌ Erreur lors de la création de la sauvegarde de test', 'error');
+        }
+    }
+
+    // ================================================
+    // MÉTHODE AMÉLIORÉE: Stocker dans un dossier personnalisé
     // ================================================
     async storeInCustomFolder(data, timestamp) {
         try {
@@ -733,50 +890,142 @@ class CategoriesPageV22 {
                 throw new Error('Aucun dossier sélectionné');
             }
             
-            // Vérifier que le handle est toujours valide
-            try {
-                await this.backupConfig.customFolderHandle.queryPermission({ mode: 'readwrite' });
-            } catch (permissionError) {
-                // Demander à nouveau la permission
-                const permission = await this.backupConfig.customFolderHandle.requestPermission({ mode: 'readwrite' });
+            // Vérifier et demander les permissions si nécessaire
+            let permission = await this.backupConfig.customFolderHandle.queryPermission({ mode: 'readwrite' });
+            
+            if (permission !== 'granted') {
+                permission = await this.backupConfig.customFolderHandle.requestPermission({ mode: 'readwrite' });
+                
                 if (permission !== 'granted') {
                     throw new Error('Permission refusée pour accéder au dossier');
                 }
             }
             
-            // Créer le nom du fichier
-            const fileName = `emailsortpro-backup-${timestamp.split('T')[0]}-${Date.now()}.json`;
+            // Créer un nom de fichier sécurisé
+            const date = new Date(timestamp);
+            const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+            const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
+            const fileName = `EmailSortPro-Backup-${dateStr}_${timeStr}.json`;
+            
+            // Vérifier s'il y a suffisamment d'espace (estimation)
+            if (data.length > 100 * 1024 * 1024) { // 100MB
+                if (!confirm('La sauvegarde est volumineuse (>100MB). Continuer ?')) {
+                    return;
+                }
+            }
             
             // Créer le fichier dans le dossier sélectionné
             const fileHandle = await this.backupConfig.customFolderHandle.getFileHandle(fileName, {
                 create: true
             });
             
-            // Écrire les données
+            // Écrire les données avec gestion d'erreur
             const writable = await fileHandle.createWritable();
-            await writable.write(data);
-            await writable.close();
+            
+            try {
+                await writable.write(data);
+                await writable.close();
+            } catch (writeError) {
+                // S'assurer que le writable est fermé même en cas d'erreur
+                try {
+                    await writable.abort();
+                } catch (abortError) {
+                    console.warn('[Backup] Erreur abort writable:', abortError);
+                }
+                throw writeError;
+            }
             
             this.showToast(`💾 Sauvegarde créée: ${fileName}`, 'success');
+            
+            // Nettoyer les anciennes sauvegardes si nécessaire
+            await this.cleanupOldBackupsInFolder();
             
         } catch (error) {
             console.error('[Backup] Erreur stockage dossier personnalisé:', error);
             
             if (error.name === 'NotAllowedError' || error.message.includes('Permission refusée')) {
-                this.showToast('❌ Permission refusée. Resélectionnez le dossier.', 'error');
+                this.showToast('❌ Permission refusée. Le dossier est protégé.', 'error');
+                
+                // Proposer de choisir un nouveau dossier
+                if (confirm('Voulez-vous sélectionner un nouveau dossier ?')) {
+                    // Réinitialiser et relancer la sélection
+                    this.backupConfig.customFolderHandle = null;
+                    this.backupConfig.customFolderPath = null;
+                    this.saveBackupConfig();
+                    
+                    setTimeout(() => this.selectCustomFolder(), 500);
+                }
+                
+            } else if (error.name === 'SecurityError') {
+                this.showToast('❌ Dossier système ou protégé. Choisissez un dossier personnel.', 'error');
+                
+            } else if (error.name === 'QuotaExceededError') {
+                this.showToast('❌ Espace disque insuffisant pour la sauvegarde.', 'error');
+                
+            } else if (error.name === 'InvalidStateError') {
+                this.showToast('❌ Le dossier n\'est plus accessible. Sélectionnez-en un nouveau.', 'error');
+                
                 // Réinitialiser le dossier
                 this.backupConfig.customFolderHandle = null;
                 this.backupConfig.customFolderPath = null;
                 this.saveBackupConfig();
                 
-                // Rafraîchir l'affichage
                 const pathInput = document.getElementById('custom-folder-path');
                 if (pathInput) {
                     pathInput.value = '';
                 }
+                
             } else {
-                this.showToast('❌ Erreur lors de la sauvegarde dans le dossier', 'error');
+                this.showToast('❌ Erreur lors de la sauvegarde. Vérifiez les permissions du dossier.', 'error');
             }
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Nettoyer les anciennes sauvegardes dans le dossier
+    // ================================================
+    async cleanupOldBackupsInFolder() {
+        try {
+            if (!this.backupConfig.customFolderHandle || !this.backupConfig.retention) {
+                return;
+            }
+            
+            const backupFiles = [];
+            
+            // Lister tous les fichiers de sauvegarde
+            for await (const [name, handle] of this.backupConfig.customFolderHandle.entries()) {
+                if (handle.kind === 'file' && 
+                    (name.startsWith('EmailSortPro-Backup-') || name.startsWith('emailsortpro-backup-')) &&
+                    name.endsWith('.json')) {
+                    
+                    backupFiles.push({ name, handle });
+                }
+            }
+            
+            // Trier par nom (qui contient la date)
+            backupFiles.sort((a, b) => b.name.localeCompare(a.name));
+            
+            // Supprimer les anciens fichiers si nécessaire
+            if (backupFiles.length > this.backupConfig.retention) {
+                const filesToDelete = backupFiles.slice(this.backupConfig.retention);
+                
+                for (const fileInfo of filesToDelete) {
+                    try {
+                        await this.backupConfig.customFolderHandle.removeEntry(fileInfo.name);
+                        console.log(`[Backup] Ancienne sauvegarde supprimée: ${fileInfo.name}`);
+                    } catch (deleteError) {
+                        console.warn(`[Backup] Impossible de supprimer ${fileInfo.name}:`, deleteError);
+                    }
+                }
+                
+                if (filesToDelete.length > 0) {
+                    this.showToast(`🗑️ ${filesToDelete.length} anciennes sauvegardes supprimées`, 'info');
+                }
+            }
+            
+        } catch (error) {
+            console.warn('[Backup] Erreur nettoyage dossier:', error);
+            // Ne pas afficher d'erreur à l'utilisateur pour le nettoyage
         }
     }
 
@@ -1759,6 +2008,22 @@ class CategoriesPageV22 {
     }
 
     // ================================================
+    // NOUVELLE MÉTHODE: Effacer la sélection de dossier
+    // ================================================
+    clearCustomFolder() {
+        if (confirm('Effacer la sélection du dossier personnalisé ?')) {
+            this.backupConfig.customFolderHandle = null;
+            this.backupConfig.customFolderPath = null;
+            this.saveBackupConfig();
+            
+            // Rafraîchir l'affichage
+            this.refreshStorageHelp('custom-folder');
+            
+            this.showToast('📁 Sélection de dossier effacée', 'info');
+        }
+    }
+
+    // ================================================
     // STYLES MODERNES V22 - CORRIGÉS
     // ================================================
     addStyles() {
@@ -2439,6 +2704,90 @@ class CategoriesPageV22 {
             
             .folder-warning i {
                 color: #F59E0B;
+            }
+            
+            /* Recommandations pour dossiers */
+            .folder-recommendations {
+                margin: 12px 0;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .recommendation-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+            }
+            
+            .recommendation-item.good {
+                background: #F0FDF4;
+                border: 1px solid #10B981;
+                color: #065F46;
+            }
+            
+            .recommendation-item.good i {
+                color: #10B981;
+            }
+            
+            .recommendation-item.warning {
+                background: #FEF3C7;
+                border: 1px solid #F59E0B;
+                color: #92400E;
+            }
+            
+            .recommendation-item.warning i {
+                color: #F59E0B;
+            }
+            
+            /* Actions pour dossier sélectionné */
+            .folder-actions {
+                display: flex;
+                gap: 8px;
+                margin-top: 12px;
+            }
+            
+            .btn-test-folder {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                background: #06B6D4;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .btn-test-folder:hover {
+                background: #0891B2;
+                transform: translateY(-1px);
+            }
+            
+            .btn-clear-folder {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 12px;
+                background: #EF4444;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            
+            .btn-clear-folder:hover {
+                background: #DC2626;
+                transform: translateY(-1px);
             }
             
             /* Actions de backup */
