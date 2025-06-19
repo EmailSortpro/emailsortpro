@@ -2072,24 +2072,100 @@
         };
 
         // ===============================================
-        // GESTION INTELLIGENTE DES MODALS DE SAUVEGARDE
+        // SYSTÈME FORCÉ POUR PREMIÈRE CONNEXION
         // ===============================================
         
+        // Fonction pour FORCER l'affichage du modal à la première connexion
+        window.forceFirstConnectionModal = function() {
+            console.log('[FORCE_FIRST] 🎯 FORÇAGE du modal première connexion...');
+            
+            try {
+                // Vérifier si le modal n'a jamais été affiché
+                const modalAlreadyShown = localStorage.getItem('emailsortpro_backup_modal_shown');
+                const userHasDeclined = localStorage.getItem('emailsortpro_backup_declined');
+                
+                console.log('[FORCE_FIRST] 📊 État modal:', {
+                    modalAlreadyShown: !!modalAlreadyShown,
+                    userHasDeclined: !!userHasDeclined
+                });
+                
+                if (!modalAlreadyShown && !userHasDeclined) {
+                    console.log('[FORCE_FIRST] ✅ CONDITIONS REMPLIES - Affichage FORCÉ du modal');
+                    
+                    // Marquer que le modal va être affiché
+                    localStorage.setItem('emailsortpro_backup_modal_shown', 'true');
+                    localStorage.setItem('emailsortpro_backup_modal_date', new Date().toISOString());
+                    
+                    // Attendre que CategoriesPage soit prêt et FORCER l'affichage
+                    let attempts = 0;
+                    const tryShowModal = () => {
+                        attempts++;
+                        
+                        if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
+                            console.log('[FORCE_FIRST] 🚀 FORÇAGE IMMÉDIAT du modal (tentative ' + attempts + ')');
+                            
+                            // Appeler directement la méthode originale sans vérifications
+                            const originalModal = window.categoriesPageV24.showAuthorizationModal;
+                            if (originalModal && typeof originalModal === 'function') {
+                                // Sauvegarder et restaurer temporairement la méthode originale
+                                const tempMethod = originalModal;
+                                
+                                // Appeler directement sans blocage
+                                try {
+                                    tempMethod.call(window.categoriesPageV24);
+                                    console.log('[FORCE_FIRST] ✅ Modal FORCÉ affiché avec succès!');
+                                    
+                                    // Afficher un toast pour confirmer
+                                    if (window.uiManager && window.uiManager.showToast) {
+                                        setTimeout(() => {
+                                            window.uiManager.showToast('💾 Configuration de sauvegarde disponible', 'info', 5000);
+                                        }, 1000);
+                                    }
+                                    
+                                    return true;
+                                } catch (error) {
+                                    console.error('[FORCE_FIRST] ❌ Erreur forçage modal:', error);
+                                }
+                            }
+                        }
+                        
+                        // Réessayer jusqu'à 10 fois
+                        if (attempts < 10) {
+                            setTimeout(tryShowModal, 1000);
+                        } else {
+                            console.warn('[FORCE_FIRST] ❌ Impossible d\'afficher le modal après 10 tentatives');
+                        }
+                    };
+                    
+                    // Démarrer les tentatives
+                    setTimeout(tryShowModal, 2000); // Première tentative après 2 secondes
+                    
+                    return true;
+                } else {
+                    console.log('[FORCE_FIRST] ❌ Modal déjà affiché ou décliné précédemment');
+                    return false;
+                }
+            } catch (error) {
+                console.error('[FORCE_FIRST] ❌ Erreur système de forçage:', error);
+                return false;
+            }
+        };
+
         // Fonction pour vérifier si c'est vraiment la première connexion
         window.isRealFirstConnection = function() {
             try {
-                const hasConnected = localStorage.getItem('emailsortpro_has_connected');
+                const modalShown = localStorage.getItem('emailsortpro_backup_modal_shown');
+                const userDeclined = localStorage.getItem('emailsortpro_backup_declined');
                 const authGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
-                const backupConfigured = localStorage.getItem('emailsortpro_filesystem_v24');
                 
                 console.log('[FIRST_CHECK] 📊 Vérification première connexion:', {
-                    hasConnected: !!hasConnected,
-                    authGranted: !!authGranted,
-                    backupConfigured: !!backupConfigured
+                    modalShown: !!modalShown,
+                    userDeclined: !!userDeclined,
+                    authGranted: !!authGranted
                 });
                 
-                // C'est la première connexion si AUCUN de ces éléments n'existe
-                return !hasConnected && !authGranted && !backupConfigured;
+                // C'est la première connexion si le modal n'a jamais été montré ET l'utilisateur n'a jamais décliné
+                return !modalShown && !userDeclined && !authGranted;
             } catch (error) {
                 console.warn('[FIRST_CHECK] Erreur vérification:', error);
                 return true; // En cas d'erreur, considérer comme première fois
@@ -2106,69 +2182,71 @@
             });
             
             if (isFirstTime) {
-                console.log('[FIRST_MODAL] ✅ PREMIÈRE CONNEXION - Modal autorisé');
+                console.log('[FIRST_MODAL] ✅ PREMIÈRE CONNEXION - Déclenchement FORCÉ');
                 
-                // Marquer la tentative pour éviter les répétitions
-                try {
-                    localStorage.setItem('emailsortpro_first_modal_attempted', 'true');
-                    localStorage.setItem('emailsortpro_first_modal_date', new Date().toISOString());
-                } catch (error) {
-                    console.warn('[FIRST_MODAL] Could not save attempt markers:', error);
-                }
-                
-                // Attendre que CategoriesPage soit prêt et déclencher le modal
-                setTimeout(() => {
-                    if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
-                        console.log('[FIRST_MODAL] 🚀 Déclenchement modal première connexion...');
-                        // Appeler directement sans blocage
-                        window.categoriesPageV24.showAuthorizationModal();
-                    } else {
-                        console.warn('[FIRST_MODAL] CategoriesPage pas prêt - tentative manuelle possible');
-                    }
-                }, 3000); // Délai pour laisser les modules se charger
-                
-                return true;
+                // Déclencher le forçage immédiatement
+                return window.forceFirstConnectionModal();
             } else {
                 console.log('[FIRST_MODAL] ❌ PAS première connexion - Modal bloqué');
-                
-                // Bloquer définitivement les tentatives suivantes
-                try {
-                    localStorage.setItem('emailsortpro_disable_auto_backup_modals', 'true');
-                    localStorage.setItem('emailsortpro_backup_notification_shown', 'true');
-                } catch (error) {
-                    console.warn('[FIRST_MODAL] Could not save blocking markers:', error);
-                }
-                
                 return false;
             }
         };
 
-        // Fonction pour bloquer les modals après la première connexion
+        // Fonction pour gérer le refus de l'utilisateur
+        window.handleBackupDecline = function() {
+            console.log('[FORCE_FIRST] 📝 Utilisateur a décliné la sauvegarde');
+            localStorage.setItem('emailsortpro_backup_declined', 'true');
+            localStorage.setItem('emailsortpro_backup_decline_date', new Date().toISOString());
+        };
+
+        // Fonction pour réinitialiser complètement le système (pour les tests)
+        window.resetFirstConnectionSystem = function() {
+            console.log('[FORCE_FIRST] 🔄 RESET COMPLET du système première connexion');
+            
+            const keysToRemove = [
+                'emailsortpro_backup_modal_shown',
+                'emailsortpro_backup_declined',
+                'emailsortpro_filesystem_authorized',
+                'emailsortpro_filesystem_v24',
+                'emailsortpro_has_connected',
+                'emailsortpro_first_connection_date',
+                'emailsortpro_backup_modal_date',
+                'emailsortpro_backup_decline_date'
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+            });
+            
+            console.log('[FORCE_FIRST] ✅ Reset terminé - rechargez la page pour tester');
+            return 'Reset terminé - rechargez la page';
+        };
+
+        // Fonction pour bloquer les modals après la première connexion (simplifiée)
         window.blockSubsequentModals = function() {
+            console.log('[BLOCK_MODAL] 🚀 Configuration du blocage intelligent...');
+            
+            // Ne pas interférer si c'est la première connexion
+            if (window.isRealFirstConnection()) {
+                console.log('[BLOCK_MODAL] ✅ Première connexion - pas de blocage');
+                return;
+            }
+            
             if (window.categoriesPageV24) {
-                // Désactiver les notifications automatiques SAUF première connexion
+                // Bloquer les notifications automatiques
                 if (window.categoriesPageV24.showBackupConfigNotification) {
-                    const original = window.categoriesPageV24.showBackupConfigNotification;
                     window.categoriesPageV24.showBackupConfigNotification = function() {
-                        if (window.isRealFirstConnection()) {
-                            console.log('[BLOCK_MODAL] ✅ Notification autorisée - première connexion');
-                            return original.call(this);
-                        } else {
-                            console.log('[BLOCK_MODAL] 🚫 Notification bloquée - pas première connexion');
-                            return;
-                        }
+                        console.log('[BLOCK_MODAL] 🚫 Notification bloquée - pas première connexion');
+                        return;
                     };
                 }
                 
-                // Gérer les modals d'autorisation intelligemment
+                // Gérer les modals d'autorisation
                 if (window.categoriesPageV24.showAuthorizationModal) {
                     const originalAuth = window.categoriesPageV24.showAuthorizationModal;
                     window.categoriesPageV24.showAuthorizationModal = function() {
-                        // Autoriser si première connexion OU appel manuel explicite
-                        if (window.isRealFirstConnection()) {
-                            console.log('[BLOCK_MODAL] ✅ Modal autorisé - première connexion');
-                            return originalAuth.call(this);
-                        } else if (arguments.length > 0 && arguments[0] === 'manual') {
+                        // Autoriser seulement les appels manuels explicites
+                        if (arguments.length > 0 && arguments[0] === 'manual') {
                             console.log('[BLOCK_MODAL] ✅ Modal autorisé - appel manuel');
                             return originalAuth.call(this);
                         } else {
@@ -2184,7 +2262,7 @@
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[DOM] 📄 DOM Content Loaded - Setting up smart welcome system...');
+            console.log('[DOM] 📄 DOM Content Loaded - Setting up FORCED first connection modal...');
             
             if (appAlreadyShown) {
                 return;
@@ -2193,13 +2271,13 @@
             // Configurer le blocage intelligent après chargement des modules
             setTimeout(() => {
                 window.blockSubsequentModals();
-            }, 2000);
+            }, 1000);
             
-            // Vérifier si c'est la première connexion et autoriser le modal si nécessaire
+            // FORCER le modal si c'est la première connexion
             setTimeout(() => {
                 if (window.isRealFirstConnection()) {
-                    console.log('[DOM] 🎯 Première connexion détectée - Modal sera autorisé');
-                    window.allowFirstConnectionModal();
+                    console.log('[DOM] 🎯 PREMIÈRE CONNEXION DÉTECTÉE - FORÇAGE DU MODAL');
+                    window.forceFirstConnectionModal();
                 } else {
                     console.log('[DOM] ✅ Connexion existante - Modals automatiques bloqués');
                 }
@@ -2446,7 +2524,9 @@
                 },
                 backupModalsDisabled: localStorage.getItem('emailsortpro_disable_auto_backup_modals') === 'true',
                 isFirstConnection: window.isRealFirstConnection ? window.isRealFirstConnection() : 'unknown',
-                modalAttempted: localStorage.getItem('emailsortpro_first_modal_attempted') === 'true'
+                modalAttempted: localStorage.getItem('emailsortpro_first_modal_attempted') === 'true',
+                modalShown: localStorage.getItem('emailsortpro_backup_modal_shown') === 'true',
+                userDeclined: localStorage.getItem('emailsortpro_backup_declined') === 'true'
             };
         };
 
@@ -2479,7 +2559,7 @@
             window.checkGoogleCallback();
         }, 500);
 
-        console.log('[INDEX] ✅ Smart welcome system integrated - FIRST CONNECTION MODAL ALLOWED');
+        console.log('[INDEX] ✅ FORCED first connection modal system integrated - MODAL WILL SHOW!');
     </script>
 
     <!-- 9. Application Principal EN DERNIER -->
