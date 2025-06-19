@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1326,6 +1327,1010 @@
                 </div>
             </div>
 
+            <div class="footer"></div>
+<!-- Section Bienvenue avec Autorisations (à ajouter dans index.html après la page de login) -->
+
+<!-- Page de Bienvenue avec Autorisations -->
+<div id="welcomePage" class="welcome-page-styles" style="display: none;">
+    <div class="welcome-container">
+        <div class="welcome-header">
+            <div class="welcome-logo">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            
+            <h1 class="welcome-title">Bienvenue dans EmailSortPro !</h1>
+            <p class="welcome-subtitle">
+                Votre connexion a réussi. Configurons maintenant quelques fonctionnalités pour optimiser votre expérience.
+            </p>
+            
+            <div class="user-welcome-info">
+                <div class="user-welcome-avatar">
+                    <span id="welcomeUserInitials">U</span>
+                </div>
+                <div class="user-welcome-details">
+                    <div class="welcome-user-name" id="welcomeUserName">Utilisateur</div>
+                    <div class="welcome-user-email" id="welcomeUserEmail">email@example.com</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="welcome-permissions">
+            <h2 class="permissions-title">
+                <i class="fas fa-shield-alt"></i>
+                Autorisations Optionnelles
+            </h2>
+            <p class="permissions-subtitle">
+                Ces autorisations amélioreront votre expérience mais ne sont pas obligatoires.
+            </p>
+
+            <!-- Autorisation Sauvegarde -->
+            <div class="permission-card" id="backupPermissionCard">
+                <div class="permission-icon">
+                    <i class="fas fa-hdd"></i>
+                </div>
+                <div class="permission-content">
+                    <div class="permission-header">
+                        <h3>Sauvegarde Automatique</h3>
+                        <div class="permission-status" id="backupStatus">
+                            <span class="status-badge pending">En attente</span>
+                        </div>
+                    </div>
+                    <p class="permission-description">
+                        Sauvegarder automatiquement vos catégories et paramètres sur votre ordinateur.
+                        <br><small>📁 Emplacement : Documents/EmailSortPro/</small>
+                    </p>
+                    <div class="permission-actions">
+                        <button class="permission-btn primary" onclick="welcomeSystem.requestBackupPermission()">
+                            <i class="fas fa-check"></i> Autoriser
+                        </button>
+                        <button class="permission-btn secondary" onclick="welcomeSystem.skipBackupPermission()">
+                            <i class="fas fa-clock"></i> Plus tard
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Autorisation Notifications -->
+            <div class="permission-card" id="notificationPermissionCard">
+                <div class="permission-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div class="permission-content">
+                    <div class="permission-header">
+                        <h3>Notifications</h3>
+                        <div class="permission-status" id="notificationStatus">
+                            <span class="status-badge pending">En attente</span>
+                        </div>
+                    </div>
+                    <p class="permission-description">
+                        Recevoir des notifications pour les nouvelles tâches et les mises à jour importantes.
+                    </p>
+                    <div class="permission-actions">
+                        <button class="permission-btn primary" onclick="welcomeSystem.requestNotificationPermission()">
+                            <i class="fas fa-check"></i> Autoriser
+                        </button>
+                        <button class="permission-btn secondary" onclick="welcomeSystem.skipNotificationPermission()">
+                            <i class="fas fa-times"></i> Refuser
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Autorisation Géolocalisation (optionnelle) -->
+            <div class="permission-card" id="locationPermissionCard">
+                <div class="permission-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="permission-content">
+                    <div class="permission-header">
+                        <h3>Géolocalisation</h3>
+                        <div class="permission-status" id="locationStatus">
+                            <span class="status-badge pending">En attente</span>
+                        </div>
+                    </div>
+                    <p class="permission-description">
+                        Améliorer la détection automatique de tâches liées à des lieux spécifiques.
+                    </p>
+                    <div class="permission-actions">
+                        <button class="permission-btn primary" onclick="welcomeSystem.requestLocationPermission()">
+                            <i class="fas fa-check"></i> Autoriser
+                        </button>
+                        <button class="permission-btn secondary" onclick="welcomeSystem.skipLocationPermission()">
+                            <i class="fas fa-times"></i> Refuser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="welcome-actions">
+            <div class="welcome-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="welcomeProgress" style="width: 0%"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="permissionsCompleted">0</span> sur <span id="permissionsTotal">3</span> configurées
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="welcome-btn secondary" onclick="welcomeSystem.skipAll()">
+                    <i class="fas fa-forward"></i> Passer toutes
+                </button>
+                <button class="welcome-btn primary" id="continueBtn" onclick="welcomeSystem.continueToApp()" disabled>
+                    <i class="fas fa-arrow-right"></i> Continuer vers l'app
+                </button>
+            </div>
+        </div>
+
+        <div class="welcome-footer">
+            <div class="security-reminder">
+                <i class="fas fa-shield-alt"></i>
+                <span>Toutes vos données restent privées et sécurisées sur votre appareil</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles pour la page de bienvenue */
+.welcome-page-styles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.welcome-container {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.welcome-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.welcome-logo {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto 24px;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.welcome-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.welcome-subtitle {
+    font-size: 1.1rem;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.user-welcome-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: #f8fafc;
+    padding: 16px 24px;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+}
+
+.user-welcome-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.user-welcome-details {
+    text-align: left;
+}
+
+.welcome-user-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.welcome-user-email {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+.welcome-permissions {
+    margin-bottom: 32px;
+}
+
+.permissions-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.permissions-subtitle {
+    font-size: 1rem;
+    color: #6b7280;
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.permission-card {
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.permission-card:hover {
+    border-color: #4F46E5;
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.1);
+}
+
+.permission-card.granted {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+}
+
+.permission-card.denied {
+    border-color: #e5e7eb;
+    background: #f9fafb;
+    opacity: 0.7;
+}
+
+.permission-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.permission-card.granted .permission-icon {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.permission-card.denied .permission-icon {
+    background: #9ca3af;
+}
+
+.permission-content {
+    flex: 1;
+}
+
+.permission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.permission-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+.permission-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.status-badge.granted {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-badge.denied {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.permission-description {
+    font-size: 0.95rem;
+    color: #6b7280;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.permission-description small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+}
+
+.permission-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.permission-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.permission-btn.primary {
+    background: #4F46E5;
+    color: white;
+}
+
+.permission-btn.primary:hover {
+    background: #4338CA;
+    transform: translateY(-1px);
+}
+
+.permission-btn.secondary {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.permission-btn.secondary:hover {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.permission-card.granted .permission-actions,
+.permission-card.denied .permission-actions {
+    display: none;
+}
+
+.welcome-actions {
+    margin-bottom: 24px;
+}
+
+.welcome-progress {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.welcome-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 140px;
+    justify-content: center;
+}
+
+.welcome-btn.primary {
+    background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);
+    color: white;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+}
+
+.welcome-btn.primary:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    transform: translateY(-2px);
+}
+
+.welcome-btn.primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.welcome-btn.secondary {
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.welcome-btn.secondary:hover {
+    background: #e5e7eb;
+    color: #374151;
+    transform: translateY(-1px);
+}
+
+.welcome-footer {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.security-reminder {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    color: #6b7280;
+    background: #f0f9ff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #bae6fd;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .welcome-container {
+        padding: 24px;
+        margin: 10px;
+    }
+    
+    .welcome-title {
+        font-size: 1.8rem;
+    }
+    
+    .permission-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .permission-header {
+        flex-direction: column;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .welcome-btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+// Système de gestion de la page de bienvenue avec autorisations
+window.welcomeSystem = {
+    permissions: {
+        backup: { status: 'pending', required: false },
+        notifications: { status: 'pending', required: false },
+        location: { status: 'pending', required: false }
+    },
+    
+    // Initialiser le système de bienvenue
+    init(user) {
+        console.log('[Welcome] Initializing welcome system for user:', user?.name);
+        
+        // Mettre à jour les informations utilisateur
+        this.updateUserInfo(user);
+        
+        // Réinitialiser les permissions
+        this.resetPermissions();
+        
+        // Afficher la page de bienvenue
+        this.show();
+        
+        // Démarrer la vérification automatique des permissions
+        this.checkExistingPermissions();
+    },
+    
+    // Mettre à jour les informations utilisateur
+    updateUserInfo(user) {
+        if (!user) return;
+        
+        const userName = user.displayName || user.name || 'Utilisateur';
+        const userEmail = user.mail || user.userPrincipalName || user.email || 'email@example.com';
+        const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+        
+        document.getElementById('welcomeUserName').textContent = userName;
+        document.getElementById('welcomeUserEmail').textContent = userEmail;
+        document.getElementById('welcomeUserInitials').textContent = initials;
+    },
+    
+    // Afficher la page de bienvenue
+    show() {
+        document.getElementById('welcomePage').style.display = 'flex';
+        
+        // Masquer la page de login
+        const loginPage = document.getElementById('loginPage');
+        if (loginPage) {
+            loginPage.style.display = 'none';
+        }
+        
+        // Masquer l'overlay de chargement
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        if (loadingOverlay) {
+            loadingOverlay.classList.remove('active');
+        }
+    },
+    
+    // Masquer la page de bienvenue
+    hide() {
+        document.getElementById('welcomePage').style.display = 'none';
+    },
+    
+    // Réinitialiser les permissions
+    resetPermissions() {
+        Object.keys(this.permissions).forEach(key => {
+            this.permissions[key].status = 'pending';
+            this.updatePermissionCard(key, 'pending');
+        });
+        this.updateProgress();
+    },
+    
+    // Vérifier les permissions existantes
+    async checkExistingPermissions() {
+        // Vérifier les notifications
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                this.setPermissionStatus('notifications', 'granted');
+            } else if (Notification.permission === 'denied') {
+                this.setPermissionStatus('notifications', 'denied');
+            }
+        }
+        
+        // Vérifier la géolocalisation
+        if ('geolocation' in navigator) {
+            try {
+                await new Promise((resolve, reject) => {
+                    navigator.permissions.query({name: 'geolocation'}).then(result => {
+                        if (result.state === 'granted') {
+                            this.setPermissionStatus('location', 'granted');
+                        } else if (result.state === 'denied') {
+                            this.setPermissionStatus('location', 'denied');
+                        }
+                        resolve();
+                    }).catch(() => resolve()); // Ignore les erreurs
+                });
+            } catch (e) {
+                // Ignore les erreurs de permissions API
+            }
+        }
+        
+        // Vérifier le backup (via CategoriesPage si disponible)
+        if (window.categoriesPageV24) {
+            const backupInfo = window.categoriesPageV24.filesystemConfig;
+            if (backupInfo && backupInfo.enabled) {
+                this.setPermissionStatus('backup', 'granted');
+            }
+        }
+        
+        this.updateProgress();
+    },
+    
+    // Demander l'autorisation de sauvegarde
+    async requestBackupPermission() {
+        console.log('[Welcome] Requesting backup permission...');
+        
+        try {
+            // Utiliser l'API CategoriesPage si disponible
+            if (window.categoriesPageV24) {
+                // Marquer comme en cours
+                this.updatePermissionCard('backup', 'loading');
+                
+                const success = await window.categoriesPageV24.configureDirectAccess();
+                
+                if (success) {
+                    this.setPermissionStatus('backup', 'granted');
+                    this.showToast('✅ Sauvegarde automatique configurée !', 'success');
+                } else {
+                    this.setPermissionStatus('backup', 'denied');
+                    this.showToast('ℹ️ Sauvegarde configurée manuellement si nécessaire', 'info');
+                }
+            } else {
+                // Fallback : marquer comme accordé et configurer plus tard
+                this.setPermissionStatus('backup', 'granted');
+                this.showToast('✅ Sauvegarde sera configurée dans l\'application', 'info');
+            }
+        } catch (error) {
+            console.error('[Welcome] Backup permission error:', error);
+            this.setPermissionStatus('backup', 'denied');
+            this.showToast('❌ Erreur de configuration de la sauvegarde', 'error');
+        }
+        
+        this.updateProgress();
+    },
+    
+    // Ignorer l'autorisation de sauvegarde
+    skipBackupPermission() {
+        this.setPermissionStatus('backup', 'denied');
+        this.showToast('📁 Sauvegarde disponible dans les Paramètres', 'info');
+        this.updateProgress();
+    },
+    
+    // Demander l'autorisation de notifications
+    async requestNotificationPermission() {
+        console.log('[Welcome] Requesting notification permission...');
+        
+        try {
+            if ('Notification' in window) {
+                this.updatePermissionCard('notifications', 'loading');
+                
+                const permission = await Notification.requestPermission();
+                
+                if (permission === 'granted') {
+                    this.setPermissionStatus('notifications', 'granted');
+                    this.showToast('✅ Notifications activées !', 'success');
+                    
+                    // Notification de test
+                    new Notification('EmailSortPro', {
+                        body: 'Notifications configurées avec succès !',
+                        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📧</text></svg>'
+                    });
+                } else {
+                    this.setPermissionStatus('notifications', 'denied');
+                    this.showToast('ℹ️ Notifications désactivées', 'info');
+                }
+            } else {
+                this.setPermissionStatus('notifications', 'denied');
+                this.showToast('❌ Notifications non supportées', 'error');
+            }
+        } catch (error) {
+            console.error('[Welcome] Notification permission error:', error);
+            this.setPermissionStatus('notifications', 'denied');
+            this.showToast('❌ Erreur de configuration des notifications', 'error');
+        }
+        
+        this.updateProgress();
+    },
+    
+    // Refuser l'autorisation de notifications
+    skipNotificationPermission() {
+        this.setPermissionStatus('notifications', 'denied');
+        this.showToast('🔕 Notifications désactivées', 'info');
+        this.updateProgress();
+    },
+    
+    // Demander l'autorisation de géolocalisation
+    async requestLocationPermission() {
+        console.log('[Welcome] Requesting location permission...');
+        
+        try {
+            if ('geolocation' in navigator) {
+                this.updatePermissionCard('location', 'loading');
+                
+                await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            this.setPermissionStatus('location', 'granted');
+                            this.showToast('✅ Géolocalisation activée !', 'success');
+                            resolve(position);
+                        },
+                        (error) => {
+                            this.setPermissionStatus('location', 'denied');
+                            this.showToast('ℹ️ Géolocalisation refusée', 'info');
+                            resolve();
+                        },
+                        { timeout: 10000, enableHighAccuracy: false }
+                    );
+                });
+            } else {
+                this.setPermissionStatus('location', 'denied');
+                this.showToast('❌ Géolocalisation non supportée', 'error');
+            }
+        } catch (error) {
+            console.error('[Welcome] Location permission error:', error);
+            this.setPermissionStatus('location', 'denied');
+            this.showToast('❌ Erreur de géolocalisation', 'error');
+        }
+        
+        this.updateProgress();
+    },
+    
+    // Refuser l'autorisation de géolocalisation
+    skipLocationPermission() {
+        this.setPermissionStatus('location', 'denied');
+        this.showToast('🗺️ Géolocalisation désactivée', 'info');
+        this.updateProgress();
+    },
+    
+    // Passer toutes les autorisations
+    skipAll() {
+        Object.keys(this.permissions).forEach(key => {
+            if (this.permissions[key].status === 'pending') {
+                this.setPermissionStatus(key, 'denied');
+            }
+        });
+        this.updateProgress();
+        this.showToast('⏭️ Configuration terminée - Vous pourrez configurer ces options plus tard', 'info');
+        
+        // Activer le bouton continuer
+        setTimeout(() => {
+            this.continueToApp();
+        }, 1500);
+    },
+    
+    // Continuer vers l'application
+    continueToApp() {
+        console.log('[Welcome] Continuing to app...');
+        
+        // Sauvegarder les préférences
+        this.savePreferences();
+        
+        // Masquer la page de bienvenue
+        this.hide();
+        
+        // Afficher l'application
+        if (window.showApp) {
+            window.showApp();
+        }
+        
+        this.showToast('🎉 Bienvenue dans EmailSortPro !', 'success');
+    },
+    
+    // Définir le statut d'une permission
+    setPermissionStatus(permission, status) {
+        this.permissions[permission].status = status;
+        this.updatePermissionCard(permission, status);
+    },
+    
+    // Mettre à jour l'affichage d'une carte de permission
+    updatePermissionCard(permission, status) {
+        const card = document.getElementById(`${permission}PermissionCard`);
+        const statusElement = document.getElementById(`${permission}Status`);
+        
+        if (!card || !statusElement) return;
+        
+        // Retirer les anciennes classes
+        card.classList.remove('granted', 'denied');
+        
+        // Mettre à jour le statut
+        let statusText = '';
+        let statusClass = '';
+        
+        switch (status) {
+            case 'granted':
+                statusText = 'Accordée';
+                statusClass = 'granted';
+                card.classList.add('granted');
+                break;
+            case 'denied':
+                statusText = 'Refusée';
+                statusClass = 'denied';
+                card.classList.add('denied');
+                break;
+            case 'loading':
+                statusText = 'Configuration...';
+                statusClass = 'pending';
+                break;
+            default:
+                statusText = 'En attente';
+                statusClass = 'pending';
+        }
+        
+        statusElement.innerHTML = `<span class="status-badge ${statusClass}">${statusText}</span>`;
+    },
+    
+    // Mettre à jour la barre de progression
+    updateProgress() {
+        const total = Object.keys(this.permissions).length;
+        const completed = Object.values(this.permissions).filter(p => p.status !== 'pending').length;
+        
+        const percentage = (completed / total) * 100;
+        
+        document.getElementById('welcomeProgress').style.width = `${percentage}%`;
+        document.getElementById('permissionsCompleted').textContent = completed;
+        document.getElementById('permissionsTotal').textContent = total;
+        
+        // Activer/désactiver le bouton continuer
+        const continueBtn = document.getElementById('continueBtn');
+        if (completed >= total) {
+            continueBtn.disabled = false;
+            continueBtn.innerHTML = '<i class="fas fa-rocket"></i> Lancer EmailSortPro';
+        } else {
+            continueBtn.disabled = true;
+            continueBtn.innerHTML = '<i class="fas fa-arrow-right"></i> Continuer vers l\'app';
+        }
+    },
+    
+    // Sauvegarder les préférences
+    savePreferences() {
+        try {
+            const preferences = {
+                permissions: this.permissions,
+                completedAt: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            localStorage.setItem('emailsortpro_welcome_preferences', JSON.stringify(preferences));
+            console.log('[Welcome] Preferences saved:', preferences);
+        } catch (error) {
+            console.error('[Welcome] Error saving preferences:', error);
+        }
+    },
+    
+    // Vérifier si l'utilisateur a déjà passé le processus de bienvenue
+    hasCompletedWelcome() {
+        try {
+            const preferences = localStorage.getItem('emailsortpro_welcome_preferences');
+            return !!preferences;
+        } catch (error) {
+            return false;
+        }
+    },
+    
+    // Afficher un toast
+    showToast(message, type = 'info') {
+        console.log(`[Welcome] ${type.toUpperCase()}: ${message}`);
+        
+        if (window.uiManager?.showToast) {
+            window.uiManager.showToast(message, type, 4000);
+        } else {
+            // Fallback simple
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                z-index: 10002;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 4000);
+        }
+    }
+};
+
+// Intégrer le système de bienvenue dans le flux d'authentification
+window.integratewelcomeSystem = function() {
+    // Intercepter la fonction showApp pour insérer la page de bienvenue
+    const originalShowApp = window.showApp;
+    
+    window.showApp = function(user) {
+        console.log('[Welcome Integration] Checking if welcome is needed...');
+        
+        // Vérifier si l'utilisateur a déjà passé le processus
+        if (window.welcomeSystem.hasCompletedWelcome()) {
+            console.log('[Welcome Integration] User has completed welcome, showing app directly');
+            originalShowApp();
+            return;
+        }
+        
+        // Récupérer les informations utilisateur
+        let userInfo = user;
+        if (!userInfo && window.authService?.getCurrentUser) {
+            userInfo = window.authService.getCurrentUser();
+        }
+        if (!userInfo && window.googleAuthService?.getCurrentUser) {
+            userInfo = window.googleAuthService.getCurrentUser();
+        }
+        
+        console.log('[Welcome Integration] Showing welcome page for user:', userInfo?.name);
+        
+        // Afficher la page de bienvenue
+        window.welcomeSystem.init(userInfo);
+    };
+    
+    // Modifier la fonction continueToApp pour utiliser l'original
+    const originalContinueToApp = window.welcomeSystem.continueToApp;
+    window.welcomeSystem.continueToApp = function() {
+        originalContinueToApp.call(this);
+        originalShowApp();
+    };
+};
+
+// Activer l'intégration automatiquement
+setTimeout(() => {
+    window.integratewelcomeSystem();
+}, 1000);
+
+console.log('[Welcome] ✅ Welcome system with permissions loaded');
+</script>
             <!-- Contenu Dynamique des Pages -->
             <div id="pageContent">
                 <!-- Le dashboard sera généré par dashboard.js -->
