@@ -1,5 +1,5 @@
-// CategoriesPage.js - Version 22.0 - CORRIGÉE ET STABLE
-console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.0 - CORRECTED...');
+// CategoriesPage.js - Version 22.1 - DOSSIER PERSONNALISÉ CORRIGÉ
+console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v22.1 - DOSSIER PERSONNALISÉ FIXÉ...');
 
 // Nettoyer toute instance précédente
 if (window.categoriesPage) {
@@ -23,7 +23,7 @@ class CategoriesPageV22 {
         this.backupConfig = this.loadBackupConfig();
         this.initializeBackupSystem();
         
-        console.log('[CategoriesPage] 🎨 Interface optimisée v22.0 initialisée avec système de backup');
+        console.log('[CategoriesPage] 🎨 Interface optimisée v22.1 initialisée avec système de backup');
     }
 
     // ================================================
@@ -141,7 +141,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // RENDU ONGLET PARAMÈTRES/BACKUP
+    // RENDU ONGLET PARAMÈTRES/BACKUP - CORRIGÉ
     // ================================================
     renderSettingsTab() {
         const backupStats = this.getBackupStats();
@@ -199,44 +199,17 @@ class CategoriesPageV22 {
                                     <i class="fas fa-database"></i>
                                     Emplacement de stockage
                                 </label>
-                                <select id="backup-storage" onchange="window.categoriesPageV22.updateBackupConfig('storage', this.value)">
+                                <select id="backup-storage" onchange="window.categoriesPageV22.updateBackupStorageConfig(this.value)">
                                     <option value="localStorage" ${config.storage === 'localStorage' ? 'selected' : ''}>Navigateur (localStorage)</option>
                                     <option value="indexedDB" ${config.storage === 'indexedDB' ? 'selected' : ''}>Base de données locale</option>
                                     <option value="download" ${config.storage === 'download' ? 'selected' : ''}>Téléchargement automatique</option>
                                     <option value="custom-folder" ${config.storage === 'custom-folder' ? 'selected' : ''}>Dossier personnalisé</option>
                                 </select>
-                                <div class="storage-help">
-                                    <small class="storage-help-text">
-                                        ${config.storage === 'localStorage' ? '💾 Stocké dans votre navigateur. Rapide mais limité à cet appareil.' : 
-                                          config.storage === 'indexedDB' ? '🗃️ Base de données locale plus robuste.' :
-                                          config.storage === 'download' ? '📥 Fichiers téléchargés automatiquement.' :
-                                          config.storage === 'custom-folder' ? '📁 Choisissez un dossier spécifique sur votre disque dur.' :
-                                          '💾 Sélectionnez un emplacement'}
-                                    </small>
-                                </div>
                                 
-                                <!-- Configuration dossier personnalisé -->
-                                ${config.storage === 'custom-folder' ? `
-                                    <div class="custom-folder-config">
-                                        <div class="folder-selector">
-                                            <input type="text" 
-                                                   id="custom-folder-path" 
-                                                   placeholder="Aucun dossier sélectionné" 
-                                                   value="${config.customFolderPath || ''}" 
-                                                   readonly>
-                                            <button class="btn-select-folder" onclick="window.categoriesPageV22.selectCustomFolder()">
-                                                <i class="fas fa-folder-open"></i>
-                                                Parcourir
-                                            </button>
-                                        </div>
-                                        <div class="folder-info">
-                                            <small>
-                                                <i class="fas fa-info-circle"></i>
-                                                Les sauvegardes seront créées dans le dossier sélectionné
-                                            </small>
-                                        </div>
-                                    </div>
-                                ` : ''}
+                                <!-- Zone d'aide dynamique -->
+                                <div class="storage-help" id="storage-help-container">
+                                    ${this.renderStorageHelp(config.storage)}
+                                </div>
                             </div>
                             
                             <!-- Rétention -->
@@ -363,6 +336,76 @@ class CategoriesPageV22 {
     }
 
     // ================================================
+    // NOUVELLE MÉTHODE: Rendu de l'aide stockage
+    // ================================================
+    renderStorageHelp(storageType) {
+        let helpText = '';
+        let customFolderSection = '';
+        
+        switch (storageType) {
+            case 'localStorage':
+                helpText = '💾 Stocké dans votre navigateur. Rapide mais limité à cet appareil.';
+                break;
+            case 'indexedDB':
+                helpText = '🗃️ Base de données locale plus robuste.';
+                break;
+            case 'download':
+                helpText = '📥 Fichiers téléchargés automatiquement.';
+                break;
+            case 'custom-folder':
+                helpText = '📁 Choisissez un dossier spécifique sur votre disque dur.';
+                customFolderSection = this.renderCustomFolderSection();
+                break;
+            default:
+                helpText = '💾 Sélectionnez un emplacement';
+        }
+        
+        return `
+            <small class="storage-help-text">
+                ${helpText}
+            </small>
+            ${customFolderSection}
+        `;
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Section dossier personnalisé
+    // ================================================
+    renderCustomFolderSection() {
+        const config = this.backupConfig;
+        
+        return `
+            <div class="custom-folder-config" id="custom-folder-section">
+                <div class="folder-selector">
+                    <input type="text" 
+                           id="custom-folder-path" 
+                           placeholder="Aucun dossier sélectionné" 
+                           value="${config.customFolderPath || ''}" 
+                           readonly>
+                    <button class="btn-select-folder" onclick="window.categoriesPageV22.selectCustomFolder()">
+                        <i class="fas fa-folder-open"></i>
+                        Parcourir
+                    </button>
+                </div>
+                <div class="folder-info">
+                    <small>
+                        <i class="fas fa-info-circle"></i>
+                        Les sauvegardes seront créées dans le dossier sélectionné
+                    </small>
+                </div>
+                ${!window.showDirectoryPicker ? `
+                    <div class="folder-warning">
+                        <small>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Cette fonctionnalité nécessite Chrome ou Edge pour fonctionner
+                        </small>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // ================================================
     // GESTION DES ONGLETS
     // ================================================
     switchMainTab(tabName) {
@@ -390,7 +433,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // SYSTÈME DE BACKUP - CONFIGURATION
+    // SYSTÈME DE BACKUP - CONFIGURATION CORRIGÉE
     // ================================================
     loadBackupConfig() {
         try {
@@ -426,7 +469,12 @@ class CategoriesPageV22 {
 
     saveBackupConfig() {
         try {
-            localStorage.setItem('emailsortpro_backup_config', JSON.stringify(this.backupConfig));
+            // Note: On ne peut pas sauvegarder les handles de dossiers dans localStorage
+            // car ils ne sont pas sérialisables
+            const configToSave = { ...this.backupConfig };
+            delete configToSave.customFolderHandle; // Supprimer le handle avant sauvegarde
+            
+            localStorage.setItem('emailsortpro_backup_config', JSON.stringify(configToSave));
             console.log('[Backup] Configuration sauvegardée');
         } catch (error) {
             console.error('[Backup] Erreur sauvegarde config:', error);
@@ -443,10 +491,30 @@ class CategoriesPageV22 {
         }
         
         this.showToast(`Configuration mise à jour: ${key}`, 'success');
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Mise à jour du stockage avec rafraîchissement
+    // ================================================
+    updateBackupStorageConfig(storageType) {
+        console.log('[Backup] Changement de stockage vers:', storageType);
         
-        // Rafraîchir l'affichage des paramètres
-        if (key === 'storage') {
-            this.refreshSettingsTab();
+        this.backupConfig.storage = storageType;
+        this.saveBackupConfig();
+        
+        // Rafraîchir immédiatement l'aide au stockage
+        this.refreshStorageHelp(storageType);
+        
+        this.showToast(`Stockage mis à jour: ${storageType}`, 'success');
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Rafraîchissement de l'aide stockage
+    // ================================================
+    refreshStorageHelp(storageType) {
+        const helpContainer = document.getElementById('storage-help-container');
+        if (helpContainer) {
+            helpContainer.innerHTML = this.renderStorageHelp(storageType);
         }
     }
 
@@ -500,7 +568,7 @@ class CategoriesPageV22 {
             // Collecter toutes les données
             const backupData = {
                 timestamp: new Date().toISOString(),
-                version: '22.0',
+                version: '22.1',
                 data: {
                     categories: this.getCategoriesToBackup(),
                     tasks: this.getTasksToBackup(),
@@ -587,7 +655,7 @@ class CategoriesPageV22 {
         return {
             categorySettings: this.loadSettings(),
             backupConfig: this.backupConfig,
-            appVersion: '22.0'
+            appVersion: '22.1'
         };
     }
 
@@ -613,7 +681,9 @@ class CategoriesPageV22 {
         }
     }
 
-    // NOUVELLE MÉTHODE: Sélectionner un dossier personnalisé
+    // ================================================
+    // MÉTHODE CORRIGÉE: Sélectionner un dossier personnalisé
+    // ================================================
     async selectCustomFolder() {
         try {
             // Vérifier si l'API File System Access est supportée
@@ -632,11 +702,14 @@ class CategoriesPageV22 {
             this.backupConfig.customFolderHandle = directoryHandle;
             this.backupConfig.customFolderPath = directoryHandle.name;
             
-            // Sauvegarder la configuration
+            // Sauvegarder la configuration (sans le handle)
             this.saveBackupConfig();
             
-            // Rafraîchir l'affichage
-            this.refreshSettingsTab();
+            // Mettre à jour l'affichage du chemin
+            const pathInput = document.getElementById('custom-folder-path');
+            if (pathInput) {
+                pathInput.value = directoryHandle.name;
+            }
             
             this.showToast(`✅ Dossier sélectionné: ${directoryHandle.name}`, 'success');
             
@@ -651,11 +724,24 @@ class CategoriesPageV22 {
         }
     }
 
-    // NOUVELLE MÉTHODE: Stocker dans un dossier personnalisé
+    // ================================================
+    // MÉTHODE CORRIGÉE: Stocker dans un dossier personnalisé
+    // ================================================
     async storeInCustomFolder(data, timestamp) {
         try {
             if (!this.backupConfig.customFolderHandle) {
                 throw new Error('Aucun dossier sélectionné');
+            }
+            
+            // Vérifier que le handle est toujours valide
+            try {
+                await this.backupConfig.customFolderHandle.queryPermission({ mode: 'readwrite' });
+            } catch (permissionError) {
+                // Demander à nouveau la permission
+                const permission = await this.backupConfig.customFolderHandle.requestPermission({ mode: 'readwrite' });
+                if (permission !== 'granted') {
+                    throw new Error('Permission refusée pour accéder au dossier');
+                }
             }
             
             // Créer le nom du fichier
@@ -676,12 +762,18 @@ class CategoriesPageV22 {
         } catch (error) {
             console.error('[Backup] Erreur stockage dossier personnalisé:', error);
             
-            if (error.name === 'NotAllowedError') {
+            if (error.name === 'NotAllowedError' || error.message.includes('Permission refusée')) {
                 this.showToast('❌ Permission refusée. Resélectionnez le dossier.', 'error');
                 // Réinitialiser le dossier
                 this.backupConfig.customFolderHandle = null;
                 this.backupConfig.customFolderPath = null;
                 this.saveBackupConfig();
+                
+                // Rafraîchir l'affichage
+                const pathInput = document.getElementById('custom-folder-path');
+                if (pathInput) {
+                    pathInput.value = '';
+                }
             } else {
                 this.showToast('❌ Erreur lors de la sauvegarde dans le dossier', 'error');
             }
@@ -1374,7 +1466,7 @@ class CategoriesPageV22 {
             if (this.backupConfig.storage !== 'download') {
                 const backupData = {
                     timestamp: new Date().toISOString(),
-                    version: '22.0',
+                    version: '22.1',
                     data: {
                         categories: this.getCategoriesToBackup(),
                         tasks: this.getTasksToBackup(),
@@ -1392,7 +1484,7 @@ class CategoriesPageV22 {
             const categories = this.getCategoriesToBackup();
             const exportData = {
                 timestamp: new Date().toISOString(),
-                version: '22.0',
+                version: '22.1',
                 categories: categories
             };
             
@@ -1667,7 +1759,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // STYLES MODERNES V22
+    // STYLES MODERNES V22 - CORRIGÉS
     // ================================================
     addStyles() {
         if (document.getElementById('categoriesModernStylesV22')) return;
@@ -2257,13 +2349,16 @@ class CategoriesPageV22 {
                 border-left: 3px solid var(--primary);
             }
             
-            /* Configuration dossier personnalisé */
+            /* Configuration dossier personnalisé - CORRIGÉ */
             .custom-folder-config {
                 margin-top: 16px;
                 padding: 16px;
                 background: #F8FAFC;
                 border: 1px solid var(--border);
                 border-radius: 8px;
+                display: block !important;
+                opacity: 1 !important;
+                visibility: visible !important;
             }
             
             .folder-selector {
@@ -2307,6 +2402,7 @@ class CategoriesPageV22 {
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                margin-bottom: 8px;
             }
             
             .folder-info small {
@@ -2319,6 +2415,30 @@ class CategoriesPageV22 {
             
             .folder-info i {
                 color: var(--primary);
+            }
+            
+            /* Avertissement pour navigateurs non compatibles */
+            .folder-warning {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                background: #FEF3C7;
+                border: 1px solid #F59E0B;
+                border-radius: 6px;
+                margin-top: 8px;
+            }
+            
+            .folder-warning small {
+                font-size: 12px;
+                color: #92400E;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .folder-warning i {
+                color: #F59E0B;
             }
             
             /* Actions de backup */
@@ -3051,7 +3171,7 @@ class CategoriesPageV22 {
 }
 
 // ================================================
-// INTÉGRATION GLOBALE V22
+// INTÉGRATION GLOBALE V22.1
 // ================================================
 
 // Créer l'instance avec un nom unique
@@ -3078,4 +3198,4 @@ if (!window.categoriesPage.getTaskPreselectedCategories) {
     };
 }
 
-console.log('[CategoriesPage] ✅ CategoriesPage v22.0 chargée - Interface corrigée et stable!');
+console.log('[CategoriesPage] ✅ CategoriesPage v22.1 chargée - Dossier personnalisé corrigé!');
