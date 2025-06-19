@@ -1,88 +1,83 @@
-// backup.js - Version PROFESSIONNELLE avec stockage persistant
-// Stratégie: Cache + IndexedDB + Dossier Documents dédié (PAS Téléchargements)
+// backup.js - Version TOTALEMENT TRANSPARENTE - ZÉRO FICHIER VISIBLE
+// Stockage invisible : Cache + IndexedDB + OPFS (Origin Private File System)
 
 (function() {
     'use strict';
 
-    class ProfessionalBackupService {
+    class InvisibleBackupService {
         constructor() {
             this.provider = null;
             this.isInitialized = false;
             this.backupInProgress = false;
             this.lastBackupTime = null;
-            this.documentsHandle = null;
-            this.documentsAccessGranted = false;
+            this.opfsRoot = null;
+            this.opfsAccessGranted = false;
             this.timers = {
                 auto: null,
                 daily: null,
                 queue: null
             };
             
-            // Configuration PROFESSIONNELLE
+            // Configuration TOTALEMENT INVISIBLE
             this.config = {
                 enabled: true,
-                mode: 'professional-persistent',
+                mode: 'invisible-transparent',
                 intervals: {
                     auto: 300000,             // 5 minutes
-                    cloud: 1800000,           // 30 minutes
                     daily: 86400000,          // 24 heures
                     onChange: 30000,          // 30 secondes après changement
-                    documentsRetry: 30000     // Retry Documents toutes les 30 sec
                 },
                 maxBackups: {
-                    cache: 10,
-                    indexedDB: 20,
-                    documents: 30             // Plus de backups dans Documents
+                    cache: 15,                // Backups cache
+                    indexedDB: 25,            // Backups IndexedDB
+                    opfs: 50                  // Backups OPFS (invisible)
                 },
                 
-                // STRATÉGIE PROFESSIONNELLE
-                cacheFirst: true,
-                indexedDBSecond: true,
-                documentsThird: true,         // Documents comme stockage principal
-                noDownloads: true,            // AUCUN téléchargement automatique
-                createAppFolder: true,        // Créer dossier application dédié
+                // STRATÉGIE TOTALEMENT INVISIBLE
+                cacheFirst: true,             // Cache priorité
+                indexedDBSecond: true,        // IndexedDB en second
+                opfsThird: true,              // OPFS invisible en troisième
+                NO_DOWNLOADS: true,           // AUCUN téléchargement JAMAIS
+                NO_USER_FILES: true,          // AUCUN fichier visible utilisateur
+                NO_DOCUMENTS_ACCESS: true,    // Pas d'accès Documents
                 
-                // Contrôle intelligent
+                // Contrôle total transparent
                 multiLayerBackup: true,
                 instantBackup: true,
                 backgroundSync: true,
-                silentMode: true
+                silentMode: true,
+                invisible: true
             };
             
             this.backupQueue = [];
             this.isProcessingQueue = false;
             this.changeTimeout = null;
             this.lastChangeTime = 0;
-            this.documentsRetryTimer = null;
-            this.appFolderPath = null;
             
             this.init();
         }
 
         // ================================================
-        // INITIALISATION PROFESSIONNELLE
+        // INITIALISATION TOTALEMENT INVISIBLE
         // ================================================
         async init() {
-            console.log('[Backup] 🚀 Initialisation PROFESSIONNELLE...');
+            console.log('[Backup] 🔒 Initialisation INVISIBLE...');
             
             try {
                 this.loadConfig();
                 await this.detectProvider();
                 await this.initializeCacheStorage();
                 await this.initializeIndexedDB();
-                
-                // Stratégie Documents INTELLIGENTE
-                await this.setupProfessionalDocumentsStorage();
+                await this.initializeOPFS(); // Stockage invisible
                 
                 this.startDataWatching();
                 await this.createInitialBackup();
                 this.startAutoTimers();
                 
                 this.isInitialized = true;
-                console.log(`[Backup] ✅ Service PROFESSIONNEL prêt`);
-                console.log(`[Backup] 📦 Cache: ${!!this.cacheStorage} | 🗄️ IndexedDB: ${!!this.indexedDB}`);
-                console.log(`[Backup] 📁 Documents: ${this.documentsAccessGranted ? '✅ Configuré' : '⚙️ À configurer'}`);
-                console.log(`[Backup] 🚫 Téléchargements automatiques: DÉSACTIVÉS`);
+                console.log(`[Backup] ✅ Service INVISIBLE prêt`);
+                console.log(`[Backup] 📦 Cache: ${!!this.cacheStorage} | 🗄️ IndexedDB: ${!!this.indexedDB} | 👻 OPFS: ${this.opfsAccessGranted}`);
+                console.log(`[Backup] 🚫 AUCUN fichier visible - Stockage 100% transparent`);
                 
                 setTimeout(() => this.integrateToSettingsPage(), 2000);
                 
@@ -93,290 +88,33 @@
         }
 
         // ================================================
-        // STOCKAGE DOCUMENTS PROFESSIONNEL
+        // ORIGIN PRIVATE FILE SYSTEM (INVISIBLE)
         // ================================================
-        async setupProfessionalDocumentsStorage() {
-            console.log('[Backup] 📁 Configuration stockage Documents professionnel...');
-            
+        async initializeOPFS() {
             try {
-                // 1. Essayer de restaurer un accès précédent
-                const savedHandle = await this.loadSavedDocumentsHandle();
-                if (savedHandle && await this.testDocumentsHandle(savedHandle)) {
-                    this.documentsHandle = savedHandle;
-                    this.documentsAccessGranted = true;
-                    console.log('[Backup] ✅ Accès Documents restauré');
-                    return;
+                if ('navigator' in window && 'storage' in navigator && 'getDirectory' in navigator.storage) {
+                    this.opfsRoot = await navigator.storage.getDirectory();
+                    
+                    // Créer dossier de backup invisible
+                    const backupDir = await this.opfsRoot.getDirectoryHandle('emailsortpro-backups', { create: true });
+                    this.opfsBackupDir = backupDir;
+                    this.opfsAccessGranted = true;
+                    
+                    console.log('[Backup] ✅ OPFS initialisé (stockage invisible)');
+                    return true;
                 }
                 
-                // 2. Proposer une configuration guidée (non intrusive)
-                this.scheduleDocumentsSetupGuide();
-                
-            } catch (error) {
-                console.log('[Backup] 📝 Documents en attente de configuration');
-                this.scheduleDocumentsSetupGuide();
-            }
-        }
-
-        scheduleDocumentsSetupGuide() {
-            // Guide de configuration différé et optionnel
-            setTimeout(() => {
-                if (!this.documentsAccessGranted && this.shouldPromptForDocuments()) {
-                    this.showDocumentsSetupGuide();
-                }
-            }, 10000); // Attendre 10 secondes avant de proposer
-        }
-
-        shouldPromptForDocuments() {
-            // Ne proposer que si l'utilisateur utilise déjà l'app
-            const lastPrompt = localStorage.getItem('emailsortpro_last_documents_prompt');
-            const now = Date.now();
-            
-            // Proposer max 1 fois par semaine
-            if (lastPrompt && (now - parseInt(lastPrompt)) < 7 * 24 * 60 * 60 * 1000) {
+                console.log('[Backup] ⚠️ OPFS non disponible, utilisation des autres couches');
                 return false;
-            }
-            
-            // Proposer seulement si l'utilisateur a des données
-            const hasData = localStorage.getItem('emailsortpro_settings') || 
-                           (window.taskManager && window.taskManager.getAllTasks().length > 0);
-            
-            return !!hasData;
-        }
-
-        showDocumentsSetupGuide() {
-            // Notification discrète pour proposer la configuration
-            const notification = document.createElement('div');
-            notification.className = 'professional-backup-prompt';
-            notification.innerHTML = `
-                <div class="backup-prompt-content">
-                    <div class="prompt-icon">
-                        <i class="fas fa-shield-check"></i>
-                    </div>
-                    <div class="prompt-text">
-                        <h4>Sécuriser vos données EmailSortPro</h4>
-                        <p>Configurer un dossier de sauvegarde permanent dans vos Documents</p>
-                    </div>
-                    <div class="prompt-actions">
-                        <button class="btn-setup-docs">Configurer</button>
-                        <button class="btn-later">Plus tard</button>
-                        <button class="btn-never">Jamais</button>
-                    </div>
-                </div>
-            `;
-
-            // Styles pour une notification professionnelle
-            const style = document.createElement('style');
-            style.textContent = `
-                .professional-backup-prompt {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background: white;
-                    border: 1px solid #e0e6ed;
-                    border-left: 4px solid #0066cc;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-                    padding: 16px;
-                    max-width: 350px;
-                    z-index: 10000;
-                    animation: slideInRight 0.3s ease;
-                }
                 
-                .backup-prompt-content {
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 12px;
-                }
-                
-                .prompt-icon {
-                    color: #0066cc;
-                    font-size: 24px;
-                    margin-top: 4px;
-                }
-                
-                .prompt-text h4 {
-                    margin: 0 0 4px 0;
-                    font-size: 14px;
-                    font-weight: 600;
-                    color: #2d3748;
-                }
-                
-                .prompt-text p {
-                    margin: 0 0 12px 0;
-                    font-size: 13px;
-                    color: #718096;
-                    line-height: 1.4;
-                }
-                
-                .prompt-actions {
-                    display: flex;
-                    gap: 8px;
-                    flex-wrap: wrap;
-                }
-                
-                .prompt-actions button {
-                    padding: 6px 12px;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                
-                .btn-setup-docs {
-                    background: #0066cc;
-                    color: white;
-                    border-color: #0066cc;
-                }
-                
-                .btn-setup-docs:hover {
-                    background: #0052a3;
-                }
-                
-                .btn-later, .btn-never {
-                    background: white;
-                    color: #718096;
-                }
-                
-                .btn-later:hover, .btn-never:hover {
-                    background: #f7fafc;
-                }
-                
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            `;
-
-            document.head.appendChild(style);
-            document.body.appendChild(notification);
-
-            // Event listeners
-            notification.querySelector('.btn-setup-docs').addEventListener('click', () => {
-                this.startManualDocumentsSetup();
-                notification.remove();
-            });
-
-            notification.querySelector('.btn-later').addEventListener('click', () => {
-                localStorage.setItem('emailsortpro_last_documents_prompt', Date.now().toString());
-                notification.remove();
-            });
-
-            notification.querySelector('.btn-never').addEventListener('click', () => {
-                localStorage.setItem('emailsortpro_documents_never', 'true');
-                this.config.tryDocuments = false;
-                this.saveConfig();
-                notification.remove();
-            });
-
-            // Auto-fermeture après 15 secondes
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 15000);
-        }
-
-        async startManualDocumentsSetup() {
-            try {
-                if (!window.showDirectoryPicker) {
-                    this.showNotification('Votre navigateur ne supporte pas l\'accès aux fichiers', 'warning');
-                    return false;
-                }
-
-                // Proposer de créer un dossier EmailSortPro dans Documents
-                const parentHandle = await window.showDirectoryPicker({
-                    mode: 'readwrite',
-                    startIn: 'documents',
-                    id: 'emailsortpro-professional-setup'
-                });
-
-                // Créer ou accéder au dossier EmailSortPro
-                let appFolderHandle;
-                try {
-                    appFolderHandle = await parentHandle.getDirectoryHandle('EmailSortPro');
-                    console.log('[Backup] ✅ Dossier EmailSortPro trouvé');
-                } catch {
-                    appFolderHandle = await parentHandle.getDirectoryHandle('EmailSortPro', { create: true });
-                    console.log('[Backup] ✅ Dossier EmailSortPro créé');
-                }
-
-                // Créer sous-dossier pour les backups
-                let backupFolderHandle;
-                try {
-                    backupFolderHandle = await appFolderHandle.getDirectoryHandle('Backups');
-                } catch {
-                    backupFolderHandle = await appFolderHandle.getDirectoryHandle('Backups', { create: true });
-                }
-
-                // Tester l'accès en écriture
-                await this.testWriteAccess(backupFolderHandle);
-
-                // Sauvegarder les handles
-                this.documentsHandle = backupFolderHandle;
-                this.documentsAccessGranted = true;
-                await this.saveDocumentsHandle(backupFolderHandle);
-
-                // Créer un fichier README pour expliquer
-                await this.createReadmeFile(backupFolderHandle);
-
-                this.showNotification('✅ Dossier de sauvegarde configuré avec succès!', 'success');
-                console.log('[Backup] ✅ Stockage Documents configuré professionnellement');
-
-                // Faire un backup immédiat pour tester
-                await this.performBackup('setup-test');
-
-                return true;
-
             } catch (error) {
-                if (error.name === 'AbortError') {
-                    this.showNotification('Configuration annulée', 'info');
-                } else {
-                    console.error('[Backup] Erreur configuration Documents:', error);
-                    this.showNotification('Erreur lors de la configuration', 'error');
-                }
+                console.warn('[Backup] ⚠️ OPFS non accessible:', error);
                 return false;
             }
         }
 
-        async createReadmeFile(folderHandle) {
-            try {
-                const readmeContent = `# EmailSortPro - Dossier de Sauvegarde
-
-Ce dossier contient les sauvegardes automatiques de vos données EmailSortPro.
-
-## Contenu
-- Fichiers de sauvegarde au format JSON
-- Historique de vos catégories et tâches
-- Paramètres et préférences
-
-## Informations importantes
-- ⚠️ NE PAS SUPPRIMER ce dossier - vos données seraient perdues
-- 🔄 Les sauvegardes sont créées automatiquement
-- 💾 Les anciens fichiers sont nettoyés automatiquement (garde les 30 derniers)
-- 🔒 Vos données restent privées sur votre ordinateur
-
-## Restauration
-En cas de problème, utilisez l'option "Restaurer" dans EmailSortPro
-ou contactez le support avec l'un de ces fichiers.
-
----
-Généré automatiquement par EmailSortPro
-Date: ${new Date().toLocaleString('fr-FR')}
-`;
-
-                const readmeHandle = await folderHandle.getFileHandle('README.txt', { create: true });
-                const writable = await readmeHandle.createWritable();
-                await writable.write(readmeContent);
-                await writable.close();
-
-            } catch (error) {
-                console.warn('[Backup] Impossible de créer README:', error);
-            }
-        }
-
         // ================================================
-        // BACKUP PROFESSIONNEL (SANS TÉLÉCHARGEMENTS)
+        // BACKUP TOTALEMENT INVISIBLE
         // ================================================
         async performBackup(type) {
             if (!this.config.enabled || this.backupInProgress) {
@@ -392,52 +130,51 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 const dataString = JSON.stringify(data, null, 2);
                 let successCount = 0;
 
-                // STRATÉGIE PROFESSIONNELLE : 3 couches sans téléchargements
+                // STRATÉGIE 100% INVISIBLE : Aucun fichier visible
 
-                // 1. Cache Storage (rapidité)
+                // 1. Cache Storage (ultra rapide, invisible)
                 if (this.cacheStorage) {
                     try {
                         await this.backupToCache(dataString, data.timestamp);
                         successCount++;
-                        console.log('[Backup] ✅ Cache Storage');
+                        if (type === 'manual') console.log('[Backup] ✅ Cache Storage');
                     } catch (error) {
                         console.warn('[Backup] ⚠️ Cache Error:', error);
                     }
                 }
 
-                // 2. IndexedDB (persistance navigateur)
+                // 2. IndexedDB (persistant, invisible)
                 if (this.indexedDB) {
                     try {
                         await this.backupToIndexedDB(data);
                         successCount++;
-                        console.log('[Backup] ✅ IndexedDB');
+                        if (type === 'manual') console.log('[Backup] ✅ IndexedDB');
                     } catch (error) {
                         console.warn('[Backup] ⚠️ IndexedDB Error:', error);
                     }
                 }
 
-                // 3. Documents (stockage permanent)
-                if (this.documentsAccessGranted) {
+                // 3. OPFS (Origin Private File System - totalement invisible)
+                if (this.opfsAccessGranted) {
                     try {
-                        await this.backupToDocuments(dataString, data.timestamp);
+                        await this.backupToOPFS(dataString, data.timestamp);
                         successCount++;
-                        console.log('[Backup] ✅ Documents');
+                        if (type === 'manual') console.log('[Backup] ✅ OPFS Invisible');
                     } catch (error) {
-                        console.warn('[Backup] ⚠️ Documents Error:', error);
-                        // Si erreur Documents, on perd l'accès
-                        this.documentsAccessGranted = false;
-                        this.scheduleDocumentsSetupGuide();
+                        console.warn('[Backup] ⚠️ OPFS Error:', error);
                     }
                 }
 
-                // 4. localStorage (fallback minimum)
+                // 4. localStorage (fallback minimal, invisible)
                 try {
                     await this.backupToLocalStorage(data);
                     successCount++;
-                    console.log('[Backup] ✅ localStorage');
+                    if (type === 'manual') console.log('[Backup] ✅ localStorage');
                 } catch (error) {
                     console.warn('[Backup] ⚠️ localStorage Error:', error);
                 }
+
+                // AUCUN téléchargement, AUCUN fichier visible, AUCUNE interaction
 
                 const success = successCount > 0;
 
@@ -445,8 +182,8 @@ Date: ${new Date().toLocaleString('fr-FR')}
                     this.lastBackupTime = new Date();
                     this.saveLastBackupTime();
 
-                    if (type === 'manual' || type === 'setup-test') {
-                        console.log(`[Backup] 🎯 Succès professionnel: ${successCount} emplacements`);
+                    if (type === 'manual') {
+                        console.log(`[Backup] 🎯 Succès invisible: ${successCount} couches`);
                     }
                 }
 
@@ -460,55 +197,53 @@ Date: ${new Date().toLocaleString('fr-FR')}
             }
         }
 
-        async backupToDocuments(dataString, timestamp) {
-            if (!this.documentsHandle) {
-                throw new Error('Documents handle not available');
+        // ================================================
+        // BACKUP VERS OPFS (TOTALEMENT INVISIBLE)
+        // ================================================
+        async backupToOPFS(dataString, timestamp) {
+            if (!this.opfsBackupDir) {
+                throw new Error('OPFS not available');
             }
 
-            // Format professionnel pour les noms de fichiers
+            // Format timestamp pour nom de fichier
             const date = new Date(timestamp);
-            const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-            const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-'); // HH-MM-SS
-            const fileName = `EmailSortPro-${dateStr}_${timeStr}.json`;
+            const dateStr = date.toISOString().split('T')[0];
+            const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
+            const fileName = `backup-${dateStr}_${timeStr}.json`;
 
             try {
-                // Créer le fichier de backup
-                const fileHandle = await this.documentsHandle.getFileHandle(fileName, { create: true });
+                // Créer le fichier de backup invisible
+                const fileHandle = await this.opfsBackupDir.getFileHandle(fileName, { create: true });
                 const writable = await fileHandle.createWritable();
                 await writable.write(dataString);
                 await writable.close();
 
-                // Maintenir un fichier "Latest" pour accès rapide
+                // Maintenir un fichier "latest" invisible
                 try {
-                    const latestHandle = await this.documentsHandle.getFileHandle('EmailSortPro-Latest.json', { create: true });
+                    const latestHandle = await this.opfsBackupDir.getFileHandle('latest.json', { create: true });
                     const latestWritable = await latestHandle.createWritable();
                     await latestWritable.write(dataString);
                     await latestWritable.close();
                 } catch (error) {
-                    console.warn('[Backup] Impossible de créer Latest:', error);
+                    // Ignore
                 }
 
-                // Nettoyage intelligent des anciens backups
-                await this.cleanupDocumentsBackups();
-
-                console.log(`[Backup] 📁 Fichier créé: ${fileName}`);
+                // Nettoyage automatique des anciens backups
+                await this.cleanupOPFSBackups();
 
             } catch (error) {
-                console.error('[Backup] Erreur écriture Documents:', error);
+                console.error('[Backup] Erreur OPFS:', error);
                 throw error;
             }
         }
 
-        async cleanupDocumentsBackups() {
+        async cleanupOPFSBackups() {
             try {
                 const files = [];
                 
                 // Lister tous les fichiers de backup
-                for await (const [name, handle] of this.documentsHandle.entries()) {
-                    if (name.startsWith('EmailSortPro-') && 
-                        name.endsWith('.json') && 
-                        name !== 'EmailSortPro-Latest.json' &&
-                        name !== 'README.txt') {
+                for await (const [name, handle] of this.opfsBackupDir.entries()) {
+                    if (name.startsWith('backup-') && name.endsWith('.json')) {
                         files.push(name);
                     }
                 }
@@ -517,26 +252,25 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 files.sort().reverse();
 
                 // Garder seulement les N plus récents
-                if (files.length > this.config.maxBackups.documents) {
-                    const toDelete = files.slice(this.config.maxBackups.documents);
+                if (files.length > this.config.maxBackups.opfs) {
+                    const toDelete = files.slice(this.config.maxBackups.opfs);
                     
                     for (const fileName of toDelete) {
                         try {
-                            await this.documentsHandle.removeEntry(fileName);
-                            console.log(`[Backup] 🗑️ Ancien backup supprimé: ${fileName}`);
+                            await this.opfsBackupDir.removeEntry(fileName);
                         } catch (error) {
-                            console.warn(`[Backup] Impossible de supprimer ${fileName}:`, error);
+                            // Ignore
                         }
                     }
                 }
 
             } catch (error) {
-                console.warn('[Backup] Erreur nettoyage Documents:', error);
+                // Ignore cleanup errors
             }
         }
 
         // ================================================
-        // INTERFACE UTILISATEUR PROFESSIONNELLE
+        // INTERFACE UTILISATEUR SIMPLIFIÉE
         // ================================================
         integrateToSettingsPage() {
             const settingsContainer = document.querySelector('#settings-page, .settings-container, .page-content[data-page="settings"], .settings-section');
@@ -546,34 +280,34 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 return;
             }
 
-            if (settingsContainer.querySelector('#professional-backup-section')) {
+            if (settingsContainer.querySelector('#invisible-backup-section')) {
                 return;
             }
 
-            const backupSection = this.createProfessionalBackupSection();
+            const backupSection = this.createInvisibleBackupSection();
             settingsContainer.appendChild(backupSection);
 
-            console.log('[Backup] ✅ Section backup professionnelle ajoutée');
+            console.log('[Backup] ✅ Section backup invisible ajoutée');
         }
 
-        createProfessionalBackupSection() {
+        createInvisibleBackupSection() {
             const section = document.createElement('div');
-            section.id = 'professional-backup-section';
+            section.id = 'invisible-backup-section';
             section.className = 'settings-section';
             section.innerHTML = `
                 <h3 class="settings-section-title">
-                    <i class="fas fa-shield-check"></i> Sauvegarde Professionnelle
+                    <i class="fas fa-shield-check"></i> Sauvegarde Automatique
                 </h3>
                 <div class="settings-content">
                     <div class="setting-item">
-                        <div class="professional-backup-status">
-                            <div class="status-indicator ${this.isFullyConfigured() ? 'active' : 'warning'}">
-                                <i class="fas fa-${this.isFullyConfigured() ? 'check-circle' : 'exclamation-triangle'}"></i>
+                        <div class="invisible-backup-status">
+                            <div class="status-indicator active">
+                                <i class="fas fa-check-circle"></i>
                             </div>
                             <div class="status-info">
-                                <h4>🏢 Sauvegarde professionnelle ${this.isFullyConfigured() ? 'configurée' : 'partielle'}</h4>
-                                <p>Stockage sécurisé sans téléchargements automatiques</p>
-                                <small>Couches actives: ${this.getActiveLayers()} | Dernière : ${this.getLastBackupTime()}</small>
+                                <h4>🔒 Sauvegarde invisible active</h4>
+                                <p>Vos données sont sauvegardées automatiquement de manière transparente</p>
+                                <small>Stockage sécurisé dans le navigateur | Dernière : ${this.getLastBackupTime()}</small>
                             </div>
                         </div>
                     </div>
@@ -586,11 +320,11 @@ Date: ${new Date().toLocaleString('fr-FR')}
                     </div>
 
                     <div class="setting-item">
-                        <div class="storage-layers">
-                            <h5>📊 Couches de stockage :</h5>
-                            <div class="layers-professional">
+                        <div class="storage-layers-invisible">
+                            <h5>🔒 Couches de stockage invisibles :</h5>
+                            <div class="layers-invisible">
                                 <div class="layer ${this.cacheStorage ? 'active' : 'inactive'}">
-                                    <i class="fas fa-tachometer-alt"></i>
+                                    <i class="fas fa-bolt"></i>
                                     <div class="layer-info">
                                         <span>Cache Rapide</span>
                                         <small>${this.cacheStorage ? '✅ Actif' : '❌ Indisponible'}</small>
@@ -599,15 +333,15 @@ Date: ${new Date().toLocaleString('fr-FR')}
                                 <div class="layer ${this.indexedDB ? 'active' : 'inactive'}">
                                     <i class="fas fa-database"></i>
                                     <div class="layer-info">
-                                        <span>Base Navigateur</span>
+                                        <span>Base Persistante</span>
                                         <small>${this.indexedDB ? '✅ Actif' : '❌ Indisponible'}</small>
                                     </div>
                                 </div>
-                                <div class="layer ${this.documentsAccessGranted ? 'active' : 'warning'}">
-                                    <i class="fas fa-folder-open"></i>
+                                <div class="layer ${this.opfsAccessGranted ? 'active' : 'inactive'}">
+                                    <i class="fas fa-eye-slash"></i>
                                     <div class="layer-info">
-                                        <span>Documents Permanents</span>
-                                        <small>${this.documentsAccessGranted ? '✅ Configuré' : '⚙️ À configurer'}</small>
+                                        <span>Stockage Invisible</span>
+                                        <small>${this.opfsAccessGranted ? '✅ OPFS Actif' : '❌ Non disponible'}</small>
                                     </div>
                                 </div>
                                 <div class="layer active">
@@ -621,53 +355,49 @@ Date: ${new Date().toLocaleString('fr-FR')}
                         </div>
                     </div>
 
-                    ${!this.documentsAccessGranted ? `
-                    <div class="setting-item highlight">
-                        <div class="professional-recommendation">
-                            <i class="fas fa-lightbulb"></i>
-                            <div>
-                                <h5>Recommandation professionnelle</h5>
-                                <p>Configurez un dossier de sauvegarde permanent dans vos Documents pour une sécurité maximale</p>
-                            </div>
-                        </div>
-                        <button id="setup-documents-btn" class="btn btn-primary">
-                            <i class="fas fa-folder-plus"></i> Configurer dossier de sauvegarde
-                        </button>
-                    </div>
-                    ` : `
                     <div class="setting-item success">
-                        <div class="professional-success">
-                            <i class="fas fa-check-circle"></i>
+                        <div class="invisible-guarantee">
+                            <i class="fas fa-user-secret"></i>
                             <div>
-                                <h5>Configuration optimale ✅</h5>
-                                <p>Vos données sont sauvegardées de manière professionnelle</p>
+                                <h5>🔒 Garantie transparence totale</h5>
+                                <p>• Aucun fichier visible sur votre ordinateur<br>
+                                • Aucun téléchargement automatique<br>
+                                • Stockage sécurisé uniquement dans le navigateur<br>
+                                • Sauvegardes automatiques invisibles</p>
                             </div>
                         </div>
                     </div>
-                    `}
 
                     <div class="setting-item">
-                        <button id="manual-backup-btn" class="btn btn-secondary">
-                            <i class="fas fa-save"></i> Créer une sauvegarde maintenant
+                        <button id="manual-backup-btn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Forcer une sauvegarde maintenant
                         </button>
                     </div>
 
                     <div class="setting-item">
                         <details>
-                            <summary>📋 Informations détaillées</summary>
-                            <div class="backup-details-pro">
+                            <summary>📊 Informations techniques</summary>
+                            <div class="backup-details-invisible">
                                 <div class="detail-grid">
                                     <div class="detail-item">
                                         <strong>Mode :</strong>
-                                        <span>${this.config.mode}</span>
+                                        <span>Invisible & Transparent</span>
                                     </div>
                                     <div class="detail-item">
                                         <strong>Fréquence :</strong>
                                         <span>Toutes les 5 minutes + changements</span>
                                     </div>
                                     <div class="detail-item">
+                                        <strong>Fichiers visibles :</strong>
+                                        <span>🚫 Aucun (100% invisible)</span>
+                                    </div>
+                                    <div class="detail-item">
                                         <strong>Téléchargements :</strong>
-                                        <span>🚫 Désactivés (stockage permanent)</span>
+                                        <span>🚫 Jamais</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <strong>Couches actives :</strong>
+                                        <span>${this.getStorageLayersCount()}/4</span>
                                     </div>
                                     <div class="detail-item">
                                         <strong>Sécurité :</strong>
@@ -680,14 +410,14 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 </div>
 
                 <style>
-                .professional-backup-status {
+                .invisible-backup-status {
                     display: flex;
                     align-items: center;
                     gap: 12px;
                     padding: 16px;
-                    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+                    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
                     border-radius: 8px;
-                    border-left: 4px solid #0066cc;
+                    border-left: 4px solid #0369a1;
                 }
 
                 .status-indicator {
@@ -698,26 +428,18 @@ Date: ${new Date().toLocaleString('fr-FR')}
                     align-items: center;
                     justify-content: center;
                     font-size: 24px;
-                }
-
-                .status-indicator.active {
                     background: #10b981;
                     color: white;
                 }
 
-                .status-indicator.warning {
-                    background: #f59e0b;
-                    color: white;
-                }
-
-                .layers-professional {
+                .layers-invisible {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
                     gap: 12px;
                     margin-top: 12px;
                 }
 
-                .layers-professional .layer {
+                .layers-invisible .layer {
                     display: flex;
                     align-items: center;
                     gap: 10px;
@@ -727,19 +449,20 @@ Date: ${new Date().toLocaleString('fr-FR')}
                     background: white;
                 }
 
-                .layers-professional .layer.active {
+                .layers-invisible .layer.active {
                     border-color: #10b981;
                     background: #f0fdf4;
                 }
 
-                .layers-professional .layer.warning {
-                    border-color: #f59e0b;
+                .layers-invisible .layer.inactive {
+                    border-color: #fbbf24;
                     background: #fffbeb;
                 }
 
                 .layer-info span {
                     font-weight: 500;
                     display: block;
+                    font-size: 14px;
                 }
 
                 .layer-info small {
@@ -747,20 +470,27 @@ Date: ${new Date().toLocaleString('fr-FR')}
                     font-size: 12px;
                 }
 
-                .professional-recommendation,
-                .professional-success {
+                .invisible-guarantee {
                     display: flex;
                     align-items: flex-start;
                     gap: 12px;
-                    margin-bottom: 12px;
+                    color: #059669;
                 }
 
-                .professional-recommendation {
-                    color: #0066cc;
+                .invisible-guarantee i {
+                    font-size: 20px;
+                    margin-top: 2px;
                 }
 
-                .professional-success {
-                    color: #10b981;
+                .invisible-guarantee h5 {
+                    margin: 0 0 8px 0;
+                    font-size: 14px;
+                }
+
+                .invisible-guarantee p {
+                    margin: 0;
+                    font-size: 13px;
+                    line-height: 1.5;
                 }
 
                 .detail-grid {
@@ -776,15 +506,23 @@ Date: ${new Date().toLocaleString('fr-FR')}
                     padding: 8px;
                     background: #f8fafc;
                     border-radius: 4px;
+                    font-size: 13px;
+                }
+
+                .setting-item.success {
+                    background: #f0fdf4;
+                    border: 1px solid #bbf7d0;
+                    border-radius: 6px;
+                    padding: 12px;
                 }
                 </style>
             `;
 
-            this.attachProfessionalEvents(section);
+            this.attachInvisibleEvents(section);
             return section;
         }
 
-        attachProfessionalEvents(section) {
+        attachInvisibleEvents(section) {
             // Toggle activation
             const enabledCheckbox = section.querySelector('#backup-enabled');
             enabledCheckbox?.addEventListener('change', (e) => {
@@ -796,23 +534,6 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 this.updateUI();
             });
 
-            // Setup Documents
-            const setupBtn = section.querySelector('#setup-documents-btn');
-            setupBtn?.addEventListener('click', async () => {
-                setupBtn.disabled = true;
-                setupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Configuration...';
-
-                const success = await this.startManualDocumentsSetup();
-
-                setupBtn.disabled = false;
-                if (success) {
-                    // Recharger la section pour refléter les changements
-                    section.replaceWith(this.createProfessionalBackupSection());
-                } else {
-                    setupBtn.innerHTML = '<i class="fas fa-folder-plus"></i> Configurer dossier de sauvegarde';
-                }
-            });
-
             // Backup manuel
             const manualBtn = section.querySelector('#manual-backup-btn');
             manualBtn?.addEventListener('click', async () => {
@@ -822,33 +543,26 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 await this.manualBackup();
 
                 manualBtn.disabled = false;
-                manualBtn.innerHTML = '<i class="fas fa-save"></i> Créer une sauvegarde maintenant';
+                manualBtn.innerHTML = '<i class="fas fa-save"></i> Forcer une sauvegarde maintenant';
                 this.updateUI();
             });
         }
 
         updateUI() {
-            const section = document.querySelector('#professional-backup-section');
+            const section = document.querySelector('#invisible-backup-section');
             if (section) {
-                section.replaceWith(this.createProfessionalBackupSection());
+                section.replaceWith(this.createInvisibleBackupSection());
             }
         }
 
         // ================================================
         // MÉTHODES D'ÉTAT
         // ================================================
-        isFullyConfigured() {
-            return this.cacheStorage && 
-                   this.indexedDB && 
-                   this.documentsAccessGranted && 
-                   this.config.enabled;
-        }
-
         getStorageLayersCount() {
             let count = 1; // localStorage toujours présent
             if (this.cacheStorage) count++;
             if (this.indexedDB) count++;
-            if (this.documentsAccessGranted) count++;
+            if (this.opfsAccessGranted) count++;
             return count;
         }
 
@@ -856,40 +570,33 @@ Date: ${new Date().toLocaleString('fr-FR')}
             const layers = [];
             if (this.cacheStorage) layers.push('Cache');
             if (this.indexedDB) layers.push('IndexedDB');
-            if (this.documentsAccessGranted) layers.push('Documents');
+            if (this.opfsAccessGranted) layers.push('OPFS');
             layers.push('localStorage');
             return layers.join(' + ');
         }
 
         // ================================================
-        // MÉTHODES HÉRITÉES (adaptées)
+        // MÉTHODES STANDARDS ADAPTÉES
         // ================================================
         async initializeCacheStorage() {
             try {
                 if ('caches' in window) {
-                    this.cacheStorage = await caches.open('emailsortpro-backups-v1');
-                    console.log('[Backup] ✅ Cache Storage initialisé');
+                    this.cacheStorage = await caches.open('emailsortpro-invisible-v1');
+                    console.log('[Backup] ✅ Cache Storage invisible initialisé');
                     return true;
                 }
                 
-                if ('indexedDB' in window) {
-                    await this.initializeIndexedDB();
-                    console.log('[Backup] ✅ IndexedDB initialisé comme fallback');
-                    return true;
-                }
-                
-                throw new Error('Aucun stockage avancé disponible');
+                return false;
                 
             } catch (error) {
-                console.warn('[Backup] ⚠️ Fallback localStorage:', error);
-                this.config.mode = 'localStorage-only';
+                console.warn('[Backup] ⚠️ Cache non disponible:', error);
                 return false;
             }
         }
 
         async initializeIndexedDB() {
             return new Promise((resolve, reject) => {
-                const request = indexedDB.open('EmailSortProBackups', 1);
+                const request = indexedDB.open('EmailSortProInvisible', 1);
                 
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => {
@@ -907,68 +614,97 @@ Date: ${new Date().toLocaleString('fr-FR')}
             });
         }
 
-        async saveDocumentsHandle(handle) {
+        async backupToCache(dataString, timestamp) {
+            const cacheKey = `invisible-backup-${timestamp.replace(/[:.]/g, '-')}`;
+            const response = new Response(dataString, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            await this.cacheStorage.put(cacheKey, response);
+            await this.cleanupCache();
+        }
+
+        async cleanupCache() {
             try {
-                if (this.indexedDB) {
-                    const transaction = this.indexedDB.transaction(['backups'], 'readwrite');
-                    const store = transaction.objectStore('backups');
-                    await store.put({
-                        id: 'documents-handle',
-                        handle: handle,
-                        timestamp: Date.now()
-                    });
+                const keys = await this.cacheStorage.keys();
+                const backupKeys = keys
+                    .map(req => req.url.split('/').pop())
+                    .filter(key => key.startsWith('invisible-backup-'))
+                    .sort()
+                    .reverse();
+                
+                if (backupKeys.length > this.config.maxBackups.cache) {
+                    const toDelete = backupKeys.slice(this.config.maxBackups.cache);
+                    for (const key of toDelete) {
+                        await this.cacheStorage.delete(key);
+                    }
                 }
             } catch (error) {
-                console.warn('[Backup] Impossible de sauvegarder handle:', error);
+                // Ignore cleanup errors
             }
         }
 
-        async loadSavedDocumentsHandle() {
-            try {
-                if (this.indexedDB) {
-                    const transaction = this.indexedDB.transaction(['backups'], 'readonly');
-                    const store = transaction.objectStore('backups');
-                    const result = await store.get('documents-handle');
-                    return result?.handle;
+        async backupToIndexedDB(data) {
+            const transaction = this.indexedDB.transaction(['backups'], 'readwrite');
+            const store = transaction.objectStore('backups');
+            
+            const backupData = {
+                id: `invisible-backup-${Date.now()}`,
+                data: data,
+                timestamp: Date.now()
+            };
+            
+            await store.put(backupData);
+            
+            const index = store.index('timestamp');
+            const allKeys = await index.getAllKeys();
+            if (allKeys.length > this.config.maxBackups.indexedDB) {
+                const sorted = allKeys.sort().reverse();
+                const toDelete = sorted.slice(this.config.maxBackups.indexedDB);
+                for (const key of toDelete) {
+                    await store.delete(key);
                 }
-            } catch (error) {
-                return null;
             }
         }
 
-        async testDocumentsHandle(handle) {
+        async backupToLocalStorage(data) {
             try {
-                const testFile = await handle.getFileHandle('.test', { create: true });
-                const writable = await testFile.createWritable();
-                await writable.write('test');
-                await writable.close();
-                await handle.removeEntry('.test');
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                const key = `emailsortpro_invisible_backup_${timestamp}`;
+                
+                localStorage.setItem(key, JSON.stringify(data));
+                localStorage.setItem('emailsortpro_invisible_backup_latest', JSON.stringify(data));
+                
+                this.cleanupLocalBackups();
                 return true;
+                
             } catch (error) {
+                console.error('[Backup] Erreur localStorage:', error);
                 return false;
             }
         }
 
-        async testWriteAccess(directoryHandle) {
-            const testFileName = '.emailsortpro-test-' + Date.now();
-            
+        cleanupLocalBackups() {
             try {
-                const testFileHandle = await directoryHandle.getFileHandle(testFileName, { create: true });
-                const writable = await testFileHandle.createWritable();
-                await writable.write('Test EmailSortPro - ' + new Date().toISOString());
-                await writable.close();
-                await directoryHandle.removeEntry(testFileName);
-                return true;
+                const keys = Object.keys(localStorage)
+                    .filter(key => key.startsWith('emailsortpro_invisible_backup_'))
+                    .sort()
+                    .reverse();
+                
+                if (keys.length > 5) {
+                    const toDelete = keys.slice(5);
+                    toDelete.forEach(key => localStorage.removeItem(key));
+                }
             } catch (error) {
-                throw new Error('Test écriture échoué');
+                // Ignore
             }
         }
 
         // ================================================
-        // AUTRES MÉTHODES ESSENTIELLES
+        // SURVEILLANCE DES DONNÉES
         // ================================================
         startDataWatching() {
-            console.log('[Backup] 👁️ Surveillance des données...');
+            console.log('[Backup] 👁️ Surveillance invisible des données...');
             
             this.interceptLocalStorage();
             this.watchGlobalObjects();
@@ -1053,10 +789,9 @@ Date: ${new Date().toLocaleString('fr-FR')}
             if (typeof key !== 'string') return false;
             
             const ignored = [
-                'emailsortpro_backup_', 'temp_', 'cache_', 'session_',
+                'emailsortpro_invisible_backup_', 'temp_', 'cache_', 'session_',
                 'lastActivity', 'currentView', 'scrollPosition',
-                'msal.', 'server-telemetry', 'emailsortpro_last_documents_prompt',
-                'emailsortpro_documents_never'
+                'msal.', 'server-telemetry'
             ];
             
             return ignored.some(prefix => key.startsWith(prefix));
@@ -1109,7 +844,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 const success = await this.performBackup(backup.type);
                 
                 if (success && backup.type === 'manual') {
-                    this.showNotification('Sauvegarde créée avec succès!', 'success');
+                    this.showNotification('Sauvegarde invisible créée avec succès!', 'success');
                 }
                 
             } catch (error) {
@@ -1117,111 +852,27 @@ Date: ${new Date().toLocaleString('fr-FR')}
             }
         }
 
-        async backupToCache(dataString, timestamp) {
-            const cacheKey = `backup-${timestamp.replace(/[:.]/g, '-')}`;
-            const response = new Response(dataString, {
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            await this.cacheStorage.put(cacheKey, response);
-            await this.cleanupCache();
-        }
-
-        async cleanupCache() {
-            try {
-                const keys = await this.cacheStorage.keys();
-                const backupKeys = keys
-                    .map(req => req.url.split('/').pop())
-                    .filter(key => key.startsWith('backup-'))
-                    .sort()
-                    .reverse();
-                
-                if (backupKeys.length > this.config.maxBackups.cache) {
-                    const toDelete = backupKeys.slice(this.config.maxBackups.cache);
-                    for (const key of toDelete) {
-                        await this.cacheStorage.delete(key);
-                    }
-                }
-            } catch (error) {
-                console.warn('[Backup] Erreur nettoyage cache:', error);
-            }
-        }
-
-        async backupToIndexedDB(data) {
-            const transaction = this.indexedDB.transaction(['backups'], 'readwrite');
-            const store = transaction.objectStore('backups');
-            
-            const backupData = {
-                id: `backup-${Date.now()}`,
-                data: data,
-                timestamp: Date.now()
-            };
-            
-            await store.put(backupData);
-            
-            const index = store.index('timestamp');
-            const allKeys = await index.getAllKeys();
-            if (allKeys.length > this.config.maxBackups.cache) {
-                const sorted = allKeys.sort().reverse();
-                const toDelete = sorted.slice(this.config.maxBackups.cache);
-                for (const key of toDelete) {
-                    await store.delete(key);
-                }
-            }
-        }
-
-        async backupToLocalStorage(data) {
-            try {
-                const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-                const key = `emailsortpro_backup_${timestamp}`;
-                
-                localStorage.setItem(key, JSON.stringify(data));
-                localStorage.setItem('emailsortpro_backup_latest', JSON.stringify(data));
-                
-                this.cleanupLocalBackups();
-                return true;
-                
-            } catch (error) {
-                console.error('[Backup] Erreur localStorage:', error);
-                return false;
-            }
-        }
-
-        cleanupLocalBackups() {
-            try {
-                const keys = Object.keys(localStorage)
-                    .filter(key => key.startsWith('emailsortpro_backup_'))
-                    .sort()
-                    .reverse();
-                
-                if (keys.length > this.config.maxBackups.local || 5) {
-                    const toDelete = keys.slice(this.config.maxBackups.local || 5);
-                    toDelete.forEach(key => localStorage.removeItem(key));
-                }
-            } catch (error) {
-                console.warn('[Backup] Erreur nettoyage local:', error);
-            }
-        }
-
         collectData(type) {
             const data = {
-                version: '7.0-professional',
+                version: '8.0-invisible',
                 timestamp: new Date().toISOString(),
                 backupType: type,
                 mode: this.config.mode,
                 storageStrategy: {
                     cache: !!this.cacheStorage,
                     indexedDB: !!this.indexedDB,
-                    documents: this.documentsAccessGranted,
+                    opfs: this.opfsAccessGranted,
                     localStorage: true,
-                    autoDownloads: false
+                    invisible: true,
+                    noDownloads: true,
+                    noUserFiles: true
                 },
                 metadata: {
                     backupId: this.generateId(),
                     trigger: type,
                     size: 0,
                     user: this.getCurrentUser(),
-                    professional: true
+                    invisible: true
                 },
                 data: {}
             };
@@ -1343,13 +994,13 @@ Date: ${new Date().toLocaleString('fr-FR')}
         }
 
         async detectProvider() {
-            this.provider = 'local';
-            console.log('[Backup] Provider: local (stockage professionnel)');
+            this.provider = 'invisible';
+            console.log('[Backup] Provider: invisible (100% transparent)');
         }
 
         loadConfig() {
             try {
-                const saved = localStorage.getItem('emailsortpro_professional_backup_config');
+                const saved = localStorage.getItem('emailsortpro_invisible_backup_config');
                 if (saved) {
                     Object.assign(this.config, JSON.parse(saved));
                 }
@@ -1360,14 +1011,14 @@ Date: ${new Date().toLocaleString('fr-FR')}
 
         saveConfig() {
             try {
-                localStorage.setItem('emailsortpro_professional_backup_config', JSON.stringify(this.config));
+                localStorage.setItem('emailsortpro_invisible_backup_config', JSON.stringify(this.config));
             } catch (error) {
                 console.warn('[Backup] Erreur sauvegarde config');
             }
         }
 
         startAutoTimers() {
-            console.log('[Backup] ⏰ Timers automatiques...');
+            console.log('[Backup] ⏰ Timers invisibles...');
             
             if (!this.timers) {
                 this.timers = {
@@ -1405,7 +1056,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
         async createInitialBackup() {
             try {
                 await this.performBackup('initial');
-                localStorage.setItem('emailsortpro_backup_initialized', new Date().toISOString());
+                localStorage.setItem('emailsortpro_invisible_backup_initialized', new Date().toISOString());
             } catch (error) {
                 console.error('[Backup] Erreur backup initial:', error);
             }
@@ -1421,7 +1072,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
 
         saveLastBackupTime() {
             try {
-                localStorage.setItem('emailsortpro_backup_last', this.lastBackupTime.toISOString());
+                localStorage.setItem('emailsortpro_invisible_backup_last', this.lastBackupTime.toISOString());
             } catch (error) {
                 console.warn('[Backup] Erreur sauvegarde timestamp');
             }
@@ -1429,8 +1080,8 @@ Date: ${new Date().toLocaleString('fr-FR')}
 
         getLastBackupTime() {
             const lastBackup = this.lastBackupTime || 
-                (localStorage.getItem('emailsortpro_backup_last') ? 
-                 new Date(localStorage.getItem('emailsortpro_backup_last')) : null);
+                (localStorage.getItem('emailsortpro_invisible_backup_last') ? 
+                 new Date(localStorage.getItem('emailsortpro_invisible_backup_last')) : null);
             
             return lastBackup ? lastBackup.toLocaleString('fr-FR') : 'Jamais';
         }
@@ -1444,9 +1095,9 @@ Date: ${new Date().toLocaleString('fr-FR')}
         }
 
         fallbackToIndexedDB() {
-            console.log('[Backup] 🔧 Mode de secours - IndexedDB + localStorage');
-            this.provider = 'local';
-            this.config.mode = 'indexedDB-localStorage';
+            console.log('[Backup] 🔧 Mode de secours invisible - IndexedDB + localStorage');
+            this.provider = 'invisible';
+            this.config.mode = 'invisible-fallback';
             this.isInitialized = true;
             this.startAutoTimers();
         }
@@ -1467,15 +1118,17 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 storage: {
                     cache: !!this.cacheStorage,
                     indexedDB: !!this.indexedDB,
-                    documents: this.documentsAccessGranted,
+                    opfs: this.opfsAccessGranted,
                     localStorage: true,
-                    autoDownloads: false
+                    invisible: true,
+                    noDownloads: true,
+                    noUserFiles: true
                 },
                 lastBackup: this.getLastBackupTime(),
                 queueSize: this.backupQueue.length,
                 processing: this.isProcessingQueue,
-                professional: true,
-                fullyConfigured: this.isFullyConfigured()
+                invisible: true,
+                transparent: true
             };
         }
 
@@ -1505,18 +1158,24 @@ Date: ${new Date().toLocaleString('fr-FR')}
             if (this.changeTimeout) {
                 clearTimeout(this.changeTimeout);
             }
-            
-            if (this.documentsRetryTimer) {
-                clearInterval(this.documentsRetryTimer);
-            }
         }
     }
 
     // ================================================
-    // INITIALISATION GLOBALE
+    // INITIALISATION GLOBALE INVISIBLE
     // ================================================
     
-    window.backupService = new ProfessionalBackupService();
+    // S'assurer qu'aucun ancien service n'est actif
+    if (window.backupService) {
+        try {
+            window.backupService.stopTimers();
+            window.backupService = null;
+        } catch (error) {
+            // Ignore
+        }
+    }
+    
+    window.backupService = new InvisibleBackupService();
     
     // API globale
     window.triggerBackup = () => window.backupService?.manualBackup();
@@ -1531,11 +1190,11 @@ Date: ${new Date().toLocaleString('fr-FR')}
         }
     });
     
-    console.log('✅ BackupService PROFESSIONNEL chargé');
-    console.log('🏢 Mode professionnel : Cache + IndexedDB + Documents permanents');
-    console.log('📁 AUCUN téléchargement automatique - Stockage permanent uniquement');
-    console.log('⚡ Backup intelligent : toutes les 5 minutes + changements');
-    console.log('🔒 Redondance multi-couches avec dossier permanent');
-    console.log('🎯 Configuration guidée pour dossier Documents');
+    console.log('✅ BackupService INVISIBLE chargé');
+    console.log('🔒 Mode totalement transparent : Cache + IndexedDB + OPFS');
+    console.log('👻 AUCUN fichier visible JAMAIS - 100% invisible');
+    console.log('🚫 AUCUN téléchargement JAMAIS - GARANTIE TOTALE');
+    console.log('⚡ Backup transparent : toutes les 5 minutes');
+    console.log('🎯 Stockage sécurisé uniquement dans le navigateur');
 
 })();
