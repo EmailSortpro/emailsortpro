@@ -3008,18 +3008,37 @@ window.triggerAuthorizationModal = function() {
     }
 };
 
-// API pour vérifier l'état d'autorisation
+// API pour vérifier l'état d'autorisation (AMÉLIORÉE AVEC DÉTECTION NAVIGATION PRIVÉE)
 window.checkAuthorizationStatus = function() {
     const hasConnected = localStorage.getItem('emailsortpro_has_connected');
     const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
     const authDate = localStorage.getItem('emailsortpro_authorization_date');
     const firstConnectionDate = localStorage.getItem('emailsortpro_first_connection_date');
     
+    // Détection rapide de navigation privée
+    let isLikelyPrivate = false;
+    try {
+        // Test rapide localStorage quota
+        const testKey = '__private_test_' + Date.now();
+        localStorage.setItem(testKey, 'test');
+        localStorage.removeItem(testKey);
+        
+        // Si on arrive ici, pas d'erreur visible, mais on peut tester d'autres indices
+        isLikelyPrivate = (
+            !hasConnected && // Pas de trace de connexion précédente
+            navigator.webdriver === undefined && // Pas en mode test
+            !window.chrome?.app // Pas d'extension Chrome visible
+        );
+    } catch (e) {
+        isLikelyPrivate = true; // Erreur localStorage = probablement privé
+    }
+    
     const status = {
         hasConnectedBefore: !!hasConnected,
         authorizationGranted: !!authorizationGranted,
         isFirstTime: !hasConnected && !authorizationGranted,
-        shouldShowModal: !hasConnected && !authorizationGranted,
+        isLikelyPrivateBrowsing: isLikelyPrivate,
+        shouldShowModal: isLikelyPrivate || (!hasConnected && !authorizationGranted),
         authorizationDate: authDate,
         firstConnectionDate: firstConnectionDate,
         categoriesPageReady: !!(window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal)
@@ -3029,22 +3048,121 @@ window.checkAuthorizationStatus = function() {
     return status;
 };
 
-// Script d'intégration pour la première connexion (CORRIGÉ AVEC AUTO-TRIGGER)
+// API pour forcer le mode "première connexion" (pour tests en navigation privée)
+window.forceFirstTimeMode = function() {
+    console.log('[API] 🔄 Forçage mode première connexion...');
+    
+    // Effacer les marqueurs de connexion
+    localStorage.removeItem('emailsortpro_has_connected');
+    localStorage.removeItem('emailsortpro_filesystem_authorized');
+    localStorage.removeItem('emailsortpro_authorization_date');
+    localStorage.removeItem('emailsortpro_first_connection_date');
+    localStorage.removeItem('emailsortpro_backup_notification_shown');
+    
+    console.log('[API] ✅ Mode première connexion activé - Rechargez la page');
+    
+    return {
+        success: true,
+        message: 'Mode première connexion activé - Rechargez la page pour tester'
+    };
+};
+
+// API pour déclencher immédiatement l'autorisation (avec override de détection)
+window.forceShowAuthModal = function() {
+    console.log('[API] 🎨 Forçage immédiat du modal d\'autorisation...');
+    
+    try {
+        if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
+            // Forcer le mode première connexion temporairement
+            const originalHasConnected = localStorage.getItem('emailsortpro_has_connected');
+            const originalAuth = localStorage.getItem('emailsortpro_filesystem_authorized');
+            
+            // Temporairement effacer pour forcer l'affichage
+            localStorage.removeItem('emailsortpro_has_connected');
+            localStorage.removeItem('emailsortpro_filesystem_authorized');
+            
+            window.categoriesPageV24.showAuthorizationModal();
+            
+            // Restaurer les valeurs après 1 seconde (si elles existaient)
+            setTimeout(() => {
+                if (originalHasConnected) localStorage.setItem('emailsortpro_has_connected', originalHasConnected);
+                if (originalAuth) localStorage.setItem('emailsortpro_filesystem_authorized', originalAuth);
+            }, 1000);
+            
+            console.log('[API] ✅ Modal d\'autorisation forcé');
+            return { success: true };
+        } else {
+            console.error('[API] ❌ CategoriesPage non disponible');
+            return { success: false, error: 'CategoriesPage not available' };
+        }
+    } catch (error) {
+        console.error('[API] ❌ Erreur forçage modal:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+// Script d'intégration pour la première connexion (CORRIGÉ AVEC DÉTECTION NAVIGATION PRIVÉE)
 window.setupFirstTimeAuth = function() {
     console.log('[SETUP] 🎯 Configuration autorisation première connexion...');
     
+    // Fonction pour détecter la navigation privée
+    const detectPrivateBrowsing = () => {
+        return new Promise((resolve) => {
+            // Méthode 1: Test du quota localStorage (Safari)
+            try {
+                localStorage.setItem('__private_test__', '1');
+                localStorage.removeItem('__private_test__');
+                
+                // Méthode 2: Test de requestFileSystem (Chrome/Edge)
+                if (window.webkitRequestFileSystem) {
+                    webkitRequestFileSystem(
+                        window.TEMPORARY, 
+                        1,
+                        () => resolve(false), // Navigation normale
+                        () => resolve(true)   // Navigation privée
+                    );
+                } else if (window.indexedDB) {
+                    // Méthode 3: Test IndexedDB (Firefox)
+                    const testName = '__private_test_db__';
+                    const openReq = indexedDB.open(testName);
+                    openReq.onsuccess = () => {
+                        indexedDB.deleteDatabase(testName);
+                        resolve(false); // Navigation normale
+                    };
+                    openReq.onerror = () => resolve(true); // Navigation privée
+                } else {
+                    resolve(false); // Pas de détection possible
+                }
+            } catch (e) {
+                resolve(true); // Probablement navigation privée
+            }
+        });
+    };
+    
     // Attendre que l'application soit complètement chargée
-    const checkAndSetup = () => {
+    const checkAndSetup = async () => {
+        // Détecter la navigation privée
+        const isPrivateBrowsing = await detectPrivateBrowsing();
+        console.log(`[SETUP] 🔍 Navigation privée détectée: ${isPrivateBrowsing}`);
+        
         // Vérifier si c'est vraiment la première connexion
         const hasConnectedBefore = localStorage.getItem('emailsortpro_has_connected');
         const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
         
-        if (!hasConnectedBefore && !authorizationGranted) {
-            console.log('[SETUP] 🆕 Première connexion détectée - Déclenchement automatique...');
+        // En navigation privée, on considère toujours comme première connexion
+        // OU si les marqueurs normaux indiquent une première connexion
+        const isFirstTime = isPrivateBrowsing || (!hasConnectedBefore && !authorizationGranted);
+        
+        if (isFirstTime) {
+            console.log('[SETUP] 🆕 Première connexion détectée (ou navigation privée) - Déclenchement automatique...');
             
-            // Marquer que l'utilisateur s'est connecté
+            // Marquer que l'utilisateur s'est connecté (même en navigation privée)
             localStorage.setItem('emailsortpro_has_connected', 'true');
             localStorage.setItem('emailsortpro_first_connection_date', new Date().toISOString());
+            
+            if (isPrivateBrowsing) {
+                console.log('[SETUP] 🔒 Mode navigation privée - Modal automatique');
+            }
             
             // DÉCLENCHER automatiquement le modal d'autorisation après un délai
             setTimeout(async () => {
@@ -3074,7 +3192,7 @@ window.setupFirstTimeAuth = function() {
             }, 3000); // 3 secondes après l'activation de l'app
             
         } else {
-            console.log('[SETUP] ✅ Utilisateur existant - Pas d\'autorisation automatique requise');
+            console.log('[SETUP] ✅ Utilisateur existant en navigation normale - Pas d\'autorisation automatique requise');
         }
     };
     
@@ -3106,9 +3224,10 @@ setTimeout(() => {
     window.setupFirstTimeAuth();
 }, 1000);
 
-console.log('[CategoriesPage] ✅ CategoriesPage v24.1 chargée - AUTO-TRIGGER PREMIÈRE CONNEXION !');
+console.log('[CategoriesPage] ✅ CategoriesPage v24.1 chargée - NAVIGATION PRIVÉE DÉTECTÉE !');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
 console.log('[CategoriesPage]   • 🔧 CORRIGÉ: User Gesture pour File Picker API');
+console.log('[CategoriesPage]   • 🔒 NOUVEAU: Détection automatique navigation privée');
 console.log('[CategoriesPage]   • 🎨 Modal d\'autorisation esthétique AUTO-DÉCLENCHEMENT');
 console.log('[CategoriesPage]   • 🔔 Notification discrète de configuration backup');
 console.log('[CategoriesPage]   • 🎯 Modal de création directe après autorisation');
@@ -3123,5 +3242,7 @@ console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
 console.log('[CategoriesPage]   • window.triggerAuthorizationModal() - Déclencher modal');
-console.log('[CategoriesPage]   • window.checkAuthorizationStatus() - Vérifier statut');
-console.log('[CategoriesPage] ⚡ Auto-déclenchement à la première connexion + notification discrète !');
+console.log('[CategoriesPage]   • window.checkAuthorizationStatus() - Vérifier statut (avec détection privée)');
+console.log('[CategoriesPage]   • window.forceFirstTimeMode() - Forcer mode première fois');
+console.log('[CategoriesPage]   • window.forceShowAuthModal() - Forcer modal (override)');
+console.log('[CategoriesPage] ⚡ Auto-déclenchement en navigation privée + API de debug complète !');
