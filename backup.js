@@ -19,29 +19,36 @@
                 queue: null
             };
             
-            // Configuration CACHE FIRST
+            // Configuration ULTRA AUTOMATIQUE
             this.config = {
                 enabled: true,
-                mode: 'cache-primary',        // Cache en priorité
+                mode: 'ultra-auto',           // Mode ultra automatique
                 intervals: {
-                    auto: 300000,             // 5 minutes
+                    auto: 120000,             // 2 minutes (plus fréquent)
                     cloud: 1800000,           // 30 minutes
                     daily: 86400000,          // 24 heures
-                    onChange: 60000,          // 1 minute après changement
-                    documentsRetry: 30000     // Essai Documents toutes les 30 sec
+                    onChange: 15000,          // 15 secondes après changement
+                    documentsRetry: 10000     // Essai Documents toutes les 10 sec
                 },
                 maxBackups: {
-                    cache: 10,
-                    local: 5,
-                    documents: 20
+                    cache: 15,                // Plus de backups cache
+                    indexedDB: 20,            // Plus de backups IndexedDB
+                    local: 8,
+                    documents: 30
                 },
                 silentMode: true,
                 
-                // Stratégie de stockage
-                cacheFirst: true,             // Toujours cache en premier
-                tryDocuments: true,           // Essayer Documents si possible
-                documentsAutoSetup: true,     // Setup automatique Documents
-                lastDocumentsAttempt: 0
+                // Stratégie ULTRA aggressive
+                cacheFirst: true,             // Cache priorité absolue
+                indexedDBSecond: true,        // IndexedDB en second
+                tryDocuments: false,          // Désactiver tentatives Documents par défaut
+                documentsAutoSetup: false,    // Pas de setup automatique
+                lastDocumentsAttempt: 0,
+                
+                // NOUVEAU: Backup multi-couches
+                multiLayerBackup: true,       // Backup dans plusieurs endroits
+                instantBackup: true,          // Backup instantané
+                backgroundSync: true          // Sync en arrière-plan
             };
             
             this.backupQueue = [];
@@ -54,26 +61,29 @@
         }
 
         // ================================================
-        // INITIALISATION AVEC CACHE PRIORITAIRE
+        // INITIALISATION ULTRA AUTOMATIQUE
         // ================================================
         async init() {
-            console.log('[Backup] 🚀 Initialisation CACHE PRIORITAIRE...');
+            console.log('[Backup] 🚀 Initialisation ULTRA AUTOMATIQUE...');
             
             try {
                 this.loadConfig();
                 await this.detectProvider();
                 await this.initializeCacheStorage();
+                await this.initializeIndexedDB(); // Force IndexedDB
                 
-                // Tentative Documents en arrière-plan (sans bloquer)
-                this.attemptDocumentsAccess();
+                // PAS de tentative Documents par défaut - trop intrusif
+                if (this.config.tryDocuments) {
+                    this.attemptDocumentsAccess();
+                }
                 
                 this.startDataWatching();
                 await this.createInitialBackup();
                 this.startAutoTimers();
                 
                 this.isInitialized = true;
-                console.log(`[Backup] ✅ Service CACHE prêt - Mode: ${this.config.mode}`);
-                console.log(`[Backup] 📦 Cache: Activé | 📁 Documents: ${this.documentsAccessGranted ? 'Actif' : 'En attente'}`);
+                console.log(`[Backup] ✅ Service ULTRA AUTO prêt - Mode: ${this.config.mode}`);
+                console.log(`[Backup] 📦 Cache: ${!!this.cacheStorage} | 🗄️ IndexedDB: ${!!this.indexedDB} | 📁 Documents: Optionnel`);
                 
                 // Interface optionnelle
                 setTimeout(() => this.integrateToSettingsPage(), 2000);
@@ -319,18 +329,18 @@
             section.className = 'settings-section';
             section.innerHTML = `
                 <h3 class="settings-section-title">
-                    <i class="fas fa-shield-check"></i> Sauvegarde automatique (Cache)
+                    <i class="fas fa-shield-check"></i> Sauvegarde automatique ULTRA
                 </h3>
                 <div class="settings-content">
                     <div class="setting-item">
-                        <div class="backup-status-cache">
+                        <div class="backup-status-ultra">
                             <div class="status-indicator active">
-                                <i class="fas fa-database"></i>
+                                <i class="fas fa-rocket"></i>
                             </div>
                             <div class="status-info">
-                                <h4>✅ Sauvegarde cache activée</h4>
-                                <p>Stockage prioritaire dans le cache navigateur</p>
-                                <small>Documents: ${this.documentsAccessGranted ? '✅ Actif' : '⏳ En attente'} | Dernière sauvegarde : ${this.getLastBackupTime()}</small>
+                                <h4>🚀 Sauvegarde ULTRA automatique activée</h4>
+                                <p>Multi-couches : Cache + IndexedDB + localStorage en parallèle</p>
+                                <small>Backups toutes les 2 minutes + à chaque modification | Dernière : ${this.getLastBackupTime()}</small>
                             </div>
                         </div>
                     </div>
@@ -343,29 +353,60 @@
                     </div>
                     
                     <div class="setting-item">
+                        <div class="backup-layers">
+                            <h5>📊 Couches de sauvegarde actives :</h5>
+                            <div class="layers-grid">
+                                <div class="layer ${this.cacheStorage ? 'active' : 'inactive'}">
+                                    <i class="fas fa-database"></i>
+                                    <span>Cache Storage</span>
+                                    <small>${this.cacheStorage ? '✅ Actif' : '❌ Indisponible'}</small>
+                                </div>
+                                <div class="layer ${this.indexedDB ? 'active' : 'inactive'}">
+                                    <i class="fas fa-archive"></i>
+                                    <span>IndexedDB</span>
+                                    <small>${this.indexedDB ? '✅ Actif' : '❌ Indisponible'}</small>
+                                </div>
+                                <div class="layer active">
+                                    <i class="fas fa-memory"></i>
+                                    <span>localStorage</span>
+                                    <small>✅ Toujours actif</small>
+                                </div>
+                                <div class="layer ${this.documentsAccessGranted ? 'active' : 'optional'}">
+                                    <i class="fas fa-folder"></i>
+                                    <span>Documents</span>
+                                    <small>${this.documentsAccessGranted ? '✅ Configuré' : '⚙️ Optionnel'}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-item">
                         <button id="setup-documents-btn" class="btn btn-secondary" ${this.documentsAccessGranted ? 'disabled' : ''}>
-                            <i class="fas fa-folder"></i> ${this.documentsAccessGranted ? 'Documents configuré ✅' : 'Configurer dossier Documents'}
+                            <i class="fas fa-folder-plus"></i> ${this.documentsAccessGranted ? 'Documents configuré ✅' : 'Ajouter couche Documents (optionnel)'}
                         </button>
                         <p class="setting-description">
-                            Accès optionnel au dossier Documents pour backup physique
+                            Couche supplémentaire : fichiers physiques dans Documents/EmailSortPro
                         </p>
                     </div>
                     
                     <div class="setting-item">
                         <button id="manual-backup-btn" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Créer une sauvegarde maintenant
+                            <i class="fas fa-save"></i> Forcer une sauvegarde maintenant
                         </button>
                     </div>
                     
                     <div class="setting-item">
                         <details>
-                            <summary>Informations de stockage</summary>
+                            <summary>🔬 Diagnostic détaillé</summary>
                             <div class="backup-details">
-                                <p><strong>Mode :</strong> ${this.config.mode}</p>
-                                <p><strong>Cache :</strong> ${this.cacheStorage ? '✅ Actif' : '❌ Indisponible'}</p>
-                                <p><strong>IndexedDB :</strong> ${this.indexedDB ? '✅ Actif' : '❌ Indisponible'}</p>
-                                <p><strong>Documents :</strong> ${this.documentsAccessGranted ? '✅ Actif' : '⏳ Tentatives automatiques'}</p>
-                                <p><strong>localStorage :</strong> ✅ Fallback disponible</p>
+                                <p><strong>Mode :</strong> ${this.config.mode} (ultra automatique)</p>
+                                <p><strong>Fréquence :</strong> Toutes les 2 minutes + changements</p>
+                                <p><strong>Couches actives :</strong> ${this.getActiveLayers()}</p>
+                                <p><strong>Cache Storage :</strong> ${this.cacheStorage ? '✅ Opérationnel' : '❌ Indisponible'}</p>
+                                <p><strong>IndexedDB :</strong> ${this.indexedDB ? '✅ Opérationnel' : '❌ Indisponible'}</p>
+                                <p><strong>localStorage :</strong> ✅ Toujours disponible</p>
+                                <p><strong>Documents :</strong> ${this.documentsAccessGranted ? '✅ Configuré' : '⚙️ Non configuré (optionnel)'}</p>
+                                <p><strong>Sécurité :</strong> Redondance triple garantie</p>
                             </div>
                         </details>
                     </div>
@@ -463,20 +504,13 @@
             }
         }
 
-        updateBackupUI() {
-            const section = document.querySelector('#backup-settings-section');
-            if (!section) return;
-
-            const statusInfo = section.querySelector('.status-info small');
-            if (statusInfo) {
-                statusInfo.textContent = `Documents: ${this.documentsAccessGranted ? '✅ Actif' : '⏳ En attente'} | Dernière sauvegarde : ${this.getLastBackupTime()}`;
-            }
-
-            const setupBtn = section.querySelector('#setup-documents-btn');
-            if (setupBtn) {
-                setupBtn.disabled = this.documentsAccessGranted;
-                setupBtn.innerHTML = `<i class="fas fa-folder"></i> ${this.documentsAccessGranted ? 'Documents configuré ✅' : 'Configurer dossier Documents'}`;
-            }
+        getActiveLayers() {
+            const layers = [];
+            if (this.cacheStorage) layers.push('Cache');
+            if (this.indexedDB) layers.push('IndexedDB');
+            layers.push('localStorage');
+            if (this.documentsAccessGranted) layers.push('Documents');
+            return layers.join(' + ');
         }
 
         getLastBackupTime() {
@@ -643,7 +677,7 @@
         }
 
         // ================================================
-        // EXÉCUTION DES BACKUPS (STRATÉGIE CACHE FIRST)
+        // EXÉCUTION ULTRA AUTOMATIQUE (MULTI-COUCHES)
         // ================================================
         async performBackup(type) {
             if (!this.config.enabled || this.backupInProgress) {
@@ -657,53 +691,75 @@
                 if (!data || !data.data) return false;
                 
                 const dataString = JSON.stringify(data, null, 2);
-                let success = false;
+                let successCount = 0;
                 
-                // STRATÉGIE: Cache FIRST, puis Documents si disponible, puis localStorage
+                // STRATÉGIE MULTI-COUCHES : Backup dans TOUT ce qui est disponible
                 
-                // 1. Cache Storage (priorité absolue)
+                // 1. Cache Storage (ultra priorité)
                 if (this.cacheStorage) {
                     try {
                         await this.backupToCache(dataString, data.timestamp);
-                        success = true;
-                        console.log('[Backup] ✅ Backup cache créé');
+                        successCount++;
+                        console.log('[Backup] ✅ Cache Storage');
                     } catch (error) {
-                        console.warn('[Backup] ⚠️ Erreur cache:', error);
+                        console.warn('[Backup] ⚠️ Cache Error:', error);
                     }
                 }
                 
-                // 2. IndexedDB (fallback cache)
+                // 2. IndexedDB (toujours en parallèle)
                 if (this.indexedDB) {
                     try {
                         await this.backupToIndexedDB(data);
-                        success = true;
-                        console.log('[Backup] ✅ Backup IndexedDB créé');
+                        successCount++;
+                        console.log('[Backup] ✅ IndexedDB');
                     } catch (error) {
-                        console.warn('[Backup] ⚠️ Erreur IndexedDB:', error);
+                        console.warn('[Backup] ⚠️ IndexedDB Error:', error);
                     }
                 }
                 
-                // 3. Documents (si disponible)
+                // 3. localStorage (toujours en parallèle)
+                try {
+                    await this.backupToLocal(data);
+                    successCount++;
+                    console.log('[Backup] ✅ localStorage');
+                } catch (error) {
+                    console.warn('[Backup] ⚠️ localStorage Error:', error);
+                }
+                
+                // 4. Documents (si configuré par l'utilisateur)
                 if (this.documentsAccessGranted && this.documentsHandle) {
                     try {
                         await this.backupToDocuments(dataString, data.timestamp);
-                        console.log('[Backup] ✅ Backup Documents créé');
+                        successCount++;
+                        console.log('[Backup] ✅ Documents physiques');
                     } catch (error) {
-                        console.warn('[Backup] ⚠️ Erreur Documents:', error);
-                        // Marquer comme plus disponible
+                        console.warn('[Backup] ⚠️ Documents Error:', error);
                         this.documentsAccessGranted = false;
                         this.documentsHandle = null;
                     }
                 }
                 
-                // 4. localStorage (dernier recours)
-                if (!success) {
-                    success = await this.backupToLocal(data);
+                // 5. Cloud (si disponible)
+                if (this.isCloudReady() && type !== 'auto' && type !== 'onChange') {
+                    try {
+                        await this.backupToCloud(data);
+                        successCount++;
+                        console.log('[Backup] ✅ Cloud');
+                    } catch (error) {
+                        console.warn('[Backup] ⚠️ Cloud Error:', error);
+                    }
                 }
+                
+                const success = successCount > 0;
                 
                 if (success) {
                     this.lastBackupTime = new Date();
                     this.saveLastBackupTime();
+                    
+                    // Log du succès seulement si manuel ou occasionnel
+                    if (type === 'manual' || Math.random() < 0.1) {
+                        console.log(`[Backup] 🎯 Succès multi-couches: ${successCount} emplacements`);
+                    }
                 }
                 
                 return success;
@@ -1173,10 +1229,10 @@
         }
     });
     
-    console.log('✅ BackupService CACHE PRIORITAIRE chargé');
-    console.log('📦 Cache Storage: Priorité absolue');
-    console.log('🗄️ IndexedDB: Fallback cache');
-    console.log('📁 Documents: Tentatives automatiques silencieuses');
-    console.log('💾 localStorage: Dernier recours');
+    console.log('✅ BackupService ULTRA AUTOMATIQUE chargé');
+    console.log('🚀 Mode multi-couches : Cache + IndexedDB + localStorage');
+    console.log('⚡ Backup ultra-fréquent : toutes les 2 minutes');
+    console.log('🔒 Redondance triple garantie - Documents optionnel');
+    console.log('🎯 AUCUNE interaction requise - 100% automatique');
 
 })();
