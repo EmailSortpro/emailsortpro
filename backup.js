@@ -735,6 +735,8 @@
                     console.warn('[Backup] ⚠️ Dossier local Error:', error);
                 }
                 
+                // Note: Cloud désactivé pour éviter les erreurs
+                
                 const success = successCount > 0;
                 
                 if (success) {
@@ -1062,6 +1064,14 @@
         async detectProvider() {
             this.provider = 'local';
             console.log('[Backup] Provider: local (cloud désactivé)');
+        }
+
+        isOneDriveReady() {
+            return false;
+        }
+
+        isGoogleDriveReady() {
+            return false;
         }
 
         // ================================================
