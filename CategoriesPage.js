@@ -52,7 +52,7 @@ class CategoriesPageV24 {
     }
 
     async initializeStorage() {
-        console.log('[CategoriesPage] 📁 Initialisation stockage C:// direct...');
+        console.log('[CategoriesPage] 📁 Initialisation stockage Documents...');
         
         if (!this.fileSystemSupported) {
             console.warn('[CategoriesPage] ⚠️ API non supportée - Configuration basique');
@@ -64,33 +64,29 @@ class CategoriesPageV24 {
         // Essayer de restaurer l'accès précédent
         await this.restoreDirectoryAccess();
         
-        // FORCER la création automatique du dossier
+        // Ne PAS forcer automatiquement - attendre l'interaction utilisateur
         if (!this.filesystemConfig.enabled) {
-            console.log('[CategoriesPage] 🚀 FORCE: Tentative création automatique dossier...');
-            await this.forceCreateDefaultFolder();
+            console.log('[CategoriesPage] 📂 Prêt pour configuration sur interaction utilisateur');
+            this.filesystemConfig.currentPath = 'Prêt à configurer - Cliquez "CRÉER DANS DOCUMENTS"';
         }
         
         this.initializeBackup();
     }
 
     async forceCreateDefaultFolder() {
-        console.log('[CategoriesPage] 🚀 FORCE: Création automatique du dossier EmailSortPro...');
+        console.log('[CategoriesPage] 🚀 FORCE: Création avec interaction utilisateur...');
         
         try {
-            // STRATÉGIE 1: Essayer d'accéder directement sans popup (si permissions déjà accordées)
-            const success1 = await this.tryExistingPermissions();
-            if (success1) {
-                console.log('[CategoriesPage] ✅ FORCE: Accès existant trouvé');
-                return true;
-            }
+            // IMPORTANT: Cette méthode nécessite une interaction utilisateur
+            // Elle ne peut pas être appelée automatiquement au chargement
             
-            // STRATÉGIE 2: Demander l'accès aux DOCUMENTS (le plus professionnel et fiable)
-            console.log('[CategoriesPage] 📂 FORCE: Demande accès Documents pour création dossier...');
-            this.showToast('📁 Création dans DOCUMENTS - Sélectionnez votre dossier Documents', 'info');
+            // Demander l'accès aux DOCUMENTS avec interaction utilisateur
+            console.log('[CategoriesPage] 📂 FORCE: Demande accès Documents...');
+            this.showToast('📁 CRÉATION: Sélectionnez votre dossier Documents pour créer EmailSortPro', 'info');
             
             const directoryHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
-                startIn: 'documents', // Force vers Documents
+                startIn: 'documents',
                 id: 'emailsortpro-documents-setup'
             });
             
@@ -103,10 +99,15 @@ class CategoriesPageV24 {
             if (error.name === 'AbortError') {
                 console.log('[CategoriesPage] 📂 FORCE: Sélection annulée par utilisateur');
                 this.filesystemConfig.currentPath = 'Configuration annulée - Cliquez "CRÉER DANS DOCUMENTS" pour réessayer';
+                this.showToast('📂 Configuration annulée', 'info');
             } else {
-                console.error('[CategoriesPage] ❌ FORCE: Erreur création automatique:', error);
-                this.filesystemConfig.currentPath = 'Erreur auto-configuration - Cliquez "CRÉER DANS DOCUMENTS"';
+                console.error('[CategoriesPage] ❌ FORCE: Erreur création:', error);
+                this.filesystemConfig.currentPath = 'Erreur configuration - Cliquez "CRÉER DANS DOCUMENTS"';
+                this.showToast('❌ Erreur: ' + error.message, 'error');
             }
+            
+            // Rafraîchir l'interface pour montrer le nouveau statut
+            this.refreshInterface();
             return false;
         }
     }
@@ -715,11 +716,12 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 <div class="status-card ${isConfigured ? 'configured' : 'not-configured'}">
                     <div class="status-header">
                         <div class="status-icon">
-                            <i class="fas fa-${isConfigured ? 'check-circle' : 'cog'}"></i>
+                            <i class="fas fa-${isConfigured ? 'check-circle' : 'play-circle'}"></i>
                         </div>
                         <div class="status-info">
-                            <h3>${isConfigured ? 'Sauvegarde Configurée' : 'Configuration Requise'}</h3>
+                            <h3>${isConfigured ? 'Sauvegarde Configurée' : 'Prêt à Configurer'}</h3>
                             <p class="path"><i class="fas fa-folder"></i> ${currentPath}</p>
+                            ${!isConfigured ? '<p class="setup-hint">Cliquez sur le bouton ci-dessous pour créer votre dossier EmailSortPro</p>' : ''}
                         </div>
                     </div>
                     
@@ -729,7 +731,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
                         </button>
                         
                         ${this.fileSystemSupported ? `
-                            <button class="btn-action ${isConfigured ? 'secondary' : 'warning'}" 
+                            <button class="btn-action ${isConfigured ? 'secondary' : 'warning pulsing'}" 
                                     onclick="window.categoriesPageV24.configureDirectAccess()">
                                 <i class="fas fa-folder"></i> 
                                 ${isConfigured ? 'Reconfigurer' : 'CRÉER DANS DOCUMENTS'}
@@ -784,17 +786,25 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 ` : `
                     <!-- Guide -->
                     <div class="guide-card">
-                        <h4><i class="fas fa-lightbulb"></i> Création Automatique dans Documents</h4>
+                        <h4><i class="fas fa-lightbulb"></i> Configuration en 1 Clic dans Documents</h4>
                         <div class="auto-setup-info">
                             <div class="setup-highlight">
-                                📁 <strong>MEILLEUR CHOIX:</strong> Création automatique dans vos Documents !
+                                📁 <strong>SIMPLE:</strong> Création automatique dans vos Documents en 1 clic !
                             </div>
-                            <ol>
-                                <li>Cliquez sur <strong>"CRÉER DANS DOCUMENTS"</strong></li>
-                                <li>Sélectionnez votre dossier <strong>Documents</strong></li>
-                                <li>Le système créera automatiquement <strong>EmailSortPro/Categories/</strong></li>
-                                <li>Dossier accessible via "Mes Documents" !</li>
-                            </ol>
+                            <div class="setup-steps">
+                                <div class="step-item">
+                                    <div class="step-number">1</div>
+                                    <div class="step-text">Cliquez sur <strong>"CRÉER DANS DOCUMENTS"</strong></div>
+                                </div>
+                                <div class="step-item">
+                                    <div class="step-number">2</div>
+                                    <div class="step-text">Sélectionnez votre dossier <strong>Documents</strong></div>
+                                </div>
+                                <div class="step-item">
+                                    <div class="step-number">3</div>
+                                    <div class="step-text">✅ <strong>Terminé !</strong> Structure créée automatiquement</div>
+                                </div>
+                            </div>
                             <div class="setup-benefits">
                                 <h5>✅ Pourquoi Documents ?</h5>
                                 <ul>
@@ -811,7 +821,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
                         </div>
                         <p class="note">
                             <i class="fas fa-shield-alt"></i>
-                            Documents est l'emplacement le plus professionnel et sûr - Idéal pour les données importantes !
+                            Documents est l'emplacement le plus professionnel et sûr - Configuration en 1 clic !
                         </p>
                     </div>
                 `}
@@ -1995,10 +2005,58 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 color: #374151;
             }
 
-            .path-example code {
-                background: none;
-                color: #1f2937;
+            .setup-hint {
+                font-size: 13px;
+                color: #6b7280;
+                margin: 4px 0 0 0;
+                font-style: italic;
+            }
+
+            .btn-action.pulsing {
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+                70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+            }
+
+            .setup-steps {
+                margin: 16px 0;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .step-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 8px 12px;
+                background: #f8fafc;
+                border-radius: 6px;
+                border-left: 3px solid #3B82F6;
+            }
+
+            .step-number {
+                background: #3B82F6;
+                color: white;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
                 font-weight: 600;
+                flex-shrink: 0;
+            }
+
+            .step-text {
+                font-size: 13px;
+                color: #374151;
+                line-height: 1.4;
             }
 
             .error {
@@ -2117,12 +2175,18 @@ window.forceConfigureBackup = async function() {
     }
 };
 
-// API pour forcer la création automatique au démarrage
+// API pour forcer la création automatique au démarrage (AVEC interaction utilisateur)
 window.forceAutoSetup = async function() {
-    console.log('[API] 🚀 FORCE: Auto-setup immédiat...');
+    console.log('[API] 🚀 FORCE: Auto-setup avec interaction utilisateur...');
     
     try {
         const instance = window.categoriesPageV24;
+        
+        // Vérifier que c'est bien une interaction utilisateur
+        if (!instance.fileSystemSupported) {
+            return { success: false, error: 'File System API not supported' };
+        }
+        
         const success = await instance.forceCreateDefaultFolder();
         
         if (success) {
@@ -2138,11 +2202,11 @@ window.forceAutoSetup = async function() {
     }
 };
 
-console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - Stockage C:// Direct Simplifié!');
+console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - Stockage Documents Direct!');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
 console.log('[CategoriesPage]   • Interface épurée et rapide');
-console.log('[CategoriesPage]   • FORCE: Création automatique du dossier EmailSortPro');
-console.log('[CategoriesPage]   • Configuration directe C:// (évite AppData)');
+console.log('[CategoriesPage]   • Configuration Documents en 1 clic (interaction utilisateur)');
+console.log('[CategoriesPage]   • Création automatique structure complète');
 console.log('[CategoriesPage]   • Sauvegarde automatique toutes les 30s');
 console.log('[CategoriesPage]   • Backup invisible en parallèle (localStorage)');
 console.log('[CategoriesPage]   • API de test et diagnostic');
@@ -2150,5 +2214,5 @@ console.log('[CategoriesPage] 📁 API disponible:');
 console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
-console.log('[CategoriesPage]   • window.forceAutoSetup() - Auto-setup forcé');
-console.log('[CategoriesPage] 🚀 Prêt pour création forcée du dossier C:// !');
+console.log('[CategoriesPage]   • window.forceAutoSetup() - Setup avec interaction');
+console.log('[CategoriesPage] 🚀 Prêt pour configuration Documents en 1 clic !');
