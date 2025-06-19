@@ -83,8 +83,227 @@ class SmartBackupService {
     }
 
     // ================================================
-    // DÉTECTION AUTOMATIQUE INTELLIGENTE
+    // SETUP INITIAL FORCÉ
     // ================================================
+    async forceInitialSetup() {
+        console.log('[SmartBackup] 🚀 Forçage du setup initial...');
+        
+        try {
+            // Vérifier si c'est le premier lancement
+            const isFirstRun = !localStorage.getItem('emailsortpro_smart_backup_initialized');
+            
+            if (isFirstRun || this.config.activeStorage === 'documents') {
+                await this.forceDocumentsSetup();
+            }
+            
+            // Créer le premier backup immédiatement
+            await this.createInitialBackup();
+            
+            // Marquer comme initialisé
+            localStorage.setItem('emailsortpro_smart_backup_initialized', 'true');
+            localStorage.setItem('emailsortpro_smart_setup_date', new Date().toISOString());
+            
+            console.log('[SmartBackup] ✅ Setup initial terminé avec succès');
+            
+        } catch (error) {
+            console.warn('[SmartBackup] ⚠️ Erreur setup initial, fallback vers localStorage:', error);
+            this.config.activeStorage = 'localStorage';
+            await this.createInitialBackup();
+        }
+    }
+
+    async forceDocumentsSetup() {
+        console.log('[SmartBackup] 📁 Forçage création dossier Documents/EmailSortPro...');
+        
+        try {
+            if (!window.showDirectoryPicker) {
+                console.log('[SmartBackup] ⚠️ File System Access API non supportée, utilisation downloads');
+                this.config.activeStorage = 'downloads';
+                return;
+            }
+            
+            // Demander l'accès automatiquement au premier lancement
+            const shouldPrompt = !localStorage.getItem('emailsortpro_documents_access_requested');
+            
+            if (shouldPrompt) {
+                console.log('[SmartBackup] 📂 Demande d\'accès au dossier Documents...');
+                
+                // Afficher une notification à l'utilisateur
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        '📁 Configuration du dossier de sauvegarde...',
+                        'info',
+                        5000
+                    );
+                }
+                
+                // Attendre un peu pour que l'utilisateur voit la notification
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                try {
+                    await this.requestDocumentsAccess();
+                    localStorage.setItem('emailsortpro_documents_access_requested', 'true');
+                    localStorage.setItem('emailsortpro_documents_access_granted', 'true');
+                    
+                    if (window.uiManager) {
+                        window.uiManager.showToast(
+                            '✅ Dossier Documents/EmailSortPro configuré !',
+                            'success'
+                        );
+                    }
+                    
+                } catch (accessError) {
+                    console.log('[SmartBackup] ⚠️ Accès Documents refusé, utilisation téléchargements');
+                    localStorage.setItem('emailsortpro_documents_access_requested', 'true');
+                    localStorage.setItem('emailsortpro_documents_access_granted', 'false');
+                    
+                    this.config.activeStorage = 'downloads';
+                    
+                    if (window.uiManager) {
+                        window.uiManager.showToast(
+                            '📥 Utilisation du dossier Téléchargements pour les sauvegardes',
+                            'info'
+                        );
+                    }
+                }
+            } else {
+                // L'accès a déjà été demandé, vérifier s'il était accordé
+                const accessGranted = localStorage.getItem('emailsortpro_documents_access_granted') === 'true';
+                
+                if (accessGranted) {
+                    try {
+                        // Essayer de réutiliser l'accès précédent
+                        await this.requestDocumentsAccess();
+                    } catch (error) {
+                        console.log('[SmartBackup] ⚠️ Accès Documents perdu, demande de renouvellement...');
+                        
+                        if (window.uiManager) {
+                            window.uiManager.showToast(
+                                '🔄 Renouvellement de l\'accès aux Documents...',
+                                'info'
+                            );
+                        }
+                        
+                        await this.requestDocumentsAccess();
+                    }
+                } else {
+                    // L'utilisateur avait refusé, utiliser téléchargements
+                    this.config.activeStorage = 'downloads';
+                }
+            }
+            
+        } catch (error) {
+            console.error('[SmartBackup] Erreur setup Documents:', error);
+            this.config.activeStorage = 'downloads';
+        }
+    }
+
+    async createInitialBackup() {
+        console.log('[SmartBackup] 💾 Création du backup initial...');
+        
+        try {
+            const success = await this.performBackup('initial');
+            
+            if (success) {
+                console.log('[SmartBackup] ✅ Backup initial créé avec succès');
+                
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        `✅ Premier backup créé dans ${this.getStorageDisplayName()}`,
+                        'success',
+                        4000
+                    );
+                }
+                
+                // Programmer le prochain backup quotidien
+                this.scheduleNextDailyBackup();
+                
+            } else {
+                throw new Error('Échec création backup initial');
+            }
+            
+        } catch (error) {
+            console.error('[SmartBackup] ❌ Erreur backup initial:', error);
+            
+            // Fallback vers localStorage en cas d'échec
+            this.config.activeStorage = 'localStorage';
+            
+            try {
+                await this.performBackup('initial-fallback');
+                
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        '⚠️ Backup initial créé dans le navigateur (fallback)',
+                        'warning'
+                    );
+                }
+                
+            } catch (fallbackError) {
+                console.error('[SmartBackup] ❌ Échec backup fallback:', fallbackError);
+                
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        '❌ Erreur création backup initial',
+                        'error'
+                    );
+                }
+            }
+        }
+    }
+
+    scheduleNextDailyBackup() {
+        console.log('[SmartBackup] 📅 Programmation du backup quotidien...');
+        
+        // Programmer le prochain backup pour demain à la même heure
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        const timeUntilTomorrow = tomorrow.getTime() - now.getTime();
+        
+        // Programmer le premier backup quotidien
+        setTimeout(() => {
+            this.performDailyBackup();
+            
+            // Puis démarrer l'intervalle quotidien
+            this.dailyBackupTimer = setInterval(() => {
+                this.performDailyBackup();
+            }, 24 * 60 * 60 * 1000); // 24 heures
+            
+        }, timeUntilTomorrow);
+        
+        const nextBackupTime = tomorrow.toLocaleString('fr-FR');
+        console.log('[SmartBackup] ⏰ Prochain backup quotidien:', nextBackupTime);
+        
+        // Sauvegarder l'heure du prochain backup
+        localStorage.setItem('emailsortpro_next_daily_backup', tomorrow.toISOString());
+    }
+
+    async performDailyBackup() {
+        console.log('[SmartBackup] 📅 Exécution du backup quotidien automatique...');
+        
+        try {
+            const success = await this.performBackup('daily-auto');
+            
+            if (success) {
+                console.log('[SmartBackup] ✅ Backup quotidien réussi');
+                
+                // Notification discrète (pas de toast pour ne pas déranger)
+                console.log(`[SmartBackup] 📦 Données sauvegardées dans ${this.getStorageDisplayName()}`);
+                
+            } else {
+                console.warn('[SmartBackup] ⚠️ Échec backup quotidien');
+            }
+            
+        } catch (error) {
+            console.error('[SmartBackup] ❌ Erreur backup quotidien:', error);
+        }
+        
+        // Programmer le prochain backup
+        const nextBackup = new Date();
+        nextBackup.setDate(nextBackup.getDate() + 1);
+        localStorage.setItem('emailsortpro_next_daily_backup', nextBackup.toISOString());
+    }
     async initializeSmartDetection() {
         console.log('[SmartBackup] 🔍 Démarrage de la détection automatique...');
         
@@ -97,6 +316,9 @@ class SmartBackupService {
         // Configurer le stockage optimal
         await this.configureOptimalStorage();
         
+        // NOUVEAU: Forcer la création du dossier et premier backup
+        await this.forceInitialSetup();
+        
         this.isInitialized = true;
         
         // Démarrer la surveillance continue
@@ -106,7 +328,7 @@ class SmartBackupService {
             this.startAutoBackup();
         }
         
-        console.log('[SmartBackup] ✅ Détection automatique terminée');
+        console.log('[SmartBackup] ✅ Détection automatique terminée avec setup initial');
     }
 
     async detectAuthProvider() {
@@ -515,25 +737,72 @@ class SmartBackupService {
 
     async requestDocumentsAccess() {
         try {
-            // Demander l'accès au dossier parent (Documents)
+            console.log('[SmartBackup] 📂 Demande d\'accès au dossier Documents...');
+            
+            // Demander l'accès au dossier Documents avec message personnalisé
             const parentHandle = await window.showDirectoryPicker({
                 mode: 'readwrite',
                 startIn: 'documents',
-                id: 'emailsortpro-documents'
+                id: 'emailsortpro-documents-v3'
             });
             
+            console.log('[SmartBackup] ✅ Accès Documents accordé:', parentHandle.name);
+            
             // Créer ou accéder au dossier EmailSortPro
-            this.documentsHandle = await parentHandle.getDirectoryHandle('EmailSortPro', {
+            try {
+                this.documentsHandle = await parentHandle.getDirectoryHandle('EmailSortPro', {
+                    create: true
+                });
+                
+                console.log('[SmartBackup] ✅ Dossier EmailSortPro créé/trouvé dans Documents');
+                
+                // Tester l'accès en écriture
+                await this.testWriteAccess(this.documentsHandle);
+                
+                console.log('[SmartBackup] ✅ Accès en écriture confirmé');
+                
+            } catch (folderError) {
+                console.error('[SmartBackup] ❌ Erreur création dossier EmailSortPro:', folderError);
+                throw new Error('Impossible de créer le dossier EmailSortPro');
+            }
+            
+        } catch (error) {
+            console.error('[SmartBackup] ❌ Erreur accès Documents:', error);
+            
+            if (error.name === 'AbortError') {
+                throw new Error('Accès aux Documents annulé par l\'utilisateur');
+            } else if (error.name === 'NotAllowedError') {
+                throw new Error('Accès aux Documents refusé');
+            } else {
+                throw new Error(`Erreur accès Documents: ${error.message}`);
+            }
+        }
+    }
+
+    async testWriteAccess(directoryHandle) {
+        const testFileName = '.emailsortpro-test-' + Date.now();
+        
+        try {
+            // Créer un fichier de test
+            const testFileHandle = await directoryHandle.getFileHandle(testFileName, {
                 create: true
             });
             
-            console.log('[SmartBackup] ✅ Accès Documents configuré');
+            // Écrire du contenu de test
+            const writable = await testFileHandle.createWritable();
+            await writable.write('Test accès écriture EmailSortPro - ' + new Date().toISOString());
+            await writable.close();
+            
+            console.log('[SmartBackup] ✅ Test écriture réussi');
+            
+            // Nettoyer le fichier de test
+            await directoryHandle.removeEntry(testFileName);
+            
+            return true;
             
         } catch (error) {
-            if (error.name === 'AbortError') {
-                throw new Error('Accès aux Documents annulé par l\'utilisateur');
-            }
-            throw error;
+            console.error('[SmartBackup] ❌ Test écriture échoué:', error);
+            throw new Error('Impossible d\'écrire dans ce dossier');
         }
     }
 
@@ -948,6 +1217,11 @@ class SmartBackupService {
             clearInterval(this.detectionTimer);
             this.detectionTimer = null;
         }
+        
+        if (this.dailyBackupTimer) {
+            clearInterval(this.dailyBackupTimer);
+            this.dailyBackupTimer = null;
+        }
     }
 
     // ================================================
@@ -964,6 +1238,8 @@ class SmartBackupService {
     }
 
     getStatus() {
+        const nextDailyBackup = localStorage.getItem('emailsortpro_next_daily_backup');
+        
         return {
             enabled: this.config.enabled,
             autoBackup: this.config.autoBackup,
@@ -973,8 +1249,11 @@ class SmartBackupService {
             isInitialized: this.isInitialized,
             backupInProgress: this.backupInProgress,
             lastBackup: this.formatLastBackupTime(),
+            nextDailyBackup: nextDailyBackup ? new Date(nextDailyBackup).toLocaleString('fr-FR') : 'Non programmé',
             smartFolders: this.config.smartFolders,
-            emergencyMode: this.config.emergencyMode
+            emergencyMode: this.config.emergencyMode,
+            documentsAccessGranted: localStorage.getItem('emailsortpro_documents_access_granted') === 'true',
+            setupCompleted: localStorage.getItem('emailsortpro_smart_backup_initialized') === 'true'
         };
     }
 
@@ -1000,18 +1279,41 @@ class SmartBackupService {
         await this.initializeSmartDetection();
     }
 
-    // Changer manuellement le stockage préféré
-    async setPreferredStorage(storageType) {
-        this.config.preferredStorage = storageType;
-        await this.configureOptimalStorage();
-        this.saveConfig();
+    // Forcer un nouveau setup (pour debug)
+    async forceSetup() {
+        console.log('[SmartBackup] 🔧 Forçage nouveau setup...');
+        
+        // Réinitialiser les flags
+        localStorage.removeItem('emailsortpro_smart_backup_initialized');
+        localStorage.removeItem('emailsortpro_documents_access_requested');
+        localStorage.removeItem('emailsortpro_documents_access_granted');
+        
+        // Relancer le setup
+        await this.forceInitialSetup();
         
         if (window.uiManager) {
             window.uiManager.showToast(
-                `📁 Stockage changé vers ${this.getStorageDisplayName()}`, 
+                '🔧 Setup forcé terminé',
                 'success'
             );
         }
+    }
+
+    // Informations détaillées pour debug
+    getDetailedStatus() {
+        return {
+            ...this.getStatus(),
+            config: this.config,
+            localStorage: {
+                initialized: localStorage.getItem('emailsortpro_smart_backup_initialized'),
+                documentsRequested: localStorage.getItem('emailsortpro_documents_access_requested'),
+                documentsGranted: localStorage.getItem('emailsortpro_documents_access_granted'),
+                setupDate: localStorage.getItem('emailsortpro_smart_setup_date'),
+                nextDailyBackup: localStorage.getItem('emailsortpro_next_daily_backup')
+            },
+            hasDocumentsHandle: !!this.documentsHandle,
+            supportsFileSystemAccess: !!window.showDirectoryPicker
+        };
     }
 }
 
@@ -1033,6 +1335,21 @@ window.getBackupStatus = () => window.smartBackupService?.getStatus() || { avail
 // Interface pour changer le stockage
 window.setBackupStorage = (storageType) => window.smartBackupService?.setPreferredStorage(storageType);
 window.reconfigureBackup = () => window.smartBackupService?.reconfigure();
+
+// NOUVELLES fonctions pour setup forcé
+window.forceBackupSetup = () => window.smartBackupService?.forceSetup();
+window.getDetailedBackupStatus = () => window.smartBackupService?.getDetailedStatus();
+
+// Fonction de test rapide
+window.testBackupNow = async () => {
+    if (window.smartBackupService) {
+        console.log('🧪 Test backup immédiat...');
+        const success = await window.smartBackupService.backup();
+        console.log(success ? '✅ Test réussi' : '❌ Test échoué');
+        return success;
+    }
+    return false;
+};
 
 // Événements d'authentification pour auto-reconfiguration
 const originalAuthSuccess = window.onAuthSuccess;
