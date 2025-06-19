@@ -1,5 +1,5 @@
-// CategoriesPage.js - Version v24.0 - Stockage C:// Direct Simplifié
-console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v24.0 - Direct C:// Storage...');
+// CategoriesPage.js - Version v24.1 - Correction User Gesture pour File Picker
+console.log('[CategoriesPage] 🚀 Loading CategoriesPage.js v24.1 - User Gesture Fixed...');
 
 // Nettoyer toute instance précédente
 if (window.categoriesPage) {
@@ -13,13 +13,13 @@ class CategoriesPageV24 {
         this.currentModal = null;
         this.searchTerm = '';
         this.activeTab = 'categories';
-        this.creationInProgress = false; // Flag pour éviter les boucles
+        this.creationInProgress = false;
         this.colors = [
             '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
             '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
         ];
         
-        // Configuration filesystem simplifiée - DIRECTEMENT vers Documents
+        // Configuration filesystem simplifiée
         this.filesystemConfig = {
             enabled: false,
             defaultPath: 'C:\\Users\\[Utilisateur]\\Documents\\EmailSortPro\\Categories\\',
@@ -40,7 +40,7 @@ class CategoriesPageV24 {
         this.pendingChanges = false;
         this.fileSystemSupported = this.checkFileSystemSupport();
         
-        console.log('[CategoriesPage] 🎯 Interface v24.0 - Stockage C:// direct');
+        console.log('[CategoriesPage] 🎯 Interface v24.1 - User Gesture Fixed');
         
         this.initializeStorage();
     }
@@ -72,7 +72,7 @@ class CategoriesPageV24 {
             console.log('[CategoriesPage] 🎯 Première utilisation - Préparation autorisation...');
             this.filesystemConfig.currentPath = 'Autorisation requise pour création automatique';
         } else if (!this.filesystemConfig.enabled && authorizationGranted) {
-            console.log('[CategoriesPage] ✅ Autorisation précédente trouvée - Configuration direct');
+            console.log('[CategoriesPage] ✅ Autorisation précédente trouvée - Configuration disponible');
             this.filesystemConfig.currentPath = 'Prêt pour création automatique';
         }
         
@@ -85,8 +85,8 @@ class CategoriesPageV24 {
         // Vérifier si l'autorisation a déjà été donnée
         const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
         if (authorizationGranted) {
-            console.log('[CategoriesPage] ✅ Autorisation déjà accordée');
-            await this.forceCreateImmediately();
+            console.log('[CategoriesPage] ✅ Autorisation déjà accordée - Affichage configuration directe');
+            this.showDirectCreationModal();
             return;
         }
         
@@ -190,14 +190,140 @@ class CategoriesPageV24 {
             }
             
             // Message de confirmation
-            this.showToast('✅ Autorisation accordée - Création en cours...', 'success');
+            this.showToast('✅ Autorisation accordée - Cliquez pour créer maintenant !', 'success');
             
-            // Créer immédiatement le dossier
-            await this.forceCreateImmediately();
+            // Afficher le modal de création directe
+            setTimeout(() => {
+                this.showDirectCreationModal();
+            }, 500);
             
         } catch (error) {
             console.error('[CategoriesPage] ❌ Erreur après autorisation:', error);
-            this.showToast('❌ Erreur lors de la création: ' + error.message, 'error');
+            this.showToast('❌ Erreur lors de la configuration: ' + error.message, 'error');
+        }
+    }
+
+    showDirectCreationModal() {
+        console.log('[CategoriesPage] 🚀 Affichage modal création directe...');
+        
+        const modal = document.createElement('div');
+        modal.className = 'creation-modal-overlay';
+        modal.innerHTML = `
+            <div class="creation-modal">
+                <div class="creation-header">
+                    <div class="creation-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h2>Création Automatique Prête</h2>
+                    <p class="creation-subtitle">EmailSortPro va créer son dossier de sauvegarde</p>
+                </div>
+                
+                <div class="creation-body">
+                    <div class="creation-info">
+                        <div class="info-highlight">
+                            ✨ <strong>PRÊT :</strong> Le système va créer automatiquement :<br>
+                            <code>Documents\\EmailSortPro\\Categories\\</code>
+                        </div>
+                        
+                        <div class="creation-steps">
+                            <div class="step-preview">
+                                <i class="fas fa-folder-plus"></i>
+                                <span>Sélection automatique du dossier Documents</span>
+                            </div>
+                            <div class="step-preview">
+                                <i class="fas fa-cogs"></i>
+                                <span>Création de la structure EmailSortPro</span>
+                            </div>
+                            <div class="step-preview">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Configuration automatique terminée</span>
+                            </div>
+                        </div>
+                        
+                        <div class="important-note">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Important :</strong> Votre navigateur va vous demander d'autoriser l'accès au dossier Documents. Cliquez sur "Autoriser" pour finaliser la configuration.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="creation-actions">
+                    <button class="creation-btn secondary" onclick="window.categoriesPageV24.closeCreationModal()">
+                        <i class="fas fa-clock"></i>
+                        Plus tard
+                    </button>
+                    <button class="creation-btn primary magic-btn" onclick="window.categoriesPageV24.executeDirectCreation()">
+                        <i class="fas fa-magic"></i>
+                        CRÉER AUTOMATIQUEMENT
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        this.currentModal = modal;
+        
+        // Animation d'apparition
+        setTimeout(() => {
+            modal.classList.add('visible');
+        }, 50);
+    }
+
+    closeCreationModal() {
+        if (this.currentModal) {
+            this.currentModal.classList.add('closing');
+            setTimeout(() => {
+                this.currentModal.remove();
+                this.currentModal = null;
+            }, 300);
+        }
+        
+        this.showToast('📁 Création disponible dans les Paramètres', 'info');
+        this.refreshInterface();
+    }
+
+    async executeDirectCreation() {
+        console.log('[CategoriesPage] 🚀 EXÉCUTION: Création directe avec User Gesture...');
+        
+        try {
+            // Fermer le modal immédiatement
+            if (this.currentModal) {
+                this.currentModal.classList.add('closing');
+                setTimeout(() => {
+                    this.currentModal.remove();
+                    this.currentModal = null;
+                }, 300);
+            }
+            
+            // Message informatif
+            this.showToast('📁 Sélectionnez le dossier Documents pour la création...', 'info');
+            
+            // APPEL DIRECT avec User Gesture actif
+            const directoryHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents',
+                id: 'emailsortpro-direct-creation'
+            });
+            
+            // Création immédiate
+            await this.createCompleteStructure(directoryHandle);
+            
+            this.showToast('✅ EmailSortPro créé avec succès dans Documents!', 'success');
+            this.refreshInterface();
+            
+            return true;
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('[CategoriesPage] 📂 Création annulée par l\'utilisateur');
+                this.showToast('📁 Création annulée - Disponible dans Paramètres', 'info');
+            } else {
+                console.error('[CategoriesPage] ❌ Erreur création directe:', error);
+                this.showToast('❌ Erreur: ' + error.message, 'error');
+            }
+            
+            this.refreshInterface();
+            return false;
         }
     }
 
@@ -221,58 +347,49 @@ class CategoriesPageV24 {
         this.refreshInterface();
     }
 
-    async forceCreateImmediately() {
-        console.log('[CategoriesPage] 🚀 FORCE: Création IMMÉDIATE sans questions...');
-        
+    async restoreDirectoryAccess() {
         try {
-            // Message très court et direct
-            this.showToast('📁 Création automatique EmailSortPro...', 'info');
-            
-            const directoryHandle = await window.showDirectoryPicker({
-                mode: 'readwrite',
-                startIn: 'documents',
-                id: 'emailsortpro-auto-immediate'
-            });
-            
-            // Création immédiate et silencieuse
-            await this.createCompleteStructure(directoryHandle);
-            
-            this.showToast('✅ EmailSortPro créé dans Documents!', 'success');
-            
-            return true;
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('[CategoriesPage] 📂 Création reportée');
-                this.showToast('📁 Création reportée - Disponible dans Paramètres', 'info');
-            } else {
-                console.error('[CategoriesPage] ❌ Erreur création immédiate:', error);
-                this.showToast('❌ Erreur: ' + error.message, 'error');
+            const savedConfig = localStorage.getItem('emailsortpro_filesystem_v24');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                this.filesystemConfig.currentPath = config.currentPath;
+                this.filesystemConfig.enabled = config.enabled;
+                this.filesystemConfig.permissions = config.permissions;
+                console.log('[CategoriesPage] 📂 Configuration restaurée:', config.currentPath);
+                
+                // Si configuré mais pas de handle, marquer pour re-configuration
+                if (config.enabled && !this.filesystemConfig.directoryHandle) {
+                    console.log('[CategoriesPage] 🔄 Handle perdu - Re-configuration nécessaire');
+                    this.filesystemConfig.enabled = false;
+                }
             }
-            
-            // Mettre à jour l'interface
-            this.refreshInterface();
-            return false;
+        } catch (error) {
+            console.log('[CategoriesPage] ℹ️ Aucune configuration précédente');
         }
     }
 
-    async tryExistingPermissions() {
-        try {
-            // Vérifier si on a déjà des permissions stockées
-            const existingPermissions = localStorage.getItem('emailsortpro_directory_permission');
-            if (!existingPermissions) return false;
-            
-            // Cette méthode ne fonctionne pas directement car les handles ne peuvent pas être sérialisés
-            // Mais on peut essayer d'autres approches silencieuses
+    async configureDirectAccess() {
+        if (!this.fileSystemSupported) {
+            this.showToast('❌ Votre navigateur ne supporte pas l\'accès aux fichiers', 'error');
             return false;
-            
-        } catch (error) {
+        }
+
+        // Vérifier si l'autorisation a déjà été donnée
+        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+        
+        if (!authorizationGranted) {
+            // Première fois - Afficher le modal d'autorisation esthétique
+            await this.showAuthorizationModal();
             return false;
+        } else {
+            // Autorisation déjà accordée - Afficher le modal de création directe
+            this.showDirectCreationModal();
+            return false; // On ne crée pas immédiatement, on attend le clic utilisateur
         }
     }
 
     async createCompleteStructure(baseDirectoryHandle) {
-        console.log('[CategoriesPage] 🔧 FORCE: Création structure complète...');
+        console.log('[CategoriesPage] 🔧 Création structure complète...');
         
         try {
             // Étape 1: Créer EmailSortPro dans le dossier sélectionné
@@ -312,15 +429,13 @@ class CategoriesPageV24 {
             await this.createSetupInfoFile();
             
             // Étape 7: Créer un backup initial
-            await this.createBackup('auto-setup');
+            await this.createBackup('setup-complete');
             
-            this.showToast(`✅ Dossier EmailSortPro créé automatiquement dans: ${baseDirectoryHandle.name}`, 'success');
-            
-            console.log('[CategoriesPage] 🎉 FORCE: Structure complète créée avec succès');
+            console.log('[CategoriesPage] 🎉 Structure complète créée avec succès');
             return true;
             
         } catch (error) {
-            console.error('[CategoriesPage] ❌ FORCE: Erreur création structure:', error);
+            console.error('[CategoriesPage] ❌ Erreur création structure:', error);
             throw error;
         }
     }
@@ -373,8 +488,8 @@ ${this.filesystemConfig.currentPath}
 
 ## ⚙️ PARAMÈTRES
 - Configuration: ${new Date().toLocaleString('fr-FR')}
-- Version: EmailSortPro v24.0
-- Type: Configuration automatique forcée
+- Version: EmailSortPro v24.1
+- Type: Configuration automatique avec User Gesture
 - Statut: ✅ OPÉRATIONNEL
 
 Félicitations ! Votre système de sauvegarde est maintenant actif.
@@ -388,66 +503,6 @@ Félicitations ! Votre système de sauvegarde est maintenant actif.
             console.log('[CategoriesPage] ✅ Fichier info configuration créé');
         } catch (error) {
             console.warn('[CategoriesPage] ⚠️ Impossible de créer fichier info:', error);
-        }
-    }
-
-    async restoreDirectoryAccess() {
-        try {
-            const savedConfig = localStorage.getItem('emailsortpro_filesystem_v24');
-            if (savedConfig) {
-                const config = JSON.parse(savedConfig);
-                this.filesystemConfig.currentPath = config.currentPath;
-                this.filesystemConfig.enabled = config.enabled;
-                this.filesystemConfig.permissions = config.permissions;
-                console.log('[CategoriesPage] 📂 Configuration restaurée:', config.currentPath);
-                
-                // Si configuré mais pas de handle, marquer pour re-configuration
-                if (config.enabled && !this.filesystemConfig.directoryHandle) {
-                    console.log('[CategoriesPage] 🔄 Handle perdu - Re-configuration nécessaire');
-                    this.filesystemConfig.enabled = false;
-                }
-            }
-        } catch (error) {
-            console.log('[CategoriesPage] ℹ️ Aucune configuration précédente');
-        }
-    }
-
-    async configureDirectAccess() {
-        if (!this.fileSystemSupported) {
-            this.showToast('❌ Votre navigateur ne supporte pas l\'accès aux fichiers', 'error');
-            return false;
-        }
-
-        // Vérifier si l'autorisation a déjà été donnée
-        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
-        
-        if (!authorizationGranted) {
-            // Première fois - Afficher le modal d'autorisation esthétique
-            await this.showAuthorizationModal();
-            return false;
-        } else {
-            // Autorisation déjà accordée - Créer directement
-            try {
-                await this.forceCreateImmediately();
-                this.refreshInterface();
-                return true;
-            } catch (error) {
-                console.error('[CategoriesPage] ❌ Erreur configuration directe:', error);
-                return false;
-            }
-        }
-    }
-
-    estimateFullPath(directoryHandle) {
-        const folderName = directoryHandle.name || 'DossierSelectionne';
-        
-        // Estimation intelligente du chemin
-        if (folderName.toLowerCase().includes('desktop')) {
-            return `C:\\Users\\[Utilisateur]\\Desktop\\${folderName}\\`;
-        } else if (folderName.toLowerCase().includes('documents')) {
-            return `C:\\Users\\[Utilisateur]\\Documents\\${folderName}\\`;
-        } else {
-            return `C:\\${folderName}\\`;
         }
     }
 
@@ -508,7 +563,7 @@ ${this.filesystemConfig.currentPath}
 - Paramètres et statistiques
 
 ---
-Généré par EmailSortPro v24.0
+Généré par EmailSortPro v24.1
 Date: ${new Date().toLocaleString('fr-FR')}
 `;
 
@@ -688,7 +743,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
 
     collectData(type) {
         const data = {
-            version: '24.0-categories-direct',
+            version: '24.1-categories-user-gesture-fixed',
             timestamp: new Date().toISOString(),
             type: type,
             filesystem: {
@@ -845,19 +900,21 @@ Date: ${new Date().toLocaleString('fr-FR')}
     renderBackupTab() {
         const isConfigured = this.filesystemConfig.enabled;
         const currentPath = this.filesystemConfig.currentPath || 'Non configuré';
+        const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
         
         return `
             <div class="backup-content">
                 <!-- Status -->
-                <div class="status-card ${isConfigured ? 'configured' : 'auto-ready'}">
+                <div class="status-card ${isConfigured ? 'configured' : (authorizationGranted ? 'ready-to-create' : 'auto-ready')}">
                     <div class="status-header">
                         <div class="status-icon">
-                            <i class="fas fa-${isConfigured ? 'check-circle' : 'magic'}"></i>
+                            <i class="fas fa-${isConfigured ? 'check-circle' : (authorizationGranted ? 'play-circle' : 'magic')}"></i>
                         </div>
                         <div class="status-info">
-                            <h3>${isConfigured ? 'Sauvegarde Configurée' : 'Auto-Création Prête'}</h3>
+                            <h3>${isConfigured ? 'Sauvegarde Configurée' : (authorizationGranted ? 'Prêt à Créer' : 'Auto-Création Disponible')}</h3>
                             <p class="path"><i class="fas fa-folder"></i> ${currentPath}</p>
-                            ${!isConfigured ? '<p class="setup-hint">🎯 Le dossier EmailSortPro se créera automatiquement au prochain clic!</p>' : ''}
+                            ${!isConfigured && authorizationGranted ? '<p class="setup-hint">🎯 Cliquez pour créer maintenant votre dossier EmailSortPro!</p>' : ''}
+                            ${!isConfigured && !authorizationGranted ? '<p class="setup-hint">✨ Le système créera automatiquement votre dossier après autorisation!</p>' : ''}
                         </div>
                     </div>
                     
@@ -867,10 +924,10 @@ Date: ${new Date().toLocaleString('fr-FR')}
                         </button>
                         
                         ${this.fileSystemSupported ? `
-                            <button class="btn-action ${isConfigured ? 'secondary' : 'magic pulsing'}" 
+                            <button class="btn-action ${isConfigured ? 'secondary' : (authorizationGranted ? 'success pulsing' : 'magic pulsing')}" 
                                     onclick="window.categoriesPageV24.configureDirectAccess()">
-                                <i class="fas fa-${isConfigured ? 'folder' : 'magic'}"></i> 
-                                ${isConfigured ? 'Reconfigurer' : 'CRÉER AUTOMATIQUEMENT'}
+                                <i class="fas fa-${isConfigured ? 'folder' : (authorizationGranted ? 'play' : 'magic')}"></i> 
+                                ${isConfigured ? 'Reconfigurer' : (authorizationGranted ? 'CRÉER MAINTENANT' : 'CRÉER AUTOMATIQUEMENT')}
                             </button>
                         ` : `
                             <p class="browser-notice">
@@ -922,35 +979,57 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 ` : `
                     <!-- Guide -->
                     <div class="guide-card">
-                        <h4><i class="fas fa-magic"></i> Création Automatique Ultra-Rapide</h4>
+                        <h4><i class="fas fa-magic"></i> ${authorizationGranted ? 'Création en 1 Clic' : 'Création Automatique Ultra-Rapide'}</h4>
                         <div class="auto-setup-info">
-                            <div class="setup-highlight magic-highlight">
-                                ✨ <strong>AUTOMATIQUE:</strong> EmailSortPro se crée tout seul dans Documents !
-                            </div>
+                            ${authorizationGranted ? `
+                                <div class="ready-highlight">
+                                    🎯 <strong>PRÊT :</strong> Votre autorisation est enregistrée !<br>
+                                    Cliquez maintenant pour créer votre dossier EmailSortPro.
+                                </div>
+                            ` : `
+                                <div class="setup-highlight magic-highlight">
+                                    ✨ <strong>AUTOMATIQUE:</strong> EmailSortPro se crée tout seul dans Documents !
+                                </div>
+                            `}
+                            
                             <div class="magic-explanation">
-                                <div class="magic-icon">🎯</div>
+                                <div class="magic-icon">${authorizationGranted ? '🎯' : '✨'}</div>
                                 <div class="magic-text">
-                                    <strong>Plus besoin de suivre d'étapes !</strong><br>
-                                    Cliquez simplement sur <strong>"CRÉER AUTOMATIQUEMENT"</strong> 
-                                    et le système fait tout pour vous.
+                                    <strong>${authorizationGranted ? 'Un seul clic suffit !' : 'Plus besoin de suivre d\'étapes !'}</strong><br>
+                                    ${authorizationGranted ? 
+                                        'Votre autorisation est déjà accordée. Cliquez sur "CRÉER MAINTENANT" et le dossier sera créé instantanément.' :
+                                        'Cliquez simplement sur "CRÉER AUTOMATIQUEMENT" et le système fait tout pour vous.'
+                                    }
                                 </div>
                             </div>
+                            
                             <div class="setup-benefits">
-                                <h5>⚡ Processus Ultra-Rapide:</h5>
+                                <h5>⚡ Processus ${authorizationGranted ? 'Immédiat' : 'Ultra-Rapide'}:</h5>
                                 <ul>
-                                    <li><strong>1 clic</strong> → Sélection automatique du dossier Documents</li>
-                                    <li><strong>Création instantanée</strong> → EmailSortPro/Categories/</li>
-                                    <li><strong>Configuration complète</strong> → Prêt à l'emploi</li>
+                                    ${authorizationGranted ? `
+                                        <li><strong>Autorisation accordée</strong> → Déjà fait !</li>
+                                        <li><strong>1 clic</strong> → Création instantanée</li>
+                                        <li><strong>Configuration automatique</strong> → Prêt immédiatement</li>
+                                    ` : `
+                                        <li><strong>1 clic</strong> → Autorisation unique</li>
+                                        <li><strong>Sélection automatique</strong> → Dossier Documents</li>
+                                        <li><strong>Création instantanée</strong> → EmailSortPro/Categories/</li>
+                                    `}
                                     <li><strong>Backup immédiat</strong> → Première sauvegarde automatique</li>
                                 </ul>
                             </div>
-                            <div class="path-example magic-path">
-                                ✨ Résultat: <code>Documents\\EmailSortPro\\Categories\\</code>
+                            
+                            <div class="path-example ${authorizationGranted ? 'ready-path' : 'magic-path'}">
+                                ${authorizationGranted ? '🎯' : '✨'} Résultat: <code>Documents\\EmailSortPro\\Categories\\</code>
                             </div>
                         </div>
-                        <p class="note magic-note">
-                            <i class="fas fa-magic"></i>
-                            Le système détecte automatiquement votre dossier Documents et crée tout !
+                        
+                        <p class="note ${authorizationGranted ? 'ready-note' : 'magic-note'}">
+                            <i class="fas fa-${authorizationGranted ? 'rocket' : 'magic'}"></i>
+                            ${authorizationGranted ? 
+                                'Création en 1 clic - Votre autorisation est déjà enregistrée !' :
+                                'Le système détecte automatiquement votre dossier Documents et crée tout !'
+                            }
                         </p>
                     </div>
                 `}
@@ -964,6 +1043,12 @@ Date: ${new Date().toLocaleString('fr-FR')}
                                 <strong>Support API:</strong>
                                 <span class="${this.fileSystemSupported ? 'ok' : 'error'}">
                                     ${this.fileSystemSupported ? '✅ Supporté' : '❌ Non supporté'}
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Autorisation:</strong>
+                                <span class="${authorizationGranted ? 'ok' : 'warning'}">
+                                    ${authorizationGranted ? '✅ Accordée' : '⚠️ En attente'}
                                 </span>
                             </div>
                             <div class="info-item">
@@ -1300,7 +1385,7 @@ Date: ${new Date().toLocaleString('fr-FR')}
     }
 
     // ================================================
-    // STYLES COMPACTS
+    // STYLES COMPACTS AVEC NOUVEAUX ÉLÉMENTS
     // ================================================
     addStyles() {
         if (document.getElementById('categoriesPageStylesV24')) return;
@@ -1614,9 +1699,14 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 background: #f0fdf4;
             }
 
-            .status-card.not-configured {
-                border-color: #f59e0b;
-                background: #fffbeb;
+            .status-card.ready-to-create {
+                border-color: #06b6d4;
+                background: #f0f9ff;
+            }
+
+            .status-card.auto-ready {
+                border-color: #8b5cf6;
+                background: linear-gradient(135deg, #f3e8ff, #faf5ff);
             }
 
             .status-header {
@@ -1641,8 +1731,13 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 color: white;
             }
 
-            .status-card.not-configured .status-icon {
-                background: #f59e0b;
+            .status-card.ready-to-create .status-icon {
+                background: #06b6d4;
+                color: white;
+            }
+
+            .status-card.auto-ready .status-icon {
+                background: #8b5cf6;
                 color: white;
             }
 
@@ -1660,6 +1755,13 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 display: flex;
                 align-items: center;
                 gap: 6px;
+            }
+
+            .setup-hint {
+                font-size: 13px;
+                color: #6b7280;
+                margin: 4px 0 0 0;
+                font-style: italic;
             }
 
             .status-actions {
@@ -1700,13 +1802,48 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 background: #e5e7eb;
             }
 
-            .btn-action.warning {
-                background: #f59e0b;
+            .btn-action.success {
+                background: #10b981;
                 color: white;
             }
 
-            .btn-action.warning:hover {
-                background: #d97706;
+            .btn-action.success:hover {
+                background: #059669;
+            }
+
+            .btn-action.magic {
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: white;
+                font-weight: 600;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .btn-action.magic::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+                transform: rotate(45deg);
+                animation: shimmer 2s infinite;
+            }
+
+            @keyframes shimmer {
+                0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+                100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+            }
+
+            .btn-action.pulsing {
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+                70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
             }
 
             .browser-notice {
@@ -1795,14 +1932,144 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 gap: 6px;
             }
 
-            .guide-card ol {
-                margin: 0 0 16px 0;
-                padding-left: 20px;
+            .auto-setup-info {
+                margin: 16px 0;
             }
 
-            .guide-card li {
-                margin-bottom: 8px;
-                line-height: 1.4;
+            .setup-highlight {
+                background: linear-gradient(135deg, #3B82F6, #10B981);
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                font-weight: 600;
+                text-align: center;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+
+            .magic-highlight {
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: white;
+                padding: 16px 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                font-weight: 600;
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .magic-highlight::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                animation: magicSweep 3s infinite;
+            }
+
+            @keyframes magicSweep {
+                0% { left: -100%; }
+                100% { left: 100%; }
+            }
+
+            .ready-highlight {
+                background: linear-gradient(135deg, #06b6d4, #10b981);
+                color: white;
+                padding: 16px 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                font-weight: 600;
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+            }
+
+            .magic-explanation {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 16px;
+                background: #faf5ff;
+                border: 2px solid #e9d5ff;
+                border-radius: 8px;
+                margin: 16px 0;
+            }
+
+            .magic-icon {
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+
+            .magic-text {
+                flex: 1;
+                font-size: 14px;
+                line-height: 1.5;
+                color: #374151;
+            }
+
+            .magic-text strong {
+                color: #8b5cf6;
+            }
+
+            .setup-benefits {
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 6px;
+                padding: 12px;
+                margin-top: 12px;
+            }
+
+            .setup-benefits h5 {
+                font-size: 13px;
+                font-weight: 600;
+                color: #166534;
+                margin: 0 0 8px 0;
+            }
+
+            .setup-benefits ul {
+                margin: 0;
+                padding-left: 16px;
+                color: #166534;
+            }
+
+            .path-example {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                padding: 8px 12px;
+                margin-top: 12px;
+                font-family: monospace;
+                font-size: 12px;
+                color: #374151;
+            }
+
+            .magic-path {
+                background: linear-gradient(135deg, #f3e8ff, #faf5ff);
+                border: 2px solid #e9d5ff;
+                padding: 12px 16px;
+                border-radius: 6px;
+                margin-top: 12px;
+                font-family: monospace;
+                font-size: 13px;
+                color: #8b5cf6;
+                font-weight: 600;
+                text-align: center;
+            }
+
+            .ready-path {
+                background: linear-gradient(135deg, #f0f9ff, #f0fdf4);
+                border: 2px solid #bae6fd;
+                padding: 12px 16px;
+                border-radius: 6px;
+                margin-top: 12px;
+                font-family: monospace;
+                font-size: 13px;
+                color: #06b6d4;
+                font-weight: 600;
+                text-align: center;
             }
 
             .note {
@@ -1816,6 +2083,26 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 display: flex;
                 align-items: center;
                 gap: 8px;
+            }
+
+            .magic-note {
+                background: linear-gradient(135deg, #f0f9ff, #f8fafc);
+                border: 1px solid #bae6fd;
+                color: #0369a1;
+            }
+
+            .magic-note i {
+                color: #8b5cf6;
+            }
+
+            .ready-note {
+                background: linear-gradient(135deg, #f0f9ff, #f0fdf4);
+                border: 1px solid #bae6fd;
+                color: #0369a1;
+            }
+
+            .ready-note i {
+                color: #06b6d4;
             }
 
             .tech-info {
@@ -1855,6 +2142,312 @@ Date: ${new Date().toLocaleString('fr-FR')}
             .error { color: #ef4444; }
             .warning { color: #f59e0b; }
 
+            /* Modaux d'autorisation et de création */
+            .authorization-modal-overlay,
+            .creation-modal-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+                padding: 20px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .authorization-modal-overlay.visible,
+            .creation-modal-overlay.visible {
+                opacity: 1;
+            }
+
+            .authorization-modal-overlay.closing,
+            .creation-modal-overlay.closing {
+                opacity: 0;
+            }
+
+            .authorization-modal,
+            .creation-modal {
+                background: white;
+                border-radius: 12px;
+                width: 100%;
+                max-width: 500px;
+                max-height: 90vh;
+                overflow: hidden;
+                box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+                transform: scale(0.9);
+                transition: transform 0.3s ease;
+            }
+
+            .authorization-modal-overlay.visible .authorization-modal,
+            .creation-modal-overlay.visible .creation-modal {
+                transform: scale(1);
+            }
+
+            .auth-modal-header,
+            .creation-header {
+                padding: 24px;
+                text-align: center;
+                background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+                color: white;
+            }
+
+            .auth-icon,
+            .creation-icon {
+                width: 60px;
+                height: 60px;
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 16px;
+                font-size: 24px;
+            }
+
+            .auth-modal-header h2,
+            .creation-header h2 {
+                font-size: 20px;
+                font-weight: 600;
+                margin: 0 0 8px 0;
+            }
+
+            .auth-subtitle,
+            .creation-subtitle {
+                font-size: 14px;
+                opacity: 0.9;
+                margin: 0;
+            }
+
+            .auth-modal-body,
+            .creation-body {
+                padding: 24px;
+                overflow-y: auto;
+                max-height: 60vh;
+            }
+
+            .auth-explanation {
+                margin-bottom: 20px;
+            }
+
+            .auth-feature {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+                padding: 12px;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+
+            .feature-icon {
+                width: 36px;
+                height: 36px;
+                background: #3B82F6;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+
+            .feature-text {
+                flex: 1;
+            }
+
+            .feature-text strong {
+                display: block;
+                font-size: 14px;
+                color: #1f2937;
+                margin-bottom: 4px;
+            }
+
+            .feature-text span {
+                font-size: 13px;
+                color: #6b7280;
+            }
+
+            .auth-path-preview {
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 20px 0;
+            }
+
+            .path-label {
+                font-size: 12px;
+                color: #374151;
+                font-weight: 500;
+                margin-bottom: 8px;
+            }
+
+            .path-value {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-family: monospace;
+                font-size: 13px;
+                color: #0369a1;
+                font-weight: 600;
+            }
+
+            .auth-promise {
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 8px;
+                padding: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                color: #166534;
+                margin-top: 20px;
+            }
+
+            .auth-modal-actions,
+            .creation-actions {
+                padding: 20px 24px;
+                border-top: 1px solid #e2e8f0;
+                background: #f8fafc;
+                display: flex;
+                justify-content: flex-end;
+                gap: 12px;
+            }
+
+            .auth-btn,
+            .creation-btn {
+                padding: 10px 16px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.15s ease;
+                border: none;
+            }
+
+            .auth-btn.secondary,
+            .creation-btn.secondary {
+                background: #f3f4f6;
+                color: #374151;
+                border: 1px solid #d1d5db;
+            }
+
+            .auth-btn.secondary:hover,
+            .creation-btn.secondary:hover {
+                background: #e5e7eb;
+            }
+
+            .auth-btn.primary,
+            .creation-btn.primary {
+                background: #3B82F6;
+                color: white;
+            }
+
+            .auth-btn.primary:hover,
+            .creation-btn.primary:hover {
+                background: #2563EB;
+            }
+
+            .creation-btn.magic-btn {
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: white;
+                font-weight: 600;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .creation-btn.magic-btn::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+                transform: rotate(45deg);
+                animation: shimmer 2s infinite;
+            }
+
+            .creation-info {
+                text-align: center;
+            }
+
+            .info-highlight {
+                background: linear-gradient(135deg, #f0f9ff, #f0fdf4);
+                border: 2px solid #bae6fd;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+                font-size: 14px;
+                color: #0369a1;
+                font-weight: 500;
+            }
+
+            .info-highlight code {
+                background: rgba(6, 182, 212, 0.1);
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-family: monospace;
+                font-size: 12px;
+            }
+
+            .creation-steps {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                margin: 20px 0;
+            }
+
+            .step-preview {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                font-size: 13px;
+                color: #374151;
+            }
+
+            .step-preview i {
+                color: #3B82F6;
+                width: 16px;
+                text-align: center;
+            }
+
+            .important-note {
+                background: #fffbeb;
+                border: 1px solid #fed7aa;
+                border-radius: 8px;
+                padding: 16px;
+                margin-top: 20px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                font-size: 13px;
+                color: #92400e;
+                line-height: 1.4;
+            }
+
+            .important-note i {
+                color: #f59e0b;
+                margin-top: 2px;
+                flex-shrink: 0;
+            }
+
+            /* Modal général */
             .modal-overlay {
                 position: fixed;
                 top: 0;
@@ -2025,12 +2618,6 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 gap: 8px;
             }
 
-            .info-item {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
             .color-box {
                 width: 16px;
                 height: 16px;
@@ -2085,215 +2672,6 @@ Date: ${new Date().toLocaleString('fr-FR')}
             .path-details ul {
                 margin: 0;
                 padding-left: 20px;
-            }
-
-            .setup-highlight {
-                background: linear-gradient(135deg, #3B82F6, #10B981);
-                color: white;
-                padding: 12px 16px;
-                border-radius: 8px;
-                margin-bottom: 16px;
-                font-weight: 600;
-                text-align: center;
-                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-            }
-
-            .auto-setup-info {
-                margin: 16px 0;
-            }
-
-            .setup-benefits {
-                background: #f0fdf4;
-                border: 1px solid #bbf7d0;
-                border-radius: 6px;
-                padding: 12px;
-                margin-top: 12px;
-            }
-
-            .setup-benefits h5 {
-                font-size: 13px;
-                font-weight: 600;
-                color: #166534;
-                margin: 0 0 8px 0;
-            }
-
-            .setup-benefits ul {
-                margin: 0;
-                padding-left: 16px;
-                color: #166534;
-            }
-
-            .path-example {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 4px;
-                padding: 8px 12px;
-                margin-top: 12px;
-                font-family: monospace;
-                font-size: 12px;
-                color: #374151;
-            }
-
-            .setup-hint {
-                font-size: 13px;
-                color: #6b7280;
-                margin: 4px 0 0 0;
-                font-style: italic;
-            }
-
-            .btn-action.pulsing {
-                animation: pulse 2s infinite;
-            }
-
-            @keyframes pulse {
-                0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
-                70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-            }
-
-            .setup-steps {
-                margin: 16px 0;
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .step-item {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 8px 12px;
-                background: #f8fafc;
-                border-radius: 6px;
-                border-left: 3px solid #3B82F6;
-            }
-
-            .step-number {
-                background: #3B82F6;
-                color: white;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: 600;
-                flex-shrink: 0;
-            }
-
-            .status-card.auto-ready {
-                border-color: #8b5cf6;
-                background: linear-gradient(135deg, #f3e8ff, #faf5ff);
-            }
-
-            .status-card.auto-ready .status-icon {
-                background: #8b5cf6;
-                color: white;
-            }
-
-            .btn-action.magic {
-                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-                color: white;
-                font-weight: 600;
-                position: relative;
-                overflow: hidden;
-            }
-
-            .btn-action.magic::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                left: -50%;
-                width: 200%;
-                height: 200%;
-                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
-                transform: rotate(45deg);
-                animation: shimmer 2s infinite;
-            }
-
-            @keyframes shimmer {
-                0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-                100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-            }
-
-            .magic-highlight {
-                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-                color: white;
-                padding: 16px 20px;
-                border-radius: 8px;
-                margin-bottom: 20px;
-                font-weight: 600;
-                text-align: center;
-                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-                position: relative;
-                overflow: hidden;
-            }
-
-            .magic-highlight::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                left: -100%;
-                width: 100%;
-                height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-                animation: magicSweep 3s infinite;
-            }
-
-            @keyframes magicSweep {
-                0% { left: -100%; }
-                100% { left: 100%; }
-            }
-
-            .magic-explanation {
-                display: flex;
-                align-items: flex-start;
-                gap: 16px;
-                padding: 16px;
-                background: #faf5ff;
-                border: 2px solid #e9d5ff;
-                border-radius: 8px;
-                margin: 16px 0;
-            }
-
-            .magic-icon {
-                font-size: 32px;
-                flex-shrink: 0;
-            }
-
-            .magic-text {
-                flex: 1;
-                font-size: 14px;
-                line-height: 1.5;
-                color: #374151;
-            }
-
-            .magic-text strong {
-                color: #8b5cf6;
-            }
-
-            .magic-path {
-                background: linear-gradient(135deg, #f3e8ff, #faf5ff);
-                border: 2px solid #e9d5ff;
-                padding: 12px 16px;
-                border-radius: 6px;
-                margin-top: 12px;
-                font-family: monospace;
-                font-size: 13px;
-                color: #8b5cf6;
-                font-weight: 600;
-                text-align: center;
-            }
-
-            .magic-note {
-                background: linear-gradient(135deg, #f0f9ff, #f8fafc);
-                border: 1px solid #bae6fd;
-                color: #0369a1;
-            }
-
-            .magic-note i {
-                color: #8b5cf6;
             }
 
             .error {
@@ -2397,7 +2775,8 @@ window.getCategoriesBackupInfo = function() {
         path: instance.filesystemConfig.currentPath,
         permissions: instance.filesystemConfig.permissions,
         autoSave: instance.filesystemConfig.autoSave,
-        fileSystemSupported: instance.fileSystemSupported
+        fileSystemSupported: instance.fileSystemSupported,
+        authorizationGranted: localStorage.getItem('emailsortpro_filesystem_authorized') === 'true'
     };
 };
 
@@ -2412,34 +2791,7 @@ window.forceConfigureBackup = async function() {
     }
 };
 
-// API pour forcer la création automatique au démarrage (AVEC interaction utilisateur)
-window.forceAutoSetup = async function() {
-    console.log('[API] 🚀 FORCE: Auto-setup avec interaction utilisateur...');
-    
-    try {
-        const instance = window.categoriesPageV24;
-        
-        // Vérifier que c'est bien une interaction utilisateur
-        if (!instance.fileSystemSupported) {
-            return { success: false, error: 'File System API not supported' };
-        }
-        
-        const success = await instance.configureDirectAccess();
-        
-        if (success) {
-            console.log('[API] ✅ Auto-setup réussi');
-            return { success: true, path: instance.filesystemConfig.currentPath };
-        } else {
-            console.log('[API] ❌ Auto-setup échoué');
-            return { success: false, error: 'Auto-setup failed' };
-        }
-    } catch (error) {
-        console.error('[API] ❌ Erreur auto-setup:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// API pour déclencher l'autorisation à la première connexion
+// API pour déclencher l'autorisation à la première connexion (CORRIGÉE)
 window.requestFirstTimeAuthorization = async function() {
     console.log('[API] 🎯 Demande autorisation première connexion...');
     
@@ -2463,7 +2815,7 @@ window.requestFirstTimeAuthorization = async function() {
             return { success: true, alreadyAuthorized: true };
         }
         
-        // Afficher le modal d'autorisation
+        // Afficher le modal d'autorisation - SEULEMENT SI NÉCESSAIRE
         await instance.showAuthorizationModal();
         
         return { success: true, modalShown: true };
@@ -2474,7 +2826,7 @@ window.requestFirstTimeAuthorization = async function() {
     }
 };
 
-// Script d'intégration pour la première connexion
+// Script d'intégration pour la première connexion (CORRIGÉ)
 window.setupFirstTimeAuth = function() {
     console.log('[SETUP] 🎯 Configuration autorisation première connexion...');
     
@@ -2491,18 +2843,11 @@ window.setupFirstTimeAuth = function() {
             localStorage.setItem('emailsortpro_has_connected', 'true');
             localStorage.setItem('emailsortpro_first_connection_date', new Date().toISOString());
             
-            // Déclencher l'autorisation après un délai pour que l'app soit stable
-            setTimeout(async () => {
-                try {
-                    console.log('[SETUP] 🎨 Déclenchement modal autorisation...');
-                    await window.requestFirstTimeAuthorization();
-                } catch (error) {
-                    console.log('[SETUP] ⚠️ Autorisation différée:', error.message);
-                }
-            }, 2000); // 2 secondes après l'affichage de l'app
+            // NE PAS déclencher automatiquement - Attendre l'interaction utilisateur
+            console.log('[SETUP] ✅ Marqué pour autorisation - Attente interaction utilisateur');
             
         } else {
-            console.log('[SETUP] ✅ Utilisateur existant - Pas d\'autorisation requise');
+            console.log('[SETUP] ✅ Utilisateur existant - Pas d\'autorisation automatique requise');
         }
     };
     
@@ -2534,19 +2879,20 @@ setTimeout(() => {
     window.setupFirstTimeAuth();
 }, 1000);
 
-console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - AUTO-AUTORISATION PREMIÈRE CONNEXION!');
+console.log('[CategoriesPage] ✅ CategoriesPage v24.1 chargée - USER GESTURE FIXÉ !');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
-console.log('[CategoriesPage]   • Interface épurée et rapide');
-console.log('[CategoriesPage]   • 🎨 Modal d\'autorisation esthétique à la première connexion');
+console.log('[CategoriesPage]   • 🔧 CORRIGÉ: User Gesture pour File Picker API');
+console.log('[CategoriesPage]   • 🎨 Modal d\'autorisation esthétique');
+console.log('[CategoriesPage]   • 🎯 Modal de création directe après autorisation');
 console.log('[CategoriesPage]   • ✨ Autorisation unique - Ne se reproduit jamais');
-console.log('[CategoriesPage]   • 📁 Création automatique dans Documents après autorisation');
+console.log('[CategoriesPage]   • 📁 Création automatique dans Documents après clic utilisateur');
 console.log('[CategoriesPage]   • 🔒 Persistance de l\'autorisation');
 console.log('[CategoriesPage]   • 💾 Sauvegarde automatique toutes les 30s');
 console.log('[CategoriesPage]   • 📦 Backup invisible en parallèle (localStorage)');
-console.log('[CategoriesPage]   • 🧪 API de test et diagnostic');
+console.log('[CategoriesPage]   • 🧪 API de test et diagnostic complète');
 console.log('[CategoriesPage] 📁 API disponible:');
 console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
 console.log('[CategoriesPage]   • window.requestFirstTimeAuthorization() - Modal autorisation');
-console.log('[CategoriesPage] ⚡ Autorisation esthétique à la première connexion !');
+console.log('[CategoriesPage] ⚡ User Gesture correctement géré pour File Picker !');
