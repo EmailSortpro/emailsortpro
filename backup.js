@@ -89,6 +89,9 @@ class SmartBackupService {
         console.log('[SmartBackup] 🚀 Forçage du setup initial...');
         
         try {
+            // CORRIGER: Marquer comme initialisé AVANT le backup
+            this.isInitialized = true;
+            
             // Vérifier si c'est le premier lancement
             const isFirstRun = !localStorage.getItem('emailsortpro_smart_backup_initialized');
             
@@ -108,6 +111,7 @@ class SmartBackupService {
         } catch (error) {
             console.warn('[SmartBackup] ⚠️ Erreur setup initial, fallback vers localStorage:', error);
             this.config.activeStorage = 'localStorage';
+            this.isInitialized = true; // S'assurer que c'est initialisé même en cas d'erreur
             await this.createInitialBackup();
         }
     }
@@ -145,8 +149,11 @@ class SmartBackupService {
         console.log('[SmartBackup] 💾 Création du backup initial...');
         
         try {
-            // Marquer comme initialisé AVANT le backup pour éviter les boucles
-            this.isInitialized = true;
+            // S'assurer qu'on est initialisé
+            if (!this.isInitialized) {
+                this.isInitialized = true;
+                console.log('[SmartBackup] 🔧 Force initialization pour backup initial');
+            }
             
             const success = await this.performBackup('initial');
             
@@ -1406,6 +1413,52 @@ window.setupDocumentsFolder = async () => {
             if (window.uiManager) {
                 window.uiManager.showToast(
                     '❌ Configuration Documents échouée',
+                    'error'
+                );
+            }
+            return false;
+        }
+    }
+    return false;
+};
+
+// NOUVELLE: Fonction pour forcer le backup dans Documents MAINTENANT
+window.forceDocumentsBackup = async () => {
+    if (window.smartBackupService) {
+        try {
+            console.log('🚀 Forçage backup dans Documents...');
+            
+            // D'abord configurer Documents
+            await window.smartBackupService.requestDocumentsAccess();
+            
+            // Changer le stockage
+            window.smartBackupService.config.activeStorage = 'documents';
+            window.smartBackupService.config.needsDocumentsSetup = false;
+            window.smartBackupService.isInitialized = true;
+            window.smartBackupService.saveConfig();
+            
+            // Faire le backup immédiatement
+            const success = await window.smartBackupService.backup();
+            
+            if (success) {
+                console.log('✅ Backup forcé dans Documents réussi !');
+                if (window.uiManager) {
+                    window.uiManager.showToast(
+                        '✅ Backup créé dans Documents/EmailSortPro !',
+                        'success',
+                        5000
+                    );
+                }
+                return true;
+            } else {
+                throw new Error('Backup échoué');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erreur forçage backup Documents:', error);
+            if (window.uiManager) {
+                window.uiManager.showToast(
+                    `❌ Erreur: ${error.message}`,
                     'error'
                 );
             }
