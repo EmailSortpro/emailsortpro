@@ -379,31 +379,45 @@ class CategoriesPageV22 {
                 <div class="folder-selector">
                     <input type="text" 
                            id="custom-folder-path" 
-                           placeholder="Aucun dossier sélectionné" 
-                           value="${config.customFolderPath || ''}" 
+                           placeholder="Configuration automatique en cours..." 
+                           value="${config.customFolderPath || (config.needsFolderCreation ? 'Configuration par défaut: ' + config.customFolderPath : '')}" 
                            readonly>
                     <button class="btn-select-folder" onclick="window.categoriesPageV22.selectCustomFolder()">
                         <i class="fas fa-folder-open"></i>
-                        Parcourir
+                        ${config.customFolderPath ? 'Changer' : 'Configurer'}
                     </button>
                 </div>
                 
                 <div class="folder-info">
                     <small>
                         <i class="fas fa-info-circle"></i>
-                        Un sous-dossier "EmailSortPro" sera créé automatiquement pour organiser vos sauvegardes
+                        ${config.needsFolderCreation ? 
+                            'Dossier par défaut configuré - cliquez "Configurer" pour finaliser' :
+                            'Un sous-dossier "EmailSortPro" sera créé automatiquement pour organiser vos sauvegardes'
+                        }
                     </small>
                 </div>
                 
                 <div class="folder-recommendations">
-                    <div class="recommendation-item good">
-                        <i class="fas fa-check-circle"></i>
-                        <span><strong>Dossiers sûrs :</strong> Documents, Téléchargements, Bureau, Google Drive, OneDrive, Dropbox</span>
-                    </div>
-                    <div class="recommendation-item info">
-                        <i class="fas fa-folder-plus"></i>
-                        <span><strong>Organisation :</strong> Structure finale → VotreDossier/EmailSortPro/sauvegardes.json</span>
-                    </div>
+                    ${config.needsFolderCreation ? `
+                        <div class="recommendation-item good">
+                            <i class="fas fa-star"></i>
+                            <span><strong>Configuration par défaut :</strong> ${config.customFolderPath}</span>
+                        </div>
+                        <div class="recommendation-item info">
+                            <i class="fas fa-lightbulb"></i>
+                            <span><strong>Alternative :</strong> Choisissez Documents, Google Drive, ou OneDrive si vous préférez</span>
+                        </div>
+                    ` : `
+                        <div class="recommendation-item good">
+                            <i class="fas fa-check-circle"></i>
+                            <span><strong>Dossiers sûrs :</strong> Documents, Téléchargements, Bureau, Google Drive, OneDrive, Dropbox</span>
+                        </div>
+                        <div class="recommendation-item info">
+                            <i class="fas fa-folder-plus"></i>
+                            <span><strong>Organisation :</strong> Structure finale → VotreDossier/EmailSortPro/sauvegardes.json</span>
+                        </div>
+                    `}
                 </div>
                 
                 ${!window.showDirectoryPicker ? `
@@ -415,7 +429,7 @@ class CategoriesPageV22 {
                     </div>
                 ` : ''}
                 
-                ${config.customFolderPath ? `
+                ${config.customFolderPath && !config.needsFolderCreation ? `
                     <div class="folder-actions">
                         <button class="btn-test-folder" onclick="window.categoriesPageV22.createTestBackup()">
                             <i class="fas fa-vial"></i>
@@ -423,7 +437,7 @@ class CategoriesPageV22 {
                         </button>
                         <button class="btn-clear-folder" onclick="window.categoriesPageV22.clearCustomFolder()">
                             <i class="fas fa-times"></i>
-                            Effacer la sélection
+                            Réinitialiser
                         </button>
                     </div>
                 ` : ''}
@@ -467,29 +481,88 @@ class CategoriesPageV22 {
             const defaultConfig = {
                 enabled: true, // ACTIVÉ PAR DÉFAUT
                 frequency: 'daily', // QUOTIDIEN PAR DÉFAUT
-                storage: 'localStorage',
+                storage: 'custom-folder', // DOSSIER PERSONNALISÉ PAR DÉFAUT
                 retention: 10,
                 compression: true,
                 lastBackup: null,
                 nextBackup: null,
-                customFolderPath: null, // NOUVEAU: Chemin du dossier personnalisé
-                customFolderHandle: null // NOUVEAU: Handle du dossier (File System Access API)
+                customFolderPath: null, // Sera défini automatiquement
+                customFolderHandle: null,
+                autoSetupDone: false // Flag pour savoir si l'auto-setup a été fait
             };
             
-            return saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
+            const config = saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
+            
+            // Auto-setup du dossier Program Files à la première utilisation
+            if (!config.autoSetupDone && !config.customFolderPath) {
+                this.setupDefaultProgramFilesFolder(config);
+            }
+            
+            return config;
         } catch (error) {
             console.error('[Backup] Erreur chargement config:', error);
-            return {
-                enabled: true, // ACTIVÉ PAR DÉFAUT
-                frequency: 'daily', // QUOTIDIEN PAR DÉFAUT
-                storage: 'localStorage',
+            const defaultConfig = {
+                enabled: true,
+                frequency: 'daily',
+                storage: 'custom-folder',
                 retention: 10,
                 compression: true,
                 lastBackup: null,
                 nextBackup: null,
                 customFolderPath: null,
-                customFolderHandle: null
+                customFolderHandle: null,
+                autoSetupDone: false
             };
+            
+            this.setupDefaultProgramFilesFolder(defaultConfig);
+            return defaultConfig;
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Setup automatique du dossier Program Files
+    // ================================================
+    setupDefaultProgramFilesFolder(config) {
+        try {
+            // Déterminer le chemin Program Files approprié
+            const isWindows = navigator.platform.toLowerCase().includes('win');
+            
+            if (isWindows) {
+                // Déterminer s'il faut utiliser Program Files ou Program Files (x86)
+                const is64Bit = navigator.userAgent.includes('WOW64') || 
+                               navigator.userAgent.includes('Win64') || 
+                               navigator.platform === 'Win64';
+                
+                const programFilesPath = is64Bit ? 
+                    'C:\\Program Files\\EmailSortPro' : 
+                    'C:\\Program Files (x86)\\EmailSortPro';
+                
+                // Configurer le chemin par défaut
+                config.customFolderPath = programFilesPath;
+                config.autoSetupDone = true;
+                
+                console.log('[Backup] Configuration automatique:', programFilesPath);
+                
+                // Marquer qu'il faudra créer le dossier au premier accès
+                config.needsFolderCreation = true;
+                
+            } else {
+                // Pour macOS/Linux, utiliser un dossier dans Applications ou home
+                const isMac = navigator.platform.toLowerCase().includes('mac');
+                const defaultPath = isMac ? 
+                    '/Applications/EmailSortPro' : 
+                    '~/EmailSortPro';
+                
+                config.customFolderPath = defaultPath;
+                config.autoSetupDone = true;
+                config.needsFolderCreation = true;
+            }
+            
+            // Sauvegarder la configuration
+            localStorage.setItem('emailsortpro_backup_config', JSON.stringify(config));
+            
+        } catch (error) {
+            console.error('[Backup] Erreur setup automatique:', error);
         }
     }
 
@@ -708,7 +781,7 @@ class CategoriesPageV22 {
     }
 
     // ================================================
-    // MÉTHODE CORRIGÉE: Sélectionner un dossier personnalisé
+    // MÉTHODE AMÉLIORÉE: Sélectionner un dossier personnalisé avec auto-setup
     // ================================================
     async selectCustomFolder() {
         try {
@@ -718,118 +791,88 @@ class CategoriesPageV22 {
                 return;
             }
             
-            // Afficher un avertissement préventif SEULEMENT la première fois
-            const hasShownWarning = localStorage.getItem('emailsortpro_folder_warning_shown');
-            
-            if (!hasShownWarning) {
-                const userConfirmed = confirm(
-                    '📁 Sélection du dossier de sauvegarde\n\n' +
-                    '✅ DOSSIERS SÛRS :\n' +
-                    '• Documents, Téléchargements, Bureau\n' +
-                    '• Google Drive, OneDrive, Dropbox\n' +
-                    '• Dossiers personnalisés que vous créez\n\n' +
-                    '💡 INFO : Un sous-dossier "EmailSortPro" sera créé automatiquement\n' +
-                    'dans le dossier que vous sélectionnez.\n\n' +
-                    'Continuer la sélection ?'
+            // Si c'est la première fois et qu'il faut créer le dossier Program Files
+            if (this.backupConfig.needsFolderCreation && this.backupConfig.customFolderPath) {
+                const shouldUseProgramFiles = confirm(
+                    `📁 Configuration du dossier de sauvegarde\n\n` +
+                    `Le dossier par défaut est configuré sur :\n` +
+                    `${this.backupConfig.customFolderPath}\n\n` +
+                    `• Cliquez "OK" pour utiliser ce dossier par défaut\n` +
+                    `• Cliquez "Annuler" pour choisir un autre emplacement\n\n` +
+                    `Note : Le dossier sera créé automatiquement s'il n'existe pas.`
                 );
                 
-                if (!userConfirmed) {
-                    return;
+                if (shouldUseProgramFiles) {
+                    // Essayer de créer le dossier Program Files avec File System Access API
+                    return await this.setupProgramFilesWithAPI();
                 }
-                
-                // Marquer que l'avertissement a été affiché
-                localStorage.setItem('emailsortpro_folder_warning_shown', 'true');
             }
             
-            // Options de sélection sécurisées
+            // Sinon, procédure normale de sélection
+            return await this.selectCustomFolderManual();
+            
+        } catch (error) {
+            console.error('[Backup] Erreur sélection dossier:', error);
+            this.handleFolderSelectionError(error);
+        }
+    }
+
+    // ================================================
+    // NOUVELLE MÉTHODE: Setup automatique Program Files avec API
+    // ================================================
+    async setupProgramFilesWithAPI() {
+        try {
+            // Pour Windows, essayer d'accéder au dossier Program Files
+            const isWindows = navigator.platform.toLowerCase().includes('win');
+            
+            if (!isWindows) {
+                // Pour non-Windows, utiliser la sélection manuelle
+                return await this.selectCustomFolderManual();
+            }
+            
+            // Afficher un message informatif
+            this.showToast('🔧 Configuration du dossier Program Files...', 'info');
+            
+            // Essayer d'accéder au dossier parent Program Files
             const pickerOptions = {
                 mode: 'readwrite',
-                startIn: 'documents', // Commencer dans Documents par défaut
-                id: 'emailsortpro-backup-folder' // ID pour mémoriser le dernier dossier
+                startIn: 'desktop', // Commencer par le bureau pour naviguer vers C:\
+                id: 'emailsortpro-programfiles-setup'
             };
             
-            // Ouvrir le sélecteur de dossier
-            const parentDirectoryHandle = await window.showDirectoryPicker(pickerOptions);
+            // Demander à l'utilisateur de naviguer vers Program Files
+            const programFilesHandle = await window.showDirectoryPicker(pickerOptions);
             
-            // Vérifier que le dossier parent n'est pas un dossier système
-            const folderName = parentDirectoryHandle.name.toLowerCase();
-            const folderPath = parentDirectoryHandle.name;
-            
-            // VRAIS dossiers système à éviter (très restrictif)
-            const restrictedFolders = [
-                // Windows système
-                'windows', 'system32', 'syswow64', 'boot', 'recovery',
-                'program files', 'program files (x86)', 'programdata',
-                '$recycle.bin', 'system volume information',
-                
-                // macOS système
-                'system', 'library', 'applications', 'private',
-                'usr', 'bin', 'sbin', 'etc', 'var', 'tmp', 'dev',
-                
-                // Linux système
-                'root', 'proc', 'sys', 'run', 'mnt'
-            ];
-            
-            // Vérification plus intelligente
-            const isRestricted = restrictedFolders.some(restricted => {
-                return folderName === restricted || 
-                       folderName.startsWith(restricted + ' ') ||
-                       folderName.endsWith(' ' + restricted) ||
-                       (restricted.includes(' ') && folderName.includes(restricted));
-            });
-            
-            // Vérification spéciale pour éviter les dossiers racine système
-            const systemRootPatterns = [
-                /^[a-z]:$/i, // C:, D:, etc.
-                /^\/$/,      // /
-            ];
-            
-            const isSystemRoot = systemRootPatterns.some(pattern => pattern.test(folderPath));
-            
-            if (isRestricted || isSystemRoot) {
-                this.showToast('❌ Dossier système détecté. Choisissez un dossier personnel.', 'error');
-                setTimeout(() => this.selectCustomFolder(), 1000);
-                return;
-            }
-            
-            // Créer ou récupérer le sous-dossier EmailSortPro
+            // Créer le sous-dossier EmailSortPro
             let emailSortProFolder;
             try {
-                // Essayer de récupérer le dossier existant
-                emailSortProFolder = await parentDirectoryHandle.getDirectoryHandle('EmailSortPro');
-                console.log('[Backup] Dossier EmailSortPro existant trouvé');
-            } catch (error) {
-                // Le dossier n'existe pas, le créer
-                try {
-                    emailSortProFolder = await parentDirectoryHandle.getDirectoryHandle('EmailSortPro', {
-                        create: true
-                    });
-                    console.log('[Backup] Dossier EmailSortPro créé');
-                    this.showToast('📁 Dossier "EmailSortPro" créé dans ' + parentDirectoryHandle.name, 'info');
-                } catch (createError) {
-                    console.error('[Backup] Erreur création dossier:', createError);
-                    this.showToast('❌ Impossible de créer le dossier EmailSortPro', 'error');
-                    return;
+                emailSortProFolder = await programFilesHandle.getDirectoryHandle('EmailSortPro', {
+                    create: true
+                });
+                
+                console.log('[Backup] Dossier EmailSortPro créé dans Program Files');
+                this.showToast('✅ Dossier EmailSortPro créé dans Program Files', 'success');
+                
+            } catch (createError) {
+                console.error('[Backup] Erreur création dans Program Files:', createError);
+                
+                if (createError.name === 'NotAllowedError') {
+                    this.showToast('❌ Permission refusée pour Program Files. Choisissez un autre dossier.', 'warning');
+                    return await this.selectCustomFolderManual();
                 }
+                throw createError;
             }
             
-            // Tester l'accès en écriture dans le sous-dossier
-            try {
-                await this.testFolderWriteAccess(emailSortProFolder);
-            } catch (accessError) {
-                console.error('[Backup] Test d\'écriture échoué:', accessError);
-                this.showToast('❌ Impossible d\'écrire dans le dossier EmailSortPro. Vérifiez les permissions.', 'error');
-                return;
-            }
+            // Tester l'accès en écriture
+            await this.testFolderWriteAccess(emailSortProFolder);
             
-            // Stocker le handle du sous-dossier EmailSortPro (pas le parent)
+            // Configurer le dossier
             this.backupConfig.customFolderHandle = emailSortProFolder;
-            this.backupConfig.customFolderPath = `${parentDirectoryHandle.name}/EmailSortPro`;
-            
-            // Sauvegarder la configuration
+            this.backupConfig.customFolderPath = `${programFilesHandle.name}/EmailSortPro`;
+            this.backupConfig.needsFolderCreation = false;
             this.saveBackupConfig();
             
-            // Mettre à jour l'affichage du chemin
+            // Mettre à jour l'affichage
             const pathInput = document.getElementById('custom-folder-path');
             if (pathInput) {
                 pathInput.value = this.backupConfig.customFolderPath;
@@ -837,30 +880,151 @@ class CategoriesPageV22 {
             
             this.showToast(`✅ Dossier configuré: ${this.backupConfig.customFolderPath}`, 'success');
             
-            // Proposer de créer une sauvegarde de test SEULEMENT si c'est la première fois
-            if (!localStorage.getItem('emailsortpro_test_backup_done')) {
-                setTimeout(() => {
-                    if (confirm('Voulez-vous créer une sauvegarde de test pour vérifier que tout fonctionne ?')) {
-                        this.createTestBackup();
-                        localStorage.setItem('emailsortpro_test_backup_done', 'true');
-                    }
-                }, 1500);
-            }
+            // Créer une sauvegarde de test
+            setTimeout(() => {
+                if (confirm('Voulez-vous créer une sauvegarde de test pour vérifier le bon fonctionnement ?')) {
+                    this.createTestBackup();
+                }
+            }, 1500);
             
         } catch (error) {
-            console.error('[Backup] Erreur sélection dossier:', error);
+            console.error('[Backup] Erreur setup Program Files:', error);
             
             if (error.name === 'AbortError') {
-                console.log('[Backup] Sélection de dossier annulée');
-            } else if (error.name === 'SecurityError') {
-                this.showToast('❌ Accès refusé. Le dossier est protégé ou inaccessible.', 'error');
-            } else if (error.name === 'NotAllowedError') {
-                this.showToast('❌ Permission refusée. Choisissez un dossier dans vos documents personnels.', 'error');
-            } else if (error.message && error.message.includes('system')) {
-                this.showToast('❌ Dossier système détecté. Sélectionnez un dossier personnel.', 'error');
+                // L'utilisateur a annulé, proposer la sélection manuelle
+                const tryManual = confirm(
+                    'Sélection annulée.\n\n' +
+                    'Voulez-vous choisir un autre dossier manuellement ?'
+                );
+                
+                if (tryManual) {
+                    return await this.selectCustomFolderManual();
+                }
             } else {
-                this.showToast('❌ Erreur lors de la sélection du dossier. Réessayez avec un autre dossier.', 'error');
+                this.handleFolderSelectionError(error);
+                
+                // En cas d'erreur, proposer la sélection manuelle
+                setTimeout(() => {
+                    const tryManual = confirm(
+                        'Erreur avec le dossier Program Files.\n\n' +
+                        'Voulez-vous choisir un autre dossier ?'
+                    );
+                    
+                    if (tryManual) {
+                        this.selectCustomFolderManual();
+                    }
+                }, 2000);
             }
+        }
+    }
+
+    // ================================================
+    // MÉTHODE: Sélection manuelle de dossier (ancienne logique)
+    // ================================================
+    async selectCustomFolderManual() {
+        // Afficher un avertissement préventif SEULEMENT la première fois
+        const hasShownWarning = localStorage.getItem('emailsortpro_folder_warning_shown');
+        
+        if (!hasShownWarning) {
+            const userConfirmed = confirm(
+                '📁 Sélection du dossier de sauvegarde\n\n' +
+                '✅ DOSSIERS SÛRS :\n' +
+                '• Documents, Téléchargements, Bureau\n' +
+                '• Google Drive, OneDrive, Dropbox\n' +
+                '• Dossiers personnalisés que vous créez\n\n' +
+                '💡 INFO : Un sous-dossier "EmailSortPro" sera créé automatiquement\n' +
+                'dans le dossier que vous sélectionnez.\n\n' +
+                'Continuer la sélection ?'
+            );
+            
+            if (!userConfirmed) {
+                return;
+            }
+            
+            localStorage.setItem('emailsortpro_folder_warning_shown', 'true');
+        }
+        
+        // Options de sélection sécurisées
+        const pickerOptions = {
+            mode: 'readwrite',
+            startIn: 'documents',
+            id: 'emailsortpro-backup-folder'
+        };
+        
+        // Ouvrir le sélecteur de dossier
+        const parentDirectoryHandle = await window.showDirectoryPicker(pickerOptions);
+        
+        // Vérifications de sécurité (code existant...)
+        const folderName = parentDirectoryHandle.name.toLowerCase();
+        const folderPath = parentDirectoryHandle.name;
+        
+        const restrictedFolders = [
+            'windows', 'system32', 'syswow64', 'boot', 'recovery',
+            'programdata', '$recycle.bin', 'system volume information',
+            'system', 'library', 'applications', 'private',
+            'usr', 'bin', 'sbin', 'etc', 'var', 'tmp', 'dev',
+            'root', 'proc', 'sys', 'run', 'mnt'
+        ];
+        
+        const isRestricted = restrictedFolders.some(restricted => {
+            return folderName === restricted || 
+                   folderName.startsWith(restricted + ' ') ||
+                   folderName.endsWith(' ' + restricted) ||
+                   (restricted.includes(' ') && folderName.includes(restricted));
+        });
+        
+        const systemRootPatterns = [/^[a-z]:$/i, /^\/$/];
+        const isSystemRoot = systemRootPatterns.some(pattern => pattern.test(folderPath));
+        
+        if (isRestricted || isSystemRoot) {
+            this.showToast('❌ Dossier système détecté. Choisissez un dossier personnel.', 'error');
+            setTimeout(() => this.selectCustomFolderManual(), 1000);
+            return;
+        }
+        
+        // Créer le sous-dossier EmailSortPro
+        let emailSortProFolder;
+        try {
+            emailSortProFolder = await parentDirectoryHandle.getDirectoryHandle('EmailSortPro');
+        } catch (error) {
+            emailSortProFolder = await parentDirectoryHandle.getDirectoryHandle('EmailSortPro', {
+                create: true
+            });
+            this.showToast('📁 Dossier "EmailSortPro" créé dans ' + parentDirectoryHandle.name, 'info');
+        }
+        
+        // Tester l'accès
+        await this.testFolderWriteAccess(emailSortProFolder);
+        
+        // Configurer
+        this.backupConfig.customFolderHandle = emailSortProFolder;
+        this.backupConfig.customFolderPath = `${parentDirectoryHandle.name}/EmailSortPro`;
+        this.backupConfig.needsFolderCreation = false;
+        this.saveBackupConfig();
+        
+        // Mettre à jour l'affichage
+        const pathInput = document.getElementById('custom-folder-path');
+        if (pathInput) {
+            pathInput.value = this.backupConfig.customFolderPath;
+        }
+        
+        this.showToast(`✅ Dossier configuré: ${this.backupConfig.customFolderPath}`, 'success');
+    }
+
+    // ================================================
+    // MÉTHODE: Gestion des erreurs de sélection
+    // ================================================
+    handleFolderSelectionError(error) {
+        if (error.name === 'AbortError') {
+            console.log('[Backup] Sélection de dossier annulée');
+        } else if (error.name === 'SecurityError') {
+            this.showToast('❌ Accès refusé. Le dossier est protégé ou inaccessible.', 'error');
+        } else if (error.name === 'NotAllowedError') {
+            this.showToast('❌ Permission refusée. Choisissez un dossier dans vos documents personnels.', 'error');
+        } else if (error.message && error.message.includes('system')) {
+            this.showToast('❌ Dossier système détecté. Sélectionnez un dossier personnel.', 'error');
+        } else {
+            this.showToast('❌ Erreur lors de la sélection du dossier. Réessayez avec un autre dossier.', 'error');
         }
     }
 
@@ -2804,6 +2968,11 @@ class CategoriesPageV22 {
             
             .recommendation-item.info i {
                 color: #3B82F6;
+            }
+            
+            /* Style spécial pour la configuration par défaut */
+            .recommendation-item.good i.fa-star {
+                color: #F59E0B;
             }
             
             /* Actions pour dossier sélectionné */
