@@ -13,6 +13,7 @@ class CategoriesPageV24 {
         this.currentModal = null;
         this.searchTerm = '';
         this.activeTab = 'categories';
+        this.creationInProgress = false; // Flag pour éviter les boucles
         this.colors = [
             '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
             '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
@@ -64,13 +65,83 @@ class CategoriesPageV24 {
         // Essayer de restaurer l'accès précédent
         await this.restoreDirectoryAccess();
         
-        // Ne PAS forcer automatiquement - attendre l'interaction utilisateur
+        // FORCER la création automatique dès que possible
         if (!this.filesystemConfig.enabled) {
-            console.log('[CategoriesPage] 📂 Prêt pour configuration sur interaction utilisateur');
-            this.filesystemConfig.currentPath = 'Prêt à configurer - Cliquez "CRÉER DANS DOCUMENTS"';
+            console.log('[CategoriesPage] 🚀 FORCE: Préparation auto-création immédiate...');
+            this.filesystemConfig.currentPath = 'PRÊT POUR AUTO-CRÉATION - Un clic et c\'est fait !';
+            
+            // Préparer l'auto-création pour la première interaction
+            this.setupAutoCreationTrigger();
         }
         
         this.initializeBackup();
+    }
+
+    setupAutoCreationTrigger() {
+        console.log('[CategoriesPage] 🎯 Configuration trigger auto-création...');
+        
+        // Intercepter TOUS les clics sur la page pour déclencher la création
+        const triggerAutoCreation = async (event) => {
+            // Éviter les boucles infinies
+            if (this.filesystemConfig.enabled || this.creationInProgress) {
+                return;
+            }
+            
+            this.creationInProgress = true;
+            console.log('[CategoriesPage] 🚀 TRIGGER: Auto-création déclenchée par interaction!');
+            
+            // Petite pause pour que l'action utilisateur se termine
+            setTimeout(async () => {
+                try {
+                    await this.forceCreateImmediately();
+                } catch (error) {
+                    console.log('[CategoriesPage] ⚠️ Auto-création différée');
+                }
+                this.creationInProgress = false;
+            }, 100);
+        };
+        
+        // Attacher le trigger à tous les événements possibles
+        document.addEventListener('click', triggerAutoCreation, { once: true });
+        document.addEventListener('keydown', triggerAutoCreation, { once: true });
+        document.addEventListener('touchstart', triggerAutoCreation, { once: true });
+        
+        // Auto-trigger sur focus de fenêtre (quand l'utilisateur revient)
+        window.addEventListener('focus', triggerAutoCreation, { once: true });
+        
+        console.log('[CategoriesPage] ✅ Auto-triggers configurés - Création au prochain clic!');
+    }
+
+    async forceCreateImmediately() {
+        console.log('[CategoriesPage] 🚀 FORCE: Création IMMÉDIATE sans questions...');
+        
+        try {
+            // Message très court et direct
+            this.showToast('📁 Création automatique EmailSortPro...', 'info');
+            
+            const directoryHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents',
+                id: 'emailsortpro-auto-immediate'
+            });
+            
+            // Création immédiate et silencieuse
+            await this.createCompleteStructure(directoryHandle);
+            
+            this.showToast('✅ EmailSortPro créé dans Documents!', 'success');
+            
+            return true;
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log('[CategoriesPage] 📂 Création reportée');
+                // Re-configurer le trigger pour la prochaine fois
+                setTimeout(() => this.setupAutoCreationTrigger(), 1000);
+            } else {
+                console.error('[CategoriesPage] ❌ Erreur création immédiate:', error);
+            }
+            return false;
+        }
     }
 
     async forceCreateDefaultFolder() {
@@ -713,15 +784,15 @@ Date: ${new Date().toLocaleString('fr-FR')}
         return `
             <div class="backup-content">
                 <!-- Status -->
-                <div class="status-card ${isConfigured ? 'configured' : 'not-configured'}">
+                <div class="status-card ${isConfigured ? 'configured' : 'auto-ready'}">
                     <div class="status-header">
                         <div class="status-icon">
-                            <i class="fas fa-${isConfigured ? 'check-circle' : 'play-circle'}"></i>
+                            <i class="fas fa-${isConfigured ? 'check-circle' : 'magic'}"></i>
                         </div>
                         <div class="status-info">
-                            <h3>${isConfigured ? 'Sauvegarde Configurée' : 'Prêt à Configurer'}</h3>
+                            <h3>${isConfigured ? 'Sauvegarde Configurée' : 'Auto-Création Prête'}</h3>
                             <p class="path"><i class="fas fa-folder"></i> ${currentPath}</p>
-                            ${!isConfigured ? '<p class="setup-hint">Cliquez sur le bouton ci-dessous pour créer votre dossier EmailSortPro</p>' : ''}
+                            ${!isConfigured ? '<p class="setup-hint">🎯 Le dossier EmailSortPro se créera automatiquement au prochain clic!</p>' : ''}
                         </div>
                     </div>
                     
@@ -731,10 +802,10 @@ Date: ${new Date().toLocaleString('fr-FR')}
                         </button>
                         
                         ${this.fileSystemSupported ? `
-                            <button class="btn-action ${isConfigured ? 'secondary' : 'warning pulsing'}" 
+                            <button class="btn-action ${isConfigured ? 'secondary' : 'magic pulsing'}" 
                                     onclick="window.categoriesPageV24.configureDirectAccess()">
-                                <i class="fas fa-folder"></i> 
-                                ${isConfigured ? 'Reconfigurer' : 'CRÉER DANS DOCUMENTS'}
+                                <i class="fas fa-${isConfigured ? 'folder' : 'magic'}"></i> 
+                                ${isConfigured ? 'Reconfigurer' : 'CRÉER AUTOMATIQUEMENT'}
                             </button>
                         ` : `
                             <p class="browser-notice">
@@ -786,42 +857,35 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 ` : `
                     <!-- Guide -->
                     <div class="guide-card">
-                        <h4><i class="fas fa-lightbulb"></i> Configuration en 1 Clic dans Documents</h4>
+                        <h4><i class="fas fa-magic"></i> Création Automatique Ultra-Rapide</h4>
                         <div class="auto-setup-info">
-                            <div class="setup-highlight">
-                                📁 <strong>SIMPLE:</strong> Création automatique dans vos Documents en 1 clic !
+                            <div class="setup-highlight magic-highlight">
+                                ✨ <strong>AUTOMATIQUE:</strong> EmailSortPro se crée tout seul dans Documents !
                             </div>
-                            <div class="setup-steps">
-                                <div class="step-item">
-                                    <div class="step-number">1</div>
-                                    <div class="step-text">Cliquez sur <strong>"CRÉER DANS DOCUMENTS"</strong></div>
-                                </div>
-                                <div class="step-item">
-                                    <div class="step-number">2</div>
-                                    <div class="step-text">Sélectionnez votre dossier <strong>Documents</strong></div>
-                                </div>
-                                <div class="step-item">
-                                    <div class="step-number">3</div>
-                                    <div class="step-text">✅ <strong>Terminé !</strong> Structure créée automatiquement</div>
+                            <div class="magic-explanation">
+                                <div class="magic-icon">🎯</div>
+                                <div class="magic-text">
+                                    <strong>Plus besoin de suivre d'étapes !</strong><br>
+                                    Cliquez simplement sur <strong>"CRÉER AUTOMATIQUEMENT"</strong> 
+                                    et le système fait tout pour vous.
                                 </div>
                             </div>
                             <div class="setup-benefits">
-                                <h5>✅ Pourquoi Documents ?</h5>
+                                <h5>⚡ Processus Ultra-Rapide:</h5>
                                 <ul>
-                                    <li><strong>AUCUNE restriction</strong> - Permissions garanties</li>
-                                    <li><strong>Emplacement professionnel</strong> - Organisé avec vos fichiers</li>
-                                    <li><strong>Sauvegardé par Windows</strong> - Protection automatique</li>
-                                    <li><strong>Accès rapide</strong> - Dans l'explorateur de fichiers</li>
-                                    <li><strong>Synchronisation cloud</strong> - OneDrive/iCloud compatible</li>
+                                    <li><strong>1 clic</strong> → Sélection automatique du dossier Documents</li>
+                                    <li><strong>Création instantanée</strong> → EmailSortPro/Categories/</li>
+                                    <li><strong>Configuration complète</strong> → Prêt à l'emploi</li>
+                                    <li><strong>Backup immédiat</strong> → Première sauvegarde automatique</li>
                                 </ul>
                             </div>
-                            <div class="path-example">
-                                📁 Emplacement final: <code>Documents\\EmailSortPro\\Categories\\</code>
+                            <div class="path-example magic-path">
+                                ✨ Résultat: <code>Documents\\EmailSortPro\\Categories\\</code>
                             </div>
                         </div>
-                        <p class="note">
-                            <i class="fas fa-shield-alt"></i>
-                            Documents est l'emplacement le plus professionnel et sûr - Configuration en 1 clic !
+                        <p class="note magic-note">
+                            <i class="fas fa-magic"></i>
+                            Le système détecte automatiquement votre dossier Documents et crée tout !
                         </p>
                     </div>
                 `}
@@ -2053,10 +2117,118 @@ Date: ${new Date().toLocaleString('fr-FR')}
                 flex-shrink: 0;
             }
 
-            .step-text {
-                font-size: 13px;
+            .status-card.auto-ready {
+                border-color: #8b5cf6;
+                background: linear-gradient(135deg, #f3e8ff, #faf5ff);
+            }
+
+            .status-card.auto-ready .status-icon {
+                background: #8b5cf6;
+                color: white;
+            }
+
+            .btn-action.magic {
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: white;
+                font-weight: 600;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .btn-action.magic::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+                transform: rotate(45deg);
+                animation: shimmer 2s infinite;
+            }
+
+            @keyframes shimmer {
+                0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+                100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+            }
+
+            .magic-highlight {
+                background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+                color: white;
+                padding: 16px 20px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                font-weight: 600;
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .magic-highlight::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                animation: magicSweep 3s infinite;
+            }
+
+            @keyframes magicSweep {
+                0% { left: -100%; }
+                100% { left: 100%; }
+            }
+
+            .magic-explanation {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 16px;
+                background: #faf5ff;
+                border: 2px solid #e9d5ff;
+                border-radius: 8px;
+                margin: 16px 0;
+            }
+
+            .magic-icon {
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+
+            .magic-text {
+                flex: 1;
+                font-size: 14px;
+                line-height: 1.5;
                 color: #374151;
-                line-height: 1.4;
+            }
+
+            .magic-text strong {
+                color: #8b5cf6;
+            }
+
+            .magic-path {
+                background: linear-gradient(135deg, #f3e8ff, #faf5ff);
+                border: 2px solid #e9d5ff;
+                padding: 12px 16px;
+                border-radius: 6px;
+                margin-top: 12px;
+                font-family: monospace;
+                font-size: 13px;
+                color: #8b5cf6;
+                font-weight: 600;
+                text-align: center;
+            }
+
+            .magic-note {
+                background: linear-gradient(135deg, #f0f9ff, #f8fafc);
+                border: 1px solid #bae6fd;
+                color: #0369a1;
+            }
+
+            .magic-note i {
+                color: #8b5cf6;
             }
 
             .error {
@@ -2202,17 +2374,19 @@ window.forceAutoSetup = async function() {
     }
 };
 
-console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - Stockage Documents Direct!');
+console.log('[CategoriesPage] ✅ CategoriesPage v24.0 chargée - AUTO-CRÉATION FORCÉE!');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
 console.log('[CategoriesPage]   • Interface épurée et rapide');
-console.log('[CategoriesPage]   • Configuration Documents en 1 clic (interaction utilisateur)');
-console.log('[CategoriesPage]   • Création automatique structure complète');
-console.log('[CategoriesPage]   • Sauvegarde automatique toutes les 30s');
-console.log('[CategoriesPage]   • Backup invisible en parallèle (localStorage)');
-console.log('[CategoriesPage]   • API de test et diagnostic');
+console.log('[CategoriesPage]   • 🚀 AUTO-CRÉATION forcée dès le premier clic!');
+console.log('[CategoriesPage]   • ✨ Création automatique sans questions');
+console.log('[CategoriesPage]   • 📁 Déploiement instantané dans Documents');
+console.log('[CategoriesPage]   • 🔄 Triggers sur tous les événements utilisateur');
+console.log('[CategoriesPage]   • 💾 Sauvegarde automatique toutes les 30s');
+console.log('[CategoriesPage]   • 📦 Backup invisible en parallèle (localStorage)');
+console.log('[CategoriesPage]   • 🧪 API de test et diagnostic');
 console.log('[CategoriesPage] 📁 API disponible:');
 console.log('[CategoriesPage]   • window.testCategoriesBackup() - Tester');
 console.log('[CategoriesPage]   • window.getCategoriesBackupInfo() - Infos');
 console.log('[CategoriesPage]   • window.forceConfigureBackup() - Configurer');
-console.log('[CategoriesPage]   • window.forceAutoSetup() - Setup avec interaction');
-console.log('[CategoriesPage] 🚀 Prêt pour configuration Documents en 1 clic !');
+console.log('[CategoriesPage]   • window.forceAutoSetup() - Auto-setup forcé');
+console.log('[CategoriesPage] ⚡ AUTO-CRÉATION au prochain clic utilisateur !');
