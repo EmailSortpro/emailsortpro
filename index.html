@@ -2072,78 +2072,138 @@
         };
 
         // ===============================================
-        // DÉSACTIVATION COMPLÈTE DES MODALS DE SAUVEGARDE AUTO
+        // GESTION INTELLIGENTE DES MODALS DE SAUVEGARDE
         // ===============================================
         
-        // Fonction pour EMPÊCHER les modals automatiques de sauvegarde
-        window.preventBackupModals = function() {
-            console.log('[PREVENT_MODALS] 🚫 Désactivation des modals automatiques de sauvegarde...');
-            
-            // Marquer que l'utilisateur ne veut pas les modals automatiques
+        // Fonction pour vérifier si c'est vraiment la première connexion
+        window.isRealFirstConnection = function() {
             try {
-                localStorage.setItem('emailsortpro_disable_auto_backup_modals', 'true');
-                localStorage.setItem('emailsortpro_backup_notification_shown', 'true');
-                console.log('[PREVENT_MODALS] ✅ Modals automatiques désactivés');
+                const hasConnected = localStorage.getItem('emailsortpro_has_connected');
+                const authGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+                const backupConfigured = localStorage.getItem('emailsortpro_filesystem_v24');
+                
+                console.log('[FIRST_CHECK] 📊 Vérification première connexion:', {
+                    hasConnected: !!hasConnected,
+                    authGranted: !!authGranted,
+                    backupConfigured: !!backupConfigured
+                });
+                
+                // C'est la première connexion si AUCUN de ces éléments n'existe
+                return !hasConnected && !authGranted && !backupConfigured;
             } catch (error) {
-                console.warn('[PREVENT_MODALS] Could not disable modals:', error);
+                console.warn('[FIRST_CHECK] Erreur vérification:', error);
+                return true; // En cas d'erreur, considérer comme première fois
             }
         };
 
-        // Appeler immédiatement la désactivation
-        window.preventBackupModals();
+        // Fonction pour permettre le modal UNIQUEMENT à la première connexion
+        window.allowFirstConnectionModal = function() {
+            const isFirstTime = window.isRealFirstConnection();
+            
+            console.log('[FIRST_MODAL] 🎯 Vérification autorisation modal:', {
+                isFirstTime: isFirstTime,
+                timestamp: new Date().toISOString()
+            });
+            
+            if (isFirstTime) {
+                console.log('[FIRST_MODAL] ✅ PREMIÈRE CONNEXION - Modal autorisé');
+                
+                // Marquer la tentative pour éviter les répétitions
+                try {
+                    localStorage.setItem('emailsortpro_first_modal_attempted', 'true');
+                    localStorage.setItem('emailsortpro_first_modal_date', new Date().toISOString());
+                } catch (error) {
+                    console.warn('[FIRST_MODAL] Could not save attempt markers:', error);
+                }
+                
+                // Attendre que CategoriesPage soit prêt et déclencher le modal
+                setTimeout(() => {
+                    if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
+                        console.log('[FIRST_MODAL] 🚀 Déclenchement modal première connexion...');
+                        // Appeler directement sans blocage
+                        window.categoriesPageV24.showAuthorizationModal();
+                    } else {
+                        console.warn('[FIRST_MODAL] CategoriesPage pas prêt - tentative manuelle possible');
+                    }
+                }, 3000); // Délai pour laisser les modules se charger
+                
+                return true;
+            } else {
+                console.log('[FIRST_MODAL] ❌ PAS première connexion - Modal bloqué');
+                
+                // Bloquer définitivement les tentatives suivantes
+                try {
+                    localStorage.setItem('emailsortpro_disable_auto_backup_modals', 'true');
+                    localStorage.setItem('emailsortpro_backup_notification_shown', 'true');
+                } catch (error) {
+                    console.warn('[FIRST_MODAL] Could not save blocking markers:', error);
+                }
+                
+                return false;
+            }
+        };
 
-        // Intercepter et bloquer les tentatives d'affichage automatique des modals
-        window.blockAutomaticBackupModals = function() {
-            // Bloquer toutes les tentatives d'auto-déclenchement
+        // Fonction pour bloquer les modals après la première connexion
+        window.blockSubsequentModals = function() {
             if (window.categoriesPageV24) {
-                // Désactiver les timers d'auto-déclenchement
+                // Désactiver les notifications automatiques SAUF première connexion
                 if (window.categoriesPageV24.showBackupConfigNotification) {
                     const original = window.categoriesPageV24.showBackupConfigNotification;
                     window.categoriesPageV24.showBackupConfigNotification = function() {
-                        console.log('[BLOCK_MODAL] 🚫 Notification de sauvegarde bloquée');
-                        return; // Ne rien faire
+                        if (window.isRealFirstConnection()) {
+                            console.log('[BLOCK_MODAL] ✅ Notification autorisée - première connexion');
+                            return original.call(this);
+                        } else {
+                            console.log('[BLOCK_MODAL] 🚫 Notification bloquée - pas première connexion');
+                            return;
+                        }
                     };
                 }
                 
+                // Gérer les modals d'autorisation intelligemment
                 if (window.categoriesPageV24.showAuthorizationModal) {
                     const originalAuth = window.categoriesPageV24.showAuthorizationModal;
                     window.categoriesPageV24.showAuthorizationModal = function() {
-                        console.log('[BLOCK_MODAL] 🚫 Modal d\'autorisation automatique bloqué');
-                        // Ne s'exécuter QUE si appelé manuellement
-                        if (arguments.length > 0 && arguments[0] === 'manual') {
+                        // Autoriser si première connexion OU appel manuel explicite
+                        if (window.isRealFirstConnection()) {
+                            console.log('[BLOCK_MODAL] ✅ Modal autorisé - première connexion');
                             return originalAuth.call(this);
+                        } else if (arguments.length > 0 && arguments[0] === 'manual') {
+                            console.log('[BLOCK_MODAL] ✅ Modal autorisé - appel manuel');
+                            return originalAuth.call(this);
+                        } else {
+                            console.log('[BLOCK_MODAL] 🚫 Modal bloqué - ni première connexion ni manuel');
+                            return;
                         }
-                        return; // Bloquer les appels automatiques
                     };
                 }
             }
             
-            // Bloquer les scripts d'auto-setup
-            if (window.setupFirstTimeAuth) {
-                window.setupFirstTimeAuth = function() {
-                    console.log('[BLOCK_MODAL] 🚫 Setup première connexion bloqué');
-                    return; // Ne rien faire
-                };
-            }
-            
-            console.log('[BLOCK_MODAL] ✅ Auto-modals de sauvegarde bloqués');
+            console.log('[BLOCK_MODAL] ✅ Blocage intelligent configuré');
         };
 
         // Gestion du bouton de connexion
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[DOM] 📄 DOM Content Loaded - Setting up simplified welcome system...');
-            
-            // DÉSACTIVER IMMÉDIATEMENT tous les modals automatiques
-            window.preventBackupModals();
-            
-            // Bloquer après un délai pour s'assurer que les modules sont chargés
-            setTimeout(() => {
-                window.blockAutomaticBackupModals();
-            }, 2000);
+            console.log('[DOM] 📄 DOM Content Loaded - Setting up smart welcome system...');
             
             if (appAlreadyShown) {
                 return;
             }
+            
+            // Configurer le blocage intelligent après chargement des modules
+            setTimeout(() => {
+                window.blockSubsequentModals();
+            }, 2000);
+            
+            // Vérifier si c'est la première connexion et autoriser le modal si nécessaire
+            setTimeout(() => {
+                if (window.isRealFirstConnection()) {
+                    console.log('[DOM] 🎯 Première connexion détectée - Modal sera autorisé');
+                    window.allowFirstConnectionModal();
+                } else {
+                    console.log('[DOM] ✅ Connexion existante - Modals automatiques bloqués');
+                }
+            }, 1500);
             
             // Fonction de vérification d'authentification sécurisée
             const safeAuthCheck = () => {
@@ -2384,7 +2444,9 @@
                     microsoft: window.authService ? window.authService.isAuthenticated() : false,
                     google: window.googleAuthService ? window.googleAuthService.isAuthenticated() : false
                 },
-                backupModalsDisabled: localStorage.getItem('emailsortpro_disable_auto_backup_modals') === 'true'
+                backupModalsDisabled: localStorage.getItem('emailsortpro_disable_auto_backup_modals') === 'true',
+                isFirstConnection: window.isRealFirstConnection ? window.isRealFirstConnection() : 'unknown',
+                modalAttempted: localStorage.getItem('emailsortpro_first_modal_attempted') === 'true'
             };
         };
 
@@ -2417,7 +2479,7 @@
             window.checkGoogleCallback();
         }, 500);
 
-        console.log('[INDEX] ✅ Simplified welcome system integrated - NO AUTOMATIC BACKUP MODALS');
+        console.log('[INDEX] ✅ Smart welcome system integrated - FIRST CONNECTION MODAL ALLOWED');
     </script>
 
     <!-- 9. Application Principal EN DERNIER -->
