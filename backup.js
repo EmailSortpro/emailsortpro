@@ -1,5 +1,5 @@
-// backup.js - Version corrigée sans bouton flottant et avec integration propre
-// Cette version s'intègre à la page paramètres existante
+// backup.js - Version CORRIGÉE avec vrai stockage physique et réduction des logs
+// Cette version force vraiment la création de fichiers et réduit le spam
 
 (function() {
     'use strict';
@@ -17,53 +17,58 @@
                 queue: null
             };
             
-            // Configuration propre sans interférence UI
+            // Configuration avec backup physique par défaut et intervals plus longs
             this.config = {
                 enabled: true,
                 intervals: {
-                    auto: 30000,        // 30 secondes
-                    cloud: 600000,      // 10 minutes  
+                    auto: 300000,       // 5 minutes (au lieu de 30 sec)
+                    cloud: 1800000,     // 30 minutes  
                     daily: 86400000,    // 24 heures
-                    onChange: 5000      // 5 secondes après changement
+                    onChange: 30000     // 30 secondes après changement (au lieu de 5)
                 },
                 maxBackups: {
-                    local: 10,
-                    cloud: 50
+                    local: 5,           // Réduire le nombre de backups
+                    cloud: 20
                 },
-                silentMode: true,       // Mode silencieux par défaut
+                silentMode: true,
                 autoDetect: true,
                 
-                // Configuration dossier physique
-                physicalBackupEnabled: false,
-                documentsSetupNeeded: true,
-                showSetupPrompt: false  // Pas de prompt automatique
+                // Configuration pour forcer les fichiers physiques
+                physicalBackupEnabled: true,    // ACTIVÉ par défaut
+                documentsSetupNeeded: false,     // Pas de setup nécessaire
+                showSetupPrompt: true           // Montrer le prompt de configuration
             };
             
             this.backupQueue = [];
             this.isProcessingQueue = false;
             this.changeTimeout = null;
             this.documentsHandle = null;
+            this.lastChangeTime = 0;
             
             this.init();
         }
 
         // ================================================
-        // INITIALISATION PROPRE
+        // INITIALISATION AVEC SETUP PHYSIQUE FORCÉ
         // ================================================
         async init() {
-            console.log('[Backup] 🚀 Initialisation du service de backup...');
+            console.log('[Backup] 🚀 Initialisation avec stockage physique forcé...');
             
             try {
                 this.loadConfig();
                 await this.detectProvider();
+                
+                // FORCER l'setup du stockage physique immédiatement
+                await this.autoSetupPhysicalStorage();
+                
                 this.startDataWatching();
                 await this.createInitialBackup();
                 this.startAutoTimers();
                 
                 this.isInitialized = true;
-                console.log(`[Backup] ✅ Service prêt - Provider: ${this.provider}`);
+                console.log(`[Backup] ✅ Service prêt - Provider: ${this.provider}, Stockage: ${this.getStorageLocation()}`);
                 
-                // Intégration à la page paramètres si elle existe
+                // Intégration à la page paramètres
                 this.integrateToSettingsPage();
                 
             } catch (error) {
@@ -73,34 +78,96 @@
         }
 
         // ================================================
-        // INTÉGRATION À LA PAGE PARAMÈTRES EXISTANTE
+        // NOUVEAU: AUTO-SETUP DU STOCKAGE PHYSIQUE
+        // ================================================
+        async autoSetupPhysicalStorage() {
+            console.log('[Backup] 🔧 Configuration automatique du stockage physique...');
+            
+            // Vérifier si File System Access API est disponible
+            if (!window.showDirectoryPicker) {
+                console.log('[Backup] ❌ File System Access API non disponible - Mode téléchargement activé');
+                this.config.physicalBackupEnabled = true;
+                this.config.storage = 'download';
+                this.saveConfig();
+                return false;
+            }
+            
+            // Vérifier si on a déjà un handle
+            if (this.documentsHandle) {
+                console.log('[Backup] ✅ Dossier physique déjà configuré');
+                return true;
+            }
+            
+            // Essayer de configurer automatiquement après un délai
+            setTimeout(() => {
+                this.promptForPhysicalSetup();
+            }, 3000);
+            
+            return true;
+        }
+
+        async promptForPhysicalSetup() {
+            if (this.documentsHandle) return; // Déjà configuré
+            
+            const userChoice = confirm(
+                '📁 Configuration du stockage de sauvegarde\n\n' +
+                '✅ AVANTAGES du stockage physique :\n' +
+                '• Sauvegardes permanentes sur votre disque\n' +
+                '• Accessible même hors ligne\n' +
+                '• Sauvegarde automatique dans un dossier\n\n' +
+                '📂 DOSSIERS RECOMMANDÉS :\n' +
+                '• Documents (recommandé)\n' +
+                '• Bureau\n' +
+                '• Téléchargements\n\n' +
+                'Voulez-vous configurer un dossier maintenant ?\n' +
+                '(Cliquez Annuler pour utiliser les téléchargements automatiques)'
+            );
+            
+            if (userChoice) {
+                await this.setupPhysicalBackup();
+            } else {
+                // Activer le mode téléchargement
+                this.config.storage = 'download';
+                this.config.physicalBackupEnabled = true;
+                this.saveConfig();
+                this.showNotification('📥 Mode téléchargement automatique activé', 'info');
+                console.log('[Backup] Mode téléchargement automatique activé');
+            }
+        }
+
+        getStorageLocation() {
+            if (this.documentsHandle) {
+                return `Dossier: ${this.config.folderPath || 'Dossier sélectionné'}`;
+            } else if (this.config.storage === 'download') {
+                return 'Téléchargements automatiques';
+            } else {
+                return 'Navigateur (localStorage)';
+            }
+        }
+
+        // ================================================
+        // INTÉGRATION À LA PAGE PARAMÈTRES
         // ================================================
         integrateToSettingsPage() {
-            // Attendre que la page paramètres soit chargée
             setTimeout(() => {
                 this.addBackupSectionToSettings();
             }, 2000);
         }
 
         addBackupSectionToSettings() {
-            // Chercher la page paramètres existante
-            const settingsContainer = document.querySelector('#settings-page, .settings-container, .page-content[data-page="settings"]');
+            const settingsContainer = document.querySelector('#settings-page, .settings-container, .page-content[data-page="settings"], .settings-section');
             
             if (!settingsContainer) {
-                console.log('[Backup] Page paramètres non trouvée, pas d\'intégration UI');
+                console.log('[Backup] Page paramètres non trouvée');
                 return;
             }
 
-            // Vérifier si la section backup existe déjà
             if (settingsContainer.querySelector('#backup-settings-section')) {
                 console.log('[Backup] Section backup déjà présente');
                 return;
             }
 
-            // Créer la section backup
             const backupSection = this.createBackupSettingsSection();
-            
-            // L'ajouter à la page paramètres
             settingsContainer.appendChild(backupSection);
             
             console.log('[Backup] ✅ Section backup ajoutée à la page paramètres');
@@ -126,31 +193,40 @@
                     </div>
                     
                     <div class="setting-item">
-                        <label>Mode de sauvegarde :</label>
+                        <label>Mode de sauvegarde actuel :</label>
                         <div id="backup-mode-info" class="backup-status">
                             ${this.getBackupModeDisplay()}
                         </div>
                     </div>
                     
                     <div class="setting-item">
-                        <button id="setup-folder-btn" class="btn btn-secondary" ${!window.showDirectoryPicker ? 'disabled' : ''}>
-                            <i class="fas fa-folder"></i> Configurer dossier Documents
+                        <button id="setup-folder-btn" class="btn btn-secondary">
+                            <i class="fas fa-folder"></i> ${this.documentsHandle ? 'Changer de dossier' : 'Configurer dossier physique'}
                         </button>
                         <p class="setting-description">
-                            Sauvegarder dans le dossier Documents/EmailSortPro
+                            Sauvegarder dans un dossier de votre choix (Documents, Bureau, etc.)
+                        </p>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <button id="download-mode-btn" class="btn btn-info">
+                            <i class="fas fa-download"></i> Mode téléchargement automatique
+                        </button>
+                        <p class="setting-description">
+                            Les sauvegardes seront téléchargées automatiquement
                         </p>
                     </div>
                     
                     <div class="setting-item">
                         <button id="manual-backup-btn" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Créer une sauvegarde maintenant
+                            <i class="fas fa-save"></i> Créer une sauvegarde maintenant
                         </button>
                         <span id="backup-status" class="backup-status-text">
                             Dernière sauvegarde : ${this.getLastBackupTime()}
                         </span>
                     </div>
                     
-                    <div class="setting-item" id="backup-details" style="display: none;">
+                    <div class="setting-item">
                         <details>
                             <summary>Informations détaillées</summary>
                             <div id="backup-info-content">
@@ -161,9 +237,7 @@
                 </div>
             `;
 
-            // Ajouter les événements
             this.attachBackupEvents(section);
-            
             return section;
         }
 
@@ -185,12 +259,21 @@
                 setupBtn.disabled = true;
                 setupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Configuration...';
                 
-                const success = await this.setupPhysicalBackup();
+                await this.setupPhysicalBackup();
                 
                 setupBtn.disabled = false;
-                setupBtn.innerHTML = '<i class="fas fa-folder"></i> Configurer dossier Documents';
-                
+                setupBtn.innerHTML = `<i class="fas fa-folder"></i> ${this.documentsHandle ? 'Changer de dossier' : 'Configurer dossier physique'}`;
                 this.updateBackupUI();
+            });
+
+            // Mode téléchargement
+            const downloadBtn = section.querySelector('#download-mode-btn');
+            downloadBtn?.addEventListener('click', () => {
+                this.config.storage = 'download';
+                this.config.physicalBackupEnabled = true;
+                this.saveConfig();
+                this.updateBackupUI();
+                this.showNotification('📥 Mode téléchargement automatique activé!', 'success');
             });
 
             // Backup manuel
@@ -202,8 +285,7 @@
                 await this.manualBackup();
                 
                 manualBtn.disabled = false;
-                manualBtn.innerHTML = '<i class="fas fa-download"></i> Créer une sauvegarde maintenant';
-                
+                manualBtn.innerHTML = '<i class="fas fa-save"></i> Créer une sauvegarde maintenant';
                 this.updateBackupUI();
             });
         }
@@ -212,19 +294,16 @@
             const section = document.querySelector('#backup-settings-section');
             if (!section) return;
 
-            // Mettre à jour le mode
             const modeInfo = section.querySelector('#backup-mode-info');
             if (modeInfo) {
                 modeInfo.innerHTML = this.getBackupModeDisplay();
             }
 
-            // Mettre à jour le statut
             const statusText = section.querySelector('#backup-status');
             if (statusText) {
                 statusText.textContent = `Dernière sauvegarde : ${this.getLastBackupTime()}`;
             }
 
-            // Mettre à jour les détails
             const detailsContent = section.querySelector('#backup-info-content');
             if (detailsContent) {
                 detailsContent.innerHTML = this.getDetailedInfo();
@@ -232,8 +311,10 @@
         }
 
         getBackupModeDisplay() {
-            if (this.config.physicalBackupEnabled) {
-                return `<span class="status-active"><i class="fas fa-folder"></i> Dossier physique: ${this.config.folderPath || 'Documents/EmailSortPro'}</span>`;
+            if (this.documentsHandle) {
+                return `<span class="status-active"><i class="fas fa-folder"></i> Dossier physique: ${this.config.folderPath || 'Dossier sélectionné'}</span>`;
+            } else if (this.config.storage === 'download') {
+                return `<span class="status-download"><i class="fas fa-download"></i> Téléchargement automatique</span>`;
             } else {
                 return `<span class="status-browser"><i class="fas fa-browser"></i> Navigateur (localStorage)</span>`;
             }
@@ -251,25 +332,29 @@
             const status = this.getStatus();
             return `
                 <div class="backup-details">
+                    <p><strong>Stockage:</strong> ${this.getStorageLocation()}</p>
                     <p><strong>Provider:</strong> ${status.provider}</p>
-                    <p><strong>Cloud prêt:</strong> ${status.cloudReady ? 'Oui' : 'Non'}</p>
                     <p><strong>Files en attente:</strong> ${status.queueSize}</p>
                     <p><strong>En cours:</strong> ${status.processing ? 'Oui' : 'Non'}</p>
+                    <p><strong>Fréquence:</strong> Toutes les 5 minutes + à chaque changement</p>
                 </div>
             `;
         }
 
         // ================================================
-        // SETUP PHYSIQUE (sur demande uniquement)
+        // SETUP PHYSIQUE AMÉLIORÉ
         // ================================================
         async setupPhysicalBackup() {
             console.log('[Backup] 🔧 Setup du backup physique...');
             
             if (!window.showDirectoryPicker) {
                 this.showNotification(
-                    'Votre navigateur ne supporte pas cette fonctionnalité.\nUtilisez Chrome ou Edge.',
-                    'error'
+                    'Votre navigateur ne supporte pas cette fonctionnalité.\nPassage en mode téléchargement automatique.',
+                    'warning'
                 );
+                this.config.storage = 'download';
+                this.config.physicalBackupEnabled = true;
+                this.saveConfig();
                 return false;
             }
             
@@ -278,7 +363,7 @@
                 
                 if (success && this.documentsHandle) {
                     this.config.physicalBackupEnabled = true;
-                    this.config.documentsSetupNeeded = false;
+                    this.config.storage = 'folder';
                     this.saveConfig();
                     
                     // Test immédiat
@@ -288,7 +373,7 @@
                     await this.performBackup('setup');
                     
                     this.showNotification(
-                        'Dossier Documents/EmailSortPro configuré avec succès!',
+                        `Dossier configuré avec succès!\nEmplacement: ${this.config.folderPath}`,
                         'success'
                     );
                     
@@ -304,9 +389,12 @@
                     this.showNotification('Configuration annulée', 'info');
                 } else {
                     this.showNotification(
-                        'Erreur lors de la configuration.\nLes sauvegardes continueront dans le navigateur.',
-                        'error'
+                        'Erreur lors de la configuration.\nPassage en mode téléchargement automatique.',
+                        'warning'
                     );
+                    this.config.storage = 'download';
+                    this.config.physicalBackupEnabled = true;
+                    this.saveConfig();
                 }
                 
                 return false;
@@ -314,12 +402,12 @@
         }
 
         async requestDocumentsAccess() {
-            console.log('[Backup] 🔓 Demande d\'accès au dossier Documents...');
+            console.log('[Backup] 🔓 Demande d\'accès au dossier...');
             
             const pickerOptions = {
                 mode: 'readwrite',
                 startIn: 'documents',
-                id: 'emailsortpro-backup-v4'
+                id: 'emailsortpro-backup-v5'
             };
             
             try {
@@ -385,7 +473,12 @@
                     message: 'Test de configuration du backup'
                 }, null, 2);
                 
-                await this.storeInPhysicalFolder(testData, new Date().toISOString(), 'test');
+                if (this.documentsHandle) {
+                    await this.storeInPhysicalFolder(testData, new Date().toISOString(), 'test');
+                } else {
+                    this.downloadBackup(testData, new Date().toISOString());
+                }
+                
                 console.log('[Backup] ✅ Test backup réussi');
                 
             } catch (error) {
@@ -429,7 +522,7 @@
                 return fileName;
                 
             } catch (error) {
-                console.error('[Backup] ❌ Erreur stockage:', error);
+                console.error('[Backup] ❌ Erreur stockage physique:', error);
                 throw error;
             }
         }
@@ -449,65 +542,27 @@
             }
         }
 
-        // ================================================
-        // MÉTHODES DE BASE
-        // ================================================
-        loadConfig() {
-            try {
-                const saved = localStorage.getItem('emailsortpro_backup_config');
-                if (saved) {
-                    Object.assign(this.config, JSON.parse(saved));
-                }
-            } catch (error) {
-                console.warn('[Backup] Configuration par défaut utilisée');
-            }
-        }
-
-        saveConfig() {
-            try {
-                const configToSave = { ...this.config };
-                delete configToSave.documentsHandle;
-                localStorage.setItem('emailsortpro_backup_config', JSON.stringify(configToSave));
-            } catch (error) {
-                console.warn('[Backup] Erreur sauvegarde config');
-            }
-        }
-
-        async detectProvider() {
-            console.log('[Backup] 🔍 Détection automatique du provider...');
+        downloadBackup(data, timestamp) {
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
             
-            if (this.isOneDriveReady()) {
-                this.provider = 'onedrive';
-                console.log('[Backup] ☁️ OneDrive détecté');
-                return;
-            }
+            const date = new Date(timestamp);
+            const dateStr = date.toISOString().split('T')[0];
+            const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
             
-            if (this.isGoogleDriveReady()) {
-                this.provider = 'googledrive';
-                console.log('[Backup] ☁️ Google Drive détecté');
-                return;
-            }
+            a.href = url;
+            a.download = `EmailSortPro-Backup-${dateStr}_${timeStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
             
-            this.provider = 'local';
-            console.log('[Backup] 💾 Mode local activé');
-        }
-
-        isOneDriveReady() {
-            return window.authService && 
-                   typeof window.authService.isAuthenticated === 'function' &&
-                   window.authService.isAuthenticated() &&
-                   typeof window.authService.getAccessToken === 'function';
-        }
-
-        isGoogleDriveReady() {
-            return window.googleAuthService && 
-                   typeof window.googleAuthService.isAuthenticated === 'function' &&
-                   window.googleAuthService.isAuthenticated() &&
-                   typeof window.googleAuthService.getAccessToken === 'function';
+            console.log(`[Backup] 📥 Fichier téléchargé: ${a.download}`);
         }
 
         // ================================================
-        // SURVEILLANCE DES DONNÉES
+        // SURVEILLANCE DES DONNÉES (RÉDUITE)
         // ================================================
         startDataWatching() {
             console.log('[Backup] 👁️ Démarrage surveillance des données...');
@@ -570,7 +625,7 @@
                 } catch (error) {
                     // Ignore errors
                 }
-            }, 5000);
+            }, 30000); // Réduire la fréquence de vérification
         }
 
         listenToAppEvents() {
@@ -590,7 +645,18 @@
         onDataChange(source, key) {
             if (this.shouldIgnoreChange(key)) return;
             
-            console.log(`[Backup] 📝 Changement: ${source}.${key}`);
+            // Réduire les logs de changement
+            const now = Date.now();
+            if (now - this.lastChangeTime < 10000) { // Moins de 10 secondes
+                return; // Ignorer les changements trop rapprochés
+            }
+            this.lastChangeTime = now;
+            
+            // Log moins verbose
+            if (Math.random() < 0.1) { // Seulement 10% des changements loggés
+                console.log(`[Backup] 📝 Changement détecté: ${source}.${key}`);
+            }
+            
             this.scheduleChangeBackup();
         }
 
@@ -600,7 +666,8 @@
             const ignored = [
                 'emailsortpro_backup_',
                 'temp_', 'cache_', 'session_',
-                'lastActivity', 'currentView', 'scrollPosition'
+                'lastActivity', 'currentView', 'scrollPosition',
+                'msal.', 'server-telemetry'
             ];
             
             return ignored.some(prefix => key.startsWith(prefix));
@@ -644,7 +711,7 @@
                 while (this.backupQueue.length > 0) {
                     const backup = this.backupQueue.shift();
                     await this.executeBackup(backup);
-                    await this.sleep(100);
+                    await this.sleep(200);
                 }
             } catch (error) {
                 console.error('[Backup] Erreur traitement queue:', error);
@@ -655,21 +722,25 @@
 
         async executeBackup(backup) {
             try {
-                console.log(`[Backup] 🔄 Exécution: ${backup.type}`);
+                // Log moins verbose
+                if (backup.type === 'manual' || Math.random() < 0.2) {
+                    console.log(`[Backup] 🔄 Exécution: ${backup.type}`);
+                }
                 
                 const success = await this.performBackup(backup.type);
                 
                 if (success) {
-                    console.log(`[Backup] ✅ ${backup.type} réussi`);
+                    // Log de succès seulement pour les backups manuels ou 20% des automatiques
+                    if (backup.type === 'manual' || Math.random() < 0.2) {
+                        console.log(`[Backup] ✅ ${backup.type} réussi`);
+                    }
                     
                     // Mise à jour UI si visible
                     this.updateBackupUI();
                     
                     // Notification pour les backups manuels uniquement
                     if (backup.type === 'manual') {
-                        const location = this.config.physicalBackupEnabled ? 
-                            this.config.folderPath : 'navigateur';
-                        this.showNotification(`Sauvegarde créée dans ${location}`, 'success');
+                        this.showNotification(`Sauvegarde créée dans ${this.getStorageLocation()}`, 'success');
                     }
                 } else {
                     console.warn(`[Backup] ⚠️ ${backup.type} échoué`);
@@ -681,8 +752,132 @@
         }
 
         // ================================================
-        // TIMERS ET BACKUP INITIAL
+        // EXÉCUTION DES BACKUPS
         // ================================================
+        async performBackup(type) {
+            if (!this.config.enabled || this.backupInProgress) {
+                return false;
+            }
+            
+            this.backupInProgress = true;
+            
+            try {
+                const data = this.collectData(type);
+                
+                if (!data || !data.data) {
+                    return false;
+                }
+                
+                const dataString = JSON.stringify(data, null, 2);
+                let success = false;
+                
+                // Priorité au stockage configuré
+                if (this.config.storage === 'folder' && this.documentsHandle) {
+                    try {
+                        await this.storeInPhysicalFolder(dataString, data.timestamp, 'backup');
+                        success = true;
+                    } catch (error) {
+                        console.warn('[Backup] ⚠️ Erreur backup physique, fallback download:', error);
+                        this.downloadBackup(dataString, data.timestamp);
+                        success = true;
+                    }
+                } else if (this.config.storage === 'download') {
+                    this.downloadBackup(dataString, data.timestamp);
+                    success = true;
+                } else {
+                    // Fallback localStorage
+                    success = await this.backupToLocal(data);
+                }
+                
+                // Backup cloud si disponible (et pas pour les changements automatiques)
+                if (this.isCloudReady() && type !== 'auto' && type !== 'onChange') {
+                    const cloudSuccess = await this.backupToCloud(data);
+                    success = success || cloudSuccess;
+                }
+                
+                if (success) {
+                    this.lastBackupTime = new Date();
+                    this.saveLastBackupTime();
+                }
+                
+                return success;
+                
+            } catch (error) {
+                console.error('[Backup] Erreur backup:', error);
+                
+                if (type === 'manual') {
+                    this.showNotification(`Erreur backup: ${error.message}`, 'error');
+                }
+                
+                return false;
+                
+            } finally {
+                this.backupInProgress = false;
+            }
+        }
+
+        // ================================================
+        // MÉTHODES DE BASE (inchangées)
+        // ================================================
+        loadConfig() {
+            try {
+                const saved = localStorage.getItem('emailsortpro_backup_config');
+                if (saved) {
+                    Object.assign(this.config, JSON.parse(saved));
+                }
+            } catch (error) {
+                console.warn('[Backup] Configuration par défaut utilisée');
+            }
+        }
+
+        saveConfig() {
+            try {
+                const configToSave = { ...this.config };
+                delete configToSave.documentsHandle;
+                localStorage.setItem('emailsortpro_backup_config', JSON.stringify(configToSave));
+            } catch (error) {
+                console.warn('[Backup] Erreur sauvegarde config');
+            }
+        }
+
+        async detectProvider() {
+            console.log('[Backup] 🔍 Détection automatique du provider...');
+            
+            if (this.isOneDriveReady()) {
+                this.provider = 'onedrive';
+                console.log('[Backup] ☁️ OneDrive détecté');
+                return;
+            }
+            
+            if (this.isGoogleDriveReady()) {
+                this.provider = 'googledrive';
+                console.log('[Backup] ☁️ Google Drive détecté');
+                return;
+            }
+            
+            this.provider = 'local';
+            console.log('[Backup] 💾 Mode local activé');
+        }
+
+        isOneDriveReady() {
+            return window.authService && 
+                   typeof window.authService.isAuthenticated === 'function' &&
+                   window.authService.isAuthenticated() &&
+                   typeof window.authService.getAccessToken === 'function';
+        }
+
+        isGoogleDriveReady() {
+            return window.googleAuthService && 
+                   typeof window.googleAuthService.isAuthenticated === 'function' &&
+                   window.googleAuthService.isAuthenticated() &&
+                   typeof window.googleAuthService.getAccessToken === 'function';
+        }
+
+        isCloudReady() {
+            return (this.provider === 'onedrive' && this.isOneDriveReady()) ||
+                   (this.provider === 'googledrive' && this.isGoogleDriveReady());
+        }
+
         startAutoTimers() {
             console.log('[Backup] ⏰ Démarrage des timers automatiques...');
             
@@ -722,11 +917,6 @@
             console.log(`[Backup] ⏰ Prochain backup quotidien: ${tomorrow.toLocaleString('fr-FR')}`);
         }
 
-        isCloudReady() {
-            return (this.provider === 'onedrive' && this.isOneDriveReady()) ||
-                   (this.provider === 'googledrive' && this.isGoogleDriveReady());
-        }
-
         async createInitialBackup() {
             console.log('[Backup] 💾 Création du backup initial...');
             
@@ -745,78 +935,14 @@
             }
         }
 
-        // ================================================
-        // EXÉCUTION DES BACKUPS
-        // ================================================
-        async performBackup(type) {
-            if (!this.config.enabled || this.backupInProgress) {
-                return false;
-            }
-            
-            this.backupInProgress = true;
-            
-            try {
-                const data = this.collectData(type);
-                
-                if (!data || !data.data) {
-                    return false;
-                }
-                
-                let success = false;
-                
-                // Priorité au dossier physique si configuré
-                if (this.config.physicalBackupEnabled && this.documentsHandle) {
-                    try {
-                        const dataString = JSON.stringify(data, null, 2);
-                        await this.storeInPhysicalFolder(dataString, data.timestamp, 'backup');
-                        success = true;
-                        console.log('[Backup] ✅ Backup physique créé');
-                    } catch (physicalError) {
-                        console.warn('[Backup] ⚠️ Erreur backup physique:', physicalError);
-                        success = await this.backupToLocal(data);
-                    }
-                } else {
-                    success = await this.backupToLocal(data);
-                }
-                
-                // Backup cloud si disponible
-                if (type.includes('Cloud') || (this.isCloudReady() && type !== 'auto')) {
-                    const cloudSuccess = await this.backupToCloud(data);
-                    success = success || cloudSuccess;
-                }
-                
-                if (success) {
-                    this.lastBackupTime = new Date();
-                    this.saveLastBackupTime();
-                }
-                
-                return success;
-                
-            } catch (error) {
-                console.error('[Backup] Erreur backup:', error);
-                
-                if (type === 'manual') {
-                    this.showNotification(`Erreur backup: ${error.message}`, 'error');
-                }
-                
-                return false;
-                
-            } finally {
-                this.backupInProgress = false;
-            }
-        }
-
-        // ================================================
-        // COLLECTE DES DONNÉES
-        // ================================================
         collectData(type) {
             const data = {
-                version: '4.0',
+                version: '4.1',
                 timestamp: new Date().toISOString(),
                 backupType: type,
                 provider: this.provider,
-                physicalBackup: this.config.physicalBackupEnabled,
-                folderPath: this.config.folderPath || 'localStorage',
+                storage: this.config.storage,
+                storageLocation: this.getStorageLocation(),
                 metadata: {
                     backupId: this.generateId(),
                     trigger: type,
@@ -839,7 +965,11 @@
                 data.data.preferences = this.collectPreferences();
                 
                 data.metadata.size = JSON.stringify(data).length;
-                console.log(`[Backup] 📊 Données collectées: ${data.metadata.size} bytes`);
+                
+                // Log taille seulement occasionnellement
+                if (type === 'manual' || Math.random() < 0.1) {
+                    console.log(`[Backup] 📊 Données collectées: ${data.metadata.size} bytes`);
+                }
                 
             } catch (error) {
                 console.error('[Backup] Erreur collecte données:', error);
@@ -943,9 +1073,6 @@
             }
         }
 
-        // ================================================
-        // STOCKAGE LOCAL
-        // ================================================
         async backupToLocal(data) {
             try {
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -956,7 +1083,10 @@
                 
                 this.cleanupLocalBackups();
                 
-                console.log('[Backup] ✅ Backup local créé');
+                // Log moins verbose
+                if (Math.random() < 0.3) {
+                    console.log('[Backup] ✅ Backup local créé');
+                }
                 return true;
                 
             } catch (error) {
@@ -975,16 +1105,17 @@
                 if (keys.length > this.config.maxBackups.local) {
                     const toDelete = keys.slice(this.config.maxBackups.local);
                     toDelete.forEach(key => localStorage.removeItem(key));
-                    console.log(`[Backup] 🧹 ${toDelete.length} anciens backups supprimés`);
+                    
+                    // Log nettoyage seulement occasionnellement
+                    if (Math.random() < 0.5) {
+                        console.log(`[Backup] 🧹 ${toDelete.length} anciens backups supprimés`);
+                    }
                 }
             } catch (error) {
                 console.warn('[Backup] Erreur nettoyage:', error);
             }
         }
 
-        // ================================================
-        // STOCKAGE CLOUD (simplifié)
-        // ================================================
         async backupToCloud(data) {
             try {
                 if (this.provider === 'onedrive') {
@@ -1086,7 +1217,8 @@
             }
         }
 
-        showNotification(message, type = 'info', duration = 3000) {
+        showNotification(message, type = 'info', duration = 4000) {
+            // Log toujours
             console.log(`[Backup] ${type.toUpperCase()}: ${message}`);
             
             if (window.uiManager && window.uiManager.showToast) {
@@ -1101,6 +1233,7 @@
             console.log('[Backup] 🔧 Mode de secours - localStorage uniquement');
             this.provider = 'local';
             this.config.physicalBackupEnabled = false;
+            this.config.storage = 'localStorage';
             this.isInitialized = true;
             this.startAutoTimers();
             this.queueBackup('fallback');
@@ -1115,10 +1248,6 @@
             await this.processQueue();
         }
 
-        async setupFolder() {
-            return await this.setupPhysicalBackup();
-        }
-
         getStatus() {
             const lastBackup = this.lastBackupTime || 
                 (localStorage.getItem('emailsortpro_backup_last') ? 
@@ -1128,16 +1257,13 @@
                 enabled: this.config.enabled,
                 initialized: this.isInitialized,
                 provider: this.provider,
+                storage: this.config.storage,
+                storageLocation: this.getStorageLocation(),
                 cloudReady: this.isCloudReady(),
                 physicalBackupEnabled: this.config.physicalBackupEnabled,
-                folderPath: this.config.folderPath || 'localStorage',
                 lastBackup: lastBackup ? lastBackup.toLocaleString('fr-FR') : 'Jamais',
                 queueSize: this.backupQueue.length,
-                processing: this.isProcessingQueue,
-                setupNeeded: this.config.documentsSetupNeeded,
-                mode: this.config.physicalBackupEnabled ? 
-                    `Physique (${this.config.folderPath})` : 
-                    'Navigateur (localStorage)'
+                processing: this.isProcessingQueue
             };
         }
 
@@ -1178,7 +1304,7 @@
     
     // Fonctions globales
     window.triggerBackup = () => window.backupService?.manualBackup();
-    window.setupBackupFolder = () => window.backupService?.setupFolder();
+    window.setupBackupFolder = () => window.backupService?.setupPhysicalBackup();
     window.getBackupStatus = () => window.backupService?.getStatus() || { available: false };
     window.enableBackup = () => window.backupService?.enable();
     window.disableBackup = () => window.backupService?.disable();
@@ -1199,9 +1325,9 @@
         }
     });
     
-    console.log('✅ BackupService intégré chargé');
-    console.log('🔄 Backup automatique actif');
-    console.log('⚙️ Configuration via page paramètres');
-    console.log('👁️ Surveillance temps réel des données activée');
+    console.log('✅ BackupService CORRIGÉ chargé');
+    console.log('🔄 Backup automatique avec stockage physique forcé');
+    console.log('📁 Configuration automatique du dossier ou téléchargements');
+    console.log('🔇 Logs réduits pour éviter le spam');
 
 })();
