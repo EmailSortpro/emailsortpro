@@ -19,36 +19,39 @@
                 queue: null
             };
             
-            // Configuration ULTRA AUTOMATIQUE
+                // Configuration ULTRA AUTOMATIQUE SILENCIEUSE
             this.config = {
                 enabled: true,
-                mode: 'ultra-auto',           // Mode ultra automatique
+                mode: 'ultra-auto-silent',    // Mode ultra silencieux
                 intervals: {
-                    auto: 120000,             // 2 minutes (plus fréquent)
+                    auto: 300000,             // 5 minutes (moins agressif)
                     cloud: 1800000,           // 30 minutes
                     daily: 86400000,          // 24 heures
-                    onChange: 15000,          // 15 secondes après changement
+                    onChange: 30000,          // 30 secondes après changement
                     documentsRetry: 10000     // Essai Documents toutes les 10 sec
                 },
                 maxBackups: {
-                    cache: 15,                // Plus de backups cache
-                    indexedDB: 20,            // Plus de backups IndexedDB
-                    local: 8,
-                    documents: 30
+                    cache: 10,                // Backups cache
+                    indexedDB: 15,            // Backups IndexedDB
+                    local: 5,
+                    downloads: 3              // Limiter les téléchargements à 3 par heure
                 },
                 silentMode: true,
                 
-                // Stratégie ULTRA aggressive
+                // Stratégie SILENCIEUSE
                 cacheFirst: true,             // Cache priorité absolue
                 indexedDBSecond: true,        // IndexedDB en second
                 tryDocuments: false,          // Désactiver tentatives Documents par défaut
                 documentsAutoSetup: false,    // Pas de setup automatique
                 lastDocumentsAttempt: 0,
                 
-                // NOUVEAU: Backup multi-couches
+                // NOUVEAU: Contrôle téléchargements
                 multiLayerBackup: true,       // Backup dans plusieurs endroits
                 instantBackup: true,          // Backup instantané
-                backgroundSync: true          // Sync en arrière-plan
+                backgroundSync: true,         // Sync en arrière-plan
+                downloadLimit: 3,             // Max 3 téléchargements par heure
+                lastDownloadHour: 0,
+                downloadsThisHour: 0
             };
             
             this.backupQueue = [];
@@ -373,8 +376,8 @@
                                 </div>
                                 <div class="layer active">
                                     <i class="fas fa-download"></i>
-                                    <span>Dossier local</span>
-                                    <small>✅ Téléchargement forcé</small>
+                                    <span>Téléchargements</span>
+                                    <small>✅ Max 3/heure (${this.config.downloadsThisHour || 0}/3)</small>
                                 </div>
                             </div>
                         </div>
@@ -726,13 +729,18 @@
                     console.warn('[Backup] ⚠️ localStorage Error:', error);
                 }
                 
-                // 4. Dossier local FORCÉ (téléchargement automatique)
-                try {
-                    await this.backupToLocalFolder(dataString, data.timestamp);
-                    successCount++;
-                    console.log('[Backup] ✅ Dossier local forcé');
-                } catch (error) {
-                    console.warn('[Backup] ⚠️ Dossier local Error:', error);
+                // 4. Téléchargement contrôlé (avec limite)
+                if (this.shouldDownloadFile()) {
+                    try {
+                        await this.backupToLocalFolder(dataString, data.timestamp);
+                        this.recordDownload();
+                        successCount++;
+                        console.log('[Backup] ✅ Téléchargement automatique');
+                    } catch (error) {
+                        console.warn('[Backup] ⚠️ Téléchargement Error:', error);
+                    }
+                } else {
+                    console.log('[Backup] 📊 Limite téléchargements atteinte cette heure');
                 }
                 
                 // Note: Cloud désactivé pour éviter les erreurs
@@ -841,7 +849,7 @@
         }
 
         // ================================================
-        // NOUVEAU: BACKUP DOSSIER LOCAL FORCÉ
+        // NOUVEAU: BACKUP DOSSIER LOCAL FORCÉ (SANS POPUP)
         // ================================================
         async backupToLocalFolder(dataString, timestamp) {
             try {
@@ -855,27 +863,62 @@
                 const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
                 const fileName = `EmailSortPro-Auto-${dateStr}_${timeStr}.json`;
                 
-                // Créer un lien de téléchargement automatique
+                // Créer un lien de téléchargement automatique SILENCIEUX
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = fileName;
                 a.style.display = 'none';
                 
-                // Force le téléchargement vers le dossier par défaut
+                // Forcer le téléchargement vers le dossier par défaut SANS POPUP
+                // Utiliser le comportement par défaut du navigateur
                 document.body.appendChild(a);
-                a.click();
+                
+                // Déclencher le téléchargement automatique
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                });
+                
+                a.dispatchEvent(clickEvent);
+                
+                // Nettoyer immédiatement
                 document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 100);
                 
-                // Nettoyer l'URL
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                console.log(`[Backup] 📁 Fichier auto-téléchargé: ${fileName}`);
                 
-                console.log(`[Backup] 📁 Fichier forcé: ${fileName}`);
+                // Stocker aussi dans un dossier virtuel pour organisation
+                await this.storeInVirtualFolder(dataString, fileName);
+                
                 return true;
                 
             } catch (error) {
-                console.error('[Backup] Erreur dossier local forcé:', error);
+                console.error('[Backup] Erreur téléchargement auto:', error);
                 return false;
             }
+        }
+        
+        // ================================================
+        // CONTRÔLE DES TÉLÉCHARGEMENTS
+        // ================================================
+        shouldDownloadFile() {
+            const currentHour = new Date().getHours();
+            
+            // Reset du compteur si nouvelle heure
+            if (currentHour !== this.config.lastDownloadHour) {
+                this.config.lastDownloadHour = currentHour;
+                this.config.downloadsThisHour = 0;
+                this.saveConfig();
+            }
+            
+            // Vérifier la limite
+            return this.config.downloadsThisHour < this.config.downloadLimit;
+        }
+        
+        recordDownload() {
+            this.config.downloadsThisHour++;
+            this.saveConfig();
         }
 
         // ================================================
@@ -1027,6 +1070,45 @@
             return preferences;
         }
 
+        getCurrentUser() {
+            try {
+                return window.app?.user?.email || 
+                       window.currentUserInfo?.email || 
+                       localStorage.getItem('currentUserEmail') || 
+                       'unknown';
+            } catch {
+                return 'unknown';
+            }
+        }
+
+        // Méthode pour créer un "dossier virtuel" dans IndexedDB
+        async storeInVirtualFolder(dataString, fileName) {
+            try {
+                if (!this.indexedDB) return;
+                
+                const transaction = this.indexedDB.transaction(['backups'], 'readwrite');
+                const store = transaction.objectStore('backups');
+                
+                const folderData = {
+                    id: `folder-${Date.now()}`,
+                    fileName: fileName,
+                    data: dataString,
+                    timestamp: Date.now(),
+                    type: 'auto-download',
+                    location: 'Téléchargements par défaut'
+                };
+                
+                await store.put(folderData);
+                console.log(`[Backup] 📂 Référence créée: ${fileName}`);
+                
+            } catch (error) {
+                console.warn('[Backup] Erreur dossier virtuel:', error);
+            }
+        }
+
+        // ================================================
+        // MÉTHODES CLOUD (simplifiées pour éviter erreurs)
+        // ================================================
         cleanupLocalBackups() {
             try {
                 const keys = Object.keys(localStorage)
@@ -1041,24 +1123,6 @@
             } catch (error) {
                 console.warn('[Backup] Erreur nettoyage local:', error);
             }
-        }
-
-        getCurrentUser() {
-            try {
-                return window.app?.user?.email || 
-                       window.currentUserInfo?.email || 
-                       localStorage.getItem('currentUserEmail') || 
-                       'unknown';
-            } catch {
-                return 'unknown';
-            }
-        }
-
-        // ================================================
-        // MÉTHODES CLOUD (simplifiées pour éviter erreurs)
-        // ================================================
-        isCloudReady() {
-            return false; // Désactivé pour éviter les erreurs
         }
 
         async detectProvider() {
@@ -1268,10 +1332,10 @@
     });
     
     console.log('✅ BackupService ULTRA AUTOMATIQUE chargé');
-    console.log('🚀 Mode QUAD-couches : Cache + IndexedDB + localStorage + Dossier local FORCÉ');
-    console.log('📁 DOSSIER LOCAL: Téléchargement automatique dans Téléchargements');
-    console.log('⚡ Backup ultra-fréquent : toutes les 2 minutes');
-    console.log('🔒 Quadruple redondance garantie');
-    console.log('🎯 Fichiers créés automatiquement à chaque backup!');
+    console.log('🚀 Mode QUAD-couches : Cache + IndexedDB + localStorage + Téléchargements CONTRÔLÉS');
+    console.log('📁 TÉLÉCHARGEMENTS: Automatiques dans dossier par défaut (max 3/heure)');
+    console.log('⚡ Backup intelligent : toutes les 5 minutes');
+    console.log('🔒 Quadruple redondance avec limite intelligente');
+    console.log('🎯 Téléchargements silencieux sans popup!');
 
 })();
