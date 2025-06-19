@@ -203,11 +203,14 @@ class CategoriesPageV22 {
                                     <option value="localStorage" ${config.storage === 'localStorage' ? 'selected' : ''}>Navigateur (localStorage)</option>
                                     <option value="indexedDB" ${config.storage === 'indexedDB' ? 'selected' : ''}>Base de données locale (IndexedDB)</option>
                                     <option value="download" ${config.storage === 'download' ? 'selected' : ''}>Téléchargement automatique</option>
-                                    <option value="cloud" ${config.storage === 'cloud' ? 'selected' : ''}>Cloud (Google Drive/OneDrive)</option>
-                                    <option value="export" ${config.storage === 'export' ? 'selected' : ''}>Export manuel uniquement</option>
                                 </select>
                                 <div class="storage-help">
-                                    ${this.getStorageHelp(config.storage)}
+                                    <small class="storage-help-text">
+                                        ${config.storage === 'localStorage' ? '💾 Stocké dans votre navigateur. Rapide mais limité à cet appareil.' : 
+                                          config.storage === 'indexedDB' ? '🗃️ Base de données locale plus robuste. Recommandé pour de gros volumes.' :
+                                          config.storage === 'download' ? '📥 Fichiers téléchargés automatiquement dans votre dossier Téléchargements.' :
+                                          '💾 Sélectionnez un emplacement de stockage'}
+                                    </small>
                                 </div>
                             </div>
                             
@@ -573,65 +576,11 @@ class CategoriesPageV22 {
                 this.showToast('📥 Sauvegarde téléchargée automatiquement', 'success');
                 break;
                 
-            case 'cloud':
-                await this.storeInCloud(data, timestamp);
-                break;
-                
-            case 'export':
-                // Ne pas stocker automatiquement, seulement via export manuel
-                this.showToast('📤 Sauvegarde créée - utilisez "Télécharger" pour l\'exporter', 'info');
-                // Stocker temporairement pour l'export
-                localStorage.setItem('temp_' + backupKey, data);
-                break;
-                
             default:
                 // Fallback vers localStorage
                 localStorage.setItem(backupKey, data);
                 this.showToast('💾 Sauvegarde stockée (localStorage par défaut)', 'success');
         }
-    }
-
-    async storeInCloud(data, timestamp) {
-        try {
-            // Détection du service cloud disponible
-            if (window.gapi && window.gapi.auth2) {
-                // Google Drive
-                await this.storeInGoogleDrive(data, timestamp);
-                this.showToast('☁️ Sauvegarde uploadée sur Google Drive', 'success');
-            } else if (window.OneDrive) {
-                // OneDrive
-                await this.storeInOneDrive(data, timestamp);
-                this.showToast('☁️ Sauvegarde uploadée sur OneDrive', 'success');
-            } else {
-                // Fallback vers téléchargement
-                this.downloadBackup(data, timestamp);
-                this.showToast('📥 Cloud non disponible - sauvegarde téléchargée', 'warning');
-            }
-        } catch (error) {
-            console.error('[Backup] Erreur cloud:', error);
-            // Fallback vers localStorage
-            const backupKey = `emailsortpro_backup_${timestamp.replace(/[:.]/g, '-')}`;
-            localStorage.setItem(backupKey, data);
-            this.showToast('💾 Erreur cloud - sauvé localement', 'warning');
-        }
-    }
-
-    async storeInGoogleDrive(data, timestamp) {
-        // Implémentation Google Drive (à développer)
-        const filename = `emailsortpro-backup-${timestamp.split('T')[0]}.json`;
-        
-        // Placeholder pour l'intégration Google Drive
-        console.log('[Backup] Google Drive upload:', filename);
-        throw new Error('Google Drive non encore implémenté');
-    }
-
-    async storeInOneDrive(data, timestamp) {
-        // Implémentation OneDrive (à développer)
-        const filename = `emailsortpro-backup-${timestamp.split('T')[0]}.json`;
-        
-        // Placeholder pour l'intégration OneDrive
-        console.log('[Backup] OneDrive upload:', filename);
-        throw new Error('OneDrive non encore implémenté');
     }
 
     async storeInIndexedDB(key, data) {
