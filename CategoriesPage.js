@@ -95,120 +95,325 @@ class CategoriesPageV23 {
     }
 
     async setupDefaultPath() {
-        console.log('[CategoriesPage] 🎯 Configuration automatique du chemin par défaut...');
+        console.log('[CategoriesPage] 🎯 Configuration chemin PERSISTANT par défaut...');
         
         try {
-            // CONFIGURATION PAR DÉFAUT SANS DEMANDER À L'UTILISATEUR
-            // Utiliser OPFS comme stockage par défaut (invisible mais persistant)
-            
-            if ('navigator' in window && 'storage' in navigator && 'getDirectory' in navigator.storage) {
-                // Utiliser OPFS pour créer un stockage par défaut
-                const opfsRoot = await navigator.storage.getDirectory();
-                const backupDir = await opfsRoot.getDirectoryHandle('emailsortpro-categories-backup', { create: true });
-                
-                // Tester l'accès en écriture
-                await this.testDirectoryAccess(backupDir);
-                
-                // Configurer le filesystem avec OPFS et chemin complet
-                this.filesystemConfig.directoryHandle = backupDir;
-                this.filesystemConfig.enabled = true;
-                this.filesystemConfig.permissions = 'granted';
-                
-                // CHEMIN COMPLET DÉTAILLÉ
-                const userProfile = navigator.userAgent.includes('Windows') ? 'C:\\Users\\' + (navigator.userAgentData?.platform || 'Utilisateur') + '\\' : 
-                                   navigator.userAgent.includes('Mac') ? '/Users/' + (process?.env?.USER || 'Utilisateur') + '/' :
-                                   '/home/' + (process?.env?.USER || 'utilisateur') + '/';
-                
-                this.filesystemConfig.currentPath = userProfile + 'AppData\\Local\\Google\\Chrome\\User Data\\Default\\File System\\Origin\\' + 
-                                                   window.location.origin.replace(/[^a-zA-Z0-9]/g, '_') + '\\emailsortpro-categories-backup\\';
-                
-                await this.saveFilesystemConfig();
-                
-                // Créer un fichier d'information avec le chemin complet
-                await this.createDefaultInfo(backupDir);
-                
-                // Créer un backup initial pour tester
-                await this.createFilesystemBackup('setup-default');
-                
-                console.log('[CategoriesPage] ✅ Chemin par défaut OPFS configuré:', this.filesystemConfig.currentPath);
-                
+            // STRATÉGIE 1: Essayer le dossier Documents de l'utilisateur (le plus sûr)
+            if (await this.tryDocumentsFolder()) {
                 return true;
-            } else {
-                // Fallback : configurer un chemin théorique avec drive complet
-                this.filesystemConfig.currentPath = 'C:\\Users\\[Utilisateur]\\AppData\\Local\\[Navigateur]\\EmailSortPro\\Categories\\';
-                this.filesystemConfig.enabled = false;
-                this.filesystemConfig.permissions = 'not-supported';
-                
-                console.log('[CategoriesPage] ⚠️ OPFS non disponible - Chemin théorique configuré');
-                return false;
             }
             
+            // STRATÉGIE 2: Essayer de demander un dossier système persistant
+            if (await this.trySystemFolder()) {
+                return true;
+            }
+            
+            // STRATÉGIE 3: Fallback vers stockage visible mais demander à l'utilisateur
+            if (await this.tryUserSelectedFolder()) {
+                return true;
+            }
+            
+            // STRATÉGIE 4: Utiliser OPFS uniquement en dernier recours
+            return await this.fallbackToOPFS();
+            
         } catch (error) {
-            console.log('[CategoriesPage] ⚠️ Configuration par défaut impossible - Mode backup invisible uniquement');
+            console.log('[CategoriesPage] ⚠️ Toutes les stratégies échouées - Mode invisible uniquement');
+            return await this.fallbackToOPFS();
+        }
+    }
+
+    async tryDocumentsFolder() {
+        try {
+            console.log('[CategoriesPage] 📁 Tentative: Dossier Documents');
             
-            // Configurer au moins le chemin théorique par défaut avec drive complet
-            this.filesystemConfig.currentPath = 'C:\\Users\\[Utilisateur]\\AppData\\Local\\[Navigateur]\\EmailSortPro\\Categories\\';
-            this.filesystemConfig.enabled = false;
-            this.filesystemConfig.permissions = 'error';
+            // Demander accès au dossier Documents
+            const documentsHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents',
+                id: 'emailsortpro-documents-setup'
+            });
             
+            // Créer EmailSortPro dans Documents
+            let emailSortProHandle;
+            try {
+                emailSortProHandle = await documentsHandle.getDirectoryHandle('EmailSortPro', { create: true });
+            } catch (error) {
+                emailSortProHandle = await documentsHandle.getDirectoryHandle('EmailSortPro', { create: true });
+            }
+            
+            // Créer sous-dossier Categories
+            let categoriesHandle;
+            try {
+                categoriesHandle = await emailSortProHandle.getDirectoryHandle('Categories-Backup', { create: true });
+            } catch (error) {
+                categoriesHandle = await emailSortProHandle.getDirectoryHandle('Categories-Backup', { create: true });
+            }
+            
+            // Tester l'accès
+            await this.testDirectoryAccess(categoriesHandle);
+            
+            // Configurer
+            this.filesystemConfig.directoryHandle = categoriesHandle;
+            this.filesystemConfig.enabled = true;
+            this.filesystemConfig.permissions = 'granted';
+            this.filesystemConfig.storageType = 'documents';
+            this.filesystemConfig.currentPath = `C:\\Users\\${this.getCurrentUser()}\\Documents\\EmailSortPro\\Categories-Backup\\`;
+            this.filesystemConfig.documentsPath = this.filesystemConfig.currentPath;
+            
+            await this.saveFilesystemConfig();
+            await this.createBackupReadme(categoriesHandle);
+            await this.createFilesystemBackup('setup-documents');
+            
+            console.log('[CategoriesPage] ✅ Dossier Documents configuré:', this.filesystemConfig.currentPath);
+            return true;
+            
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.log('[CategoriesPage] ⚠️ Dossier Documents inaccessible:', error.message);
+            }
             return false;
         }
     }
 
-    async createDefaultInfo(directoryHandle) {
+    async trySystemFolder() {
         try {
-            const fullPath = this.filesystemConfig.currentPath;
+            console.log('[CategoriesPage] 🏢 Tentative: Dossier système persistant');
             
-            const infoContent = `# EmailSortPro - Stockage Automatique des Catégories
+            // Demander un dossier sur le disque C:// racine
+            const rootHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'desktop', // Commencer par le bureau
+                id: 'emailsortpro-system-setup'
+            });
+            
+            // Vérifier si c'est un dossier approprié (racine du disque)
+            const folderName = rootHandle.name || '';
+            
+            // Créer structure EmailSortPro
+            let emailSortProHandle;
+            try {
+                emailSortProHandle = await rootHandle.getDirectoryHandle('EmailSortPro', { create: true });
+            } catch (error) {
+                emailSortProHandle = await rootHandle.getDirectoryHandle('EmailSortPro', { create: true });
+            }
+            
+            let backupsHandle;
+            try {
+                backupsHandle = await emailSortProHandle.getDirectoryHandle('Backups', { create: true });
+            } catch (error) {
+                backupsHandle = await emailSortProHandle.getDirectoryHandle('Backups', { create: true });
+            }
+            
+            let categoriesHandle;
+            try {
+                categoriesHandle = await backupsHandle.getDirectoryHandle('Categories', { create: true });
+            } catch (error) {
+                categoriesHandle = await backupsHandle.getDirectoryHandle('Categories', { create: true });
+            }
+            
+            // Tester l'accès
+            await this.testDirectoryAccess(categoriesHandle);
+            
+            // Déterminer le chemin probable
+            let probablePath;
+            if (folderName.toLowerCase().includes('desktop') || folderName.toLowerCase().includes('bureau')) {
+                probablePath = `C:\\Users\\${this.getCurrentUser()}\\Desktop\\EmailSortPro\\Backups\\Categories\\`;
+            } else if (folderName.toLowerCase().includes('documents')) {
+                probablePath = `C:\\Users\\${this.getCurrentUser()}\\Documents\\EmailSortPro\\Backups\\Categories\\`;
+            } else {
+                probablePath = `C:\\${folderName}\\EmailSortPro\\Backups\\Categories\\`;
+            }
+            
+            // Configurer
+            this.filesystemConfig.directoryHandle = categoriesHandle;
+            this.filesystemConfig.enabled = true;
+            this.filesystemConfig.permissions = 'granted';
+            this.filesystemConfig.storageType = 'system';
+            this.filesystemConfig.currentPath = probablePath;
+            
+            await this.saveFilesystemConfig();
+            await this.createBackupReadme(categoriesHandle);
+            await this.createFilesystemBackup('setup-system');
+            
+            console.log('[CategoriesPage] ✅ Dossier système configuré:', this.filesystemConfig.currentPath);
+            return true;
+            
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.log('[CategoriesPage] ⚠️ Dossier système inaccessible:', error.message);
+            }
+            return false;
+        }
+    }
 
-Ce dossier est créé automatiquement par EmailSortPro pour sauvegarder vos catégories.
+    async tryUserSelectedFolder() {
+        try {
+            console.log('[CategoriesPage] 👤 Demande: Dossier personnalisé persistant');
+            
+            // Afficher un message explicatif
+            this.showToast('📁 Choisissez un dossier PERSISTANT pour vos backups (évitez les dossiers temporaires)', 'info');
+            
+            const selectedHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents',
+                id: 'emailsortpro-persistent-setup'
+            });
+            
+            // Créer sous-dossier EmailSortPro-Categories directement
+            let categoriesHandle;
+            try {
+                categoriesHandle = await selectedHandle.getDirectoryHandle('EmailSortPro-Categories', { create: true });
+            } catch (error) {
+                categoriesHandle = await selectedHandle.getDirectoryHandle('EmailSortPro-Categories', { create: true });
+            }
+            
+            // Tester l'accès
+            await this.testDirectoryAccess(categoriesHandle);
+            
+            // Configurer avec chemin complet estimé
+            const fullPath = await this.getFullDirectoryPath(categoriesHandle);
+            
+            this.filesystemConfig.directoryHandle = categoriesHandle;
+            this.filesystemConfig.enabled = true;
+            this.filesystemConfig.permissions = 'granted';
+            this.filesystemConfig.storageType = 'custom';
+            this.filesystemConfig.currentPath = fullPath;
+            
+            await this.saveFilesystemConfig();
+            await this.createBackupReadme(categoriesHandle);
+            await this.createFilesystemBackup('setup-custom');
+            
+            console.log('[CategoriesPage] ✅ Dossier personnalisé configuré:', this.filesystemConfig.currentPath);
+            return true;
+            
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.log('[CategoriesPage] ⚠️ Dossier personnalisé inaccessible:', error.message);
+            }
+            return false;
+        }
+    }
 
-## 📁 Emplacement Complet
-${fullPath}
+    async fallbackToOPFS() {
+        try {
+            console.log('[CategoriesPage] 🔄 Fallback: Stockage navigateur (temporaire)');
+            
+            if ('navigator' in window && 'storage' in navigator && 'getDirectory' in navigator.storage) {
+                const opfsRoot = await navigator.storage.getDirectory();
+                const backupDir = await opfsRoot.getDirectoryHandle('emailsortpro-categories-backup', { create: true });
+                
+                await this.testDirectoryAccess(backupDir);
+                
+                this.filesystemConfig.directoryHandle = backupDir;
+                this.filesystemConfig.enabled = true;
+                this.filesystemConfig.permissions = 'granted';
+                this.filesystemConfig.storageType = 'browser-temporary';
+                this.filesystemConfig.currentPath = `⚠️ TEMPORAIRE: ${this.getBrowserDataPath()}\\emailsortpro-categories-backup\\`;
+                
+                await this.saveFilesystemConfig();
+                await this.createTemporaryWarning(backupDir);
+                await this.createFilesystemBackup('setup-temporary');
+                
+                console.log('[CategoriesPage] ⚠️ Stockage temporaire configuré (ATTENTION: peut être supprimé)');
+                return true;
+            }
+            
+            return false;
+            
+        } catch (error) {
+            console.error('[CategoriesPage] ❌ Même le fallback OPFS a échoué:', error);
+            
+            // Configuration minimale pour information
+            this.filesystemConfig.currentPath = '❌ AUCUN STOCKAGE PERSISTANT CONFIGURÉ';
+            this.filesystemConfig.enabled = false;
+            this.filesystemConfig.storageType = 'none';
+            return false;
+        }
+    }
 
-## 🎯 Stockage Par Défaut
-- Stockage sécurisé dans le système de fichiers du navigateur
-- Sauvegarde automatique toutes les 30 secondes
-- Pas d'intervention utilisateur requise
-- Persistant même après fermeture du navigateur
+    getCurrentUser() {
+        try {
+            // Essayer d'obtenir le nom d'utilisateur
+            return process?.env?.USERNAME || 
+                   process?.env?.USER || 
+                   navigator?.userAgentData?.platform || 
+                   'Utilisateur';
+        } catch (error) {
+            return 'Utilisateur';
+        }
+    }
 
-## 📂 Contenu de ce Dossier
-- Sauvegardes automatiques des catégories (JSON)
-- Configuration des mots-clés et filtres
-- Paramètres de pré-sélection des tâches
-- Métadonnées et statistiques
+    getBrowserDataPath() {
+        const userAgent = navigator.userAgent;
+        const user = this.getCurrentUser();
+        
+        if (userAgent.includes('Chrome')) {
+            return `C:\\Users\\${user}\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\File System`;
+        } else if (userAgent.includes('Edge')) {
+            return `C:\\Users\\${user}\\AppData\\Local\\Microsoft\\Edge\\User Data\\Default\\File System`;
+        } else if (userAgent.includes('Firefox')) {
+            return `C:\\Users\\${user}\\AppData\\Local\\Mozilla\\Firefox\\Profiles\\[Profile]\\storage`;
+        } else {
+            return `C:\\Users\\${user}\\AppData\\Local\\[Navigateur]\\[Profile]\\storage`;
+        }
+    }
 
-## 🔍 Localisation Physique
-Ce dossier se trouve dans le stockage privé de votre navigateur :
-${fullPath}
+    async createTemporaryWarning(directoryHandle) {
+        try {
+            const warningContent = `# ⚠️ ATTENTION - STOCKAGE TEMPORAIRE ⚠️
 
-Note: Ce chemin est géré automatiquement par le navigateur pour la sécurité.
+IMPORTANT: Ce dossier est dans le stockage du navigateur et peut être SUPPRIMÉ !
 
-## 🔧 Pour Changer l'Emplacement
-Si vous voulez sauvegarder dans un dossier visible et accessible :
-1. Allez dans EmailSortPro > Paramètres > Sauvegarde C://
-2. Cliquez sur "Configurer Répertoire C://"
-3. Choisissez votre dossier préféré (ex: C:\\MesBackups\\EmailSortPro)
+## 🚨 RISQUES
+- Suppression lors du nettoyage du navigateur
+- Perte lors de la réinstallation du navigateur
+- Suppression lors du nettoyage de Windows
+- Pas de sauvegarde externe automatique
 
-## 📋 Fichiers Créés
-- EmailSortPro-Categories-YYYY-MM-DD_HH-MM-SS.json (horodatés)
-- LATEST-Categories-Backup.json (toujours la dernière version)
-- Ce fichier README pour information
+## 📁 Emplacement Actuel (TEMPORAIRE)
+${this.filesystemConfig.currentPath}
+
+## 🔧 SOLUTION RECOMMANDÉE
+Configurez un dossier PERSISTANT pour vos backups :
+
+### Option 1: Dossier Documents (RECOMMANDÉ)
+- Allez dans Paramètres > Sauvegarde C://
+- Cliquez "Configurer Répertoire Persistant"
+- Choisissez votre dossier Documents
+- Créez un dossier "EmailSortPro"
+
+### Option 2: Dossier Système
+- Créez un dossier sur C:\\ directement
+- Ex: C:\\EmailSortPro\\Backups\\
+- Utilisez "Configurer Répertoire Persistant"
+
+### Option 3: Dossier Externe
+- Utilisez un disque externe (D:\\, E:\\, etc.)
+- Créez EmailSortPro sur ce disque
+- Configuration via "Configurer Répertoire Persistant"
+
+## 📋 Contenu Actuel
+- Sauvegardes automatiques (JSON)
+- Configuration des catégories
+- Métadonnées et historique
+
+## ⚡ URGENT
+Ce stockage est TEMPORAIRE. Configurez un emplacement persistant
+dès que possible pour éviter la perte de vos données !
 
 ---
-Configuré automatiquement le ${new Date().toLocaleString('fr-FR')}
-Chemin complet : ${fullPath}
-Mode : Stockage automatique sécurisé
-Application : EmailSortPro v23.0
+Généré automatiquement le ${new Date().toLocaleString('fr-FR')}
+Status: STOCKAGE TEMPORAIRE - ACTION REQUISE
+Emplacement: ${this.filesystemConfig.currentPath}
 `;
 
-            const infoHandle = await directoryHandle.getFileHandle('README-Stockage-Automatique.txt', { create: true });
-            const writable = await infoHandle.createWritable();
-            await writable.write(infoContent);
+            const warningHandle = await directoryHandle.getFileHandle('⚠️-ATTENTION-STOCKAGE-TEMPORAIRE.txt', { create: true });
+            const writable = await warningHandle.createWritable();
+            await writable.write(warningContent);
             await writable.close();
 
         } catch (error) {
-            console.warn('[CategoriesPage] Impossible de créer le fichier d\'info:', error);
+            console.warn('[CategoriesPage] Impossible de créer l\'avertissement temporaire:', error);
         }
     }
 
@@ -1154,22 +1359,28 @@ Chemin: ${this.filesystemConfig.currentPath}
         
         return `
             <div class="filesystem-backup-content">
-                <!-- Statut du système de fichiers -->
-                <div class="filesystem-status-card">
+                <!-- Statut du système de fichiers avec avertissement si temporaire -->
+                <div class="filesystem-status-card ${this.filesystemConfig.storageType === 'browser-temporary' ? 'warning-storage' : ''}">
                     <div class="status-header">
                         <div class="status-icon ${isConfigured ? 'active' : 'inactive'}">
-                            <i class="fas fa-${isConfigured ? 'check-circle' : 'cog'}"></i>
+                            <i class="fas fa-${isConfigured ? 
+                                (this.filesystemConfig.storageType === 'browser-temporary' ? 'exclamation-triangle' : 'check-circle') : 
+                                'cog'}"></i>
                         </div>
                         <div class="status-info">
-                            <h3>Sauvegarde ${isConfigured ? 'Active' : 'Par Défaut'}</h3>
+                            <h3>Sauvegarde ${isConfigured ? 
+                                (this.filesystemConfig.storageType === 'browser-temporary' ? 'TEMPORAIRE ⚠️' : 'Persistante ✅') : 
+                                'Par Défaut'}</h3>
                             <p class="filesystem-path">
                                 <i class="fas fa-folder"></i>
                                 ${currentPath}
                             </p>
                             <p class="filesystem-details">
-                                ${isConfigured ? 
-                                  `Dernière sauvegarde : ${lastBackup}` : 
-                                  'Stockage automatique dans l\'application'
+                                ${this.filesystemConfig.storageType === 'browser-temporary' ? 
+                                  '⚠️ ATTENTION: Stockage temporaire - peut être supprimé !' :
+                                  isConfigured ? 
+                                    `Dernière sauvegarde : ${lastBackup}` : 
+                                    'Configuration automatique du stockage persistant'
                                 }
                                 ${this.filesystemConfig.lastBackupFile ? ` | Fichier : ${this.filesystemConfig.lastBackupFile}` : ''}
                             </p>
@@ -1183,9 +1394,12 @@ Chemin: ${this.filesystemConfig.currentPath}
                         </button>
                         
                         ${this.fileSystemSupported ? `
-                            <button class="btn-action secondary" onclick="window.categoriesPageV23.changeBackupDirectory()">
+                            <button class="btn-action ${this.filesystemConfig.storageType === 'browser-temporary' ? 'warning' : 'secondary'}" 
+                                    onclick="window.categoriesPageV23.changeBackupDirectory()">
                                 <i class="fas fa-folder-open"></i>
-                                ${isConfigured ? 'Changer Répertoire' : 'Configurer Répertoire C://'}
+                                ${this.filesystemConfig.storageType === 'browser-temporary' ? 
+                                  'Configurer Stockage Persistant' : 
+                                  isConfigured ? 'Changer Répertoire' : 'Configurer Répertoire Persistant'}
                             </button>
                         ` : ''}
                         
@@ -1198,17 +1412,39 @@ Chemin: ${this.filesystemConfig.currentPath}
                     </div>
                 </div>
                 
+                <!-- Avertissement stockage temporaire -->
+                ${this.filesystemConfig.storageType === 'browser-temporary' ? `
+                    <div class="temporary-warning-card">
+                        <div class="warning-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="warning-content">
+                            <h4>🚨 Stockage Temporaire Détecté</h4>
+                            <p><strong>RISQUE:</strong> Vos backups sont dans le dossier du navigateur et peuvent être supprimés 
+                               lors du nettoyage, réinstallation, ou mise à jour du navigateur.</p>
+                            <p><strong>SOLUTION:</strong> Configurez un emplacement persistant (Documents, C:\\, disque externe) 
+                               pour protéger vos données.</p>
+                        </div>
+                    </div>
+                ` : ''}
+                
                 <!-- Notification de fonctionnement par défaut -->
-                <div class="default-info-card">
-                    <div class="info-icon">
-                        <i class="fas fa-info-circle"></i>
+                ${this.filesystemConfig.storageType !== 'browser-temporary' ? `
+                    <div class="default-info-card">
+                        <div class="info-icon">
+                            <i class="fas fa-${this.filesystemConfig.storageType === 'documents' ? 'file-alt' : 
+                                               this.filesystemConfig.storageType === 'system' ? 'hdd' :
+                                               this.filesystemConfig.storageType === 'custom' ? 'folder' : 'info-circle'}"></i>
+                        </div>
+                        <div class="info-content">
+                            <h4>✅ Stockage Persistant ${this.filesystemConfig.storageType === 'documents' ? '(Documents)' :
+                                                        this.filesystemConfig.storageType === 'system' ? '(Système)' :
+                                                        this.filesystemConfig.storageType === 'custom' ? '(Personnalisé)' : ''}</h4>
+                            <p>Vos catégories sont sauvegardées automatiquement dans un emplacement sûr et persistant.
+                               ${!isConfigured && this.fileSystemSupported ? ' Vous pouvez configurer un répertoire personnalisé ci-dessous.' : ''}</p>
+                        </div>
                     </div>
-                    <div class="info-content">
-                        <h4>✅ Backup Automatique Activé</h4>
-                        <p>Vos catégories sont sauvegardées automatiquement ${isConfigured ? 'dans le répertoire configuré' : 'dans le stockage de l\'application'}.
-                           ${!isConfigured && this.fileSystemSupported ? ' Vous pouvez configurer un répertoire C:// personnalisé ci-dessous.' : ''}</p>
-                    </div>
-                </div>
+                ` : ''}
                 
                 ${!this.fileSystemSupported ? `
                     <div class="warning-card">
@@ -2674,8 +2910,63 @@ Chemin: ${this.filesystemConfig.currentPath}
                 background: #fef2f2;
             }
 
-            /* Carte d'information par défaut */
-            .default-info-card {
+            /* Avertissement stockage temporaire */
+            .temporary-warning-card {
+                background: #fef2f2;
+                border: 2px solid #fecaca;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .temporary-warning-card .warning-icon {
+                color: #dc2626;
+                font-size: 24px;
+                margin-top: 2px;
+            }
+
+            .temporary-warning-card .warning-content h4 {
+                font-size: 15px;
+                font-weight: 600;
+                color: #dc2626;
+                margin: 0 0 8px 0;
+            }
+
+            .temporary-warning-card .warning-content p {
+                font-size: 13px;
+                color: #991b1b;
+                margin: 0 0 6px 0;
+                line-height: 1.4;
+            }
+
+            .temporary-warning-card .warning-content p strong {
+                font-weight: 600;
+            }
+
+            /* Status card avec warning */
+            .filesystem-status-card.warning-storage {
+                border: 2px solid #fbbf24;
+                background: #fffbeb;
+            }
+
+            .filesystem-status-card.warning-storage .status-icon {
+                background: #f59e0b;
+                color: white;
+            }
+
+            .btn-action.warning {
+                background: #f59e0b;
+                color: white;
+                font-weight: 600;
+            }
+
+            .btn-action.warning:hover {
+                background: #d97706;
+                transform: translateY(-1px);
+            }
                 background: #f0f9ff;
                 border: 1px solid #bae6fd;
                 border-radius: 8px;
@@ -3925,50 +4216,95 @@ window.forceFilesystemBackup = async function() {
     }
 };
 
-// Démarrer un test automatique ET configuration par défaut après un délai
+// Démarrer la configuration automatique PERSISTANTE
 setTimeout(async () => {
-    console.log('[CategoriesPage] 🎯 Configuration automatique du backup filesystem...');
+    console.log('[CategoriesPage] 🎯 Configuration automatique PERSISTANTE...');
     
     const instance = window.categoriesPageV23;
     
-    // Si le filesystem est supporté, essayer de configurer automatiquement
+    // Si le filesystem est supporté, essayer de configurer automatiquement un stockage PERSISTANT
     if (instance.fileSystemSupported && !instance.filesystemConfig.enabled) {
-        console.log('[CategoriesPage] 🔧 Tentative de configuration automatique...');
+        console.log('[CategoriesPage] 🏠 Tentative de configuration persistante...');
         
         setTimeout(async () => {
             try {
-                // Essayer la configuration automatique silencieuse
-                const autoConfigured = await instance.setupDefaultPath();
+                // Essayer la configuration persistante avec stratégies multiples
+                const configured = await instance.setupDefaultPath();
                 
-                if (autoConfigured) {
-                    console.log('[CategoriesPage] ✅ Configuration automatique réussie !');
+                if (configured) {
+                    const storageType = instance.filesystemConfig.storageType;
+                    console.log(`[CategoriesPage] ✅ Configuration persistante réussie: ${storageType}`);
                     console.log('[CategoriesPage] 📁 Backup configuré dans:', instance.filesystemConfig.currentPath);
                     
                     // Test du backup
                     const testResult = await instance.createFilesystemBackup('auto-config-test');
                     if (testResult) {
-                        console.log('[CategoriesPage] ✅ Test backup automatique réussi !');
+                        console.log('[CategoriesPage] ✅ Test backup persistant réussi !');
                         console.log('[CategoriesPage] 💾 Fichier de backup créé et vérifié');
+                        
+                        if (storageType === 'browser-temporary') {
+                            console.warn('[CategoriesPage] ⚠️ ATTENTION: Stockage temporaire - Configurez un emplacement persistant !');
+                        }
                     }
                 } else {
-                    console.log('[CategoriesPage] ⚠️ Configuration automatique non possible - Mode manuel disponible');
+                    console.log('[CategoriesPage] ⚠️ Configuration persistante non possible - Vérifiez les permissions');
                     console.log('[CategoriesPage] 📋 Utilisez l\'onglet "Sauvegarde C://" pour configurer manuellement');
                 }
             } catch (error) {
-                console.log('[CategoriesPage] ℹ️ Configuration par défaut en attente d\'interaction utilisateur');
+                console.log('[CategoriesPage] ℹ️ Configuration persistante en attente d\'interaction utilisateur');
             }
         }, 2000);
     } else if (!instance.fileSystemSupported) {
         console.warn('[CategoriesPage] ⚠️ File System API non supportée - Backup invisible uniquement');
         
-        // Configurer au moins le chemin par défaut pour information
+        // Configurer au moins un chemin par défaut pour information
         instance.filesystemConfig.currentPath = instance.filesystemConfig.defaultPath;
-        console.log('[CategoriesPage] 📁 Chemin par défaut configuré:', instance.filesystemConfig.currentPath);
+        instance.filesystemConfig.storageType = 'none';
+        console.log('[CategoriesPage] 📁 Chemin théorique configuré:', instance.filesystemConfig.currentPath);
     } else {
-        console.log('[CategoriesPage] ✅ Filesystem déjà configuré');
+        console.log('[CategoriesPage] ✅ Stockage persistant déjà configuré');
     }
     
 }, 1000);
+
+// API pour forcer une configuration persistante
+window.configurePersistentBackup = async function() {
+    console.log('[API] 🏠 Configuration stockage persistant forcée...');
+    
+    try {
+        const instance = window.categoriesPageV23;
+        
+        // Réinitialiser la configuration
+        instance.filesystemConfig.enabled = false;
+        instance.filesystemConfig.directoryHandle = null;
+        
+        // Essayer la configuration persistante
+        const success = await instance.setupDefaultPath();
+        
+        if (success) {
+            console.log('[API] ✅ Stockage persistant configuré:', instance.filesystemConfig.storageType);
+            console.log('[API] 📁 Emplacement:', instance.filesystemConfig.currentPath);
+            
+            // Rafraîchir l'interface
+            if (instance.activeTab === 'backup') {
+                instance.refreshBackupInfo();
+            }
+            
+            return {
+                success: true,
+                storageType: instance.filesystemConfig.storageType,
+                path: instance.filesystemConfig.currentPath,
+                temporary: instance.filesystemConfig.storageType === 'browser-temporary'
+            };
+        } else {
+            console.error('[API] ❌ Échec configuration stockage persistant');
+            return { success: false, error: 'Configuration impossible' };
+        }
+    } catch (error) {
+        console.error('[API] ❌ Erreur configuration persistante:', error);
+        return { success: false, error: error.message };
+    }
+};
 
 // Vérifier la compatibilité avec le backup service
 if (window.getBackupStatus) {
