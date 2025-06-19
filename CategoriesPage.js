@@ -1,5 +1,5 @@
-// CategoriesPage.js - Version propre avec sauvegarde automatique dans fichier système
-// Sauvegarde automatique GARANTIE dans un fichier réel du système
+// CategoriesPage.js - Version propre et fonctionnelle avec sauvegarde automatique
+// Sauvegarde automatique GARANTIE dans le dossier Téléchargements
 
 (function() {
     'use strict';
@@ -10,11 +10,9 @@
             this.categories = [];
             this.customCategories = [];
             this.currentPage = 1;
-            this.itemsPerPage = 10;
+            this.itemsPerPage = 6;
             this.searchTerm = '';
             this.selectedFilter = 'all';
-            this.isEditing = false;
-            this.editingCategoryId = null;
             this.activeTab = 'categories';
             
             // Système de sauvegarde automatique
@@ -23,7 +21,7 @@
             this.autoBackupEnabled = true;
             
             this.init();
-        showNotification(message, type = 'info', duration = 4000) {
+        }
 
         // ================================================
         // INITIALISATION
@@ -34,7 +32,6 @@
             try {
                 await this.loadCategories();
                 this.render();
-                this.attachEvents();
                 this.startAutoBackup();
                 
                 console.log('[CategoriesPage] ✅ Initialisé avec sauvegarde automatique');
@@ -44,8 +41,97 @@
             }
         }
 
+        async loadCategories() {
+            try {
+                console.log('[CategoriesPage] 📂 Chargement des catégories...');
+                
+                // Essayer de charger depuis categoryManager
+                if (window.categoryManager) {
+                    this.categories = window.categoryManager.getCategories() || [];
+                    this.customCategories = window.categoryManager.getCustomCategories() || [];
+                    console.log(`[CategoriesPage] ✅ Chargé ${this.categories.length} catégories depuis categoryManager`);
+                }
+                
+                // Si pas de catégories, charger des exemples
+                if (this.categories.length === 0) {
+                    this.loadDefaultCategories();
+                }
+                
+            } catch (error) {
+                console.warn('[CategoriesPage] ❌ Erreur chargement catégories:', error);
+                this.loadDefaultCategories();
+            }
+        }
+
+        loadDefaultCategories() {
+            // Catégories par défaut pour démonstration
+            this.categories = [
+                {
+                    id: 'important',
+                    name: 'Important',
+                    description: 'Emails prioritaires et urgents',
+                    color: '#dc3545',
+                    keywords: ['urgent', 'important', 'priorité', 'asap'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'work',
+                    name: 'Travail',
+                    description: 'Emails professionnels et projets',
+                    color: '#007bff',
+                    keywords: ['projet', 'réunion', 'deadline', 'client'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'finance',
+                    name: 'Finance',
+                    description: 'Factures, banque et finances',
+                    color: '#28a745',
+                    keywords: ['facture', 'banque', 'paiement', 'budget'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'personal',
+                    name: 'Personnel',
+                    description: 'Emails personnels et famille',
+                    color: '#ffc107',
+                    keywords: ['famille', 'ami', 'personnel', 'vacances'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'shopping',
+                    name: 'Achats',
+                    description: 'Commandes et livraisons',
+                    color: '#17a2b8',
+                    keywords: ['commande', 'livraison', 'amazon', 'achat'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                },
+                {
+                    id: 'newsletters',
+                    name: 'Newsletters',
+                    description: 'Newsletters et publications',
+                    color: '#6c757d',
+                    keywords: ['newsletter', 'publication', 'abonnement'],
+                    createdAt: new Date('2024-01-01').toISOString()
+                }
+            ];
+            
+            this.customCategories = [
+                {
+                    id: 'custom-travel',
+                    name: 'Voyages',
+                    description: 'Réservations et voyages',
+                    color: '#fd7e14',
+                    keywords: ['vol', 'hôtel', 'voyage', 'booking'],
+                    createdAt: new Date('2024-06-01').toISOString()
+                }
+            ];
+            
+            console.log('[CategoriesPage] ✅ Catégories par défaut chargées');
+        }
+
         // ================================================
-        // SAUVEGARDE AUTOMATIQUE DANS FICHIER SYSTÈME
+        // SAUVEGARDE AUTOMATIQUE
         // ================================================
         startAutoBackup() {
             // Première sauvegarde immédiate
@@ -179,62 +265,6 @@
         }
 
         // ================================================
-        // COLLECTE DES DONNÉES
-        // ================================================
-        collectCategoriesData() {
-            try {
-                return {
-                    all: window.categoryManager?.getCategories() || this.categories || [],
-                    custom: window.categoryManager?.getCustomCategories() || this.customCategories || [],
-                    keywords: window.categoryManager?.getAllKeywords() || {},
-                    settings: window.categoryManager?.getSettings() || {}
-                };
-            } catch (error) {
-                console.warn('[CategoriesPage] Erreur collecte catégories:', error);
-                return { all: [], custom: [], keywords: {}, settings: {} };
-            }
-        }
-
-        collectTasksData() {
-            try {
-                const tasks = window.taskManager?.getAllTasks() || [];
-                return {
-                    all: tasks,
-                    count: tasks.length,
-                    completed: tasks.filter(t => t.status === 'completed').length,
-                    pending: tasks.filter(t => t.status !== 'completed').length
-                };
-            } catch (error) {
-                console.warn('[CategoriesPage] Erreur collecte tâches:', error);
-                return { all: [], count: 0, completed: 0, pending: 0 };
-            }
-        }
-
-        collectSettingsData() {
-            const settings = {};
-            const settingsKeys = [
-                'emailsortpro_settings',
-                'emailsortpro_preferences', 
-                'categorySettings',
-                'taskSettings',
-                'uiSettings'
-            ];
-            
-            settingsKeys.forEach(key => {
-                const value = localStorage.getItem(key);
-                if (value) {
-                    try {
-                        settings[key] = JSON.parse(value);
-                    } catch {
-                        settings[key] = value;
-                    }
-                }
-            });
-            
-            return settings;
-        }
-
-        // ================================================
         // INTERFACE UTILISATEUR
         // ================================================
         render() {
@@ -289,6 +319,14 @@
                     </div>
                 </div>
 
+                ${this.renderStyles()}
+            `;
+
+            this.attachEvents();
+        }
+
+        renderStyles() {
+            return `
                 <style>
                 .categories-page {
                     max-width: 1200px;
@@ -402,7 +440,6 @@
                     gap: 10px;
                     transition: all 0.3s ease;
                     border-bottom: 3px solid transparent;
-                    position: relative;
                 }
 
                 .tab-btn:hover {
@@ -439,11 +476,7 @@
                     display: block;
                 }
 
-                /* Styles pour le contenu des catégories */
-                .categories-content {
-                    max-width: 100%;
-                }
-
+                /* Styles catégories */
                 .categories-header {
                     display: flex;
                     justify-content: space-between;
@@ -504,81 +537,83 @@
                     cursor: pointer;
                 }
 
-                .btn {
-                    padding: 10px 20px;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 14px;
-                    font-weight: 500;
+                .categories-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 20px;
+                    margin-top: 20px;
+                }
+
+                .category-card {
+                    background: white;
+                    border: 1px solid #e9ecef;
+                    border-radius: 10px;
+                    padding: 20px;
+                    transition: all 0.3s ease;
                     cursor: pointer;
+                }
+
+                .category-card:hover {
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+                    transform: translateY(-2px);
+                    border-color: #007bff;
+                }
+
+                .category-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin-bottom: 15px;
+                }
+
+                .category-name {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #2c3e50;
+                    margin: 0;
                     display: flex;
                     align-items: center;
                     gap: 8px;
-                    transition: all 0.2s ease;
-                    text-decoration: none;
                 }
 
-                .btn-primary {
-                    background: #007bff;
-                    color: white;
-                }
-
-                .btn-primary:hover {
-                    background: #0056b3;
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
-                }
-
-                .btn-success {
-                    background: #28a745;
-                    color: white;
-                }
-
-                .btn-success:hover {
-                    background: #1e7e34;
-                    transform: translateY(-1px);
-                    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
-                }
-
-                .btn-warning {
-                    background: #ffc107;
-                    color: #212529;
-                }
-
-                .btn-warning:hover {
-                    background: #e0a800;
-                }
-
-                .btn-secondary {
-                    background: #6c757d;
-                    color: white;
-                }
-
-                .btn-secondary:hover {
-                    background: #545b62;
-                }
-
-                .categories-placeholder {
-                    text-align: center;
-                    padding: 60px 20px;
+                .category-badge {
+                    background: #e9ecef;
                     color: #6c757d;
+                    font-size: 10px;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    text-transform: uppercase;
+                    font-weight: 500;
+                }
+
+                .category-badge.custom {
+                    background: #d4edda;
+                    color: #155724;
+                }
+
+                .category-description {
+                    color: #6c757d;
+                    font-size: 14px;
+                    line-height: 1.4;
+                    margin-bottom: 15px;
+                }
+
+                .category-keywords {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
+                }
+
+                .keyword-tag {
                     background: #f8f9fa;
-                    border-radius: 12px;
-                    border: 2px dashed #dee2e6;
-                }
-
-                .categories-placeholder i {
-                    font-size: 48px;
-                    margin-bottom: 20px;
-                    color: #dee2e6;
-                }
-
-                .categories-placeholder h4 {
-                    margin: 0 0 10px 0;
                     color: #495057;
+                    padding: 3px 8px;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    border: 1px solid #e9ecef;
                 }
 
-                /* Styles pour les paramètres */
+                /* Styles paramètres */
                 .settings-section {
                     margin-bottom: 30px;
                 }
@@ -670,65 +705,66 @@
                     display: flex;
                     align-items: flex-start;
                     gap: 8px;
+                    line-height: 1.4;
                 }
 
                 .backup-info i {
                     margin-top: 2px;
                 }
 
-                .status-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 20px;
-                }
-
-                .status-card {
-                    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-                    border: 1px solid #e9ecef;
-                    border-radius: 10px;
-                    padding: 20px;
-                    text-align: center;
-                    transition: all 0.3s ease;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .status-card::before {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 3px;
-                    background: linear-gradient(90deg, #007bff, #6610f2);
-                }
-
-                .status-card:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-                }
-
-                .status-card h4 {
-                    margin: 0 0 10px 0;
-                    color: #2c3e50;
+                .btn {
+                    padding: 10px 20px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     gap: 8px;
-                    font-size: 14px;
-                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    text-decoration: none;
                 }
 
-                .status-value {
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: #007bff;
-                    margin-bottom: 5px;
+                .btn-primary {
+                    background: #007bff;
+                    color: white;
                 }
 
-                .status-card small {
-                    color: #6c757d;
-                    font-size: 12px;
+                .btn-primary:hover {
+                    background: #0056b3;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+                }
+
+                .btn-success {
+                    background: #28a745;
+                    color: white;
+                }
+
+                .btn-success:hover {
+                    background: #1e7e34;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+                }
+
+                .btn-warning {
+                    background: #ffc107;
+                    color: #212529;
+                }
+
+                .btn-warning:hover {
+                    background: #e0a800;
+                }
+
+                .btn-secondary {
+                    background: #6c757d;
+                    color: white;
+                }
+
+                .btn-secondary:hover {
+                    background: #545b62;
                 }
 
                 .notification {
@@ -787,8 +823,7 @@
                         width: 200px;
                     }
 
-                    .backup-controls-grid,
-                    .status-grid {
+                    .backup-controls-grid {
                         grid-template-columns: 1fr;
                     }
 
@@ -808,8 +843,6 @@
                 }
                 </style>
             `;
-
-            this.attachEvents();
         }
 
         renderCategoriesContent() {
@@ -840,172 +873,43 @@
                     <div class="categories-list">
                         ${this.renderCategoriesList()}
                     </div>
-
-                    <div class="categories-pagination">
-                        ${this.renderPagination()}
-                    </div>
                 </div>
             `;
         }
 
         renderCategoriesList() {
-            if (!this.categories || this.categories.length === 0) {
+            const allCategories = [...this.categories, ...this.customCategories];
+            
+            if (allCategories.length === 0) {
                 return `
-                    <div class="categories-placeholder">
-                        <i class="fas fa-tags"></i>
+                    <div style="text-align: center; padding: 60px 20px; color: #6c757d;">
+                        <i class="fas fa-tags" style="font-size: 48px; margin-bottom: 20px; color: #dee2e6;"></i>
                         <h4>Aucune catégorie trouvée</h4>
                         <p>Commencez par créer votre première catégorie personnalisée.</p>
-                        <button class="btn btn-primary" onclick="this.addNewCategory()">
-                            <i class="fas fa-plus"></i>
-                            Créer une catégorie
-                        </button>
                     </div>
                 `;
             }
 
-            const filteredCategories = this.getFilteredCategories();
-            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-            const endIndex = startIndex + this.itemsPerPage;
-            const paginatedCategories = filteredCategories.slice(startIndex, endIndex);
-
             return `
                 <div class="categories-grid">
-                    ${paginatedCategories.map(category => this.renderCategoryCard(category)).join('')}
+                    ${allCategories.map(category => this.renderCategoryCard(category)).join('')}
                 </div>
-                
-                <style>
-                .categories-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                    gap: 20px;
-                    margin-top: 20px;
-                }
-
-                .category-card {
-                    background: white;
-                    border: 1px solid #e9ecef;
-                    border-radius: 10px;
-                    padding: 20px;
-                    transition: all 0.3s ease;
-                    cursor: pointer;
-                }
-
-                .category-card:hover {
-                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-                    transform: translateY(-2px);
-                    border-color: #007bff;
-                }
-
-                .category-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-start;
-                    margin-bottom: 15px;
-                }
-
-                .category-name {
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #2c3e50;
-                    margin: 0;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                }
-
-                .category-badge {
-                    background: #e9ecef;
-                    color: #6c757d;
-                    font-size: 10px;
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    text-transform: uppercase;
-                    font-weight: 500;
-                }
-
-                .category-badge.custom {
-                    background: #d4edda;
-                    color: #155724;
-                }
-
-                .category-actions {
-                    display: flex;
-                    gap: 5px;
-                }
-
-                .category-btn {
-                    background: none;
-                    border: 1px solid #e9ecef;
-                    color: #6c757d;
-                    padding: 5px 8px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 12px;
-                    transition: all 0.2s;
-                }
-
-                .category-btn:hover {
-                    background: #f8f9fa;
-                    border-color: #007bff;
-                    color: #007bff;
-                }
-
-                .category-description {
-                    color: #6c757d;
-                    font-size: 14px;
-                    line-height: 1.4;
-                    margin-bottom: 15px;
-                }
-
-                .category-keywords {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 5px;
-                }
-
-                .keyword-tag {
-                    background: #f8f9fa;
-                    color: #495057;
-                    padding: 3px 8px;
-                    border-radius: 4px;
-                    font-size: 11px;
-                    border: 1px solid #e9ecef;
-                }
-
-                .category-stats {
-                    margin-top: 15px;
-                    padding-top: 15px;
-                    border-top: 1px solid #e9ecef;
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 12px;
-                    color: #6c757d;
-                }
-                </style>
             `;
         }
 
         renderCategoryCard(category) {
-            const isCustom = this.customCategories.includes(category);
+            const isCustom = this.customCategories.some(c => c.id === category.id);
             const keywords = category.keywords || [];
             
             return `
-                <div class="category-card" data-category-id="${category.id || category.name}">
+                <div class="category-card" data-category-id="${category.id}">
                     <div class="category-header">
                         <div>
                             <h3 class="category-name">
                                 <i class="fas fa-tag" style="color: ${category.color || '#007bff'}"></i>
-                                ${category.name || category.label}
+                                ${category.name}
                                 <span class="category-badge ${isCustom ? 'custom' : ''}">${isCustom ? 'Personnalisé' : 'Défaut'}</span>
                             </h3>
-                        </div>
-                        <div class="category-actions">
-                            <button class="category-btn" onclick="this.editCategory('${category.id || category.name}')" title="Modifier">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            ${isCustom ? `<button class="category-btn" onclick="this.deleteCategory('${category.id || category.name}')" title="Supprimer">
-                                <i class="fas fa-trash"></i>
-                            </button>` : ''}
                         </div>
                     </div>
                     
@@ -1019,126 +923,8 @@
                             ${keywords.length > 5 ? `<span class="keyword-tag">+${keywords.length - 5} autres</span>` : ''}
                         </div>
                     ` : ''}
-                    
-                    <div class="category-stats">
-                        <span>${keywords.length} mots-clés</span>
-                        <span>Créé ${category.createdAt ? new Date(category.createdAt).toLocaleDateString('fr-FR') : 'N/A'}</span>
-                    </div>
                 </div>
             `;
-        }
-
-        renderPagination() {
-            const filteredCategories = this.getFilteredCategories();
-            const totalPages = Math.ceil(filteredCategories.length / this.itemsPerPage);
-            
-            if (totalPages <= 1) return '';
-
-            return `
-                <div class="pagination-container">
-                    <div class="pagination-info">
-                        Affichage ${(this.currentPage - 1) * this.itemsPerPage + 1}-${Math.min(this.currentPage * this.itemsPerPage, filteredCategories.length)} 
-                        sur ${filteredCategories.length} catégories
-                    </div>
-                    <div class="pagination-controls">
-                        <button class="pagination-btn" ${this.currentPage === 1 ? 'disabled' : ''} onclick="this.goToPage(${this.currentPage - 1})">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
-                            <button class="pagination-btn ${page === this.currentPage ? 'active' : ''}" onclick="this.goToPage(${page})">
-                                ${page}
-                            </button>
-                        `).join('')}
-                        <button class="pagination-btn" ${this.currentPage === totalPages ? 'disabled' : ''} onclick="this.goToPage(${this.currentPage + 1})">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <style>
-                .pagination-container {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-top: 30px;
-                    padding: 20px;
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                }
-
-                .pagination-info {
-                    color: #6c757d;
-                    font-size: 14px;
-                }
-
-                .pagination-controls {
-                    display: flex;
-                    gap: 5px;
-                }
-
-                .pagination-btn {
-                    padding: 8px 12px;
-                    border: 1px solid #e9ecef;
-                    background: white;
-                    color: #6c757d;
-                    cursor: pointer;
-                    border-radius: 4px;
-                    transition: all 0.2s;
-                }
-
-                .pagination-btn:hover:not(:disabled) {
-                    background: #007bff;
-                    color: white;
-                    border-color: #007bff;
-                }
-
-                .pagination-btn.active {
-                    background: #007bff;
-                    color: white;
-                    border-color: #007bff;
-                }
-
-                .pagination-btn:disabled {
-                    opacity: 0.5;
-                    cursor: not-allowed;
-                }
-                </style>
-            `;
-        }
-
-        getFilteredCategories() {
-            let filtered = [...(this.categories || [])];
-            
-            if (this.selectedFilter === 'custom') {
-                filtered = filtered.filter(cat => this.customCategories.includes(cat));
-            } else if (this.selectedFilter === 'default') {
-                filtered = filtered.filter(cat => !this.customCategories.includes(cat));
-            }
-            
-            if (this.searchTerm) {
-                const term = this.searchTerm.toLowerCase();
-                filtered = filtered.filter(cat => 
-                    (cat.name || cat.label || '').toLowerCase().includes(term) ||
-                    (cat.description || '').toLowerCase().includes(term)
-                );
-            }
-            
-            return filtered;
-        }
-
-        goToPage(page) {
-            this.currentPage = page;
-            this.switchTab('categories'); // Recharger l'onglet
-        }
-
-        editCategory(categoryId) {
-            this.showNotification(`✏️ Édition de la catégorie "${categoryId}" à implémenter`, 'info');
-        }
-
-        deleteCategory(categoryId) {
-            if (confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${categoryId}" ?`)) {
-                this.showNotification(`🗑️ Suppression de la catégorie "${categoryId}" à implémenter`, 'info');
-            }
         }
 
         renderSettingsContent() {
@@ -1169,7 +955,7 @@
                                 <div class="backup-info">
                                     <i class="fas fa-info-circle"></i>
                                     <strong>Fichiers créés :</strong> EmailSortPro-Auto-[Date]_[Heure].json dans votre dossier <strong>Téléchargements</strong>.
-                                    <br><strong>Chemin complet :</strong> <code>C:\Users\[VotreNom]\Downloads\EmailSortPro-*.json</code>
+                                    <br><strong>Chemin complet :</strong> <code>C:\\Users\\[VotreNom]\\Downloads\\EmailSortPro-*.json</code>
                                     <br>Les fichiers sont accessibles via l'Explorateur Windows/Mac.
                                 </div>
                             </div>
@@ -1180,7 +966,7 @@
                                 <div class="backup-actions">
                                     <button id="view-backup-folder-btn" class="btn btn-secondary">
                                         <i class="fas fa-folder-open"></i>
-                                        Ouvrir dossier Téléchargements
+                                        Voir localisation des fichiers
                                     </button>
                                     <button id="refresh-status-btn" class="btn btn-secondary">
                                         <i class="fas fa-sync"></i>
@@ -1193,91 +979,6 @@
                                     <br><strong>Dossier de destination :</strong> <code>Téléchargements/EmailSortPro-*.json</code>
                                     <br>Prochaine sauvegarde dans ${this.getNextBackupTime()}.
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SECTION IMPORT/EXPORT -->
-                    <div class="settings-section">
-                        <div class="settings-section-header">
-                            <h3><i class="fas fa-exchange-alt"></i> Import / Export</h3>
-                            <p>Outils pour transférer vos données entre appareils ou créer des sauvegardes manuelles</p>
-                        </div>
-
-                        <div class="backup-controls-grid">
-                            <div class="backup-card">
-                                <h4><i class="fas fa-upload"></i> Import de données</h4>
-                                <p>Restaurez vos données depuis un fichier de sauvegarde EmailSortPro.</p>
-                                <div class="backup-actions">
-                                    <button id="import-data-btn" class="btn btn-primary">
-                                        <i class="fas fa-upload"></i>
-                                        Importer un fichier
-                                    </button>
-                                </div>
-                                <div class="backup-info">
-                                    <i class="fas fa-info-circle"></i>
-                                    Sélectionnez un fichier EmailSortPro-*.json pour restaurer vos données.
-                                </div>
-                            </div>
-
-                            <div class="backup-card">
-                                <h4><i class="fas fa-download"></i> Export manuel</h4>
-                                <p>Créez une sauvegarde manuelle pour transfert ou archivage.</p>
-                                <div class="backup-actions">
-                                    <button id="export-all-btn" class="btn btn-primary">
-                                        <i class="fas fa-download"></i>
-                                        Exporter tout
-                                    </button>
-                                    <button id="export-categories-btn" class="btn btn-secondary">
-                                        <i class="fas fa-tags"></i>
-                                        Catégories seulement
-                                    </button>
-                                </div>
-                                <div class="backup-info">
-                                    <i class="fas fa-info-circle"></i>
-                                    Télécharge un fichier JSON avec vos données sélectionnées.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SECTION STATISTIQUES -->
-                    <div class="settings-section">
-                        <div class="settings-section-header">
-                            <h3><i class="fas fa-chart-bar"></i> Statistiques</h3>
-                            <p>Vue d'ensemble de vos données EmailSortPro</p>
-                        </div>
-
-                        <div class="status-grid">
-                            <div class="status-card">
-                                <h4><i class="fas fa-tags"></i> Catégories</h4>
-                                <div class="status-value">${this.getCategoriesCount()}</div>
-                                <small>catégories configurées</small>
-                            </div>
-                            <div class="status-card">
-                                <h4><i class="fas fa-palette"></i> Personnalisées</h4>
-                                <div class="status-value">${this.getCustomCategoriesCount()}</div>
-                                <small>catégories personnalisées</small>
-                            </div>
-                            <div class="status-card">
-                                <h4><i class="fas fa-tasks"></i> Tâches</h4>
-                                <div class="status-value">${this.getTasksCount()}</div>
-                                <small>tâches enregistrées</small>
-                            </div>
-                            <div class="status-card">
-                                <h4><i class="fas fa-database"></i> Données</h4>
-                                <div class="status-value">${this.calculateDataSize()}</div>
-                                <small>taille totale</small>
-                            </div>
-                            <div class="status-card">
-                                <h4><i class="fas fa-clock"></i> Dernière sauvegarde</h4>
-                                <div class="status-value" style="font-size: 16px;">${this.getLastBackupTimeFormatted()}</div>
-                                <small>sauvegarde automatique</small>
-                            </div>
-                            <div class="status-card">
-                                <h4><i class="fas fa-sync"></i> Fréquence</h4>
-                                <div class="status-value" style="font-size: 18px;">5 min</div>
-                                <small>intervalle de sauvegarde</small>
                             </div>
                         </div>
                     </div>
@@ -1311,21 +1012,7 @@
                 this.refreshStatus();
             });
 
-            // Export
-            document.getElementById('export-all-btn')?.addEventListener('click', () => {
-                this.exportAllData();
-            });
-
-            document.getElementById('export-categories-btn')?.addEventListener('click', () => {
-                this.exportCategoriesOnly();
-            });
-
-            // Import
-            document.getElementById('import-data-btn')?.addEventListener('click', () => {
-                this.importData();
-            });
-
-            // Ouvrir dossier téléchargements (conseil à l'utilisateur)
+            // Voir localisation
             document.getElementById('view-backup-folder-btn')?.addEventListener('click', () => {
                 this.showBackupLocationInfo();
             });
@@ -1368,9 +1055,6 @@
             }
         }
 
-        // ================================================
-        // GESTION DE LA SAUVEGARDE
-        // ================================================
         toggleAutoBackup() {
             this.autoBackupEnabled = !this.autoBackupEnabled;
             
@@ -1420,236 +1104,13 @@
             this.showNotification('✅ Statut actualisé', 'success');
         }
 
-        // ================================================
-        // IMPORT/EXPORT
-        // ================================================
-        exportAllData() {
-            try {
-                const data = {
-                    version: '1.0',
-                    exportDate: new Date().toISOString(),
-                    source: 'EmailSortPro-Export-Manuel',
-                    data: {
-                        categories: this.collectCategoriesData(),
-                        tasks: this.collectTasksData(),
-                        settings: this.collectSettingsData()
-                    }
-                };
-
-                const timestamp = new Date().toISOString().split('T')[0];
-                this.downloadFile(data, `EmailSortPro-Export-Complet-${timestamp}.json`);
-                this.showNotification('✅ Export complet réussi !', 'success');
-
-            } catch (error) {
-                console.error('[CategoriesPage] Erreur export:', error);
-                this.showNotification('❌ Erreur lors de l\'export', 'error');
-            }
-        }
-
-        exportCategoriesOnly() {
-            try {
-                const data = {
-                    version: '1.0',
-                    exportDate: new Date().toISOString(),
-                    source: 'EmailSortPro-Export-Categories',
-                    data: {
-                        categories: this.collectCategoriesData()
-                    }
-                };
-
-                const timestamp = new Date().toISOString().split('T')[0];
-                this.downloadFile(data, `EmailSortPro-Categories-${timestamp}.json`);
-                this.showNotification('✅ Export des catégories réussi !', 'success');
-
-            } catch (error) {
-                console.error('[CategoriesPage] Erreur export catégories:', error);
-                this.showNotification('❌ Erreur lors de l\'export des catégories', 'error');
-            }
-        }
-
-        importData() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.style.display = 'none';
-            
-            input.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    this.handleImportFile(e.target.files[0]);
-                }
-            });
-            
-            document.body.appendChild(input);
-            input.click();
-            document.body.removeChild(input);
-        }
-
-        async handleImportFile(file) {
-            try {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        
-                        if (!data.data) {
-                            this.showNotification('❌ Fichier invalide - structure incorrecte', 'error');
-                            return;
-                        }
-
-                        // Importer les données
-                        let importCount = 0;
-
-                        if (data.data.categories) {
-                            // Logique d'import des catégories ici
-                            importCount++;
-                        }
-
-                        if (data.data.settings) {
-                            Object.keys(data.data.settings).forEach(key => {
-                                localStorage.setItem(key, JSON.stringify(data.data.settings[key]));
-                            });
-                            importCount++;
-                        }
-
-                        this.showNotification(`✅ Import réussi ! ${importCount} sections importées.`, 'success');
-                        
-                        // Déclencher une sauvegarde après l'import
-                        setTimeout(() => {
-                            this.performAutoBackup('post-import');
-                        }, 1000);
-
-                        // Recharger l'interface
-                        this.loadCategories();
-                        this.render();
-
-                    } catch (error) {
-                        this.showNotification('❌ Erreur format de fichier - JSON invalide', 'error');
-                    }
-                };
-                
-                reader.readAsText(file);
-
-            } catch (error) {
-                console.error('[CategoriesPage] Erreur import:', error);
-                this.showNotification('❌ Erreur lors de l\'import', 'error');
-            }
-        }
-
-        downloadFile(data, filename) {
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.style.display = 'none';
-            
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            setTimeout(() => URL.revokeObjectURL(url), 100);
-        }
-
-        // ================================================
-        // GESTION DES CATÉGORIES
-        // ================================================
-        async loadCategories() {
-            try {
-                console.log('[CategoriesPage] 📂 Chargement des catégories...');
-                
-                // Essayer de charger depuis categoryManager
-                if (window.categoryManager) {
-                    this.categories = window.categoryManager.getCategories() || [];
-                    this.customCategories = window.categoryManager.getCustomCategories() || [];
-                    console.log(`[CategoriesPage] ✅ Chargé ${this.categories.length} catégories depuis categoryManager`);
-                } else {
-                    console.log('[CategoriesPage] ⚠️ categoryManager non disponible, chargement des catégories par défaut');
-                    this.loadDefaultCategories();
-                }
-                
-                // Si pas de catégories, charger des exemples
-                if (this.categories.length === 0) {
-                    this.loadDefaultCategories();
-                }
-                
-            } catch (error) {
-                console.warn('[CategoriesPage] ❌ Erreur chargement catégories:', error);
-                this.loadDefaultCategories();
-            }
-        }
-
-        loadDefaultCategories() {
-            // Catégories par défaut pour démonstration
-            this.categories = [
-                {
-                    id: 'important',
-                    name: 'Important',
-                    description: 'Emails prioritaires et urgents',
-                    color: '#dc3545',
-                    keywords: ['urgent', 'important', 'priorité', 'asap'],
-                    createdAt: new Date('2024-01-01').toISOString()
-                },
-                {
-                    id: 'work',
-                    name: 'Travail',
-                    description: 'Emails professionnels et projets',
-                    color: '#007bff',
-                    keywords: ['projet', 'réunion', 'deadline', 'client'],
-                    createdAt: new Date('2024-01-01').toISOString()
-                },
-                {
-                    id: 'finance',
-                    name: 'Finance',
-                    description: 'Factures, banque et finances',
-                    color: '#28a745',
-                    keywords: ['facture', 'banque', 'paiement', 'budget'],
-                    createdAt: new Date('2024-01-01').toISOString()
-                },
-                {
-                    id: 'personal',
-                    name: 'Personnel',
-                    description: 'Emails personnels et famille',
-                    color: '#ffc107',
-                    keywords: ['famille', 'ami', 'personnel', 'vacances'],
-                    createdAt: new Date('2024-01-01').toISOString()
-                },
-                {
-                    id: 'shopping',
-                    name: 'Achats',
-                    description: 'Commandes et livraisons',
-                    color: '#17a2b8',
-                    keywords: ['commande', 'livraison', 'amazon', 'achat'],
-                    createdAt: new Date('2024-01-01').toISOString()
-                },
-                {
-                    id: 'newsletters',
-                    name: 'Newsletters',
-                    description: 'Newsletters et publications',
-                    color: '#6c757d',
-                    keywords: ['newsletter', 'publication', 'abonnement'],
-                    createdAt: new Date('2024-01-01').toISOString()
-                }
-            ];
-            
-            this.customCategories = [
-                {
-                    id: 'custom-travel',
-                    name: 'Voyages',
-                    description: 'Réservations et voyages',
-                    color: '#fd7e14',
-                    keywords: ['vol', 'hôtel', 'voyage', 'booking'],
-                    createdAt: new Date('2024-06-01').toISOString()
-                }
-            ];
-            
-            console.log('[CategoriesPage] ✅ Catégories par défaut chargées');
+        showBackupLocationInfo() {
+            this.showNotification(`📁 Vos sauvegardes se trouvent dans : Téléchargements/EmailSortPro-*.json\n🔍 Ouvrez votre dossier Téléchargements et recherchez les fichiers "EmailSortPro-"`, 'info', 8000);
         }
 
         filterCategories() {
-            // Logique de filtrage des catégories
-            console.log(`[CategoriesPage] Filtrage: "${this.searchTerm}" (${this.selectedFilter})`);
+            // Recharger l'affichage des catégories
+            this.switchTab('categories');
         }
 
         addNewCategory() {
@@ -1657,14 +1118,62 @@
         }
 
         // ================================================
+        // COLLECTE DES DONNÉES
+        // ================================================
+        collectCategoriesData() {
+            try {
+                return {
+                    all: this.categories || [],
+                    custom: this.customCategories || [],
+                    keywords: this.getAllKeywords()
+                };
+            } catch (error) {
+                return { all: [], custom: [], keywords: {} };
+            }
+        }
+
+        collectTasksData() {
+            try {
+                const tasks = window.taskManager?.getAllTasks() || [];
+                return {
+                    all: tasks,
+                    count: tasks.length
+                };
+            } catch (error) {
+                return { all: [], count: 0 };
+            }
+        }
+
+        collectSettingsData() {
+            const settings = {};
+            ['emailsortpro_settings', 'categorySettings'].forEach(key => {
+                const value = localStorage.getItem(key);
+                if (value) {
+                    try {
+                        settings[key] = JSON.parse(value);
+                    } catch {
+                        settings[key] = value;
+                    }
+                }
+            });
+            return settings;
+        }
+
+        getAllKeywords() {
+            const keywords = {};
+            [...this.categories, ...this.customCategories].forEach(category => {
+                if (category.keywords) {
+                    keywords[category.id] = category.keywords;
+                }
+            });
+            return keywords;
+        }
+
+        // ================================================
         // UTILITAIRES
         // ================================================
         getCategoriesCount() {
             return (this.categories?.length || 0) + (this.customCategories?.length || 0);
-        }
-
-        getCustomCategoriesCount() {
-            return this.customCategories?.length || 0;
         }
 
         getTasksCount() {
@@ -1732,246 +1241,7 @@
             return `${minutes} min`;
         }
 
-        showBackupLocationInfo() {
-            const modal = document.createElement('div');
-            modal.className = 'backup-location-modal';
-            modal.innerHTML = `
-                <div class="modal-overlay"></div>
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3><i class="fas fa-folder-open"></i> Localisation des sauvegardes</h3>
-                        <button class="modal-close">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="location-info">
-                            <h4>📁 Vos fichiers de sauvegarde se trouvent ici :</h4>
-                            
-                            <div class="path-section">
-                                <h5>🪟 Windows :</h5>
-                                <code class="path-code">C:\\Users\\[VotreNom]\\Downloads\\EmailSortPro-*.json</code>
-                                <button onclick="navigator.clipboard.writeText('C:\\\\Users\\\\' + (process.env.USERNAME || '[VotreNom]') + '\\\\Downloads\\\\EmailSortPro-')" class="copy-btn">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                            
-                            <div class="path-section">
-                                <h5>🍎 Mac :</h5>
-                                <code class="path-code">/Users/[VotreNom]/Downloads/EmailSortPro-*.json</code>
-                                <button onclick="navigator.clipboard.writeText('/Users/' + (process.env.USER || '[VotreNom]') + '/Downloads/EmailSortPro-')" class="copy-btn">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                            
-                            <div class="files-examples">
-                                <h5>📄 Types de fichiers créés :</h5>
-                                <ul>
-                                    <li><code>EmailSortPro-Auto-2025-06-19_14h.json</code> - Sauvegarde automatique</li>
-                                    <li><code>EmailSortPro-Latest.json</code> - Dernière sauvegarde</li>
-                                    <li><code>EmailSortPro-Manuel-2025-06-19_14-30-45.json</code> - Sauvegarde manuelle</li>
-                                </ul>
-                            </div>
-                            
-                            <div class="access-instructions">
-                                <h5>🔍 Comment y accéder :</h5>
-                                <ol>
-                                    <li>Ouvrez l'<strong>Explorateur de fichiers</strong> (Windows) ou <strong>Finder</strong> (Mac)</li>
-                                    <li>Naviguez vers votre dossier <strong>"Téléchargements"</strong></li>
-                                    <li>Recherchez les fichiers commençant par <strong>"EmailSortPro-"</strong></li>
-                                    <li>Double-cliquez pour ouvrir avec un éditeur de texte</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button onclick="this.parentElement.parentElement.parentElement.remove()" class="btn btn-primary">
-                            <i class="fas fa-check"></i>
-                            Compris
-                        </button>
-                    </div>
-                </div>
-
-                <style>
-                .backup-location-modal {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    z-index: 10000;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .modal-overlay {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.5);
-                    backdrop-filter: blur(2px);
-                }
-
-                .modal-content {
-                    background: white;
-                    border-radius: 12px;
-                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-                    max-width: 700px;
-                    width: 90%;
-                    max-height: 80vh;
-                    overflow: auto;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .modal-header {
-                    background: linear-gradient(135deg, #007bff, #0056b3);
-                    color: white;
-                    padding: 20px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    border-radius: 12px 12px 0 0;
-                }
-
-                .modal-header h3 {
-                    margin: 0;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                }
-
-                .modal-close {
-                    background: none;
-                    border: none;
-                    color: white;
-                    font-size: 24px;
-                    cursor: pointer;
-                    padding: 0;
-                    width: 30px;
-                    height: 30px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    border-radius: 50%;
-                    transition: background 0.2s;
-                }
-
-                .modal-close:hover {
-                    background: rgba(255, 255, 255, 0.2);
-                }
-
-                .modal-body {
-                    padding: 30px;
-                }
-
-                .location-info h4 {
-                    color: #2c3e50;
-                    margin: 0 0 20px 0;
-                }
-
-                .path-section {
-                    background: #f8f9fa;
-                    border: 1px solid #e9ecef;
-                    border-radius: 8px;
-                    padding: 15px;
-                    margin-bottom: 15px;
-                    position: relative;
-                }
-
-                .path-section h5 {
-                    margin: 0 0 10px 0;
-                    color: #495057;
-                    font-size: 14px;
-                }
-
-                .path-code {
-                    background: #2c3e50;
-                    color: #e9ecef;
-                    padding: 8px 12px;
-                    border-radius: 4px;
-                    font-family: 'Courier New', monospace;
-                    font-size: 13px;
-                    display: block;
-                    margin-right: 40px;
-                    word-break: break-all;
-                }
-
-                .copy-btn {
-                    position: absolute;
-                    top: 45px;
-                    right: 15px;
-                    background: #007bff;
-                    color: white;
-                    border: none;
-                    padding: 6px 8px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-size: 12px;
-                }
-
-                .copy-btn:hover {
-                    background: #0056b3;
-                }
-
-                .files-examples,
-                .access-instructions {
-                    background: #e7f3ff;
-                    border: 1px solid #b3d9ff;
-                    border-radius: 8px;
-                    padding: 15px;
-                    margin-bottom: 15px;
-                }
-
-                .files-examples h5,
-                .access-instructions h5 {
-                    margin: 0 0 10px 0;
-                    color: #0c5460;
-                }
-
-                .files-examples ul,
-                .access-instructions ol {
-                    margin: 0;
-                    padding-left: 20px;
-                    color: #0c5460;
-                }
-
-                .files-examples li,
-                .access-instructions li {
-                    margin-bottom: 5px;
-                    font-size: 13px;
-                }
-
-                .files-examples code {
-                    background: rgba(255, 255, 255, 0.7);
-                    padding: 2px 4px;
-                    border-radius: 3px;
-                    font-size: 12px;
-                }
-
-                .modal-footer {
-                    background: #f8f9fa;
-                    padding: 20px;
-                    display: flex;
-                    justify-content: center;
-                    border-top: 1px solid #e9ecef;
-                    border-radius: 0 0 12px 12px;
-                }
-                </style>
-            `;
-
-            // Événements du modal
-            modal.querySelector('.modal-close').addEventListener('click', () => {
-                modal.remove();
-            });
-
-            modal.querySelector('.modal-overlay').addEventListener('click', () => {
-                modal.remove();
-            });
-
-            document.body.appendChild(modal);
-        }
+        showNotification(message, type = 'info', duration = 4000) {
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.textContent = message;
