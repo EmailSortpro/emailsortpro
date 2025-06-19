@@ -371,10 +371,10 @@
                                     <span>localStorage</span>
                                     <small>✅ Toujours actif</small>
                                 </div>
-                                <div class="layer ${this.documentsAccessGranted ? 'active' : 'optional'}">
-                                    <i class="fas fa-folder"></i>
-                                    <span>Documents</span>
-                                    <small>${this.documentsAccessGranted ? '✅ Configuré' : '⚙️ Optionnel'}</small>
+                                <div class="layer active">
+                                    <i class="fas fa-download"></i>
+                                    <span>Dossier local</span>
+                                    <small>✅ Téléchargement forcé</small>
                                 </div>
                             </div>
                         </div>
@@ -719,35 +719,20 @@
                 
                 // 3. localStorage (toujours en parallèle)
                 try {
-                    await this.backupToLocal(data);
+                    await this.backupToLocalStorage(data);
                     successCount++;
                     console.log('[Backup] ✅ localStorage');
                 } catch (error) {
                     console.warn('[Backup] ⚠️ localStorage Error:', error);
                 }
                 
-                // 4. Documents (si configuré par l'utilisateur)
-                if (this.documentsAccessGranted && this.documentsHandle) {
-                    try {
-                        await this.backupToDocuments(dataString, data.timestamp);
-                        successCount++;
-                        console.log('[Backup] ✅ Documents physiques');
-                    } catch (error) {
-                        console.warn('[Backup] ⚠️ Documents Error:', error);
-                        this.documentsAccessGranted = false;
-                        this.documentsHandle = null;
-                    }
-                }
-                
-                // 5. Cloud (si disponible)
-                if (this.isCloudReady() && type !== 'auto' && type !== 'onChange') {
-                    try {
-                        await this.backupToCloud(data);
-                        successCount++;
-                        console.log('[Backup] ✅ Cloud');
-                    } catch (error) {
-                        console.warn('[Backup] ⚠️ Cloud Error:', error);
-                    }
+                // 4. Dossier local FORCÉ (téléchargement automatique)
+                try {
+                    await this.backupToLocalFolder(dataString, data.timestamp);
+                    successCount++;
+                    console.log('[Backup] ✅ Dossier local forcé');
+                } catch (error) {
+                    console.warn('[Backup] ⚠️ Dossier local Error:', error);
                 }
                 
                 const success = successCount > 0;
@@ -853,7 +838,48 @@
             }
         }
 
-        async backupToLocal(data) {
+        // ================================================
+        // NOUVEAU: BACKUP DOSSIER LOCAL FORCÉ
+        // ================================================
+        async backupToLocalFolder(dataString, timestamp) {
+            try {
+                // Créer un blob avec les données
+                const blob = new Blob([dataString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                // Générer nom de fichier avec timestamp
+                const date = new Date(timestamp);
+                const dateStr = date.toISOString().split('T')[0];
+                const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
+                const fileName = `EmailSortPro-Auto-${dateStr}_${timeStr}.json`;
+                
+                // Créer un lien de téléchargement automatique
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.style.display = 'none';
+                
+                // Force le téléchargement vers le dossier par défaut
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                // Nettoyer l'URL
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                
+                console.log(`[Backup] 📁 Fichier forcé: ${fileName}`);
+                return true;
+                
+            } catch (error) {
+                console.error('[Backup] Erreur dossier local forcé:', error);
+                return false;
+            }
+        }
+
+        // ================================================
+        // BACKUP LOCALSTORAGE (maintenu séparément)
+        // ================================================
+        async backupToLocalStorage(data) {
             try {
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
                 const key = `emailsortpro_backup_${timestamp}`;
@@ -865,24 +891,8 @@
                 return true;
                 
             } catch (error) {
-                console.error('[Backup] Erreur backup local:', error);
+                console.error('[Backup] Erreur localStorage:', error);
                 return false;
-            }
-        }
-
-        cleanupLocalBackups() {
-            try {
-                const keys = Object.keys(localStorage)
-                    .filter(key => key.startsWith('emailsortpro_backup_'))
-                    .sort()
-                    .reverse();
-                
-                if (keys.length > this.config.maxBackups.local) {
-                    const toDelete = keys.slice(this.config.maxBackups.local);
-                    toDelete.forEach(key => localStorage.removeItem(key));
-                }
-            } catch (error) {
-                console.warn('[Backup] Erreur nettoyage local:', error);
             }
         }
 
@@ -1015,6 +1025,22 @@
             return preferences;
         }
 
+        cleanupLocalBackups() {
+            try {
+                const keys = Object.keys(localStorage)
+                    .filter(key => key.startsWith('emailsortpro_backup_'))
+                    .sort()
+                    .reverse();
+                
+                if (keys.length > this.config.maxBackups.local) {
+                    const toDelete = keys.slice(this.config.maxBackups.local);
+                    toDelete.forEach(key => localStorage.removeItem(key));
+                }
+            } catch (error) {
+                console.warn('[Backup] Erreur nettoyage local:', error);
+            }
+        }
+
         getCurrentUser() {
             try {
                 return window.app?.user?.email || 
@@ -1024,6 +1050,18 @@
             } catch {
                 return 'unknown';
             }
+        }
+
+        // ================================================
+        // MÉTHODES CLOUD (simplifiées pour éviter erreurs)
+        // ================================================
+        isCloudReady() {
+            return false; // Désactivé pour éviter les erreurs
+        }
+
+        async detectProvider() {
+            this.provider = 'local';
+            console.log('[Backup] Provider: local (cloud désactivé)');
         }
 
         // ================================================
@@ -1045,16 +1083,6 @@
                 localStorage.setItem('emailsortpro_cache_backup_config', JSON.stringify(this.config));
             } catch (error) {
                 console.warn('[Backup] Erreur sauvegarde config');
-            }
-        }
-
-        async detectProvider() {
-            if (this.isOneDriveReady()) {
-                this.provider = 'onedrive';
-            } else if (this.isGoogleDriveReady()) {
-                this.provider = 'googledrive';
-            } else {
-                this.provider = 'local';
             }
         }
 
@@ -1230,9 +1258,10 @@
     });
     
     console.log('✅ BackupService ULTRA AUTOMATIQUE chargé');
-    console.log('🚀 Mode multi-couches : Cache + IndexedDB + localStorage');
+    console.log('🚀 Mode QUAD-couches : Cache + IndexedDB + localStorage + Dossier local FORCÉ');
+    console.log('📁 DOSSIER LOCAL: Téléchargement automatique dans Téléchargements');
     console.log('⚡ Backup ultra-fréquent : toutes les 2 minutes');
-    console.log('🔒 Redondance triple garantie - Documents optionnel');
-    console.log('🎯 AUCUNE interaction requise - 100% automatique');
+    console.log('🔒 Quadruple redondance garantie');
+    console.log('🎯 Fichiers créés automatiquement à chaque backup!');
 
 })();
