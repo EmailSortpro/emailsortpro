@@ -2072,9 +2072,375 @@
         };
 
         // ===============================================
-        // SYSTÈME FORCÉ POUR PREMIÈRE CONNEXION
+        // SYSTÈME DE FORÇAGE DIRECT DU MODAL (BYPASS COMPLET)
         // ===============================================
         
+        // Fonction pour créer et afficher directement le modal d'autorisation
+        window.createAndShowBackupModal = function() {
+            console.log('[DIRECT_MODAL] 🚀 Création directe du modal d\'autorisation...');
+            
+            // Supprimer tout modal existant
+            const existingModal = document.querySelector('.authorization-modal-overlay, .modal-overlay');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Créer le modal d'autorisation directement
+            const modal = document.createElement('div');
+            modal.className = 'authorization-modal-overlay visible';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                padding: 20px;
+                opacity: 1;
+                transition: opacity 0.3s ease;
+            `;
+            
+            modal.innerHTML = `
+                <div class="authorization-modal" style="
+                    background: white;
+                    border-radius: 12px;
+                    width: 100%;
+                    max-width: 500px;
+                    max-height: 90vh;
+                    overflow: hidden;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+                    transform: scale(1);
+                    transition: transform 0.3s ease;
+                ">
+                    <div class="auth-modal-header" style="
+                        padding: 24px;
+                        text-align: center;
+                        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+                        color: white;
+                    ">
+                        <div class="auth-icon" style="
+                            width: 60px;
+                            height: 60px;
+                            background: rgba(255, 255, 255, 0.2);
+                            border-radius: 50%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            margin: 0 auto 16px;
+                            font-size: 24px;
+                        ">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h2 style="
+                            font-size: 20px;
+                            font-weight: 600;
+                            margin: 0 0 8px 0;
+                        ">Autorisation de Sauvegarde</h2>
+                        <p style="
+                            font-size: 14px;
+                            opacity: 0.9;
+                            margin: 0;
+                        ">EmailSortPro souhaite créer son dossier de sauvegarde</p>
+                    </div>
+                    
+                    <div class="auth-modal-body" style="
+                        padding: 24px;
+                        overflow-y: auto;
+                        max-height: 60vh;
+                    ">
+                        <div class="auth-explanation">
+                            <div class="auth-feature" style="
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                margin-bottom: 16px;
+                                padding: 12px;
+                                background: #f8fafc;
+                                border-radius: 8px;
+                                border: 1px solid #e2e8f0;
+                            ">
+                                <div class="feature-icon" style="
+                                    width: 36px;
+                                    height: 36px;
+                                    background: #3B82F6;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-size: 14px;
+                                    flex-shrink: 0;
+                                ">
+                                    <i class="fas fa-folder-plus"></i>
+                                </div>
+                                <div class="feature-text" style="flex: 1;">
+                                    <strong style="
+                                        display: block;
+                                        font-size: 14px;
+                                        color: #1f2937;
+                                        margin-bottom: 4px;
+                                    ">Création automatique</strong>
+                                    <span style="
+                                        font-size: 13px;
+                                        color: #6b7280;
+                                    ">Un dossier EmailSortPro sera créé dans vos Documents</span>
+                                </div>
+                            </div>
+                            
+                            <div class="auth-feature" style="
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                margin-bottom: 16px;
+                                padding: 12px;
+                                background: #f8fafc;
+                                border-radius: 8px;
+                                border: 1px solid #e2e8f0;
+                            ">
+                                <div class="feature-icon" style="
+                                    width: 36px;
+                                    height: 36px;
+                                    background: #10b981;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-size: 14px;
+                                    flex-shrink: 0;
+                                ">
+                                    <i class="fas fa-save"></i>
+                                </div>
+                                <div class="feature-text" style="flex: 1;">
+                                    <strong style="
+                                        display: block;
+                                        font-size: 14px;
+                                        color: #1f2937;
+                                        margin-bottom: 4px;
+                                    ">Sauvegarde sécurisée</strong>
+                                    <span style="
+                                        font-size: 13px;
+                                        color: #6b7280;
+                                    ">Vos catégories et paramètres seront sauvegardés automatiquement</span>
+                                </div>
+                            </div>
+                            
+                            <div class="auth-feature" style="
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                margin-bottom: 20px;
+                                padding: 12px;
+                                background: #f8fafc;
+                                border-radius: 8px;
+                                border: 1px solid #e2e8f0;
+                            ">
+                                <div class="feature-icon" style="
+                                    width: 36px;
+                                    height: 36px;
+                                    background: #f59e0b;
+                                    border-radius: 50%;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-size: 14px;
+                                    flex-shrink: 0;
+                                ">
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                                <div class="feature-text" style="flex: 1;">
+                                    <strong style="
+                                        display: block;
+                                        font-size: 14px;
+                                        color: #1f2937;
+                                        margin-bottom: 4px;
+                                    ">Confidentialité garantie</strong>
+                                    <span style="
+                                        font-size: 13px;
+                                        color: #6b7280;
+                                    ">Tous vos fichiers restent sur votre ordinateur</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="auth-path-preview" style="
+                            background: #f0f9ff;
+                            border: 1px solid #bae6fd;
+                            border-radius: 8px;
+                            padding: 16px;
+                            margin: 20px 0;
+                        ">
+                            <div class="path-label" style="
+                                font-size: 12px;
+                                color: #374151;
+                                font-weight: 500;
+                                margin-bottom: 8px;
+                            ">Emplacement de création :</div>
+                            <div class="path-value" style="
+                                display: flex;
+                                align-items: center;
+                                gap: 8px;
+                                font-family: monospace;
+                                font-size: 13px;
+                                color: #0369a1;
+                                font-weight: 600;
+                            ">
+                                <i class="fas fa-folder"></i>
+                                Documents\\EmailSortPro\\Categories\\
+                            </div>
+                        </div>
+                        
+                        <div class="auth-promise" style="
+                            background: #f0fdf4;
+                            border: 1px solid #bbf7d0;
+                            border-radius: 8px;
+                            padding: 12px;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            font-size: 13px;
+                            color: #166534;
+                            margin-top: 20px;
+                        ">
+                            <i class="fas fa-check-circle"></i>
+                            Cette autorisation ne vous sera demandée qu'une seule fois
+                        </div>
+                    </div>
+                    
+                    <div class="auth-modal-actions" style="
+                        padding: 20px 24px;
+                        border-top: 1px solid #e2e8f0;
+                        background: #f8fafc;
+                        display: flex;
+                        justify-content: flex-end;
+                        gap: 12px;
+                    ">
+                        <button class="auth-btn secondary" onclick="window.handleModalDecline()" style="
+                            padding: 10px 16px;
+                            border-radius: 6px;
+                            font-size: 14px;
+                            font-weight: 500;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            transition: all 0.15s ease;
+                            border: none;
+                            background: #f3f4f6;
+                            color: #374151;
+                            border: 1px solid #d1d5db;
+                        ">
+                            <i class="fas fa-times"></i>
+                            Plus tard
+                        </button>
+                        <button class="auth-btn primary" onclick="window.handleModalAccept()" style="
+                            padding: 10px 16px;
+                            border-radius: 6px;
+                            font-size: 14px;
+                            font-weight: 500;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            transition: all 0.15s ease;
+                            border: none;
+                            background: #3B82F6;
+                            color: white;
+                        ">
+                            <i class="fas fa-check"></i>
+                            Autoriser la création
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Ajouter au DOM
+            document.body.appendChild(modal);
+            
+            // Animation d'apparition
+            setTimeout(() => {
+                modal.style.opacity = '1';
+            }, 50);
+            
+            console.log('[DIRECT_MODAL] ✅ Modal d\'autorisation affiché directement!');
+            
+            // Marquer que le modal a été affiché
+            try {
+                localStorage.setItem('emailsortpro_backup_modal_shown', 'true');
+                localStorage.setItem('emailsortpro_backup_modal_date', new Date().toISOString());
+            } catch (error) {
+                console.warn('[DIRECT_MODAL] Could not save modal state:', error);
+            }
+            
+            return modal;
+        };
+
+        // Fonction pour gérer l'acceptation
+        window.handleModalAccept = function() {
+            console.log('[DIRECT_MODAL] ✅ Utilisateur a accepté l\'autorisation');
+            
+            // Marquer l'autorisation comme accordée
+            try {
+                localStorage.setItem('emailsortpro_filesystem_authorized', 'true');
+                localStorage.setItem('emailsortpro_authorization_date', new Date().toISOString());
+            } catch (error) {
+                console.warn('[DIRECT_MODAL] Could not save authorization:', error);
+            }
+            
+            // Fermer le modal
+            const modal = document.querySelector('.authorization-modal-overlay');
+            if (modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+            
+            // Afficher un message de succès
+            if (window.uiManager && window.uiManager.showToast) {
+                window.uiManager.showToast('✅ Autorisation accordée! Configuration disponible dans les Paramètres.', 'success', 5000);
+            }
+            
+            // Optionnel : déclencher la configuration automatique
+            setTimeout(() => {
+                if (window.categoriesPageV24 && window.categoriesPageV24.configureDirectAccess) {
+                    window.categoriesPageV24.configureDirectAccess();
+                }
+            }, 1000);
+        };
+
+        // Fonction pour gérer le refus
+        window.handleModalDecline = function() {
+            console.log('[DIRECT_MODAL] ❌ Utilisateur a refusé l\'autorisation');
+            
+            // Marquer le refus
+            try {
+                localStorage.setItem('emailsortpro_backup_declined', 'true');
+                localStorage.setItem('emailsortpro_backup_decline_date', new Date().toISOString());
+            } catch (error) {
+                console.warn('[DIRECT_MODAL] Could not save decline:', error);
+            }
+            
+            // Fermer le modal
+            const modal = document.querySelector('.authorization-modal-overlay');
+            if (modal) {
+                modal.style.opacity = '0';
+                setTimeout(() => {
+                    modal.remove();
+                }, 300);
+            }
+            
+            // Afficher un message informatif
+            if (window.uiManager && window.uiManager.showToast) {
+                window.uiManager.showToast('📁 Sauvegarde disponible dans les Paramètres quand vous le souhaitez.', 'info', 4000);
+            }
+        };
+
         // Fonction pour FORCER l'affichage du modal à la première connexion
         window.forceFirstConnectionModal = function() {
             console.log('[FORCE_FIRST] 🎯 FORÇAGE du modal première connexion...');
@@ -2090,55 +2456,12 @@
                 });
                 
                 if (!modalAlreadyShown && !userHasDeclined) {
-                    console.log('[FORCE_FIRST] ✅ CONDITIONS REMPLIES - Affichage FORCÉ du modal');
+                    console.log('[FORCE_FIRST] ✅ CONDITIONS REMPLIES - Affichage DIRECT du modal');
                     
-                    // Marquer que le modal va être affiché
-                    localStorage.setItem('emailsortpro_backup_modal_shown', 'true');
-                    localStorage.setItem('emailsortpro_backup_modal_date', new Date().toISOString());
-                    
-                    // Attendre que CategoriesPage soit prêt et FORCER l'affichage
-                    let attempts = 0;
-                    const tryShowModal = () => {
-                        attempts++;
-                        
-                        if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
-                            console.log('[FORCE_FIRST] 🚀 FORÇAGE IMMÉDIAT du modal (tentative ' + attempts + ')');
-                            
-                            // Appeler directement la méthode originale sans vérifications
-                            const originalModal = window.categoriesPageV24.showAuthorizationModal;
-                            if (originalModal && typeof originalModal === 'function') {
-                                // Sauvegarder et restaurer temporairement la méthode originale
-                                const tempMethod = originalModal;
-                                
-                                // Appeler directement sans blocage
-                                try {
-                                    tempMethod.call(window.categoriesPageV24);
-                                    console.log('[FORCE_FIRST] ✅ Modal FORCÉ affiché avec succès!');
-                                    
-                                    // Afficher un toast pour confirmer
-                                    if (window.uiManager && window.uiManager.showToast) {
-                                        setTimeout(() => {
-                                            window.uiManager.showToast('💾 Configuration de sauvegarde disponible', 'info', 5000);
-                                        }, 1000);
-                                    }
-                                    
-                                    return true;
-                                } catch (error) {
-                                    console.error('[FORCE_FIRST] ❌ Erreur forçage modal:', error);
-                                }
-                            }
-                        }
-                        
-                        // Réessayer jusqu'à 10 fois
-                        if (attempts < 10) {
-                            setTimeout(tryShowModal, 1000);
-                        } else {
-                            console.warn('[FORCE_FIRST] ❌ Impossible d\'afficher le modal après 10 tentatives');
-                        }
-                    };
-                    
-                    // Démarrer les tentatives
-                    setTimeout(tryShowModal, 2000); // Première tentative après 2 secondes
+                    // Attendre un délai pour que l'app soit complètement chargée
+                    setTimeout(() => {
+                        window.createAndShowBackupModal();
+                    }, 3000);
                     
                     return true;
                 } else {
@@ -2172,33 +2495,6 @@
             }
         };
 
-        // Fonction pour permettre le modal UNIQUEMENT à la première connexion
-        window.allowFirstConnectionModal = function() {
-            const isFirstTime = window.isRealFirstConnection();
-            
-            console.log('[FIRST_MODAL] 🎯 Vérification autorisation modal:', {
-                isFirstTime: isFirstTime,
-                timestamp: new Date().toISOString()
-            });
-            
-            if (isFirstTime) {
-                console.log('[FIRST_MODAL] ✅ PREMIÈRE CONNEXION - Déclenchement FORCÉ');
-                
-                // Déclencher le forçage immédiatement
-                return window.forceFirstConnectionModal();
-            } else {
-                console.log('[FIRST_MODAL] ❌ PAS première connexion - Modal bloqué');
-                return false;
-            }
-        };
-
-        // Fonction pour gérer le refus de l'utilisateur
-        window.handleBackupDecline = function() {
-            console.log('[FORCE_FIRST] 📝 Utilisateur a décliné la sauvegarde');
-            localStorage.setItem('emailsortpro_backup_declined', 'true');
-            localStorage.setItem('emailsortpro_backup_decline_date', new Date().toISOString());
-        };
-
         // Fonction pour réinitialiser complètement le système (pour les tests)
         window.resetFirstConnectionSystem = function() {
             console.log('[FORCE_FIRST] 🔄 RESET COMPLET du système première connexion');
@@ -2220,6 +2516,12 @@
             
             console.log('[FORCE_FIRST] ✅ Reset terminé - rechargez la page pour tester');
             return 'Reset terminé - rechargez la page';
+        };
+
+        // Fonction pour afficher le modal manuellement (pour tests)
+        window.showBackupModalNow = function() {
+            console.log('[MANUAL] 🚀 Affichage manuel du modal...');
+            return window.createAndShowBackupModal();
         };
 
         // Fonction pour bloquer les modals après la première connexion (simplifiée)
@@ -2559,7 +2861,7 @@
             window.checkGoogleCallback();
         }, 500);
 
-        console.log('[INDEX] ✅ FORCED first connection modal system integrated - MODAL WILL SHOW!');
+        console.log('[INDEX] ✅ DIRECT MODAL SYSTEM - GUARANTEED TO SHOW!');
     </script>
 
     <!-- 9. Application Principal EN DERNIER -->
