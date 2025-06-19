@@ -203,15 +203,40 @@ class CategoriesPageV22 {
                                     <option value="localStorage" ${config.storage === 'localStorage' ? 'selected' : ''}>Navigateur (localStorage)</option>
                                     <option value="indexedDB" ${config.storage === 'indexedDB' ? 'selected' : ''}>Base de données locale</option>
                                     <option value="download" ${config.storage === 'download' ? 'selected' : ''}>Téléchargement automatique</option>
+                                    <option value="custom-folder" ${config.storage === 'custom-folder' ? 'selected' : ''}>Dossier personnalisé</option>
                                 </select>
                                 <div class="storage-help">
                                     <small class="storage-help-text">
                                         ${config.storage === 'localStorage' ? '💾 Stocké dans votre navigateur. Rapide mais limité à cet appareil.' : 
                                           config.storage === 'indexedDB' ? '🗃️ Base de données locale plus robuste.' :
                                           config.storage === 'download' ? '📥 Fichiers téléchargés automatiquement.' :
+                                          config.storage === 'custom-folder' ? '📁 Choisissez un dossier spécifique sur votre disque dur.' :
                                           '💾 Sélectionnez un emplacement'}
                                     </small>
                                 </div>
+                                
+                                <!-- Configuration dossier personnalisé -->
+                                ${config.storage === 'custom-folder' ? `
+                                    <div class="custom-folder-config">
+                                        <div class="folder-selector">
+                                            <input type="text" 
+                                                   id="custom-folder-path" 
+                                                   placeholder="Aucun dossier sélectionné" 
+                                                   value="${config.customFolderPath || ''}" 
+                                                   readonly>
+                                            <button class="btn-select-folder" onclick="window.categoriesPageV22.selectCustomFolder()">
+                                                <i class="fas fa-folder-open"></i>
+                                                Parcourir
+                                            </button>
+                                        </div>
+                                        <div class="folder-info">
+                                            <small>
+                                                <i class="fas fa-info-circle"></i>
+                                                Les sauvegardes seront créées dans le dossier sélectionné
+                                            </small>
+                                        </div>
+                                    </div>
+                                ` : ''}
                             </div>
                             
                             <!-- Rétention -->
@@ -377,7 +402,9 @@ class CategoriesPageV22 {
                 retention: 10,
                 compression: true,
                 lastBackup: null,
-                nextBackup: null
+                nextBackup: null,
+                customFolderPath: null, // NOUVEAU: Chemin du dossier personnalisé
+                customFolderHandle: null // NOUVEAU: Handle du dossier (File System Access API)
             };
             
             return saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
@@ -390,7 +417,9 @@ class CategoriesPageV22 {
                 retention: 10,
                 compression: true,
                 lastBackup: null,
-                nextBackup: null
+                nextBackup: null,
+                customFolderPath: null,
+                customFolderHandle: null
             };
         }
     }
@@ -577,6 +606,85 @@ class CategoriesPageV22 {
             case 'download':
                 this.downloadBackup(data, timestamp);
                 break;
+                
+            case 'custom-folder':
+                await this.storeInCustomFolder(data, timestamp);
+                break;
+        }
+    }
+
+    // NOUVELLE MÉTHODE: Sélectionner un dossier personnalisé
+    async selectCustomFolder() {
+        try {
+            // Vérifier si l'API File System Access est supportée
+            if (!window.showDirectoryPicker) {
+                this.showToast('❌ Cette fonctionnalité nécessite un navigateur moderne (Chrome/Edge)', 'error');
+                return;
+            }
+            
+            // Ouvrir le sélecteur de dossier
+            const directoryHandle = await window.showDirectoryPicker({
+                mode: 'readwrite',
+                startIn: 'documents'
+            });
+            
+            // Stocker le handle et le chemin
+            this.backupConfig.customFolderHandle = directoryHandle;
+            this.backupConfig.customFolderPath = directoryHandle.name;
+            
+            // Sauvegarder la configuration
+            this.saveBackupConfig();
+            
+            // Rafraîchir l'affichage
+            this.refreshSettingsTab();
+            
+            this.showToast(`✅ Dossier sélectionné: ${directoryHandle.name}`, 'success');
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                // L'utilisateur a annulé
+                console.log('[Backup] Sélection de dossier annulée');
+            } else {
+                console.error('[Backup] Erreur sélection dossier:', error);
+                this.showToast('❌ Erreur lors de la sélection du dossier', 'error');
+            }
+        }
+    }
+
+    // NOUVELLE MÉTHODE: Stocker dans un dossier personnalisé
+    async storeInCustomFolder(data, timestamp) {
+        try {
+            if (!this.backupConfig.customFolderHandle) {
+                throw new Error('Aucun dossier sélectionné');
+            }
+            
+            // Créer le nom du fichier
+            const fileName = `emailsortpro-backup-${timestamp.split('T')[0]}-${Date.now()}.json`;
+            
+            // Créer le fichier dans le dossier sélectionné
+            const fileHandle = await this.backupConfig.customFolderHandle.getFileHandle(fileName, {
+                create: true
+            });
+            
+            // Écrire les données
+            const writable = await fileHandle.createWritable();
+            await writable.write(data);
+            await writable.close();
+            
+            this.showToast(`💾 Sauvegarde créée: ${fileName}`, 'success');
+            
+        } catch (error) {
+            console.error('[Backup] Erreur stockage dossier personnalisé:', error);
+            
+            if (error.name === 'NotAllowedError') {
+                this.showToast('❌ Permission refusée. Resélectionnez le dossier.', 'error');
+                // Réinitialiser le dossier
+                this.backupConfig.customFolderHandle = null;
+                this.backupConfig.customFolderPath = null;
+                this.saveBackupConfig();
+            } else {
+                this.showToast('❌ Erreur lors de la sauvegarde dans le dossier', 'error');
+            }
         }
     }
 
@@ -2147,6 +2255,70 @@ class CategoriesPageV22 {
                 background: #F8FAFC;
                 border-radius: 6px;
                 border-left: 3px solid var(--primary);
+            }
+            
+            /* Configuration dossier personnalisé */
+            .custom-folder-config {
+                margin-top: 16px;
+                padding: 16px;
+                background: #F8FAFC;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+            }
+            
+            .folder-selector {
+                display: flex;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+            
+            .folder-selector input {
+                flex: 1;
+                padding: 10px 12px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                background: white;
+                font-size: 14px;
+                color: var(--text-secondary);
+            }
+            
+            .btn-select-folder {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 10px 16px;
+                background: var(--primary);
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s;
+                white-space: nowrap;
+            }
+            
+            .btn-select-folder:hover {
+                background: #5558E3;
+                transform: translateY(-1px);
+            }
+            
+            .folder-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .folder-info small {
+                font-size: 12px;
+                color: var(--text-secondary);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .folder-info i {
+                color: var(--primary);
             }
             
             /* Actions de backup */
