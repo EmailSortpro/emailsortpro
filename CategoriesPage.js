@@ -3101,40 +3101,78 @@ window.forceShowAuthModal = function() {
     }
 };
 
-// Script d'intégration pour la première connexion (CORRIGÉ AVEC DÉTECTION NAVIGATION PRIVÉE)
+// Script d'intégration pour la première connexion (FORCE EN NAVIGATION PRIVÉE)
 window.setupFirstTimeAuth = function() {
     console.log('[SETUP] 🎯 Configuration autorisation première connexion...');
     
-    // Fonction pour détecter la navigation privée
+    // Fonction pour détecter la navigation privée de manière plus agressive
     const detectPrivateBrowsing = () => {
         return new Promise((resolve) => {
-            // Méthode 1: Test du quota localStorage (Safari)
+            // Détection immédiate basée sur plusieurs indices
+            let privateBrowsingIndicators = 0;
+            
             try {
-                localStorage.setItem('__private_test__', '1');
-                localStorage.removeItem('__private_test__');
-                
-                // Méthode 2: Test de requestFileSystem (Chrome/Edge)
-                if (window.webkitRequestFileSystem) {
-                    webkitRequestFileSystem(
-                        window.TEMPORARY, 
-                        1,
-                        () => resolve(false), // Navigation normale
-                        () => resolve(true)   // Navigation privée
-                    );
-                } else if (window.indexedDB) {
-                    // Méthode 3: Test IndexedDB (Firefox)
-                    const testName = '__private_test_db__';
-                    const openReq = indexedDB.open(testName);
-                    openReq.onsuccess = () => {
-                        indexedDB.deleteDatabase(testName);
-                        resolve(false); // Navigation normale
-                    };
-                    openReq.onerror = () => resolve(true); // Navigation privée
-                } else {
-                    resolve(false); // Pas de détection possible
+                // Test 1: Storage quota (Safari)
+                if (navigator.storage && navigator.storage.estimate) {
+                    navigator.storage.estimate().then(estimate => {
+                        if (estimate.quota < 50000000) { // Moins de 50MB = probablement privé
+                            privateBrowsingIndicators++;
+                        }
+                    });
                 }
-            } catch (e) {
-                resolve(true); // Probablement navigation privée
+                
+                // Test 2: IndexedDB (Firefox)
+                try {
+                    const testDB = indexedDB.open('__test_private__');
+                    testDB.onerror = () => {
+                        privateBrowsingIndicators++;
+                        console.log('[SETUP] 🔍 IndexedDB error - Navigation privée détectée');
+                    };
+                    testDB.onsuccess = () => {
+                        indexedDB.deleteDatabase('__test_private__');
+                    };
+                } catch (e) {
+                    privateBrowsingIndicators++;
+                    console.log('[SETUP] 🔍 IndexedDB exception - Navigation privée détectée');
+                }
+                
+                // Test 3: User Agent et contexte
+                const isLikelyPrivate = (
+                    !document.referrer && // Pas de référent
+                    performance.navigation.type === 1 && // Navigation directe
+                    !window.name && // Pas de nom de fenêtre
+                    navigator.webdriver === undefined // Pas en mode automation
+                );
+                
+                if (isLikelyPrivate) {
+                    privateBrowsingIndicators++;
+                    console.log('[SETUP] 🔍 Contexte navigation privée détecté');
+                }
+                
+                // Test 4: Capacités de stockage limitées
+                try {
+                    const testKey = '__storage_test__' + Date.now();
+                    localStorage.setItem(testKey, 'test');
+                    const retrieved = localStorage.getItem(testKey);
+                    localStorage.removeItem(testKey);
+                    
+                    if (!retrieved) {
+                        privateBrowsingIndicators++;
+                        console.log('[SETUP] 🔍 Storage dysfunction - Navigation privée détectée');
+                    }
+                } catch (e) {
+                    privateBrowsingIndicators++;
+                    console.log('[SETUP] 🔍 Storage error - Navigation privée détectée');
+                }
+                
+                console.log(`[SETUP] 📊 Indicateurs navigation privée: ${privateBrowsingIndicators}/4`);
+                
+                // Résolution immédiate avec seuil bas
+                resolve(privateBrowsingIndicators >= 1);
+                
+            } catch (error) {
+                console.log('[SETUP] ⚠️ Erreur détection, assumons navigation privée');
+                resolve(true);
             }
         });
     };
@@ -3145,51 +3183,60 @@ window.setupFirstTimeAuth = function() {
         const isPrivateBrowsing = await detectPrivateBrowsing();
         console.log(`[SETUP] 🔍 Navigation privée détectée: ${isPrivateBrowsing}`);
         
-        // Vérifier si c'est vraiment la première connexion
+        // Vérifier les marqueurs normaux
         const hasConnectedBefore = localStorage.getItem('emailsortpro_has_connected');
         const authorizationGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
         
-        // En navigation privée, on considère toujours comme première connexion
-        // OU si les marqueurs normaux indiquent une première connexion
+        console.log(`[SETUP] 📋 hasConnectedBefore: ${!!hasConnectedBefore}`);
+        console.log(`[SETUP] 📋 authorizationGranted: ${!!authorizationGranted}`);
+        
+        // LOGIQUE FORCÉE: En navigation privée, toujours considérer comme première fois
+        // OU si vraiment première fois
         const isFirstTime = isPrivateBrowsing || (!hasConnectedBefore && !authorizationGranted);
         
-        if (isFirstTime) {
-            console.log('[SETUP] 🆕 Première connexion détectée (ou navigation privée) - Déclenchement automatique...');
+        // OVERRIDE SPÉCIAL: Si on est en navigation privée et qu'il y a des traces, 
+        // forcer le modal quand même
+        const shouldForceModal = isPrivateBrowsing && (hasConnectedBefore || authorizationGranted);
+        
+        if (isFirstTime || shouldForceModal) {
+            if (shouldForceModal) {
+                console.log('[SETUP] 🚀 FORCE: Navigation privée avec traces - Modal forcé!');
+            } else {
+                console.log('[SETUP] 🆕 Première connexion détectée - Déclenchement automatique...');
+            }
             
             // Marquer que l'utilisateur s'est connecté (même en navigation privée)
             localStorage.setItem('emailsortpro_has_connected', 'true');
             localStorage.setItem('emailsortpro_first_connection_date', new Date().toISOString());
             
-            if (isPrivateBrowsing) {
-                console.log('[SETUP] 🔒 Mode navigation privée - Modal automatique');
-            }
-            
-            // DÉCLENCHER automatiquement le modal d'autorisation après un délai
+            // DÉCLENCHER automatiquement le modal d'autorisation après un délai COURT
             setTimeout(async () => {
                 try {
-                    console.log('[SETUP] 🎨 Déclenchement automatique du modal d\'autorisation...');
+                    console.log('[SETUP] 🎨 Déclenchement FORCÉ du modal d\'autorisation...');
                     
                     // Vérifier que CategoriesPage est prêt
                     if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
                         await window.categoriesPageV24.showAuthorizationModal();
-                        console.log('[SETUP] ✅ Modal d\'autorisation affiché automatiquement');
+                        console.log('[SETUP] ✅ Modal d\'autorisation affiché FORCÉ');
                     } else {
-                        console.warn('[SETUP] ⚠️ CategoriesPage pas encore prêt - Nouvelle tentative...');
+                        console.warn('[SETUP] ⚠️ CategoriesPage pas encore prêt - Tentative immédiate...');
                         
-                        // Deuxième tentative après 2 secondes supplémentaires
+                        // Tentative immédiate sans délai
                         setTimeout(async () => {
                             if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
                                 await window.categoriesPageV24.showAuthorizationModal();
-                                console.log('[SETUP] ✅ Modal d\'autorisation affiché (2ème tentative)');
+                                console.log('[SETUP] ✅ Modal d\'autorisation affiché (tentative immédiate)');
                             } else {
-                                console.warn('[SETUP] ⚠️ Impossible d\'afficher le modal - Disponible manuellement');
+                                console.error('[SETUP] ❌ CategoriesPage introuvable - API manuelle disponible');
+                                console.log('[SETUP] 💡 Utilisez: window.forceShowAuthModal()');
                             }
-                        }, 2000);
+                        }, 500); // Délai très court
                     }
                 } catch (error) {
                     console.error('[SETUP] ❌ Erreur déclenchement modal:', error);
+                    console.log('[SETUP] 💡 Utilisez: window.forceShowAuthModal()');
                 }
-            }, 3000); // 3 secondes après l'activation de l'app
+            }, 2000); // Délai réduit pour navigation privée
             
         } else {
             console.log('[SETUP] ✅ Utilisateur existant en navigation normale - Pas d\'autorisation automatique requise');
@@ -3198,7 +3245,7 @@ window.setupFirstTimeAuth = function() {
     
     // Si l'app est déjà active, vérifier immédiatement
     if (document.body.classList.contains('app-active')) {
-        checkAndSetup();
+        setTimeout(checkAndSetup, 1000); // Petit délai pour laisser l'app se stabiliser
     } else {
         // Sinon, attendre que l'app devienne active
         const observer = new MutationObserver((mutations) => {
@@ -3207,7 +3254,7 @@ window.setupFirstTimeAuth = function() {
                     mutation.attributeName === 'class' &&
                     document.body.classList.contains('app-active')) {
                     observer.disconnect();
-                    checkAndSetup();
+                    setTimeout(checkAndSetup, 1000);
                 }
             });
         });
@@ -3223,6 +3270,38 @@ window.setupFirstTimeAuth = function() {
 setTimeout(() => {
     window.setupFirstTimeAuth();
 }, 1000);
+
+// SOLUTION IMMÉDIATE: Déclencher le modal après chargement complet
+setTimeout(() => {
+    console.log('[IMMEDIATE] 🚀 Tentative de déclenchement immédiat pour navigation privée...');
+    
+    // Vérifier si on est probablement en navigation privée
+    const hasConnected = localStorage.getItem('emailsortpro_has_connected');
+    const authGranted = localStorage.getItem('emailsortpro_filesystem_authorized');
+    
+    // Si il y a des traces mais qu'on pourrait être en navigation privée
+    if (hasConnected || authGranted) {
+        console.log('[IMMEDIATE] 🔍 Traces détectées - Tentative déclenchement modal...');
+        
+        // Attendre que CategoriesPage soit prêt
+        const tryTrigger = () => {
+            if (window.categoriesPageV24 && window.categoriesPageV24.showAuthorizationModal) {
+                try {
+                    console.log('[IMMEDIATE] 🎨 Déclenchement immédiat du modal...');
+                    window.categoriesPageV24.showAuthorizationModal();
+                    console.log('[IMMEDIATE] ✅ Modal déclenché avec succès!');
+                } catch (error) {
+                    console.error('[IMMEDIATE] ❌ Erreur déclenchement:', error);
+                }
+            } else {
+                console.log('[IMMEDIATE] ⏳ CategoriesPage pas prêt, nouvelle tentative...');
+                setTimeout(tryTrigger, 1000);
+            }
+        };
+        
+        setTimeout(tryTrigger, 3000); // Après 3 secondes
+    }
+}, 2000);
 
 console.log('[CategoriesPage] ✅ CategoriesPage v24.1 chargée - NAVIGATION PRIVÉE DÉTECTÉE !');
 console.log('[CategoriesPage] 🎯 Fonctionnalités principales:');
@@ -3246,3 +3325,8 @@ console.log('[CategoriesPage]   • window.checkAuthorizationStatus() - Vérifie
 console.log('[CategoriesPage]   • window.forceFirstTimeMode() - Forcer mode première fois');
 console.log('[CategoriesPage]   • window.forceShowAuthModal() - Forcer modal (override)');
 console.log('[CategoriesPage] ⚡ Auto-déclenchement en navigation privée + API de debug complète !');
+console.log('');
+console.log('🔥 NAVIGATION PRIVÉE - TESTEZ IMMÉDIATEMENT:');
+console.log('   window.forceShowAuthModal()    ← FORCER LE MODAL');
+console.log('   window.checkAuthorizationStatus()  ← VÉRIFIER STATUT');
+console.log('   window.forceFirstTimeMode()    ← RESET COMPLET');
